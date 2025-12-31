@@ -35,8 +35,9 @@ interface MenuItem {
               alt="Profile"
               class="drawer-profile-image" />
             <div class="user-details">
+              <p class="user-tagline">you eating healthy</p>
               <h3 class="user-name">{{ userFirstName$ | async }} Plan</h3>
-              <p class="user-subtitle">Nutrition planning</p>
+              <p class="user-subtitle">Nutrition coach</p>
             </div>
           </div>
           <button
@@ -90,10 +91,11 @@ export class LeftNavComponent {
   );
 
   menuItems: MenuItem[] = [
-    { label: 'Regimenu™', icon: '🤖', tabId: 'meal-planning' },
+    { label: 'Chatbot', icon: '💬', tabId: 'chat' },
     { label: 'Foods', icon: '🍒', tabId: 'foods' },
-    { label: 'Shopping List', icon: '🛒', tabId: 'shop' },
+    { label: 'Regimenu™', iconImage: 'images/ai-button1.png', tabId: 'meal-planning' },
     { label: 'Tracking', icon: '📈', tabId: 'review' },
+    { label: 'Shopping List', icon: '🛒', tabId: 'shop' },
     { label: 'Preferences', icon: '⚙️', tabId: 'preferences' }
   ];
 
