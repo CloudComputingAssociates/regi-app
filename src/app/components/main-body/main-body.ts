@@ -7,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { TabService } from '../../services/tab.service';
 import { ChatComponent } from '../chat/chat';
 import { TodayComponent } from '../today/today';
-import { PlanComponent } from '../plan/plan';
+import { FoodsPanelComponent } from '../foods-panel/foods-panel';
 import { AccountPanelComponent } from '../account-panel/account-panel';
 import { PreferencesPanelComponent } from '../preferences-panel/preferences-panel';
 import { NotificationComponent } from '../notification/notification';
@@ -22,7 +22,7 @@ import { NotificationComponent } from '../notification/notification';
     MatButtonModule,
     ChatComponent,
     TodayComponent,
-    PlanComponent,
+    FoodsPanelComponent,
     AccountPanelComponent,
     PreferencesPanelComponent,
     NotificationComponent
@@ -46,8 +46,8 @@ import { NotificationComponent } from '../notification/notification';
                 <app-chat />
               } @else if (tab.id === 'today') {
                 <app-today />
-              } @else if (tab.id === 'plan') {
-                <app-plan />
+              } @else if (tab.id === 'foods') {
+                <app-foods-panel />
               } @else if (tab.id === 'shop') {
                 <div class="placeholder-content">
                   <p class="placeholder-text">Shopping List - Coming soon</p>

@@ -77,7 +77,7 @@ export class LeftNavComponent {
 
   menuItems: MenuItem[] = [
     { label: 'Today', iconImage: 'images/yeh_logo_dark.png', tabId: 'today' },
-    { label: 'Plan', icon: '📋', tabId: 'plan' },
+    { label: 'Foods', icon: '🍒', tabId: 'foods' },
     { label: 'Shopping List', icon: '🛒', tabId: 'shop' },
     { label: 'Review', icon: '📈', tabId: 'review' },
     { label: 'Preferences', icon: '⚙️', tabId: 'preferences' }

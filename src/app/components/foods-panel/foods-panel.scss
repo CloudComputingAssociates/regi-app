@@ -1,11 +1,12 @@
-// src/app/components/plan/plan.scss
+// src/app/components/foods-panel/foods-panel.scss
 :host {
   display: flex;
   height: 100%;
   width: 100%;
 }
 
-.plan-container {
+.foods-panel-container {
+  position: relative;
   display: grid;
   grid-template-rows: 1fr 2fr;  // 1:2 ratio = 33.33%:66.67%
   height: 100%;
@@ -15,7 +16,36 @@
   overflow: hidden;
 }
 
-.plan-header {
+.close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #5a5a5a 0%, #4a4a4a 100%);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: linear-gradient(180deg, #6a6a6a 0%, #5a5a5a 100%);
+  }
+
+  &:active {
+    background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  }
+}
+
+.foods-panel-header {
   grid-row: 1;
   background: linear-gradient(180deg, #404040 0%, #5a5a5a 100%);  // Stronger contrast: darker top, lighter bottom
   padding: 8px;
@@ -64,7 +94,7 @@
   }
 }
 
-.plan-foods {
+.foods-panel-content {
   grid-row: 2;
   display: grid;
   grid-template-columns: 1fr 1fr;  // 50% / 50%
@@ -86,11 +116,11 @@
 
 // Mobile responsive header adjustments
 @media (max-width: 480px) {
-  .plan-container {
+  .foods-panel-container {
     gap: 2px;  // Keep minimal on mobile
   }
 
-  .plan-header {
+  .foods-panel-header {
     padding: 4px;  // Keep minimal on mobile too
 
     .header-text {

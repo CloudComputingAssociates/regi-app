@@ -1,19 +1,22 @@
-// src/app/components/plan/plan.ts
-import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
+// src/app/components/foods-panel/foods-panel.ts
+import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FoodsComponent, SelectedFoodEvent, AddFoodEvent } from '../foods/foods';
 import { SelectedFoodsComponent, RemoveFoodEvent } from '../selected-foods/selected-foods';
 import { Food } from '../../models/food.model';
+import { TabService } from '../../services/tab.service';
 
 @Component({
-  selector: 'app-plan',
-  standalone: true,
+  selector: 'app-foods-panel',
   imports: [CommonModule, FoodsComponent, SelectedFoodsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="plan-container">
+    <div class="foods-panel-container">
+      <!-- Close button -->
+      <button type="button" class="close-btn" (click)="closePanel()">✕</button>
+
       <!-- Top 1/4 - Reserved for filters and selected food display -->
-      <div class="plan-header">
+      <div class="foods-panel-header">
         <div class="header-placeholder">
           <p class="header-text">Filters & Selected Food Display</p>
           <p class="header-subtext">(Coming soon)</p>
@@ -28,7 +31,7 @@ import { Food } from '../../models/food.model';
       </div>
 
       <!-- Bottom 3/4 - Foods search component (left) and selected foods (right) -->
-      <div class="plan-foods">
+      <div class="foods-panel-content">
         <app-foods
           [mode]="'search'"
           (selectedFood)="onFoodSelected($event)"
@@ -40,14 +43,19 @@ import { Food } from '../../models/food.model';
       </div>
     </div>
   `,
-  styleUrls: ['./plan.scss']
+  styleUrls: ['./foods-panel.scss']
 })
-export class PlanComponent {
+export class FoodsPanelComponent {
+  private tabService = inject(TabService);
   selectedDescription = signal<string>('');
   selectedFoods = signal<Food[]>([]);
 
+  closePanel(): void {
+    this.tabService.closeTab('foods');
+  }
+
   onFoodSelected(event: SelectedFoodEvent): void {
-    console.log('Food selected in Plan:', event);
+    console.log('Food selected:', event);
     console.log('Description:', event.description);
     console.log('Protein:', event.protein, 'g');
     console.log('Carbs:', event.carbs, 'g');
