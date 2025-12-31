@@ -1,10 +1,12 @@
 // src/app/components/left-nav/left-nav.ts
 import { Component, EventEmitter, Output, ViewChild, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, AsyncPipe } from '@angular/common';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { TabService } from '../../services/tab.service';
+import { AuthService } from '@auth0/auth0-angular';
+import { map } from 'rxjs/operators';
 
 interface MenuItem {
   label: string;
@@ -16,7 +18,7 @@ interface MenuItem {
 @Component({
   selector: 'app-left-nav',
   standalone: true,
-  imports: [CommonModule, MatSidenavModule, MatIconModule, MatListModule],
+  imports: [CommonModule, AsyncPipe, MatSidenavModule, MatIconModule, MatListModule],
   template: `
     <mat-sidenav-container class="sidenav-container">
       <mat-sidenav
@@ -33,8 +35,8 @@ interface MenuItem {
               alt="Profile"
               class="drawer-profile-image" />
             <div class="user-details">
-              <h3 class="user-name">yeh </h3>
-              <p class="user-subtitle">What should I eat?</p>
+              <h3 class="user-name">{{ userFirstName$ | async }} Plan</h3>
+              <p class="user-subtitle">Nutrition planning</p>
             </div>
           </div>
           <button
@@ -75,11 +77,23 @@ export class LeftNavComponent {
   @ViewChild('drawer') drawer!: MatSidenav;
   @Output() drawerToggle = new EventEmitter<void>();
 
+  private auth = inject(AuthService);
+
+  // Get user's first name from Auth0 user profile
+  userFirstName$ = this.auth.user$.pipe(
+    map(user => {
+      if (!user?.name) return 'Your';
+      // Extract first name (split by space and take first part)
+      const firstName = user.name.split(' ')[0];
+      return firstName || 'Your';
+    })
+  );
+
   menuItems: MenuItem[] = [
-    { label: 'Regimenu™', iconImage: 'images/yeh_logo_dark.png', tabId: 'meal-planning' },
+    { label: 'Regimenu™', icon: '🤖', tabId: 'meal-planning' },
     { label: 'Foods', icon: '🍒', tabId: 'foods' },
     { label: 'Shopping List', icon: '🛒', tabId: 'shop' },
-    { label: 'Review', icon: '📈', tabId: 'review' },
+    { label: 'Tracking', icon: '📈', tabId: 'review' },
     { label: 'Preferences', icon: '⚙️', tabId: 'preferences' }
   ];
 
