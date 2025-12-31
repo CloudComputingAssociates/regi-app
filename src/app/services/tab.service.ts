@@ -18,22 +18,22 @@ export class TabService {
       closeable: false
     },
     {
-      id: 'today',
-      label: 'Today',
+      id: 'meal-planning',
+      label: 'Regimenu™',
       closeable: true
     }
   ]);
 
-  private activeTabIndexSignal = signal<number>(1);  // Default to Today (index 1)
+  private activeTabIndexSignal = signal<number>(1);  // Default to Regimenu (index 1)
 
   // Expose signals as readonly
   tabs = this.tabsSignal.asReadonly();
   activeTabIndex = this.activeTabIndexSignal.asReadonly();
 
   // Define menu order - this determines tab insertion order
-  // Left nav: today, plan, shop (Shopping List), review, preferences
+  // Left nav: meal-planning, foods, shop (Shopping List), review, preferences
   // Right nav (profile menu): account, help
-  private menuOrder = ['chat', 'today', 'foods', 'shop', 'review', 'preferences', 'account', 'help'];
+  private menuOrder = ['chat', 'meal-planning', 'foods', 'shop', 'review', 'preferences', 'account', 'help'];
 
   toggleTab(tabId: string, label: string): void {
     const currentTabs = this.tabsSignal();

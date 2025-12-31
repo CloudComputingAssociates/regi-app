@@ -1,20 +1,19 @@
-// src/app/components/today/today.ts
+// src/app/components/meal-planning/meal-planning.ts
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-today',
-  standalone: true,
+  selector: 'app-meal-planning',
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="today-container">
+    <div class="meal-planning-container">
       <div class="content-placeholder">
-        <p class="placeholder-text">Today's Activity</p>
+        <p class="placeholder-text">Meal Planning</p>
         <p class="placeholder-subtext">(Coming soon)</p>
       </div>
     </div>
   `,
-  styleUrls: ['./today.scss']
+  styleUrls: ['./meal-planning.scss']
 })
-export class TodayComponent {}
+export class MealPlanningComponent {}

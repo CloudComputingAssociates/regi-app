@@ -76,7 +76,7 @@ export class LeftNavComponent {
   @Output() drawerToggle = new EventEmitter<void>();
 
   menuItems: MenuItem[] = [
-    { label: 'Today', iconImage: 'images/yeh_logo_dark.png', tabId: 'today' },
+    { label: 'Regimenu™', iconImage: 'images/yeh_logo_dark.png', tabId: 'meal-planning' },
     { label: 'Foods', icon: '🍒', tabId: 'foods' },
     { label: 'Shopping List', icon: '🛒', tabId: 'shop' },
     { label: 'Review', icon: '📈', tabId: 'review' },

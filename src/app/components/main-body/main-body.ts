@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { TabService } from '../../services/tab.service';
 import { ChatComponent } from '../chat/chat';
-import { TodayComponent } from '../today/today';
+import { MealPlanningComponent } from '../meal-planning/meal-planning';
 import { FoodsPanelComponent } from '../foods-panel/foods-panel';
 import { AccountPanelComponent } from '../account-panel/account-panel';
 import { PreferencesPanelComponent } from '../preferences-panel/preferences-panel';
@@ -21,7 +21,7 @@ import { NotificationComponent } from '../notification/notification';
     MatIconModule,
     MatButtonModule,
     ChatComponent,
-    TodayComponent,
+    MealPlanningComponent,
     FoodsPanelComponent,
     AccountPanelComponent,
     PreferencesPanelComponent,
@@ -44,8 +44,8 @@ import { NotificationComponent } from '../notification/notification';
             <div class="tab-content">
               @if (tab.id === 'chat') {
                 <app-chat />
-              } @else if (tab.id === 'today') {
-                <app-today />
+              } @else if (tab.id === 'meal-planning') {
+                <app-meal-planning />
               } @else if (tab.id === 'foods') {
                 <app-foods-panel />
               } @else if (tab.id === 'shop') {

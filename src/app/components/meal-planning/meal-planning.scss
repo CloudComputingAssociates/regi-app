@@ -1,4 +1,4 @@
-// src/app/components/today/today.scss
+// src/app/components/meal-planning/meal-planning.scss
 
 :host {
   display: flex;
@@ -6,7 +6,7 @@
   width: 100%;
 }
 
-.today-container {
+.meal-planning-container {
   height: 100%;
   width: 100%;
   background: linear-gradient(180deg, #404040 0%, #5a5a5a 100%);  // Gradient fill
