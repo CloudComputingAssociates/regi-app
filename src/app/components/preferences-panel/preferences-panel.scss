@@ -16,10 +16,10 @@
   flex-direction: column;
 }
 
-// Action buttons inside settings section - icon style
+// Action buttons - icon style
 .action-buttons {
   display: flex;
-  gap: 16px;
+  gap: 8px;
   align-items: center;
   margin-left: auto;
 
@@ -80,7 +80,6 @@
       }
     }
   }
-
 }
 
 // Confirmation dialog overlay
@@ -172,53 +171,98 @@
 
 .panel-content {
   flex: 1;
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 16px;
+  gap: 12px;
   min-height: 0;
   overflow: hidden;
 
-  // Settings Section with grouped boxes
+  // Settings Section - two columns layout
   .settings-section {
     width: 100%;
     flex-shrink: 0;
     display: flex;
     gap: 12px;
     flex-wrap: nowrap;
-    align-items: flex-start;
-  }
-
-  .settings-group {
+    align-items: stretch;
     background: #2a2a2a;
     border: 1px solid #4a4a4a;
     border-radius: 8px;
-    overflow: hidden;
-    flex: 1 1 0;
-    min-width: 0;
+    padding: 10px;
+  }
 
-    .group-header {
-      background: #3a3a3a;
+  // Left column: Targets
+  .targets-column {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+
+    .column-label {
       color: #4da6ff;
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 600;
-      padding: 8px 12px;
-      border-bottom: 1px solid #4a4a4a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .group-content {
-      padding: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .targets-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
 
-      &.vertical {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
+    .target-field {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      label {
+        color: #ffffff;
+        font-size: 10px;
+        font-weight: 500;
+      }
+
+      input {
+        width: 100%;
+        padding: 4px 6px;
+        font-size: 12px;
+        font-family: inherit;
+        color: #ffffff;
+        background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+        border: 1px solid #5a5a5a;
+        border-radius: 4px;
+        outline: none;
+        box-sizing: border-box;
+
+        &:hover {
+          border-color: #6a6a6a;
+        }
+
+        &:focus {
+          border-color: #4da6ff;
+          box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.2);
+        }
+
+        // Hide number input spinners
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        -moz-appearance: textfield;
       }
     }
+  }
+
+  // Right column: Meals & Fasting
+  .plan-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
 
     .setting-row {
       display: flex;
@@ -228,30 +272,27 @@
 
     .setting-label {
       color: #ffffff;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
-      flex-shrink: 0;
+      min-width: 45px;
     }
 
     .setting-select {
-      font-size: 12px;
+      font-size: 11px;
       font-family: inherit;
       color: #ffffff;
       background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
       border: 1px solid #5a5a5a;
       border-radius: 4px;
-      padding: 6px 22px 6px 8px;
+      padding: 4px 20px 4px 6px;
       cursor: pointer;
       outline: none;
       appearance: none;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
-      background-position: right 6px center;
-      min-width: 0;
-      flex: 1;
+      background-position: right 4px center;
 
       &:hover {
-        background-color: #4a4a4a;
         border-color: #6a6a6a;
       }
 
@@ -263,7 +304,6 @@
       option {
         background: #3a3a3a;
         color: #ffffff;
-        padding: 8px;
       }
     }
   }
@@ -274,43 +314,13 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-
-    .foods-panel {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      gap: 12px;
-
-      .picker-column,
-      .selected-column {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-
-        .column-title {
-          color: #4da6ff;
-          font-size: 13px;
-          font-weight: 600;
-          margin: 0 0 8px 0;
-          flex-shrink: 0;
-        }
-
-        app-foods,
-        app-selected-foods {
-          flex: 1;
-          min-height: 0;
-        }
-      }
-    }
   }
 }
 
 // Mobile responsive
 @media (max-width: 480px) {
   .action-buttons {
-    gap: 12px;
+    gap: 6px;
 
     .icon-btn {
       width: 28px;
@@ -340,27 +350,38 @@
   }
 
   .panel-content {
-    padding: 12px;
-    gap: 12px;
+    padding: 8px;
+    gap: 8px;
 
     .settings-section {
-      gap: 6px;
+      padding: 8px;
+      gap: 8px;
     }
 
-    .settings-group {
-      .group-header {
-        font-size: 10px;
-        padding: 4px 6px;
+    .targets-column {
+      .column-label {
+        font-size: 9px;
       }
 
-      .group-content {
-        padding: 6px;
+      .targets-grid {
+        grid-template-columns: repeat(3, 1fr);
         gap: 4px;
+      }
 
-        &.vertical {
-          gap: 6px;
+      .target-field {
+        label {
+          font-size: 9px;
+        }
+
+        input {
+          font-size: 11px;
+          padding: 3px 4px;
         }
       }
+    }
+
+    .plan-column {
+      gap: 6px;
 
       .setting-label {
         font-size: 10px;
@@ -369,23 +390,7 @@
 
       .setting-select {
         font-size: 10px;
-        padding: 4px 16px 4px 4px;
-        background-position: right 4px center;
-      }
-    }
-
-    .foods-section {
-      .foods-panel {
-        gap: 8px;
-        flex-direction: column;  // Stack columns on mobile
-
-        .picker-column,
-        .selected-column {
-          .column-title {
-            font-size: 12px;
-            margin-bottom: 6px;
-          }
-        }
+        padding: 3px 18px 3px 4px;
       }
     }
   }

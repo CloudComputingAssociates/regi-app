@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { NotificationService } from '../../services/notification.service';
-import { UserSettingsService, DefaultFoodList, MealsPerDay, FastingType } from '../../services/user-settings.service';
+import { UserSettingsService, MealsPerDay, FastingType, DailyGoals } from '../../services/user-settings.service';
 import { FoodsComponent, SelectedFoodEvent } from '../foods/foods';
 import { forkJoin } from 'rxjs';
 
@@ -29,67 +29,89 @@ import { forkJoin } from 'rxjs';
       }
 
       <div class="panel-content">
-        <!-- Settings Section with grouped boxes and buttons -->
+        <!-- Settings Section - two columns -->
         <div class="settings-section">
-          <!-- On startup grouping -->
-          <div class="settings-group">
-            <div class="group-header">On Startup</div>
-            <div class="group-content">
-              <div class="setting-row">
-                <label class="setting-label">Foods</label>
-                <select
-                  class="setting-select"
-                  [ngModel]="userSettingsService.defaultFoodList()"
-                  (ngModelChange)="onDefaultFoodListChange($event)">
-                  <option value="yeh">YEH Approved</option>
-                  <option value="myfoods">My Foods</option>
-                </select>
+          <!-- Left column: Targets -->
+          <div class="targets-column">
+            <span class="column-label">Targets</span>
+            <div class="targets-grid">
+              <div class="target-field">
+                <label>Cal</label>
+                <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
+                       (ngModelChange)="onDailyGoalChange('calories', $event)" />
+              </div>
+              <div class="target-field">
+                <label>Protein</label>
+                <input type="number" [ngModel]="userSettingsService.dailyGoals().protein"
+                       (ngModelChange)="onDailyGoalChange('protein', $event)" />
+              </div>
+              <div class="target-field">
+                <label>Carbs</label>
+                <input type="number" [ngModel]="userSettingsService.dailyGoals().carbs"
+                       (ngModelChange)="onDailyGoalChange('carbs', $event)" />
+              </div>
+              <div class="target-field">
+                <label>Fat</label>
+                <input type="number" [ngModel]="userSettingsService.dailyGoals().fat"
+                       (ngModelChange)="onDailyGoalChange('fat', $event)" />
+              </div>
+              <div class="target-field">
+                <label>Fiber</label>
+                <input type="number" [ngModel]="userSettingsService.dailyGoals().fiber"
+                       (ngModelChange)="onDailyGoalChange('fiber', $event)" />
+              </div>
+              <div class="target-field">
+                <label>Sodium</label>
+                <input type="number" [ngModel]="userSettingsService.dailyGoals().sodium"
+                       (ngModelChange)="onDailyGoalChange('sodium', $event)" />
               </div>
             </div>
           </div>
 
-          <!-- Food Plan grouping -->
-          <div class="settings-group">
-            <div class="group-header">Food Plan</div>
-            <div class="group-content vertical">
-              <div class="setting-row">
-                <label class="setting-label">Meals</label>
-                <select
-                  class="setting-select"
-                  [ngModel]="userSettingsService.mealsPerDay()"
-                  (ngModelChange)="onMealsPerDayChange($event)">
-                  <option [ngValue]="1">1 meal</option>
-                  <option [ngValue]="2">2 meals</option>
-                  <option [ngValue]="3">3 meals</option>
-                  <option [ngValue]="4">4 meals</option>
-                  <option [ngValue]="5">5 meals</option>
-                  <option [ngValue]="6">6 meals</option>
-                </select>
-              </div>
-              <div class="setting-row">
-                <label class="setting-label">Fasting</label>
-                <select
-                  class="setting-select"
-                  [ngModel]="userSettingsService.fastingType()"
-                  (ngModelChange)="onFastingTypeChange($event)">
-                  <option value="none">None</option>
-                  <option value="16:8">16:8</option>
-                  <option value="18:6">18:6</option>
-                  <option value="20:4">20:4</option>
-                  <option value="omad">OMAD</option>
-                </select>
-              </div>
+          <!-- Right column: Meals & Fasting -->
+          <div class="plan-column">
+            <div class="setting-row">
+              <label class="setting-label">Meals</label>
+              <select
+                class="setting-select"
+                [ngModel]="userSettingsService.mealsPerDay()"
+                (ngModelChange)="onMealsPerDayChange($event)">
+                <option [ngValue]="1">1 meal</option>
+                <option [ngValue]="2">2 meals</option>
+                <option [ngValue]="3">3 meals</option>
+                <option [ngValue]="4">4 meals</option>
+                <option [ngValue]="5">5 meals</option>
+                <option [ngValue]="6">6 meals</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label class="setting-label">Fasting</label>
+              <select
+                class="setting-select"
+                [ngModel]="userSettingsService.fastingType()"
+                (ngModelChange)="onFastingTypeChange($event)">
+                <option value="none">None</option>
+                <option value="16:8">16:8</option>
+                <option value="18:6">18:6</option>
+                <option value="20:4">20:4</option>
+                <option value="omad">OMAD</option>
+              </select>
             </div>
           </div>
 
-          <!-- Save button - icon style -->
+          <!-- Action buttons -->
           <div class="action-buttons">
+            <button
+              class="icon-btn close-btn"
+              (click)="close()"
+              title="Close without saving">
+              ✕
+            </button>
             <button
               class="icon-btn save-btn"
               [class.has-changes]="hasAnyChanges()"
-              [disabled]="!hasAnyChanges() || isSaving()"
-              (click)="save()"
-              title="Save changes">
+              (click)="saveAndClose()"
+              title="Save and close">
               ✓
             </button>
           </div>
@@ -128,8 +150,8 @@ export class PreferencesPanelComponent implements OnInit {
     return this.preferencesService.hasUnsavedChanges() || this.settingsChanged();
   }
 
-  onDefaultFoodListChange(value: DefaultFoodList): void {
-    this.userSettingsService.setDefaultFoodList(value);
+  onDailyGoalChange(field: keyof DailyGoals, value: number): void {
+    this.userSettingsService.updateDailyGoal(field, value);
     this.settingsChanged.set(true);
   }
 
@@ -143,8 +165,9 @@ export class PreferencesPanelComponent implements OnInit {
     this.settingsChanged.set(true);
   }
 
-  save(): void {
+  saveAndClose(): void {
     if (!this.hasAnyChanges()) {
+      this.tabService.closeTab('preferences');
       return;
     }
 
@@ -161,6 +184,7 @@ export class PreferencesPanelComponent implements OnInit {
 
     if (saveOps.length === 0) {
       this.isSaving.set(false);
+      this.tabService.closeTab('preferences');
       return;
     }
 
@@ -169,6 +193,7 @@ export class PreferencesPanelComponent implements OnInit {
         this.isSaving.set(false);
         this.settingsChanged.set(false);
         this.notificationService.show('Preferences saved', 'success');
+        this.tabService.closeTab('preferences');
       },
       error: (err) => {
         console.error('Failed to save preferences:', err);
