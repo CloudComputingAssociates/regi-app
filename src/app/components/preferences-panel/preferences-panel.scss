@@ -261,8 +261,15 @@
   .plan-column {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    justify-content: center;
+    gap: 6px;
+
+    .column-label {
+      color: #4da6ff;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
     .setting-row {
       display: flex;

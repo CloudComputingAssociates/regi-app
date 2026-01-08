@@ -31,9 +31,9 @@ import { forkJoin } from 'rxjs';
       <div class="panel-content">
         <!-- Settings Section - two columns -->
         <div class="settings-section">
-          <!-- Left column: Targets -->
+          <!-- Left column: Nutrition Targets -->
           <div class="targets-column">
-            <span class="column-label">Targets</span>
+            <span class="column-label">Nutrition Targets</span>
             <div class="targets-grid">
               <div class="target-field">
                 <label>Cal</label>
@@ -70,6 +70,7 @@ import { forkJoin } from 'rxjs';
 
           <!-- Right column: Meals & Fasting -->
           <div class="plan-column">
+            <span class="column-label">Eating Window</span>
             <div class="setting-row">
               <label class="setting-label">Meals</label>
               <select
@@ -91,9 +92,9 @@ import { forkJoin } from 'rxjs';
                 [ngModel]="userSettingsService.fastingType()"
                 (ngModelChange)="onFastingTypeChange($event)">
                 <option value="none">None</option>
-                <option value="16:8">16:8</option>
-                <option value="18:6">18:6</option>
-                <option value="20:4">20:4</option>
+                <option value="16_8">16:8</option>
+                <option value="18_6">18:6</option>
+                <option value="20_4">20:4</option>
                 <option value="omad">OMAD</option>
               </select>
             </div>

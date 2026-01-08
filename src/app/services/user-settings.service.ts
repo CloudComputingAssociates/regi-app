@@ -5,7 +5,7 @@ import { Observable, of, catchError, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6;
-export type FastingType = 'none' | '16:8' | '18:6' | '20:4' | 'omad';
+export type FastingType = 'none' | '16_8' | '18_6' | '20_4' | 'omad';
 
 export interface DailyGoals {
   calories: number;
@@ -22,11 +22,11 @@ export interface UserSettings {
   dailyGoals: DailyGoals;
 }
 
-// API response format
+// API response format - dailyGoals comes as JSON string from backend
 interface UserSettingsResponse {
   mealsPerDay: number;
   fastingType: string;
-  dailyGoals?: DailyGoals;
+  dailyGoals?: string;  // JSON string that needs to be parsed
 }
 
 const DEFAULT_DAILY_GOALS: DailyGoals = {
@@ -74,10 +74,20 @@ export class UserSettingsService {
     this.loadingSignal.set(true);
     return this.http.get<UserSettingsResponse>(`${this.API_BASE_URL}/user/settings`).pipe(
       map(response => {
+        // Parse dailyGoals from JSON string if present
+        let parsedDailyGoals: DailyGoals = DEFAULT_DAILY_GOALS;
+        if (response.dailyGoals) {
+          try {
+            parsedDailyGoals = JSON.parse(response.dailyGoals);
+          } catch {
+            console.warn('Failed to parse dailyGoals, using defaults');
+          }
+        }
+
         const settings: UserSettings = {
           mealsPerDay: (response.mealsPerDay as MealsPerDay) || DEFAULT_SETTINGS.mealsPerDay,
           fastingType: (response.fastingType as FastingType) || DEFAULT_SETTINGS.fastingType,
-          dailyGoals: response.dailyGoals || DEFAULT_DAILY_GOALS
+          dailyGoals: parsedDailyGoals
         };
         this.settingsSignal.set(settings);
         this.loadedSignal.set(true);
@@ -96,7 +106,13 @@ export class UserSettingsService {
   /** Save settings to API */
   saveSettings(): Observable<UserSettings> {
     const current = this.settingsSignal();
-    return this.http.put<UserSettingsResponse>(`${this.API_BASE_URL}/user/settings`, current).pipe(
+    // API expects dailyGoals as a JSON string, not an object
+    const payload = {
+      mealsPerDay: current.mealsPerDay,
+      fastingType: current.fastingType,
+      dailyGoals: JSON.stringify(current.dailyGoals)
+    };
+    return this.http.put<UserSettingsResponse>(`${this.API_BASE_URL}/user/settings`, payload).pipe(
       map(() => {
         console.log('User settings saved:', current);
         return current;
