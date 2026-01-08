@@ -7,7 +7,7 @@ import { PreferencesService } from '../../services/preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { UserSettingsService, MealsPerDay, FastingType, DailyGoals } from '../../services/user-settings.service';
 import { FoodsComponent, SelectedFoodEvent } from '../foods/foods';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-preferences-panel',
@@ -167,6 +167,13 @@ export class PreferencesPanelComponent implements OnInit {
   }
 
   saveAndClose(): void {
+    console.log('saveAndClose called', {
+      hasAnyChanges: this.hasAnyChanges(),
+      settingsChanged: this.settingsChanged(),
+      preferencesHasChanges: this.preferencesService.hasUnsavedChanges(),
+      currentSettings: this.userSettingsService.settings()
+    });
+
     if (!this.hasAnyChanges()) {
       this.tabService.closeTab('preferences');
       return;
@@ -175,13 +182,16 @@ export class PreferencesPanelComponent implements OnInit {
     this.isSaving.set(true);
 
     // Build array of save operations
-    const saveOps = [];
+    const saveOps: Observable<unknown>[] = [];
     if (this.preferencesService.hasUnsavedChanges()) {
       saveOps.push(this.preferencesService.saveAllChanges());
     }
     if (this.settingsChanged()) {
+      console.log('Adding saveSettings to operations');
       saveOps.push(this.userSettingsService.saveSettings());
     }
+
+    console.log('Save operations count:', saveOps.length);
 
     if (saveOps.length === 0) {
       this.isSaving.set(false);
@@ -191,6 +201,7 @@ export class PreferencesPanelComponent implements OnInit {
 
     forkJoin(saveOps).subscribe({
       next: () => {
+        console.log('Save completed successfully');
         this.isSaving.set(false);
         this.settingsChanged.set(false);
         this.notificationService.show('Preferences saved', 'success');

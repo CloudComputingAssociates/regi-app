@@ -107,11 +107,14 @@ export class UserSettingsService {
   saveSettings(): Observable<UserSettings> {
     const current = this.settingsSignal();
     // API expects dailyGoals as a JSON string, not an object
+    // defaultFoodList is required by the database (cannot be NULL)
     const payload = {
+      defaultFoodList: 'yeh_approved',
       mealsPerDay: current.mealsPerDay,
       fastingType: current.fastingType,
       dailyGoals: JSON.stringify(current.dailyGoals)
     };
+    console.log('Saving settings, payload:', payload);
     return this.http.put<UserSettingsResponse>(`${this.API_BASE_URL}/user/settings`, payload).pipe(
       map(() => {
         console.log('User settings saved:', current);
@@ -119,6 +122,7 @@ export class UserSettingsService {
       }),
       catchError(error => {
         console.error('Failed to save user settings:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         throw error;
       })
     );
