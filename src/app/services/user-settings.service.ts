@@ -114,15 +114,10 @@ export class UserSettingsService {
       fastingType: current.fastingType,
       dailyGoals: JSON.stringify(current.dailyGoals)
     };
-    console.log('Saving settings, payload:', payload);
     return this.http.put<UserSettingsResponse>(`${this.API_BASE_URL}/user/settings`, payload).pipe(
-      map(() => {
-        console.log('User settings saved:', current);
-        return current;
-      }),
+      map(() => current),
       catchError(error => {
         console.error('Failed to save user settings:', error);
-        console.error('Error details:', JSON.stringify(error, null, 2));
         throw error;
       })
     );
