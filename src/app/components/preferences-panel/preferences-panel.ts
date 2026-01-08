@@ -152,21 +152,25 @@ export class PreferencesPanelComponent implements OnInit {
   }
 
   onDailyGoalChange(field: keyof DailyGoals, value: number): void {
+    console.log('Daily goal changed:', field, value);
     this.userSettingsService.updateDailyGoal(field, value);
     this.settingsChanged.set(true);
   }
 
   onMealsPerDayChange(value: MealsPerDay): void {
+    console.log('Meals per day changed:', value);
     this.userSettingsService.setMealsPerDay(value);
     this.settingsChanged.set(true);
   }
 
   onFastingTypeChange(value: FastingType): void {
+    console.log('Fasting type changed:', value);
     this.userSettingsService.setFastingType(value);
     this.settingsChanged.set(true);
   }
 
   saveAndClose(): void {
+    alert('saveAndClose called - settingsChanged: ' + this.settingsChanged());
     console.log('saveAndClose called', {
       hasAnyChanges: this.hasAnyChanges(),
       settingsChanged: this.settingsChanged(),
