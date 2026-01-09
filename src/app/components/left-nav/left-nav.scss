@@ -139,18 +139,20 @@
         font-size: 24px;
         line-height: 1;
         flex-shrink: 0;
+        width: 28px;  // Fixed width for alignment
+        text-align: center;
       }
 
       .menu-icon-image {
-        width: 22px;
-        height: 22px;
+        width: 28px;  // Match emoji container width
+        height: 28px;
         object-fit: contain;
         flex-shrink: 0;
         vertical-align: middle;
         background-color: transparent;
         border-radius: 4px;
-        margin: 1px;  // Align with emoji icons
-        box-sizing: content-box;
+        padding: 2px;  // Inner padding for the image
+        box-sizing: border-box;
 
         // Hide alt text while image loads
         color: transparent;
