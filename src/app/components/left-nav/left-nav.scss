@@ -37,6 +37,7 @@
 
     .user-details {
       flex: 1;
+      padding-top: 8px;  // Push text down to align with icon center
 
       .user-tagline {
         margin: 0 0 2px;
@@ -56,7 +57,7 @@
       }
 
       .user-subtitle {
-        margin: 4px 0 0;
+        margin: 2px 0 0;
         font-size: 12px;
         opacity: 0.9;
         line-height: 1.2;
@@ -137,22 +138,23 @@
 
       .menu-icon {
         font-size: 24px;
-        line-height: 1;
+        line-height: 28px;  // Match height for vertical centering
         flex-shrink: 0;
         width: 28px;  // Fixed width for alignment
+        height: 28px;
         text-align: center;
+        display: inline-block;
       }
 
       .menu-icon-image {
-        width: 28px;  // Match emoji container width
-        height: 28px;
+        width: 24px;  // Actual image size
+        height: 24px;
         object-fit: contain;
         flex-shrink: 0;
-        vertical-align: middle;
+        display: block;
+        margin: 2px;  // 2px margin on all sides = 28px total
         background-color: transparent;
         border-radius: 4px;
-        padding: 2px;  // Inner padding for the image
-        box-sizing: border-box;
 
         // Hide alt text while image loads
         color: transparent;
