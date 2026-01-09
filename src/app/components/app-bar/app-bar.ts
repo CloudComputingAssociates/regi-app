@@ -22,7 +22,7 @@ import { map } from 'rxjs/operators';
           <mat-icon>menu</mat-icon>
         </button>
 
-        <span class="app-title">{{ userFirstName$ | async }} eating healthy</span>
+        <span class="app-title">{{ userFirstName$ | async }}'s nutrition plan</span>
 
         <app-profile-menu />
       </div>

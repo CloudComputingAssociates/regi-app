@@ -35,8 +35,8 @@ interface MenuItem {
               alt="Profile"
               class="drawer-profile-image" />
             <div class="user-details">
-              <h3 class="user-name">you eating healthy</h3>
-              <p class="user-subtitle">Intelligent Meal Planning</p>
+              <h3 class="user-name">you<br>eating healthy</h3>
+              <p class="user-subtitle">Intelligent Nutrition Planning</p>
             </div>
           </div>
           <button
@@ -90,12 +90,12 @@ export class LeftNavComponent {
   );
 
   menuItems: MenuItem[] = [
-    { label: 'Chatbot', icon: '💬', tabId: 'chat' },
-    { label: 'Foods', icon: '🍒', tabId: 'foods' },
+    { label: 'Preferences', icon: '⚙️', tabId: 'preferences' },
     { label: 'Regimenu™', iconImage: 'images/ai-button1.png', tabId: 'meal-planning' },
-    { label: 'Tracking', icon: '📈', tabId: 'review' },
-    { label: 'Shopping List', icon: '🛒', tabId: 'shop' },
-    { label: 'Preferences', icon: '⚙️', tabId: 'preferences' }
+    { label: 'Foods', icon: '🍒', tabId: 'foods' },
+    { label: 'Shopping', icon: '🛒', tabId: 'shop' },
+    { label: 'Analysis', icon: '📈', tabId: 'review' },
+    { label: 'Nutrition Talk', iconImage: 'images/ai-button1.png', tabId: 'chat' }
   ];
 
   tabService = inject(TabService);
