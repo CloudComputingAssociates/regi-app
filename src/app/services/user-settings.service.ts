@@ -6,6 +6,8 @@ import { environment } from '../../environments/environment';
 
 export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6;
 export type FastingType = 'none' | '16_8' | '18_6' | '20_4' | 'omad';
+export type RepeatMeals = 1 | 2 | 3 | 4;
+export type FoodListSource = 'yeh_plus_myfoods' | 'yeh' | 'myfoods';
 
 export interface DailyGoals {
   calories: number;
@@ -20,6 +22,9 @@ export interface UserSettings {
   mealsPerDay: MealsPerDay;
   fastingType: FastingType;
   dailyGoals: DailyGoals;
+  eatingStartTime: string;  // 24-hour format "HH:MM"
+  repeatMeals: RepeatMeals;
+  foodListSource: FoodListSource;
 }
 
 // API response format - dailyGoals comes as JSON string from backend
@@ -27,6 +32,9 @@ interface UserSettingsResponse {
   mealsPerDay: number;
   fastingType: string;
   dailyGoals?: string;  // JSON string that needs to be parsed
+  eatingStartTime?: string;
+  repeatMeals?: number;
+  foodListSource?: string;
 }
 
 const DEFAULT_DAILY_GOALS: DailyGoals = {
@@ -41,7 +49,10 @@ const DEFAULT_DAILY_GOALS: DailyGoals = {
 const DEFAULT_SETTINGS: UserSettings = {
   mealsPerDay: 3,
   fastingType: 'none',
-  dailyGoals: DEFAULT_DAILY_GOALS
+  dailyGoals: DEFAULT_DAILY_GOALS,
+  eatingStartTime: '08:00',
+  repeatMeals: 1,
+  foodListSource: 'yeh_plus_myfoods'
 };
 
 @Injectable({
@@ -64,6 +75,9 @@ export class UserSettingsService {
   readonly mealsPerDay = computed(() => this.settingsSignal().mealsPerDay);
   readonly fastingType = computed(() => this.settingsSignal().fastingType);
   readonly dailyGoals = computed(() => this.settingsSignal().dailyGoals);
+  readonly eatingStartTime = computed(() => this.settingsSignal().eatingStartTime);
+  readonly repeatMeals = computed(() => this.settingsSignal().repeatMeals);
+  readonly foodListSource = computed(() => this.settingsSignal().foodListSource);
 
   /** Load settings from API */
   loadSettings(): Observable<UserSettings> {
@@ -87,7 +101,10 @@ export class UserSettingsService {
         const settings: UserSettings = {
           mealsPerDay: (response.mealsPerDay as MealsPerDay) || DEFAULT_SETTINGS.mealsPerDay,
           fastingType: (response.fastingType as FastingType) || DEFAULT_SETTINGS.fastingType,
-          dailyGoals: parsedDailyGoals
+          dailyGoals: parsedDailyGoals,
+          eatingStartTime: response.eatingStartTime || DEFAULT_SETTINGS.eatingStartTime,
+          repeatMeals: (response.repeatMeals as RepeatMeals) || DEFAULT_SETTINGS.repeatMeals,
+          foodListSource: (response.foodListSource as FoodListSource) || DEFAULT_SETTINGS.foodListSource
         };
         this.settingsSignal.set(settings);
         this.loadedSignal.set(true);
@@ -112,7 +129,10 @@ export class UserSettingsService {
       defaultFoodList: 'yeh_approved',
       mealsPerDay: current.mealsPerDay,
       fastingType: current.fastingType,
-      dailyGoals: JSON.stringify(current.dailyGoals)
+      dailyGoals: JSON.stringify(current.dailyGoals),
+      eatingStartTime: current.eatingStartTime,
+      repeatMeals: current.repeatMeals,
+      foodListSource: current.foodListSource
     };
     return this.http.put<UserSettingsResponse>(`${this.API_BASE_URL}/user/settings`, payload).pipe(
       map(() => current),
@@ -136,6 +156,30 @@ export class UserSettingsService {
     this.settingsSignal.update(settings => ({
       ...settings,
       fastingType: value
+    }));
+  }
+
+  /** Update eating start time */
+  setEatingStartTime(value: string): void {
+    this.settingsSignal.update(settings => ({
+      ...settings,
+      eatingStartTime: value
+    }));
+  }
+
+  /** Update repeat meals */
+  setRepeatMeals(value: RepeatMeals): void {
+    this.settingsSignal.update(settings => ({
+      ...settings,
+      repeatMeals: value
+    }));
+  }
+
+  /** Update food list source */
+  setFoodListSource(value: FoodListSource): void {
+    this.settingsSignal.update(settings => ({
+      ...settings,
+      foodListSource: value
     }));
   }
 

@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { NotificationService } from '../../services/notification.service';
-import { UserSettingsService, MealsPerDay, FastingType, DailyGoals } from '../../services/user-settings.service';
+import { UserSettingsService, MealsPerDay, FastingType, DailyGoals, RepeatMeals, FoodListSource } from '../../services/user-settings.service';
 import { FoodsComponent, SelectedFoodEvent } from '../foods/foods';
 import { forkJoin, Observable } from 'rxjs';
 
@@ -68,7 +68,7 @@ import { forkJoin, Observable } from 'rxjs';
             </div>
           </div>
 
-          <!-- Right column: Meals & Fasting -->
+          <!-- Middle column: Meals & Fasting -->
           <div class="plan-column">
             <span class="column-label">Eating Window</span>
             <div class="setting-row">
@@ -96,6 +96,45 @@ import { forkJoin, Observable } from 'rxjs';
                 <option value="18_6">18:6</option>
                 <option value="20_4">20:4</option>
                 <option value="omad">OMAD</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label class="setting-label">Start at</label>
+              <select
+                class="setting-select time-select"
+                [ngModel]="userSettingsService.eatingStartTime()"
+                (ngModelChange)="onEatingStartTimeChange($event)">
+                @for (time of timeOptions; track time) {
+                  <option [value]="time">{{ time }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Right column: RegiMenu -->
+          <div class="regimenu-column">
+            <span class="column-label">RegiMenu℠</span>
+            <div class="setting-row">
+              <label class="setting-label">Repeat Meals</label>
+              <select
+                class="setting-select"
+                [ngModel]="userSettingsService.repeatMeals()"
+                (ngModelChange)="onRepeatMealsChange($event)">
+                <option [ngValue]="1">1</option>
+                <option [ngValue]="2">2</option>
+                <option [ngValue]="3">3</option>
+                <option [ngValue]="4">4</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label class="setting-label">Pick from</label>
+              <select
+                class="setting-select"
+                [ngModel]="userSettingsService.foodListSource()"
+                (ngModelChange)="onFoodListSourceChange($event)">
+                <option value="yeh_plus_myfoods">YEH+MyFoods</option>
+                <option value="yeh">YEH</option>
+                <option value="myfoods">MyFoods</option>
               </select>
             </div>
           </div>
@@ -142,6 +181,13 @@ export class PreferencesPanelComponent implements OnInit {
   showConfirmDialog = signal(false);
   settingsChanged = signal(false);
 
+  // Generate 24-hour time options in 30-minute increments
+  timeOptions: string[] = Array.from({ length: 48 }, (_, i) => {
+    const hours = Math.floor(i / 2).toString().padStart(2, '0');
+    const minutes = (i % 2 === 0) ? '00' : '30';
+    return `${hours}:${minutes}`;
+  });
+
   ngOnInit(): void {
     // Load user settings when panel opens
     this.userSettingsService.loadSettings().subscribe();
@@ -163,6 +209,21 @@ export class PreferencesPanelComponent implements OnInit {
 
   onFastingTypeChange(value: FastingType): void {
     this.userSettingsService.setFastingType(value);
+    this.settingsChanged.set(true);
+  }
+
+  onEatingStartTimeChange(value: string): void {
+    this.userSettingsService.setEatingStartTime(value);
+    this.settingsChanged.set(true);
+  }
+
+  onRepeatMealsChange(value: RepeatMeals): void {
+    this.userSettingsService.setRepeatMeals(value);
+    this.settingsChanged.set(true);
+  }
+
+  onFoodListSourceChange(value: FoodListSource): void {
+    this.userSettingsService.setFoodListSource(value);
     this.settingsChanged.set(true);
   }
 
