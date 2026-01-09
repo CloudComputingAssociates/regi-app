@@ -37,7 +37,6 @@
 
     .user-details {
       flex: 1;
-      padding-top: 8px;  // Push text down to align with icon center
 
       .user-tagline {
         margin: 0 0 2px;
@@ -49,20 +48,18 @@
 
       .user-name {
         margin: 0;
-        font-size: 18px;
+        font-size: 22px;
         font-weight: 700;
         line-height: 1.2;
         color: #ffffff;  // White - prominent
-        white-space: nowrap;
       }
 
       .user-subtitle {
-        margin: 2px 0 0;
-        font-size: 12px;
+        margin: 4px 0 0;
+        font-size: 13px;
         opacity: 0.9;
         line-height: 1.2;
-        color: #ffffff;  // White to match
-        white-space: nowrap;
+        color: #4da6ff;  // Blue - label
       }
     }
 
@@ -131,34 +128,36 @@
         }
       }
 
-      // No longer highlighting active tabs - using X close buttons instead
       &.active {
-        // Same as default state - no special highlighting
+        background: linear-gradient(180deg, #5ab3ff 0%, #4da6ff 100%);  // Blue when active
+        border-color: #4da6ff;
+        box-shadow:
+          0 2px 8px rgba(77, 166, 255, 0.5),
+          0 -1px 0 rgba(255, 255, 255, 0.3) inset,
+          0 1px 0 rgba(0, 0, 0, 0.1) inset;  // Blue inset effect
+
+        .menu-icon,
+        .menu-label {
+          color: #ffffff;  // White when active
+        }
       }
 
       .menu-icon {
         font-size: 24px;
-        line-height: 28px;  // Match height for vertical centering
+        line-height: 1;
         flex-shrink: 0;
-        width: 28px;  // Fixed width for alignment
-        height: 28px;
-        text-align: center;
-        display: inline-block;
       }
 
       .menu-icon-image {
-        width: 24px;  // Actual image size
+        width: 24px;
         height: 24px;
         object-fit: contain;
         flex-shrink: 0;
-        display: block;
-        margin: 2px;  // 2px margin on all sides = 28px total
-        background-color: transparent;
+        vertical-align: middle;
+        background-color: #ffffff;
         border-radius: 4px;
-
-        // Hide alt text while image loads
-        color: transparent;
-        font-size: 0;
+        padding: 2px;
+        box-sizing: content-box;
       }
 
       .menu-label {
@@ -187,11 +186,11 @@
 
       .user-details {
         .user-tagline {
-          font-size: 10px;
+          font-size: 11px;
         }
 
         .user-name {
-          font-size: 16px;
+          font-size: 18px;
         }
 
         .user-subtitle {
