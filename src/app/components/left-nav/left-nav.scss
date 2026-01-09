@@ -48,7 +48,7 @@
 
       .user-name {
         margin: 0;
-        font-size: 17px;
+        font-size: 18px;
         font-weight: 700;
         line-height: 1.2;
         color: #ffffff;  // White - prominent
@@ -57,10 +57,10 @@
 
       .user-subtitle {
         margin: 4px 0 0;
-        font-size: 11px;
+        font-size: 12px;
         opacity: 0.9;
         line-height: 1.2;
-        color: #4da6ff;  // Blue - label
+        color: #ffffff;  // White to match
         white-space: nowrap;
       }
     }
@@ -130,18 +130,9 @@
         }
       }
 
+      // No longer highlighting active tabs - using X close buttons instead
       &.active {
-        background: linear-gradient(180deg, #5ab3ff 0%, #4da6ff 100%);  // Blue when active
-        border-color: #4da6ff;
-        box-shadow:
-          0 2px 8px rgba(77, 166, 255, 0.5),
-          0 -1px 0 rgba(255, 255, 255, 0.3) inset,
-          0 1px 0 rgba(0, 0, 0, 0.1) inset;  // Blue inset effect
-
-        .menu-icon,
-        .menu-label {
-          color: #ffffff;  // White when active
-        }
+        // Same as default state - no special highlighting
       }
 
       .menu-icon {
@@ -151,15 +142,19 @@
       }
 
       .menu-icon-image {
-        width: 24px;
-        height: 24px;
+        width: 22px;
+        height: 22px;
         object-fit: contain;
         flex-shrink: 0;
         vertical-align: middle;
         background-color: transparent;
         border-radius: 4px;
-        padding: 0;
+        margin: 1px;  // Align with emoji icons
         box-sizing: content-box;
+
+        // Hide alt text while image loads
+        color: transparent;
+        font-size: 0;
       }
 
       .menu-label {
@@ -192,11 +187,11 @@
         }
 
         .user-name {
-          font-size: 15px;
+          font-size: 16px;
         }
 
         .user-subtitle {
-          font-size: 10px;
+          font-size: 11px;
         }
       }
     }
