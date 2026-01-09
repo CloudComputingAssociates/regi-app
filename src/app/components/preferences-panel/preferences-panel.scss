@@ -470,8 +470,8 @@
     gap: 8px;
 
     .settings-section {
-      padding: 8px;
-      gap: 8px;
+      padding: 8px 10px;
+      gap: 12px;
     }
 
     .targets-column {
@@ -480,7 +480,7 @@
       }
 
       .targets-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, 48px);
         gap: 4px;
       }
 
@@ -491,36 +491,49 @@
 
         input {
           font-size: 11px;
-          padding: 3px 4px;
+          padding: 3px 2px;
+          width: 48px;
         }
       }
     }
 
     .plan-column {
-      gap: 6px;
+      gap: 4px;
+
+      .column-label {
+        font-size: 9px;
+      }
 
       .setting-label {
         font-size: 10px;
-        min-width: 40px;
+        min-width: 38px;
       }
 
       .setting-select {
         font-size: 10px;
-        padding: 3px 18px 3px 4px;
+        padding: 3px 16px 3px 4px;
+        min-width: 0;
+        width: auto;
       }
     }
 
     .regimenu-column {
-      gap: 6px;
+      gap: 4px;
+
+      .column-label {
+        font-size: 9px;
+      }
 
       .setting-label {
         font-size: 10px;
-        min-width: 65px;
+        min-width: 55px;
       }
 
       .setting-select {
         font-size: 10px;
-        padding: 3px 18px 3px 4px;
+        padding: 3px 16px 3px 4px;
+        min-width: 0;
+        width: auto;
       }
     }
   }

@@ -1,13 +1,15 @@
 // src/app/components/app-bar/app-bar.ts
-import { Component, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Output, EventEmitter, ChangeDetectionStrategy, inject } from '@angular/core';
+import { CommonModule, AsyncPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { ProfileMenuComponent } from '../profile-menu/profile-menu';
+import { AuthService } from '@auth0/auth0-angular';
+import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-app-bar',
-  standalone: true,
-  imports: [MatIconModule, MatButtonModule, ProfileMenuComponent],
+  imports: [CommonModule, AsyncPipe, MatIconModule, MatButtonModule, ProfileMenuComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="app-bar">
@@ -20,7 +22,7 @@ import { ProfileMenuComponent } from '../profile-menu/profile-menu';
           <mat-icon>menu</mat-icon>
         </button>
 
-        <span class="app-title">you eating healthy</span>
+        <span class="app-title">{{ userFirstName$ | async }} eating healthy</span>
 
         <app-profile-menu />
       </div>
@@ -30,6 +32,16 @@ import { ProfileMenuComponent } from '../profile-menu/profile-menu';
 })
 export class AppBarComponent {
   @Output() menuClick = new EventEmitter<void>();
+
+  private auth = inject(AuthService);
+
+  userFirstName$ = this.auth.user$.pipe(
+    map(user => {
+      if (!user?.name) return 'you';
+      const firstName = user.name.split(' ')[0].toLowerCase();
+      return firstName || 'you';
+    })
+  );
 
   onMenuClick(): void {
     this.menuClick.emit();

@@ -35,9 +35,8 @@ interface MenuItem {
               alt="Profile"
               class="drawer-profile-image" />
             <div class="user-details">
-              <p class="user-tagline">you eating healthy</p>
-              <h3 class="user-name">{{ userFirstName$ | async }} Plan</h3>
-              <p class="user-subtitle">Nutrition coach</p>
+              <h3 class="user-name">you eating healthy</h3>
+              <p class="user-subtitle">Intelligent Meal Planning</p>
             </div>
           </div>
           <button
