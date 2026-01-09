@@ -195,7 +195,7 @@
     padding: 10px 16px 10px 10px;
     overflow-x: auto;
 
-    // Auto-hide scrollbar styling
+    // Scrollbar styling
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
 
@@ -216,9 +216,25 @@
       }
     }
 
-    // Hide scrollbar when not hovering (WebKit)
-    &:not(:hover)::-webkit-scrollbar-thumb {
-      background: transparent;
+    // Desktop only: hide scrollbar when not hovering
+    @media (hover: hover) and (pointer: fine) {
+      &:not(:hover)::-webkit-scrollbar-thumb {
+        background: transparent;
+      }
+    }
+
+    // Touch/mobile devices: always show scrollbar
+    @media (hover: none), (pointer: coarse) {
+      scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.1);
+
+      &::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.4);
+      }
     }
   }
 
