@@ -90,10 +90,10 @@ export class LeftNavComponent {
   );
 
   menuItems: MenuItem[] = [
+    { label: 'Chat', iconImage: 'images/AI-star.png', tabId: 'chat' },
     { label: 'Regimenu℠', iconImage: 'images/AI-star.png', tabId: 'meal-planning' },
-    { label: 'Nutrition chat', iconImage: 'images/AI-star.png', tabId: 'chat' },
     { label: 'Shopping', icon: '🛒', tabId: 'shop' },
-    { label: 'Analysis', icon: '📈', tabId: 'review' },
+    { label: 'Progress', icon: '📈', tabId: 'review' },
     { label: 'Preferences', icon: '⚙️', tabId: 'preferences' }
   ];
 

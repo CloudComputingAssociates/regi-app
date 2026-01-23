@@ -51,18 +51,28 @@ export interface MacroDisplayData {
                     </div>
                   </div>
                 </div>
-                <!-- Value Label - clickable in non-planning mode to toggle day/week -->
+                <!-- Value Label - clickable to toggle percent/grams -->
                 @if (!isPlanningMode()) {
                   <button
                     type="button"
                     class="value-label clickable"
-                    (click)="toggleTimePeriod()"
-                    matTooltip="Toggle Day/Week"
+                    (click)="toggleDisplayMode()"
+                    matTooltip="Toggle Percent/Grams"
                     matTooltipPosition="below">
-                    {{ macro.percentage }}%
+                    @if (showPercent) {
+                      {{ macro.percentage }}%
+                    } @else {
+                      {{ macro.actual }}g
+                    }
                   </button>
                 } @else {
-                  <div class="value-label">{{ macro.percentage }}%</div>
+                  <div class="value-label">
+                    @if (showPercent) {
+                      {{ macro.percentage }}%
+                    } @else {
+                      {{ macro.actual }}g
+                    }
+                  </div>
                 }
               </div>
             }
@@ -128,6 +138,7 @@ export class MacrosComponent implements OnInit, OnDestroy {
   currentTimePeriod: TimePeriod = 'day';
   isLoading = false;
   currentPlanningDisplayMode: MacrosDisplayMode = 'food';  // For planning mode cycling
+  showPercent = true;  // Toggle between percent and grams display
 
   constructor(private macrosService: MacrosService) {}
 
@@ -211,6 +222,13 @@ export class MacrosComponent implements OnInit, OnDestroy {
   toggleTimePeriod(): void {
     const newPeriod: TimePeriod = this.currentTimePeriod === 'day' ? 'week' : 'day';
     this.macrosService.setTimePeriod(newPeriod);
+  }
+
+  /**
+   * Toggle between percent and grams display
+   */
+  toggleDisplayMode(): void {
+    this.showPercent = !this.showPercent;
   }
 
   /**
