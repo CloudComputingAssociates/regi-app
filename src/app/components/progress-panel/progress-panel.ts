@@ -1,15 +1,15 @@
-// src/app/components/chat/chat.ts
+// src/app/components/progress-panel/progress-panel.ts
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TabService } from '../../services/tab.service';
 
 @Component({
-  selector: 'app-chat',
+  selector: 'app-progress-panel',
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="chat-container">
-      <!-- Action button - top right (X only for Chat) -->
+    <div class="panel-container">
+      <!-- Action buttons - top right (X only for Progress) -->
       <div class="action-buttons">
         <button
           class="icon-btn close-btn"
@@ -19,19 +19,21 @@ import { TabService } from '../../services/tab.service';
         </button>
       </div>
 
-      <div class="chat-messages">
-        <div class="placeholder-content">
-          <p class="placeholder-text">Chat messages will appear here</p>
+      <!-- Main content area -->
+      <div class="panel-content">
+        <div class="content-placeholder">
+          <p class="placeholder-text">Progress</p>
+          <p class="placeholder-subtext">Track your nutrition journey</p>
         </div>
       </div>
     </div>
   `,
-  styleUrls: ['./chat.scss']
+  styleUrls: ['./progress-panel.scss']
 })
-export class ChatComponent {
+export class ProgressPanelComponent {
   private tabService = inject(TabService);
 
   close(): void {
-    this.tabService.closeTab('chat');
+    this.tabService.closeTab('review');
   }
 }

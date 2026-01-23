@@ -6,7 +6,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { TabService } from '../../services/tab.service';
 import { ChatComponent } from '../chat/chat';
-import { MealPlanningComponent } from '../meal-planning/meal-planning';
+import { RegimenuPanelComponent } from '../regimenu-panel/regimenu-panel';
+import { ShoppingPanelComponent } from '../shopping-panel/shopping-panel';
+import { ProgressPanelComponent } from '../progress-panel/progress-panel';
 import { FoodsPanelComponent } from '../foods-panel/foods-panel';
 import { AccountPanelComponent } from '../account-panel/account-panel';
 import { PreferencesPanelComponent } from '../preferences-panel/preferences-panel';
@@ -21,7 +23,9 @@ import { NotificationComponent } from '../notification/notification';
     MatIconModule,
     MatButtonModule,
     ChatComponent,
-    MealPlanningComponent,
+    RegimenuPanelComponent,
+    ShoppingPanelComponent,
+    ProgressPanelComponent,
     FoodsPanelComponent,
     AccountPanelComponent,
     PreferencesPanelComponent,
@@ -45,17 +49,13 @@ import { NotificationComponent } from '../notification/notification';
               @if (tab.id === 'chat') {
                 <app-chat />
               } @else if (tab.id === 'meal-planning') {
-                <app-meal-planning />
+                <app-regimenu-panel />
               } @else if (tab.id === 'foods') {
                 <app-foods-panel />
               } @else if (tab.id === 'shop') {
-                <div class="placeholder-content">
-                  <p class="placeholder-text">Shopping List - Coming soon</p>
-                </div>
+                <app-shopping-panel />
               } @else if (tab.id === 'review') {
-                <div class="placeholder-content">
-                  <p class="placeholder-text">Review - Coming soon</p>
-                </div>
+                <app-progress-panel />
               } @else if (tab.id === 'preferences') {
                 <app-preferences-panel />
               } @else if (tab.id === 'account') {
