@@ -151,13 +151,12 @@
       }
 
       .menu-icon-image {
-        width: 24px;
+        width: 28px;
         height: 24px;
         object-fit: contain;
+        object-position: center;
         flex-shrink: 0;
-        vertical-align: middle;
         background-color: transparent;
-        margin-left: 2px;  // Center 24px in 28px space
       }
 
       .menu-label {

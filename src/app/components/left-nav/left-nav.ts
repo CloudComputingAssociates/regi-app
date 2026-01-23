@@ -1,6 +1,6 @@
 // src/app/components/left-nav/left-nav.ts
 import { Component, EventEmitter, Output, ViewChild, inject } from '@angular/core';
-import { CommonModule, AsyncPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
@@ -18,7 +18,7 @@ interface MenuItem {
 @Component({
   selector: 'app-left-nav',
   standalone: true,
-  imports: [CommonModule, AsyncPipe, MatSidenavModule, MatIconModule, MatListModule],
+  imports: [CommonModule, MatSidenavModule, MatIconModule, MatListModule],
   template: `
     <mat-sidenav-container class="sidenav-container">
       <mat-sidenav
@@ -108,13 +108,9 @@ export class LeftNavComponent {
   }
 
   navigateTo(tabId: string, drawer: MatSidenav): void {
-    if (tabId === 'chat') {
-      this.tabService.switchToChat();
-    } else {
-      const menuItem = this.menuItems.find(item => item.tabId === tabId);
-      if (menuItem) {
-        this.tabService.toggleTab(tabId, menuItem.label);
-      }
+    const menuItem = this.menuItems.find(item => item.tabId === tabId);
+    if (menuItem) {
+      this.tabService.toggleTab(tabId, menuItem.label);
     }
     drawer.close();
   }

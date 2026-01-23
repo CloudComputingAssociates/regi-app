@@ -15,16 +15,11 @@ export class TabService {
     {
       id: 'chat',
       label: 'Chat',
-      closeable: false
-    },
-    {
-      id: 'meal-planning',
-      label: 'Regimenu™',
       closeable: true
     }
   ]);
 
-  private activeTabIndexSignal = signal<number>(1);  // Default to Regimenu (index 1)
+  private activeTabIndexSignal = signal<number>(0);  // Default to Chat
 
   // Expose signals as readonly
   tabs = this.tabsSignal.asReadonly();
@@ -111,8 +106,11 @@ export class TabService {
 
     // Adjust active tab index if needed
     const currentActiveIndex = this.activeTabIndexSignal();
-    if (currentActiveIndex === tabIndex) {
-      // Closed the active tab, switch to Chat (index 0)
+    if (newTabs.length === 0) {
+      // All tabs closed
+      this.activeTabIndexSignal.set(-1);
+    } else if (currentActiveIndex === tabIndex) {
+      // Closed the active tab, switch to first available tab
       this.activeTabIndexSignal.set(0);
     } else if (currentActiveIndex > tabIndex) {
       // Active tab is after the closed tab, decrement index
