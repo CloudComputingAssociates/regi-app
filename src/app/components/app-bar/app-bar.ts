@@ -22,7 +22,7 @@ import { map } from 'rxjs/operators';
           <mat-icon>menu</mat-icon>
         </button>
 
-        <span class="app-title">{{ userFirstName$ | async }}'s Nutrition Plan</span>
+        <span class="app-title">{{ titlePrefix$ | async }} Nutrition Plan</span>
 
         <app-profile-menu />
       </div>
@@ -35,12 +35,13 @@ export class AppBarComponent {
 
   private auth = inject(AuthService);
 
-  userFirstName$ = this.auth.user$.pipe(
+  titlePrefix$ = this.auth.user$.pipe(
     map(user => {
-      if (!user?.name) return 'You';
+      if (!user?.name) return 'YEH';
       const firstName = user.name.split(' ')[0];
       // Capitalize first letter, lowercase rest
-      return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase() || 'You';
+      const name = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+      return name ? `${name}'s` : 'YEH';
     })
   );
 

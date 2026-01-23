@@ -5,51 +5,33 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, of, map, switchMap } from 'rxjs';
 import { environment } from '../../environments/environment';
+import {
+  GetFoodPreferencesResponse,
+  FoodPreferenceItem,
+  FoodPreferenceList,
+  CreateFoodPreferenceRequest,
+  CreateFoodPreferencesRequest,
+  CreateFoodPreferencesResponse,
+  DeleteFoodPreferencesRequest,
+} from '../models/generated/food-preferences.schema';
 
-export interface FoodPreference {
-  preferenceId: number;
-  foodId: number;
-  description: string;
-}
+// Re-export generated types for consumers
+export type {
+  GetFoodPreferencesResponse,
+  FoodPreferenceItem,
+  FoodPreferenceList,
+  CreateFoodPreferenceRequest,
+  CreateFoodPreferencesRequest,
+  CreateFoodPreferencesResponse,
+  DeleteFoodPreferencesRequest,
+};
 
-export interface FoodPreferencesResponse {
-  allowed: {
-    foods: FoodPreference[];
-    ingredients: FoodPreference[];
-  };
-  restricted: {
-    foods: FoodPreference[];
-    ingredients: FoodPreference[];
-  };
-}
-
-export interface AllowedRestrictedResponse {
-  foods: FoodPreference[];
-  ingredients: FoodPreference[];
-}
-
-export interface CreateFoodPreferenceItem {
-  foodId?: number;
-  ingredientId?: number;
-  allowed: boolean;
-}
-
-export interface CreateFoodPreferenceRequest {
-  items: CreateFoodPreferenceItem[];
-}
-
-export interface CreateFoodPreferenceResponse {
-  created: number;
-  ids: number[];
-}
-
-export interface DeleteFoodPreferencesRequest {
-  preferenceIds: number[];
-}
-
-export interface DeleteFoodPreferencesResponse {
-  deleted: number;
-}
+// Type aliases for backward compatibility
+export type FoodPreference = FoodPreferenceItem;
+export type FoodPreferencesResponse = GetFoodPreferencesResponse;
+export type AllowedRestrictedResponse = FoodPreferenceList;
+export type CreateFoodPreferenceItem = CreateFoodPreferenceRequest;
+export type CreateFoodPreferenceResponse = CreateFoodPreferencesResponse;
 
 // Pending change types
 export type PendingChangeType = 'add-allowed' | 'add-restricted' | 'remove';
@@ -109,8 +91,8 @@ export class FoodPreferencesService {
         const allowedMap = new Map<number, number>();
         const restrictedMap = new Map<number, number>();
 
-        response.allowed.foods.forEach(f => allowedMap.set(f.foodId, f.preferenceId));
-        response.restricted.foods.forEach(f => restrictedMap.set(f.foodId, f.preferenceId));
+        response.allowed.foods.forEach(f => { if (f.foodId != null) allowedMap.set(f.foodId, f.preferenceId); });
+        response.restricted.foods.forEach(f => { if (f.foodId != null) restrictedMap.set(f.foodId, f.preferenceId); });
 
         this.serverAllowedFoods.set(allowedMap);
         this.serverRestrictedFoods.set(restrictedMap);
@@ -132,7 +114,7 @@ export class FoodPreferencesService {
     return this.http.get<AllowedRestrictedResponse>(`${this.baseUrl}/user/preferences/food/allowed`).pipe(
       tap(response => {
         const allowedMap = new Map<number, number>();
-        response.foods.forEach(f => allowedMap.set(f.foodId, f.preferenceId));
+        response.foods.forEach(f => { if (f.foodId != null) allowedMap.set(f.foodId, f.preferenceId); });
         this.serverAllowedFoods.set(allowedMap);
         this.localAllowedFoods.set(new Set(allowedMap.keys()));
       })
@@ -146,7 +128,7 @@ export class FoodPreferencesService {
     return this.http.get<AllowedRestrictedResponse>(`${this.baseUrl}/user/preferences/food/restricted`).pipe(
       tap(response => {
         const restrictedMap = new Map<number, number>();
-        response.foods.forEach(f => restrictedMap.set(f.foodId, f.preferenceId));
+        response.foods.forEach(f => { if (f.foodId != null) restrictedMap.set(f.foodId, f.preferenceId); });
         this.serverRestrictedFoods.set(restrictedMap);
         this.localRestrictedFoods.set(new Set(restrictedMap.keys()));
       })

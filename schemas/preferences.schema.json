@@ -1,0 +1,194 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.youeatinghealthy.com/schemas/preferences.schema.json",
+  "title": "User Preferences Schema",
+  "description": "User application preferences for nutrition planning (meals, fasting, daily goals, etc.)",
+  "type": "object",
+  "definitions": {
+    "DailyGoals": {
+      "type": "object",
+      "description": "Daily nutrition targets",
+      "properties": {
+        "calories": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Daily calorie target"
+        },
+        "protein": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Daily protein target in grams"
+        },
+        "carbs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Daily carbohydrate target in grams"
+        },
+        "fat": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Daily fat target in grams"
+        },
+        "fiber": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Daily fiber target in grams"
+        },
+        "sodium": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Daily sodium target in mg"
+        }
+      },
+      "required": ["calories", "protein", "carbs", "fat", "fiber", "sodium"],
+      "additionalProperties": false
+    },
+    "GetPreferencesResponse": {
+      "type": "object",
+      "description": "Response for GET /api/user/preferences",
+      "properties": {
+        "defaultFoodList": {
+          "type": ["string", "null"],
+          "enum": ["yeh_approved", "all_foods", null],
+          "description": "Default food list filter"
+        },
+        "mealsPerDay": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Number of meals per day (1-10)"
+        },
+        "fastingType": {
+          "type": ["string", "null"],
+          "enum": ["none", "16_8", "18_6", "20_4", "omad", null],
+          "description": "Intermittent fasting schedule"
+        },
+        "dailyGoals": {
+          "type": ["string", "null"],
+          "description": "JSON string containing DailyGoals object"
+        },
+        "eatingStartTime": {
+          "type": ["string", "null"],
+          "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
+          "description": "Eating window start time in 24-hour format HH:MM"
+        },
+        "repeatMeals": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 4,
+          "description": "Number of times to repeat meal plan (1-4)"
+        },
+        "foodListSource": {
+          "type": ["string", "null"],
+          "enum": ["yeh_plus_myfoods", "yeh", "myfoods", null],
+          "description": "Source of foods for meal planning"
+        }
+      },
+      "additionalProperties": false
+    },
+    "UpdatePreferencesRequest": {
+      "type": "object",
+      "description": "Request body for PUT /api/user/preferences",
+      "properties": {
+        "defaultFoodList": {
+          "type": "string",
+          "enum": ["yeh_approved", "all_foods"],
+          "description": "Default food list filter"
+        },
+        "mealsPerDay": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Number of meals per day (1-10)"
+        },
+        "fastingType": {
+          "type": "string",
+          "enum": ["none", "16_8", "18_6", "20_4", "omad"],
+          "description": "Intermittent fasting schedule"
+        },
+        "dailyGoals": {
+          "type": "string",
+          "description": "JSON string containing DailyGoals object"
+        },
+        "eatingStartTime": {
+          "type": "string",
+          "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
+          "description": "Eating window start time in 24-hour format HH:MM"
+        },
+        "repeatMeals": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4,
+          "description": "Number of times to repeat meal plan (1-4)"
+        },
+        "foodListSource": {
+          "type": "string",
+          "enum": ["yeh_plus_myfoods", "yeh", "myfoods"],
+          "description": "Source of foods for meal planning"
+        }
+      },
+      "additionalProperties": false
+    },
+    "UpdatePreferencesResponse": {
+      "$ref": "#/definitions/GetPreferencesResponse"
+    }
+  },
+  "properties": {
+    "userSettingId": {
+      "type": "integer",
+      "description": "Internal preference record ID"
+    },
+    "userId": {
+      "type": "integer",
+      "description": "Internal user ID (not exposed in API responses)",
+      "x-go-json-tag": "-"
+    },
+    "defaultFoodList": {
+      "type": ["string", "null"],
+      "enum": ["yeh_approved", "all_foods", null],
+      "description": "Default food list filter"
+    },
+    "mealsPerDay": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Number of meals per day (1-10)"
+    },
+    "fastingType": {
+      "type": ["string", "null"],
+      "enum": ["none", "16_8", "18_6", "20_4", "omad", null],
+      "description": "Intermittent fasting schedule"
+    },
+    "dailyGoals": {
+      "type": ["string", "null"],
+      "description": "JSON string containing DailyGoals object"
+    },
+    "eatingStartTime": {
+      "type": ["string", "null"],
+      "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
+      "description": "Eating window start time in 24-hour format HH:MM"
+    },
+    "repeatMeals": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "maximum": 4,
+      "description": "Number of times to repeat meal plan (1-4)"
+    },
+    "foodListSource": {
+      "type": ["string", "null"],
+      "enum": ["yeh_plus_myfoods", "yeh", "myfoods", null],
+      "description": "Source of foods for meal planning"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When preferences were created"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When preferences were last updated"
+    }
+  },
+  "additionalProperties": false
+}

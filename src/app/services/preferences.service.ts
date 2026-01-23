@@ -5,21 +5,22 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, catchError, map } from 'rxjs';
 import { environment } from '../../environments/environment';
+import {
+  GetPreferencesResponse,
+  DailyGoals,
+  UpdatePreferencesRequest,
+} from '../models/generated/preferences.schema';
 
+// Re-export generated types for consumers
+export type { DailyGoals, GetPreferencesResponse, UpdatePreferencesRequest };
+
+// Narrower types for better type safety in the UI
 export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6;
 export type FastingType = 'none' | '16_8' | '18_6' | '20_4' | 'omad';
 export type RepeatMeals = 1 | 2 | 3 | 4;
 export type FoodListSource = 'yeh_plus_myfoods' | 'yeh' | 'myfoods';
 
-export interface DailyGoals {
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  fiber: number;
-  sodium: number;
-}
-
+// Local preferences with parsed dailyGoals (API returns as JSON string)
 export interface Preferences {
   mealsPerDay: MealsPerDay;
   fastingType: FastingType;
@@ -27,16 +28,6 @@ export interface Preferences {
   eatingStartTime: string;  // 24-hour format "HH:MM"
   repeatMeals: RepeatMeals;
   foodListSource: FoodListSource;
-}
-
-// API response format - dailyGoals comes as JSON string from backend
-interface PreferencesResponse {
-  mealsPerDay: number;
-  fastingType: string;
-  dailyGoals?: string;  // JSON string that needs to be parsed
-  eatingStartTime?: string;
-  repeatMeals?: number;
-  foodListSource?: string;
 }
 
 const DEFAULT_DAILY_GOALS: DailyGoals = {
@@ -88,7 +79,7 @@ export class PreferencesService {
     }
 
     this.loadingSignal.set(true);
-    return this.http.get<PreferencesResponse>(`${this.API_BASE_URL}/user/preferences`).pipe(
+    return this.http.get<GetPreferencesResponse>(`${this.API_BASE_URL}/user/preferences`).pipe(
       map(response => {
         // Parse dailyGoals from JSON string if present
         let parsedDailyGoals: DailyGoals = DEFAULT_DAILY_GOALS;
@@ -136,7 +127,7 @@ export class PreferencesService {
       repeatMeals: current.repeatMeals,
       foodListSource: current.foodListSource
     };
-    return this.http.put<PreferencesResponse>(`${this.API_BASE_URL}/user/preferences`, payload).pipe(
+    return this.http.put<GetPreferencesResponse>(`${this.API_BASE_URL}/user/preferences`, payload).pipe(
       map(() => current),
       catchError(error => {
         console.error('Failed to save user preferences:', error);

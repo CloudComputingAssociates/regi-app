@@ -21,7 +21,7 @@ import { TabService } from '../../services/tab.service';
 
       <div class="chat-messages">
         <div class="placeholder-content">
-          <p class="placeholder-text">Chat messages will appear here</p>
+          <p class="placeholder-text">AI-driven Nutrition Planning</p>
         </div>
       </div>
     </div>

@@ -1,0 +1,227 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.youeatinghealthy.com/schemas/food-preferences.schema.json",
+  "title": "User Food Preferences Schema",
+  "description": "User food and ingredient preferences (allowed/restricted lists)",
+  "type": "object",
+  "definitions": {
+    "FoodPreference": {
+      "type": "object",
+      "description": "A single food or ingredient preference",
+      "properties": {
+        "preferenceId": {
+          "type": "integer",
+          "description": "Unique preference ID"
+        },
+        "userId": {
+          "type": "integer",
+          "description": "Internal user ID (not exposed in API responses)",
+          "x-go-json-tag": "-"
+        },
+        "foodId": {
+          "type": ["integer", "null"],
+          "description": "Food ID if this preference is for a food"
+        },
+        "ingredientId": {
+          "type": ["integer", "null"],
+          "description": "Ingredient ID if this preference is for an ingredient"
+        },
+        "allowed": {
+          "type": "boolean",
+          "description": "True if food/ingredient is allowed, false if restricted"
+        },
+        "description": {
+          "type": "string",
+          "description": "Food or ingredient description"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When preference was created"
+        }
+      },
+      "required": ["preferenceId", "allowed"],
+      "additionalProperties": false
+    },
+    "FoodPreferenceItem": {
+      "type": "object",
+      "description": "Preference item in response (simplified)",
+      "properties": {
+        "preferenceId": {
+          "type": "integer",
+          "description": "Unique preference ID"
+        },
+        "foodId": {
+          "type": ["integer", "null"],
+          "description": "Food ID if this preference is for a food"
+        },
+        "ingredientId": {
+          "type": ["integer", "null"],
+          "description": "Ingredient ID if this preference is for an ingredient"
+        },
+        "description": {
+          "type": "string",
+          "description": "Food or ingredient description"
+        }
+      },
+      "required": ["preferenceId", "description"],
+      "additionalProperties": false
+    },
+    "FoodPreferenceList": {
+      "type": "object",
+      "description": "List of food and ingredient preferences",
+      "properties": {
+        "foods": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FoodPreferenceItem"
+          },
+          "description": "Food preferences"
+        },
+        "ingredients": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FoodPreferenceItem"
+          },
+          "description": "Ingredient preferences"
+        }
+      },
+      "required": ["foods", "ingredients"],
+      "additionalProperties": false
+    },
+    "GetFoodPreferencesResponse": {
+      "type": "object",
+      "description": "Response for GET /api/user/preferences/food",
+      "properties": {
+        "allowed": {
+          "$ref": "#/definitions/FoodPreferenceList",
+          "description": "Allowed (liked) foods and ingredients"
+        },
+        "restricted": {
+          "$ref": "#/definitions/FoodPreferenceList",
+          "description": "Restricted foods and ingredients"
+        }
+      },
+      "required": ["allowed", "restricted"],
+      "additionalProperties": false
+    },
+    "GetAllowedFoodPreferencesResponse": {
+      "$ref": "#/definitions/FoodPreferenceList",
+      "description": "Response for GET /api/user/preferences/food/allowed"
+    },
+    "GetRestrictedFoodPreferencesResponse": {
+      "$ref": "#/definitions/FoodPreferenceList",
+      "description": "Response for GET /api/user/preferences/food/restricted"
+    },
+    "CreateFoodPreferenceRequest": {
+      "type": "object",
+      "description": "Single food preference to create",
+      "properties": {
+        "foodId": {
+          "type": "integer",
+          "description": "Food ID (mutually exclusive with ingredientId)"
+        },
+        "ingredientId": {
+          "type": "integer",
+          "description": "Ingredient ID (mutually exclusive with foodId)"
+        },
+        "allowed": {
+          "type": "boolean",
+          "description": "True to allow, false to restrict"
+        }
+      },
+      "required": ["allowed"],
+      "oneOf": [
+        { "required": ["foodId"] },
+        { "required": ["ingredientId"] }
+      ],
+      "additionalProperties": false
+    },
+    "CreateFoodPreferencesRequest": {
+      "type": "object",
+      "description": "Request body for POST /api/user/preferences/food",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CreateFoodPreferenceRequest"
+          },
+          "minItems": 1,
+          "description": "Array of food preferences to create"
+        }
+      },
+      "required": ["items"],
+      "additionalProperties": false
+    },
+    "CreateFoodPreferencesResponse": {
+      "type": "object",
+      "description": "Response for POST /api/user/preferences/food",
+      "properties": {
+        "created": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of preferences created"
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "IDs of created preferences"
+        }
+      },
+      "required": ["created", "ids"],
+      "additionalProperties": false
+    },
+    "DeleteFoodPreferencesRequest": {
+      "type": "object",
+      "description": "Request body for DELETE /api/user/preferences/food (bulk)",
+      "properties": {
+        "preferenceIds": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 1,
+          "description": "IDs of preferences to delete"
+        }
+      },
+      "required": ["preferenceIds"],
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "preferenceId": {
+      "type": "integer",
+      "description": "Unique preference ID"
+    },
+    "userId": {
+      "type": "integer",
+      "description": "Internal user ID (not exposed in API responses)",
+      "x-go-json-tag": "-"
+    },
+    "foodId": {
+      "type": ["integer", "null"],
+      "description": "Food ID if this preference is for a food"
+    },
+    "ingredientId": {
+      "type": ["integer", "null"],
+      "description": "Ingredient ID if this preference is for an ingredient"
+    },
+    "allowed": {
+      "type": "boolean",
+      "description": "True if food/ingredient is allowed, false if restricted"
+    },
+    "description": {
+      "type": "string",
+      "description": "Food or ingredient description"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When preference was created"
+    }
+  },
+  "required": ["preferenceId", "allowed"],
+  "additionalProperties": false
+}

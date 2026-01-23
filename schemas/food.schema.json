@@ -1,0 +1,484 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://yourdomain.com/schemas/food.schema.json",
+  "title": "Food Schema",
+  "description": "Complete food information including nutrition facts, brand info, and metadata",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "number",
+      "description": "Internal food ID"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Food description/name as searched"
+    },
+    "shortDescription": {
+      "type": ["string", "null"],
+      "maxLength": 200,
+      "description": "Shortened description for display purposes"
+    },
+    "foodRequestType": {
+      "type": "string",
+      "enum": [
+        "brand",
+        "whole",
+        "recipe",
+        "unknown"
+      ],
+      "description": "Classification of food type"
+    },
+    "categoryName": {
+      "type": ["string", "null"],
+      "description": "Food category name (e.g., Protein, Carbohydrate)"
+    },
+    "subCategoryName": {
+      "type": ["string", "null"],
+      "description": "Food subcategory name (e.g., Lean Protein, Grain)"
+    },
+    "usdaCategory": {
+      "type": ["string", "null"],
+      "description": "Original USDA category classification"
+    },
+    "yehApproved": {
+      "type": "boolean",
+      "default": false,
+      "description": "Is this a healthy food for users of the App"
+    },
+    "glycemicIndex": {
+      "type": "number",
+      "default": 0,
+      "description": "Glycemic Index value (0-100 scale)"
+    },
+    "glycemicLoad": {
+      "type": ["number", "null"],
+      "description": "Glycemic Load per serving (GI × carbs per serving / 100)"
+    },
+    "nutritionFacts": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "FDA nutrition facts per serving",
+      "properties": {
+        "foodName": {
+          "type": "string",
+          "description": "Product name / description"
+        },
+        "servingSizeHousehold": {
+          "type": "string",
+          "description": "Common household measure, e.g., '2/3 cup', '1 container'"
+        },
+        "servingSizeG": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Metric weight of serving in grams (g)"
+        },
+        "servingsPerContainer": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Number of servings per container"
+        },
+        "calories": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Calories per serving"
+        },
+        "totalFatG": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total fat (g)"
+        },
+        "saturatedFatG": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Saturated fat (g)"
+        },
+        "transFatG": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Trans fat (g)"
+        },
+        "cholesterolMG": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Cholesterol (mg)"
+        },
+        "sodiumMG": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Sodium (mg)"
+        },
+        "totalCarbohydrateG": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total carbohydrate (g)"
+        },
+        "dietaryFiberG": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Dietary fiber (g)"
+        },
+        "totalSugarsG": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total sugars (g)"
+        },
+        "addedSugarsG": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Added sugars (g)"
+        },
+        "proteinG": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Protein (g)"
+        },
+        "vitaminDMcg": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Vitamin D (mcg)"
+        },
+        "calciumMG": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Calcium (mg)"
+        },
+        "ironMG": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Iron (mg)"
+        },
+        "potassiumMG": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Potassium (mg)"
+        },
+        "ingredients": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "string"
+          },
+          "description": "List of ingredients from product label"
+        }
+      },
+      "additionalProperties": false
+    },
+    "servingSizeMultiplicand": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Multiplier for serving size calculations"
+    },
+    "dataSource": {
+      "type": "string",
+      "description": "Source of nutrition data (e.g., 'USDA-FNDDS', 'FatSecret')"
+    },
+    "duplicateCount": {
+      "type": "number",
+      "minimum": 0,
+      "default": 0,
+      "description": "Count of duplicate entries merged into this record"
+    },
+    "enhancedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "When the record was enhanced/created"
+    },
+    "verifiedType": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "FatSecret",
+        "ProductLabel",
+        "AIModel",
+        "USDAsurvey",
+        "USDAbrand",
+        "brand"
+      ],
+      "description": "Verification method for nutrition data"
+    },
+    "verifiedDate": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "When the data was verified"
+    },
+    "verifiedBy": {
+      "type": "string",
+      "description": "Who/what verified the data"
+    },
+    "foodImage": {
+      "type": ["string", "null"],
+      "description": "CloudFront URL or ObjectID for product image"
+    },
+    "foodImageThumbnail": {
+      "type": ["string", "null"],
+      "description": "CloudFront URL or ObjectID for product image thumbnail"
+    },
+    "nutritionFactsImage": {
+      "type": ["string", "null"],
+      "description": "CloudFront URL or ObjectID for nutrition facts label image"
+    },
+    "nutritionFactsImagePending": {
+      "type": ["string", "null"],
+      "description": "CloudFront URL or ObjectID for nutrition facts image pending processing"
+    },
+    "nutritionFactsStatus": {
+      "type": ["string", "null"],
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "error",
+        null
+      ],
+      "description": "Status of nutrition facts processing/OCR"
+    },
+    "nutritionFactsQueueState": {
+      "type": ["string", "null"],
+      "enum": [
+        "queued",
+        "processing",
+        "completed",
+        "failed",
+        null
+      ],
+      "description": "Queue processing state for nutrition facts extraction"
+    },
+    "ingredientsImage": {
+      "type": ["string", "null"],
+      "description": "CloudFront URL for ingredients label image"
+    },
+    "ingredientsImagePending": {
+      "type": ["string", "null"],
+      "description": "CloudFront URL for ingredients image pending processing"
+    },
+    "gtinUpc": {
+      "type": ["string", "null"],
+      "maxLength": 20,
+      "description": "GTIN/UPC barcode for the product"
+    },
+    "tokensUsed": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "AI tokens consumed for this food"
+    },
+    "estimatedCost": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Estimated cost in USD for AI processing"
+    },
+    "userId": {
+      "type": ["number", "null"],
+      "description": "User ID who created/owns this food entry (for user-specific foods)"
+    },
+    "brandInfo": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Brand and manufacturer information",
+      "properties": {
+        "manufacturer": {
+          "type": "string",
+          "description": "Product manufacturer"
+        },
+        "parentCompany": {
+          "type": "string",
+          "description": "Parent company name"
+        },
+        "officialSites": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "string"
+          },
+          "description": "Official brand websites"
+        },
+        "nutritionSiteCandidates": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "string"
+          },
+          "description": "URLs with potential nutrition information"
+        },
+        "productImageSiteCandidates": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "string"
+          },
+          "description": "URLs with potential product images"
+        },
+        "productLine": {
+          "type": "string",
+          "description": "Product line or series name"
+        }
+      },
+      "additionalProperties": false
+    },
+    "recipe": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Recipe information for recipe-type foods",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "totalWeightG": {
+          "type": "number",
+          "minimum": 0
+        },
+        "servings": {
+          "type": "number",
+          "minimum": 1
+        },
+        "ingredients": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "number"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "preparation": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "number"
+              },
+              "weightG": {
+                "type": "number"
+              },
+              "calories": {
+                "type": "number"
+              },
+              "totalFatG": {
+                "type": "number"
+              },
+              "proteinG": {
+                "type": "number"
+              },
+              "carbsG": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "quantity",
+              "unit",
+              "preparation",
+              "amount",
+              "weightG",
+              "calories",
+              "totalFatG",
+              "proteinG",
+              "carbsG"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "instructions": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "totalWeightG",
+        "servings",
+        "ingredients",
+        "instructions"
+      ],
+      "additionalProperties": false
+    },
+    "ingredientsAreAllergens": {
+      "type": "boolean",
+      "default": false,
+      "description": "Indicates if the ingredients list contains allergens rather than actual ingredients (used when API returns allergens but not detailed ingredients)"
+    }
+  },
+  "required": [
+    "id",
+    "description",
+    "foodRequestType",
+    "servingSizeMultiplicand",
+    "dataSource",
+    "verifiedType",
+    "verifiedBy"
+  ],
+  "additionalProperties": true,
+  "definitions": {
+    "FoodSearchResponse": {
+      "type": "object",
+      "description": "Response for GET /api/foods/search",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of foods returned"
+        },
+        "foods": {
+          "type": "array",
+          "items": {
+            "$ref": "#"
+          },
+          "description": "Array of matching food items"
+        }
+      },
+      "required": ["count", "foods"],
+      "additionalProperties": false
+    },
+    "FoodSearchBatchResponse": {
+      "type": "object",
+      "description": "Response for POST /api/foods/search (batch)",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of foods returned"
+        },
+        "foods": {
+          "type": "array",
+          "items": {
+            "$ref": "#"
+          },
+          "description": "Array of matching food items"
+        },
+        "serving_size": {
+          "type": "string",
+          "description": "Standardized serving size used"
+        }
+      },
+      "required": ["count", "foods"],
+      "additionalProperties": false
+    }
+  }
+}

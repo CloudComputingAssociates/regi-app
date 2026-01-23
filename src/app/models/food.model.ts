@@ -1,50 +1,19 @@
 // src/app/models/food.model.ts
-// Food model matching the API structure
-export interface Food {
-  id: number;  // SQL FoodID - required for backend
-  description: string;
-  shortDescription?: string | null;
-  glycemicIndex?: number | null;
-  glycemicLoad?: number | null;
-  yehApproved?: boolean;
-  nutritionFacts?: NutritionFacts;
-  servingSizeMultiplicand?: number;
-  brandInfo?: BrandInfo;
-  nutritionFactsImage?: string;
-  foodImage?: string;
-  foodImageThumbnail?: string;
-  nutritionFactsStatus?: string;
-}
+// Re-exports from generated schema for backward compatibility
+import {
+  FoodSchema,
+  FoodSearchResponse as GeneratedFoodSearchResponse,
+  FoodSearchBatchResponse,
+} from './generated/food.schema';
 
-export interface NutritionFacts {
-  foodName: string;
-  calories: number;
-  totalFatG: number;
-  saturatedFatG: number;
-  transFatG: number;
-  cholesterolMG: number;
-  sodiumMG: number;
-  totalCarbohydrateG: number;
-  dietaryFiberG: number;
-  totalSugarsG: number;
-  addedSugarsG: number;
-  proteinG: number;
-  vitaminDMcg: number;
-  calciumMG: number;
-  ironMG: number;
-  potassiumMG: number;
-  servingSizeHousehold: string;
-  servingSizeG: number;
-  servingsPerContainer: number;
-}
+// Re-export generated types
+export type { FoodSchema, FoodSearchBatchResponse };
 
-export interface BrandInfo {
-  nutritionSiteCandidates?: string[];
-  productImageSiteCandidates?: string[];
-}
+// Type aliases for backward compatibility
+export type Food = FoodSchema;
+export type FoodSearchResponse = GeneratedFoodSearchResponse;
 
-// Search response from API
-export interface FoodSearchResponse {
-  count: number;
-  foods: Food[];
-}
+// Extract nested types for standalone use if needed
+export type NutritionFacts = NonNullable<FoodSchema['nutritionFacts']>;
+export type BrandInfo = NonNullable<FoodSchema['brandInfo']>;
+export type Recipe = NonNullable<FoodSchema['recipe']>;
