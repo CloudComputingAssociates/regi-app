@@ -1,364 +1,219 @@
 // src/app/services/preferences.service.ts
+// Service for managing user application preferences (mealsPerDay, fastingType, dailyGoals, etc.)
+// API: /user/preferences (GET/PUT)
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, of, map, switchMap } from 'rxjs';
+import { Observable, of, catchError, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-export interface FoodPreference {
-  preferenceId: number;
-  foodId: number;
-  description: string;
+export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6;
+export type FastingType = 'none' | '16_8' | '18_6' | '20_4' | 'omad';
+export type RepeatMeals = 1 | 2 | 3 | 4;
+export type FoodListSource = 'yeh_plus_myfoods' | 'yeh' | 'myfoods';
+
+export interface DailyGoals {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  sodium: number;
 }
 
-export interface PreferencesResponse {
-  allowed: {
-    foods: FoodPreference[];
-    ingredients: FoodPreference[];
-  };
-  restricted: {
-    foods: FoodPreference[];
-    ingredients: FoodPreference[];
-  };
+export interface Preferences {
+  mealsPerDay: MealsPerDay;
+  fastingType: FastingType;
+  dailyGoals: DailyGoals;
+  eatingStartTime: string;  // 24-hour format "HH:MM"
+  repeatMeals: RepeatMeals;
+  foodListSource: FoodListSource;
 }
 
-export interface AllowedRestrictedResponse {
-  foods: FoodPreference[];
-  ingredients: FoodPreference[];
+// API response format - dailyGoals comes as JSON string from backend
+interface PreferencesResponse {
+  mealsPerDay: number;
+  fastingType: string;
+  dailyGoals?: string;  // JSON string that needs to be parsed
+  eatingStartTime?: string;
+  repeatMeals?: number;
+  foodListSource?: string;
 }
 
-export interface CreatePreferenceItem {
-  foodId?: number;
-  ingredientId?: number;
-  allowed: boolean;
-}
+const DEFAULT_DAILY_GOALS: DailyGoals = {
+  calories: 2000,
+  protein: 150,
+  carbs: 200,
+  fat: 65,
+  fiber: 30,
+  sodium: 2300
+};
 
-export interface CreatePreferenceRequest {
-  items: CreatePreferenceItem[];
-}
-
-export interface CreatePreferenceResponse {
-  created: number;
-  ids: number[];
-}
-
-export interface DeletePreferencesRequest {
-  preferenceIds: number[];
-}
-
-export interface DeletePreferencesResponse {
-  deleted: number;
-}
-
-// Pending change types
-export type PendingChangeType = 'add-allowed' | 'add-restricted' | 'remove';
-
-export interface PendingChange {
-  foodId: number;
-  type: PendingChangeType;
-  originalPreferenceId?: number; // For removals, we need to know what to delete
-}
+const DEFAULT_PREFERENCES: Preferences = {
+  mealsPerDay: 3,
+  fastingType: 'none',
+  dailyGoals: DEFAULT_DAILY_GOALS,
+  eatingStartTime: '08:00',
+  repeatMeals: 1,
+  foodListSource: 'yeh_plus_myfoods'
+};
 
 @Injectable({
   providedIn: 'root'
 })
 export class PreferencesService {
   private http = inject(HttpClient);
-  private baseUrl = environment.apiUrl;
+  private readonly API_BASE_URL = environment.apiUrl;
 
-  // Server state - what's saved in the database (maps foodId to preferenceId)
-  private serverAllowedFoods = signal<Map<number, number>>(new Map());
-  private serverRestrictedFoods = signal<Map<number, number>>(new Map());
+  private preferencesSignal = signal<Preferences>(DEFAULT_PREFERENCES);
+  private loadingSignal = signal(false);
+  private loadedSignal = signal(false);
 
-  // Local state - reflects UI including unsaved changes (just foodId sets)
-  private localAllowedFoods = signal<Set<number>>(new Set());
-  private localRestrictedFoods = signal<Set<number>>(new Set());
+  /** Read-only access to all preferences */
+  readonly preferences = this.preferencesSignal.asReadonly();
+  readonly isLoading = this.loadingSignal.asReadonly();
+  readonly isLoaded = this.loadedSignal.asReadonly();
 
-  // Pending changes to be saved
-  private pendingChanges = signal<Map<number, PendingChange>>(new Map());
+  /** Convenience accessors */
+  readonly mealsPerDay = computed(() => this.preferencesSignal().mealsPerDay);
+  readonly fastingType = computed(() => this.preferencesSignal().fastingType);
+  readonly dailyGoals = computed(() => this.preferencesSignal().dailyGoals);
+  readonly eatingStartTime = computed(() => this.preferencesSignal().eatingStartTime);
+  readonly repeatMeals = computed(() => this.preferencesSignal().repeatMeals);
+  readonly foodListSource = computed(() => this.preferencesSignal().foodListSource);
 
-  // Computed: has unsaved changes
-  hasUnsavedChanges = computed(() => this.pendingChanges().size > 0);
-
-  // Expose local state for UI (what the icons should show)
-  isAllowed(foodId: number): boolean {
-    return this.localAllowedFoods().has(foodId);
-  }
-
-  isRestricted(foodId: number): boolean {
-    return this.localRestrictedFoods().has(foodId);
-  }
-
-  // Getters for filtering (returns Sets of foodIds)
-  allowedFoods(): Set<number> {
-    return this.localAllowedFoods();
-  }
-
-  restrictedFoods(): Set<number> {
-    return this.localRestrictedFoods();
-  }
-
-  /**
-   * Get all user preferences (allowed and restricted) and initialize local state
-   */
-  getAllPreferences(): Observable<PreferencesResponse> {
-    return this.http.get<PreferencesResponse>(`${this.baseUrl}/user/preferences`).pipe(
-      tap(response => {
-        // Update server state
-        const allowedMap = new Map<number, number>();
-        const restrictedMap = new Map<number, number>();
-
-        response.allowed.foods.forEach(f => allowedMap.set(f.foodId, f.preferenceId));
-        response.restricted.foods.forEach(f => restrictedMap.set(f.foodId, f.preferenceId));
-
-        this.serverAllowedFoods.set(allowedMap);
-        this.serverRestrictedFoods.set(restrictedMap);
-
-        // Initialize local state to match server
-        this.localAllowedFoods.set(new Set(allowedMap.keys()));
-        this.localRestrictedFoods.set(new Set(restrictedMap.keys()));
-
-        // Clear any pending changes
-        this.pendingChanges.set(new Map());
-      })
-    );
-  }
-
-  /**
-   * Get only allowed (favorite) preferences
-   */
-  getAllowedPreferences(): Observable<AllowedRestrictedResponse> {
-    return this.http.get<AllowedRestrictedResponse>(`${this.baseUrl}/user/preferences/allowed`).pipe(
-      tap(response => {
-        const allowedMap = new Map<number, number>();
-        response.foods.forEach(f => allowedMap.set(f.foodId, f.preferenceId));
-        this.serverAllowedFoods.set(allowedMap);
-        this.localAllowedFoods.set(new Set(allowedMap.keys()));
-      })
-    );
-  }
-
-  /**
-   * Get only restricted preferences
-   */
-  getRestrictedPreferences(): Observable<AllowedRestrictedResponse> {
-    return this.http.get<AllowedRestrictedResponse>(`${this.baseUrl}/user/preferences/restricted`).pipe(
-      tap(response => {
-        const restrictedMap = new Map<number, number>();
-        response.foods.forEach(f => restrictedMap.set(f.foodId, f.preferenceId));
-        this.serverRestrictedFoods.set(restrictedMap);
-        this.localRestrictedFoods.set(new Set(restrictedMap.keys()));
-      })
-    );
-  }
-
-  /**
-   * Toggle favorite status locally (no API call)
-   * Updates local state and tracks pending change
-   */
-  toggleFavoriteLocal(foodId: number): void {
-    console.log('[PreferencesService] toggleFavoriteLocal called with foodId:', foodId);
-    const localAllowed = new Set(this.localAllowedFoods());
-    const localRestricted = new Set(this.localRestrictedFoods());
-    const changes = new Map(this.pendingChanges());
-    console.log('[PreferencesService] Current state - localAllowed:', [...localAllowed], 'localRestricted:', [...localRestricted], 'pendingChanges:', [...changes.entries()]);
-
-    const wasAllowed = localAllowed.has(foodId);
-    const wasRestricted = localRestricted.has(foodId);
-    const serverAllowedPrefId = this.serverAllowedFoods().get(foodId);
-    const serverRestrictedPrefId = this.serverRestrictedFoods().get(foodId);
-
-    if (wasAllowed) {
-      // Currently allowed -> remove it
-      localAllowed.delete(foodId);
-
-      if (serverAllowedPrefId) {
-        // Was saved on server, need to delete
-        changes.set(foodId, { foodId, type: 'remove', originalPreferenceId: serverAllowedPrefId });
-      } else {
-        // Was only local (pending add), just remove the pending change
-        changes.delete(foodId);
-      }
-    } else {
-      // Not allowed -> make it allowed
-      localAllowed.add(foodId);
-
-      // If it was restricted, remove from restricted
-      if (wasRestricted) {
-        localRestricted.delete(foodId);
-      }
-
-      // Track the change
-      if (serverAllowedPrefId) {
-        // Already saved as allowed on server, no change needed
-        changes.delete(foodId);
-      } else if (serverRestrictedPrefId) {
-        // Was restricted on server, need to delete that and add allowed
-        // For simplicity, we'll handle this as add-allowed (server will handle conflict)
-        changes.set(foodId, { foodId, type: 'add-allowed', originalPreferenceId: serverRestrictedPrefId });
-      } else {
-        // New preference
-        changes.set(foodId, { foodId, type: 'add-allowed' });
-      }
+  /** Load preferences from API */
+  loadPreferences(): Observable<Preferences> {
+    if (this.loadedSignal()) {
+      return of(this.preferencesSignal());
     }
 
-    this.localAllowedFoods.set(localAllowed);
-    this.localRestrictedFoods.set(localRestricted);
-    this.pendingChanges.set(changes);
-    console.log('[PreferencesService] After toggle - localAllowed:', [...this.localAllowedFoods()], 'pendingChanges:', [...this.pendingChanges().entries()]);
-  }
-
-  /**
-   * Toggle restricted status locally (no API call)
-   * Updates local state and tracks pending change
-   */
-  toggleRestrictedLocal(foodId: number): void {
-    const localAllowed = new Set(this.localAllowedFoods());
-    const localRestricted = new Set(this.localRestrictedFoods());
-    const changes = new Map(this.pendingChanges());
-
-    const wasAllowed = localAllowed.has(foodId);
-    const wasRestricted = localRestricted.has(foodId);
-    const serverAllowedPrefId = this.serverAllowedFoods().get(foodId);
-    const serverRestrictedPrefId = this.serverRestrictedFoods().get(foodId);
-
-    if (wasRestricted) {
-      // Currently restricted -> remove it
-      localRestricted.delete(foodId);
-
-      if (serverRestrictedPrefId) {
-        // Was saved on server, need to delete
-        changes.set(foodId, { foodId, type: 'remove', originalPreferenceId: serverRestrictedPrefId });
-      } else {
-        // Was only local (pending add), just remove the pending change
-        changes.delete(foodId);
-      }
-    } else {
-      // Not restricted -> make it restricted
-      localRestricted.add(foodId);
-
-      // If it was allowed, remove from allowed
-      if (wasAllowed) {
-        localAllowed.delete(foodId);
-      }
-
-      // Track the change
-      if (serverRestrictedPrefId) {
-        // Already saved as restricted on server, no change needed
-        changes.delete(foodId);
-      } else if (serverAllowedPrefId) {
-        // Was allowed on server, need to delete that and add restricted
-        changes.set(foodId, { foodId, type: 'add-restricted', originalPreferenceId: serverAllowedPrefId });
-      } else {
-        // New preference
-        changes.set(foodId, { foodId, type: 'add-restricted' });
-      }
-    }
-
-    this.localAllowedFoods.set(localAllowed);
-    this.localRestrictedFoods.set(localRestricted);
-    this.pendingChanges.set(changes);
-  }
-
-  /**
-   * Save all pending changes to the server
-   * Returns observable that completes when all changes are saved
-   *
-   * The API supports upsert via POST - it will insert or update based on foodId.
-   * So for state flips (Allowed↔Restricted), we just POST with the new allowed value.
-   * DELETE is only needed for actual removals (user removes preference entirely).
-   */
-  saveAllChanges(): Observable<void> {
-    const changes = Array.from(this.pendingChanges().values());
-    console.log('[PreferencesService] saveAllChanges called, pending changes:', changes);
-
-    if (changes.length === 0) {
-      console.log('[PreferencesService] No changes to save');
-      return of(undefined);
-    }
-
-    // Separate into deletes and upserts
-    // DELETE: only for 'remove' type (user wants to completely remove the preference)
-    // UPSERT (POST): for add-allowed and add-restricted (API handles insert or update)
-    const toDelete: number[] = [];
-    const toUpsert: CreatePreferenceItem[] = [];
-
-    for (const change of changes) {
-      if (change.type === 'remove') {
-        // User wants to remove the preference entirely
-        if (change.originalPreferenceId) {
-          toDelete.push(change.originalPreferenceId);
+    this.loadingSignal.set(true);
+    return this.http.get<PreferencesResponse>(`${this.API_BASE_URL}/user/preferences`).pipe(
+      map(response => {
+        // Parse dailyGoals from JSON string if present
+        let parsedDailyGoals: DailyGoals = DEFAULT_DAILY_GOALS;
+        if (response.dailyGoals) {
+          try {
+            parsedDailyGoals = JSON.parse(response.dailyGoals);
+          } catch {
+            console.warn('Failed to parse dailyGoals, using defaults');
+          }
         }
-      } else if (change.type === 'add-allowed') {
-        // Add or flip to allowed - API will upsert
-        toUpsert.push({ foodId: change.foodId, allowed: true });
-      } else if (change.type === 'add-restricted') {
-        // Add or flip to restricted - API will upsert
-        toUpsert.push({ foodId: change.foodId, allowed: false });
-      }
-    }
 
-    console.log('[PreferencesService] toDelete:', toDelete);
-    console.log('[PreferencesService] toUpsert:', toUpsert);
-
-    // Chain operations: delete first (if any), then upsert (if any), then refresh
-    let operation$: Observable<unknown> = of(null);
-
-    // Bulk delete if needed (only for actual removals)
-    if (toDelete.length > 0) {
-      console.log('[PreferencesService] Adding DELETE operation');
-      // Note: trailing slash required for bulk delete endpoint
-      operation$ = this.http.request<{ deleted: number }>('DELETE', `${this.baseUrl}/user/preferences/`, {
-        body: { preferenceIds: toDelete }
-      }).pipe(
-        tap(res => console.log('[PreferencesService] DELETE response:', res))
-      );
-    }
-
-    // Bulk upsert if needed (chain after delete)
-    if (toUpsert.length > 0) {
-      const requestBody = { items: toUpsert };
-      console.log('[PreferencesService] Adding POST (upsert) operation, request body:', JSON.stringify(requestBody));
-      operation$ = operation$.pipe(
-        switchMap(() => this.http.post<CreatePreferenceResponse>(`${this.baseUrl}/user/preferences`, requestBody).pipe(
-          tap(res => console.log('[PreferencesService] POST (upsert) response:', res))
-        ))
-      );
-    }
-
-    // Clear pending changes and refresh from server
-    return operation$.pipe(
-      tap(() => {
-        console.log('[PreferencesService] Operations complete, clearing pending changes');
-        this.pendingChanges.set(new Map());
+        const preferences: Preferences = {
+          mealsPerDay: (response.mealsPerDay as MealsPerDay) || DEFAULT_PREFERENCES.mealsPerDay,
+          fastingType: (response.fastingType as FastingType) || DEFAULT_PREFERENCES.fastingType,
+          dailyGoals: parsedDailyGoals,
+          eatingStartTime: response.eatingStartTime || DEFAULT_PREFERENCES.eatingStartTime,
+          repeatMeals: (response.repeatMeals as RepeatMeals) || DEFAULT_PREFERENCES.repeatMeals,
+          foodListSource: (response.foodListSource as FoodListSource) || DEFAULT_PREFERENCES.foodListSource
+        };
+        this.preferencesSignal.set(preferences);
+        this.loadedSignal.set(true);
+        this.loadingSignal.set(false);
+        return preferences;
       }),
-      // Refresh from server to get accurate preferenceIds
-      switchMap(() => {
-        console.log('[PreferencesService] Refreshing from server');
-        return this.getAllPreferences();
-      }),
-      tap(() => console.log('[PreferencesService] Refresh complete')),
-      // Map to void
-      map(() => undefined)
+      catchError(error => {
+        console.error('Failed to load user preferences:', error);
+        this.loadingSignal.set(false);
+        // Return defaults on error
+        return of(DEFAULT_PREFERENCES);
+      })
     );
   }
 
-  /**
-   * Discard all pending changes and reset local state to match server
-   */
-  discardChanges(): void {
-    this.localAllowedFoods.set(new Set(this.serverAllowedFoods().keys()));
-    this.localRestrictedFoods.set(new Set(this.serverRestrictedFoods().keys()));
-    this.pendingChanges.set(new Map());
+  /** Save preferences to API */
+  savePreferences(): Observable<Preferences> {
+    const current = this.preferencesSignal();
+    // API expects dailyGoals as a JSON string, not an object
+    // defaultFoodList is required by the database (cannot be NULL)
+    const payload = {
+      defaultFoodList: 'yeh_approved',
+      mealsPerDay: current.mealsPerDay,
+      fastingType: current.fastingType,
+      dailyGoals: JSON.stringify(current.dailyGoals),
+      eatingStartTime: current.eatingStartTime,
+      repeatMeals: current.repeatMeals,
+      foodListSource: current.foodListSource
+    };
+    return this.http.put<PreferencesResponse>(`${this.API_BASE_URL}/user/preferences`, payload).pipe(
+      map(() => current),
+      catchError(error => {
+        console.error('Failed to save user preferences:', error);
+        throw error;
+      })
+    );
   }
 
-  /**
-   * Clear all state (e.g., on logout)
-   */
-  clearAll(): void {
-    this.serverAllowedFoods.set(new Map());
-    this.serverRestrictedFoods.set(new Map());
-    this.localAllowedFoods.set(new Set());
-    this.localRestrictedFoods.set(new Set());
-    this.pendingChanges.set(new Map());
+  /** Update meals per day */
+  setMealsPerDay(value: MealsPerDay): void {
+    this.preferencesSignal.update(prefs => ({
+      ...prefs,
+      mealsPerDay: value
+    }));
+  }
+
+  /** Update fasting type */
+  setFastingType(value: FastingType): void {
+    this.preferencesSignal.update(prefs => ({
+      ...prefs,
+      fastingType: value
+    }));
+  }
+
+  /** Update eating start time */
+  setEatingStartTime(value: string): void {
+    this.preferencesSignal.update(prefs => ({
+      ...prefs,
+      eatingStartTime: value
+    }));
+  }
+
+  /** Update repeat meals */
+  setRepeatMeals(value: RepeatMeals): void {
+    this.preferencesSignal.update(prefs => ({
+      ...prefs,
+      repeatMeals: value
+    }));
+  }
+
+  /** Update food list source */
+  setFoodListSource(value: FoodListSource): void {
+    this.preferencesSignal.update(prefs => ({
+      ...prefs,
+      foodListSource: value
+    }));
+  }
+
+  /** Update daily goals */
+  setDailyGoals(goals: DailyGoals): void {
+    this.preferencesSignal.update(prefs => ({
+      ...prefs,
+      dailyGoals: goals
+    }));
+  }
+
+  /** Update a single daily goal field */
+  updateDailyGoal(field: keyof DailyGoals, value: number): void {
+    this.preferencesSignal.update(prefs => ({
+      ...prefs,
+      dailyGoals: {
+        ...prefs.dailyGoals,
+        [field]: value
+      }
+    }));
+  }
+
+  /** Update multiple preferences at once */
+  updatePreferences(partial: Partial<Preferences>): void {
+    this.preferencesSignal.update(prefs => ({
+      ...prefs,
+      ...partial
+    }));
+  }
+
+  /** Reset preferences to defaults */
+  resetToDefaults(): void {
+    this.preferencesSignal.set(DEFAULT_PREFERENCES);
   }
 }

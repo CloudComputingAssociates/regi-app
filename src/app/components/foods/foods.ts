@@ -7,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatRadioModule } from '@angular/material/radio';
 import { FoodsService } from '../../services/foods.service';
-import { PreferencesService } from '../../services/preferences.service';
+import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { Food } from '../../models/food.model';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -155,7 +155,7 @@ export interface AddFoodEvent {
 })
 export class FoodsComponent implements OnInit {
   private foodsService = inject(FoodsService);
-  protected preferencesService = inject(PreferencesService);
+  protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
 
   // Inputs

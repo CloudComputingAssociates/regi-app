@@ -6,7 +6,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { UserProfileService } from '../../services/user-profile.service';
+import { MacrosService } from '../../services/macros.service';
 import { TimePeriod, NutritionResponse } from '../../models/nutrition.model';
 
 // Display modes for macros component
@@ -129,23 +129,23 @@ export class MacrosComponent implements OnInit, OnDestroy {
   isLoading = false;
   currentPlanningDisplayMode: MacrosDisplayMode = 'food';  // For planning mode cycling
 
-  constructor(private userProfileService: UserProfileService) {}
+  constructor(private macrosService: MacrosService) {}
 
   ngOnInit(): void {
     // Get initial static data immediately
     this.displayData = this.transformNutritionData(
-      this.userProfileService.getCurrentNutritionData(),
+      this.macrosService.getCurrentNutritionData(),
       'day'
     );
     this.currentTimePeriod = 'day';
 
     // Listen for time period changes
-    this.userProfileService.currentPeriod$.pipe(
+    this.macrosService.currentPeriod$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(timePeriod => {
       this.currentTimePeriod = timePeriod;
       this.displayData = this.transformNutritionData(
-        this.userProfileService.getCurrentNutritionData(),
+        this.macrosService.getCurrentNutritionData(),
         timePeriod
       );
     });
@@ -210,7 +210,7 @@ export class MacrosComponent implements OnInit, OnDestroy {
    */
   toggleTimePeriod(): void {
     const newPeriod: TimePeriod = this.currentTimePeriod === 'day' ? 'week' : 'day';
-    this.userProfileService.setTimePeriod(newPeriod);
+    this.macrosService.setTimePeriod(newPeriod);
   }
 
   /**

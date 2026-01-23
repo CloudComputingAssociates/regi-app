@@ -3,9 +3,9 @@ import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
-import { PreferencesService } from '../../services/preferences.service';
+import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
-import { UserSettingsService, MealsPerDay, FastingType, DailyGoals, RepeatMeals, FoodListSource } from '../../services/user-settings.service';
+import { PreferencesService, MealsPerDay, FastingType, DailyGoals, RepeatMeals, FoodListSource } from '../../services/preferences.service';
 import { FoodsComponent, SelectedFoodEvent } from '../foods/foods';
 import { forkJoin, Observable } from 'rxjs';
 
@@ -173,8 +173,8 @@ import { forkJoin, Observable } from 'rxjs';
 })
 export class PreferencesPanelComponent implements OnInit {
   private tabService = inject(TabService);
-  protected preferencesService = inject(PreferencesService);
-  protected userSettingsService = inject(UserSettingsService);
+  protected preferencesService = inject(FoodPreferencesService);
+  protected userSettingsService = inject(PreferencesService);
   private notificationService = inject(NotificationService);
 
   isSaving = signal(false);
@@ -190,7 +190,7 @@ export class PreferencesPanelComponent implements OnInit {
 
   ngOnInit(): void {
     // Load user settings when panel opens
-    this.userSettingsService.loadSettings().subscribe();
+    this.userSettingsService.loadPreferences().subscribe();
   }
 
   hasAnyChanges(): boolean {
@@ -241,7 +241,7 @@ export class PreferencesPanelComponent implements OnInit {
       saveOps.push(this.preferencesService.saveAllChanges());
     }
     if (this.settingsChanged()) {
-      saveOps.push(this.userSettingsService.saveSettings());
+      saveOps.push(this.userSettingsService.savePreferences());
     }
 
     if (saveOps.length === 0) {
