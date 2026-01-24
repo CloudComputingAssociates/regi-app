@@ -34,42 +34,49 @@ import { NotificationComponent } from '../notification/notification';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="main-body-container">
-      <mat-tab-group
-        [selectedIndex]="tabService.activeTabIndex()"
-        (selectedIndexChange)="onTabIndexChange($event)"
-        class="main-body-tabs">
+      @if (tabService.tabs().length === 0) {
+        <!-- Empty state with background image -->
+        <div class="empty-state">
+          <img src="/images/YEH3.png" alt="You Eating Healthy" class="empty-state-image" />
+        </div>
+      } @else {
+        <mat-tab-group
+          [selectedIndex]="tabService.activeTabIndex()"
+          (selectedIndexChange)="onTabIndexChange($event)"
+          class="main-body-tabs">
 
-        @for (tab of tabService.tabs(); track tab.id; let i = $index) {
-          <mat-tab>
-            <ng-template mat-tab-label>
-              <span class="tab-label-text">{{ tab.label }}</span>
-            </ng-template>
+          @for (tab of tabService.tabs(); track tab.id; let i = $index) {
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <span class="tab-label-text">{{ tab.label }}</span>
+              </ng-template>
 
-            <div class="tab-content">
-              @if (tab.id === 'chat') {
-                <app-chat />
-              } @else if (tab.id === 'meal-planning') {
-                <app-regimenu-panel />
-              } @else if (tab.id === 'foods') {
-                <app-foods-panel />
-              } @else if (tab.id === 'shop') {
-                <app-shopping-panel />
-              } @else if (tab.id === 'review') {
-                <app-progress-panel />
-              } @else if (tab.id === 'preferences') {
-                <app-preferences-panel />
-              } @else if (tab.id === 'account') {
-                <app-account-panel />
-              } @else if (tab.id === 'help') {
-                <div class="placeholder-content">
-                  <p class="placeholder-text">Help - Coming soon</p>
-                </div>
-              }
-            </div>
-          </mat-tab>
-        }
+              <div class="tab-content">
+                @if (tab.id === 'chat') {
+                  <app-chat />
+                } @else if (tab.id === 'meal-planning') {
+                  <app-regimenu-panel />
+                } @else if (tab.id === 'foods') {
+                  <app-foods-panel />
+                } @else if (tab.id === 'shop') {
+                  <app-shopping-panel />
+                } @else if (tab.id === 'review') {
+                  <app-progress-panel />
+                } @else if (tab.id === 'preferences') {
+                  <app-preferences-panel />
+                } @else if (tab.id === 'account') {
+                  <app-account-panel />
+                } @else if (tab.id === 'help') {
+                  <div class="placeholder-content">
+                    <p class="placeholder-text">Help - Coming soon</p>
+                  </div>
+                }
+              </div>
+            </mat-tab>
+          }
 
-      </mat-tab-group>
+        </mat-tab-group>
+      }
 
       <!-- Notification component (always present) -->
       <app-notification />
