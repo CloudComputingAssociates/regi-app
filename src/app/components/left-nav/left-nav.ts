@@ -36,7 +36,7 @@ interface MenuItem {
               class="drawer-profile-image" />
             <div class="user-details">
               <h3 class="user-name">you eating healthy</h3>
-              <p class="user-subtitle">AI-driven Nutrition Planning</p>
+              <p class="user-subtitle">AI-driven Nutrition Planner</p>
             </div>
           </div>
           <button

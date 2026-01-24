@@ -6,6 +6,31 @@
   height: 100%;
   background-color: #000000;
 
+  // Status header - permanent toast area at top
+  .chat-status-header {
+    background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+    padding: 8px 16px;
+    text-align: center;
+    border-bottom: 1px solid #5a5a5a;
+    flex-shrink: 0;
+
+    .status-text {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    &.prompt-mode {
+      background: linear-gradient(180deg, #4da6ff 0%, #3a8fd9 100%);
+      border-bottom-color: #5ab3ff;
+
+      .status-text {
+        color: #000000;
+        font-weight: 600;
+      }
+    }
+  }
+
   // Action buttons - top right corner
   .action-buttons {
     position: absolute;

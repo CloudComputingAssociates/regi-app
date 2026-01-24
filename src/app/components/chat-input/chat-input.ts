@@ -1,25 +1,25 @@
 // src/app/chat/chat-input.ts
-import { Component, signal, ChangeDetectionStrategy, output } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy, output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ChatStatusService } from '../../services/chat-status.service';
 
 @Component({
   selector: 'app-chat-input',
-  standalone: true,
   imports: [CommonModule, FormsModule, MatButtonModule, MatTooltipModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="chat-input-container">
       <div class="input-wrapper">
-        
+
         <!-- Prompt Me Button (Left) -->
         <button
           class="prompt-me-btn"
-          [class.active]="isPromptMeActive()"
+          [class.active]="chatStatus.isPromptMeActive()"
           (click)="togglePromptMe()"
-          [attr.aria-label]="isPromptMeActive() ? 'Stop prompt mode' : 'Start prompt mode'"
+          [attr.aria-label]="chatStatus.isPromptMeActive() ? 'Stop prompt mode' : 'Start prompt mode'"
           matTooltip="Reverse: prompt me"
           matTooltipPosition="above"
           [matTooltipShowDelay]="500"
@@ -56,9 +56,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
   styleUrls: ['./chat-input.scss']
 })
 export class ChatInputComponent {
+  chatStatus = inject(ChatStatusService);
+
   messageText = '';
   placeholder = signal('yeh? ');
-  isPromptMeActive = signal(false);
   isTTSActive = signal(false);
 
   messageSubmit = output<string>();
@@ -66,9 +67,8 @@ export class ChatInputComponent {
   ttsToggle = output<boolean>();
 
   togglePromptMe(): void {
-    const newMode = !this.isPromptMeActive();
-    this.isPromptMeActive.set(newMode);
-    this.promptMeToggle.emit(newMode);
+    this.chatStatus.togglePromptMe();
+    this.promptMeToggle.emit(this.chatStatus.isPromptMeActive());
   }
 
   toggleTTS(): void {
