@@ -55,12 +55,14 @@ interface MenuItem {
             (click)="navigateTo(item.tabId, drawer)"
             class="menu-item"
             [class.active]="isTabOpen(item.tabId)">
-            @if (item.iconImage) {
-              <img [src]="item.iconImage" [alt]="item.label" class="menu-icon-image" />
-            } @else {
-              <span class="menu-icon">{{ item.icon }}</span>
-            }
-            <span class="menu-label">{{ item.label }}</span>
+            <div class="menu-item-content">
+              @if (item.iconImage) {
+                <img [src]="item.iconImage" [alt]="item.label" class="menu-icon-image" />
+              } @else {
+                <span class="menu-icon">{{ item.icon }}</span>
+              }
+              <span class="menu-label">{{ item.label }}</span>
+            </div>
           </mat-list-item>
         </mat-nav-list>
       </mat-sidenav>

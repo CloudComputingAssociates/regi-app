@@ -141,31 +141,31 @@
         }
       }
 
+      .menu-item-content {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        gap: 12px;
+      }
+
       .menu-icon {
         font-size: 24px;
         line-height: 1;
         flex-shrink: 0;
         width: 28px;
-        text-align: center;
-        display: inline-block;
-        margin-right: 6px;
       }
 
       .menu-icon-image {
         width: 28px;
         height: 24px;
         object-fit: contain;
-        object-position: center;
         flex-shrink: 0;
-        background-color: transparent;
-        margin-right: 6px;
       }
 
       .menu-label {
-        flex: 1;
         font-size: 16px;
         font-weight: 500;
-        color: #ffffff;  // White - clickable
+        color: #ffffff;
         transition: color 0.2s ease;
       }
     }
