@@ -90,6 +90,8 @@ export class ChatInputComponent {
   submitMessage(): void {
     const text = this.messageText.trim();
     if (text && !this.chatService.isLoading()) {
+      // Send directly to chat service
+      this.chatService.sendMessage(text);
       this.messageSubmit.emit(text);
       this.messageText = '';
     }
