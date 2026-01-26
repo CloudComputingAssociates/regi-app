@@ -2,21 +2,30 @@
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TabService } from '../../services/tab.service';
-import { ChatStatusService } from '../../services/chat-status.service';
+import { ChatService } from '../../services/chat.service';
+import { ChatInputComponent } from './chat-input/chat-input';
+import { ChatOutputComponent } from './chat-output/chat-output';
 
 @Component({
   selector: 'app-chat',
-  imports: [CommonModule],
+  imports: [CommonModule, ChatInputComponent, ChatOutputComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="chat-container">
       <!-- Status header - permanent toast area -->
-      <div class="chat-status-header" [class.prompt-mode]="chatStatus.isPromptMeActive()">
-        <span class="status-text">{{ chatStatus.statusMessage() }}</span>
+      <div class="chat-status-header" [class.prompt-mode]="chatService.isPromptMeActive()">
+        <span class="status-text">{{ chatService.statusMessage() }}</span>
       </div>
 
-      <!-- Action button - top right (X only for Chat) -->
+      <!-- Action buttons - top right -->
       <div class="action-buttons">
+        <button
+          class="icon-btn new-chat-btn"
+          (click)="startNewChat()"
+          title="New conversation"
+          [disabled]="chatService.isLoading()">
+          +
+        </button>
         <button
           class="icon-btn close-btn"
           (click)="close()"
@@ -25,18 +34,28 @@ import { ChatStatusService } from '../../services/chat-status.service';
         </button>
       </div>
 
-      <div class="chat-messages">
-        <!-- Chat messages will go here -->
-      </div>
+      <!-- Chat output area -->
+      <app-chat-output />
+
+      <!-- Chat input area -->
+      <app-chat-input (messageSubmit)="onMessageSubmit($event)" />
     </div>
   `,
   styleUrls: ['./chat.scss']
 })
 export class ChatComponent {
   private tabService = inject(TabService);
-  chatStatus = inject(ChatStatusService);
+  chatService = inject(ChatService);
 
   close(): void {
     this.tabService.closeTab('chat');
+  }
+
+  startNewChat(): void {
+    this.chatService.startNewConversation();
+  }
+
+  onMessageSubmit(message: string): void {
+    this.chatService.sendMessage(message);
   }
 }

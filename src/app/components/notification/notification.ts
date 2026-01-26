@@ -12,7 +12,7 @@ import { NotificationService } from '../../services/notification.service';
   template: `
     @if (notificationService.notification(); as notification) {
       <div class="notification-container">
-        <div class="notification" [class.error]="notification.type === 'error'">
+        <div class="notification" [class.error]="notification.type === 'error'" [class.warning]="notification.type === 'warning'">
           <span class="message">{{ notification.message }}</span>
           <button class="close-btn" (click)="notificationService.dismiss()" aria-label="Close notification">
             <mat-icon>close</mat-icon>

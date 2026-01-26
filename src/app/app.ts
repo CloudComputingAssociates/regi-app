@@ -7,7 +7,7 @@ import { MacrosComponent } from './components/macros/macros';
 import { AppBarComponent } from './components/app-bar/app-bar';
 import { LeftNavComponent } from './components/left-nav/left-nav';
 import { MainBodyComponent } from './components/main-body/main-body';
-import { ChatInputComponent } from './components/chat-input/chat-input';
+import { ChatInputComponent } from './components/chat/chat-input/chat-input';
 import { PaywallComponent } from './components/paywall/paywall';
 import { LoadingOverlayComponent } from './components/loading-overlay/loading-overlay';
 import { SubscriptionService } from './services/subscription.service';

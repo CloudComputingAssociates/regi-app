@@ -3,7 +3,7 @@ import { Injectable, signal } from '@angular/core';
 
 export interface Notification {
   message: string;
-  type: 'success' | 'error';
+  type: 'success' | 'error' | 'warning';
 }
 
 @Injectable({
@@ -15,7 +15,7 @@ export class NotificationService {
 
   notification = this.notificationSignal.asReadonly();
 
-  show(message: string, type: 'success' | 'error' = 'success'): void {
+  show(message: string, type: 'success' | 'error' | 'warning' = 'success'): void {
     // Clear any existing timeout
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);

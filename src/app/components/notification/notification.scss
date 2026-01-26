@@ -39,6 +39,11 @@
     color: #ffffff;
   }
 
+  &.warning {
+    background-color: #ff9800;  // Orange for warnings
+    color: #000000;
+  }
+
   .message {
     flex: 1;
     font-size: 13px;

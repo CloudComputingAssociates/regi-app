@@ -1,0 +1,270 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.youreatinghealthy.com/schemas/chat.schema.json",
+  "title": "Chat",
+  "description": "AI chat and completion types for vLLM integration",
+
+  "definitions": {
+    "SessionStatus": {
+      "type": "string",
+      "description": "Chat session status",
+      "enum": ["ACTIVE", "TIMEOUT_INACTIVE", "CONTEXT_LIMIT_REACHED", "CLOSED"]
+    },
+
+    "ChatMessage": {
+      "type": "object",
+      "description": "A single message in a conversation",
+      "properties": {
+        "role": {
+          "type": "string",
+          "description": "Message role",
+          "enum": ["system", "user", "assistant"]
+        },
+        "content": {
+          "type": "string",
+          "description": "Message content"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the message was sent"
+        }
+      },
+      "required": ["role", "content"]
+    },
+
+    "TokenUsage": {
+      "type": "object",
+      "description": "Token consumption metrics",
+      "properties": {
+        "promptTokens": {
+          "type": "integer",
+          "description": "Tokens used in prompt"
+        },
+        "completionTokens": {
+          "type": "integer",
+          "description": "Tokens used in response"
+        },
+        "totalTokens": {
+          "type": "integer",
+          "description": "Total tokens used"
+        }
+      },
+      "required": ["promptTokens", "completionTokens", "totalTokens"]
+    },
+
+    "CompletionRequest": {
+      "type": "object",
+      "description": "Request for POST /api/ai (canned prompts)",
+      "properties": {
+        "systemPrompt": {
+          "type": "string",
+          "description": "System instructions for the AI"
+        },
+        "userPrompt": {
+          "type": "string",
+          "description": "The user's prompt/query"
+        },
+        "maxTokens": {
+          "type": "integer",
+          "description": "Maximum tokens in response",
+          "default": 2000
+        },
+        "temperature": {
+          "type": "number",
+          "description": "Sampling temperature (0-2)",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 2
+        }
+      },
+      "required": ["systemPrompt", "userPrompt"]
+    },
+
+    "CompletionResponse": {
+      "type": "object",
+      "description": "Response for POST /api/ai",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "AI-generated response"
+        },
+        "usage": {
+          "$ref": "#/definitions/TokenUsage"
+        },
+        "latencyMs": {
+          "type": "integer",
+          "description": "Response time in milliseconds"
+        }
+      },
+      "required": ["content", "usage", "latencyMs"]
+    },
+
+    "ChatRequest": {
+      "type": "object",
+      "description": "Request for POST /api/ai/chat",
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "description": "Session ID (omit for new session)"
+        },
+        "message": {
+          "type": "string",
+          "description": "User's message"
+        }
+      },
+      "required": ["message"]
+    },
+
+    "ChatResponse": {
+      "type": "object",
+      "description": "Response for POST /api/ai/chat",
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "description": "Session ID for continuation"
+        },
+        "message": {
+          "type": "string",
+          "description": "AI response"
+        },
+        "sessionStatus": {
+          "$ref": "#/definitions/SessionStatus"
+        },
+        "tokensUsed": {
+          "type": "integer",
+          "description": "Total tokens used this request"
+        },
+        "tokensRemaining": {
+          "type": "integer",
+          "description": "Tokens remaining in context window"
+        },
+        "contextWarning": {
+          "type": "string",
+          "description": "Warning if approaching context limit"
+        }
+      },
+      "required": ["sessionId", "message", "sessionStatus", "tokensUsed", "tokensRemaining"]
+    },
+
+    "ChatSession": {
+      "type": "object",
+      "description": "Full chat session (for GET /api/ai/chat/sessions/{id})",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/SessionStatus"
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChatMessage"
+          }
+        },
+        "totalTokens": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastActivityAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["sessionId", "status", "messages", "totalTokens", "createdAt", "lastActivityAt"]
+    },
+
+    "ChatSessionSummary": {
+      "type": "object",
+      "description": "Session summary for listing (GET /api/ai/chat/sessions)",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/SessionStatus"
+        },
+        "messageCount": {
+          "type": "integer"
+        },
+        "totalTokens": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastActivityAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["sessionId", "status", "messageCount", "totalTokens", "createdAt", "lastActivityAt"]
+    },
+
+    "AIHealthResponse": {
+      "type": "object",
+      "description": "Response for GET /api/ai/health",
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "models": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "maxContextTokens": {
+          "type": "integer"
+        }
+      },
+      "required": ["available"]
+    },
+
+    "StreamEvent": {
+      "type": "object",
+      "description": "SSE stream event from POST /api/ai/chat/stream",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Event type",
+          "enum": ["content", "done", "error"]
+        },
+        "delta": {
+          "type": "string",
+          "description": "Content chunk (for type=content)"
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "Session ID (sent with first event)"
+        },
+        "error": {
+          "type": "string",
+          "description": "Error message (for type=error)"
+        },
+        "usage": {
+          "$ref": "#/definitions/TokenUsage",
+          "description": "Token usage (sent with type=done)"
+        },
+        "sessionStatus": {
+          "$ref": "#/definitions/SessionStatus",
+          "description": "Session status (sent with type=done)"
+        },
+        "tokensRemaining": {
+          "type": "integer",
+          "description": "Tokens remaining (sent with type=done)"
+        },
+        "contextWarning": {
+          "type": "string",
+          "description": "Context warning (sent with type=done if applicable)"
+        }
+      },
+      "required": ["type"]
+    }
+  }
+}

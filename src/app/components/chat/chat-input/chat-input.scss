@@ -1,41 +1,41 @@
-// src/app/chat/chat-input.scss
+// src/app/components/chat/chat-input/chat-input.scss
 
 .chat-input-container {
   background-color: #3a3a3a;
   border-top: 1px solid #4a4a4a;
-  border-radius: 8px 8px 0 0;  // Rounded top corners to match main-body
-  padding: 6px 12px;  // Reduced from 12px 16px (50% vertical reduction)
+  border-radius: 8px 8px 0 0;
+  padding: 6px 12px;
   box-sizing: border-box;
 }
 
 .input-wrapper {
   display: flex;
   align-items: center;
-  gap: 8px;  // Reduced from 12px
+  gap: 8px;
   max-width: 100%;
 }
 
 .input-icon-btn {
   flex-shrink: 0;
-  width: 36px;  // Reduced from 48px (25% reduction)
+  width: 36px;
   height: 36px;
-  background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);  // Much lighter top for strong 3D
-  border-top: 1px solid #6a6a6a;  // Light top edge
+  background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+  border-top: 1px solid #6a6a6a;
   border-left: 1px solid #5a5a5a;
   border-right: 1px solid #5a5a5a;
-  border-bottom: 2px solid #1a1a1a;  // Much darker, thicker bottom for strong shadow
+  border-bottom: 2px solid #1a1a1a;
   border-radius: 50%;
   transition: all 0.2s ease;
   box-shadow:
-    0 4px 8px rgba(0, 0, 0, 0.5),  // Stronger drop shadow
-    0 -2px 0 rgba(255, 255, 255, 0.2) inset,  // Brighter top highlight
-    0 2px 0 rgba(0, 0, 0, 0.3) inset;  // Darker bottom shadow
+    0 4px 8px rgba(0, 0, 0, 0.5),
+    0 -2px 0 rgba(255, 255, 255, 0.2) inset,
+    0 2px 0 rgba(0, 0, 0, 0.3) inset;
 
   mat-icon {
-    font-size: 18px;  // Reduced from 24px
+    font-size: 18px;
     width: 18px;
     height: 18px;
-    color: #ffffff;  // White - clickable
+    color: #ffffff;
   }
 
   &:hover:not(:disabled):not(.active) {
@@ -63,7 +63,7 @@
       0 1px 0 rgba(0, 0, 0, 0.1) inset;
 
     mat-icon {
-      color: #000000;  // Black icon when active
+      color: #000000;
     }
   }
 
@@ -98,10 +98,10 @@
     width: 24px;
     height: 24px;
     display: block;
-    filter: brightness(0) invert(1);  // Make image white
+    filter: brightness(0) invert(1);
   }
 
-  &:hover:not(.active) {
+  &:hover:not(.active):not(:disabled) {
     background: linear-gradient(180deg, #606060 0%, #454545 100%);
     border-top-color: #757575;
     border-left-color: #656565;
@@ -122,8 +122,13 @@
       0 1px 0 rgba(0, 0, 0, 0.1) inset;
 
     .prompt-me-icon {
-      filter: none;  // Show natural icon color when active
+      filter: none;
     }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   &:focus-visible {
@@ -137,24 +142,29 @@
   min-width: 0;
   background-color: #4a4a4a;
   border: 1px solid #5a5a5a;
-  border-radius: 18px;  // Reduced from 24px
-  padding: 8px 14px;  // Reduced from 12px 20px
-  font-size: 14px;  // Reduced from 15px
+  border-radius: 18px;
+  padding: 8px 14px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.9);
   font-family: inherit;
   resize: none;
   overflow-y: auto;
   line-height: 1.4;
-  max-height: 42px;  // Reduced from 56px
+  max-height: 42px;
 
   &::placeholder {
-    color: #4da6ff;  // Blue - label
+    color: #4da6ff;
   }
 
   &:focus {
     outline: none;
     border-color: #4da6ff;
     background-color: #4a4a4a;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   // Hide scrollbar but keep functionality
@@ -191,7 +201,7 @@
     width: 24px;
     height: 24px;
     display: block;
-    filter: brightness(0) invert(1);  // Make image white
+    filter: brightness(0) invert(1);
   }
 
   &:hover:not(.active) {
@@ -215,7 +225,7 @@
       0 1px 0 rgba(0, 0, 0, 0.1) inset;
 
     .tts-icon {
-      filter: none;  // Show natural icon color when active
+      filter: none;
     }
   }
 
@@ -228,27 +238,27 @@
 // Responsive
 @media (max-width: 480px) {
   .chat-input-container {
-    padding: 5px 10px;  // Reduced
+    padding: 5px 10px;
   }
 
   .input-wrapper {
-    gap: 6px;  // Reduced from 8px
+    gap: 6px;
   }
 
   .input-icon-btn {
-    width: 32px;  // Reduced from 44px
+    width: 32px;
     height: 32px;
 
     mat-icon {
-      font-size: 16px;  // Reduced from 22px
+      font-size: 16px;
       width: 16px;
       height: 16px;
     }
   }
 
   .message-input {
-    font-size: 13px;  // Reduced from 14px
-    padding: 6px 12px;  // Reduced from 10px 16px
+    font-size: 13px;
+    padding: 6px 12px;
   }
 
   .prompt-me-btn {

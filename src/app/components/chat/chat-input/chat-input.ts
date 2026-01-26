@@ -1,10 +1,10 @@
-// src/app/chat/chat-input.ts
+// src/app/components/chat/chat-input/chat-input.ts
 import { Component, signal, ChangeDetectionStrategy, output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ChatStatusService } from '../../services/chat-status.service';
+import { ChatService } from '../../../services/chat.service';
 
 @Component({
   selector: 'app-chat-input',
@@ -17,9 +17,10 @@ import { ChatStatusService } from '../../services/chat-status.service';
         <!-- Prompt Me Button (Left) -->
         <button
           class="prompt-me-btn"
-          [class.active]="chatStatus.isPromptMeActive()"
+          [class.active]="chatService.isPromptMeActive()"
           (click)="togglePromptMe()"
-          [attr.aria-label]="chatStatus.isPromptMeActive() ? 'Stop prompt mode' : 'Start prompt mode'"
+          [disabled]="chatService.isLoading()"
+          [attr.aria-label]="chatService.isPromptMeActive() ? 'Stop prompt mode' : 'Start prompt mode'"
           matTooltip="Reverse: prompt me"
           matTooltipPosition="above"
           [matTooltipShowDelay]="500"
@@ -34,6 +35,7 @@ import { ChatStatusService } from '../../services/chat-status.service';
           [(ngModel)]="messageText"
           (keydown)="onKeyDown($event)"
           [placeholder]="placeholder()"
+          [disabled]="chatService.isLoading()"
           [attr.aria-label]="'Message input'"
           rows="2"></textarea>
 
@@ -56,7 +58,7 @@ import { ChatStatusService } from '../../services/chat-status.service';
   styleUrls: ['./chat-input.scss']
 })
 export class ChatInputComponent {
-  chatStatus = inject(ChatStatusService);
+  chatService = inject(ChatService);
 
   messageText = '';
   placeholder = signal('yeh? ');
@@ -67,8 +69,8 @@ export class ChatInputComponent {
   ttsToggle = output<boolean>();
 
   togglePromptMe(): void {
-    this.chatStatus.togglePromptMe();
-    this.promptMeToggle.emit(this.chatStatus.isPromptMeActive());
+    this.chatService.togglePromptMe();
+    this.promptMeToggle.emit(this.chatService.isPromptMeActive());
   }
 
   toggleTTS(): void {
@@ -87,7 +89,7 @@ export class ChatInputComponent {
 
   submitMessage(): void {
     const text = this.messageText.trim();
-    if (text) {
+    if (text && !this.chatService.isLoading()) {
       this.messageSubmit.emit(text);
       this.messageText = '';
     }

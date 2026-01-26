@@ -83,23 +83,17 @@
     }
   }
 
-  .chat-messages {
+  // Chat output takes remaining space
+  app-chat-output {
     flex: 1;
-    overflow-y: auto;
-    padding: 8px;
-    background: linear-gradient(180deg, #404040 0%, #5a5a5a 100%);
+    display: flex;
+    flex-direction: column;
+    min-height: 0; // Important for flex child with overflow
+  }
 
-    .placeholder-content {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-
-      .placeholder-text {
-        color: rgba(255, 255, 255, 0.5);
-        font-size: 16px;
-      }
-    }
+  // Chat input stays at bottom
+  app-chat-input {
+    flex-shrink: 0;
   }
 }
 
