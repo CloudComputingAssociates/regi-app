@@ -99,10 +99,9 @@
   }
 
   .avatar-img {
-    width: 28px;
     height: 28px;
-    border-radius: 50%;
-    object-fit: cover;
+    width: auto;
+    object-fit: contain;
   }
 }
 
@@ -192,9 +191,9 @@
   opacity: 0.6;
 
   .empty-logo {
-    width: 64px;
     height: 64px;
-    border-radius: 50%;
+    width: auto;
+    object-fit: contain;
   }
 
   .empty-text {
@@ -259,8 +258,8 @@
     }
 
     .avatar-img {
-      width: 24px;
       height: 24px;
+      width: auto;
     }
   }
 
