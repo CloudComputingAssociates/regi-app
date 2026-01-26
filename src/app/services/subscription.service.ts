@@ -172,7 +172,7 @@ export class SubscriptionService {
    * @returns Observable with cancellation confirmation
    */
   cancelSubscription(): Observable<{ status: string; message: string }> {
-    return this.http.put<{ status: string; message: string }>(
+    return this.http.post<{ status: string; message: string }>(
       `${this.API_BASE_URL}/subscriptions/cancel`,
       {}
     ).pipe(
@@ -205,7 +205,7 @@ export class SubscriptionService {
       message: string;
       subscriptionCanceled: boolean;
       deactivatedAt?: string;
-    }>(`${this.API_BASE_URL}/user`).pipe(
+    }>(`${this.API_BASE_URL}/user/account`).pipe(
       tap(() => {
         // Clear subscription status after deactivation
         this.clearStatus();
