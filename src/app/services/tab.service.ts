@@ -11,15 +11,10 @@ export interface Tab {
   providedIn: 'root'
 })
 export class TabService {
-  private tabsSignal = signal<Tab[]>([
-    {
-      id: 'chat',
-      label: 'Chat',
-      closeable: true
-    }
-  ]);
+  // Start with no tabs - Chat tab is added on login via resetToChat()
+  private tabsSignal = signal<Tab[]>([]);
 
-  private activeTabIndexSignal = signal<number>(0);  // Default to Chat
+  private activeTabIndexSignal = signal<number>(-1);  // No active tab until login
 
   // Expose signals as readonly
   tabs = this.tabsSignal.asReadonly();
