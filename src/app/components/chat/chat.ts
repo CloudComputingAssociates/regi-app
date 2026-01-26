@@ -3,12 +3,11 @@ import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TabService } from '../../services/tab.service';
 import { ChatService } from '../../services/chat.service';
-import { ChatInputComponent } from './chat-input/chat-input';
 import { ChatOutputComponent } from './chat-output/chat-output';
 
 @Component({
   selector: 'app-chat',
-  imports: [CommonModule, ChatInputComponent, ChatOutputComponent],
+  imports: [CommonModule, ChatOutputComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="chat-container">
@@ -36,9 +35,6 @@ import { ChatOutputComponent } from './chat-output/chat-output';
 
       <!-- Chat output area -->
       <app-chat-output />
-
-      <!-- Chat input area -->
-      <app-chat-input (messageSubmit)="onMessageSubmit($event)" />
     </div>
   `,
   styleUrls: ['./chat.scss']
@@ -53,9 +49,5 @@ export class ChatComponent {
 
   startNewChat(): void {
     this.chatService.startNewConversation();
-  }
-
-  onMessageSubmit(message: string): void {
-    this.chatService.sendMessage(message);
   }
 }
