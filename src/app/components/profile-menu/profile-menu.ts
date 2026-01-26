@@ -7,6 +7,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { AuthService } from '@auth0/auth0-angular';
 import { SubscriptionService } from '../../services/subscription.service';
 import { TabService } from '../../services/tab.service';
+import { ChatService } from '../../services/chat.service';
 
 @Component({
   selector: 'app-profile-menu',
@@ -65,6 +66,7 @@ export class ProfileMenuComponent {
   auth = inject(AuthService);
   subscriptionService = inject(SubscriptionService);
   private tabService = inject(TabService);
+  private chatService = inject(ChatService);
 
   login(): void {
     // Reset tabs to have Chat open on login
@@ -73,8 +75,9 @@ export class ProfileMenuComponent {
   }
 
   logout(): void {
-    // Clear subscription state and close all tabs before logging out
+    // Clear all state before logging out
     this.subscriptionService.clearStatus();
+    this.chatService.clearSession();
     this.tabService.closeAllTabs();
     this.auth.logout({ logoutParams: { returnTo: window.location.origin } });
   }
