@@ -129,4 +129,18 @@ export class TabService {
       this.activeTabIndexSignal.set(tabIndex);
     }
   }
+
+  /** Close all tabs - used on logout */
+  closeAllTabs(): void {
+    this.tabsSignal.set([]);
+    this.activeTabIndexSignal.set(-1);
+  }
+
+  /** Reset to initial state with Chat tab open - used on login */
+  resetToChat(): void {
+    this.tabsSignal.set([
+      { id: 'chat', label: 'Chat', closeable: true }
+    ]);
+    this.activeTabIndexSignal.set(0);
+  }
 }

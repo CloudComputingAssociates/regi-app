@@ -67,12 +67,15 @@ export class ProfileMenuComponent {
   private tabService = inject(TabService);
 
   login(): void {
+    // Reset tabs to have Chat open on login
+    this.tabService.resetToChat();
     this.auth.loginWithRedirect();
   }
 
   logout(): void {
-    // Clear subscription state before logging out
+    // Clear subscription state and close all tabs before logging out
     this.subscriptionService.clearStatus();
+    this.tabService.closeAllTabs();
     this.auth.logout({ logoutParams: { returnTo: window.location.origin } });
   }
 
