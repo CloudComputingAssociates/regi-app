@@ -10,9 +10,6 @@ import {
   PipeTransform
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
-import { AuthService } from '@auth0/auth0-angular';
 import { ChatService } from '../../../services/chat.service';
 
 /**
@@ -79,7 +76,7 @@ export class MarkdownPipe implements PipeTransform {
           <div class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
             <div class="message-avatar">
               @if (message.role === 'user') {
-                <span class="avatar-name">{{ userFirstName() }}</span>
+                <span class="avatar-name">YOU</span>
               } @else {
                 <img src="/images/YEH3.png" alt="YEH" class="avatar-img" />
               }
@@ -128,19 +125,6 @@ export class MarkdownPipe implements PipeTransform {
 })
 export class ChatOutputComponent {
   chatService = inject(ChatService);
-  private auth = inject(AuthService);
-
-  /** User's first name from Auth0 */
-  userFirstName = toSignal(
-    this.auth.user$.pipe(
-      map(user => {
-        if (!user?.name) return 'You';
-        const firstName = user.name.split(' ')[0];
-        return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-      })
-    ),
-    { initialValue: 'You' }
-  );
 
   private scrollContainer = viewChild<ElementRef<HTMLDivElement>>('scrollContainer');
 

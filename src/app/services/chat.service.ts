@@ -194,6 +194,9 @@ export class ChatService {
       const currentSessionId = this.sessionId();
       if (currentSessionId) {
         request.sessionId = currentSessionId;
+        console.log('[ChatService] Sending message with sessionId:', currentSessionId);
+      } else {
+        console.log('[ChatService] Sending message - new session (no sessionId)');
       }
 
       const response = await fetch(`${this.baseUrl}/ai/chat/stream`, {
@@ -280,12 +283,18 @@ export class ChatService {
   private handleStreamEvent(event: StreamEvent, currentContent: string): void {
     // Capture session ID from first event
     if (event.sessionId && !this.sessionId()) {
+      console.log('[ChatService] Captured new sessionId:', event.sessionId);
       this.saveSession(event.sessionId);
     }
 
     // Update session on activity
     if (this.sessionId()) {
       this.saveSession(this.sessionId()!);
+    }
+
+    // Debug: Log session tracking on done events
+    if (event.type === 'done') {
+      console.log('[ChatService] Stream done - sessionId:', this.sessionId(), 'status:', event.sessionStatus);
     }
 
     if (event.type === 'done') {

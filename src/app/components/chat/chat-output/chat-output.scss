@@ -1,5 +1,13 @@
 // src/app/components/chat/chat-output/chat-output.scss
 
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .chat-output-container {
   flex: 1;
   height: 100%;
@@ -80,28 +88,29 @@
 
 .message-avatar {
   flex-shrink: 0;
-  min-width: 32px;
-  height: 32px;
-  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #3a3a3a;
-  padding: 0 8px;
 
+  // User avatar - "YOU" in jet black oval
   .avatar-name {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     color: #ffffff;
     white-space: nowrap;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    background: #000000;
+    padding: 6px 12px;
+    border-radius: 20px; // Oval shape
   }
 
+  // Assistant avatar - YEH logo on transparent/black background
   .avatar-img {
-    height: 28px;
+    height: 32px;
     width: auto;
     object-fit: contain;
+    background: transparent;
   }
 }
 
@@ -250,16 +259,13 @@
   }
 
   .message-avatar {
-    width: 28px;
-    height: 28px;
-
-    .avatar-icon {
-      font-size: 16px;
+    .avatar-name {
+      font-size: 10px;
+      padding: 5px 10px;
     }
 
     .avatar-img {
-      height: 24px;
-      width: auto;
+      height: 28px;
     }
   }
 
