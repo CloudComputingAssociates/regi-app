@@ -82,7 +82,7 @@ export class SubscriptionService {
         }
 
         // User is authenticated - check subscription status from backend
-        return this.http.get<BackendSubscriptionResponse>(`${this.API_BASE_URL}/subscriptions/status`).pipe(
+        return this.http.get<BackendSubscriptionResponse>(`${this.API_BASE_URL}/user/account/status`).pipe(
           tap(backendResponse => {
             // Map backend response to frontend format
             const status: SubscriptionStatus = {
@@ -123,7 +123,7 @@ export class SubscriptionService {
    */
   getProducts(): Observable<{ products: StripeProduct[] }> {
     return this.http.get<{ products: StripeProduct[] }>(
-      `${this.API_BASE_URL}/subscriptions/products`
+      `${this.API_BASE_URL}/user/account/products`
     ).pipe(
       tap(response => {
         this.productsSignal.set(response.products);
@@ -142,26 +142,11 @@ export class SubscriptionService {
    */
   createCheckoutSession(priceId: string): Observable<{ url: string }> {
     return this.http.post<{ sessionId: string; url: string }>(
-      `${this.API_BASE_URL}/subscriptions/checkout`,
+      `${this.API_BASE_URL}/user/account/checkout`,
       { priceId }
     ).pipe(
       catchError(error => {
         console.error('Error creating checkout session:', error);
-        return throwError(() => error);
-      })
-    );
-  }
-
-  /**
-   * Get Stripe billing portal URL
-   * @returns Observable with portal URL
-   */
-  getBillingPortalUrl(): Observable<{ portal_url: string }> {
-    return this.http.get<{ portal_url: string }>(
-      `${this.API_BASE_URL}/subscriptions/portal`
-    ).pipe(
-      catchError(error => {
-        console.error('Error getting billing portal URL:', error);
         return throwError(() => error);
       })
     );
@@ -173,7 +158,7 @@ export class SubscriptionService {
    */
   cancelSubscription(): Observable<{ status: string; message: string }> {
     return this.http.post<{ status: string; message: string }>(
-      `${this.API_BASE_URL}/subscriptions/cancel`,
+      `${this.API_BASE_URL}/user/account/cancel`,
       {}
     ).pipe(
       tap(() => {
