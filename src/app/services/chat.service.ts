@@ -141,7 +141,7 @@ export class ChatService {
   private async loadSessionHistory(sessionId: string): Promise<void> {
     try {
       const token = await firstValueFrom(this.auth.getAccessTokenSilently());
-      const url = `${this.baseUrl}/api/ai/chat/sessions/${sessionId}`;
+      const url = `${this.baseUrl}/ai/chat/sessions/${sessionId}`;
 
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -196,7 +196,7 @@ export class ChatService {
         request.sessionId = currentSessionId;
       }
 
-      const response = await fetch(`${this.baseUrl}/api/ai/chat/stream`, {
+      const response = await fetch(`${this.baseUrl}/ai/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
