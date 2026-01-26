@@ -81,7 +81,7 @@ export class MarkdownPipe implements PipeTransform {
               @if (message.role === 'user') {
                 <span class="avatar-name">{{ userFirstName() }}</span>
               } @else {
-                <img src="/images/yeh_logo_dark.png" alt="YEH" class="avatar-img" />
+                <img src="/images/YEH3.png" alt="YEH" class="avatar-img" />
               }
             </div>
             <div class="message-content" [innerHTML]="message.content | markdown"></div>
@@ -92,7 +92,7 @@ export class MarkdownPipe implements PipeTransform {
         @if (chatService.streamingContent()) {
           <div class="message assistant streaming">
             <div class="message-avatar">
-              <img src="/images/yeh_logo_dark.png" alt="YEH" class="avatar-img" />
+              <img src="/images/YEH3.png" alt="YEH" class="avatar-img" />
             </div>
             <div class="message-content" [innerHTML]="chatService.streamingContent() | markdown">
             </div>
@@ -104,7 +104,7 @@ export class MarkdownPipe implements PipeTransform {
         @if (chatService.isLoading() && !chatService.streamingContent()) {
           <div class="message assistant loading">
             <div class="message-avatar">
-              <img src="/images/yeh_logo_dark.png" alt="YEH" class="avatar-img" />
+              <img src="/images/YEH3.png" alt="YEH" class="avatar-img" />
             </div>
             <div class="message-content">
               <span class="loading-dots">
@@ -117,7 +117,7 @@ export class MarkdownPipe implements PipeTransform {
         <!-- Empty state -->
         @if (chatService.messages().length === 0 && !chatService.isLoading()) {
           <div class="empty-state">
-            <img src="/images/yeh_logo_dark.png" alt="YEH" class="empty-logo" />
+            <img src="/images/YEH3.png" alt="YEH" class="empty-logo" />
             <p class="empty-text">Ask me anything about nutrition!</p>
           </div>
         }
