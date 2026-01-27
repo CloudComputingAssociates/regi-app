@@ -281,14 +281,11 @@ export class ChatService {
 
   /** Handle individual stream events */
   private handleStreamEvent(event: StreamEvent, currentContent: string): void {
-    // Capture session ID from first event
-    if (event.sessionId && !this.sessionId()) {
-      console.log('[ChatService] Captured new sessionId:', event.sessionId);
+    // Always use backend's sessionId as source of truth
+    if (event.sessionId) {
       this.saveSession(event.sessionId);
-    }
-
-    // Update session on activity
-    if (this.sessionId()) {
+    } else if (this.sessionId()) {
+      // Update activity timestamp for events without sessionId
       this.saveSession(this.sessionId()!);
     }
 
