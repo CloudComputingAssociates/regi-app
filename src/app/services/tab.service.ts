@@ -138,4 +138,61 @@ export class TabService {
     ]);
     this.activeTabIndexSignal.set(0);
   }
+
+  /** Get current open tab IDs - used for saving settings */
+  getOpenTabIds(): string[] {
+    return this.tabsSignal().map(tab => tab.id);
+  }
+
+  /** Restore tabs from saved settings - used on login */
+  restoreFromSettings(tabIds: string[]): void {
+    if (!tabIds || tabIds.length === 0) {
+      // Fall back to default (just Chat)
+      this.resetToChat();
+      return;
+    }
+
+    // Map of tab ID to label
+    const tabLabels: Record<string, string> = {
+      'chat': 'Chat',
+      'meal-planning': 'Meal Planning',
+      'foods': 'Foods',
+      'shop': 'Shopping List',
+      'review': 'Review',
+      'preferences': 'Preferences',
+      'account': 'Account',
+      'help': 'Help'
+    };
+
+    // Create tabs in the order they were saved, but sorted by menuOrder
+    const tabs: Tab[] = [];
+
+    // Sort tab IDs by menu order
+    const sortedTabIds = [...tabIds].sort((a, b) => {
+      const aIndex = this.menuOrder.indexOf(a);
+      const bIndex = this.menuOrder.indexOf(b);
+      return aIndex - bIndex;
+    });
+
+    for (const tabId of sortedTabIds) {
+      const label = tabLabels[tabId];
+      if (label) {
+        tabs.push({
+          id: tabId,
+          label,
+          closeable: true
+        });
+      }
+    }
+
+    if (tabs.length === 0) {
+      // No valid tabs, fall back to default
+      this.resetToChat();
+      return;
+    }
+
+    this.tabsSignal.set(tabs);
+    this.activeTabIndexSignal.set(0);
+    console.log('[TabService] Restored tabs from settings:', tabIds);
+  }
 }

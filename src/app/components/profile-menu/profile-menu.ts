@@ -8,6 +8,7 @@ import { AuthService } from '@auth0/auth0-angular';
 import { SubscriptionService } from '../../services/subscription.service';
 import { TabService } from '../../services/tab.service';
 import { ChatService } from '../../services/chat.service';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
   selector: 'app-profile-menu',
@@ -67,17 +68,29 @@ export class ProfileMenuComponent {
   subscriptionService = inject(SubscriptionService);
   private tabService = inject(TabService);
   private chatService = inject(ChatService);
+  private settingsService = inject(SettingsService);
 
   login(): void {
-    // Reset tabs to have Chat open on login
-    this.tabService.resetToChat();
+    // Just redirect to Auth0 - settings will be loaded after auth completes in app.ts
     this.auth.loginWithRedirect();
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
+    // Save current tabs to settings before logout
+    const openTabs = this.tabService.getOpenTabIds();
+    if (openTabs.length > 0) {
+      try {
+        await this.settingsService.saveOpenTabs(openTabs);
+      } catch (error) {
+        console.error('[ProfileMenu] Failed to save tabs on logout:', error);
+        // Continue with logout even if save fails
+      }
+    }
+
     // Clear all state before logging out
     this.subscriptionService.clearStatus();
     this.chatService.clearSession();
+    this.settingsService.clearSettings();
     this.tabService.closeAllTabs();
     this.auth.logout({ logoutParams: { returnTo: window.location.origin } });
   }

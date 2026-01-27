@@ -11,6 +11,8 @@ import { ChatInputComponent } from './components/chat/chat-input/chat-input';
 import { PaywallComponent } from './components/paywall/paywall';
 import { LoadingOverlayComponent } from './components/loading-overlay/loading-overlay';
 import { SubscriptionService } from './services/subscription.service';
+import { SettingsService } from './services/settings.service';
+import { TabService } from './services/tab.service';
 
 @Component({
   selector: 'app-root',
@@ -53,6 +55,8 @@ import { SubscriptionService } from './services/subscription.service';
 export class AppComponent implements OnInit {
   auth = inject(AuthService);
   subscriptionService = inject(SubscriptionService);
+  private settingsService = inject(SettingsService);
+  private tabService = inject(TabService);
   title = 'yeh-web-app';
 
   ngOnInit(): void {
@@ -63,10 +67,20 @@ export class AppComponent implements OnInit {
       take(1),
       // Once loaded, check if user is authenticated
       switchMap(() => this.auth.isAuthenticated$.pipe(take(1)))
-    ).subscribe((isAuthenticated: boolean) => {
+    ).subscribe(async (isAuthenticated: boolean) => {
       if (isAuthenticated) {
         // Only check subscription status if user is authenticated
         this.subscriptionService.checkSubscriptionStatus().subscribe();
+
+        // Load user settings and restore tabs
+        try {
+          const settings = await this.settingsService.loadSettings();
+          this.tabService.restoreFromSettings(settings.defaultTabs);
+        } catch (error) {
+          console.error('[App] Failed to load settings:', error);
+          // Fall back to default (chat tab)
+          this.tabService.resetToChat();
+        }
       }
       // If not authenticated, do nothing - user will see login button
     });
