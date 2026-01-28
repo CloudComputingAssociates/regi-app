@@ -12,7 +12,7 @@
   flex: 1;
   height: 100%;
   min-height: 0; // Critical for flex child overflow
-  overflow-y: auto;
+  overflow-y: scroll;
   padding: 16px;
   background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
 
