@@ -167,6 +167,13 @@
   flex-direction: column;
 }
 
+.tab-icon {
+  height: 1em;
+  width: auto;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
 .tab-label-text {
   font-size: 12px;  // Reduced from 14px
   font-weight: 500;

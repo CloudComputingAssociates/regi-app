@@ -5,6 +5,7 @@ export interface Tab {
   id: string;
   label: string;
   closeable: boolean;
+  icon?: string;
 }
 
 @Injectable({
@@ -25,6 +26,12 @@ export class TabService {
   // Right nav (profile menu): account, help
   private menuOrder = ['chat', 'meal-planning', 'foods', 'shop', 'review', 'preferences', 'account', 'help'];
 
+  // Tabs that get an icon
+  private tabIcons: Record<string, string> = {
+    'chat': '/images/AI-star.png',
+    'meal-planning': '/images/AI-star.png'
+  };
+
   toggleTab(tabId: string, label: string): void {
     const currentTabs = this.tabsSignal();
     const existingTabIndex = currentTabs.findIndex(t => t.id === tabId);
@@ -34,10 +41,11 @@ export class TabService {
       this.closeTab(tabId);
     } else {
       // Tab doesn't exist - add it in the correct position based on menu order
-      const newTab = {
+      const newTab: Tab = {
         id: tabId,
         label,
-        closeable: true
+        closeable: true,
+        icon: this.tabIcons[tabId]
       };
 
       // Find the correct insertion position based on menu order
@@ -134,7 +142,7 @@ export class TabService {
   /** Reset to initial state with Chat tab open - used on login */
   resetToChat(): void {
     this.tabsSignal.set([
-      { id: 'chat', label: 'Chat', closeable: true }
+      { id: 'chat', label: 'Chat', closeable: true, icon: this.tabIcons['chat'] }
     ]);
     this.activeTabIndexSignal.set(0);
   }
@@ -155,7 +163,7 @@ export class TabService {
     // Map of tab ID to label
     const tabLabels: Record<string, string> = {
       'chat': 'Chat',
-      'meal-planning': 'Meal Planning',
+      'meal-planning': 'Regimenu℠',
       'foods': 'Foods',
       'shop': 'Shopping List',
       'review': 'Review',
@@ -180,7 +188,8 @@ export class TabService {
         tabs.push({
           id: tabId,
           label,
-          closeable: true
+          closeable: true,
+          icon: this.tabIcons[tabId]
         });
       }
     }
