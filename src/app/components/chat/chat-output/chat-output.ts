@@ -135,8 +135,8 @@ export class ChatOutputComponent {
       this.chatService.messages();
       this.chatService.streamingContent();
 
-      // Scroll to bottom
-      setTimeout(() => this.scrollToBottom(), 0);
+      // Use requestAnimationFrame to scroll after DOM update
+      requestAnimationFrame(() => this.scrollToBottom());
     });
   }
 
