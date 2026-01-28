@@ -74,13 +74,11 @@ export class MarkdownPipe implements PipeTransform {
       <div class="messages-list">
         @for (message of chatService.messages(); track $index) {
           <div class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
-            <div class="message-avatar">
-              @if (message.role === 'user') {
-                <span class="avatar-name">YOU</span>
-              } @else {
+            @if (message.role === 'assistant') {
+              <div class="message-avatar">
                 <img src="/images/YEH3.png" alt="YEH" class="avatar-img" />
-              }
-            </div>
+              </div>
+            }
             <div class="message-content" [innerHTML]="message.content | markdown"></div>
           </div>
         }

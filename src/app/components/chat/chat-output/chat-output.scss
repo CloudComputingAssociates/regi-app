@@ -10,7 +10,6 @@
 
 .chat-output-container {
   flex: 1;
-  height: 100%;
   min-height: 0; // Critical for flex child overflow
   overflow-y: scroll;
   padding: 16px;
