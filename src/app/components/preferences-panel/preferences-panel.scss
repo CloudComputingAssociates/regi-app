@@ -67,6 +67,12 @@
     }
   }
 
+  .ai-btn-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
+
   .save-btn {
     &.has-changes {
       background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%);

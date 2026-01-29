@@ -1,5 +1,5 @@
 // src/app/components/preferences-panel/preferences-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
@@ -144,6 +144,12 @@ import { forkJoin, Observable } from 'rxjs';
           <!-- Action buttons -->
           <div class="action-buttons">
             <button
+              class="icon-btn ai-btn"
+              (click)="openAiChat()"
+              title="AI Chat">
+              <img src="/images/AI-star.png" alt="AI" class="ai-btn-icon" />
+            </button>
+            <button
               class="icon-btn close-btn"
               (click)="close()"
               title="Close without saving">
@@ -199,6 +205,15 @@ export class PreferencesPanelComponent implements OnInit {
   isChatCollapsed = signal(true); // starts collapsed
 
   hasPreferencesMessages = computed(() => this.chatService.preferencesMessages().length > 0);
+
+  constructor() {
+    // Auto-expand chat panel when messages arrive or loading starts
+    effect(() => {
+      if (this.hasPreferencesMessages() || this.chatService.preferencesIsLoading()) {
+        this.isChatCollapsed.set(false);
+      }
+    });
+  }
 
   // Generate 24-hour time options in 30-minute increments
   timeOptions: string[] = Array.from({ length: 48 }, (_, i) => {
@@ -304,6 +319,10 @@ export class PreferencesPanelComponent implements OnInit {
 
   toggleChat(): void {
     this.isChatCollapsed.update(v => !v);
+  }
+
+  openAiChat(): void {
+    this.isChatCollapsed.set(false);
   }
 
   onFoodSelected(event: SelectedFoodEvent): void {
