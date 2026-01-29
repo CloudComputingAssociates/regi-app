@@ -31,6 +31,29 @@ import { forkJoin, Observable } from 'rxjs';
       }
 
       <div class="panel-content">
+        <!-- Action buttons - floating overlay -->
+        <div class="action-buttons">
+          <button
+            class="icon-btn ai-btn"
+            (click)="openAiChat()"
+            title="AI Chat">
+            <img src="/images/AI-star.png" alt="AI" class="ai-btn-icon" />
+          </button>
+          <button
+            class="icon-btn close-btn"
+            (click)="close()"
+            title="Close without saving">
+            ✕
+          </button>
+          <button
+            class="icon-btn save-btn"
+            [class.has-changes]="hasAnyChanges()"
+            (click)="saveAndClose()"
+            title="Save and close">
+            ✓
+          </button>
+        </div>
+
         <!-- Settings Section - two columns -->
         <div class="settings-section">
           <!-- Left column: Nutrition Targets -->
@@ -141,28 +164,6 @@ import { forkJoin, Observable } from 'rxjs';
             </div>
           </div>
 
-          <!-- Action buttons -->
-          <div class="action-buttons">
-            <button
-              class="icon-btn ai-btn"
-              (click)="openAiChat()"
-              title="AI Chat">
-              <img src="/images/AI-star.png" alt="AI" class="ai-btn-icon" />
-            </button>
-            <button
-              class="icon-btn close-btn"
-              (click)="close()"
-              title="Close without saving">
-              ✕
-            </button>
-            <button
-              class="icon-btn save-btn"
-              [class.has-changes]="hasAnyChanges()"
-              (click)="saveAndClose()"
-              title="Save and close">
-              ✓
-            </button>
-          </div>
         </div>
 
         <!-- Foods Section -->
@@ -177,7 +178,7 @@ import { forkJoin, Observable } from 'rxjs';
       </div>
 
       <!-- Mini chat panel (bottom-attached, collapsible, starts collapsed) -->
-      @if (hasPreferencesMessages() || chatService.preferencesIsLoading()) {
+      @if (showChatPanel()) {
         <div class="mini-chat-panel" [class.collapsed]="isChatCollapsed()">
           <button class="mini-chat-toggle" (click)="toggleChat()">
             <span class="toggle-icon">{{ isChatCollapsed() ? '▲' : '▼' }}</span>
@@ -203,8 +204,10 @@ export class PreferencesPanelComponent implements OnInit {
   showConfirmDialog = signal(false);
   settingsChanged = signal(false);
   isChatCollapsed = signal(true); // starts collapsed
+  chatManuallyOpened = signal(false);
 
   hasPreferencesMessages = computed(() => this.chatService.preferencesMessages().length > 0);
+  showChatPanel = computed(() => this.chatManuallyOpened() || this.hasPreferencesMessages() || this.chatService.preferencesIsLoading());
 
   constructor() {
     // Auto-expand chat panel when messages arrive or loading starts
@@ -322,6 +325,7 @@ export class PreferencesPanelComponent implements OnInit {
   }
 
   openAiChat(): void {
+    this.chatManuallyOpened.set(true);
     this.isChatCollapsed.set(false);
   }
 

@@ -16,14 +16,15 @@
   flex-direction: column;
 }
 
-// Action buttons - icon style
+// Action buttons - floating overlay
 .action-buttons {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
   display: flex;
   gap: 8px;
   align-items: center;
-  align-self: flex-start;
-  margin-left: auto;
-  padding-right: 4px;
 
   .icon-btn {
     font-size: 18px;
@@ -178,6 +179,7 @@
 }
 
 .panel-content {
+  position: relative;
   flex: 1;
   padding: 12px;
   display: flex;
@@ -201,45 +203,25 @@
     padding: 10px 16px 10px 10px;
     overflow-x: auto;
 
-    // Scrollbar styling
+    // Scrollbar styling - always visible
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.1);
 
     &::-webkit-scrollbar {
       height: 6px;
     }
 
     &::-webkit-scrollbar-track {
-      background: transparent;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
     }
 
     &::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.4);
       border-radius: 3px;
 
       &:hover {
         background: rgba(255, 255, 255, 0.5);
-      }
-    }
-
-    // Desktop only: hide scrollbar when not hovering
-    @media (hover: hover) and (pointer: fine) {
-      &:not(:hover)::-webkit-scrollbar-thumb {
-        background: transparent;
-      }
-    }
-
-    // Touch/mobile devices: always show scrollbar
-    @media (hover: none), (pointer: coarse) {
-      scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.1);
-
-      &::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.4);
       }
     }
   }
