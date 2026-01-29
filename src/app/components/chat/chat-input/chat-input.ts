@@ -1,10 +1,11 @@
 // src/app/components/chat/chat-input/chat-input.ts
-import { Component, signal, ChangeDetectionStrategy, output, inject } from '@angular/core';
+import { Component, signal, computed, ChangeDetectionStrategy, output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ChatService } from '../../../services/chat.service';
+import { ChatService, ChatContext } from '../../../services/chat.service';
+import { TabService } from '../../../services/tab.service';
 
 @Component({
   selector: 'app-chat-input',
@@ -59,6 +60,7 @@ import { ChatService } from '../../../services/chat.service';
 })
 export class ChatInputComponent {
   chatService = inject(ChatService);
+  private tabService = inject(TabService);
 
   messageText = '';
   placeholder = signal('yeh? ');
@@ -67,6 +69,12 @@ export class ChatInputComponent {
   messageSubmit = output<string>();
   promptMeToggle = output<boolean>();
   ttsToggle = output<boolean>();
+
+  /** Determine chat context from active tab */
+  private activeContext = computed((): ChatContext => {
+    const tabId = this.tabService.activeTabId();
+    return tabId === 'meal-planning' ? 'regimenu' : 'chat';
+  });
 
   togglePromptMe(): void {
     this.chatService.togglePromptMe();
@@ -89,9 +97,9 @@ export class ChatInputComponent {
 
   submitMessage(): void {
     const text = this.messageText.trim();
-    if (text && !this.chatService.isLoading()) {
-      // Send directly to chat service
-      this.chatService.sendMessage(text);
+    const ctx = this.activeContext();
+    if (text && !this.chatService.getIsLoading(ctx)) {
+      this.chatService.sendMessage(text, ctx);
       this.messageSubmit.emit(text);
       this.messageText = '';
     }

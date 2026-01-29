@@ -6,11 +6,13 @@ import {
   ElementRef,
   viewChild,
   effect,
+  input,
+  computed,
   Pipe,
   PipeTransform
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ChatService } from '../../../services/chat.service';
+import { ChatService, ChatContext } from '../../../services/chat.service';
 
 /**
  * Simple markdown pipe for basic formatting
@@ -72,7 +74,7 @@ export class MarkdownPipe implements PipeTransform {
   template: `
     <div class="chat-output-container" #scrollContainer>
       <div class="messages-list">
-        @for (message of chatService.messages(); track $index) {
+        @for (message of contextMessages(); track $index) {
           <div class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
             @if (message.role === 'assistant') {
               <div class="message-avatar">
@@ -84,19 +86,19 @@ export class MarkdownPipe implements PipeTransform {
         }
 
         <!-- Streaming response -->
-        @if (chatService.streamingContent()) {
+        @if (contextStreamingContent()) {
           <div class="message assistant streaming">
             <div class="message-avatar">
               <img src="/images/YEH3.png" alt="YEH" class="avatar-img" />
             </div>
-            <div class="message-content" [innerHTML]="chatService.streamingContent() | markdown">
+            <div class="message-content" [innerHTML]="contextStreamingContent() | markdown">
             </div>
             <span class="typing-indicator">▋</span>
           </div>
         }
 
         <!-- Loading indicator when waiting for stream to start -->
-        @if (chatService.isLoading() && !chatService.streamingContent()) {
+        @if (contextIsLoading() && !contextStreamingContent()) {
           <div class="message assistant loading">
             <div class="message-avatar">
               <img src="/images/YEH3.png" alt="YEH" class="avatar-img" />
@@ -109,8 +111,8 @@ export class MarkdownPipe implements PipeTransform {
           </div>
         }
 
-        <!-- Empty state -->
-        @if (chatService.messages().length === 0 && !chatService.isLoading()) {
+        <!-- Empty state (only for full chat, not condensed) -->
+        @if (!condensed() && contextMessages().length === 0 && !contextIsLoading()) {
           <div class="empty-state">
             <img src="/images/YEH3.png" alt="YEH" class="empty-logo" />
             <p class="empty-text">Ask me anything about nutrition!</p>
@@ -119,21 +121,44 @@ export class MarkdownPipe implements PipeTransform {
       </div>
     </div>
   `,
+  host: {
+    '[class.condensed]': 'condensed()'
+  },
   styleUrls: ['./chat-output.scss']
 })
 export class ChatOutputComponent {
   chatService = inject(ChatService);
+
+  /** Which chat context to display */
+  context = input<ChatContext>('chat');
+
+  /** Whether to use condensed styling */
+  condensed = input(false);
+
+  /** Context-aware computed signals */
+  contextMessages = computed(() => {
+    const ctx = this.context();
+    return ctx === 'regimenu' ? this.chatService.regimenuMessages() : this.chatService.messages();
+  });
+
+  contextStreamingContent = computed(() => {
+    const ctx = this.context();
+    return ctx === 'regimenu' ? this.chatService.regimenuStreamingContent() : this.chatService.streamingContent();
+  });
+
+  contextIsLoading = computed(() => {
+    const ctx = this.context();
+    return ctx === 'regimenu' ? this.chatService.regimenuIsLoading() : this.chatService.isLoading();
+  });
 
   private scrollContainer = viewChild<ElementRef<HTMLDivElement>>('scrollContainer');
 
   constructor() {
     // Auto-scroll to bottom when messages change or streaming updates
     effect(() => {
-      // Track these signals to trigger effect
-      this.chatService.messages();
-      this.chatService.streamingContent();
+      this.contextMessages();
+      this.contextStreamingContent();
 
-      // Use requestAnimationFrame to scroll after DOM update
       requestAnimationFrame(() => this.scrollToBottom());
     });
   }

@@ -1,5 +1,5 @@
 // src/app/services/tab.service.ts
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 
 export interface Tab {
   id: string;
@@ -20,6 +20,13 @@ export class TabService {
   // Expose signals as readonly
   tabs = this.tabsSignal.asReadonly();
   activeTabIndex = this.activeTabIndexSignal.asReadonly();
+
+  /** The ID of the currently active tab */
+  activeTabId = computed(() => {
+    const index = this.activeTabIndexSignal();
+    const allTabs = this.tabsSignal();
+    return allTabs[index]?.id ?? null;
+  });
 
   // Define menu order - this determines tab insertion order
   // Left nav: meal-planning, foods, shop (Shopping List), review, preferences

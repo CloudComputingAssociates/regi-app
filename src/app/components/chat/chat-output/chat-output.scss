@@ -246,6 +246,61 @@
   }
 }
 
+// Condensed mode (for Regimenu mini chat)
+:host.condensed {
+  .chat-output-container {
+    padding: 8px;
+  }
+
+  .messages-list {
+    gap: 8px;
+  }
+
+  .message {
+    max-width: 90%;
+    gap: 6px;
+  }
+
+  .message-avatar {
+    .avatar-img {
+      height: 20px;
+    }
+  }
+
+  .message-content {
+    padding: 6px 10px;
+    font-size: 11px;
+    line-height: 1.4;
+
+    pre {
+      padding: 6px;
+      margin: 4px 0;
+
+      code {
+        font-size: 10px;
+      }
+    }
+
+    code.inline {
+      font-size: 10px;
+      padding: 1px 4px;
+    }
+
+    ul, ol {
+      margin: 4px 0;
+      padding-left: 16px;
+
+      li {
+        margin: 2px 0;
+      }
+    }
+  }
+
+  .loading-dots span {
+    font-size: 18px;
+  }
+}
+
 // Responsive
 @media (max-width: 480px) {
   .chat-output-container {

@@ -1,5 +1,5 @@
 // src/app/services/chat.service.ts
-// Unified chat service: status, AI streaming, session management
+// Unified chat service: status, AI streaming, multi-context session management
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '@auth0/auth0-angular';
@@ -14,12 +14,43 @@ import {
   SessionStatus
 } from '../models/generated/chat.schema';
 
-const SESSION_STORAGE_KEY = 'yeh_chat_session_id';
+export type ChatContext = 'chat' | 'regimenu';
+
 const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+const STORAGE_KEYS: Record<ChatContext, string> = {
+  chat: 'yeh_chat_session_id',
+  regimenu: 'yeh_regimenu_session_id'
+};
+
+const SESSION_TYPES: Record<ChatContext, 'CHAT' | 'REGIMENU'> = {
+  chat: 'CHAT',
+  regimenu: 'REGIMENU'
+};
 
 interface StoredSession {
   sessionId: string;
-  lastActivity: number; // timestamp
+  lastActivity: number;
+}
+
+interface ContextState {
+  messages: ChatMessage[];
+  streamingContent: string;
+  isLoading: boolean;
+  sessionId: string | null;
+  tokensRemaining: number;
+  sessionStatus: SessionStatus;
+}
+
+function createDefaultState(): ContextState {
+  return {
+    messages: [],
+    streamingContent: '',
+    isLoading: false,
+    sessionId: null,
+    tokensRemaining: 28000,
+    sessionStatus: 'ACTIVE'
+  };
 }
 
 @Injectable({
@@ -67,29 +98,66 @@ export class ChatService {
   }
 
   // ============================================
-  // CHAT STATE
+  // MULTI-CONTEXT CHAT STATE
   // ============================================
 
-  /** All messages in current conversation */
-  messages = signal<ChatMessage[]>([]);
+  /** Per-context state signals */
+  private chatState = signal<ContextState>(createDefaultState());
+  private regimenuState = signal<ContextState>(createDefaultState());
 
-  /** Current streaming content (while receiving) */
-  streamingContent = signal<string>('');
+  /** Get state signal for a context */
+  private getStateSignal(ctx: ChatContext) {
+    return ctx === 'regimenu' ? this.regimenuState : this.chatState;
+  }
 
-  /** Whether a request is in progress */
-  isLoading = signal(false);
+  // --- Public accessors per context ---
 
-  /** Current session ID */
-  private sessionId = signal<string | null>(null);
+  /** Get messages for a context */
+  getMessages(ctx: ChatContext) {
+    return this.getStateSignal(ctx)().messages;
+  }
 
-  /** Tokens remaining in context window */
-  tokensRemaining = signal<number>(28000); // PracticalLimit from API
+  /** Get streaming content for a context */
+  getStreamingContent(ctx: ChatContext) {
+    return this.getStateSignal(ctx)().streamingContent;
+  }
 
-  /** Session status */
-  sessionStatus = signal<SessionStatus>('ACTIVE');
+  /** Get loading state for a context */
+  getIsLoading(ctx: ChatContext) {
+    return this.getStateSignal(ctx)().isLoading;
+  }
+
+  // --- Backward-compatible signals for Chat tab (default context) ---
+
+  /** All messages in current chat conversation */
+  messages = computed(() => this.chatState().messages);
+
+  /** Current streaming content for chat */
+  streamingContent = computed(() => this.chatState().streamingContent);
+
+  /** Whether chat request is in progress */
+  isLoading = computed(() => this.chatState().isLoading);
+
+  /** Tokens remaining for chat */
+  tokensRemaining = computed(() => this.chatState().tokensRemaining);
+
+  /** Session status for chat */
+  sessionStatus = computed(() => this.chatState().sessionStatus);
+
+  // --- Regimenu signals ---
+
+  /** Regimenu messages */
+  regimenuMessages = computed(() => this.regimenuState().messages);
+
+  /** Regimenu streaming content */
+  regimenuStreamingContent = computed(() => this.regimenuState().streamingContent);
+
+  /** Regimenu loading state */
+  regimenuIsLoading = computed(() => this.regimenuState().isLoading);
 
   constructor() {
-    this.loadSession();
+    this.loadSession('chat');
+    this.loadSession('regimenu');
   }
 
   // ============================================
@@ -97,48 +165,49 @@ export class ChatService {
   // ============================================
 
   /** Load session from localStorage if valid */
-  private loadSession(): void {
+  private loadSession(ctx: ChatContext): void {
     try {
-      const stored = localStorage.getItem(SESSION_STORAGE_KEY);
+      const stored = localStorage.getItem(STORAGE_KEYS[ctx]);
       if (stored) {
         const session: StoredSession = JSON.parse(stored);
         const elapsed = Date.now() - session.lastActivity;
 
         if (elapsed < SESSION_TIMEOUT_MS) {
-          this.sessionId.set(session.sessionId);
-          // Optionally load message history from API
-          this.loadSessionHistory(session.sessionId);
+          this.updateState(ctx, { sessionId: session.sessionId });
+          this.loadSessionHistory(ctx, session.sessionId);
         } else {
-          // Session timed out
-          this.clearSession();
+          this.clearContextSession(ctx);
         }
       }
     } catch {
-      this.clearSession();
+      this.clearContextSession(ctx);
     }
   }
 
-  /** Save session to localStorage */
-  private saveSession(id: string): void {
+  /** Save session to localStorage for a context */
+  private saveContextSession(ctx: ChatContext, id: string): void {
     const session: StoredSession = {
       sessionId: id,
       lastActivity: Date.now()
     };
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-    this.sessionId.set(id);
+    localStorage.setItem(STORAGE_KEYS[ctx], JSON.stringify(session));
+    this.updateState(ctx, { sessionId: id });
   }
 
-  /** Clear session from localStorage */
+  /** Clear session for a specific context */
+  clearContextSession(ctx: ChatContext): void {
+    localStorage.removeItem(STORAGE_KEYS[ctx]);
+    const stateSignal = this.getStateSignal(ctx);
+    stateSignal.set(createDefaultState());
+  }
+
+  /** Clear the default chat session (backward compat) */
   clearSession(): void {
-    localStorage.removeItem(SESSION_STORAGE_KEY);
-    this.sessionId.set(null);
-    this.messages.set([]);
-    this.sessionStatus.set('ACTIVE');
-    this.tokensRemaining.set(28000);
+    this.clearContextSession('chat');
   }
 
   /** Load message history for existing session */
-  private async loadSessionHistory(sessionId: string): Promise<void> {
+  private async loadSessionHistory(ctx: ChatContext, sessionId: string): Promise<void> {
     try {
       const token = await firstValueFrom(this.auth.getAccessTokenSilently());
       const url = `${this.baseUrl}/ai/chat/sessions/${sessionId}`;
@@ -149,19 +218,19 @@ export class ChatService {
 
       if (response.ok) {
         const session = await response.json();
-        // Filter out system messages for display
         const displayMessages = session.messages.filter(
           (m: ChatMessage) => m.role !== 'system'
         );
-        this.messages.set(displayMessages);
-        this.sessionStatus.set(session.status);
+        this.updateState(ctx, {
+          messages: displayMessages,
+          sessionStatus: session.status
+        });
       } else if (response.status === 404) {
-        // Session not found, start fresh
-        this.clearSession();
+        this.clearContextSession(ctx);
       }
     } catch (error) {
-      console.error('Failed to load session history:', error);
-      this.clearSession();
+      console.error(`Failed to load ${ctx} session history:`, error);
+      this.clearContextSession(ctx);
     }
   }
 
@@ -169,34 +238,35 @@ export class ChatService {
   // CHAT API - SSE STREAMING
   // ============================================
 
-  /** Send a message and stream the response */
-  async sendMessage(message: string): Promise<void> {
-    if (this.isLoading() || !message.trim()) return;
+  /** Send a message in a specific context */
+  async sendMessage(message: string, ctx: ChatContext = 'chat'): Promise<void> {
+    const state = this.getStateSignal(ctx)();
+    if (state.isLoading || !message.trim()) return;
 
-    this.isLoading.set(true);
-    this.streamingContent.set('');
+    this.updateState(ctx, { isLoading: true, streamingContent: '' });
 
-    // Add user message to display immediately
     const userMessage: ChatMessage = {
       role: 'user',
       content: message.trim()
     };
-    this.messages.update(msgs => [...msgs, userMessage]);
+    this.updateState(ctx, {
+      messages: [...state.messages, userMessage]
+    });
 
     try {
       const token = await firstValueFrom(this.auth.getAccessTokenSilently());
 
       const request: ChatRequest = {
-        message: message.trim()
+        message: message.trim(),
+        sessionType: SESSION_TYPES[ctx]
       };
 
-      // Include session ID if we have one
-      const currentSessionId = this.sessionId();
+      const currentSessionId = this.getStateSignal(ctx)().sessionId;
       if (currentSessionId) {
         request.sessionId = currentSessionId;
-        console.log('[ChatService] Sending message with sessionId:', currentSessionId);
+        console.log(`[ChatService:${ctx}] Sending message with sessionId:`, currentSessionId);
       } else {
-        console.log('[ChatService] Sending message - new session (no sessionId)');
+        console.log(`[ChatService:${ctx}] Sending message - new session`);
       }
 
       const response = await fetch(`${this.baseUrl}/ai/chat/stream`, {
@@ -212,21 +282,22 @@ export class ChatService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      await this.processSSEStream(response);
+      await this.processSSEStream(response, ctx);
 
     } catch (error) {
-      console.error('Chat error:', error);
+      console.error(`${ctx} chat error:`, error);
       this.notification.show('Failed to send message. Please try again.', 'error');
 
       // Remove the user message on error
-      this.messages.update(msgs => msgs.slice(0, -1));
+      const currentMessages = this.getStateSignal(ctx)().messages;
+      this.updateState(ctx, { messages: currentMessages.slice(0, -1) });
     } finally {
-      this.isLoading.set(false);
+      this.updateState(ctx, { isLoading: false });
     }
   }
 
   /** Process SSE stream from response */
-  private async processSSEStream(response: Response): Promise<void> {
+  private async processSSEStream(response: Response, ctx: ChatContext): Promise<void> {
     const reader = response.body?.getReader();
     if (!reader) throw new Error('No response body');
 
@@ -241,9 +312,8 @@ export class ChatService {
 
         buffer += decoder.decode(value, { stream: true });
 
-        // Process complete SSE events
         const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -251,21 +321,23 @@ export class ChatService {
             if (jsonStr) {
               try {
                 const event: StreamEvent = JSON.parse(jsonStr);
-                this.handleStreamEvent(event, fullContent);
+                this.handleStreamEvent(event, ctx);
 
                 if (event.type === 'content' && event.delta) {
                   fullContent += event.delta;
-                  this.streamingContent.set(fullContent);
+                  this.updateState(ctx, { streamingContent: fullContent });
                 }
 
                 if (event.type === 'done') {
-                  // Finalize the assistant message
                   const assistantMessage: ChatMessage = {
                     role: 'assistant',
                     content: fullContent
                   };
-                  this.messages.update(msgs => [...msgs, assistantMessage]);
-                  this.streamingContent.set('');
+                  const currentMessages = this.getStateSignal(ctx)().messages;
+                  this.updateState(ctx, {
+                    messages: [...currentMessages, assistantMessage],
+                    streamingContent: ''
+                  });
                 }
               } catch (parseError) {
                 console.warn('Failed to parse SSE event:', jsonStr);
@@ -280,42 +352,40 @@ export class ChatService {
   }
 
   /** Handle individual stream events */
-  private handleStreamEvent(event: StreamEvent, currentContent: string): void {
-    // Always use backend's sessionId as source of truth
+  private handleStreamEvent(event: StreamEvent, ctx: ChatContext): void {
     if (event.sessionId) {
-      this.saveSession(event.sessionId);
-    } else if (this.sessionId()) {
-      // Update activity timestamp for events without sessionId
-      this.saveSession(this.sessionId()!);
-    }
-
-    // Debug: Log session tracking on done events
-    if (event.type === 'done') {
-      console.log('[ChatService] Stream done - sessionId:', this.sessionId(), 'status:', event.sessionStatus);
+      this.saveContextSession(ctx, event.sessionId);
+    } else {
+      const currentId = this.getStateSignal(ctx)().sessionId;
+      if (currentId) {
+        this.saveContextSession(ctx, currentId);
+      }
     }
 
     if (event.type === 'done') {
-      // Update context tracking
+      console.log(`[ChatService:${ctx}] Stream done - sessionId:`, this.getStateSignal(ctx)().sessionId, 'status:', event.sessionStatus);
+
+      const updates: Partial<ContextState> = {};
       if (event.tokensRemaining !== undefined) {
-        this.tokensRemaining.set(event.tokensRemaining);
+        updates.tokensRemaining = event.tokensRemaining;
       }
-
       if (event.sessionStatus) {
-        this.sessionStatus.set(event.sessionStatus);
+        updates.sessionStatus = event.sessionStatus;
+      }
+      if (Object.keys(updates).length > 0) {
+        this.updateState(ctx, updates);
       }
 
-      // Show context warnings
       if (event.contextWarning) {
         this.notification.show(event.contextWarning, 'warning');
       }
 
-      // Handle session status changes
       if (event.sessionStatus === 'CONTEXT_LIMIT_REACHED') {
         this.notification.show('Context limit reached. Starting a new session.', 'warning');
-        this.clearSession();
+        this.clearContextSession(ctx);
       } else if (event.sessionStatus === 'TIMEOUT_INACTIVE') {
         this.notification.show('Session timed out. Starting a new session.', 'warning');
-        this.clearSession();
+        this.clearContextSession(ctx);
       }
     }
 
@@ -326,17 +396,26 @@ export class ChatService {
   }
 
   // ============================================
+  // STATE HELPERS
+  // ============================================
+
+  private updateState(ctx: ChatContext, partial: Partial<ContextState>): void {
+    const stateSignal = this.getStateSignal(ctx);
+    stateSignal.update(current => ({ ...current, ...partial }));
+  }
+
+  // ============================================
   // UTILITY METHODS
   // ============================================
 
-  /** Start a new conversation */
-  startNewConversation(): void {
-    this.clearSession();
+  /** Start a new conversation for a context */
+  startNewConversation(ctx: ChatContext = 'chat'): void {
+    this.clearContextSession(ctx);
     this.notification.show('Started new conversation', 'success');
   }
 
   /** Get current session ID (for debugging/display) */
-  getCurrentSessionId(): string | null {
-    return this.sessionId();
+  getCurrentSessionId(ctx: ChatContext = 'chat'): string | null {
+    return this.getStateSignal(ctx)().sessionId;
   }
 }
