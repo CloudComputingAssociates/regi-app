@@ -16,11 +16,11 @@
   flex-direction: column;
 }
 
-// Action buttons - floating overlay
+// Action buttons - floating overlay at bottom-right of settings area
 .action-buttons {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  bottom: 10px;
+  right: 6px;
   z-index: 10;
   display: flex;
   gap: 8px;
@@ -179,7 +179,6 @@
 }
 
 .panel-content {
-  position: relative;
   flex: 1;
   padding: 12px;
   display: flex;
@@ -188,6 +187,11 @@
   gap: 12px;
   min-height: 0;
   overflow: hidden;
+
+  .settings-wrapper {
+    position: relative;
+    flex-shrink: 0;
+  }
 
   // Settings Section - scrollable with compact columns
   .settings-section {

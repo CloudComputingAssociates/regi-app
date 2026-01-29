@@ -7,13 +7,14 @@ import { ChatService } from '../../services/chat.service';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { PreferencesService, MealsPerDay, FastingType, DailyGoals, RepeatMeals, FoodListSource } from '../../services/preferences.service';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FoodsComponent, SelectedFoodEvent } from '../foods/foods';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
 import { forkJoin, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-preferences-panel',
-  imports: [CommonModule, FormsModule, FoodsComponent, ChatOutputComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, FoodsComponent, ChatOutputComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
@@ -31,31 +32,36 @@ import { forkJoin, Observable } from 'rxjs';
       }
 
       <div class="panel-content">
-        <!-- Action buttons - floating overlay -->
-        <div class="action-buttons">
-          <button
-            class="icon-btn ai-btn"
-            (click)="openAiChat()"
-            title="AI Chat">
-            <img src="/images/AI-star.png" alt="AI" class="ai-btn-icon" />
-          </button>
-          <button
-            class="icon-btn close-btn"
-            (click)="close()"
-            title="Close without saving">
-            ✕
-          </button>
-          <button
-            class="icon-btn save-btn"
-            [class.has-changes]="hasAnyChanges()"
-            (click)="saveAndClose()"
-            title="Save and close">
-            ✓
-          </button>
-        </div>
-
-        <!-- Settings Section - two columns -->
-        <div class="settings-section">
+        <!-- Settings Section wrapper with floating buttons -->
+        <div class="settings-wrapper">
+          <div class="action-buttons">
+            <button
+              class="icon-btn ai-btn"
+              (click)="openAiChat()"
+              matTooltip="AI assist"
+              matTooltipPosition="above"
+              [matTooltipShowDelay]="300">
+              <img src="/images/AI-star.png" alt="AI" class="ai-btn-icon" />
+            </button>
+            <button
+              class="icon-btn close-btn"
+              (click)="close()"
+              matTooltip="Close"
+              matTooltipPosition="above"
+              [matTooltipShowDelay]="300">
+              ✕
+            </button>
+            <button
+              class="icon-btn save-btn"
+              [class.has-changes]="hasAnyChanges()"
+              (click)="saveAndClose()"
+              matTooltip="Save"
+              matTooltipPosition="above"
+              [matTooltipShowDelay]="300">
+              ✓
+            </button>
+          </div>
+          <div class="settings-section">
           <!-- Left column: Nutrition Targets -->
           <div class="targets-column">
             <span class="column-label">Nutrition Targets</span>
@@ -164,6 +170,7 @@ import { forkJoin, Observable } from 'rxjs';
             </div>
           </div>
 
+          </div>
         </div>
 
         <!-- Foods Section -->
