@@ -12,17 +12,17 @@ import { TabService } from '../../services/tab.service';
       <!-- Action buttons - top right -->
       <div class="action-buttons">
         <button
-          class="icon-btn close-btn"
-          (click)="close()"
-          title="Close">
-          ✕
-        </button>
-        <button
           class="icon-btn save-btn"
           [class.has-changes]="hasChanges()"
           (click)="saveAndClose()"
           title="Save and close">
           ✓
+        </button>
+        <button
+          class="icon-btn close-btn"
+          (click)="close()"
+          title="Close">
+          ✕
         </button>
       </div>
 

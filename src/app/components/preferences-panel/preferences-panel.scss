@@ -16,15 +16,19 @@
   flex-direction: column;
 }
 
-// Action buttons - floating overlay at bottom-right of settings area
+// Action buttons - floating top-right of panel
 .action-buttons {
   position: absolute;
-  bottom: 10px;
-  right: 6px;
+  top: 8px;
+  right: 8px;
   z-index: 10;
   display: flex;
   gap: 8px;
   align-items: center;
+
+  .btn-spacer {
+    width: 8px;
+  }
 
   .icon-btn {
     font-size: 18px;

@@ -27,17 +27,17 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
       <!-- Action buttons - top right -->
       <div class="action-buttons">
         <button
-          class="icon-btn close-btn"
-          (click)="close()"
-          title="Close without saving">
-          ✕
-        </button>
-        <button
           class="icon-btn save-btn"
           [class.has-changes]="hasChanges()"
           (click)="saveAndClose()"
           title="Save and close">
           ✓
+        </button>
+        <button
+          class="icon-btn close-btn"
+          (click)="close()"
+          title="Close without saving">
+          ✕
         </button>
       </div>
 

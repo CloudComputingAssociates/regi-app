@@ -28,36 +28,38 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
         </div>
       }
 
+      <!-- Action buttons - floating top right -->
+      <div class="action-buttons">
+        <button
+          class="icon-btn ai-btn"
+          (click)="openAiChat()"
+          matTooltip="AI assist"
+          matTooltipPosition="above"
+          [matTooltipShowDelay]="300">
+          <img src="/images/AI-star.png" alt="AI" class="ai-btn-icon" />
+        </button>
+        <span class="btn-spacer"></span>
+        <button
+          class="icon-btn save-btn"
+          [class.has-changes]="hasAnyChanges()"
+          (click)="save()"
+          matTooltip="Save"
+          matTooltipPosition="above"
+          [matTooltipShowDelay]="300">
+          ✓
+        </button>
+        <button
+          class="icon-btn close-btn"
+          (click)="close()"
+          matTooltip="Close"
+          matTooltipPosition="above"
+          [matTooltipShowDelay]="300">
+          ✕
+        </button>
+      </div>
+
       <div class="panel-content">
-        <!-- Settings Section wrapper with floating buttons -->
         <div class="settings-wrapper">
-          <div class="action-buttons">
-            <button
-              class="icon-btn ai-btn"
-              (click)="openAiChat()"
-              matTooltip="AI assist"
-              matTooltipPosition="above"
-              [matTooltipShowDelay]="300">
-              <img src="/images/AI-star.png" alt="AI" class="ai-btn-icon" />
-            </button>
-            <button
-              class="icon-btn close-btn"
-              (click)="close()"
-              matTooltip="Close"
-              matTooltipPosition="above"
-              [matTooltipShowDelay]="300">
-              ✕
-            </button>
-            <button
-              class="icon-btn save-btn"
-              [class.has-changes]="hasAnyChanges()"
-              (click)="saveAndClose()"
-              matTooltip="Save"
-              matTooltipPosition="above"
-              [matTooltipShowDelay]="300">
-              ✓
-            </button>
-          </div>
           <div class="settings-section">
           <!-- Left column: Nutrition Targets -->
           <div class="targets-column">
@@ -258,11 +260,8 @@ export class PreferencesPanelComponent implements OnInit {
     this.settingsChanged.set(true);
   }
 
-  saveAndClose(): void {
-    if (!this.hasAnyChanges()) {
-      this.tabService.closeTab('preferences');
-      return;
-    }
+  save(): void {
+    if (!this.hasAnyChanges()) return;
 
     this.isSaving.set(true);
     this.userSettingsService.savePreferences().subscribe({
@@ -270,7 +269,6 @@ export class PreferencesPanelComponent implements OnInit {
         this.isSaving.set(false);
         this.settingsChanged.set(false);
         this.notificationService.show('Preferences saved', 'success');
-        this.tabService.closeTab('preferences');
       },
       error: () => {
         this.isSaving.set(false);
