@@ -48,12 +48,14 @@ import { NotificationComponent } from '../notification/notification';
           @for (tab of tabService.tabs(); track tab.id; let i = $index) {
             <mat-tab>
               <ng-template mat-tab-label>
-                @if (tab.icon) {
-                  <img [src]="tab.icon" alt="" class="tab-icon" />
-                } @else if (tab.emoji) {
-                  <span class="tab-emoji">{{ tab.emoji }}</span>
-                }
-                <span class="tab-label-text">{{ tab.label }}</span>
+                <span class="tab-label-content">
+                  @if (tab.icon) {
+                    <img [src]="tab.icon" alt="" class="tab-icon" />
+                  } @else if (tab.emoji) {
+                    <span class="tab-emoji">{{ tab.emoji }}</span>
+                  }
+                  <span class="tab-label-text">{{ tab.label }}</span>
+                </span>
               </ng-template>
 
               <div class="tab-content">

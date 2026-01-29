@@ -18,7 +18,7 @@
   // Status header - permanent toast area at top
   .chat-status-header {
     background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
-    padding: 8px 16px;
+    padding: 10px 16px;
     text-align: center;
     border-bottom: 1px solid #5a5a5a;
     flex-shrink: 0;
@@ -43,7 +43,7 @@
   // Action buttons - top right corner
   .action-buttons {
     position: absolute;
-    top: 8px;
+    top: 6px;
     right: 8px;
     z-index: 10;
     display: flex;
