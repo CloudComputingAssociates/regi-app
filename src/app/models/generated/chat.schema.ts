@@ -122,7 +122,7 @@ export interface ChatRequest {
   /**
    * Session type: "CHAT" or "REGIMENU" (defaults to "CHAT")
    */
-  sessionType?: 'CHAT' | 'REGIMENU';
+  sessionType?: 'CHAT' | 'REGIMENU' | 'PREFERENCES';
   [k: string]: unknown;
 }
 /**

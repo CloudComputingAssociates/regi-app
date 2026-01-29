@@ -14,18 +14,20 @@ import {
   SessionStatus
 } from '../models/generated/chat.schema';
 
-export type ChatContext = 'chat' | 'regimenu';
+export type ChatContext = 'chat' | 'regimenu' | 'preferences';
 
 const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
 const STORAGE_KEYS: Record<ChatContext, string> = {
   chat: 'yeh_chat_session_id',
-  regimenu: 'yeh_regimenu_session_id'
+  regimenu: 'yeh_regimenu_session_id',
+  preferences: 'yeh_preferences_session_id'
 };
 
-const SESSION_TYPES: Record<ChatContext, 'CHAT' | 'REGIMENU'> = {
+const SESSION_TYPES: Record<ChatContext, 'CHAT' | 'REGIMENU' | 'PREFERENCES'> = {
   chat: 'CHAT',
-  regimenu: 'REGIMENU'
+  regimenu: 'REGIMENU',
+  preferences: 'PREFERENCES'
 };
 
 interface StoredSession {
@@ -104,10 +106,13 @@ export class ChatService {
   /** Per-context state signals */
   private chatState = signal<ContextState>(createDefaultState());
   private regimenuState = signal<ContextState>(createDefaultState());
+  private preferencesState = signal<ContextState>(createDefaultState());
 
   /** Get state signal for a context */
   private getStateSignal(ctx: ChatContext) {
-    return ctx === 'regimenu' ? this.regimenuState : this.chatState;
+    if (ctx === 'regimenu') return this.regimenuState;
+    if (ctx === 'preferences') return this.preferencesState;
+    return this.chatState;
   }
 
   // --- Public accessors per context ---
@@ -155,9 +160,21 @@ export class ChatService {
   /** Regimenu loading state */
   regimenuIsLoading = computed(() => this.regimenuState().isLoading);
 
+  // --- Preferences signals ---
+
+  /** Preferences messages */
+  preferencesMessages = computed(() => this.preferencesState().messages);
+
+  /** Preferences streaming content */
+  preferencesStreamingContent = computed(() => this.preferencesState().streamingContent);
+
+  /** Preferences loading state */
+  preferencesIsLoading = computed(() => this.preferencesState().isLoading);
+
   constructor() {
     this.loadSession('chat');
     this.loadSession('regimenu');
+    this.loadSession('preferences');
   }
 
   // ============================================

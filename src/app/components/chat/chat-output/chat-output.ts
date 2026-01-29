@@ -138,17 +138,23 @@ export class ChatOutputComponent {
   /** Context-aware computed signals */
   contextMessages = computed(() => {
     const ctx = this.context();
-    return ctx === 'regimenu' ? this.chatService.regimenuMessages() : this.chatService.messages();
+    if (ctx === 'regimenu') return this.chatService.regimenuMessages();
+    if (ctx === 'preferences') return this.chatService.preferencesMessages();
+    return this.chatService.messages();
   });
 
   contextStreamingContent = computed(() => {
     const ctx = this.context();
-    return ctx === 'regimenu' ? this.chatService.regimenuStreamingContent() : this.chatService.streamingContent();
+    if (ctx === 'regimenu') return this.chatService.regimenuStreamingContent();
+    if (ctx === 'preferences') return this.chatService.preferencesStreamingContent();
+    return this.chatService.streamingContent();
   });
 
   contextIsLoading = computed(() => {
     const ctx = this.context();
-    return ctx === 'regimenu' ? this.chatService.regimenuIsLoading() : this.chatService.isLoading();
+    if (ctx === 'regimenu') return this.chatService.regimenuIsLoading();
+    if (ctx === 'preferences') return this.chatService.preferencesIsLoading();
+    return this.chatService.isLoading();
   });
 
   private scrollContainer = viewChild<ElementRef<HTMLDivElement>>('scrollContainer');

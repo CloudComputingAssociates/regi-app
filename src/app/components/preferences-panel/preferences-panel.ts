@@ -1,17 +1,19 @@
 // src/app/components/preferences-panel/preferences-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
+import { ChatService } from '../../services/chat.service';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { PreferencesService, MealsPerDay, FastingType, DailyGoals, RepeatMeals, FoodListSource } from '../../services/preferences.service';
 import { FoodsComponent, SelectedFoodEvent } from '../foods/foods';
+import { ChatOutputComponent } from '../chat/chat-output/chat-output';
 import { forkJoin, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-preferences-panel',
-  imports: [CommonModule, FormsModule, FoodsComponent],
+  imports: [CommonModule, FormsModule, FoodsComponent, ChatOutputComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
@@ -167,12 +169,26 @@ import { forkJoin, Observable } from 'rxjs';
             (selectedFood)="onFoodSelected($event)" />
         </div>
       </div>
+
+      <!-- Mini chat panel (bottom-attached, collapsible, starts collapsed) -->
+      @if (hasPreferencesMessages() || chatService.preferencesIsLoading()) {
+        <div class="mini-chat-panel" [class.collapsed]="isChatCollapsed()">
+          <button class="mini-chat-toggle" (click)="toggleChat()">
+            <span class="toggle-icon">{{ isChatCollapsed() ? '▲' : '▼' }}</span>
+            <span class="toggle-label">AI Chat</span>
+          </button>
+          @if (!isChatCollapsed()) {
+            <app-chat-output context="preferences" [condensed]="true" />
+          }
+        </div>
+      }
     </div>
   `,
   styleUrls: ['./preferences-panel.scss']
 })
 export class PreferencesPanelComponent implements OnInit {
   private tabService = inject(TabService);
+  chatService = inject(ChatService);
   protected preferencesService = inject(FoodPreferencesService);
   protected userSettingsService = inject(PreferencesService);
   private notificationService = inject(NotificationService);
@@ -180,6 +196,9 @@ export class PreferencesPanelComponent implements OnInit {
   isSaving = signal(false);
   showConfirmDialog = signal(false);
   settingsChanged = signal(false);
+  isChatCollapsed = signal(true); // starts collapsed
+
+  hasPreferencesMessages = computed(() => this.chatService.preferencesMessages().length > 0);
 
   // Generate 24-hour time options in 30-minute increments
   timeOptions: string[] = Array.from({ length: 48 }, (_, i) => {
@@ -281,6 +300,10 @@ export class PreferencesPanelComponent implements OnInit {
 
   cancelClose(): void {
     this.showConfirmDialog.set(false);
+  }
+
+  toggleChat(): void {
+    this.isChatCollapsed.update(v => !v);
   }
 
   onFoodSelected(event: SelectedFoodEvent): void {

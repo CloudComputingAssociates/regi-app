@@ -73,7 +73,9 @@ export class ChatInputComponent {
   /** Determine chat context from active tab */
   private activeContext = computed((): ChatContext => {
     const tabId = this.tabService.activeTabId();
-    return tabId === 'meal-planning' ? 'regimenu' : 'chat';
+    if (tabId === 'meal-planning') return 'regimenu';
+    if (tabId === 'preferences') return 'preferences';
+    return 'chat';
   });
 
   togglePromptMe(): void {

@@ -153,6 +153,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.subscriptionService.clearStatus();
     this.chatService.clearSession();
     this.chatService.clearContextSession('regimenu');
+    this.chatService.clearContextSession('preferences');
     this.settingsService.clearSettings();
     this.tabService.closeAllTabs();
 
