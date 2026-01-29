@@ -4,17 +4,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
 import { ChatService } from '../../services/chat.service';
-import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { PreferencesService, MealsPerDay, FastingType, DailyGoals, RepeatMeals, FoodListSource } from '../../services/preferences.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { FoodsComponent, SelectedFoodEvent } from '../foods/foods';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
-import { forkJoin, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-preferences-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, FoodsComponent, ChatOutputComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, ChatOutputComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
@@ -173,15 +170,6 @@ import { forkJoin, Observable } from 'rxjs';
           </div>
         </div>
 
-        <!-- Foods Section -->
-        <div class="foods-section">
-          <app-foods
-            [mode]="'search'"
-            [showAiButton]="false"
-            [showPreferenceIcons]="true"
-            [showFilterRadios]="true"
-            (selectedFood)="onFoodSelected($event)" />
-        </div>
       </div>
 
       <!-- Mini chat panel (bottom-attached, collapsible, starts collapsed) -->
@@ -203,7 +191,6 @@ import { forkJoin, Observable } from 'rxjs';
 export class PreferencesPanelComponent implements OnInit {
   private tabService = inject(TabService);
   chatService = inject(ChatService);
-  protected preferencesService = inject(FoodPreferencesService);
   protected userSettingsService = inject(PreferencesService);
   private notificationService = inject(NotificationService);
 
@@ -238,7 +225,7 @@ export class PreferencesPanelComponent implements OnInit {
   }
 
   hasAnyChanges(): boolean {
-    return this.preferencesService.hasUnsavedChanges() || this.settingsChanged();
+    return this.settingsChanged();
   }
 
   onDailyGoalChange(field: keyof DailyGoals, value: number): void {
@@ -278,23 +265,7 @@ export class PreferencesPanelComponent implements OnInit {
     }
 
     this.isSaving.set(true);
-
-    // Build array of save operations
-    const saveOps: Observable<unknown>[] = [];
-    if (this.preferencesService.hasUnsavedChanges()) {
-      saveOps.push(this.preferencesService.saveAllChanges());
-    }
-    if (this.settingsChanged()) {
-      saveOps.push(this.userSettingsService.savePreferences());
-    }
-
-    if (saveOps.length === 0) {
-      this.isSaving.set(false);
-      this.tabService.closeTab('preferences');
-      return;
-    }
-
-    forkJoin(saveOps).subscribe({
+    this.userSettingsService.savePreferences().subscribe({
       next: () => {
         this.isSaving.set(false);
         this.settingsChanged.set(false);
@@ -317,7 +288,6 @@ export class PreferencesPanelComponent implements OnInit {
   }
 
   confirmClose(): void {
-    this.preferencesService.discardChanges();
     this.settingsChanged.set(false);
     this.showConfirmDialog.set(false);
     this.tabService.closeTab('preferences');
@@ -336,7 +306,4 @@ export class PreferencesPanelComponent implements OnInit {
     this.isChatCollapsed.set(false);
   }
 
-  onFoodSelected(event: SelectedFoodEvent): void {
-    console.log('Food selected in Preferences:', event.description);
-  }
 }

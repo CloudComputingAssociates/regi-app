@@ -6,6 +6,7 @@ export interface Tab {
   label: string;
   closeable: boolean;
   icon?: string;
+  emoji?: string;
 }
 
 @Injectable({
@@ -33,10 +34,18 @@ export class TabService {
   // Right nav (profile menu): account, help
   private menuOrder = ['chat', 'meal-planning', 'foods', 'shop', 'review', 'preferences', 'account', 'help'];
 
-  // Tabs that get an icon
+  // Tabs that get an image icon
   private tabIcons: Record<string, string> = {
     'chat': '/images/AI-star.png',
-    'meal-planning': '/images/AI-star.png'
+    'meal-planning': '/images/AI-star.png',
+    'foods': '/favicon.ico',
+    'preferences': '/images/AI-star.png'
+  };
+
+  // Tabs that get an emoji icon
+  private tabEmojis: Record<string, string> = {
+    'shop': '🛒',
+    'review': '📈'
   };
 
   toggleTab(tabId: string, label: string): void {
@@ -52,7 +61,8 @@ export class TabService {
         id: tabId,
         label,
         closeable: true,
-        icon: this.tabIcons[tabId]
+        icon: this.tabIcons[tabId],
+        emoji: this.tabEmojis[tabId]
       };
 
       // Find the correct insertion position based on menu order
@@ -94,7 +104,9 @@ export class TabService {
         {
           id: tabId,
           label,
-          closeable: true
+          closeable: true,
+          icon: this.tabIcons[tabId],
+          emoji: this.tabEmojis[tabId]
         }
       ]);
       // Switch to the new tab
@@ -196,7 +208,8 @@ export class TabService {
           id: tabId,
           label,
           closeable: true,
-          icon: this.tabIcons[tabId]
+          icon: this.tabIcons[tabId],
+          emoji: this.tabEmojis[tabId]
         });
       }
     }

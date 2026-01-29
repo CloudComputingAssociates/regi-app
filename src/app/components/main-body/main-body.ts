@@ -50,6 +50,8 @@ import { NotificationComponent } from '../notification/notification';
               <ng-template mat-tab-label>
                 @if (tab.icon) {
                   <img [src]="tab.icon" alt="" class="tab-icon" />
+                } @else if (tab.emoji) {
+                  <span class="tab-emoji">{{ tab.emoji }}</span>
                 }
                 <span class="tab-label-text">{{ tab.label }}</span>
               </ng-template>

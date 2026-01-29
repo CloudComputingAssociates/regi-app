@@ -176,7 +176,7 @@
   }
 }
 
-.tts-btn {
+.send-btn {
   flex-shrink: 0;
   width: 36px;
   height: 36px;
@@ -185,7 +185,7 @@
   border-left: 1px solid #5a5a5a;
   border-right: 1px solid #5a5a5a;
   border-bottom: 2px solid #1a1a1a;
-  border-radius: 50%;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow:
@@ -195,16 +195,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3px;
+  padding: 0;
 
-  .tts-icon {
-    width: 24px;
-    height: 24px;
-    display: block;
-    filter: brightness(0) invert(1);
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #ffffff;
   }
 
-  &:hover:not(.active) {
+  &:hover:not(:disabled) {
     background: linear-gradient(180deg, #606060 0%, #454545 100%);
     border-top-color: #757575;
     border-left-color: #656565;
@@ -216,17 +216,15 @@
       0 2px 0 rgba(0, 0, 0, 0.3) inset;
   }
 
-  &.active {
-    background: linear-gradient(180deg, #5ab3ff 0%, #4da6ff 100%);
-    border-color: #4da6ff;
-    box-shadow:
-      0 2px 8px rgba(77, 166, 255, 0.5),
-      0 -1px 0 rgba(255, 255, 255, 0.3) inset,
-      0 1px 0 rgba(0, 0, 0, 0.1) inset;
+  &:active:not(:disabled) {
+    background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
+    border-bottom-width: 1px;
+    transform: translateY(1px);
+  }
 
-    .tts-icon {
-      filter: none;
-    }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   &:focus-visible {
@@ -271,13 +269,14 @@
     }
   }
 
-  .tts-btn {
+  .send-btn {
     width: 32px;
     height: 32px;
 
-    .tts-icon {
-      width: 20px;
-      height: 20px;
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
     }
   }
 }

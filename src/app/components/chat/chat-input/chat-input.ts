@@ -3,13 +3,14 @@ import { Component, signal, computed, ChangeDetectionStrategy, output, inject } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ChatService, ChatContext } from '../../../services/chat.service';
 import { TabService } from '../../../services/tab.service';
 
 @Component({
   selector: 'app-chat-input',
-  imports: [CommonModule, FormsModule, MatButtonModule, MatTooltipModule],
+  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule, MatTooltipModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="chat-input-container">
@@ -22,7 +23,7 @@ import { TabService } from '../../../services/tab.service';
           (click)="togglePromptMe()"
           [disabled]="chatService.isLoading()"
           [attr.aria-label]="chatService.isPromptMeActive() ? 'Stop prompt mode' : 'Start prompt mode'"
-          matTooltip="Reverse: prompt me"
+          matTooltip="Prompt me"
           matTooltipPosition="above"
           [matTooltipShowDelay]="500"
           [matTooltipHideDelay]="5000">
@@ -40,17 +41,16 @@ import { TabService } from '../../../services/tab.service';
           [attr.aria-label]="'Message input'"
           rows="2"></textarea>
 
-        <!-- TTS Button (Right) -->
+        <!-- Send Button (Right) -->
         <button
-          class="tts-btn"
-          [class.active]="isTTSActive()"
-          (click)="toggleTTS()"
-          [attr.aria-label]="isTTSActive() ? 'Disable voice' : 'Enable voice'"
-          matTooltip="Voice input/output"
+          class="send-btn"
+          (click)="submitMessage()"
+          [disabled]="chatService.isLoading()"
+          aria-label="Send message"
+          matTooltip="Send"
           matTooltipPosition="above"
-          [matTooltipShowDelay]="500"
-          [matTooltipHideDelay]="5000">
-          <img src="/images/speak-icon.png" alt="Voice" class="tts-icon" />
+          [matTooltipShowDelay]="500">
+          <mat-icon>keyboard_return</mat-icon>
         </button>
 
       </div>
@@ -64,11 +64,8 @@ export class ChatInputComponent {
 
   messageText = '';
   placeholder = signal('yeh? ');
-  isTTSActive = signal(false);
-
   messageSubmit = output<string>();
   promptMeToggle = output<boolean>();
-  ttsToggle = output<boolean>();
 
   /** Determine chat context from active tab */
   private activeContext = computed((): ChatContext => {
@@ -81,12 +78,6 @@ export class ChatInputComponent {
   togglePromptMe(): void {
     this.chatService.togglePromptMe();
     this.promptMeToggle.emit(this.chatService.isPromptMeActive());
-  }
-
-  toggleTTS(): void {
-    const newMode = !this.isTTSActive();
-    this.isTTSActive.set(newMode);
-    this.ttsToggle.emit(newMode);
   }
 
   onKeyDown(event: KeyboardEvent): void {

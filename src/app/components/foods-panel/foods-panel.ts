@@ -1,45 +1,46 @@
 // src/app/components/foods-panel/foods-panel.ts
 import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FoodsComponent, SelectedFoodEvent, AddFoodEvent } from '../foods/foods';
-import { SelectedFoodsComponent, RemoveFoodEvent } from '../selected-foods/selected-foods';
-import { Food } from '../../models/food.model';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { FoodsComponent, SelectedFoodEvent } from '../foods/foods';
+import { FoodPreferencesService } from '../../services/food-preferences.service';
+import { NotificationService } from '../../services/notification.service';
 import { TabService } from '../../services/tab.service';
 
 @Component({
   selector: 'app-foods-panel',
-  imports: [CommonModule, FoodsComponent, SelectedFoodsComponent],
+  imports: [CommonModule, MatTooltipModule, FoodsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="foods-panel-container">
-      <!-- Close button -->
-      <button type="button" class="close-btn" (click)="closePanel()">✕</button>
-
-      <!-- Top 1/4 - Reserved for filters and selected food display -->
-      <div class="foods-panel-header">
-        <div class="header-placeholder">
-          <p class="header-text">Filters & Selected Food Display</p>
-          <p class="header-subtext">(Coming soon)</p>
-        </div>
-
-        <!-- Blue description label at bottom of header -->
-        @if (selectedDescription()) {
-          <div class="selected-description">
-            {{ selectedDescription() }}
-          </div>
-        }
+      <div class="action-buttons">
+        <button
+          class="icon-btn save-btn"
+          [class.has-changes]="preferencesService.hasUnsavedChanges()"
+          (click)="save()"
+          [disabled]="!preferencesService.hasUnsavedChanges() || isSaving()"
+          matTooltip="Save"
+          matTooltipPosition="above"
+          [matTooltipShowDelay]="300">
+          ✓
+        </button>
+        <button
+          class="icon-btn close-btn"
+          (click)="closePanel()"
+          matTooltip="Close"
+          matTooltipPosition="above"
+          [matTooltipShowDelay]="300">
+          ✕
+        </button>
       </div>
 
-      <!-- Bottom 3/4 - Foods search component (left) and selected foods (right) -->
-      <div class="foods-panel-content">
+      <div class="foods-content">
         <app-foods
           [mode]="'search'"
-          (selectedFood)="onFoodSelected($event)"
-          (addFood)="onAddFood($event)" />
-
-        <app-selected-foods
-          [foods]="selectedFoods()"
-          (removeFood)="onRemoveFood($event)" />
+          [showAiButton]="false"
+          [showPreferenceIcons]="true"
+          [showFilterRadios]="true"
+          (selectedFood)="onFoodSelected($event)" />
       </div>
     </div>
   `,
@@ -47,50 +48,32 @@ import { TabService } from '../../services/tab.service';
 })
 export class FoodsPanelComponent {
   private tabService = inject(TabService);
-  selectedDescription = signal<string>('');
-  selectedFoods = signal<Food[]>([]);
+  protected preferencesService = inject(FoodPreferencesService);
+  private notificationService = inject(NotificationService);
+
+  isSaving = signal(false);
 
   closePanel(): void {
     this.tabService.closeTab('foods');
   }
 
+  save(): void {
+    if (!this.preferencesService.hasUnsavedChanges()) return;
+
+    this.isSaving.set(true);
+    this.preferencesService.saveAllChanges().subscribe({
+      next: () => {
+        this.isSaving.set(false);
+        this.notificationService.show('Food preferences saved', 'success');
+      },
+      error: () => {
+        this.isSaving.set(false);
+        this.notificationService.show('Failed to save food preferences', 'error');
+      }
+    });
+  }
+
   onFoodSelected(event: SelectedFoodEvent): void {
-    console.log('Food selected:', event);
-    console.log('Description:', event.description);
-    console.log('Protein:', event.protein, 'g');
-    console.log('Carbs:', event.carbs, 'g');
-    console.log('Fat:', event.fat, 'g');
-    console.log('Fiber:', event.fiber, 'g');
-
-    // Update the selected description
-    this.selectedDescription.set(event.description);
-  }
-
-  onAddFood(event: AddFoodEvent): void {
-    this.addToSelectedFoods(event.food);
-  }
-
-  onRemoveFood(event: RemoveFoodEvent): void {
-    this.removeFromSelectedFoods(event.food);
-  }
-
-  private addToSelectedFoods(food: Food): void {
-    // Check if food is already in selected foods (prevent duplicates)
-    const currentFoods = this.selectedFoods();
-    const alreadyExists = currentFoods.some(f => f.id === food.id);
-
-    if (!alreadyExists) {
-      this.selectedFoods.set([...currentFoods, food]);
-      console.log('Added food to selected foods:', food.description);
-    } else {
-      console.log('Food already in selected foods:', food.description);
-    }
-  }
-
-  private removeFromSelectedFoods(food: Food): void {
-    const currentFoods = this.selectedFoods();
-    const updatedFoods = currentFoods.filter(f => f.id !== food.id);
-    this.selectedFoods.set(updatedFoods);
-    console.log('Removed food from selected foods:', food.description);
+    console.log('Food selected in Foods tab:', event.description);
   }
 }
