@@ -1,7 +1,8 @@
 // src/app/app.ts
 // Main App Component - Modern Angular with Material Design
-import { Component, ChangeDetectionStrategy, inject, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, OnDestroy } from '@angular/core';
 import { AuthService } from '@auth0/auth0-angular';
+import { Subscription } from 'rxjs';
 import { take, switchMap, filter } from 'rxjs/operators';
 import { MacrosComponent } from './components/macros/macros';
 import { AppBarComponent } from './components/app-bar/app-bar';
@@ -13,6 +14,8 @@ import { LoadingOverlayComponent } from './components/loading-overlay/loading-ov
 import { SubscriptionService } from './services/subscription.service';
 import { SettingsService } from './services/settings.service';
 import { TabService } from './services/tab.service';
+import { ChatService } from './services/chat.service';
+import { NotificationService } from './services/notification.service';
 
 @Component({
   selector: 'app-root',
@@ -52,14 +55,30 @@ import { TabService } from './services/tab.service';
   `,
   styleUrls: ['./app.scss']
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
   subscriptionService = inject(SubscriptionService);
   private settingsService = inject(SettingsService);
   private tabService = inject(TabService);
+  private chatService = inject(ChatService);
+  private notification = inject(NotificationService);
+  private errorSub?: Subscription;
   title = 'yeh-web-app';
 
+  ngOnDestroy(): void {
+    this.errorSub?.unsubscribe();
+  }
+
   ngOnInit(): void {
+    // Listen for Auth0 errors (e.g. missing/expired refresh token) and auto-logout
+    this.errorSub = this.auth.error$.subscribe(error => {
+      console.error('[Auth0] Error:', error);
+      if (error?.message?.includes('Missing Refresh Token') ||
+          error?.message?.includes('invalid_grant') ||
+          error?.message?.includes('Login required')) {
+        this.handleSessionExpired();
+      }
+    });
     // Wait for Auth0 to finish loading, then check subscription status only if authenticated
     this.auth.isLoading$.pipe(
       // Wait for Auth0 to finish loading (isLoading$ becomes false)
@@ -125,5 +144,21 @@ export class AppComponent implements OnInit {
 
     // Show gate only if authenticated AND no active subscription
     return isAuthenticated && status !== null && !status.hasActiveSubscription;
+  }
+
+  private handleSessionExpired(): void {
+    this.notification.show('Your session has expired. Logging out...', 'warning');
+
+    // Clear all state
+    this.subscriptionService.clearStatus();
+    this.chatService.clearSession();
+    this.chatService.clearContextSession('regimenu');
+    this.settingsService.clearSettings();
+    this.tabService.closeAllTabs();
+
+    // Auto-logout after a brief delay so user sees the notification
+    setTimeout(() => {
+      this.auth.logout({ logoutParams: { returnTo: window.location.origin } });
+    }, 2000);
   }
 }

@@ -279,6 +279,11 @@ export class ChatService {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          // Token expired - Auth0 error$ listener in app.ts will handle logout.
+          // Trigger a silent token refresh attempt to surface the error.
+          this.auth.getAccessTokenSilently().subscribe({ error: () => {} });
+        }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
