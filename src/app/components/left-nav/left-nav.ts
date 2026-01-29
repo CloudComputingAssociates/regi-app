@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { TabService } from '../../services/tab.service';
 import { AuthService } from '@auth0/auth0-angular';
-import { map } from 'rxjs/operators';
+import { map, take } from 'rxjs/operators';
 
 interface MenuItem {
   label: string;
@@ -113,7 +113,10 @@ export class LeftNavComponent {
   navigateTo(tabId: string, drawer: MatSidenav): void {
     const menuItem = this.menuItems.find(item => item.tabId === tabId);
     if (menuItem) {
-      this.tabService.toggleTab(tabId, menuItem.label);
+      // Wait for drawer close animation to complete before toggling tab
+      drawer.closedStart.pipe(take(1)).subscribe(() => {
+        this.tabService.toggleTab(tabId, menuItem.label);
+      });
     }
     drawer.close();
   }
