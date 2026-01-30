@@ -74,7 +74,11 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
             <!-- Personal Info -->
             <div class="settings-section personal-info-section">
               <div class="pi-column">
-                <span class="column-label">Personal Info</span>
+                <span class="column-label">Personal Info
+                  <button class="unit-toggle" (click)="toggleUnits()">
+                    {{ userSettingsService.useImperial() ? 'US' : 'metric' }}
+                  </button>
+                </span>
                 <div class="pi-row">
                   <label class="setting-label">DOB</label>
                   <input type="date" class="pi-input pi-date"
@@ -110,19 +114,16 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                       <span class="unit-label">cm</span>
                     </div>
                   }
-                  <button class="unit-toggle" (click)="toggleUnits()">
-                    {{ userSettingsService.useImperial() ? 'US' : 'metric' }}
-                  </button>
                 </div>
                 <div class="pi-row">
-                  <label class="setting-label">Cur. Wt</label>
+                  <label class="setting-label">Cur Wt</label>
                   <div class="weight-row">
                     <input type="number" class="pi-input pi-small"
                       [ngModel]="currentWeightDisplay()"
                       (ngModelChange)="onCurrentWeightChange($event)" />
                     <span class="unit-label">{{ userSettingsService.useImperial() ? 'lbs' : 'kg' }}</span>
                   </div>
-                  <label class="setting-label pi-gap-left">Tgt. Wt</label>
+                  <label class="setting-label pi-gap-left">Tgt Wt</label>
                   <div class="weight-row">
                     <input type="number" class="pi-input pi-small"
                       [ngModel]="targetWeightDisplay()"
@@ -142,20 +143,17 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <option value="very_active">Very Active</option>
                     <option value="extremely_active">Ext. Active</option>
                   </select>
+                  <label class="setting-label pi-gap-left">Cal</label>
+                  <span class="pi-computed-value">{{ userSettingsService.computedTDEE() ?? '—' }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- Top row: Nutrition Targets -->
+            <!-- Nutrition Targets -->
             <div class="settings-section">
               <div class="targets-column">
                 <span class="column-label">Nutrition Targets</span>
                 <div class="targets-grid">
-                  <div class="target-field">
-                    <label>Cal</label>
-                    <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
-                           (ngModelChange)="onDailyGoalChange('calories', $event)" />
-                  </div>
                   <div class="target-field">
                     <label>Protein</label>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().protein"
@@ -171,6 +169,8 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().fat"
                            (ngModelChange)="onDailyGoalChange('fat', $event)" />
                   </div>
+                </div>
+                <div class="targets-grid">
                   <div class="target-field">
                     <label>Fiber</label>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().fiber"
@@ -181,6 +181,28 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().sodium"
                            (ngModelChange)="onDailyGoalChange('sodium', $event)" />
                   </div>
+                </div>
+                <!-- Protein ratio dropdown -->
+                <div class="macro-control-row">
+                  <label class="setting-label">Protein</label>
+                  <select class="setting-select"
+                    [ngModel]="userSettingsService.personalInfo().proteinRatio ?? 1.0"
+                    (ngModelChange)="onProteinRatioChange($event)">
+                    <option [ngValue]="0.8">0.8 g/lb</option>
+                    <option [ngValue]="1.0">1.0 g/lb</option>
+                    <option [ngValue]="1.2">1.2 g/lb</option>
+                  </select>
+                  <span class="macro-hint">(of tgt wt)</span>
+                </div>
+                <!-- Carb scale slider -->
+                <div class="macro-control-row">
+                  <label class="setting-label">Carbs</label>
+                  <input type="range" class="carb-slider"
+                    [min]="0"
+                    [max]="userSettingsService.maxCarbGrams()"
+                    [ngModel]="userSettingsService.personalInfo().carbScaleGrams ?? 50"
+                    (ngModelChange)="onCarbScaleChange($event)" />
+                  <span class="slider-value">{{ userSettingsService.personalInfo().carbScaleGrams ?? 50 }}g</span>
                 </div>
               </div>
             </div>
@@ -414,6 +436,16 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
 
   toggleUnits(): void {
     this.userSettingsService.toggleUnits();
+  }
+
+  onProteinRatioChange(value: number): void {
+    this.userSettingsService.setProteinRatio(+value);
+    this.settingsChanged.set(true);
+  }
+
+  onCarbScaleChange(value: number): void {
+    this.userSettingsService.setCarbScaleGrams(+value);
+    this.settingsChanged.set(true);
   }
 
   // --- Existing handlers ---

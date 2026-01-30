@@ -42,6 +42,8 @@ export interface PersonalInfo {
   currentWeightKg?: number;
   targetWeightKg?: number;
   activityLevel?: string;
+  proteinRatio?: number;    // g per lb of target weight (0.8, 1.0, 1.2)
+  carbScaleGrams?: number;  // daily carb target in grams (slider value)
 }
 
 // GET/PUT /api/user/settings/defaultfoodlist

@@ -85,6 +85,58 @@ export class PreferencesService {
   readonly personalInfo = computed(() => this.preferencesSignal().personalInfo);
 
   // ========================================================
+  // COMPUTED NUTRITION (Mifflin-St. Jeor)
+  // ========================================================
+
+  /** TDEE computed from personal info via Mifflin-St. Jeor + activity multiplier */
+  readonly computedTDEE = computed(() => {
+    const pi = this.personalInfo();
+    if (!pi.sex || !pi.dateOfBirth || !pi.heightCm || !pi.currentWeightKg || !pi.activityLevel) {
+      return null;
+    }
+    const age = PreferencesService.calcAge(pi.dateOfBirth);
+    if (age <= 0) return null;
+
+    // Mifflin-St. Jeor: BMR
+    // Male:   10 * weight(kg) + 6.25 * height(cm) - 5 * age - 5 + 166 => +5
+    // Female: 10 * weight(kg) + 6.25 * height(cm) - 5 * age - 161
+    const bmr = pi.sex === 'male'
+      ? 10 * pi.currentWeightKg + 6.25 * pi.heightCm - 5 * age + 5
+      : 10 * pi.currentWeightKg + 6.25 * pi.heightCm - 5 * age - 161;
+
+    const multiplier = PreferencesService.activityMultiplier(pi.activityLevel);
+    return Math.round(bmr * multiplier);
+  });
+
+  /** Max carb grams = all TDEE calories from carbs */
+  readonly maxCarbGrams = computed(() => {
+    const tdee = this.computedTDEE();
+    if (!tdee) return 500; // fallback max
+    return Math.floor(tdee / 4);
+  });
+
+  /** Protein grams computed from target weight * ratio */
+  readonly computedProteinGrams = computed(() => {
+    const pi = this.personalInfo();
+    const ratio = pi.proteinRatio ?? 1.0;
+    const targetKg = pi.targetWeightKg;
+    if (!targetKg) return null;
+    const targetLbs = PreferencesService.kgToLbs(targetKg);
+    return Math.round(targetLbs * ratio);
+  });
+
+  /** Fat grams = remaining calories after protein + carbs, divided by 9 */
+  readonly computedFatGrams = computed(() => {
+    const tdee = this.computedTDEE();
+    const protein = this.computedProteinGrams();
+    const pi = this.personalInfo();
+    const carbs = pi.carbScaleGrams ?? 50;
+    if (!tdee || !protein) return null;
+    const remaining = tdee - (protein * 4) - (carbs * 4);
+    return Math.max(0, Math.round(remaining / 9));
+  });
+
+  // ========================================================
   // LOAD (from SettingsService cached data)
   // ========================================================
 
@@ -243,6 +295,20 @@ export class PreferencesService {
     this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
   }
 
+  setProteinRatio(value: number): void {
+    this.preferencesSignal.update(p => ({
+      ...p, personalInfo: { ...p.personalInfo, proteinRatio: value }
+    }));
+    this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
+  }
+
+  setCarbScaleGrams(value: number): void {
+    this.preferencesSignal.update(p => ({
+      ...p, personalInfo: { ...p.personalInfo, carbScaleGrams: value }
+    }));
+    this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
+  }
+
   // Unit toggle
   toggleUnits(): void {
     const newValue = !this.useImperial();
@@ -271,6 +337,26 @@ export class PreferencesService {
 
   static ftInToCm(ft: number, inches: number): number {
     return Math.round((ft * 12 + inches) * 2.54 * 10) / 10;
+  }
+
+  static calcAge(dateOfBirth: string): number {
+    const dob = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+    return age;
+  }
+
+  static activityMultiplier(level: string): number {
+    switch (level) {
+      case 'sedentary': return 1.2;
+      case 'lightly_active': return 1.375;
+      case 'moderately_active': return 1.55;
+      case 'very_active': return 1.725;
+      case 'extremely_active': return 1.9;
+      default: return 1.2;
+    }
   }
 
   // ========================================================
