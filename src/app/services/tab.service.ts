@@ -97,12 +97,12 @@ export class TabService {
 
       // Defer focus to the new tab so mat-tab-group renders it first
       this._pendingActiveIndex = insertIndex;
-      queueMicrotask(() => {
+      setTimeout(() => {
         if (this._pendingActiveIndex !== null) {
           this.activeTabIndexSignal.set(this._pendingActiveIndex);
           this._pendingActiveIndex = null;
         }
-      });
+      }, 0);
     }
   }
 
