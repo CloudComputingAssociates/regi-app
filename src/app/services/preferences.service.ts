@@ -64,6 +64,7 @@ interface DirtyGroups {
 export class PreferencesService {
   private settingsService = inject(SettingsService);
   private auth = inject(AuthService);
+  private aiCallGeneration = 0;
 
   private preferencesSignal = signal<Preferences>(DEFAULT_PREFERENCES);
   private loadingSignal = signal(false);
@@ -379,8 +380,13 @@ export class PreferencesService {
     if (pi.deficitPercent !== undefined && pi.deficitPercent !== null) return;
     if (!pi.currentWeightKg || !pi.targetWeightKg) return;
     const diff = pi.targetWeightKg - pi.currentWeightKg;
-    if (Math.abs(diff) < 0.5) return; // at goal
+    if (Math.abs(diff) < 0.5) {
+      // At goal — explicitly set 0% so Target = TDEE
+      this.setDeficitPercent(0);
+      return;
+    }
 
+    const generation = ++this.aiCallGeneration;
     const currentLbs = PreferencesService.kgToLbs(pi.currentWeightKg);
     const targetLbs = PreferencesService.kgToLbs(pi.targetWeightKg);
     const direction = diff < 0 ? 'lose' : 'gain';
@@ -410,6 +416,7 @@ export class PreferencesService {
       const data = await response.json();
       const content = (data.content || '').trim();
       const parsed = parseInt(content, 10);
+      if (generation !== this.aiCallGeneration) return; // stale call
       if (!isNaN(parsed) && parsed >= -30 && parsed <= 20) {
         this.setDeficitPercent(parsed);
         return;
@@ -417,6 +424,8 @@ export class PreferencesService {
     } catch (err) {
       console.warn('[PreferencesService] AI deficit call failed, using fallback:', err);
     }
+
+    if (generation !== this.aiCallGeneration) return; // stale call
 
     // Fallback heuristic
     const gapKg = Math.abs(diff);
