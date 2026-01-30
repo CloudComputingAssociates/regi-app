@@ -115,10 +115,9 @@ export class LeftNavComponent {
 
   navigateTo(tabId: string, drawer: MatSidenav): void {
     const menuItem = this.menuItems.find(item => item.tabId === tabId);
-    drawer.close().then(() => {
-      if (menuItem) {
-        this.tabService.toggleTab(tabId, menuItem.label);
-      }
-    });
+    if (menuItem) {
+      this.tabService.toggleTab(tabId, menuItem.label);
+    }
+    drawer.close();
   }
 }
