@@ -1,5 +1,5 @@
 // src/app/components/preferences-panel/preferences-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy, ElementRef, NgZone } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy, AfterViewInit, ElementRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
@@ -29,7 +29,17 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
       }
 
       <!-- Top pane: Settings -->
-      <div class="settings-pane" [style.flex]="topFlex()">
+      <div class="settings-pane" [style.flex]="topFlex()" #settingsPane (scroll)="onSettingsScroll()">
+        @if (showScrollUp()) {
+          <div class="scroll-hint scroll-hint-up">
+            <span class="scroll-chevron">&#x25B2;</span>
+          </div>
+        }
+        @if (showScrollDown()) {
+          <div class="scroll-hint scroll-hint-down">
+            <span class="scroll-chevron">&#x25BC;</span>
+          </div>
+        }
         <div class="panel-content">
           <!-- Action buttons - right-aligned in flow -->
           <div class="action-buttons">
@@ -63,83 +73,77 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
           <div class="settings-wrapper">
             <!-- Personal Info -->
             <div class="settings-section personal-info-section">
-              <div class="personal-info-column">
+              <div class="pi-column">
                 <span class="column-label">Personal Info</span>
-                <div class="personal-info-grid">
-                  <div class="pi-field">
-                    <label>Sex</label>
-                    <select class="pi-select"
-                      [ngModel]="userSettingsService.personalInfo().sex || ''"
-                      (ngModelChange)="onSexChange($event)">
-                      <option value="">—</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                    </select>
-                  </div>
-                  <div class="pi-field">
-                    <label>Date of Birth</label>
-                    <input type="date" class="pi-input pi-date"
-                      [ngModel]="userSettingsService.personalInfo().dateOfBirth || ''"
-                      (ngModelChange)="onDateOfBirthChange($event)" />
-                  </div>
-                  <div class="pi-field">
-                    <label>
-                      Height
-                      <button class="unit-toggle" (click)="toggleUnits()">
-                        {{ userSettingsService.useImperial() ? 'ft/in' : 'cm' }}
-                      </button>
-                    </label>
-                    @if (userSettingsService.useImperial()) {
-                      <div class="height-imperial">
-                        <input type="number" class="pi-input pi-small"
-                          [ngModel]="heightFt()"
-                          (ngModelChange)="onHeightFtChange($event)" />
-                        <span class="unit-label">ft</span>
-                        <input type="number" class="pi-input pi-small"
-                          [ngModel]="heightIn()"
-                          (ngModelChange)="onHeightInChange($event)" />
-                        <span class="unit-label">in</span>
-                      </div>
-                    } @else {
-                      <div class="height-metric">
-                        <input type="number" class="pi-input pi-small"
-                          [ngModel]="userSettingsService.personalInfo().heightCm || ''"
-                          (ngModelChange)="onHeightCmChange($event)" />
-                        <span class="unit-label">cm</span>
-                      </div>
-                    }
-                  </div>
-                  <div class="pi-field">
-                    <label>Current Weight</label>
-                    <div class="weight-row">
+                <div class="pi-row">
+                  <label class="setting-label">DOB</label>
+                  <input type="date" class="pi-input pi-date"
+                    [ngModel]="userSettingsService.personalInfo().dateOfBirth || ''"
+                    (ngModelChange)="onDateOfBirthChange($event)" />
+                  <label class="setting-label pi-gap-left">Sex</label>
+                  <select class="setting-select"
+                    [ngModel]="userSettingsService.personalInfo().sex || ''"
+                    (ngModelChange)="onSexChange($event)">
+                    <option value="">—</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </div>
+                <div class="pi-row">
+                  <label class="setting-label">
+                    Height
+                    <button class="unit-toggle" (click)="toggleUnits()">
+                      {{ userSettingsService.useImperial() ? 'ft/in' : 'cm' }}
+                    </button>
+                  </label>
+                  @if (userSettingsService.useImperial()) {
+                    <div class="height-imperial">
                       <input type="number" class="pi-input pi-small"
-                        [ngModel]="currentWeightDisplay()"
-                        (ngModelChange)="onCurrentWeightChange($event)" />
-                      <span class="unit-label">{{ userSettingsService.useImperial() ? 'lbs' : 'kg' }}</span>
-                    </div>
-                  </div>
-                  <div class="pi-field">
-                    <label>Target Weight</label>
-                    <div class="weight-row">
+                        [ngModel]="heightFt()"
+                        (ngModelChange)="onHeightFtChange($event)" />
+                      <span class="unit-label">ft</span>
                       <input type="number" class="pi-input pi-small"
-                        [ngModel]="targetWeightDisplay()"
-                        (ngModelChange)="onTargetWeightChange($event)" />
-                      <span class="unit-label">{{ userSettingsService.useImperial() ? 'lbs' : 'kg' }}</span>
+                        [ngModel]="heightIn()"
+                        (ngModelChange)="onHeightInChange($event)" />
+                      <span class="unit-label">in</span>
                     </div>
+                  } @else {
+                    <div class="height-metric">
+                      <input type="number" class="pi-input pi-small"
+                        [ngModel]="userSettingsService.personalInfo().heightCm || ''"
+                        (ngModelChange)="onHeightCmChange($event)" />
+                      <span class="unit-label">cm</span>
+                    </div>
+                  }
+                </div>
+                <div class="pi-row">
+                  <label class="setting-label">Cur. Wt</label>
+                  <div class="weight-row">
+                    <input type="number" class="pi-input pi-small"
+                      [ngModel]="currentWeightDisplay()"
+                      (ngModelChange)="onCurrentWeightChange($event)" />
+                    <span class="unit-label">{{ userSettingsService.useImperial() ? 'lbs' : 'kg' }}</span>
                   </div>
-                  <div class="pi-field">
-                    <label>Activity Level</label>
-                    <select class="pi-select"
-                      [ngModel]="userSettingsService.personalInfo().activityLevel || ''"
-                      (ngModelChange)="onActivityLevelChange($event)">
-                      <option value="">—</option>
-                      <option value="sedentary">Sedentary</option>
-                      <option value="lightly_active">Lightly Active</option>
-                      <option value="moderately_active">Moderately Active</option>
-                      <option value="very_active">Very Active</option>
-                      <option value="extremely_active">Extremely Active</option>
-                    </select>
+                  <label class="setting-label pi-gap-left">Tgt. Wt</label>
+                  <div class="weight-row">
+                    <input type="number" class="pi-input pi-small"
+                      [ngModel]="targetWeightDisplay()"
+                      (ngModelChange)="onTargetWeightChange($event)" />
+                    <span class="unit-label">{{ userSettingsService.useImperial() ? 'lbs' : 'kg' }}</span>
                   </div>
+                </div>
+                <div class="pi-row">
+                  <label class="setting-label">Activity</label>
+                  <select class="setting-select"
+                    [ngModel]="userSettingsService.personalInfo().activityLevel || ''"
+                    (ngModelChange)="onActivityLevelChange($event)">
+                    <option value="">—</option>
+                    <option value="sedentary">Sedentary</option>
+                    <option value="lightly_active">Lightly Active</option>
+                    <option value="moderately_active">Mod. Active</option>
+                    <option value="very_active">Very Active</option>
+                    <option value="extremely_active">Ext. Active</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -277,7 +281,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
   `,
   styleUrls: ['./preferences-panel.scss']
 })
-export class PreferencesPanelComponent implements OnInit, OnDestroy {
+export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewInit {
   private tabService = inject(TabService);
   chatService = inject(ChatService);
   protected userSettingsService = inject(PreferencesService);
@@ -288,6 +292,10 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy {
   isSaving = signal(false);
   showConfirmDialog = signal(false);
   settingsChanged = signal(false);
+
+  // Scroll hint state
+  showScrollUp = signal(false);
+  showScrollDown = signal(false);
 
   // Splitter state: default 2/3 top, 1/3 bottom
   topFlex = signal('2 1 0%');
@@ -335,8 +343,25 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy {
     this.userSettingsService.loadPreferences();
   }
 
+  ngAfterViewInit(): void {
+    // Initial check after content renders
+    setTimeout(() => this.updateScrollHints(), 0);
+  }
+
   ngOnDestroy(): void {
     this.cleanupDragListeners();
+  }
+
+  onSettingsScroll(): void {
+    this.updateScrollHints();
+  }
+
+  private updateScrollHints(): void {
+    const pane = this.el.nativeElement.querySelector('.settings-pane') as HTMLElement;
+    if (!pane) return;
+    const threshold = 4;
+    this.showScrollUp.set(pane.scrollTop > threshold);
+    this.showScrollDown.set(pane.scrollTop + pane.clientHeight < pane.scrollHeight - threshold);
   }
 
   hasAnyChanges(): boolean {
@@ -514,6 +539,7 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy {
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
     this.cleanupDragListeners();
+    this.updateScrollHints();
   }
 
   private cleanupDragListeners(): void {
