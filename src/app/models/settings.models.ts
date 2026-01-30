@@ -44,6 +44,7 @@ export interface PersonalInfo {
   activityLevel?: string;
   proteinRatio?: number;    // g per lb of target weight (0.8, 1.0, 1.2)
   carbScaleGrams?: number;  // daily carb target in grams (slider value)
+  deficitPercent?: number;  // negative = deficit (losing), positive = surplus (gaining), e.g. -20 or +10
 }
 
 // GET/PUT /api/user/settings/defaultfoodlist

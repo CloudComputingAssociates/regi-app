@@ -101,6 +101,10 @@ export class AppComponent implements OnInit, OnDestroy {
             this.tabService.resetToChat();
           }
           localStorage.removeItem('yeh_tabState');
+          // Still load all settings from API so preferences/other data is cached
+          this.settingsService.loadSettings().catch(err =>
+            console.error('[App] Failed to load settings on refresh:', err)
+          );
         } else {
           try {
             const allSettings = await this.settingsService.loadSettings();

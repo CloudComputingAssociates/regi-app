@@ -5,6 +5,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { TabService } from '../../services/tab.service';
+import { PreferencesService } from '../../services/preferences.service';
 import { ChatComponent } from '../chat/chat';
 import { RegimenuPanelComponent } from '../regimenu-panel/regimenu-panel';
 import { ShoppingPanelComponent } from '../shopping-panel/shopping-panel';
@@ -87,21 +88,49 @@ import { NotificationComponent } from '../notification/notification';
 
       <!-- Notification component (always present) -->
       <app-notification />
+
+      @if (tabService.blockedTabSwitch()) {
+        <div class="confirm-overlay" (click)="cancelTabSwitch()">
+          <div class="confirm-dialog" (click)="$event.stopPropagation()">
+            <p>You have unsaved changes. Discard them?</p>
+            <div class="confirm-buttons">
+              <button class="confirm-btn discard" (click)="confirmTabSwitch()">Discard</button>
+              <button class="confirm-btn cancel" (click)="cancelTabSwitch()">Cancel</button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `,
   styleUrls: ['./main-body.scss']
 })
 export class MainBodyComponent {
   tabService = inject(TabService);
+  private preferencesService = inject(PreferencesService);
+
+  constructor() {
+    // Register guard: block leaving preferences tab when there are unsaved changes
+    this.tabService.setBeforeLeaveGuard(() => {
+      const currentTabId = this.tabService.activeTabId();
+      return currentTabId === 'preferences' && this.preferencesService.hasDirtyGroups();
+    });
+  }
 
   onTabIndexChange(index: number): void {
-    // Skip stale emissions from mat-tab-group during tab addition
     if (this.tabService.hasPendingFocus()) return;
 
-    // When user manually clicks a tab, update the service
     const tabs = this.tabService.tabs();
     if (tabs[index]) {
       this.tabService.switchToTab(tabs[index].id);
     }
+  }
+
+  confirmTabSwitch(): void {
+    this.preferencesService.resetDirtyGroups();
+    this.tabService.completeBlockedSwitch();
+  }
+
+  cancelTabSwitch(): void {
+    this.tabService.cancelBlockedSwitch();
   }
 }

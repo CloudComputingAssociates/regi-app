@@ -1,11 +1,12 @@
 // src/app/components/preferences-panel/preferences-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy, AfterViewInit, ElementRef, NgZone } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy, AfterViewInit, ElementRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
 import { ChatService } from '../../services/chat.service';
 import { NotificationService } from '../../services/notification.service';
 import { PreferencesService, MealsPerDay, FastingType, DailyGoals, RepeatMeals, FoodListSource } from '../../services/preferences.service';
+import { SettingsService } from '../../services/settings.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
 
@@ -57,11 +58,16 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
               <button
                 class="icon-btn save-btn"
                 [class.has-changes]="hasAnyChanges()"
+                [disabled]="isSaving()"
                 (click)="save()"
                 matTooltip="Save"
                 matTooltipPosition="above"
                 [matTooltipShowDelay]="300">
-                ✓
+                @if (isSaving()) {
+                  <span class="save-spinner"></span>
+                } @else {
+                  ✓
+                }
               </button>
               <button
                 class="icon-btn close-btn"
@@ -150,11 +156,21 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   </select>
                 </div>
                 <div class="pi-row pi-daily-row">
-                  <label class="setting-label">Daily</label>
+                  <label class="setting-label">Target</label>
                   <input type="text" class="pi-input pi-small pi-readonly" readonly
-                    [value]="userSettingsService.computedTDEE() ?? '—'" />
+                    [value]="userSettingsService.computedTargetCalories() ?? '—'" />
                   <span class="unit-label">cals</span>
+                  @if (userSettingsService.deficitLabel()) {
+                    <span class="pi-deficit-label">{{ userSettingsService.deficitLabel() }}</span>
+                  }
                 </div>
+                <div class="pi-row pi-daily-row">
+                  <label class="setting-label">Weeks</label>
+                  <input type="text" class="pi-input pi-small pi-readonly" readonly
+                    [value]="userSettingsService.computedWeeksToGoal() ?? '—'" />
+                  <span class="unit-label">to tgt wt</span>
+                </div>
+                <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
               </div>
             </div>
 
@@ -315,9 +331,18 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
   private tabService = inject(TabService);
   chatService = inject(ChatService);
   protected userSettingsService = inject(PreferencesService);
+  private settingsService = inject(SettingsService);
   private notificationService = inject(NotificationService);
   private el = inject(ElementRef);
   private ngZone = inject(NgZone);
+
+  // Retry loading preferences when allSettings becomes available (handles page refresh race)
+  private loadEffect = effect(() => {
+    const all = this.settingsService.allSettings();
+    if (all && !this.userSettingsService.isLoaded()) {
+      this.userSettingsService.loadPreferences();
+    }
+  });
 
   isSaving = signal(false);
   showConfirmDialog = signal(false);
@@ -342,6 +367,15 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     const hours = Math.floor(i / 2).toString().padStart(2, '0');
     const minutes = (i % 2 === 0) ? '00' : '30';
     return `${hours}:${minutes}`;
+  });
+
+  // Format today's date as MM/DD/YYYY for "last updated" display
+  lastComputedDate = computed(() => {
+    // Re-read deficitPercent so this recomputes when it changes
+    const pct = this.userSettingsService.personalInfo().deficitPercent;
+    if (pct === undefined || pct === null) return '';
+    const d = new Date();
+    return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
   });
 
   // Computed height in ft/in from stored cm
@@ -459,6 +493,10 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
   }
 
   private syncMacros(): void {
+    this.userSettingsService.computeDeficitPercentViaAI().then(() => {
+      this.userSettingsService.syncComputedMacros();
+    });
+    // Sync macros immediately with current values too (AI result will re-sync when it arrives)
     this.userSettingsService.syncComputedMacros();
     this.settingsChanged.set(true);
   }

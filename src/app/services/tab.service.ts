@@ -19,6 +19,47 @@ export class TabService {
   private activeTabIndexSignal = signal<number>(-1);  // No active tab until login
   private _pendingActiveIndex: number | null = null;
 
+  /** Optional guard: returns true if leaving the current tab should be blocked */
+  private _beforeLeaveGuard: (() => boolean) | null = null;
+  /** Fires when a guarded tab switch is blocked; listeners show confirmation UI */
+  readonly blockedTabSwitch = signal<{ targetTabId: string } | null>(null);
+
+  /** Register a guard that can block leaving the current tab */
+  setBeforeLeaveGuard(guard: (() => boolean) | null): void {
+    this._beforeLeaveGuard = guard;
+  }
+
+  /** Check guard and block if needed; returns true if blocked */
+  private guardLeave(targetTabId: string): boolean {
+    if (this._beforeLeaveGuard && this._beforeLeaveGuard()) {
+      this.blockedTabSwitch.set({ targetTabId });
+      return true;
+    }
+    return false;
+  }
+
+  /** Complete a previously blocked tab switch */
+  completeBlockedSwitch(): void {
+    const blocked = this.blockedTabSwitch();
+    if (blocked) {
+      this.blockedTabSwitch.set(null);
+      this._switchToTabInternal(blocked.targetTabId);
+    }
+  }
+
+  /** Cancel a blocked tab switch */
+  cancelBlockedSwitch(): void {
+    this.blockedTabSwitch.set(null);
+  }
+
+  private _switchToTabInternal(tabId: string): void {
+    const currentTabs = this.tabsSignal();
+    const tabIndex = currentTabs.findIndex(t => t.id === tabId);
+    if (tabIndex !== -1) {
+      this.activeTabIndexSignal.set(tabIndex);
+    }
+  }
+
   // Expose signals as readonly
   tabs = this.tabsSignal.asReadonly();
   activeTabIndex = this.activeTabIndexSignal.asReadonly();
@@ -63,9 +104,14 @@ export class TabService {
       if (this.activeTabIndexSignal() === existingTabIndex) {
         this.closeTab(tabId);
       } else {
+        const currentId = this.activeTabId();
+        if (currentId !== tabId && this.guardLeave(tabId)) return;
         this.activeTabIndexSignal.set(existingTabIndex);
       }
     } else {
+      // Opening a new tab also leaves current tab
+      const currentId = this.activeTabId();
+      if (currentId && this.guardLeave(tabId)) return;
       // Tab doesn't exist - add it in the correct position based on menu order
       const newTab: Tab = {
         id: tabId,
@@ -168,11 +214,9 @@ export class TabService {
   }
 
   switchToTab(tabId: string): void {
-    const currentTabs = this.tabsSignal();
-    const tabIndex = currentTabs.findIndex(t => t.id === tabId);
-    if (tabIndex !== -1) {
-      this.activeTabIndexSignal.set(tabIndex);
-    }
+    const currentId = this.activeTabId();
+    if (currentId !== tabId && this.guardLeave(tabId)) return;
+    this._switchToTabInternal(tabId);
   }
 
   /** Close all tabs - used on logout */
