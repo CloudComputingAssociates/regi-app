@@ -90,12 +90,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   </select>
                 </div>
                 <div class="pi-row">
-                  <label class="setting-label">
-                    Height
-                    <button class="unit-toggle" (click)="toggleUnits()">
-                      {{ userSettingsService.useImperial() ? 'ft/in' : 'cm' }}
-                    </button>
-                  </label>
+                  <label class="setting-label">Height</label>
                   @if (userSettingsService.useImperial()) {
                     <div class="height-imperial">
                       <input type="number" class="pi-input pi-small"
@@ -115,6 +110,9 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                       <span class="unit-label">cm</span>
                     </div>
                   }
+                  <button class="unit-toggle" (click)="toggleUnits()">
+                    {{ userSettingsService.useImperial() ? 'US' : 'metric' }}
+                  </button>
                 </div>
                 <div class="pi-row">
                   <label class="setting-label">Cur. Wt</label>

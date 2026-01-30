@@ -488,7 +488,8 @@
     }
 
     .pi-gap-left {
-      margin-left: 10px;
+      margin-left: 8px;
+      min-width: 28px;
     }
 
     .setting-select {
@@ -555,15 +556,17 @@
   }
 
   .unit-toggle {
-    font-size: 9px;
-    padding: 1px 5px;
-    border-radius: 3px;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 4px;
     border: 1px solid #5a5a5a;
     background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
     color: #4da6ff;
     cursor: pointer;
     font-family: inherit;
+    font-weight: 500;
     outline: none;
+    margin-left: 4px;
 
     &:hover { border-color: #6a6a6a; }
   }
