@@ -127,7 +127,7 @@ export class PreferencesService {
     const pct = pi.deficitPercent;
     if (!pct || pct === 0) return null;
     const absPct = Math.abs(pct);
-    return pct < 0 ? `${absPct}% lowered` : `${absPct}% raised`;
+    return pct < 0 ? `${absPct}% decreased` : `${absPct}% increased`;
   });
 
   /** Estimated weeks to reach target weight from current weight */
