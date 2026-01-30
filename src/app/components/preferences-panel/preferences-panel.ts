@@ -162,6 +162,29 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
             <div class="settings-section">
               <div class="targets-column">
                 <span class="column-label">Nutrition Targets</span>
+                <!-- Carb scale slider -->
+                <div class="macro-control-row">
+                  <label class="setting-label">Carbs</label>
+                  <input type="range" class="carb-slider"
+                    [min]="0"
+                    [max]="userSettingsService.maxCarbGrams()"
+                    [ngModel]="userSettingsService.personalInfo().carbScaleGrams ?? 50"
+                    (ngModelChange)="onCarbScaleChange($event)" />
+                  <span class="slider-value">{{ userSettingsService.personalInfo().carbScaleGrams ?? 50 }}g</span>
+                </div>
+                <!-- Protein ratio dropdown -->
+                <div class="macro-control-row">
+                  <label class="setting-label">Protein</label>
+                  <select class="setting-select"
+                    [ngModel]="userSettingsService.personalInfo().proteinRatio ?? 1.0"
+                    (ngModelChange)="onProteinRatioChange($event)">
+                    <option [ngValue]="0.8">0.8 g/lb</option>
+                    <option [ngValue]="1.0">1.0 g/lb</option>
+                    <option [ngValue]="1.2">1.2 g/lb</option>
+                  </select>
+                  <span class="macro-hint">of body weight</span>
+                </div>
+                <div class="macro-separator"></div>
                 <div class="targets-grid">
                   <div class="target-field">
                     <label>Protein</label>
@@ -190,28 +213,6 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().sodium"
                            (ngModelChange)="onDailyGoalChange('sodium', $event)" />
                   </div>
-                </div>
-                <!-- Protein ratio dropdown -->
-                <div class="macro-control-row">
-                  <label class="setting-label">Protein</label>
-                  <select class="setting-select"
-                    [ngModel]="userSettingsService.personalInfo().proteinRatio ?? 1.0"
-                    (ngModelChange)="onProteinRatioChange($event)">
-                    <option [ngValue]="0.8">0.8 g/lb</option>
-                    <option [ngValue]="1.0">1.0 g/lb</option>
-                    <option [ngValue]="1.2">1.2 g/lb</option>
-                  </select>
-                  <span class="macro-hint">of body weight</span>
-                </div>
-                <!-- Carb scale slider -->
-                <div class="macro-control-row">
-                  <label class="setting-label">Carbs</label>
-                  <input type="range" class="carb-slider"
-                    [min]="0"
-                    [max]="userSettingsService.maxCarbGrams()"
-                    [ngModel]="userSettingsService.personalInfo().carbScaleGrams ?? 50"
-                    (ngModelChange)="onCarbScaleChange($event)" />
-                  <span class="slider-value">{{ userSettingsService.personalInfo().carbScaleGrams ?? 50 }}g</span>
                 </div>
               </div>
             </div>

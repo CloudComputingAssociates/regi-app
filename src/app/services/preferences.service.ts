@@ -2,7 +2,7 @@
 // Manages user preferences state (regiMenu, dailyGoals, defaultFoodList, personalInfo).
 // Initializes from SettingsService cached data (consolidated GET at startup).
 // Saves via SettingsService individual PUT endpoints.
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { SettingsService } from './settings.service';
 import {
   DailyGoals, RegiMenuSettings, PersonalInfo
@@ -111,8 +111,8 @@ export class PreferencesService {
   /** Max carb grams = all TDEE calories from carbs */
   readonly maxCarbGrams = computed(() => {
     const tdee = this.computedTDEE();
-    if (!tdee) return 500; // fallback max
-    return Math.floor(tdee / 4);
+    if (!tdee) return 200; // fallback max
+    return Math.min(200, Math.floor(tdee / 4));
   });
 
   /** Protein grams computed from target weight * ratio */
@@ -134,6 +134,31 @@ export class PreferencesService {
     if (!tdee || !protein) return null;
     const remaining = tdee - (protein * 4) - (carbs * 4);
     return Math.max(0, Math.round(remaining / 9));
+  });
+
+  /** Sync computed macros into dailyGoals when personal info yields values */
+  private syncMacrosEffect = effect(() => {
+    const protein = this.computedProteinGrams();
+    const fat = this.computedFatGrams();
+    const pi = this.personalInfo();
+    const carbs = pi.carbScaleGrams;
+    const tdee = this.computedTDEE();
+
+    if (protein === null && fat === null && carbs === undefined && tdee === null) return;
+
+    const updates: Partial<DailyGoals> = {};
+    if (protein !== null) updates.protein = protein;
+    if (carbs !== undefined) updates.carbs = carbs;
+    if (fat !== null) updates.fat = fat;
+    if (tdee !== null) updates.calories = tdee;
+
+    if (Object.keys(updates).length === 0) return;
+
+    this.preferencesSignal.update(p => ({
+      ...p,
+      dailyGoals: { ...p.dailyGoals, ...updates }
+    }));
+    this.dirtyGroups.update(d => ({ ...d, dailyGoals: true }));
   });
 
   // ========================================================
