@@ -36,7 +36,10 @@ interface MenuItem {
               class="drawer-profile-image" />
             <div class="user-details">
               <h3 class="user-name">you eating healthy</h3>
-              <p class="user-subtitle">AI-driven Nutrition Planner</p>
+              <p class="user-subtitle">
+                <img src="images/AI-star-blue.png" alt="" class="subtitle-ai-icon" />
+                AI-driven Nutrition Planner
+              </p>
             </div>
           </div>
           <button
@@ -113,8 +116,8 @@ export class LeftNavComponent {
   navigateTo(tabId: string, drawer: MatSidenav): void {
     const menuItem = this.menuItems.find(item => item.tabId === tabId);
     if (menuItem) {
-      // Wait for drawer close animation to complete before toggling tab
-      drawer.closedStart.pipe(take(1)).subscribe(() => {
+      // Wait for drawer close animation to fully complete before toggling tab
+      drawer.closed.pipe(take(1)).subscribe(() => {
         this.tabService.toggleTab(tabId, menuItem.label);
       });
     }

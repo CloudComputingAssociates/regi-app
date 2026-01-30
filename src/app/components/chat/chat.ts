@@ -13,7 +13,10 @@ import { ChatOutputComponent } from './chat-output/chat-output';
     <div class="chat-container">
       <!-- Status header - permanent toast area -->
       <div class="chat-status-header" [class.prompt-mode]="chatService.isPromptMeActive()">
-        <span class="status-text">{{ chatService.statusMessage() }}</span>
+        <span class="status-text">
+          <img src="/images/AI-star.png" alt="" class="status-ai-icon" />
+          {{ chatService.statusMessage() }}
+        </span>
       </div>
 
       <!-- Action buttons - top right -->

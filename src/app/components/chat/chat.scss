@@ -27,6 +27,14 @@
       color: rgba(255, 255, 255, 0.8);
       font-size: 14px;
       font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+
+      .status-ai-icon {
+        height: 14px;
+        width: auto;
+      }
     }
 
     &.prompt-mode {
