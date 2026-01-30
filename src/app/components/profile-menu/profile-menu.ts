@@ -88,6 +88,12 @@ export class ProfileMenuComponent {
       }
     }
 
+    // Persist active tab to localStorage so it survives logout/login round-trip
+    const activeId = this.tabService.activeTabId();
+    if (activeId) {
+      localStorage.setItem('yeh_activeTabId', activeId);
+    }
+
     // Clear all state before logging out
     this.subscriptionService.clearStatus();
     this.chatService.clearSession();

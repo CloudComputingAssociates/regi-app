@@ -104,7 +104,10 @@ export class AppComponent implements OnInit, OnDestroy {
         } else {
           try {
             const settings = await this.settingsService.loadSettings();
-            this.tabService.restoreFromSettings(settings.defaultTabs, settings.activeTabId);
+            // Check localStorage for active tab saved on logout
+            const savedActiveTab = localStorage.getItem('yeh_activeTabId') ?? undefined;
+            localStorage.removeItem('yeh_activeTabId');
+            this.tabService.restoreFromSettings(settings.defaultTabs, savedActiveTab);
           } catch (error) {
             console.error('[App] Failed to load settings:', error);
             this.tabService.resetToChat();
@@ -176,6 +179,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.settingsService.clearSettings();
     this.tabService.closeAllTabs();
     localStorage.removeItem('yeh_tabState');
+    localStorage.removeItem('yeh_activeTabId');
 
     // Auto-logout after a brief delay so user sees the notification
     setTimeout(() => {
