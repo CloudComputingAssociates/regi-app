@@ -7,7 +7,6 @@
 }
 
 .panel-container {
-  position: relative;
   height: 100%;
   width: 100%;
   background: linear-gradient(180deg, #404040 0%, #3a3a3a 100%);
@@ -17,15 +16,13 @@
   flex-direction: column;
 }
 
-// Action buttons - floating top-right of panel
+// Action buttons - right-aligned in flow
 .action-buttons {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 10;
   display: flex;
   gap: 8px;
   align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
 
   .btn-spacer {
     width: 8px;
@@ -196,6 +193,9 @@
   .settings-wrapper {
     position: relative;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   // Settings Section - scrollable with compact columns
@@ -478,16 +478,6 @@
 
 // Mobile responsive
 @media (max-width: 480px) {
-  .action-buttons {
-    gap: 6px;
-
-    .icon-btn {
-      width: 28px;
-      height: 28px;
-      font-size: 16px;
-    }
-  }
-
   .confirm-dialog {
     padding: 16px 20px;
     max-width: 280px;

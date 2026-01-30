@@ -28,147 +28,147 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
         </div>
       }
 
-      <!-- Action buttons - floating top right -->
-      <div class="action-buttons">
-        <button
-          class="icon-btn ai-btn"
-          (click)="openAiChat()"
-          matTooltip="AI assist"
-          matTooltipPosition="above"
-          [matTooltipShowDelay]="300">
-          <img src="/images/AI-star.png" alt="AI" class="ai-btn-icon" />
-        </button>
-        <span class="btn-spacer"></span>
-        <button
-          class="icon-btn save-btn"
-          [class.has-changes]="hasAnyChanges()"
-          (click)="save()"
-          matTooltip="Save"
-          matTooltipPosition="above"
-          [matTooltipShowDelay]="300">
-          ✓
-        </button>
-        <button
-          class="icon-btn close-btn"
-          (click)="close()"
-          matTooltip="Close"
-          matTooltipPosition="above"
-          [matTooltipShowDelay]="300">
-          ✕
-        </button>
-      </div>
-
       <div class="panel-content">
+        <!-- Action buttons - right-aligned in flow -->
+        <div class="action-buttons">
+          <button
+            class="icon-btn ai-btn"
+            (click)="openAiChat()"
+            matTooltip="AI assist"
+            matTooltipPosition="above"
+            [matTooltipShowDelay]="300">
+            <img src="/images/AI-star.png" alt="AI" class="ai-btn-icon" />
+          </button>
+          <span class="btn-spacer"></span>
+          <button
+            class="icon-btn save-btn"
+            [class.has-changes]="hasAnyChanges()"
+            (click)="save()"
+            matTooltip="Save"
+            matTooltipPosition="above"
+            [matTooltipShowDelay]="300">
+            ✓
+          </button>
+          <button
+            class="icon-btn close-btn"
+            (click)="close()"
+            matTooltip="Close"
+            matTooltipPosition="above"
+            [matTooltipShowDelay]="300">
+            ✕
+          </button>
+        </div>
+
         <div class="settings-wrapper">
+          <!-- Top row: Nutrition Targets -->
           <div class="settings-section">
-          <!-- Left column: Nutrition Targets -->
-          <div class="targets-column">
-            <span class="column-label">Nutrition Targets</span>
-            <div class="targets-grid">
-              <div class="target-field">
-                <label>Cal</label>
-                <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
-                       (ngModelChange)="onDailyGoalChange('calories', $event)" />
-              </div>
-              <div class="target-field">
-                <label>Protein</label>
-                <input type="number" [ngModel]="userSettingsService.dailyGoals().protein"
-                       (ngModelChange)="onDailyGoalChange('protein', $event)" />
-              </div>
-              <div class="target-field">
-                <label>Carbs</label>
-                <input type="number" [ngModel]="userSettingsService.dailyGoals().carbs"
-                       (ngModelChange)="onDailyGoalChange('carbs', $event)" />
-              </div>
-              <div class="target-field">
-                <label>Fat</label>
-                <input type="number" [ngModel]="userSettingsService.dailyGoals().fat"
-                       (ngModelChange)="onDailyGoalChange('fat', $event)" />
-              </div>
-              <div class="target-field">
-                <label>Fiber</label>
-                <input type="number" [ngModel]="userSettingsService.dailyGoals().fiber"
-                       (ngModelChange)="onDailyGoalChange('fiber', $event)" />
-              </div>
-              <div class="target-field">
-                <label>Sodium</label>
-                <input type="number" [ngModel]="userSettingsService.dailyGoals().sodium"
-                       (ngModelChange)="onDailyGoalChange('sodium', $event)" />
+            <div class="targets-column">
+              <span class="column-label">Nutrition Targets</span>
+              <div class="targets-grid">
+                <div class="target-field">
+                  <label>Cal</label>
+                  <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
+                         (ngModelChange)="onDailyGoalChange('calories', $event)" />
+                </div>
+                <div class="target-field">
+                  <label>Protein</label>
+                  <input type="number" [ngModel]="userSettingsService.dailyGoals().protein"
+                         (ngModelChange)="onDailyGoalChange('protein', $event)" />
+                </div>
+                <div class="target-field">
+                  <label>Carbs</label>
+                  <input type="number" [ngModel]="userSettingsService.dailyGoals().carbs"
+                         (ngModelChange)="onDailyGoalChange('carbs', $event)" />
+                </div>
+                <div class="target-field">
+                  <label>Fat</label>
+                  <input type="number" [ngModel]="userSettingsService.dailyGoals().fat"
+                         (ngModelChange)="onDailyGoalChange('fat', $event)" />
+                </div>
+                <div class="target-field">
+                  <label>Fiber</label>
+                  <input type="number" [ngModel]="userSettingsService.dailyGoals().fiber"
+                         (ngModelChange)="onDailyGoalChange('fiber', $event)" />
+                </div>
+                <div class="target-field">
+                  <label>Sodium</label>
+                  <input type="number" [ngModel]="userSettingsService.dailyGoals().sodium"
+                         (ngModelChange)="onDailyGoalChange('sodium', $event)" />
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Middle column: Meals & Fasting -->
-          <div class="plan-column">
-            <span class="column-label">Eating Window</span>
-            <div class="setting-row">
-              <label class="setting-label">Meals</label>
-              <select
-                class="setting-select"
-                [ngModel]="userSettingsService.mealsPerDay()"
-                (ngModelChange)="onMealsPerDayChange($event)">
-                <option [ngValue]="1">1 meal</option>
-                <option [ngValue]="2">2 meals</option>
-                <option [ngValue]="3">3 meals</option>
-                <option [ngValue]="4">4 meals</option>
-                <option [ngValue]="5">5 meals</option>
-                <option [ngValue]="6">6 meals</option>
-              </select>
+          <!-- Bottom row: Eating Window + Regimenu side by side -->
+          <div class="settings-section bottom-row">
+            <div class="plan-column">
+              <span class="column-label">Eating Window</span>
+              <div class="setting-row">
+                <label class="setting-label">Meals</label>
+                <select
+                  class="setting-select"
+                  [ngModel]="userSettingsService.mealsPerDay()"
+                  (ngModelChange)="onMealsPerDayChange($event)">
+                  <option [ngValue]="1">1 meal</option>
+                  <option [ngValue]="2">2 meals</option>
+                  <option [ngValue]="3">3 meals</option>
+                  <option [ngValue]="4">4 meals</option>
+                  <option [ngValue]="5">5 meals</option>
+                  <option [ngValue]="6">6 meals</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <label class="setting-label">Fasting</label>
+                <select
+                  class="setting-select"
+                  [ngModel]="userSettingsService.fastingType()"
+                  (ngModelChange)="onFastingTypeChange($event)">
+                  <option value="none">None</option>
+                  <option value="16_8">16:8</option>
+                  <option value="18_6">18:6</option>
+                  <option value="20_4">20:4</option>
+                  <option value="omad">OMAD</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <label class="setting-label">Start at</label>
+                <select
+                  class="setting-select time-select"
+                  [ngModel]="userSettingsService.eatingStartTime()"
+                  (ngModelChange)="onEatingStartTimeChange($event)">
+                  @for (time of timeOptions; track time) {
+                    <option [value]="time">{{ time }}</option>
+                  }
+                </select>
+              </div>
             </div>
-            <div class="setting-row">
-              <label class="setting-label">Fasting</label>
-              <select
-                class="setting-select"
-                [ngModel]="userSettingsService.fastingType()"
-                (ngModelChange)="onFastingTypeChange($event)">
-                <option value="none">None</option>
-                <option value="16_8">16:8</option>
-                <option value="18_6">18:6</option>
-                <option value="20_4">20:4</option>
-                <option value="omad">OMAD</option>
-              </select>
-            </div>
-            <div class="setting-row">
-              <label class="setting-label">Start at</label>
-              <select
-                class="setting-select time-select"
-                [ngModel]="userSettingsService.eatingStartTime()"
-                (ngModelChange)="onEatingStartTimeChange($event)">
-                @for (time of timeOptions; track time) {
-                  <option [value]="time">{{ time }}</option>
-                }
-              </select>
-            </div>
-          </div>
 
-          <!-- Right column: RegiMenu -->
-          <div class="regimenu-column">
-            <span class="column-label">RegiMenu℠</span>
-            <div class="setting-row">
-              <label class="setting-label">Repeat Meals</label>
-              <select
-                class="setting-select"
-                [ngModel]="userSettingsService.repeatMeals()"
-                (ngModelChange)="onRepeatMealsChange($event)">
-                <option [ngValue]="1">1</option>
-                <option [ngValue]="2">2</option>
-                <option [ngValue]="3">3</option>
-                <option [ngValue]="4">4</option>
-              </select>
+            <div class="regimenu-column">
+              <span class="column-label">Regimenu</span>
+              <div class="setting-row">
+                <label class="setting-label">Repeat Meals</label>
+                <select
+                  class="setting-select"
+                  [ngModel]="userSettingsService.repeatMeals()"
+                  (ngModelChange)="onRepeatMealsChange($event)">
+                  <option [ngValue]="1">1</option>
+                  <option [ngValue]="2">2</option>
+                  <option [ngValue]="3">3</option>
+                  <option [ngValue]="4">4</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <label class="setting-label">Pick from</label>
+                <select
+                  class="setting-select"
+                  [ngModel]="userSettingsService.foodListSource()"
+                  (ngModelChange)="onFoodListSourceChange($event)">
+                  <option value="yeh_plus_myfoods">YEH+MyFoods</option>
+                  <option value="yeh">YEH</option>
+                  <option value="myfoods">MyFoods</option>
+                </select>
+              </div>
             </div>
-            <div class="setting-row">
-              <label class="setting-label">Pick from</label>
-              <select
-                class="setting-select"
-                [ngModel]="userSettingsService.foodListSource()"
-                (ngModelChange)="onFoodListSourceChange($event)">
-                <option value="yeh_plus_myfoods">YEH+MyFoods</option>
-                <option value="yeh">YEH</option>
-                <option value="myfoods">MyFoods</option>
-              </select>
-            </div>
-          </div>
-
           </div>
         </div>
 
