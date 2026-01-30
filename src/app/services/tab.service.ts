@@ -95,12 +95,19 @@ export class TabService {
       newTabs.splice(insertIndex, 0, newTab);
       this.tabsSignal.set(newTabs);
 
-      // Defer focus to the new tab so mat-tab-group renders it first
+      // Defer focus to the new tab so mat-tab-group renders it first.
+      // Keep _pendingActiveIndex set through TWO cycles: the first setTimeout
+      // sets the index, and the second clears the guard AFTER mat-tab-group
+      // emits its reactive selectedIndexChange in response.
       this._pendingActiveIndex = insertIndex;
       setTimeout(() => {
         if (this._pendingActiveIndex !== null) {
           this.activeTabIndexSignal.set(this._pendingActiveIndex);
-          this._pendingActiveIndex = null;
+          // Clear guard after the next cycle so the resulting
+          // selectedIndexChange emission is still blocked
+          setTimeout(() => {
+            this._pendingActiveIndex = null;
+          }, 0);
         }
       }, 0);
     }
