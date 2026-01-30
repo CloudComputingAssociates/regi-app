@@ -137,17 +137,21 @@
   }
 }
 
-// Action buttons - right-aligned in flow
 .action-buttons {
   display: flex;
-  gap: 8px;
   align-items: center;
-  justify-content: flex-end;
-  flex-shrink: 0;
-  padding-right: 0;
+  justify-content: space-between;
 
-  .btn-spacer {
-    width: 8px;
+  .action-left, .action-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ai-label {
+    color: #4da6ff;
+    font-size: 13px;
+    font-weight: 500;
   }
 
   .icon-btn {
@@ -480,12 +484,6 @@
     }
   }
 
-  .pi-computed-value {
-    color: #4da6ff;
-    font-size: 12px;
-    font-weight: 600;
-  }
-
   // Eating Window column (next to targets)
   .plan-column {
     display: flex;
@@ -560,6 +558,7 @@
       font-size: 14px;
       font-weight: 500;
       letter-spacing: 0.5px;
+      margin-bottom: 4px;
     }
 
     .pi-row {
@@ -654,7 +653,6 @@
     font-family: inherit;
     font-weight: 500;
     outline: none;
-    margin-left: 8px;
 
     &:hover { border-color: #6a6a6a; }
   }

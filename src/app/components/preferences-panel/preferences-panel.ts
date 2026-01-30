@@ -41,44 +41,50 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
           </div>
         }
         <div class="panel-content">
-          <!-- Action buttons - right-aligned in flow -->
+          <!-- Action buttons -->
           <div class="action-buttons">
-            <button
-              class="icon-btn ai-btn"
-              matTooltip="AI assist"
-              matTooltipPosition="above"
-              [matTooltipShowDelay]="300">
-              <img src="/images/AI-star.png" alt="AI" class="ai-btn-icon" />
-            </button>
-            <span class="btn-spacer"></span>
-            <button
-              class="icon-btn save-btn"
-              [class.has-changes]="hasAnyChanges()"
-              (click)="save()"
-              matTooltip="Save"
-              matTooltipPosition="above"
-              [matTooltipShowDelay]="300">
-              ✓
-            </button>
-            <button
-              class="icon-btn close-btn"
-              (click)="close()"
-              matTooltip="Close"
-              matTooltipPosition="above"
-              [matTooltipShowDelay]="300">
-              ✕
-            </button>
+            <div class="action-left">
+              <button
+                class="icon-btn ai-btn"
+                matTooltip="AI assist"
+                matTooltipPosition="above"
+                [matTooltipShowDelay]="300">
+                <img src="/images/AI-star.png" alt="AI" class="ai-btn-icon" />
+              </button>
+              <span class="ai-label">AI assistant</span>
+            </div>
+            <div class="action-right">
+              <button
+                class="icon-btn save-btn"
+                [class.has-changes]="hasAnyChanges()"
+                (click)="save()"
+                matTooltip="Save"
+                matTooltipPosition="above"
+                [matTooltipShowDelay]="300">
+                ✓
+              </button>
+              <button
+                class="icon-btn close-btn"
+                (click)="close()"
+                matTooltip="Close"
+                matTooltipPosition="above"
+                [matTooltipShowDelay]="300">
+                ✕
+              </button>
+            </div>
           </div>
 
           <div class="settings-wrapper">
             <!-- Personal Info -->
             <div class="settings-section personal-info-section">
               <div class="pi-column">
-                <span class="column-label">Personal Info
+                <span class="column-label">Personal Info</span>
+                <div class="pi-row">
+                  <label class="setting-label">Scale</label>
                   <button class="unit-toggle" (click)="toggleUnits()">
                     {{ userSettingsService.useImperial() ? 'US' : 'metric' }}
                   </button>
-                </span>
+                </div>
                 <div class="pi-row">
                   <label class="setting-label">DOB</label>
                   <input type="date" class="pi-input pi-date"
@@ -143,8 +149,12 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <option value="very_active">Very Active</option>
                     <option value="extremely_active">Ext. Active</option>
                   </select>
-                  <label class="setting-label pi-gap-left">Cal</label>
-                  <span class="pi-computed-value">{{ userSettingsService.computedTDEE() ?? '—' }}</span>
+                </div>
+                <div class="pi-row">
+                  <label class="setting-label">Daily</label>
+                  <input type="text" class="pi-input pi-small" readonly
+                    [value]="userSettingsService.computedTDEE() ?? '—'" />
+                  <span class="unit-label">cals</span>
                 </div>
               </div>
             </div>
@@ -192,7 +202,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <option [ngValue]="1.0">1.0 g/lb</option>
                     <option [ngValue]="1.2">1.2 g/lb</option>
                   </select>
-                  <span class="macro-hint">(of tgt wt)</span>
+                  <span class="macro-hint">of body weight</span>
                 </div>
                 <!-- Carb scale slider -->
                 <div class="macro-control-row">
