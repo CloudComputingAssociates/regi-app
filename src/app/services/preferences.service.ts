@@ -321,11 +321,11 @@ export class PreferencesService {
   // ========================================================
 
   static lbsToKg(lbs: number): number {
-    return Math.round(lbs * 0.453592 * 10) / 10;
+    return Math.round(lbs * 0.453592 * 100) / 100;
   }
 
   static kgToLbs(kg: number): number {
-    return Math.round(kg / 0.453592 * 10) / 10;
+    return Math.round(kg / 0.453592);
   }
 
   static cmToFtIn(cm: number): { ft: number; inches: number } {
