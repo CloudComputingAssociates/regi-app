@@ -52,7 +52,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                 matTooltip="AI assist"
                 matTooltipPosition="above"
                 [matTooltipShowDelay]="300">
-                <img src="/images/AI-star.png" alt="AI" class="ai-btn-icon" />
+                <img src="/images/AI-star-white.png" alt="AI" class="ai-btn-icon" />
               </button>
               <span class="ai-label">AI assistant</span>
             </div>
@@ -489,6 +489,7 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
 
   toggleAiPanel(): void {
     this.aiPanelOpen.update(v => !v);
+    this.chatService.setPromptMe(this.aiPanelOpen());
   }
 
   onProteinRatioChange(value: number): void {

@@ -144,7 +144,7 @@
   }
 
   .ai-label {
-    color: #4da6ff;
+    color: #ffffff;
     font-size: 13px;
     font-weight: 500;
   }
@@ -193,20 +193,18 @@
 
   .ai-btn-icon {
     width: 20px; height: 20px; object-fit: contain;
-    // Tint to #4da6ff blue
-    filter: brightness(0) saturate(100%) invert(58%) sepia(52%) saturate(1000%) hue-rotate(185deg) brightness(102%) contrast(101%);
+    pointer-events: none;
   }
 
   .ai-btn.ai-active,
   .ai-btn.ai-active:hover:not(:disabled),
   .ai-btn.ai-active:active:not(:disabled) {
-    background: linear-gradient(180deg, #1a1a1a 0%, #2a2a2a 100%);
-    border-top: 2px solid #0a0a0a;
-    border-left: 1px solid #1a1a1a;
-    border-right: 1px solid #1a1a1a;
-    border-bottom: 1px solid #4a4a4a;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.6) inset;
-    transform: translateY(2px);
+    background: linear-gradient(180deg, #5ab3ff 0%, #4da6ff 100%);
+    border-color: #4da6ff;
+    box-shadow:
+      0 2px 8px rgba(77, 166, 255, 0.5),
+      0 -1px 0 rgba(255, 255, 255, 0.3) inset,
+      0 1px 0 rgba(0, 0, 0, 0.1) inset;
   }
 
   .save-btn {
