@@ -53,8 +53,12 @@ export class TabService {
     const existingTabIndex = currentTabs.findIndex(t => t.id === tabId);
 
     if (existingTabIndex !== -1) {
-      // Tab exists - always close it when menu item is clicked
-      this.closeTab(tabId);
+      // Tab exists - if it's already active, close it; otherwise focus it
+      if (this.activeTabIndexSignal() === existingTabIndex) {
+        this.closeTab(tabId);
+      } else {
+        this.activeTabIndexSignal.set(existingTabIndex);
+      }
     } else {
       // Tab doesn't exist - add it in the correct position based on menu order
       const newTab: Tab = {
