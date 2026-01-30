@@ -1,5 +1,5 @@
 // src/app/components/macros/macros.ts
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject, computed, signal, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -7,7 +7,12 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { MacrosService } from '../../services/macros.service';
+import { PreferencesService } from '../../services/preferences.service';
+import { TabService } from '../../services/tab.service';
 import { TimePeriod, NutritionResponse } from '../../models/nutrition.model';
+
+// Context determines how the macros component behaves
+export type MacrosContext = 'preferences' | 'foods' | 'regimenu' | 'today' | 'shopping' | 'default';
 
 // Display modes for macros component
 export type MacrosDisplayMode = 'day' | 'week' | 'food' | 'mealplan' | 'dayplan';
@@ -39,7 +44,7 @@ export interface MacroDisplayData {
           <div class="macro-row">
 
             <!-- Iterate through each macro nutrient -->
-            @for (macro of displayData.macros; track macro.name) {
+            @for (macro of effectiveDisplayData().macros; track macro.name) {
               <div class="macro-item">
                 <div class="macro-title">{{ macro.name }}</div>
                 <div class="custom-progress-container">
@@ -53,8 +58,10 @@ export interface MacroDisplayData {
                   <span class="target-label">{{ macro.target }}</span>
                 </div>
 
-                <!-- Value Label - clickable to toggle percent/grams -->
-                @if (!isPlanningMode()) {
+                <!-- Value Label -->
+                @if (context() === 'preferences') {
+                  <div class="value-label">0g</div>
+                } @else if (!isPlanningMode()) {
                   <button
                     type="button"
                     class="value-label clickable"
@@ -81,7 +88,9 @@ export interface MacroDisplayData {
 
             <!-- Mode Toggle (Right) - Label on top, arrow button below -->
             <div class="mode-toggle-container">
-              @if (!isPlanningMode()) {
+              @if (context() === 'preferences') {
+                <span class="mode-label">Limits</span>
+              } @else if (!isPlanningMode()) {
                 <span class="mode-label">{{ currentTimePeriod === 'day' ? 'Day' : 'Week' }}</span>
                 <button
                   type="button"
@@ -128,39 +137,72 @@ export interface MacroDisplayData {
 export class MacrosComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
+  private macrosService = inject(MacrosService);
+  private preferencesService = inject(PreferencesService);
+  private tabService = inject(TabService);
 
   // Input to indicate if we're in planning mode
   planningMode = input<boolean>(false);
 
+  // Derive context from active tab
+  readonly context = computed<MacrosContext>(() => {
+    const tabId = this.tabService.activeTabId();
+    if (!tabId) return 'default';
+    if (tabId === 'preferences') return 'preferences';
+    if (tabId === 'foods') return 'foods';
+    if (tabId === 'regimenu') return 'regimenu';
+    if (tabId === 'today') return 'today';
+    if (tabId === 'shopping') return 'shopping';
+    return 'default';
+  });
+
+  // Signal-based display data for preferences context (live from PreferencesService)
+  readonly preferencesDisplayData = computed<MacroDisplayData>(() => {
+    const goals = this.preferencesService.dailyGoals();
+    return {
+      macros: [
+        { name: 'Protein', actual: 0, target: goals?.protein ?? 0, percentage: 0 },
+        { name: 'Carbs', actual: 0, target: goals?.carbs ?? 0, percentage: 0 },
+        { name: 'Fat', actual: 0, target: goals?.fat ?? 0, percentage: 0 }
+      ],
+      timePeriod: 'day'
+    };
+  });
+
+  // Signal for subscription-based display data (non-preferences contexts)
+  private subscriptionData = signal<MacroDisplayData>({ macros: [], timePeriod: 'day' });
+
+  // Combined display: picks preferences signal or subscription-based data
+  readonly effectiveDisplayData = computed<MacroDisplayData>(() => {
+    if (this.context() === 'preferences') {
+      return this.preferencesDisplayData();
+    }
+    return this.subscriptionData();
+  });
+
   // Component state
-  displayData: MacroDisplayData = {
-    macros: [],
-    timePeriod: 'day'
-  };
   currentTimePeriod: TimePeriod = 'day';
   isLoading = false;
-  currentPlanningDisplayMode: MacrosDisplayMode = 'food';  // For planning mode cycling
-  showPercent = true;  // Toggle between percent and grams display
-
-  constructor(private macrosService: MacrosService) {}
+  currentPlanningDisplayMode: MacrosDisplayMode = 'food';
+  showPercent = true;
 
   ngOnInit(): void {
     // Get initial static data immediately
-    this.displayData = this.transformNutritionData(
+    this.subscriptionData.set(this.transformNutritionData(
       this.macrosService.getCurrentNutritionData(),
       'day'
-    );
+    ));
     this.currentTimePeriod = 'day';
 
-    // Listen for time period changes
+    // Listen for time period changes (for non-preferences contexts)
     this.macrosService.currentPeriod$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(timePeriod => {
       this.currentTimePeriod = timePeriod;
-      this.displayData = this.transformNutritionData(
+      this.subscriptionData.set(this.transformNutritionData(
         this.macrosService.getCurrentNutritionData(),
         timePeriod
-      );
+      ));
     });
   }
 
@@ -233,9 +275,6 @@ export class MacrosComponent implements OnInit, OnDestroy {
     this.showPercent = !this.showPercent;
   }
 
-  /**
-   * Check if in planning mode
-   */
   isPlanningMode(): boolean {
     return this.planningMode();
   }
@@ -296,16 +335,4 @@ export class MacrosComponent implements OnInit, OnDestroy {
     return '#10b981';                          // Green - on track
   }
 
-  /**
-   * Get default nutrition data structure
-   */
-  private getDefaultNutritionData(): NutritionResponse {
-    return {
-      nutrients: {
-        protein: { 'target-percent': 30, 'target-grams': 150, 'actual-day': 0, 'actual-week': 0 },
-        fat: { 'target-percent': 35, 'target-grams': 78, 'actual-day': 0, 'actual-week': 0 },
-        carb: { 'target-percent': 35, 'target-grams': 175, 'actual-day': 0, 'actual-week': 0 }
-      }
-    };
-  }
 }
