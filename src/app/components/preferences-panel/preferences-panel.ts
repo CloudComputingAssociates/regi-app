@@ -30,7 +30,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
       }
 
       <!-- Top pane: Settings -->
-      <div class="settings-pane" [style.flex]="topFlex()" #settingsPane (scroll)="onSettingsScroll()">
+      <div class="settings-pane" [style.flex]="aiPanelOpen() ? topFlex() : '1 1 0%'" #settingsPane (scroll)="onSettingsScroll()">
         @if (showScrollUp()) {
           <div class="scroll-hint scroll-hint-up">
             <span class="scroll-chevron">&#x25B2;</span>
@@ -47,6 +47,8 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
             <div class="action-left">
               <button
                 class="icon-btn ai-btn"
+                [class.ai-active]="aiPanelOpen()"
+                (click)="toggleAiPanel()"
                 matTooltip="AI assist"
                 matTooltipPosition="above"
                 [matTooltipShowDelay]="300">
@@ -308,21 +310,23 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
         </div>
       </div>
 
-      <!-- Draggable splitter -->
-      <div
-        class="splitter-bar"
-        (mousedown)="onSplitterMouseDown($event)"
-        (touchstart)="onSplitterTouchStart($event)">
-        <span class="splitter-grip">⇕</span>
-      </div>
-
-      <!-- Bottom pane: AI Output -->
-      <div class="chat-pane" [style.flex]="bottomFlex()">
-        <div class="chat-pane-header">
-          <span class="chat-pane-label">Preferences AI Output</span>
+      @if (aiPanelOpen()) {
+        <!-- Draggable splitter -->
+        <div
+          class="splitter-bar"
+          (mousedown)="onSplitterMouseDown($event)"
+          (touchstart)="onSplitterTouchStart($event)">
+          <span class="splitter-grip">⇕</span>
         </div>
-        <app-chat-output context="preferences" [condensed]="true" />
-      </div>
+
+        <!-- Bottom pane: AI Output -->
+        <div class="chat-pane" [style.flex]="bottomFlex()">
+          <div class="chat-pane-header">
+            <span class="chat-pane-label">Preferences AI Output</span>
+          </div>
+          <app-chat-output context="preferences" [condensed]="true" />
+        </div>
+      }
     </div>
   `,
   styleUrls: ['./preferences-panel.scss']
@@ -347,6 +351,7 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
   isSaving = signal(false);
   showConfirmDialog = signal(false);
   settingsChanged = signal(false);
+  aiPanelOpen = signal(false);
 
   // Scroll hint state
   showScrollUp = signal(false);
@@ -480,6 +485,10 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
 
   toggleUnits(): void {
     this.userSettingsService.toggleUnits();
+  }
+
+  toggleAiPanel(): void {
+    this.aiPanelOpen.update(v => !v);
   }
 
   onProteinRatioChange(value: number): void {
