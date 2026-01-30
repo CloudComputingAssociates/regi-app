@@ -159,7 +159,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                 </select>
               </div>
               <div class="setting-row">
-                <label class="setting-label">Pick from</label>
+                <label class="setting-label">Foods from</label>
                 <select
                   class="setting-select"
                   [ngModel]="userSettingsService.foodListSource()"
