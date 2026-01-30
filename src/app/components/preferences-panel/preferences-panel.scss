@@ -191,16 +191,21 @@
     }
   }
 
-  .ai-btn.ai-active {
-    background: linear-gradient(180deg, #2a2a2a 0%, #3a3a3a 100%);
-    border-top: 1px solid #1a1a1a;
-    border-bottom: 1px solid #5a5a5a;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.5) inset;
-    transform: translateY(1px);
-    .ai-btn-icon { filter: brightness(1.3); }
+  .ai-btn-icon {
+    width: 20px; height: 20px; object-fit: contain;
+    // Tint to #4da6ff blue
+    filter: brightness(0) saturate(100%) invert(58%) sepia(52%) saturate(1000%) hue-rotate(185deg) brightness(102%) contrast(101%);
   }
 
-  .ai-btn-icon { width: 20px; height: 20px; object-fit: contain; }
+  .ai-btn.ai-active {
+    background: linear-gradient(180deg, #1a1a1a 0%, #2a2a2a 100%);
+    border-top: 2px solid #0a0a0a;
+    border-left: 1px solid #1a1a1a;
+    border-right: 1px solid #1a1a1a;
+    border-bottom: 1px solid #4a4a4a;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.6) inset;
+    transform: translateY(2px);
+  }
 
   .save-btn {
     &.has-changes {

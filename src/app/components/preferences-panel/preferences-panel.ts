@@ -129,14 +129,14 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   }
                 </div>
                 <div class="pi-row">
-                  <label class="setting-label">Cur Wt</label>
+                  <label class="setting-label">Weight</label>
                   <div class="weight-row">
                     <input type="number" class="pi-input pi-small"
                       [ngModel]="currentWeightDisplay()"
                       (ngModelChange)="onCurrentWeightChange($event)" />
                     <span class="unit-label">{{ userSettingsService.useImperial() ? 'lbs' : 'kg' }}</span>
                   </div>
-                  <label class="setting-label pi-gap-left">Tgt Wt</label>
+                  <label class="setting-label pi-gap-left">Goal</label>
                   <div class="weight-row">
                     <input type="number" class="pi-input pi-small"
                       [ngModel]="targetWeightDisplay()"
@@ -158,7 +158,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   </select>
                 </div>
                 <div class="pi-row pi-daily-row">
-                  <label class="setting-label">Target</label>
+                  <label class="setting-label">Daily</label>
                   <input type="text" class="pi-input pi-small pi-readonly" readonly
                     [value]="userSettingsService.computedTargetCalories() ?? '—'" />
                   <span class="unit-label">cals</span>
@@ -170,7 +170,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <label class="setting-label">Weeks</label>
                   <input type="text" class="pi-input pi-small pi-readonly" readonly
                     [value]="userSettingsService.computedWeeksToGoal() ?? '—'" />
-                  <span class="unit-label">to tgt wt</span>
+                  <span class="unit-label">to goal weight</span>
                 </div>
                 <div class="pi-last-updated">(last updated {{ lastComputedDate() }})</div>
               </div>
