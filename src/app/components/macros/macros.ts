@@ -55,6 +55,7 @@ export interface MacroDisplayData {
                       [style.background-color]="getMacroColor(macro.name, macro.percentage)">
                     </div>
                   </div>
+                  <div class="limit-marker"></div>
                   <span class="target-label">{{ macro.target }}</span>
                 </div>
 
@@ -87,10 +88,9 @@ export interface MacroDisplayData {
             }
 
             <!-- Mode Toggle (Right) - Label on top, arrow button below -->
+            @if (context() !== 'preferences') {
             <div class="mode-toggle-container">
-              @if (context() === 'preferences') {
-                <span class="mode-label">Limits</span>
-              } @else if (!isPlanningMode()) {
+              @if (!isPlanningMode()) {
                 <span class="mode-label">{{ currentTimePeriod === 'day' ? 'Day' : 'Week' }}</span>
                 <button
                   type="button"
@@ -112,6 +112,7 @@ export interface MacroDisplayData {
                 </button>
               }
             </div>
+            }
 
           </div>
 
