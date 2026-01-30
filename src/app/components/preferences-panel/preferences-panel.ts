@@ -180,6 +180,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
         class="splitter-bar"
         (mousedown)="onSplitterMouseDown($event)"
         (touchstart)="onSplitterTouchStart($event)">
+        <span class="splitter-grip">⇕</span>
       </div>
 
       <!-- Bottom pane: AI Output -->

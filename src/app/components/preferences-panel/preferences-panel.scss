@@ -86,9 +86,22 @@
   background: #5a5a5a;
   cursor: row-resize;
   transition: background 0.15s ease;
+  position: relative;
 
   &:hover {
     background: #7a7a7a;
+  }
+
+  .splitter-grip {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+    user-select: none;
   }
 }
 
