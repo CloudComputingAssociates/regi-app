@@ -1,6 +1,5 @@
 // src/app/components/preferences-panel/preferences-panel.scss
 
-// Shared scrollbar mixin
 @mixin always-visible-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.1);
@@ -39,7 +38,6 @@
   overflow: hidden;
 }
 
-// Top pane: settings area
 .settings-pane {
   display: flex;
   flex-direction: column;
@@ -50,7 +48,6 @@
   @include always-visible-scrollbar;
 }
 
-// Scroll hint overlays
 .scroll-hint {
   position: sticky;
   left: 0;
@@ -81,7 +78,6 @@
   margin-top: -28px;
 }
 
-// Bottom pane: AI output area
 .chat-pane {
   display: flex;
   flex-direction: column;
@@ -111,7 +107,6 @@
   font-weight: 500;
 }
 
-// Draggable splitter bar
 .splitter-bar {
   flex-shrink: 0;
   height: 6px;
@@ -559,6 +554,15 @@
       font-weight: 500;
       letter-spacing: 0.5px;
       margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+    }
+
+    .pi-scale-label {
+      color: #4da6ff;
+      font-size: 11px;
+      margin-left: auto;
+      font-weight: 500;
     }
 
     .pi-row {

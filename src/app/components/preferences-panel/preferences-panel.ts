@@ -78,13 +78,12 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
             <!-- Personal Info -->
             <div class="settings-section personal-info-section">
               <div class="pi-column">
-                <span class="column-label">Personal Info</span>
-                <div class="pi-row">
-                  <label class="setting-label">Scale</label>
+                <span class="column-label">Personal Info
+                  <span class="pi-scale-label">Scale</span>
                   <button class="unit-toggle" (click)="toggleUnits()">
                     {{ userSettingsService.useImperial() ? 'US' : 'metric' }}
                   </button>
-                </div>
+                </span>
                 <div class="pi-row">
                   <label class="setting-label">DOB</label>
                   <input type="date" class="pi-input pi-date"
