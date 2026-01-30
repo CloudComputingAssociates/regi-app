@@ -493,10 +493,7 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
   }
 
   private syncMacros(): void {
-    this.userSettingsService.computeDeficitPercentViaAI().then(() => {
-      this.userSettingsService.syncComputedMacros();
-    });
-    // Sync macros immediately with current values too (AI result will re-sync when it arrives)
+    this.userSettingsService.computeDeficitPercent();
     this.userSettingsService.syncComputedMacros();
     this.settingsChanged.set(true);
   }

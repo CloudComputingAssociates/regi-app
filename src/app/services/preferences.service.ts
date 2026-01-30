@@ -3,10 +3,7 @@
 // Initializes from SettingsService cached data (consolidated GET at startup).
 // Saves via SettingsService individual PUT endpoints.
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { AuthService } from '@auth0/auth0-angular';
-import { firstValueFrom } from 'rxjs';
 import { SettingsService } from './settings.service';
-import { environment } from '../../environments/environment';
 import {
   DailyGoals, RegiMenuSettings, PersonalInfo
 } from '../models/settings.models';
@@ -63,8 +60,6 @@ interface DirtyGroups {
 })
 export class PreferencesService {
   private settingsService = inject(SettingsService);
-  private auth = inject(AuthService);
-  private aiCallGeneration = 0;
 
   private preferencesSignal = signal<Preferences>(DEFAULT_PREFERENCES);
   private loadingSignal = signal(false);
@@ -372,10 +367,9 @@ export class PreferencesService {
     this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
   }
 
-  /** Ask AI to compute a conservative deficit/surplus percent.
-   *  Only calls if deficitPercent is not already stored and both weights are set.
-   *  Falls back to a simple heuristic if the AI call fails. */
-  async computeDeficitPercentViaAI(): Promise<void> {
+  /** Compute a conservative deficit/surplus percent from weight gap.
+   *  Only runs if deficitPercent is not already set and both weights are present. */
+  computeDeficitPercent(): void {
     const pi = this.personalInfo();
     if (pi.deficitPercent !== undefined && pi.deficitPercent !== null) return;
     if (!pi.currentWeightKg || !pi.targetWeightKg) return;
@@ -386,53 +380,13 @@ export class PreferencesService {
       return;
     }
 
-    const generation = ++this.aiCallGeneration;
-    const currentLbs = PreferencesService.kgToLbs(pi.currentWeightKg);
-    const targetLbs = PreferencesService.kgToLbs(pi.targetWeightKg);
-    const direction = diff < 0 ? 'lose' : 'gain';
-    const sex = pi.sex || 'unknown';
-    const age = pi.dateOfBirth ? PreferencesService.calcAge(pi.dateOfBirth) : 'unknown';
-    const activity = pi.activityLevel || 'unknown';
-
-    const userPrompt = `A ${sex} person, age ${age}, activity level ${activity}, currently weighs ${currentLbs} lbs and wants to ${direction} weight to reach ${targetLbs} lbs. What conservative caloric ${direction === 'lose' ? 'deficit' : 'surplus'} percentage would you recommend? Reply with ONLY a single integer number — negative for deficit (e.g. -20) or positive for surplus (e.g. 10). No explanation, just the number.`;
-
-    try {
-      const token = await firstValueFrom(this.auth.getAccessTokenSilently());
-      const response = await fetch(`${environment.apiUrl}/ai`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          systemPrompt: 'You are a nutrition expert. You recommend conservative, safe caloric adjustments. For weight loss, recommend between -10 and -25. For weight gain (muscle), recommend between 5 and 15. Always pick the more conservative (lower magnitude) end. Reply with ONLY a single integer.',
-          userPrompt,
-          maxTokens: 10,
-          temperature: 0.1
-        })
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      const content = (data.content || '').trim();
-      const parsed = parseInt(content, 10);
-      if (generation !== this.aiCallGeneration) return; // stale call
-      if (!isNaN(parsed) && parsed >= -30 && parsed <= 20) {
-        this.setDeficitPercent(parsed);
-        return;
-      }
-    } catch (err) {
-      console.warn('[PreferencesService] AI deficit call failed, using fallback:', err);
-    }
-
-    if (generation !== this.aiCallGeneration) return; // stale call
-
-    // Fallback heuristic
     const gapKg = Math.abs(diff);
     let pct: number;
     if (diff < 0) {
+      // Losing weight: conservative deficit
       pct = gapKg < 10 ? -15 : gapKg < 30 ? -20 : -25;
     } else {
+      // Gaining weight: conservative surplus
       pct = gapKg < 5 ? 5 : gapKg < 15 ? 10 : 15;
     }
     this.setDeficitPercent(pct);
