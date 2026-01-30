@@ -86,11 +86,10 @@
       .limit-marker {
         position: absolute;
         right: 0;
-        top: -3px;
-        width: 2px;
-        height: calc(100% + 2px);
+        top: 0;
+        width: 1px;
+        height: 12px;
         background-color: #4da6ff;
-        border-radius: 1px;
       }
 
       .target-label {
@@ -102,6 +101,7 @@
         text-align: right;
         margin-top: 1px;
         line-height: 1;
+        padding-right: 4px;
       }
     }
 

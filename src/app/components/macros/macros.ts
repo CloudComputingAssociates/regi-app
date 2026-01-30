@@ -52,7 +52,7 @@ export interface MacroDisplayData {
                     <div
                       class="custom-progress-fill"
                       [style.width.%]="macro.percentage"
-                      [style.background-color]="getMacroColor(macro.name, macro.percentage)">
+                      [style.background-color]="context() === 'preferences' ? '#10b981' : getMacroColor(macro.name, macro.percentage)">
                     </div>
                   </div>
                   <div class="limit-marker"></div>
@@ -61,7 +61,6 @@ export interface MacroDisplayData {
 
                 <!-- Value Label -->
                 @if (context() === 'preferences') {
-                  <div class="value-label">0g</div>
                 } @else if (!isPlanningMode()) {
                   <button
                     type="button"
@@ -162,9 +161,9 @@ export class MacrosComponent implements OnInit, OnDestroy {
     const goals = this.preferencesService.dailyGoals();
     return {
       macros: [
-        { name: 'Protein', actual: 0, target: goals?.protein ?? 0, percentage: 0 },
-        { name: 'Carbs', actual: 0, target: goals?.carbs ?? 0, percentage: 0 },
-        { name: 'Fat', actual: 0, target: goals?.fat ?? 0, percentage: 0 }
+        { name: 'Protein', actual: 0, target: goals?.protein ?? 0, percentage: 100 },
+        { name: 'Carbs', actual: 0, target: goals?.carbs ?? 0, percentage: 100 },
+        { name: 'Fat', actual: 0, target: goals?.fat ?? 0, percentage: 100 }
       ],
       timePeriod: 'day'
     };
