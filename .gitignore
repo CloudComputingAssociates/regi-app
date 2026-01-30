@@ -46,3 +46,4 @@ Thumbs.db
 
 # Local environment config (optional - Auth0 client ID/domain aren't secrets)
 # /src/environments/environment.ts
+nul

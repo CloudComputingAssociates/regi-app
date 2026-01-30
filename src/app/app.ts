@@ -103,8 +103,12 @@ export class AppComponent implements OnInit, OnDestroy {
           localStorage.removeItem('yeh_tabState');
         } else {
           try {
-            const settings = await this.settingsService.loadSettings();
-            this.tabService.restoreFromSettings(settings.defaultTabs, settings.activeTabId);
+            const allSettings = await this.settingsService.loadSettings();
+            const tabs = allSettings.tabs;
+            this.tabService.restoreFromSettings(
+              tabs?.defaultTabs ?? ['chat'],
+              tabs?.activeTabId
+            );
           } catch (error) {
             console.error('[App] Failed to load settings:', error);
             this.tabService.resetToChat();

@@ -1,33 +1,29 @@
 // src/app/services/preferences.service.ts
-// Service for managing user application preferences (mealsPerDay, fastingType, dailyGoals, etc.)
-// API: /user/preferences (GET/PUT)
+// Manages user preferences state (regiMenu, dailyGoals, defaultFoodList, personalInfo).
+// Initializes from SettingsService cached data (consolidated GET at startup).
+// Saves via SettingsService individual PUT endpoints.
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of, catchError, map } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { SettingsService } from './settings.service';
 import {
-  GetPreferencesResponse,
-  DailyGoals,
-  UpdatePreferencesRequest,
-} from '../models/generated/preferences.schema';
+  DailyGoals, RegiMenuSettings, PersonalInfo
+} from '../models/settings.models';
 
-// Re-export generated types for consumers
-export type { DailyGoals, GetPreferencesResponse, UpdatePreferencesRequest };
-
-// Narrower types for better type safety in the UI
+// Narrower types for UI
 export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6;
 export type FastingType = 'none' | '16_8' | '18_6' | '20_4' | 'omad';
 export type RepeatMeals = 1 | 2 | 3 | 4;
 export type FoodListSource = 'yeh_plus_myfoods' | 'yeh' | 'myfoods';
 
-// Local preferences with parsed dailyGoals (API returns as JSON string)
+export type { DailyGoals, PersonalInfo };
+
 export interface Preferences {
   mealsPerDay: MealsPerDay;
   fastingType: FastingType;
   dailyGoals: DailyGoals;
-  eatingStartTime: string;  // 24-hour format "HH:MM"
+  eatingStartTime: string;
   repeatMeals: RepeatMeals;
   foodListSource: FoodListSource;
+  personalInfo: PersonalInfo;
 }
 
 const DEFAULT_DAILY_GOALS: DailyGoals = {
@@ -39,172 +35,277 @@ const DEFAULT_DAILY_GOALS: DailyGoals = {
   sodium: 2300
 };
 
+const DEFAULT_PERSONAL_INFO: PersonalInfo = {};
+
 const DEFAULT_PREFERENCES: Preferences = {
   mealsPerDay: 3,
   fastingType: 'none',
   dailyGoals: DEFAULT_DAILY_GOALS,
   eatingStartTime: '08:00',
   repeatMeals: 1,
-  foodListSource: 'yeh_plus_myfoods'
+  foodListSource: 'yeh_plus_myfoods',
+  personalInfo: DEFAULT_PERSONAL_INFO
 };
+
+// Track which groups have been modified since last save
+interface DirtyGroups {
+  regiMenu: boolean;
+  dailyGoals: boolean;
+  defaultFoodList: boolean;
+  personalInfo: boolean;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class PreferencesService {
-  private http = inject(HttpClient);
-  private readonly API_BASE_URL = environment.apiUrl;
+  private settingsService = inject(SettingsService);
 
   private preferencesSignal = signal<Preferences>(DEFAULT_PREFERENCES);
   private loadingSignal = signal(false);
   private loadedSignal = signal(false);
+  private dirtyGroups = signal<DirtyGroups>({
+    regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false
+  });
 
-  /** Read-only access to all preferences */
+  // Unit preference for height/weight display
+  readonly useImperial = signal(localStorage.getItem('yeh_useImperial') !== 'false');
+
   readonly preferences = this.preferencesSignal.asReadonly();
   readonly isLoading = this.loadingSignal.asReadonly();
   readonly isLoaded = this.loadedSignal.asReadonly();
 
-  /** Convenience accessors */
+  // Convenience accessors
   readonly mealsPerDay = computed(() => this.preferencesSignal().mealsPerDay);
   readonly fastingType = computed(() => this.preferencesSignal().fastingType);
   readonly dailyGoals = computed(() => this.preferencesSignal().dailyGoals);
   readonly eatingStartTime = computed(() => this.preferencesSignal().eatingStartTime);
   readonly repeatMeals = computed(() => this.preferencesSignal().repeatMeals);
   readonly foodListSource = computed(() => this.preferencesSignal().foodListSource);
+  readonly personalInfo = computed(() => this.preferencesSignal().personalInfo);
 
-  /** Load preferences from API */
-  loadPreferences(): Observable<Preferences> {
-    if (this.loadedSignal()) {
-      return of(this.preferencesSignal());
-    }
+  // ========================================================
+  // LOAD (from SettingsService cached data)
+  // ========================================================
+
+  loadPreferences(): void {
+    if (this.loadedSignal()) return;
 
     this.loadingSignal.set(true);
-    return this.http.get<GetPreferencesResponse>(`${this.API_BASE_URL}/user/preferences`).pipe(
-      map(response => {
-        // Parse dailyGoals from JSON string if present
-        let parsedDailyGoals: DailyGoals = DEFAULT_DAILY_GOALS;
-        if (response.dailyGoals) {
-          try {
-            parsedDailyGoals = JSON.parse(response.dailyGoals);
-          } catch {
-            console.warn('Failed to parse dailyGoals, using defaults');
-          }
-        }
+    const all = this.settingsService.allSettings();
 
-        const preferences: Preferences = {
-          mealsPerDay: (response.mealsPerDay as MealsPerDay) || DEFAULT_PREFERENCES.mealsPerDay,
-          fastingType: (response.fastingType as FastingType) || DEFAULT_PREFERENCES.fastingType,
-          dailyGoals: parsedDailyGoals,
-          eatingStartTime: response.eatingStartTime || DEFAULT_PREFERENCES.eatingStartTime,
-          repeatMeals: (response.repeatMeals as RepeatMeals) || DEFAULT_PREFERENCES.repeatMeals,
-          foodListSource: (response.foodListSource as FoodListSource) || DEFAULT_PREFERENCES.foodListSource
-        };
-        this.preferencesSignal.set(preferences);
-        this.loadedSignal.set(true);
-        this.loadingSignal.set(false);
-        return preferences;
-      }),
-      catchError(error => {
-        console.error('Failed to load user preferences:', error);
-        this.loadingSignal.set(false);
-        // Return defaults on error
-        return of(DEFAULT_PREFERENCES);
-      })
-    );
-  }
+    if (!all) {
+      this.loadingSignal.set(false);
+      return;
+    }
 
-  /** Save preferences to API */
-  savePreferences(): Observable<Preferences> {
-    const current = this.preferencesSignal();
-    // API expects dailyGoals as a JSON string, not an object
-    // defaultFoodList is required by the database (cannot be NULL)
-    const payload = {
-      defaultFoodList: 'yeh_approved',
-      mealsPerDay: current.mealsPerDay,
-      fastingType: current.fastingType,
-      dailyGoals: JSON.stringify(current.dailyGoals),
-      eatingStartTime: current.eatingStartTime,
-      repeatMeals: current.repeatMeals,
-      foodListSource: current.foodListSource
+    const rm = all.regiMenu;
+    const dg = all.dailyGoals;
+    const pi = all.personalInfo;
+
+    const prefs: Preferences = {
+      mealsPerDay: (rm?.mealsPerDay as MealsPerDay) || DEFAULT_PREFERENCES.mealsPerDay,
+      fastingType: (rm?.fastingType as FastingType) || DEFAULT_PREFERENCES.fastingType,
+      eatingStartTime: rm?.eatingStartTime || DEFAULT_PREFERENCES.eatingStartTime,
+      repeatMeals: (rm?.repeatMeals as RepeatMeals) || DEFAULT_PREFERENCES.repeatMeals,
+      foodListSource: this.mapDefaultFoodList(all.defaultFoodList),
+      dailyGoals: dg ?? DEFAULT_DAILY_GOALS,
+      personalInfo: pi ?? DEFAULT_PERSONAL_INFO
     };
-    return this.http.put<GetPreferencesResponse>(`${this.API_BASE_URL}/user/preferences`, payload).pipe(
-      map(() => current),
-      catchError(error => {
-        console.error('Failed to save user preferences:', error);
-        throw error;
-      })
-    );
+
+    this.preferencesSignal.set(prefs);
+    this.loadedSignal.set(true);
+    this.loadingSignal.set(false);
+    this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false });
   }
 
-  /** Update meals per day */
+  // ========================================================
+  // SAVE (individual PUTs for changed groups)
+  // ========================================================
+
+  async savePreferences(): Promise<void> {
+    const current = this.preferencesSignal();
+    const dirty = this.dirtyGroups();
+    const promises: Promise<unknown>[] = [];
+
+    if (dirty.regiMenu) {
+      const data: RegiMenuSettings = {
+        mealsPerDay: current.mealsPerDay,
+        fastingType: current.fastingType,
+        eatingStartTime: current.eatingStartTime,
+        repeatMeals: current.repeatMeals
+      };
+      promises.push(this.settingsService.saveRegiMenuSettings(data));
+    }
+
+    if (dirty.dailyGoals) {
+      promises.push(this.settingsService.saveDailyGoals(current.dailyGoals));
+    }
+
+    if (dirty.defaultFoodList) {
+      promises.push(this.settingsService.saveDefaultFoodList(
+        this.mapFoodListSourceToApi(current.foodListSource)
+      ));
+    }
+
+    if (dirty.personalInfo) {
+      promises.push(this.settingsService.savePersonalInfo(current.personalInfo));
+    }
+
+    if (promises.length === 0) return;
+
+    await Promise.all(promises);
+    this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false });
+  }
+
+  // ========================================================
+  // SETTERS (mark dirty groups)
+  // ========================================================
+
   setMealsPerDay(value: MealsPerDay): void {
-    this.preferencesSignal.update(prefs => ({
-      ...prefs,
-      mealsPerDay: value
-    }));
+    this.preferencesSignal.update(p => ({ ...p, mealsPerDay: value }));
+    this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
   }
 
-  /** Update fasting type */
   setFastingType(value: FastingType): void {
-    this.preferencesSignal.update(prefs => ({
-      ...prefs,
-      fastingType: value
-    }));
+    this.preferencesSignal.update(p => ({ ...p, fastingType: value }));
+    this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
   }
 
-  /** Update eating start time */
   setEatingStartTime(value: string): void {
-    this.preferencesSignal.update(prefs => ({
-      ...prefs,
-      eatingStartTime: value
-    }));
+    this.preferencesSignal.update(p => ({ ...p, eatingStartTime: value }));
+    this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
   }
 
-  /** Update repeat meals */
   setRepeatMeals(value: RepeatMeals): void {
-    this.preferencesSignal.update(prefs => ({
-      ...prefs,
-      repeatMeals: value
-    }));
+    this.preferencesSignal.update(p => ({ ...p, repeatMeals: value }));
+    this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
   }
 
-  /** Update food list source */
   setFoodListSource(value: FoodListSource): void {
-    this.preferencesSignal.update(prefs => ({
-      ...prefs,
-      foodListSource: value
-    }));
+    this.preferencesSignal.update(p => ({ ...p, foodListSource: value }));
+    this.dirtyGroups.update(d => ({ ...d, defaultFoodList: true }));
   }
 
-  /** Update daily goals */
   setDailyGoals(goals: DailyGoals): void {
-    this.preferencesSignal.update(prefs => ({
-      ...prefs,
-      dailyGoals: goals
-    }));
+    this.preferencesSignal.update(p => ({ ...p, dailyGoals: goals }));
+    this.dirtyGroups.update(d => ({ ...d, dailyGoals: true }));
   }
 
-  /** Update a single daily goal field */
   updateDailyGoal(field: keyof DailyGoals, value: number): void {
-    this.preferencesSignal.update(prefs => ({
-      ...prefs,
-      dailyGoals: {
-        ...prefs.dailyGoals,
-        [field]: value
-      }
+    this.preferencesSignal.update(p => ({
+      ...p,
+      dailyGoals: { ...p.dailyGoals, [field]: value }
     }));
+    this.dirtyGroups.update(d => ({ ...d, dailyGoals: true }));
   }
 
-  /** Update multiple preferences at once */
+  // Personal Info setters
+  setSex(value: string): void {
+    this.preferencesSignal.update(p => ({
+      ...p, personalInfo: { ...p.personalInfo, sex: value }
+    }));
+    this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
+  }
+
+  setDateOfBirth(value: string): void {
+    this.preferencesSignal.update(p => ({
+      ...p, personalInfo: { ...p.personalInfo, dateOfBirth: value }
+    }));
+    this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
+  }
+
+  setHeightCm(value: number): void {
+    this.preferencesSignal.update(p => ({
+      ...p, personalInfo: { ...p.personalInfo, heightCm: value }
+    }));
+    this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
+  }
+
+  setCurrentWeightKg(value: number): void {
+    this.preferencesSignal.update(p => ({
+      ...p, personalInfo: { ...p.personalInfo, currentWeightKg: value }
+    }));
+    this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
+  }
+
+  setTargetWeightKg(value: number): void {
+    this.preferencesSignal.update(p => ({
+      ...p, personalInfo: { ...p.personalInfo, targetWeightKg: value }
+    }));
+    this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
+  }
+
+  setActivityLevel(value: string): void {
+    this.preferencesSignal.update(p => ({
+      ...p, personalInfo: { ...p.personalInfo, activityLevel: value }
+    }));
+    this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
+  }
+
+  // Unit toggle
+  toggleUnits(): void {
+    const newValue = !this.useImperial();
+    this.useImperial.set(newValue);
+    localStorage.setItem('yeh_useImperial', String(newValue));
+  }
+
+  // ========================================================
+  // UNIT CONVERSION HELPERS
+  // ========================================================
+
+  static lbsToKg(lbs: number): number {
+    return Math.round(lbs * 0.453592 * 10) / 10;
+  }
+
+  static kgToLbs(kg: number): number {
+    return Math.round(kg / 0.453592 * 10) / 10;
+  }
+
+  static cmToFtIn(cm: number): { ft: number; inches: number } {
+    const totalInches = cm / 2.54;
+    const ft = Math.floor(totalInches / 12);
+    const inches = Math.round(totalInches % 12);
+    return { ft, inches };
+  }
+
+  static ftInToCm(ft: number, inches: number): number {
+    return Math.round((ft * 12 + inches) * 2.54 * 10) / 10;
+  }
+
+  // ========================================================
+  // MISC
+  // ========================================================
+
   updatePreferences(partial: Partial<Preferences>): void {
-    this.preferencesSignal.update(prefs => ({
-      ...prefs,
-      ...partial
-    }));
+    this.preferencesSignal.update(p => ({ ...p, ...partial }));
   }
 
-  /** Reset preferences to defaults */
   resetToDefaults(): void {
     this.preferencesSignal.set(DEFAULT_PREFERENCES);
+  }
+
+  /** Returns true if any group has been modified since last load/save */
+  hasDirtyGroups(): boolean {
+    const d = this.dirtyGroups();
+    return d.regiMenu || d.dailyGoals || d.defaultFoodList || d.personalInfo;
+  }
+
+  // Map API defaultFoodList string to FoodListSource (the old API used different values)
+  private mapDefaultFoodList(value?: string): FoodListSource {
+    switch (value) {
+      case 'yeh_approved': return 'yeh';
+      case 'all_foods': return 'yeh_plus_myfoods';
+      default: return DEFAULT_PREFERENCES.foodListSource;
+    }
+  }
+
+  private mapFoodListSourceToApi(value: FoodListSource): string {
+    switch (value) {
+      case 'yeh': return 'yeh_approved';
+      case 'yeh_plus_myfoods': return 'all_foods';
+      case 'myfoods': return 'all_foods';
+      default: return 'yeh_approved';
+    }
   }
 }

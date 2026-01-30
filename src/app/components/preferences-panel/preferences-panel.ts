@@ -1,5 +1,5 @@
 // src/app/components/preferences-panel/preferences-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit, OnDestroy, ElementRef, NgZone } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy, ElementRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
@@ -61,6 +61,89 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
           </div>
 
           <div class="settings-wrapper">
+            <!-- Personal Info -->
+            <div class="settings-section personal-info-section">
+              <div class="personal-info-column">
+                <span class="column-label">Personal Info</span>
+                <div class="personal-info-grid">
+                  <div class="pi-field">
+                    <label>Sex</label>
+                    <select class="pi-select"
+                      [ngModel]="userSettingsService.personalInfo().sex || ''"
+                      (ngModelChange)="onSexChange($event)">
+                      <option value="">—</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                  </div>
+                  <div class="pi-field">
+                    <label>Date of Birth</label>
+                    <input type="date" class="pi-input pi-date"
+                      [ngModel]="userSettingsService.personalInfo().dateOfBirth || ''"
+                      (ngModelChange)="onDateOfBirthChange($event)" />
+                  </div>
+                  <div class="pi-field">
+                    <label>
+                      Height
+                      <button class="unit-toggle" (click)="toggleUnits()">
+                        {{ userSettingsService.useImperial() ? 'ft/in' : 'cm' }}
+                      </button>
+                    </label>
+                    @if (userSettingsService.useImperial()) {
+                      <div class="height-imperial">
+                        <input type="number" class="pi-input pi-small"
+                          [ngModel]="heightFt()"
+                          (ngModelChange)="onHeightFtChange($event)" />
+                        <span class="unit-label">ft</span>
+                        <input type="number" class="pi-input pi-small"
+                          [ngModel]="heightIn()"
+                          (ngModelChange)="onHeightInChange($event)" />
+                        <span class="unit-label">in</span>
+                      </div>
+                    } @else {
+                      <div class="height-metric">
+                        <input type="number" class="pi-input pi-small"
+                          [ngModel]="userSettingsService.personalInfo().heightCm || ''"
+                          (ngModelChange)="onHeightCmChange($event)" />
+                        <span class="unit-label">cm</span>
+                      </div>
+                    }
+                  </div>
+                  <div class="pi-field">
+                    <label>Current Weight</label>
+                    <div class="weight-row">
+                      <input type="number" class="pi-input pi-small"
+                        [ngModel]="currentWeightDisplay()"
+                        (ngModelChange)="onCurrentWeightChange($event)" />
+                      <span class="unit-label">{{ userSettingsService.useImperial() ? 'lbs' : 'kg' }}</span>
+                    </div>
+                  </div>
+                  <div class="pi-field">
+                    <label>Target Weight</label>
+                    <div class="weight-row">
+                      <input type="number" class="pi-input pi-small"
+                        [ngModel]="targetWeightDisplay()"
+                        (ngModelChange)="onTargetWeightChange($event)" />
+                      <span class="unit-label">{{ userSettingsService.useImperial() ? 'lbs' : 'kg' }}</span>
+                    </div>
+                  </div>
+                  <div class="pi-field">
+                    <label>Activity Level</label>
+                    <select class="pi-select"
+                      [ngModel]="userSettingsService.personalInfo().activityLevel || ''"
+                      (ngModelChange)="onActivityLevelChange($event)">
+                      <option value="">—</option>
+                      <option value="sedentary">Sedentary</option>
+                      <option value="lightly_active">Lightly Active</option>
+                      <option value="moderately_active">Moderately Active</option>
+                      <option value="very_active">Very Active</option>
+                      <option value="extremely_active">Extremely Active</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Top row: Nutrition Targets -->
             <div class="settings-section">
               <div class="targets-column">
@@ -223,8 +306,33 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy {
     return `${hours}:${minutes}`;
   });
 
+  // Computed height in ft/in from stored cm
+  heightFt = computed(() => {
+    const cm = this.userSettingsService.personalInfo().heightCm;
+    if (!cm) return '';
+    return PreferencesService.cmToFtIn(cm).ft;
+  });
+
+  heightIn = computed(() => {
+    const cm = this.userSettingsService.personalInfo().heightCm;
+    if (!cm) return '';
+    return PreferencesService.cmToFtIn(cm).inches;
+  });
+
+  currentWeightDisplay = computed(() => {
+    const kg = this.userSettingsService.personalInfo().currentWeightKg;
+    if (!kg) return '';
+    return this.userSettingsService.useImperial() ? PreferencesService.kgToLbs(kg) : kg;
+  });
+
+  targetWeightDisplay = computed(() => {
+    const kg = this.userSettingsService.personalInfo().targetWeightKg;
+    if (!kg) return '';
+    return this.userSettingsService.useImperial() ? PreferencesService.kgToLbs(kg) : kg;
+  });
+
   ngOnInit(): void {
-    this.userSettingsService.loadPreferences().subscribe();
+    this.userSettingsService.loadPreferences();
   }
 
   ngOnDestroy(): void {
@@ -234,6 +342,58 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy {
   hasAnyChanges(): boolean {
     return this.settingsChanged();
   }
+
+  // --- Personal Info handlers ---
+
+  onSexChange(value: string): void {
+    this.userSettingsService.setSex(value);
+    this.settingsChanged.set(true);
+  }
+
+  onDateOfBirthChange(value: string): void {
+    this.userSettingsService.setDateOfBirth(value);
+    this.settingsChanged.set(true);
+  }
+
+  onHeightFtChange(ft: number): void {
+    const inches = this.heightIn() || 0;
+    this.userSettingsService.setHeightCm(PreferencesService.ftInToCm(ft, +inches));
+    this.settingsChanged.set(true);
+  }
+
+  onHeightInChange(inches: number): void {
+    const ft = this.heightFt() || 0;
+    this.userSettingsService.setHeightCm(PreferencesService.ftInToCm(+ft, inches));
+    this.settingsChanged.set(true);
+  }
+
+  onHeightCmChange(value: number): void {
+    this.userSettingsService.setHeightCm(value);
+    this.settingsChanged.set(true);
+  }
+
+  onCurrentWeightChange(value: number): void {
+    const kg = this.userSettingsService.useImperial() ? PreferencesService.lbsToKg(value) : value;
+    this.userSettingsService.setCurrentWeightKg(kg);
+    this.settingsChanged.set(true);
+  }
+
+  onTargetWeightChange(value: number): void {
+    const kg = this.userSettingsService.useImperial() ? PreferencesService.lbsToKg(value) : value;
+    this.userSettingsService.setTargetWeightKg(kg);
+    this.settingsChanged.set(true);
+  }
+
+  onActivityLevelChange(value: string): void {
+    this.userSettingsService.setActivityLevel(value);
+    this.settingsChanged.set(true);
+  }
+
+  toggleUnits(): void {
+    this.userSettingsService.toggleUnits();
+  }
+
+  // --- Existing handlers ---
 
   onDailyGoalChange(field: keyof DailyGoals, value: number): void {
     this.userSettingsService.updateDailyGoal(field, value);
@@ -265,21 +425,19 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy {
     this.settingsChanged.set(true);
   }
 
-  save(): void {
+  async save(): Promise<void> {
     if (!this.hasAnyChanges()) return;
 
     this.isSaving.set(true);
-    this.userSettingsService.savePreferences().subscribe({
-      next: () => {
-        this.isSaving.set(false);
-        this.settingsChanged.set(false);
-        this.notificationService.show('Preferences saved', 'success');
-      },
-      error: () => {
-        this.isSaving.set(false);
-        this.notificationService.show('Failed to save preferences', 'error');
-      }
-    });
+    try {
+      await this.userSettingsService.savePreferences();
+      this.isSaving.set(false);
+      this.settingsChanged.set(false);
+      this.notificationService.show('Preferences saved', 'success');
+    } catch {
+      this.isSaving.set(false);
+      this.notificationService.show('Failed to save preferences', 'error');
+    }
   }
 
   close(): void {
