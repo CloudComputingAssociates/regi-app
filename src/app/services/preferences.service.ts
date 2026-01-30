@@ -2,7 +2,7 @@
 // Manages user preferences state (regiMenu, dailyGoals, defaultFoodList, personalInfo).
 // Initializes from SettingsService cached data (consolidated GET at startup).
 // Saves via SettingsService individual PUT endpoints.
-import { Injectable, inject, signal, computed, effect } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { SettingsService } from './settings.service';
 import {
   DailyGoals, RegiMenuSettings, PersonalInfo
@@ -137,14 +137,12 @@ export class PreferencesService {
   });
 
   /** Sync computed macros into dailyGoals when personal info yields values */
-  private syncMacrosEffect = effect(() => {
+  syncComputedMacros(): void {
     const protein = this.computedProteinGrams();
     const fat = this.computedFatGrams();
     const pi = this.personalInfo();
     const carbs = pi.carbScaleGrams;
     const tdee = this.computedTDEE();
-
-    if (protein === null && fat === null && carbs === undefined && tdee === null) return;
 
     const updates: Partial<DailyGoals> = {};
     if (protein !== null) updates.protein = protein;
@@ -159,7 +157,7 @@ export class PreferencesService {
       dailyGoals: { ...p.dailyGoals, ...updates }
     }));
     this.dirtyGroups.update(d => ({ ...d, dailyGoals: true }));
-  });
+  }
 
   // ========================================================
   // LOAD (from SettingsService cached data)

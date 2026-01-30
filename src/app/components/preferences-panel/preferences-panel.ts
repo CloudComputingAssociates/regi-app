@@ -149,9 +149,9 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <option value="extremely_active">Ext. Active</option>
                   </select>
                 </div>
-                <div class="pi-row">
+                <div class="pi-row pi-daily-row">
                   <label class="setting-label">Daily</label>
-                  <input type="text" class="pi-input pi-small" readonly
+                  <input type="text" class="pi-input pi-small pi-readonly" readonly
                     [value]="userSettingsService.computedTDEE() ?? '—'" />
                   <span class="unit-label">cals</span>
                 </div>
@@ -402,46 +402,46 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
 
   onSexChange(value: string): void {
     this.userSettingsService.setSex(value);
-    this.settingsChanged.set(true);
+    this.syncMacros();
   }
 
   onDateOfBirthChange(value: string): void {
     this.userSettingsService.setDateOfBirth(value);
-    this.settingsChanged.set(true);
+    this.syncMacros();
   }
 
   onHeightFtChange(ft: number): void {
     const inches = this.heightIn() || 0;
     this.userSettingsService.setHeightCm(PreferencesService.ftInToCm(ft, +inches));
-    this.settingsChanged.set(true);
+    this.syncMacros();
   }
 
   onHeightInChange(inches: number): void {
     const ft = this.heightFt() || 0;
     this.userSettingsService.setHeightCm(PreferencesService.ftInToCm(+ft, inches));
-    this.settingsChanged.set(true);
+    this.syncMacros();
   }
 
   onHeightCmChange(value: number): void {
     this.userSettingsService.setHeightCm(value);
-    this.settingsChanged.set(true);
+    this.syncMacros();
   }
 
   onCurrentWeightChange(value: number): void {
     const kg = this.userSettingsService.useImperial() ? PreferencesService.lbsToKg(value) : value;
     this.userSettingsService.setCurrentWeightKg(kg);
-    this.settingsChanged.set(true);
+    this.syncMacros();
   }
 
   onTargetWeightChange(value: number): void {
     const kg = this.userSettingsService.useImperial() ? PreferencesService.lbsToKg(value) : value;
     this.userSettingsService.setTargetWeightKg(kg);
-    this.settingsChanged.set(true);
+    this.syncMacros();
   }
 
   onActivityLevelChange(value: string): void {
     this.userSettingsService.setActivityLevel(value);
-    this.settingsChanged.set(true);
+    this.syncMacros();
   }
 
   toggleUnits(): void {
@@ -450,11 +450,16 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
 
   onProteinRatioChange(value: number): void {
     this.userSettingsService.setProteinRatio(+value);
-    this.settingsChanged.set(true);
+    this.syncMacros();
   }
 
   onCarbScaleChange(value: number): void {
     this.userSettingsService.setCarbScaleGrams(+value);
+    this.syncMacros();
+  }
+
+  private syncMacros(): void {
+    this.userSettingsService.syncComputedMacros();
     this.settingsChanged.set(true);
   }
 
