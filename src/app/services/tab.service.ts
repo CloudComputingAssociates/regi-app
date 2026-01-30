@@ -172,7 +172,7 @@ export class TabService {
   }
 
   /** Restore tabs from saved settings - used on login */
-  restoreFromSettings(tabIds: string[]): void {
+  restoreFromSettings(tabIds: string[], activeTabId?: string): void {
     if (!tabIds || tabIds.length === 0) {
       // Fall back to default (just Chat)
       this.resetToChat();
@@ -182,7 +182,7 @@ export class TabService {
     // Map of tab ID to label
     const tabLabels: Record<string, string> = {
       'chat': 'Chat',
-      'meal-planning': 'Regimenu℠',
+      'meal-planning': 'RegiMenu',
       'foods': 'Foods',
       'shop': 'Shopping List',
       'review': 'Review',
@@ -221,7 +221,16 @@ export class TabService {
     }
 
     this.tabsSignal.set(tabs);
-    this.activeTabIndexSignal.set(0);
-    console.log('[TabService] Restored tabs from settings:', tabIds);
+
+    // Restore the previously active tab, or default to first tab
+    let activeIndex = 0;
+    if (activeTabId) {
+      const idx = tabs.findIndex(t => t.id === activeTabId);
+      if (idx !== -1) {
+        activeIndex = idx;
+      }
+    }
+    this.activeTabIndexSignal.set(activeIndex);
+    console.log('[TabService] Restored tabs from settings:', tabIds, 'active:', activeTabId ?? tabs[0].id);
   }
 }

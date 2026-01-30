@@ -80,7 +80,8 @@ export class ProfileMenuComponent {
     const openTabs = this.tabService.getOpenTabIds();
     if (openTabs.length > 0) {
       try {
-        await this.settingsService.saveOpenTabs(openTabs);
+        const activeId = this.tabService.activeTabId() ?? undefined;
+        await this.settingsService.saveOpenTabs(openTabs, activeId);
       } catch (error) {
         console.error('[ProfileMenu] Failed to save tabs on logout:', error);
         // Continue with logout even if save fails

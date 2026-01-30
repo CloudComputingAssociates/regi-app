@@ -91,17 +91,36 @@ export class AppComponent implements OnInit, OnDestroy {
         // Only check subscription status if user is authenticated
         this.subscriptionService.checkSubscriptionStatus().subscribe();
 
-        // Load user settings and restore tabs
-        try {
-          const settings = await this.settingsService.loadSettings();
-          this.tabService.restoreFromSettings(settings.defaultTabs);
-        } catch (error) {
-          console.error('[App] Failed to load settings:', error);
-          // Fall back to default (chat tab)
-          this.tabService.resetToChat();
+        // Restore tabs: check localStorage first (page refresh), then API (login)
+        const localState = localStorage.getItem('yeh_tabState');
+        if (localState) {
+          try {
+            const parsed = JSON.parse(localState);
+            this.tabService.restoreFromSettings(parsed.defaultTabs, parsed.activeTabId);
+          } catch {
+            this.tabService.resetToChat();
+          }
+          localStorage.removeItem('yeh_tabState');
+        } else {
+          try {
+            const settings = await this.settingsService.loadSettings();
+            this.tabService.restoreFromSettings(settings.defaultTabs, settings.activeTabId);
+          } catch (error) {
+            console.error('[App] Failed to load settings:', error);
+            this.tabService.resetToChat();
+          }
         }
       }
       // If not authenticated, do nothing - user will see login button
+    });
+
+    // Save tab state to localStorage on page refresh/close
+    window.addEventListener('beforeunload', () => {
+      const openTabs = this.tabService.getOpenTabIds();
+      const activeId = this.tabService.activeTabId();
+      if (openTabs.length > 0) {
+        localStorage.setItem('yeh_tabState', JSON.stringify({ defaultTabs: openTabs, activeTabId: activeId }));
+      }
     });
 
     // Listen for visibility change to refresh subscription status when user returns from Stripe
@@ -156,6 +175,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.chatService.clearContextSession('preferences');
     this.settingsService.clearSettings();
     this.tabService.closeAllTabs();
+    localStorage.removeItem('yeh_tabState');
 
     // Auto-logout after a brief delay so user sees the notification
     setTimeout(() => {

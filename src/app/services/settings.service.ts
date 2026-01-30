@@ -9,6 +9,7 @@ import { environment } from '../../environments/environment';
 // Settings response/request interface
 export interface UserSettings {
   defaultTabs: string[];
+  activeTabId?: string;
 }
 
 @Injectable({
@@ -100,9 +101,10 @@ export class SettingsService {
   /**
    * Save the current open tabs to settings
    */
-  async saveOpenTabs(tabIds: string[]): Promise<void> {
+  async saveOpenTabs(tabIds: string[], activeTabId?: string): Promise<void> {
     const settings: UserSettings = {
-      defaultTabs: tabIds
+      defaultTabs: tabIds,
+      activeTabId
     };
     await this.saveSettings(settings);
   }
