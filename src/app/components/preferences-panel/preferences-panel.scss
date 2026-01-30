@@ -23,7 +23,7 @@
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
-  padding-right: 6px;
+  padding-right: 0;
 
   .btn-spacer {
     width: 8px;
@@ -189,7 +189,7 @@
   align-items: stretch;
   gap: 12px;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 
   .settings-wrapper {
     position: relative;
@@ -202,6 +202,7 @@
   // Settings Section - scrollable with compact columns
   .settings-section {
     width: 100%;
+    box-sizing: border-box;
     flex-shrink: 0;
     display: flex;
     gap: 16px;
@@ -210,30 +211,7 @@
     background: #2a2a2a;
     border: 1px solid #4a4a4a;
     border-radius: 8px;
-    padding: 10px 16px 10px 10px;
-    overflow-x: auto;
-
-    // Scrollbar styling - always visible
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.1);
-
-    &::-webkit-scrollbar {
-      height: 6px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 3px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.4);
-      border-radius: 3px;
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.5);
-      }
-    }
+    padding: 10px 12px;
   }
 
   // Left column: Targets
