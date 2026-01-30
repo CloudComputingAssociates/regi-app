@@ -33,7 +33,8 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
         <div class="action-buttons">
           <button
             class="icon-btn ai-btn"
-            (click)="openAiChat()"
+            [class.active]="showChatPanel() && !isChatCollapsed()"
+            (click)="toggleAiChat()"
             matTooltip="AI assist"
             matTooltipPosition="above"
             [matTooltipShowDelay]="300">
@@ -144,7 +145,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
             </div>
 
             <div class="regimenu-column">
-              <span class="column-label">Regimenu</span>
+              <span class="column-label">RegiMenu</span>
               <div class="setting-row">
                 <label class="setting-label">Repeat Meals</label>
                 <select
@@ -179,7 +180,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
         <div class="mini-chat-panel" [class.collapsed]="isChatCollapsed()">
           <button class="mini-chat-toggle" (click)="toggleChat()">
             <span class="toggle-icon">{{ isChatCollapsed() ? '▲' : '▼' }}</span>
-            <span class="toggle-label">AI Chat</span>
+            <span class="toggle-label">Preferences AI Output</span>
           </button>
           @if (!isChatCollapsed()) {
             <app-chat-output context="preferences" [condensed]="true" />
@@ -299,9 +300,14 @@ export class PreferencesPanelComponent implements OnInit {
     this.isChatCollapsed.update(v => !v);
   }
 
-  openAiChat(): void {
-    this.chatManuallyOpened.set(true);
-    this.isChatCollapsed.set(false);
+  toggleAiChat(): void {
+    if (this.showChatPanel() && !this.isChatCollapsed()) {
+      this.isChatCollapsed.set(true);
+      this.chatManuallyOpened.set(false);
+    } else {
+      this.chatManuallyOpened.set(true);
+      this.isChatCollapsed.set(false);
+    }
   }
 
 }

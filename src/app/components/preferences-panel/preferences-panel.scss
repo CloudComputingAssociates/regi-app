@@ -71,6 +71,18 @@
     }
   }
 
+  .ai-btn {
+    &.active {
+      background: linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%);
+      border-top-color: #4a4a4a;
+      border-bottom-width: 1px;
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.5) inset,
+        0 -1px 0 rgba(255, 255, 255, 0.05) inset;
+      transform: translateY(1px);
+    }
+  }
+
   .ai-btn-icon {
     width: 20px;
     height: 20px;
@@ -223,9 +235,8 @@
 
     .column-label {
       color: #4da6ff;
-      font-size: 10px;
+      font-size: 14px;
       font-weight: 600;
-      text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
@@ -287,9 +298,8 @@
 
     .column-label {
       color: #4da6ff;
-      font-size: 10px;
+      font-size: 14px;
       font-weight: 600;
-      text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
@@ -350,9 +360,8 @@
 
     .column-label {
       color: #4da6ff;
-      font-size: 10px;
+      font-size: 14px;
       font-weight: 600;
-      text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
@@ -435,23 +444,23 @@
   background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
   border: none;
   border-bottom: 1px solid #5a5a5a;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 11px;
+  font-size: 14px;
   font-family: inherit;
   cursor: pointer;
   flex-shrink: 0;
 
   &:hover {
     background: linear-gradient(180deg, #555555 0%, #454545 100%);
-    color: #ffffff;
   }
 
   .toggle-icon {
-    font-size: 9px;
+    font-size: 10px;
+    color: #ffffff;
   }
 
   .toggle-label {
     font-weight: 500;
+    color: #4da6ff;
   }
 }
 
@@ -488,7 +497,7 @@
 
     .targets-column {
       .column-label {
-        font-size: 9px;
+        font-size: 12px;
       }
 
       .targets-grid {
@@ -513,7 +522,7 @@
       gap: 4px;
 
       .column-label {
-        font-size: 9px;
+        font-size: 12px;
       }
 
       .setting-label {
@@ -533,7 +542,7 @@
       gap: 4px;
 
       .column-label {
-        font-size: 9px;
+        font-size: 12px;
       }
 
       .setting-label {
