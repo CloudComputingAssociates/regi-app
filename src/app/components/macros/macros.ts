@@ -52,6 +52,7 @@ export interface MacroDisplayData {
                   </div>
                   <span class="target-label">{{ macro.target }}</span>
                 </div>
+
                 <!-- Value Label - clickable to toggle percent/grams -->
                 @if (!isPlanningMode()) {
                   <button
