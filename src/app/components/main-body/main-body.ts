@@ -95,6 +95,9 @@ export class MainBodyComponent {
   tabService = inject(TabService);
 
   onTabIndexChange(index: number): void {
+    // Skip stale emissions from mat-tab-group during tab addition
+    if (this.tabService.hasPendingFocus()) return;
+
     // When user manually clicks a tab, update the service
     const tabs = this.tabService.tabs();
     if (tabs[index]) {

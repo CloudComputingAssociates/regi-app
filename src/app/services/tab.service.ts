@@ -17,6 +17,7 @@ export class TabService {
   private tabsSignal = signal<Tab[]>([]);
 
   private activeTabIndexSignal = signal<number>(-1);  // No active tab until login
+  private _pendingActiveIndex: number | null = null;
 
   // Expose signals as readonly
   tabs = this.tabsSignal.asReadonly();
@@ -28,6 +29,11 @@ export class TabService {
     const allTabs = this.tabsSignal();
     return allTabs[index]?.id ?? null;
   });
+
+  /** True while a deferred tab focus is queued (prevents stale selectedIndexChange) */
+  hasPendingFocus(): boolean {
+    return this._pendingActiveIndex !== null;
+  }
 
   // Define menu order - this determines tab insertion order
   // Left nav: meal-planning, foods, shop (Shopping List), review, preferences
@@ -89,8 +95,14 @@ export class TabService {
       newTabs.splice(insertIndex, 0, newTab);
       this.tabsSignal.set(newTabs);
 
-      // Switch to the new tab
-      this.activeTabIndexSignal.set(insertIndex);
+      // Defer focus to the new tab so mat-tab-group renders it first
+      this._pendingActiveIndex = insertIndex;
+      queueMicrotask(() => {
+        if (this._pendingActiveIndex !== null) {
+          this.activeTabIndexSignal.set(this._pendingActiveIndex);
+          this._pendingActiveIndex = null;
+        }
+      });
     }
   }
 
