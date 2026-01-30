@@ -338,14 +338,14 @@ export class PreferencesService {
 
   setCurrentWeightKg(value: number): void {
     this.preferencesSignal.update(p => ({
-      ...p, personalInfo: { ...p.personalInfo, currentWeightKg: value }
+      ...p, personalInfo: { ...p.personalInfo, currentWeightKg: value, deficitPercent: undefined }
     }));
     this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
   }
 
   setTargetWeightKg(value: number): void {
     this.preferencesSignal.update(p => ({
-      ...p, personalInfo: { ...p.personalInfo, targetWeightKg: value }
+      ...p, personalInfo: { ...p.personalInfo, targetWeightKg: value, deficitPercent: undefined }
     }));
     this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
   }

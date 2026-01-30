@@ -85,7 +85,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
             <div class="settings-section personal-info-section">
               <div class="pi-column">
                 <span class="column-label">Personal Info
-                  <span class="pi-scale-label">Scale</span>
+                  <span class="pi-scale-label">Units</span>
                   <button class="unit-toggle" (click)="toggleUnits()">
                     {{ userSettingsService.useImperial() ? 'US' : 'metric' }}
                   </button>
@@ -170,7 +170,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     [value]="userSettingsService.computedWeeksToGoal() ?? '—'" />
                   <span class="unit-label">to tgt wt</span>
                 </div>
-                <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
+                <div class="pi-last-updated">(last updated {{ lastComputedDate() }})</div>
               </div>
             </div>
 

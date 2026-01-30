@@ -50,6 +50,7 @@ export interface MacroDisplayData {
                       [style.background-color]="getMacroColor(macro.name, macro.percentage)">
                     </div>
                   </div>
+                  <span class="target-label">{{ macro.target }}</span>
                 </div>
                 <!-- Value Label - clickable to toggle percent/grams -->
                 @if (!isPlanningMode()) {
