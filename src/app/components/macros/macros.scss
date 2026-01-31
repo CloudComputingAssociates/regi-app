@@ -44,99 +44,106 @@
   .macro-item {
     flex: 1;
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
 
-    .macro-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #4da6ff;  // Blue - label
-      line-height: 1;
-      margin-bottom: 3px;
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .custom-progress-container {
-      width: 100%;
+      flex: 1;
+      min-width: 0;
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      position: relative;
 
       .custom-progress-track {
         width: 100%;
-        height: 10px;
+        height: 15px;
         background-color: #2a2a2a;
-        border-radius: 5px;
+        border-radius: 8px;
         overflow: hidden;
         position: relative;
         border: 1px solid #333333;
 
         .custom-progress-fill {
           height: 100%;
-          border-radius: 5px;
+          border-radius: 8px;
           transition: width 0.3s ease;
           position: absolute;
           top: 0;
           left: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+
+          .bar-value {
+            font-size: 11px;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1;
+            white-space: nowrap;
+            padding: 1px 0;
+          }
         }
-      }
-
-      .limit-marker {
-        position: absolute;
-        right: 0;
-        top: 0;
-        width: 1px;
-        height: 100%;
-        background-color: #4da6ff;
-      }
-
-      .target-label {
-        color: #4da6ff;
-        font-size: 14px;
-        font-weight: 500;
-        white-space: nowrap;
-        width: 100%;
-        text-align: right;
-        margin-top: 1px;
-        line-height: 1;
-        padding-right: 4px;
       }
     }
 
-    .value-label {
-      font-size: 14px;
-      font-weight: 500;
-      color: #ffffff;
-      line-height: 1;
-      background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
-      border-top: 1px solid #6a6a6a;
-      border-left: 1px solid #5a5a5a;
-      border-right: 1px solid #5a5a5a;
-      border-bottom: 2px solid #1a1a1a;
-      border-radius: 5px;
-      padding: 5px 10px;
-      margin-top: 4px;
-      min-width: 42px;
-      text-align: center;
-      box-shadow:
-        0 3px 6px rgba(0, 0, 0, 0.4),
-        0 -1px 0 rgba(255, 255, 255, 0.15) inset;
+    .unit-toggle {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      height: 15px;
+      border-radius: 8px;
+      border: 1px solid #6a6a6a;
+      padding: 0;
+      cursor: pointer;
+      background: #d0d0d0;
+      position: relative;
+      width: 36px;
+      outline: none;
+      transition: background 0.2s ease;
 
-      &.clickable {
-        cursor: pointer;
-        transition: all 0.2s ease;
+      &:hover {
+        background: #e0e0e0;
+      }
 
-        &:hover {
-          background: linear-gradient(180deg, #606060 0%, #454545 100%);
-          border-top-color: #757575;
+      &:active {
+        background: #c0c0c0;
+      }
+
+      .unit-label {
+        position: absolute;
+        font-size: 9px;
+        font-weight: 700;
+        color: #555555;
+        z-index: 2;
+        line-height: 1;
+
+        &.left {
+          left: 4px;
         }
 
-        &:active {
-          background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
-          border-bottom-width: 1px;
-          transform: translateY(1px);
+        &.right {
+          right: 4px;
+        }
+      }
+
+      .unit-thumb {
+        position: absolute;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 1px solid #999999;
+        left: -1px;
+        top: -1px;
+        transition: left 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+        &.right {
+          left: 21px;
         }
       }
     }
@@ -240,25 +247,28 @@
     }
 
     .macro-item {
-      .macro-title {
-        font-size: 13px;
-        font-weight: 700;
-      }
-
       .custom-progress-container {
         .custom-progress-track {
-          height: 6px;
-        }
-
-        .target-label {
-          font-size: 12px;
+          height: 9px;
         }
       }
 
-      .value-label {
-        font-size: 12px;
-        padding: 4px 8px;
-        min-width: 36px;
+      .unit-toggle {
+        height: 9px;
+        width: 28px;
+
+        .unit-label {
+          font-size: 7px;
+        }
+
+        .unit-thumb {
+          width: 9px;
+          height: 9px;
+
+          &.right {
+            left: 19px;
+          }
+        }
       }
     }
 
@@ -284,19 +294,22 @@
     }
 
     .macro-item {
-      .macro-title {
-        font-size: 12px;
-        font-weight: 700;
-      }
+      .unit-toggle {
+        height: 8px;
+        width: 24px;
 
-      .custom-progress-container .target-label {
-        font-size: 10px;
-      }
+        .unit-label {
+          font-size: 6px;
+        }
 
-      .value-label {
-        font-size: 10px;
-        padding: 3px 6px;
-        min-width: 32px;
+        .unit-thumb {
+          width: 8px;
+          height: 8px;
+
+          &.right {
+            left: 16px;
+          }
+        }
       }
     }
 

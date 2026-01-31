@@ -46,43 +46,34 @@ export interface MacroDisplayData {
             <!-- Iterate through each macro nutrient -->
             @for (macro of effectiveDisplayData().macros; track macro.name) {
               <div class="macro-item">
-                <div class="macro-title">{{ macro.name }}</div>
-                <div class="custom-progress-container">
-                  <div class="custom-progress-track">
-                    <div
-                      class="custom-progress-fill"
-                      [style.width.%]="macro.percentage"
-                      [style.background-color]="context() === 'preferences' ? '#10b981' : getMacroColor(macro.name, macro.percentage)">
+                <div class="progress-row">
+                  <div class="custom-progress-container">
+                    <div class="custom-progress-track">
+                      <div
+                        class="custom-progress-fill"
+                        [style.width.%]="macro.percentage"
+                        [style.background-color]="getMacroColor(macro.name)">
+                        <span class="bar-value">{{ getBarDisplayValue(macro) }}</span>
+                      </div>
                     </div>
                   </div>
-                  <div class="limit-marker"></div>
-                  <span class="target-label">{{ macro.target }}</span>
+                  @if (context() === 'preferences') {
+                    <div class="unit-toggle">
+                      <span class="unit-label left">%</span>
+                      <span class="unit-thumb right"></span>
+                      <span class="unit-label right">g</span>
+                    </div>
+                  } @else {
+                    <button
+                      type="button"
+                      class="unit-toggle"
+                      (click)="toggleDisplayMode()">
+                      <span class="unit-label left">%</span>
+                      <span class="unit-thumb" [class.right]="!showPercent"></span>
+                      <span class="unit-label right">g</span>
+                    </button>
+                  }
                 </div>
-
-                <!-- Value Label -->
-                @if (context() === 'preferences') {
-                } @else if (!isPlanningMode()) {
-                  <button
-                    type="button"
-                    class="value-label clickable"
-                    (click)="toggleDisplayMode()"
-                    matTooltip="Toggle Percent/Grams"
-                    matTooltipPosition="below">
-                    @if (showPercent) {
-                      {{ macro.percentage }}%
-                    } @else {
-                      {{ macro.actual }}g
-                    }
-                  </button>
-                } @else {
-                  <div class="value-label">
-                    @if (showPercent) {
-                      {{ macro.percentage }}%
-                    } @else {
-                      {{ macro.actual }}g
-                    }
-                  </div>
-                }
               </div>
             }
 
@@ -162,8 +153,8 @@ export class MacrosComponent implements OnInit, OnDestroy {
     return {
       macros: [
         { name: 'Protein', actual: 0, target: goals?.protein ?? 0, percentage: 100 },
-        { name: 'Carbs', actual: 0, target: goals?.carbs ?? 0, percentage: 100 },
-        { name: 'Fat', actual: 0, target: goals?.fat ?? 0, percentage: 100 }
+        { name: 'Fat', actual: 0, target: goals?.fat ?? 0, percentage: 100 },
+        { name: 'Carbs', actual: 0, target: goals?.carbs ?? 0, percentage: 100 }
       ],
       timePeriod: 'day'
     };
@@ -230,21 +221,21 @@ export class MacrosComponent implements OnInit, OnDestroy {
         )
       },
       {
-        name: 'Carbs',
-        actual: timePeriod === 'day' ? data.nutrients.carb['actual-day'] : data.nutrients.carb['actual-week'],
-        target: data.nutrients.carb['target-grams'],
-        percentage: this.calculatePercentage(
-          timePeriod === 'day' ? data.nutrients.carb['actual-day'] : data.nutrients.carb['actual-week'],
-          data.nutrients.carb['target-grams']
-        )
-      },
-      {
         name: 'Fat',
         actual: timePeriod === 'day' ? data.nutrients.fat['actual-day'] : data.nutrients.fat['actual-week'],
         target: data.nutrients.fat['target-grams'],
         percentage: this.calculatePercentage(
           timePeriod === 'day' ? data.nutrients.fat['actual-day'] : data.nutrients.fat['actual-week'],
           data.nutrients.fat['target-grams']
+        )
+      },
+      {
+        name: 'Carbs',
+        actual: timePeriod === 'day' ? data.nutrients.carb['actual-day'] : data.nutrients.carb['actual-week'],
+        target: data.nutrients.carb['target-grams'],
+        percentage: this.calculatePercentage(
+          timePeriod === 'day' ? data.nutrients.carb['actual-day'] : data.nutrients.carb['actual-week'],
+          data.nutrients.carb['target-grams']
         )
       }
     ];
@@ -302,37 +293,25 @@ export class MacrosComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Get Material Design color theme for progress bar
+   * Get the value to display inside the progress bar
    */
-  getMatColor(macroName: string, percentage: number): 'primary' | 'accent' | 'warn' {
-    // Carbs use reverse logic (lower is better)
-    if (macroName.toLowerCase() === 'carbs') {
-      if (percentage <= 33) return 'primary';  // Green for low carbs
-      if (percentage <= 66) return 'accent';   // Orange for moderate
-      return 'warn';                           // Red for high carbs
+  getBarDisplayValue(macro: MacroNutrient): string {
+    if (this.context() === 'preferences') {
+      return `${macro.target}g`;
     }
-
-    // Protein and Fat use normal logic (higher is better)
-    if (percentage <= 33) return 'warn';       // Red - needs attention
-    if (percentage <= 66) return 'accent';     // Orange - making progress
-    return 'primary';                          // Green - on track
+    return this.showPercent ? `${macro.percentage}%` : `${macro.actual}g`;
   }
 
   /**
-   * Get color based on macro type and percentage
+   * Get fixed color for each macro type
    */
-  getMacroColor(macroName: string, percentage: number): string {
-    // Carbs use reverse color logic (lower is better)
-    if (macroName.toLowerCase() === 'carbs') {
-      if (percentage <= 33) return '#10b981'; // Green - good (low carbs)
-      if (percentage <= 66) return '#f59e0b'; // Orange - moderate
-      return '#ef4444';                        // Red - high (too many carbs)
+  getMacroColor(macroName: string): string {
+    switch (macroName.toLowerCase()) {
+      case 'protein': return '#5a62b3';
+      case 'fat': return '#902ee3';
+      case 'carbs': return '#95d16a';
+      default: return '#5a62b3';
     }
-
-    // Protein and Fat use normal color logic (higher is better)
-    if (percentage <= 33) return '#ef4444';   // Red - needs attention
-    if (percentage <= 66) return '#f59e0b';   // Orange - making progress
-    return '#10b981';                          // Green - on track
   }
 
 }
