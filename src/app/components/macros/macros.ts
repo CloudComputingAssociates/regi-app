@@ -51,7 +51,7 @@ export interface MacroDisplayData {
                     <div
                       class="custom-progress-fill"
                       [style.width.%]="macro.percentage"
-                      [style.background-color]="getMacroColor(macro.name)">
+                      [style.background]="getMacroGradient(macro.name)">
                       <span class="bar-value">{{ getBarDisplayValue(macro) }}</span>
                     </div>
                     <span class="bar-title">{{ macro.name }}</span>
@@ -309,11 +309,16 @@ export class MacrosComponent implements OnInit, OnDestroy {
    */
   getMacroColor(macroName: string): string {
     switch (macroName) {
-      case 'proteins': return '#5bda29';
+      case 'proteins': return '#41ac17';
       case 'fats': return '#902ee3';
       case 'carbs': return '#81612e';
       default: return '#5a62b3';
     }
+  }
+
+  getMacroGradient(macroName: string): string {
+    const color = this.getMacroColor(macroName);
+    return `linear-gradient(to right, ${color}66, ${color})`;
   }
 
 }
