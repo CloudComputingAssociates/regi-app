@@ -309,7 +309,7 @@ export class MacrosComponent implements OnInit, OnDestroy {
    */
   getMacroColor(macroName: string): string {
     switch (macroName) {
-      case 'protein': return '#2e5e19';
+      case 'protein': return '#538c39';
       case 'fats': return '#902ee3';
       case 'carbs': return '#d95d16';
       default: return '#5a62b3';
