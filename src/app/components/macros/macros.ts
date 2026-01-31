@@ -54,9 +54,9 @@ export interface MacroDisplayData {
                       [style.background-color]="getMacroColor(macro.name)">
                       <span class="bar-value">{{ getBarDisplayValue(macro) }}</span>
                     </div>
+                    <span class="bar-title">{{ macro.name }}</span>
                   </div>
                 </div>
-                <div class="macro-title">{{ macro.name }}</div>
               </div>
             }
 
@@ -154,9 +154,9 @@ export class MacrosComponent implements OnInit, OnDestroy {
     const goals = this.preferencesService.dailyGoals();
     return {
       macros: [
-        { name: 'Protein', actual: 0, target: goals?.protein ?? 0, percentage: 100 },
-        { name: 'Fat', actual: 0, target: goals?.fat ?? 0, percentage: 100 },
-        { name: 'Carbs', actual: 0, target: goals?.carbs ?? 0, percentage: 100 }
+        { name: 'protein', actual: 0, target: goals?.protein ?? 0, percentage: 100 },
+        { name: 'fats', actual: 0, target: goals?.fat ?? 0, percentage: 100 },
+        { name: 'carbs', actual: 0, target: goals?.carbs ?? 0, percentage: 100 }
       ],
       timePeriod: 'day'
     };
@@ -214,7 +214,7 @@ export class MacrosComponent implements OnInit, OnDestroy {
   ): MacroDisplayData {
     const macros: MacroNutrient[] = [
       {
-        name: 'Protein',
+        name: 'protein',
         actual: timePeriod === 'day' ? data.nutrients.protein['actual-day'] : data.nutrients.protein['actual-week'],
         target: data.nutrients.protein['target-grams'],
         percentage: this.calculatePercentage(
@@ -223,7 +223,7 @@ export class MacrosComponent implements OnInit, OnDestroy {
         )
       },
       {
-        name: 'Fat',
+        name: 'fats',
         actual: timePeriod === 'day' ? data.nutrients.fat['actual-day'] : data.nutrients.fat['actual-week'],
         target: data.nutrients.fat['target-grams'],
         percentage: this.calculatePercentage(
@@ -232,7 +232,7 @@ export class MacrosComponent implements OnInit, OnDestroy {
         )
       },
       {
-        name: 'Carbs',
+        name: 'carbs',
         actual: timePeriod === 'day' ? data.nutrients.carb['actual-day'] : data.nutrients.carb['actual-week'],
         target: data.nutrients.carb['target-grams'],
         percentage: this.calculatePercentage(
@@ -308,10 +308,10 @@ export class MacrosComponent implements OnInit, OnDestroy {
    * Get fixed color for each macro type
    */
   getMacroColor(macroName: string): string {
-    switch (macroName.toLowerCase()) {
-      case 'protein': return '#5a62b3';
-      case 'fat': return '#902ee3';
-      case 'carbs': return '#95d16a';
+    switch (macroName) {
+      case 'protein': return '#2e5e19';
+      case 'fats': return '#902ee3';
+      case 'carbs': return '#d95d16';
       default: return '#5a62b3';
     }
   }
