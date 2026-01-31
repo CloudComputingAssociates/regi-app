@@ -44,11 +44,16 @@
   .macro-item {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 
-    .progress-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .macro-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #4da6ff;
+      line-height: 1;
+      padding: 4px 0;
     }
 
     .custom-progress-container {
@@ -59,7 +64,7 @@
 
       .custom-progress-track {
         width: 100%;
-        height: 15px;
+        height: 21px;
         background-color: #2a2a2a;
         border-radius: 8px;
         overflow: hidden;
@@ -80,18 +85,27 @@
 
           .bar-value {
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 500;
             color: #ffffff;
             line-height: 1;
             white-space: nowrap;
-            padding: 1px 0;
+            padding: 5px 0;
           }
         }
       }
     }
 
+  }
+
+  // Mode toggle container with arrow button and label
+  .mode-toggle-container {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+
     .unit-toggle {
-      flex-shrink: 0;
       display: flex;
       align-items: center;
       height: 15px;
@@ -147,15 +161,6 @@
         }
       }
     }
-  }
-
-  // Mode toggle container with arrow button and label
-  .mode-toggle-container {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
 
     .arrow-btn {
       font-size: 14px;
@@ -253,22 +258,8 @@
         }
       }
 
-      .unit-toggle {
-        height: 9px;
-        width: 28px;
-
-        .unit-label {
-          font-size: 7px;
-        }
-
-        .unit-thumb {
-          width: 9px;
-          height: 9px;
-
-          &.right {
-            left: 19px;
-          }
-        }
+      .macro-title {
+        font-size: 10px;
       }
     }
 
@@ -294,22 +285,8 @@
     }
 
     .macro-item {
-      .unit-toggle {
-        height: 8px;
-        width: 24px;
-
-        .unit-label {
-          font-size: 6px;
-        }
-
-        .unit-thumb {
-          width: 8px;
-          height: 8px;
-
-          &.right {
-            left: 16px;
-          }
-        }
+      .macro-title {
+        font-size: 9px;
       }
     }
 

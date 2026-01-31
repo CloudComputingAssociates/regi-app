@@ -46,38 +46,40 @@ export interface MacroDisplayData {
             <!-- Iterate through each macro nutrient -->
             @for (macro of effectiveDisplayData().macros; track macro.name) {
               <div class="macro-item">
-                <div class="progress-row">
-                  <div class="custom-progress-container">
-                    <div class="custom-progress-track">
-                      <div
-                        class="custom-progress-fill"
-                        [style.width.%]="macro.percentage"
-                        [style.background-color]="getMacroColor(macro.name)">
-                        <span class="bar-value">{{ getBarDisplayValue(macro) }}</span>
-                      </div>
+                <div class="custom-progress-container">
+                  <div class="custom-progress-track">
+                    <div
+                      class="custom-progress-fill"
+                      [style.width.%]="macro.percentage"
+                      [style.background-color]="getMacroColor(macro.name)">
+                      <span class="bar-value">{{ getBarDisplayValue(macro) }}</span>
                     </div>
                   </div>
-                  @if (context() === 'preferences') {
-                    <div class="unit-toggle">
-                      <span class="unit-label left">%</span>
-                      <span class="unit-thumb right"></span>
-                      <span class="unit-label right">g</span>
-                    </div>
-                  } @else {
-                    <button
-                      type="button"
-                      class="unit-toggle"
-                      (click)="toggleDisplayMode()">
-                      <span class="unit-label left">%</span>
-                      <span class="unit-thumb" [class.right]="!showPercent"></span>
-                      <span class="unit-label right">g</span>
-                    </button>
-                  }
                 </div>
+                <div class="macro-title">{{ macro.name }}</div>
               </div>
             }
 
-            <!-- Mode Toggle (Right) - Label on top, arrow button below -->
+            <!-- Right-side controls -->
+            <div class="mode-toggle-container">
+              @if (context() === 'preferences') {
+                <div class="unit-toggle">
+                  <span class="unit-label left">%</span>
+                  <span class="unit-thumb right"></span>
+                  <span class="unit-label right">g</span>
+                </div>
+              } @else {
+                <button
+                  type="button"
+                  class="unit-toggle"
+                  (click)="toggleDisplayMode()">
+                  <span class="unit-label left">%</span>
+                  <span class="unit-thumb" [class.right]="!showPercent"></span>
+                  <span class="unit-label right">g</span>
+                </button>
+              }
+            </div>
+
             @if (context() !== 'preferences') {
             <div class="mode-toggle-container">
               @if (!isPlanningMode()) {
