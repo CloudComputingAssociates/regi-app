@@ -79,10 +79,11 @@ export class TabService {
   // Define menu order - this determines tab insertion order
   // Left nav: meal-planning, foods, shop (Shopping List), review, preferences
   // Right nav (profile menu): account, help
-  private menuOrder = ['chat', 'meal-planning', 'foods', 'shop', 'review', 'preferences', 'account', 'help'];
+  private menuOrder = ['today', 'chat', 'meal-planning', 'foods', 'shop', 'review', 'preferences', 'account', 'help'];
 
   // Tabs that get an image icon
   private tabIcons: Record<string, string> = {
+    'today': '/images/AI-star.png',
     'chat': '/images/AI-star.png',
     'meal-planning': '/images/AI-star.png',
     'foods': '/favicon.ico',
@@ -248,6 +249,7 @@ export class TabService {
 
     // Map of tab ID to label
     const tabLabels: Record<string, string> = {
+      'today': 'Today',
       'chat': 'Chat',
       'meal-planning': 'RegiMenu',
       'foods': 'Foods',

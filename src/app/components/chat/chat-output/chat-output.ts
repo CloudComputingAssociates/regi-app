@@ -140,6 +140,7 @@ export class ChatOutputComponent {
     const ctx = this.context();
     if (ctx === 'regimenu') return this.chatService.regimenuMessages();
     if (ctx === 'preferences') return this.chatService.preferencesMessages();
+    if (ctx === 'today') return this.chatService.todayMessages();
     return this.chatService.messages();
   });
 
@@ -147,6 +148,7 @@ export class ChatOutputComponent {
     const ctx = this.context();
     if (ctx === 'regimenu') return this.chatService.regimenuStreamingContent();
     if (ctx === 'preferences') return this.chatService.preferencesStreamingContent();
+    if (ctx === 'today') return this.chatService.todayStreamingContent();
     return this.chatService.streamingContent();
   });
 
@@ -154,6 +156,7 @@ export class ChatOutputComponent {
     const ctx = this.context();
     if (ctx === 'regimenu') return this.chatService.regimenuIsLoading();
     if (ctx === 'preferences') return this.chatService.preferencesIsLoading();
+    if (ctx === 'today') return this.chatService.todayIsLoading();
     return this.chatService.isLoading();
   });
 

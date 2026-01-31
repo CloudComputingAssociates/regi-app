@@ -1,0 +1,222 @@
+// src/app/components/today-panel/today-panel.scss
+
+@mixin always-visible-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.1);
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+  }
+}
+
+:host {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.panel-container {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(180deg, #404040 0%, #3a3a3a 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.content-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  @include always-visible-scrollbar;
+}
+
+.chat-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+
+  app-chat-output {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    @include always-visible-scrollbar;
+  }
+}
+
+.chat-pane-header {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.chat-pane-label {
+  color: #4da6ff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.splitter-bar {
+  flex-shrink: 0;
+  height: 6px;
+  background: #5a5a5a;
+  cursor: row-resize;
+  transition: background 0.15s ease;
+  position: relative;
+
+  &:hover {
+    background: #7a7a7a;
+  }
+
+  .splitter-grip {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+    user-select: none;
+  }
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .action-left, .action-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ai-label {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .icon-btn {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 6px;
+    border-top: 1px solid #6a6a6a;
+    border-left: 1px solid #5a5a5a;
+    border-right: 1px solid #5a5a5a;
+    border-bottom: 2px solid #1a1a1a;
+    outline: none;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      0 3px 6px rgba(0, 0, 0, 0.4),
+      0 -1px 0 rgba(255, 255, 255, 0.2) inset;
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(180deg, #606060 0%, #454545 100%);
+      border-top-color: #757575;
+    }
+
+    &:active:not(:disabled) {
+      background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
+      border-bottom-width: 1px;
+      transform: translateY(1px);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .ai-btn-icon {
+    width: 20px; height: 20px; object-fit: contain;
+    pointer-events: none;
+  }
+
+  .ai-btn.ai-active,
+  .ai-btn.ai-active:hover:not(:disabled),
+  .ai-btn.ai-active:active:not(:disabled) {
+    background: linear-gradient(180deg, #5ab3ff 0%, #4da6ff 100%);
+    border-color: #4da6ff;
+    box-shadow:
+      0 2px 8px rgba(77, 166, 255, 0.5),
+      0 -1px 0 rgba(255, 255, 255, 0.3) inset,
+      0 1px 0 rgba(0, 0, 0, 0.1) inset;
+  }
+
+  .save-btn {
+    &.has-changes {
+      background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%);
+      border-top-color: #5aa55a;
+      border-left-color: #4a954a;
+      border-right-color: #4a954a;
+      border-bottom-color: #1a3a1a;
+      color: #ffffff;
+
+      &:hover:not(:disabled) {
+        background: linear-gradient(180deg, #5aa05a 0%, #408040 100%);
+        border-top-color: #6ab56a;
+      }
+    }
+  }
+
+  .save-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.panel-content {
+  padding: 12px 16px;
+}
+
+.today-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 16px;
+}

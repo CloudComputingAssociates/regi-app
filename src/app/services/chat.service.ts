@@ -14,20 +14,22 @@ import {
   SessionStatus
 } from '../models/generated/chat.schema';
 
-export type ChatContext = 'chat' | 'regimenu' | 'preferences';
+export type ChatContext = 'chat' | 'regimenu' | 'preferences' | 'today';
 
 const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
 const STORAGE_KEYS: Record<ChatContext, string> = {
   chat: 'yeh_chat_session_id',
   regimenu: 'yeh_regimenu_session_id',
-  preferences: 'yeh_preferences_session_id'
+  preferences: 'yeh_preferences_session_id',
+  today: 'yeh_today_session_id'
 };
 
 const SESSION_TYPES: Record<ChatContext, 'CHAT' | 'REGIMENU' | 'PREFERENCES'> = {
   chat: 'CHAT',
   regimenu: 'REGIMENU',
-  preferences: 'PREFERENCES'
+  preferences: 'PREFERENCES',
+  today: 'TODAY'
 };
 
 interface StoredSession {
@@ -107,11 +109,13 @@ export class ChatService {
   private chatState = signal<ContextState>(createDefaultState());
   private regimenuState = signal<ContextState>(createDefaultState());
   private preferencesState = signal<ContextState>(createDefaultState());
+  private todayState = signal<ContextState>(createDefaultState());
 
   /** Get state signal for a context */
   private getStateSignal(ctx: ChatContext) {
     if (ctx === 'regimenu') return this.regimenuState;
     if (ctx === 'preferences') return this.preferencesState;
+    if (ctx === 'today') return this.todayState;
     return this.chatState;
   }
 
@@ -171,10 +175,22 @@ export class ChatService {
   /** Preferences loading state */
   preferencesIsLoading = computed(() => this.preferencesState().isLoading);
 
+  // --- Today signals ---
+
+  /** Today messages */
+  todayMessages = computed(() => this.todayState().messages);
+
+  /** Today streaming content */
+  todayStreamingContent = computed(() => this.todayState().streamingContent);
+
+  /** Today loading state */
+  todayIsLoading = computed(() => this.todayState().isLoading);
+
   constructor() {
     this.loadSession('chat');
     this.loadSession('regimenu');
     this.loadSession('preferences');
+    this.loadSession('today');
   }
 
   // ============================================
