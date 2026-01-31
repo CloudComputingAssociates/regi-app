@@ -25,7 +25,7 @@ const STORAGE_KEYS: Record<ChatContext, string> = {
   today: 'yeh_today_session_id'
 };
 
-const SESSION_TYPES: Record<ChatContext, 'CHAT' | 'REGIMENU' | 'PREFERENCES'> = {
+const SESSION_TYPES: Record<ChatContext, 'CHAT' | 'REGIMENU' | 'PREFERENCES' | 'TODAY'> = {
   chat: 'CHAT',
   regimenu: 'REGIMENU',
   preferences: 'PREFERENCES',

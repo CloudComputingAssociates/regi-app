@@ -31,6 +31,7 @@ import { NotificationComponent } from '../notification/notification';
     FoodsPanelComponent,
     AccountPanelComponent,
     PreferencesPanelComponent,
+    TodayPanelComponent,
     NotificationComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,7 +62,9 @@ import { NotificationComponent } from '../notification/notification';
               </ng-template>
 
               <div class="tab-content">
-                @if (tab.id === 'chat') {
+                @if (tab.id === 'today') {
+                  <app-today-panel />
+                } @else if (tab.id === 'chat') {
                   <app-chat />
                 } @else if (tab.id === 'meal-planning') {
                   <app-regimenu-panel />
