@@ -192,7 +192,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                 </div>
                 <!-- Protein ratio dropdown -->
                 <div class="macro-control-row">
-                  <label class="setting-label">Protein</label>
+                  <label class="setting-label">Proteins</label>
                   <select class="setting-select"
                     [ngModel]="userSettingsService.personalInfo().proteinRatio ?? 1.0"
                     (ngModelChange)="onProteinRatioChange($event)">
@@ -205,7 +205,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                 <div class="macro-separator"></div>
                 <div class="targets-grid">
                   <div class="target-field">
-                    <label>Protein</label>
+                    <label>Proteins</label>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().protein"
                            (ngModelChange)="onDailyGoalChange('protein', $event)" />
                   </div>

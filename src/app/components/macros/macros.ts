@@ -154,7 +154,7 @@ export class MacrosComponent implements OnInit, OnDestroy {
     const goals = this.preferencesService.dailyGoals();
     return {
       macros: [
-        { name: 'protein', actual: 0, target: goals?.protein ?? 0, percentage: 100 },
+        { name: 'proteins', actual: 0, target: goals?.protein ?? 0, percentage: 100 },
         { name: 'fats', actual: 0, target: goals?.fat ?? 0, percentage: 100 },
         { name: 'carbs', actual: 0, target: goals?.carbs ?? 0, percentage: 100 }
       ],
@@ -214,7 +214,7 @@ export class MacrosComponent implements OnInit, OnDestroy {
   ): MacroDisplayData {
     const macros: MacroNutrient[] = [
       {
-        name: 'protein',
+        name: 'proteins',
         actual: timePeriod === 'day' ? data.nutrients.protein['actual-day'] : data.nutrients.protein['actual-week'],
         target: data.nutrients.protein['target-grams'],
         percentage: this.calculatePercentage(
@@ -309,9 +309,9 @@ export class MacrosComponent implements OnInit, OnDestroy {
    */
   getMacroColor(macroName: string): string {
     switch (macroName) {
-      case 'protein': return '#538c39';
+      case 'proteins': return '#5bda29';
       case 'fats': return '#902ee3';
-      case 'carbs': return '#d95d16';
+      case 'carbs': return '#81612e';
       default: return '#5a62b3';
     }
   }
