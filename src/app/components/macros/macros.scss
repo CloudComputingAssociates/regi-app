@@ -57,8 +57,7 @@
     }
 
     .custom-progress-container {
-      flex: 1;
-      min-width: 0;
+      width: 100%;
       display: flex;
       align-items: center;
 
@@ -108,56 +107,56 @@
     .unit-toggle {
       display: flex;
       align-items: center;
-      height: 15px;
-      border-radius: 8px;
-      border: 1px solid #6a6a6a;
+      height: 21px;
+      border-radius: 11px;
+      border: 1px solid #3a8ad8;
       padding: 0;
       cursor: pointer;
-      background: #d0d0d0;
+      background: #4da6ff;
       position: relative;
-      width: 36px;
+      width: 46px;
       outline: none;
       transition: background 0.2s ease;
 
       &:hover {
-        background: #e0e0e0;
+        background: #5bb0ff;
       }
 
       &:active {
-        background: #c0c0c0;
+        background: #3a8ad8;
       }
 
       .unit-label {
         position: absolute;
-        font-size: 9px;
+        font-size: 10px;
         font-weight: 700;
-        color: #555555;
+        color: #ffffff;
         z-index: 2;
         line-height: 1;
 
         &.left {
-          left: 4px;
+          left: 5px;
         }
 
         &.right {
-          right: 4px;
+          right: 5px;
         }
       }
 
       .unit-thumb {
         position: absolute;
-        width: 15px;
-        height: 15px;
+        width: 21px;
+        height: 21px;
         border-radius: 50%;
         background: #ffffff;
-        border: 1px solid #999999;
+        border: 1px solid #3a8ad8;
         left: -1px;
         top: -1px;
         transition: left 0.2s ease;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 
         &.right {
-          left: 21px;
+          left: 25px;
         }
       }
     }
