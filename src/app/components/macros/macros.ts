@@ -61,7 +61,7 @@ export interface MacroDisplayData {
                 <div class="unit-toggle">
                   <span class="unit-label left">%</span>
                   <span class="unit-thumb right"></span>
-                  <span class="unit-label right">g</span>
+                  <span class="unit-label right">G</span>
                 </div>
               } @else {
                 <button
@@ -70,7 +70,7 @@ export interface MacroDisplayData {
                   (click)="toggleDisplayMode()">
                   <span class="unit-label left">%</span>
                   <span class="unit-thumb" [class.right]="!showPercent"></span>
-                  <span class="unit-label right">g</span>
+                  <span class="unit-label right">G</span>
                 </button>
               }
             </div>

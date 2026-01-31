@@ -95,14 +95,10 @@
     }
   }
 
-  // Mode toggle container with arrow button and label
   .mode-toggle-container {
     flex-shrink: 0;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
     align-self: center;
 
     .unit-toggle {
@@ -110,26 +106,26 @@
       align-items: center;
       height: 21px;
       border-radius: 11px;
-      border: 1px solid #555555;
+      border: 1px solid #333333;
       padding: 0;
       cursor: pointer;
-      background: #4a4a4a;
+      background: #1a1a1a;
       position: relative;
       width: 46px;
       outline: none;
       transition: background 0.2s ease;
 
       &:hover {
-        background: #555555;
+        background: #252525;
       }
 
       &:active {
-        background: #3a3a3a;
+        background: #111111;
       }
 
       .unit-label {
         position: absolute;
-        font-size: 10px;
+        font-size: 11px;
         font-weight: 700;
         color: #ffffff;
         z-index: 2;
@@ -149,8 +145,8 @@
         width: 19px;
         height: 19px;
         border-radius: 50%;
-        background: #7a7a7a;
-        border: 1px solid #666666;
+        background: #999999;
+        border: 1px solid #888888;
         left: 0;
         top: 0;
         transition: left 0.2s ease;
