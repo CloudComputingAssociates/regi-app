@@ -144,7 +144,7 @@ export class MacrosComponent implements OnInit {
 
   // Component state
   isLoading = false;
-  showPercent = true;
+  showPercent = false;
 
   ngOnInit(): void {
     this.subscriptionData.set(this.transformNutritionData(
