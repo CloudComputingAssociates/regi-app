@@ -67,7 +67,10 @@ export interface MacroDisplayData {
                 <button
                   type="button"
                   class="unit-toggle"
-                  (click)="toggleDisplayMode()">
+                  (click)="toggleDisplayMode()"
+                  matTooltip="Percent/Grams"
+                  matTooltipPosition="above"
+                  [matTooltipShowDelay]="300">
                   <span class="unit-label left">%</span>
                   <span class="unit-thumb" [class.right]="!showPercent"></span>
                   <span class="unit-label right">g</span>
