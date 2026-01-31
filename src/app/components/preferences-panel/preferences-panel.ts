@@ -210,14 +210,14 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                            (ngModelChange)="onDailyGoalChange('protein', $event)" />
                   </div>
                   <div class="target-field">
+                    <label>Fats</label>
+                    <input type="number" [ngModel]="userSettingsService.dailyGoals().fat"
+                           (ngModelChange)="onDailyGoalChange('fat', $event)" />
+                  </div>
+                  <div class="target-field">
                     <label>Carbs</label>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().carbs"
                            (ngModelChange)="onDailyGoalChange('carbs', $event)" />
-                  </div>
-                  <div class="target-field">
-                    <label>Fat</label>
-                    <input type="number" [ngModel]="userSettingsService.dailyGoals().fat"
-                           (ngModelChange)="onDailyGoalChange('fat', $event)" />
                   </div>
                 </div>
                 <div class="targets-grid">
