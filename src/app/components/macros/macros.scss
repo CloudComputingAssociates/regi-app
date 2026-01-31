@@ -110,21 +110,21 @@
       align-items: center;
       height: 21px;
       border-radius: 11px;
-      border: 1px solid #8ab4d8;
+      border: 1px solid #555555;
       padding: 0;
       cursor: pointer;
-      background: #b0cfea;
+      background: #4a4a4a;
       position: relative;
       width: 46px;
       outline: none;
       transition: background 0.2s ease;
 
       &:hover {
-        background: #c0d8f0;
+        background: #555555;
       }
 
       &:active {
-        background: #a0c0dd;
+        background: #3a3a3a;
       }
 
       .unit-label {
@@ -149,8 +149,8 @@
         width: 19px;
         height: 19px;
         border-radius: 50%;
-        background: #4da6ff;
-        border: 1px solid #3a8ad8;
+        background: #7a7a7a;
+        border: 1px solid #666666;
         left: 0;
         top: 0;
         transition: left 0.2s ease;
@@ -162,51 +162,6 @@
       }
     }
 
-    .arrow-btn {
-      font-size: 14px;
-      font-weight: 600;
-      color: #ffffff;
-      background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.2s ease;
-      padding: 4px 10px;
-      border-radius: 4px;
-      border-top: 1px solid #5a5a5a;
-      border-left: 1px solid #4a4a4a;
-      border-right: 1px solid #4a4a4a;
-      border-bottom: 2px solid #2a2a2a;
-      outline: none;
-      font-family: inherit;
-      box-shadow:
-        0 2px 4px rgba(0, 0, 0, 0.3),
-        0 -1px 0 rgba(255, 255, 255, 0.1) inset;
-      line-height: 1;
-
-      &:hover {
-        background: linear-gradient(180deg, #555555 0%, #454545 100%);
-        border-top-color: #6a6a6a;
-      }
-
-      &:active {
-        background: linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%);
-        border-bottom-width: 1px;
-        transform: translateY(1px);
-      }
-
-      &:focus {
-        outline: none;
-      }
-    }
-
-    .mode-label {
-      font-size: 14px;
-      font-weight: 500;
-      color: #4da6ff;
-      line-height: 1;
-      white-space: nowrap;
-      margin-bottom: 2px;
-    }
   }
 
   // Content section below
@@ -257,21 +212,6 @@
           height: 9px;
         }
       }
-
-      .macro-title {
-        font-size: 10px;
-      }
-    }
-
-    .mode-toggle-container {
-      .arrow-btn {
-        font-size: 12px;
-        padding: 3px 8px;
-      }
-
-      .mode-label {
-        font-size: 12px;
-      }
     }
   }
 }
@@ -282,23 +222,6 @@
     .macro-row {
       gap: 4px;
       padding: 2px 4px;
-    }
-
-    .macro-item {
-      .macro-title {
-        font-size: 9px;
-      }
-    }
-
-    .mode-toggle-container {
-      .arrow-btn {
-        font-size: 10px;
-        padding: 2px 6px;
-      }
-
-      .mode-label {
-        font-size: 11px;
-      }
     }
   }
 }

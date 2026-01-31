@@ -1,11 +1,9 @@
 // src/app/components/macros/macros.ts
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject, computed, signal, input } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
 import { MacrosService } from '../../services/macros.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { TabService } from '../../services/tab.service';
@@ -13,9 +11,6 @@ import { TimePeriod, NutritionResponse } from '../../models/nutrition.model';
 
 // Context determines how the macros component behaves
 export type MacrosContext = 'preferences' | 'foods' | 'regimenu' | 'today' | 'shopping' | 'default';
-
-// Display modes for macros component
-export type MacrosDisplayMode = 'day' | 'week' | 'food' | 'mealplan' | 'dayplan';
 
 export interface MacroNutrient {
   name: string;
@@ -80,31 +75,6 @@ export interface MacroDisplayData {
               }
             </div>
 
-            @if (context() !== 'preferences') {
-            <div class="mode-toggle-container">
-              @if (!isPlanningMode()) {
-                <span class="mode-label">{{ currentTimePeriod === 'day' ? 'Day' : 'Week' }}</span>
-                <button
-                  type="button"
-                  class="arrow-btn"
-                  (click)="toggleTimePeriod()"
-                  matTooltip="Toggle between Day and Week totals"
-                  matTooltipPosition="below">
-                  ▶
-                </button>
-              } @else {
-                <span class="mode-label">{{ getPlanningModeLabel() }}</span>
-                <button
-                  type="button"
-                  class="arrow-btn"
-                  (click)="cyclePlanningMode()"
-                  matTooltip="Toggle planning display mode"
-                  matTooltipPosition="below">
-                  ▶
-                </button>
-              }
-            </div>
-            }
 
           </div>
 
@@ -127,15 +97,11 @@ export interface MacroDisplayData {
   `,
   styleUrls: ['./macros.scss']
 })
-export class MacrosComponent implements OnInit, OnDestroy {
+export class MacrosComponent implements OnInit {
 
-  private destroy$ = new Subject<void>();
   private macrosService = inject(MacrosService);
   private preferencesService = inject(PreferencesService);
   private tabService = inject(TabService);
-
-  // Input to indicate if we're in planning mode
-  planningMode = input<boolean>(false);
 
   // Derive context from active tab
   readonly context = computed<MacrosContext>(() => {
@@ -174,75 +140,42 @@ export class MacrosComponent implements OnInit, OnDestroy {
   });
 
   // Component state
-  currentTimePeriod: TimePeriod = 'day';
   isLoading = false;
-  currentPlanningDisplayMode: MacrosDisplayMode = 'food';
   showPercent = true;
 
   ngOnInit(): void {
-    // Get initial static data immediately
     this.subscriptionData.set(this.transformNutritionData(
-      this.macrosService.getCurrentNutritionData(),
-      'day'
+      this.macrosService.getCurrentNutritionData()
     ));
-    this.currentTimePeriod = 'day';
-
-    // Listen for time period changes (for non-preferences contexts)
-    this.macrosService.currentPeriod$.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(timePeriod => {
-      this.currentTimePeriod = timePeriod;
-      this.subscriptionData.set(this.transformNutritionData(
-        this.macrosService.getCurrentNutritionData(),
-        timePeriod
-      ));
-    });
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   /**
    * Transform nutrition response data for component display
    * Order: Protein, Carbs, Fat
    */
-  private transformNutritionData(
-    data: NutritionResponse,
-    timePeriod: TimePeriod
-  ): MacroDisplayData {
+  private transformNutritionData(data: NutritionResponse): MacroDisplayData {
     const macros: MacroNutrient[] = [
       {
         name: 'proteins',
-        actual: timePeriod === 'day' ? data.nutrients.protein['actual-day'] : data.nutrients.protein['actual-week'],
+        actual: data.nutrients.protein['actual-day'],
         target: data.nutrients.protein['target-grams'],
-        percentage: this.calculatePercentage(
-          timePeriod === 'day' ? data.nutrients.protein['actual-day'] : data.nutrients.protein['actual-week'],
-          data.nutrients.protein['target-grams']
-        )
+        percentage: this.calculatePercentage(data.nutrients.protein['actual-day'], data.nutrients.protein['target-grams'])
       },
       {
         name: 'fats',
-        actual: timePeriod === 'day' ? data.nutrients.fat['actual-day'] : data.nutrients.fat['actual-week'],
+        actual: data.nutrients.fat['actual-day'],
         target: data.nutrients.fat['target-grams'],
-        percentage: this.calculatePercentage(
-          timePeriod === 'day' ? data.nutrients.fat['actual-day'] : data.nutrients.fat['actual-week'],
-          data.nutrients.fat['target-grams']
-        )
+        percentage: this.calculatePercentage(data.nutrients.fat['actual-day'], data.nutrients.fat['target-grams'])
       },
       {
         name: 'carbs',
-        actual: timePeriod === 'day' ? data.nutrients.carb['actual-day'] : data.nutrients.carb['actual-week'],
+        actual: data.nutrients.carb['actual-day'],
         target: data.nutrients.carb['target-grams'],
-        percentage: this.calculatePercentage(
-          timePeriod === 'day' ? data.nutrients.carb['actual-day'] : data.nutrients.carb['actual-week'],
-          data.nutrients.carb['target-grams']
-        )
+        percentage: this.calculatePercentage(data.nutrients.carb['actual-day'], data.nutrients.carb['target-grams'])
       }
     ];
 
-    return { macros, timePeriod };
+    return { macros, timePeriod: 'day' };
   }
 
   /**
@@ -253,45 +186,8 @@ export class MacrosComponent implements OnInit, OnDestroy {
     return Math.min(Math.round((actual / target) * 100), 100);
   }
 
-  /**
-   * Toggle between time periods (Today/Week)
-   */
-  toggleTimePeriod(): void {
-    const newPeriod: TimePeriod = this.currentTimePeriod === 'day' ? 'week' : 'day';
-    this.macrosService.setTimePeriod(newPeriod);
-  }
-
-  /**
-   * Toggle between percent and grams display
-   */
   toggleDisplayMode(): void {
     this.showPercent = !this.showPercent;
-  }
-
-  isPlanningMode(): boolean {
-    return this.planningMode();
-  }
-
-  /**
-   * Cycle through planning display modes: food -> mealplan -> dayplan -> food
-   */
-  cyclePlanningMode(): void {
-    const modes: MacrosDisplayMode[] = ['food', 'mealplan', 'dayplan'];
-    const currentIndex = modes.indexOf(this.currentPlanningDisplayMode);
-    const nextIndex = (currentIndex + 1) % modes.length;
-    this.currentPlanningDisplayMode = modes[nextIndex];
-  }
-
-  /**
-   * Get label for current planning mode
-   */
-  getPlanningModeLabel(): string {
-    switch (this.currentPlanningDisplayMode) {
-      case 'food': return 'Food';
-      case 'mealplan': return 'MealPlan';
-      case 'dayplan': return 'DayPlan';
-      default: return 'Food';
-    }
   }
 
   /**
