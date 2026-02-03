@@ -36,7 +36,7 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 6px 12px 8px;
+    padding: 10px 12px 8px 16px;
     width: 100%;
     box-sizing: border-box;
   }
@@ -208,6 +208,33 @@
         .bar-label {
           font-size: 11px;
           margin-top: 2px;
+        }
+      }
+    }
+
+    .mode-toggle-container .unit-toggle {
+      width: 25px;
+      height: 13px;
+      border-radius: 7px;
+
+      .unit-label {
+        font-size: 6px;
+
+        &.left {
+          left: 2px;
+        }
+
+        &.right {
+          right: 4px;
+        }
+      }
+
+      .unit-thumb {
+        width: 11px;
+        height: 11px;
+
+        &.right {
+          left: 12px;
         }
       }
     }

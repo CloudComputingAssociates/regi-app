@@ -227,7 +227,7 @@ export class MacrosComponent implements OnInit {
     switch (macroName) {
       case 'proteins': return '#41ac17';
       case 'fats': return '#c060ff';
-      case 'carbs': return '#d4a84a';
+      case 'carbs': return '#f28c28';
       default: return '#5a62b3';
     }
   }
