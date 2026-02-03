@@ -45,10 +45,13 @@ export interface MacroDisplayData {
                       class="custom-progress-fill"
                       [style.width.%]="macro.percentage"
                       [style.background]="getMacroGradient(macro.name)">
-                      @if (macro.percentage >= 25) {
+                      @if (macro.percentage > 20) {
                         <span class="bar-value">{{ getBarDisplayValue(macro) }}</span>
                       }
                     </div>
+                    @if (macro.percentage <= 20) {
+                      <span class="bar-value-centered">{{ getBarDisplayValue(macro) }}</span>
+                    }
                   </div>
                   <div class="label-row">
                     <span class="bar-label" [style.color]="getLabelColor(macro.name)">{{ macro.name }}</span>
