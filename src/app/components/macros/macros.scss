@@ -49,7 +49,7 @@
       width: 100%;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: flex-start;
 
       .custom-progress-track {
         width: 100%;
@@ -85,13 +85,13 @@
       }
 
       .bar-label {
-        font-size: 16px;
+        font-size: 20px;
         font-weight: 500;
         line-height: 1;
         white-space: nowrap;
         margin-top: 6px;
-        text-align: center;
-        text-transform: capitalize;
+        text-align: left;
+        text-transform: lowercase;
       }
     }
   }

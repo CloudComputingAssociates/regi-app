@@ -226,8 +226,8 @@ export class MacrosComponent implements OnInit {
   getLabelColor(macroName: string): string {
     switch (macroName) {
       case 'proteins': return '#41ac17';
-      case 'fats': return '#a840f0';
-      case 'carbs': return '#a07a3a';
+      case 'fats': return '#c060ff';
+      case 'carbs': return '#d4a84a';
       default: return '#5a62b3';
     }
   }
