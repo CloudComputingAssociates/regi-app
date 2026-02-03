@@ -50,7 +50,7 @@ export interface MacroDisplayData {
                       <span class="bar-value">{{ getBarDisplayValue(macro) }}</span>
                     </div>
                   </div>
-                  <span class="bar-label" [style.color]="getMacroColor(macro.name)">{{ macro.name }}</span>
+                  <span class="bar-label" [style.color]="getLabelColor(macro.name)">{{ macro.name }}</span>
                 </div>
               </div>
             }
@@ -218,6 +218,18 @@ export class MacrosComponent implements OnInit {
   getMacroGradient(macroName: string): string {
     const color = this.getMacroColor(macroName);
     return `linear-gradient(to right, ${color}66, ${color})`;
+  }
+
+  /**
+   * Get label color - same as bar, slightly brighter for fats/carbs
+   */
+  getLabelColor(macroName: string): string {
+    switch (macroName) {
+      case 'proteins': return '#41ac17';
+      case 'fats': return '#a840f0';
+      case 'carbs': return '#a07a3a';
+      default: return '#5a62b3';
+    }
   }
 
 }
