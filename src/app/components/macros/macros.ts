@@ -49,8 +49,8 @@ export interface MacroDisplayData {
                       [style.background]="getMacroGradient(macro.name)">
                       <span class="bar-value">{{ getBarDisplayValue(macro) }}</span>
                     </div>
-                    <span class="bar-title">{{ macro.name }}</span>
                   </div>
+                  <span class="bar-label">{{ macro.name }}</span>
                 </div>
               </div>
             }
