@@ -50,7 +50,7 @@ export interface MacroDisplayData {
                       <span class="bar-value">{{ getBarDisplayValue(macro) }}</span>
                     </div>
                   </div>
-                  <span class="bar-label">{{ macro.name }}</span>
+                  <span class="bar-label" [style.color]="getMacroColor(macro.name)">{{ macro.name }}</span>
                 </div>
               </div>
             }
