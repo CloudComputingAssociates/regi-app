@@ -35,10 +35,8 @@ export interface MacroDisplayData {
       <mat-card class="indicators-card">
         <mat-card-content>
 
-          <!-- Macro Nutrients Row with Mode Toggle -->
+          <!-- Macro Nutrients Row -->
           <div class="macro-row">
-
-            <!-- Iterate through each macro nutrient -->
             @for (macro of effectiveDisplayData().macros; track macro.name) {
               <div class="macro-item">
                 <div class="custom-progress-container">
@@ -47,38 +45,40 @@ export interface MacroDisplayData {
                       class="custom-progress-fill"
                       [style.width.%]="macro.percentage"
                       [style.background]="getMacroGradient(macro.name)">
-                      <span class="bar-value">{{ getBarDisplayValue(macro) }}</span>
+                      @if (macro.percentage >= 25) {
+                        <span class="bar-value">{{ getBarDisplayValue(macro) }}</span>
+                      }
                     </div>
                   </div>
-                  <span class="bar-label" [style.color]="getLabelColor(macro.name)">{{ macro.name }}</span>
+                  <div class="label-row">
+                    <span class="bar-label" [style.color]="getLabelColor(macro.name)">{{ macro.name }}</span>
+                    @if ($last) {
+                      <div class="mode-toggle-container">
+                        @if (context() === 'preferences') {
+                          <div class="unit-toggle">
+                            <span class="unit-label left">%</span>
+                            <span class="unit-thumb right"></span>
+                            <span class="unit-label right">g</span>
+                          </div>
+                        } @else {
+                          <button
+                            type="button"
+                            class="unit-toggle"
+                            (click)="toggleDisplayMode()"
+                            matTooltip="Percent/Grams"
+                            matTooltipPosition="above"
+                            [matTooltipShowDelay]="300">
+                            <span class="unit-label left">%</span>
+                            <span class="unit-thumb" [class.right]="!showPercent"></span>
+                            <span class="unit-label right">g</span>
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
                 </div>
               </div>
             }
-
-            <!-- Right-side controls -->
-            <div class="mode-toggle-container">
-              @if (context() === 'preferences') {
-                <div class="unit-toggle">
-                  <span class="unit-label left">%</span>
-                  <span class="unit-thumb right"></span>
-                  <span class="unit-label right">g</span>
-                </div>
-              } @else {
-                <button
-                  type="button"
-                  class="unit-toggle"
-                  (click)="toggleDisplayMode()"
-                  matTooltip="Percent/Grams"
-                  matTooltipPosition="above"
-                  [matTooltipShowDelay]="300">
-                  <span class="unit-label left">%</span>
-                  <span class="unit-thumb" [class.right]="!showPercent"></span>
-                  <span class="unit-label right">g</span>
-                </button>
-              }
-            </div>
-
-
           </div>
 
         </mat-card-content>
