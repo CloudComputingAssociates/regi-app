@@ -9,6 +9,7 @@
   overflow: hidden;
   border-radius: 8px;
   border: 1px solid #4a4a4a;
+  position: relative;
 
   .indicators-card {
     padding: 0 !important;
@@ -119,12 +120,11 @@
   }
 
   .mode-toggle-container {
-    flex-shrink: 0;
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
     display: flex;
     align-items: center;
-    margin-left: auto;
-    margin-top: 6px;
-    margin-right: 0;
 
     .unit-toggle {
       display: flex;
