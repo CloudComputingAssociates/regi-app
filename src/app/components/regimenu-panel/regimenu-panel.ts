@@ -261,7 +261,7 @@ export class RegimenuPanelComponent {
     const items = this.planningService.planItems();
     if (items[index]) {
       this.planningService.deleteItem(items[index].id!);
-      this.notificationService.show('Item removed', 'info');
+      this.notificationService.show('Item removed', 'success');
     }
   }
 }
