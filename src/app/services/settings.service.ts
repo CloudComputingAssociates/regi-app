@@ -1,6 +1,6 @@
 // src/app/services/settings.service.ts
 // Consolidated settings service: loads all settings via GET /api/user/settings at startup,
-// saves individual groups via PUT /api/user/settings/{group}
+// saves all settings via PUT /api/user/settings
 import { Injectable, inject, signal } from '@angular/core';
 import { AuthService } from '@auth0/auth0-angular';
 import { firstValueFrom } from 'rxjs';
@@ -66,62 +66,48 @@ export class SettingsService {
   }
 
   // ========================================================
-  // INDIVIDUAL PUTs
+  // CONSOLIDATED PUT (save all settings)
+  // ========================================================
+
+  async saveSettings(settings: Partial<AllSettings>): Promise<AllSettings> {
+    const response = await this.authFetch(`${this.baseUrl}/user/settings`, {
+      method: 'PUT',
+      body: JSON.stringify(settings)
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const saved: AllSettings = await response.json();
+    this.allSettingsSignal.set(saved);
+    console.log('[SettingsService] Saved all settings:', saved);
+    return saved;
+  }
+
+  // ========================================================
+  // INDIVIDUAL SAVES (use consolidated PUT)
   // ========================================================
 
   async saveTabSettings(data: TabSettings): Promise<TabSettings> {
-    const response = await this.authFetch(`${this.baseUrl}/user/settings/tabs`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const saved: TabSettings = await response.json();
-    this.allSettingsSignal.update(s => s ? { ...s, tabs: saved } : { tabs: saved });
-    return saved;
+    const saved = await this.saveSettings({ tabs: data });
+    return saved.tabs || data;
   }
 
   async saveRegiMenuSettings(data: RegiMenuSettings): Promise<RegiMenuSettings> {
-    const response = await this.authFetch(`${this.baseUrl}/user/settings/regimenu`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const saved: RegiMenuSettings = await response.json();
-    this.allSettingsSignal.update(s => s ? { ...s, regiMenu: saved } : { regiMenu: saved });
-    return saved;
+    const saved = await this.saveSettings({ regiMenu: data });
+    return saved.regiMenu || data;
   }
 
   async saveDailyGoals(data: DailyGoals): Promise<DailyGoals> {
-    const response = await this.authFetch(`${this.baseUrl}/user/settings/dailygoals`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const saved: DailyGoals = await response.json();
-    this.allSettingsSignal.update(s => s ? { ...s, dailyGoals: saved } : { dailyGoals: saved });
-    return saved;
+    const saved = await this.saveSettings({ dailyGoals: data });
+    return saved.dailyGoals || data;
   }
 
   async saveDefaultFoodList(value: string): Promise<string> {
-    const response = await this.authFetch(`${this.baseUrl}/user/settings/defaultfoodlist`, {
-      method: 'PUT',
-      body: JSON.stringify({ defaultFoodList: value } as DefaultFoodListData)
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const saved: DefaultFoodListData = await response.json();
-    this.allSettingsSignal.update(s => s ? { ...s, defaultFoodList: saved.defaultFoodList } : { defaultFoodList: saved.defaultFoodList });
-    return saved.defaultFoodList;
+    const saved = await this.saveSettings({ defaultFoodList: value });
+    return saved.defaultFoodList || value;
   }
 
   async savePersonalInfo(data: PersonalInfo): Promise<PersonalInfo> {
-    const response = await this.authFetch(`${this.baseUrl}/user/settings/personalinfo`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const saved: PersonalInfo = await response.json();
-    this.allSettingsSignal.update(s => s ? { ...s, personalInfo: saved } : { personalInfo: saved });
-    return saved;
+    const saved = await this.saveSettings({ personalInfo: data });
+    return saved.personalInfo || data;
   }
 
   // ========================================================
