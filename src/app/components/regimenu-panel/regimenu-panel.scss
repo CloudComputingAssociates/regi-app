@@ -11,201 +11,350 @@
   height: 100%;
   width: 100%;
   background: linear-gradient(180deg, #404040 0%, #3a3a3a 100%);
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-// Action buttons - top right corner
-.action-buttons {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 10;
+// Header with plan name and actions
+.plan-header {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  border-bottom: 1px solid #2a2a2a;
+  flex-shrink: 0;
+  min-height: 48px;
 
-  .icon-btn {
-    font-size: 18px;
-    font-weight: 700;
-    color: #ffffff;
-    background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.2s ease;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border-radius: 6px;
-    border-top: 1px solid #6a6a6a;
-    border-left: 1px solid #5a5a5a;
-    border-right: 1px solid #5a5a5a;
-    border-bottom: 2px solid #1a1a1a;
-    outline: none;
-    font-family: inherit;
+  .header-left {
     display: flex;
     align-items: center;
-    justify-content: center;
-    box-shadow:
-      0 3px 6px rgba(0, 0, 0, 0.4),
-      0 -1px 0 rgba(255, 255, 255, 0.2) inset;
+    gap: 8px;
+  }
 
-    &:hover:not(:disabled) {
-      background: linear-gradient(180deg, #606060 0%, #454545 100%);
-      border-top-color: #757575;
-    }
+  .plan-name {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
 
-    &:active:not(:disabled) {
-      background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
-      border-bottom-width: 1px;
-      transform: translateY(1px);
-    }
-
-    &:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
+    &.empty {
+      color: #4da6ff;
     }
   }
 
-  .save-btn {
-    &.has-changes {
-      background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%);
-      border-top-color: #5aa55a;
-      border-left-color: #4a954a;
-      border-right-color: #4a954a;
-      border-bottom-color: #1a3a1a;
-      color: #ffffff;
+  .favorite-btn {
+    font-size: 20px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    padding: 4px;
+    transition: all 0.2s ease;
 
-      &:hover:not(:disabled) {
-        background: linear-gradient(180deg, #5aa05a 0%, #408040 100%);
-        border-top-color: #6ab56a;
+    &:hover {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    &.active {
+      color: #ffd700;
+
+      &:hover {
+        color: #ffed4e;
       }
     }
   }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
 }
 
-// Confirmation dialog overlay
-.confirm-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+// Generate button
+.generate-btn {
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%);
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border-top: 1px solid #5aa55a;
+  border-left: 1px solid #4a954a;
+  border-right: 1px solid #4a954a;
+  border-bottom: 2px solid #1a3a1a;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  min-width: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-}
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
 
-.confirm-dialog {
-  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
-  border-radius: 8px;
-  padding: 20px 24px;
-  max-width: 320px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  border: 1px solid #5a5a5a;
+  &:hover:not(:disabled) {
+    background: linear-gradient(180deg, #5aa05a 0%, #408040 100%);
+  }
 
-  p {
-    color: #ffffff;
-    font-size: 14px;
-    margin: 0 0 16px 0;
-    text-align: center;
-    line-height: 1.4;
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+    border-bottom-width: 1px;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
   }
 }
 
-.confirm-buttons {
+// Close button
+.icon-btn {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 6px;
+  border-top: 1px solid #6a6a6a;
+  border-left: 1px solid #5a5a5a;
+  border-right: 1px solid #5a5a5a;
+  border-bottom: 2px solid #1a1a1a;
+  outline: none;
+  font-family: inherit;
   display: flex;
-  gap: 12px;
+  align-items: center;
   justify-content: center;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
 
-  .confirm-btn {
-    font-size: 12px;
-    font-weight: 500;
-    padding: 8px 16px;
-    min-width: 80px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: inherit;
-    outline: none;
+  &:hover:not(:disabled) {
+    background: linear-gradient(180deg, #606060 0%, #454545 100%);
+  }
 
-    &.discard {
-      background: linear-gradient(180deg, #c75050 0%, #a03030 100%);
-      color: #ffffff;
-      border-top: 1px solid #d06060;
-      border-left: 1px solid #b04040;
-      border-right: 1px solid #b04040;
-      border-bottom: 2px solid #601a1a;
-      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
-
-      &:hover {
-        background: linear-gradient(180deg, #d76060 0%, #b04040 100%);
-      }
-
-      &:active {
-        transform: translateY(1px);
-        border-bottom-width: 1px;
-      }
-    }
-
-    &.cancel {
-      background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
-      color: #ffffff;
-      border-top: 1px solid #6a6a6a;
-      border-left: 1px solid #5a5a5a;
-      border-right: 1px solid #5a5a5a;
-      border-bottom: 2px solid #1a1a1a;
-      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
-
-      &:hover {
-        background: linear-gradient(180deg, #606060 0%, #454545 100%);
-      }
-
-      &:active {
-        transform: translateY(1px);
-        border-bottom-width: 1px;
-      }
-    }
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+    border-bottom-width: 1px;
   }
 }
 
-.panel-content {
+// Plan list container
+.plan-list-container {
   flex: 1;
   min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: #3a3a3a;
 }
 
-.content-placeholder {
+.loading-message,
+.empty-message,
+.error-message {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  height: 100%;
+  padding: 24px;
+  gap: 16px;
+
+  p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    text-align: center;
+    margin: 0;
+  }
 
   .placeholder-text {
     color: #4da6ff;
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0;
-    line-height: 1.2;
+    font-size: 16px;
+    font-weight: 500;
   }
 
   .placeholder-subtext {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.5);
     font-size: 13px;
-    margin: 0;
-    line-height: 1.2;
   }
 }
 
-// Mini chat panel (bottom-attached, 1/3 height, collapsible)
+.error-message p {
+  color: #ff6666;
+}
+
+.spinner-large {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #4da6ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// Plan list
+.plan-list {
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  padding: 4px;
+}
+
+// Plan item - swipeable
+.plan-item {
+  position: relative;
+  margin-bottom: 4px;
+  transition: transform 0.15s ease-out;
+
+  &.swiping {
+    transition: none;
+  }
+
+  .item-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: linear-gradient(180deg, #404040 0%, #383838 100%);
+    border-radius: 6px;
+    border-top: 1px solid #4a4a4a;
+    border-left: 1px solid #3a3a3a;
+    border-right: 1px solid #3a3a3a;
+    border-bottom: 1px solid #2a2a2a;
+    min-height: 52px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .delete-action {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 100px;
+    background: linear-gradient(180deg, #c75050 0%, #a03030 100%);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 500;
+    font-size: 13px;
+    z-index: 0;
+  }
+}
+
+// Meal slot badge
+.meal-slot {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(180deg, #4a7ac7 0%, #3a6ab7 100%);
+  padding: 3px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  min-width: 60px;
+  text-align: center;
+}
+
+// Thumbnail
+.item-thumbnail {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+
+  .thumbnail-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .thumbnail-placeholder {
+    width: 100%;
+    height: 100%;
+    background-color: #555555;
+  }
+}
+
+// Item details
+.item-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .item-description {
+    font-size: 13px;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-quantity {
+    font-size: 12px;
+    color: #4da6ff;
+    font-weight: 500;
+  }
+}
+
+// Macros
+.item-macros {
+  flex-shrink: 0;
+  text-align: right;
+
+  .macro {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+// Totals footer
+.plan-totals {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%);
+  border-top: 1px solid #4a4a4a;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+
+  .total-label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+  }
+
+  .total-value {
+    font-size: 12px;
+    color: #4da6ff;
+    font-weight: 600;
+  }
+}
+
+// Mini chat panel (bottom-attached, collapsible)
 .mini-chat-panel {
   flex-shrink: 0;
   display: flex;
@@ -260,42 +409,66 @@
 
 // Mobile responsive
 @media (max-width: 480px) {
-  .action-buttons {
-    gap: 6px;
+  .plan-header {
+    padding: 6px 10px;
+    min-height: 44px;
 
-    .icon-btn {
-      width: 28px;
-      height: 28px;
-      font-size: 16px;
-    }
-  }
-
-  .confirm-dialog {
-    padding: 16px 20px;
-    max-width: 280px;
-    margin: 0 16px;
-
-    p {
-      font-size: 13px;
-    }
-  }
-
-  .confirm-buttons {
-    gap: 10px;
-
-    .confirm-btn {
-      font-size: 11px;
-      padding: 7px 14px;
-      min-width: 70px;
-    }
-  }
-
-  .content-placeholder {
-    .placeholder-text {
+    .plan-name {
       font-size: 14px;
     }
 
-    .placeholder-subtext {
+    .favorite-btn {
+      font-size: 18px;
+    }
+  }
+
+  .generate-btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    min-width: 70px;
+  }
+
+  .icon-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+
+  .plan-item {
+    .item-content {
+      padding: 6px 8px;
+      gap: 6px;
+      min-height: 48px;
+    }
+  }
+
+  .meal-slot {
+    font-size: 9px;
+    padding: 2px 5px;
+    min-width: 50px;
+  }
+
+  .item-thumbnail {
+    width: 36px;
+    height: 36px;
+  }
+
+  .item-details {
+    .item-description {
+      font-size: 12px;
+    }
+
+    .item-quantity {
+      font-size: 11px;
+    }
+  }
+
+  .plan-totals {
+    gap: 8px;
+    padding: 8px 10px;
+
+    .total-label,
+    .total-value {
       font-size: 11px;
     }
   }

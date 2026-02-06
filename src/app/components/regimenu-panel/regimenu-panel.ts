@@ -1,53 +1,137 @@
 // src/app/components/regimenu-panel/regimenu-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { TabService } from '../../services/tab.service';
 import { ChatService } from '../../services/chat.service';
+import { PlanningService } from '../../services/planning.service';
+import { NotificationService } from '../../services/notification.service';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
+import { getMealSlotName } from '../../models/planning.model';
 
 @Component({
   selector: 'app-regimenu-panel',
-  imports: [CommonModule, ChatOutputComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, ChatOutputComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Confirmation dialog -->
-      @if (showConfirmDialog()) {
-        <div class="confirm-overlay" (click)="cancelClose()">
-          <div class="confirm-dialog" (click)="$event.stopPropagation()">
-            <p>You have unsaved changes. Close without saving?</p>
-            <div class="confirm-buttons">
-              <button class="confirm-btn discard" (click)="confirmClose()">Discard</button>
-              <button class="confirm-btn cancel" (click)="cancelClose()">Cancel</button>
-            </div>
+      <!-- Header with plan name and favorite -->
+      <div class="plan-header">
+        <div class="header-left">
+          @if (planningService.hasPlan()) {
+            <span class="plan-name">{{ planningService.planName() }}</span>
+            <button
+              class="favorite-btn"
+              [class.active]="planningService.isFavorite()"
+              (click)="toggleFavorite()"
+              matTooltip="Toggle Favorite"
+              matTooltipPosition="above">
+              {{ planningService.isFavorite() ? '★' : '☆' }}
+            </button>
+          } @else {
+            <span class="plan-name empty">RegiMenu℠</span>
+          }
+        </div>
+        <div class="header-actions">
+          <button
+            class="generate-btn"
+            (click)="generatePlan()"
+            [disabled]="planningService.loading()"
+            matTooltip="Generate Meal Plan"
+            matTooltipPosition="above">
+            @if (planningService.loading()) {
+              <span class="spinner"></span>
+            } @else {
+              Generate
+            }
+          </button>
+          <button
+            class="icon-btn close-btn"
+            (click)="closePanel()"
+            matTooltip="Close"
+            matTooltipPosition="above">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Plan items list -->
+      <div class="plan-list-container">
+        @if (planningService.loading()) {
+          <div class="loading-message">
+            <div class="spinner-large"></div>
+            <p>Generating your meal plan...</p>
           </div>
+        } @else if (planningService.error()) {
+          <div class="error-message">
+            <p>{{ planningService.error() }}</p>
+          </div>
+        } @else if (!planningService.hasPlan()) {
+          <div class="empty-message">
+            <p class="placeholder-text">Intelligent meal planning powered by AI</p>
+            <p class="placeholder-subtext">Click "Generate" to create a meal plan</p>
+          </div>
+        } @else {
+          <div class="plan-list" #planList>
+            @for (item of planningService.planItems(); track item.id; let i = $index) {
+              <div
+                class="plan-item"
+                [class.swiping]="swipingIndex() === i"
+                [style.transform]="getSwipeTransform(i)"
+                (touchstart)="onTouchStart($event, i)"
+                (touchmove)="onTouchMove($event, i)"
+                (touchend)="onTouchEnd($event, i)">
+
+                <div class="item-content">
+                  <!-- Meal slot badge -->
+                  <span class="meal-slot">{{ getMealSlotName(item.mealSlot) }}</span>
+
+                  <!-- Thumbnail -->
+                  <div class="item-thumbnail">
+                    @if (item.foodImageThumbnail) {
+                      <img [src]="item.foodImageThumbnail" alt="" class="thumbnail-img">
+                    } @else {
+                      <div class="thumbnail-placeholder"></div>
+                    }
+                  </div>
+
+                  <!-- Description and quantity -->
+                  <div class="item-details">
+                    <span class="item-description">
+                      {{ item.shortDescription || item.description || item.foodName }}
+                    </span>
+                    <span class="item-quantity">{{ item.quantity }} {{ item.unit }}</span>
+                  </div>
+
+                  <!-- Macros summary -->
+                  <div class="item-macros">
+                    @if (item.calories) {
+                      <span class="macro">{{ item.calories }} cal</span>
+                    }
+                  </div>
+                </div>
+
+                <!-- Delete action (revealed on swipe) -->
+                <div class="delete-action">
+                  <span>Delete</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Totals footer -->
+      @if (planningService.hasPlan()) {
+        <div class="plan-totals">
+          <span class="total-label">Daily Totals:</span>
+          <span class="total-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
+          <span class="total-value">{{ planningService.currentPlan()?.totalProteinG?.toFixed(0) ?? 0 }}g P</span>
+          <span class="total-value">{{ planningService.currentPlan()?.totalCarbG?.toFixed(0) ?? 0 }}g C</span>
+          <span class="total-value">{{ planningService.currentPlan()?.totalFatG?.toFixed(0) ?? 0 }}g F</span>
         </div>
       }
-
-      <!-- Action buttons - top right -->
-      <div class="action-buttons">
-        <button
-          class="icon-btn save-btn"
-          [class.has-changes]="hasChanges()"
-          (click)="saveAndClose()"
-          title="Save and close">
-          ✓
-        </button>
-        <button
-          class="icon-btn close-btn"
-          (click)="close()"
-          title="Close without saving">
-          ✕
-        </button>
-      </div>
-
-      <!-- Main content area -->
-      <div class="panel-content">
-        <div class="content-placeholder">
-          <p class="placeholder-text">Regimenu℠</p>
-          <p class="placeholder-subtext">Intelligent meal planning powered by AI</p>
-        </div>
-      </div>
 
       <!-- Mini chat panel (bottom-attached, collapsible) -->
       @if (hasRegimenuMessages() || chatService.regimenuIsLoading()) {
@@ -68,41 +152,116 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
 export class RegimenuPanelComponent {
   private tabService = inject(TabService);
   chatService = inject(ChatService);
+  planningService = inject(PlanningService);
+  private notificationService = inject(NotificationService);
 
-  showConfirmDialog = signal(false);
-  private changesExist = signal(false);
+  @ViewChild('planList') planListRef!: ElementRef<HTMLElement>;
+
   isChatCollapsed = signal(false);
 
-  hasChanges(): boolean {
-    return this.changesExist();
-  }
+  // Swipe state
+  swipingIndex = signal<number | null>(null);
+  swipeOffset = signal(0);
+
+  // Touch tracking
+  private touchStartX = 0;
+  private touchStartY = 0;
+  private touchStartTime = 0;
+  private isSwiping = false;
 
   hasRegimenuMessages = computed(() => this.chatService.regimenuMessages().length > 0);
+
+  // Expose helper to template
+  getMealSlotName = getMealSlotName;
 
   toggleChat(): void {
     this.isChatCollapsed.update(v => !v);
   }
 
-  close(): void {
-    if (this.hasChanges()) {
-      this.showConfirmDialog.set(true);
-    } else {
-      this.tabService.closeTab('meal-planning');
+  closePanel(): void {
+    this.tabService.closeTab('meal-planning');
+  }
+
+  async generatePlan(): Promise<void> {
+    try {
+      await this.planningService.generatePlan('day');
+      this.notificationService.show('Meal plan generated', 'success');
+    } catch {
+      this.notificationService.show('Failed to generate plan', 'error');
     }
   }
 
-  confirmClose(): void {
-    this.showConfirmDialog.set(false);
-    this.tabService.closeTab('meal-planning');
+  async toggleFavorite(): Promise<void> {
+    try {
+      await this.planningService.toggleFavorite();
+    } catch {
+      this.notificationService.show('Failed to update favorite', 'error');
+    }
   }
 
-  cancelClose(): void {
-    this.showConfirmDialog.set(false);
+  // Swipe handling for delete
+  onTouchStart(event: TouchEvent, index: number): void {
+    const touch = event.touches[0];
+    this.touchStartX = touch.clientX;
+    this.touchStartY = touch.clientY;
+    this.touchStartTime = Date.now();
+    this.isSwiping = false;
   }
 
-  saveAndClose(): void {
-    // TODO: Implement save logic when meal planning data exists
-    this.changesExist.set(false);
-    this.tabService.closeTab('meal-planning');
+  onTouchMove(event: TouchEvent, index: number): void {
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - this.touchStartX;
+    const deltaY = touch.clientY - this.touchStartY;
+
+    // Only allow left swipe (negative deltaX) and ignore vertical scrolling
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      return;
+    }
+
+    if (deltaX < -10) {
+      this.isSwiping = true;
+      this.swipingIndex.set(index);
+      // Limit swipe to -100px (delete action width)
+      this.swipeOffset.set(Math.max(deltaX, -100));
+      event.preventDefault();
+    }
+  }
+
+  onTouchEnd(event: TouchEvent, index: number): void {
+    if (!this.isSwiping) {
+      this.resetSwipe();
+      return;
+    }
+
+    const deltaTime = Date.now() - this.touchStartTime;
+    const threshold = -50; // Halfway point
+
+    // If swiped past threshold or fast swipe, trigger delete
+    if (this.swipeOffset() < threshold || (this.swipeOffset() < -20 && deltaTime < 200)) {
+      this.deleteItem(index);
+    }
+
+    this.resetSwipe();
+  }
+
+  private resetSwipe(): void {
+    this.swipingIndex.set(null);
+    this.swipeOffset.set(0);
+    this.isSwiping = false;
+  }
+
+  getSwipeTransform(index: number): string {
+    if (this.swipingIndex() === index) {
+      return `translateX(${this.swipeOffset()}px)`;
+    }
+    return 'translateX(0)';
+  }
+
+  deleteItem(index: number): void {
+    const items = this.planningService.planItems();
+    if (items[index]) {
+      this.planningService.deleteItem(items[index].id!);
+      this.notificationService.show('Item removed', 'info');
+    }
   }
 }
