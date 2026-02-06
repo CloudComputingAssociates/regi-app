@@ -78,6 +78,12 @@
           "maximum": 4,
           "description": "Number of times to repeat meal plan (1-4)"
         },
+        "weekStartDay": {
+          "type": ["string", "null"],
+          "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", null],
+          "default": "sunday",
+          "description": "Day of week that starts a new meal planning week"
+        },
         "foodListSource": {
           "type": ["string", "null"],
           "enum": ["yeh_plus_myfoods", "yeh", "myfoods", null],
@@ -120,6 +126,12 @@
           "minimum": 1,
           "maximum": 4,
           "description": "Number of times to repeat meal plan (1-4)"
+        },
+        "weekStartDay": {
+          "type": "string",
+          "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+          "default": "sunday",
+          "description": "Day of week that starts a new meal planning week"
         },
         "foodListSource": {
           "type": "string",
@@ -173,6 +185,12 @@
       "minimum": 1,
       "maximum": 4,
       "description": "Number of times to repeat meal plan (1-4)"
+    },
+    "weekStartDay": {
+      "type": ["string", "null"],
+      "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", null],
+      "default": "sunday",
+      "description": "Day of week that starts a new meal planning week"
     },
     "foodListSource": {
       "type": ["string", "null"],

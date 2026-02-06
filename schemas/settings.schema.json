@@ -1,0 +1,170 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.youeatinghealthy.com/schemas/settings.schema.json",
+  "title": "User Settings Schema",
+  "description": "Consolidated user settings stored as JSON columns in UserSettings table",
+  "type": "object",
+  "definitions": {
+    "TabSettings": {
+      "type": "object",
+      "description": "Tab persistence settings",
+      "properties": {
+        "defaultTabs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["chat", "meal-planning", "foods", "shop", "review", "preferences", "account", "help"]
+          },
+          "description": "List of default tabs to open on login"
+        },
+        "activeTabId": {
+          "type": "string",
+          "enum": ["chat", "meal-planning", "foods", "shop", "review", "preferences", "account", "help"],
+          "description": "The tab that had focus when settings were saved"
+        }
+      },
+      "required": ["defaultTabs"],
+      "additionalProperties": false
+    },
+    "RegiMenuSettings": {
+      "type": "object",
+      "description": "RegiMenu meal planning settings",
+      "properties": {
+        "mealsPerDay": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Number of meals per day (1-10)"
+        },
+        "fastingType": {
+          "type": "string",
+          "enum": ["none", "16_8", "18_6", "20_4", "omad"],
+          "description": "Intermittent fasting schedule"
+        },
+        "eatingStartTime": {
+          "type": "string",
+          "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
+          "description": "Eating window start time in 24-hour format HH:MM"
+        },
+        "repeatMeals": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4,
+          "description": "Number of times to repeat meal plan (1-4)"
+        },
+        "weekStartDay": {
+          "type": "string",
+          "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+          "default": "sunday",
+          "description": "Day of week that starts a new meal planning week"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DailyGoals": {
+      "type": "object",
+      "description": "Daily nutrition targets (computed by PromptMe, user may override)",
+      "properties": {
+        "calories": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Daily calorie target"
+        },
+        "protein": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Daily protein target in grams"
+        },
+        "carbs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Daily carbohydrate target in grams"
+        },
+        "fat": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Daily fat target in grams"
+        },
+        "fiber": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Daily fiber target in grams"
+        },
+        "sodium": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Daily sodium target in mg"
+        }
+      },
+      "required": ["calories", "protein", "carbs", "fat", "fiber", "sodium"],
+      "additionalProperties": false
+    },
+    "PersonalInfo": {
+      "type": "object",
+      "description": "User physical profile for nutrition calculations",
+      "properties": {
+        "sex": {
+          "type": "string",
+          "enum": ["male", "female"],
+          "description": "Biological sex for BMR calculation"
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "format": "date",
+          "description": "Date of birth in ISO format (YYYY-MM-DD)"
+        },
+        "heightCm": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Height in centimeters"
+        },
+        "currentWeightKg": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Current weight in kilograms"
+        },
+        "targetWeightKg": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Target/goal weight in kilograms"
+        },
+        "activityLevel": {
+          "type": "string",
+          "enum": ["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"],
+          "description": "Physical activity level for TDEE calculation"
+        },
+        "proteinRatio": {
+          "type": "number",
+          "enum": [0.8, 1.0, 1.2],
+          "description": "Protein ratio in g per lb of target weight"
+        },
+        "carbScaleGrams": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Daily carb target in grams (slider value)"
+        },
+        "deficitPercent": {
+          "type": "number",
+          "description": "Caloric adjustment percent: negative = deficit (losing weight), positive = surplus (gaining weight). E.g. -20 means 20% lowered, +10 means 10% raised."
+        }
+      },
+      "additionalProperties": false
+    },
+    "AllSettingsResponse": {
+      "type": "object",
+      "description": "Consolidated response for GET /api/user/settings (all settings at once)",
+      "properties": {
+        "tabs": { "$ref": "#/definitions/TabSettings" },
+        "regiMenu": { "$ref": "#/definitions/RegiMenuSettings" },
+        "defaultFoodList": {
+          "type": "string",
+          "enum": ["yeh_approved", "all_foods"],
+          "description": "Default food list filter"
+        },
+        "dailyGoals": { "$ref": "#/definitions/DailyGoals" },
+        "personalInfo": { "$ref": "#/definitions/PersonalInfo" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

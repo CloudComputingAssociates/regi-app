@@ -22,6 +22,7 @@ export interface RegiMenuSettings {
   fastingType?: string;
   eatingStartTime?: string;
   repeatMeals?: number;
+  weekStartDay?: string;
 }
 
 // GET/PUT /api/user/settings/dailygoals

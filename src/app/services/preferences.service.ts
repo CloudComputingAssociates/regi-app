@@ -13,6 +13,7 @@ export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6;
 export type FastingType = 'none' | '16_8' | '18_6' | '20_4' | 'omad';
 export type RepeatMeals = 1 | 2 | 3 | 4;
 export type FoodListSource = 'yeh_plus_myfoods' | 'yeh' | 'myfoods';
+export type WeekStartDay = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
 
 export type { DailyGoals, PersonalInfo };
 
@@ -24,6 +25,7 @@ export interface Preferences {
   repeatMeals: RepeatMeals;
   foodListSource: FoodListSource;
   personalInfo: PersonalInfo;
+  weekStartDay: WeekStartDay;
 }
 
 const DEFAULT_DAILY_GOALS: DailyGoals = {
@@ -44,7 +46,8 @@ const DEFAULT_PREFERENCES: Preferences = {
   eatingStartTime: '08:00',
   repeatMeals: 1,
   foodListSource: 'yeh_plus_myfoods',
-  personalInfo: DEFAULT_PERSONAL_INFO
+  personalInfo: DEFAULT_PERSONAL_INFO,
+  weekStartDay: 'sunday'
 };
 
 // Track which groups have been modified since last save
@@ -83,6 +86,7 @@ export class PreferencesService {
   readonly repeatMeals = computed(() => this.preferencesSignal().repeatMeals);
   readonly foodListSource = computed(() => this.preferencesSignal().foodListSource);
   readonly personalInfo = computed(() => this.preferencesSignal().personalInfo);
+  readonly weekStartDay = computed(() => this.preferencesSignal().weekStartDay);
 
   // ========================================================
   // COMPUTED NUTRITION (Mifflin-St. Jeor)
@@ -218,6 +222,7 @@ export class PreferencesService {
       fastingType: (rm?.fastingType as FastingType) || DEFAULT_PREFERENCES.fastingType,
       eatingStartTime: rm?.eatingStartTime || DEFAULT_PREFERENCES.eatingStartTime,
       repeatMeals: (rm?.repeatMeals as RepeatMeals) || DEFAULT_PREFERENCES.repeatMeals,
+      weekStartDay: (rm?.weekStartDay as WeekStartDay) || DEFAULT_PREFERENCES.weekStartDay,
       foodListSource: this.mapDefaultFoodList(all.defaultFoodList),
       dailyGoals: dg ?? DEFAULT_DAILY_GOALS,
       personalInfo: pi ?? DEFAULT_PERSONAL_INFO
@@ -243,7 +248,8 @@ export class PreferencesService {
         mealsPerDay: current.mealsPerDay,
         fastingType: current.fastingType,
         eatingStartTime: current.eatingStartTime,
-        repeatMeals: current.repeatMeals
+        repeatMeals: current.repeatMeals,
+        weekStartDay: current.weekStartDay
       };
       promises.push(this.settingsService.saveRegiMenuSettings(data));
     }
@@ -289,6 +295,11 @@ export class PreferencesService {
 
   setRepeatMeals(value: RepeatMeals): void {
     this.preferencesSignal.update(p => ({ ...p, repeatMeals: value }));
+    this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
+  }
+
+  setWeekStartDay(value: WeekStartDay): void {
+    this.preferencesSignal.update(p => ({ ...p, weekStartDay: value }));
     this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
   }
 

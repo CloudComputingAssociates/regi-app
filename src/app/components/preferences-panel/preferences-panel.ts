@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
 import { ChatService } from '../../services/chat.service';
 import { NotificationService } from '../../services/notification.service';
-import { PreferencesService, MealsPerDay, FastingType, DailyGoals, RepeatMeals, FoodListSource } from '../../services/preferences.service';
+import { PreferencesService, MealsPerDay, FastingType, DailyGoals, RepeatMeals, FoodListSource, WeekStartDay } from '../../services/preferences.service';
 import { SettingsService } from '../../services/settings.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
@@ -282,6 +282,21 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
               <div class="regimenu-column">
                 <span class="column-label">RegiMenu</span>
                 <div class="setting-row">
+                  <label class="setting-label">Week Starts</label>
+                  <select
+                    class="setting-select"
+                    [ngModel]="userSettingsService.weekStartDay()"
+                    (ngModelChange)="onWeekStartDayChange($event)">
+                    <option value="sunday">Sunday</option>
+                    <option value="monday">Monday</option>
+                    <option value="tuesday">Tuesday</option>
+                    <option value="wednesday">Wednesday</option>
+                    <option value="thursday">Thursday</option>
+                    <option value="friday">Friday</option>
+                    <option value="saturday">Saturday</option>
+                  </select>
+                </div>
+                <div class="setting-row">
                   <label class="setting-label">Repeat Meals</label>
                   <select
                     class="setting-select"
@@ -532,6 +547,11 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
 
   onRepeatMealsChange(value: RepeatMeals): void {
     this.userSettingsService.setRepeatMeals(value);
+    this.settingsChanged.set(true);
+  }
+
+  onWeekStartDayChange(value: WeekStartDay): void {
+    this.userSettingsService.setWeekStartDay(value);
     this.settingsChanged.set(true);
   }
 
