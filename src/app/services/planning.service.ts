@@ -33,7 +33,10 @@ export class PlanningService {
   readonly error = this.errorSignal.asReadonly();
 
   // Computed values
-  readonly planItems = computed(() => this.currentPlanSignal()?.items ?? []);
+  readonly planItems = computed(() => {
+    const items = this.currentPlanSignal()?.items ?? [];
+    return [...items].sort((a, b) => a.mealSlot - b.mealSlot || (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  });
   readonly planName = computed(() => this.currentPlanSignal()?.name ?? '');
   readonly isFavorite = computed(() => this.currentPlanSignal()?.isFavorite ?? false);
   readonly hasPlan = computed(() => this.currentPlanSignal() !== null);

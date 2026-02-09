@@ -101,7 +101,7 @@ import { getMealSlotName } from '../../models/planning.model';
                     <span class="item-description">
                       {{ item.shortDescription || item.description || item.foodName }}
                     </span>
-                    <span class="item-quantity">{{ item.quantity }} {{ item.unit }}</span>
+                    <span class="item-quantity">{{ formatQuantity(item.quantity, item.unit) }} {{ item.unit }}</span>
                   </div>
 
                   <!-- Macros summary -->
@@ -173,6 +173,16 @@ export class RegimenuPanelComponent {
 
   // Expose helper to template
   getMealSlotName = getMealSlotName;
+
+  formatQuantity(quantity: number, unit: string): string {
+    if (unit === 'g') {
+      return String(Math.ceil(quantity));
+    }
+    if (unit === 'oz') {
+      return String(Math.ceil(quantity * 10) / 10);
+    }
+    return String(Math.round(quantity * 10) / 10);
+  }
 
   toggleChat(): void {
     this.isChatCollapsed.update(v => !v);
