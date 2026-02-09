@@ -1,5 +1,6 @@
 // src/app/components/left-nav/left-nav.ts
 import { Component, EventEmitter, Output, ViewChild, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatIconModule } from '@angular/material/icon';
@@ -51,23 +52,29 @@ interface MenuItem {
           </button>
         </div>
 
-        <!-- Menu Items -->
-        <mat-nav-list class="menu-list">
-          <mat-list-item
-            *ngFor="let item of menuItems"
-            (click)="navigateTo(item.tabId, drawer)"
-            class="menu-item"
-            [class.active]="isTabOpen(item.tabId)">
-            <div class="menu-item-content">
-              @if (item.iconImage) {
-                <img [src]="item.iconImage" [alt]="item.label" class="menu-icon-image" />
-              } @else {
-                <span class="menu-icon">{{ item.icon }}</span>
-              }
-              <span class="menu-label">{{ item.label }}</span>
-            </div>
-          </mat-list-item>
-        </mat-nav-list>
+        <!-- Menu Items (only when authenticated) -->
+        @if (isAuthenticated()) {
+          <mat-nav-list class="menu-list">
+            <mat-list-item
+              *ngFor="let item of menuItems"
+              (click)="navigateTo(item.tabId, drawer)"
+              class="menu-item"
+              [class.active]="isTabOpen(item.tabId)">
+              <div class="menu-item-content">
+                @if (item.iconImage) {
+                  <img [src]="item.iconImage" [alt]="item.label" class="menu-icon-image" />
+                } @else {
+                  <span class="menu-icon">{{ item.icon }}</span>
+                }
+                <span class="menu-label">{{ item.label }}</span>
+              </div>
+            </mat-list-item>
+          </mat-nav-list>
+        } @else {
+          <div class="login-prompt">
+            <p>Please log in to access features</p>
+          </div>
+        }
       </mat-sidenav>
 
       <!-- Main Content -->
@@ -83,6 +90,7 @@ export class LeftNavComponent {
   @Output() drawerToggle = new EventEmitter<void>();
 
   private auth = inject(AuthService);
+  isAuthenticated = toSignal(this.auth.isAuthenticated$, { initialValue: false });
 
   // Get user's first name from Auth0 user profile
   userFirstName$ = this.auth.user$.pipe(

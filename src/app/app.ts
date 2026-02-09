@@ -1,6 +1,7 @@
 // src/app/app.ts
 // Main App Component - Modern Angular with Material Design
 import { Component, ChangeDetectionStrategy, inject, OnInit, OnDestroy } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '@auth0/auth0-angular';
 import { Subscription } from 'rxjs';
 import { take, switchMap, filter } from 'rxjs/operators';
@@ -39,9 +40,13 @@ import { NotificationService } from './services/notification.service';
           </app-app-bar>
 
           <main class="main-content">
-            <app-macros />
+            @if (isAuthenticated()) {
+              <app-macros />
+            }
             <app-main-body />
-            <app-chat-input />
+            @if (isAuthenticated()) {
+              <app-chat-input />
+            }
           </main>
         </div>
       </app-left-nav>
@@ -57,6 +62,7 @@ import { NotificationService } from './services/notification.service';
 })
 export class AppComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
+  isAuthenticated = toSignal(this.auth.isAuthenticated$, { initialValue: false });
   subscriptionService = inject(SubscriptionService);
   private settingsService = inject(SettingsService);
   private tabService = inject(TabService);

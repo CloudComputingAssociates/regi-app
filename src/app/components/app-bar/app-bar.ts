@@ -1,5 +1,6 @@
 // src/app/components/app-bar/app-bar.ts
 import { Component, Output, EventEmitter, ChangeDetectionStrategy, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,13 +15,17 @@ import { map } from 'rxjs/operators';
   template: `
     <header class="app-bar">
       <div class="app-bar-content">
-        <button
-          mat-icon-button
-          class="menu-button"
-          (click)="onMenuClick()"
-          aria-label="Open navigation menu">
-          <mat-icon>menu</mat-icon>
-        </button>
+        @if (isAuthenticated()) {
+          <button
+            mat-icon-button
+            class="menu-button"
+            (click)="onMenuClick()"
+            aria-label="Open navigation menu">
+            <mat-icon>menu</mat-icon>
+          </button>
+        } @else {
+          <div class="menu-button-placeholder"></div>
+        }
 
         <span class="app-title">{{ titlePrefix$ | async }} Plan</span>
 
@@ -34,6 +39,7 @@ export class AppBarComponent {
   @Output() menuClick = new EventEmitter<void>();
 
   private auth = inject(AuthService);
+  isAuthenticated = toSignal(this.auth.isAuthenticated$, { initialValue: false });
 
   titlePrefix$ = this.auth.user$.pipe(
     map(user => {
