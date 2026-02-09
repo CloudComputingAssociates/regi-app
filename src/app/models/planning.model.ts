@@ -85,5 +85,5 @@ export interface ListPlansResponse {
 
 // Helper to get meal slot name
 export function getMealSlotName(slot: number): string {
-  return `Meal${slot}`;
+  return `Meal ${slot}`;
 }

@@ -16,11 +16,19 @@ import { getMealSlotName } from '../../models/planning.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Header with plan name and favorite -->
+      <!-- Header with plan name and actions -->
       <div class="plan-header">
         <div class="header-left">
+          <span class="plan-label">Plan</span>
           @if (planningService.hasPlan()) {
-            <span class="plan-name">{{ planningService.planName() }}</span>
+            <input
+              type="text"
+              class="plan-name-input"
+              [value]="planningService.planName()"
+              (input)="onPlanNameInput($event)"
+              (blur)="onPlanNameBlur()"
+              (keydown.enter)="$event.target.blur()"
+              spellcheck="false" />
             <button
               class="favorite-btn"
               [class.active]="planningService.isFavorite()"
@@ -34,10 +42,25 @@ import { getMealSlotName } from '../../models/planning.model';
           }
         </div>
         <div class="header-actions">
+          @if (planningService.hasPlan()) {
+            <button
+              class="icon-btn save-btn"
+              [class.has-changes]="hasChanges()"
+              [disabled]="!hasChanges() || isSaving()"
+              (click)="savePlan()"
+              matTooltip="Save Plan"
+              matTooltipPosition="above">
+              @if (isSaving()) {
+                <span class="spinner"></span>
+              } @else {
+                ✓
+              }
+            </button>
+          }
           <button
             class="generate-btn"
             (click)="generatePlan()"
-            [disabled]="planningService.loading()"
+            [disabled]="planningService.loading() || planningService.hasPlan()"
             matTooltip="Generate Meal Plan"
             matTooltipPosition="above">
             @if (planningService.loading()) {
@@ -158,6 +181,9 @@ export class RegimenuPanelComponent {
   @ViewChild('planList') planListRef!: ElementRef<HTMLElement>;
 
   isChatCollapsed = signal(false);
+  hasChanges = signal(false);
+  isSaving = signal(false);
+  private pendingName: string | null = null;
 
   // Swipe state
   swipingIndex = signal<number | null>(null);
@@ -186,6 +212,37 @@ export class RegimenuPanelComponent {
 
   toggleChat(): void {
     this.isChatCollapsed.update(v => !v);
+  }
+
+  onPlanNameInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.pendingName = value;
+    this.hasChanges.set(true);
+  }
+
+  onPlanNameBlur(): void {
+    // Changes are saved via the save button
+  }
+
+  async savePlan(): Promise<void> {
+    const plan = this.planningService.currentPlan();
+    if (!plan) return;
+
+    this.isSaving.set(true);
+    try {
+      const updates: { name?: string } = {};
+      if (this.pendingName !== null) {
+        updates.name = this.pendingName;
+      }
+      await this.planningService.updatePlan(plan.id, updates);
+      this.pendingName = null;
+      this.hasChanges.set(false);
+      this.notificationService.show('Plan saved', 'success');
+    } catch {
+      this.notificationService.show('Failed to save plan', 'error');
+    } finally {
+      this.isSaving.set(false);
+    }
   }
 
   closePanel(): void {
