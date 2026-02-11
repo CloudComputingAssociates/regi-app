@@ -4,12 +4,11 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
-  Plan,
-  PlanItem,
-  GeneratePlanRequest,
-  UpdatePlanRequest,
-  ListPlansResponse,
-  ListPlansRequest
+  Meal,
+  GenerateMealRequest,
+  UpdateMealRequest,
+  ListMealsResponse,
+  ListMealsRequest
 } from '../models/planning.model';
 
 @Injectable({
@@ -19,50 +18,54 @@ export class PlanningService {
   private http = inject(HttpClient);
   private baseUrl = environment.apiUrl;
 
-  // Current plan state
-  private currentPlanSignal = signal<Plan | null>(null);
+  // Current meal state
+  private currentMealSignal = signal<Meal | null>(null);
   private loadingSignal = signal(false);
   private errorSignal = signal<string | null>(null);
 
   // Stubbed prompt for first pass (will come from PromptMe chat later)
-  private readonly STUBBED_PROMPT = 'I want a daily plan with dark chicken, eggs, cottage cheese and ground beef plus vegetables and pecorino romano cheese 1 oz';
+  private readonly STUBBED_PROMPT = 'I want a meal with dark chicken, eggs, cottage cheese and ground beef plus vegetables and pecorino romano cheese 1 oz';
 
   // Public accessors
-  readonly currentPlan = this.currentPlanSignal.asReadonly();
+  readonly currentMeal = this.currentMealSignal.asReadonly();
   readonly loading = this.loadingSignal.asReadonly();
   readonly error = this.errorSignal.asReadonly();
 
   // Computed values
-  readonly planItems = computed(() => {
-    const items = this.currentPlanSignal()?.items ?? [];
-    return [...items].sort((a, b) => a.mealSlot - b.mealSlot || (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  readonly mealItems = computed(() => {
+    const items = this.currentMealSignal()?.items ?? [];
+    return [...items].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   });
-  readonly planName = computed(() => this.currentPlanSignal()?.name ?? '');
-  readonly isFavorite = computed(() => this.currentPlanSignal()?.isFavorite ?? false);
-  readonly hasPlan = computed(() => this.currentPlanSignal() !== null);
+  readonly mealName = computed(() => this.currentMealSignal()?.name ?? '');
+  readonly isFavorite = computed(() => this.currentMealSignal()?.isFavorite ?? false);
+  readonly hasMeal = computed(() => this.currentMealSignal() !== null);
+
+  // Legacy aliases for backward compat during transition
+  readonly currentPlan = this.currentMeal;
+  readonly planItems = this.mealItems;
+  readonly planName = this.mealName;
+  readonly hasPlan = this.hasMeal;
 
   /**
-   * Generate a new meal plan via AI
+   * Generate a new standalone meal via AI
    */
-  async generatePlan(planType: 'day' | 'week' = 'day', planDate?: string): Promise<Plan> {
+  async generateMeal(name?: string): Promise<Meal> {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
-    const date = planDate ?? new Date().toISOString().split('T')[0];
-    const request: GeneratePlanRequest = {
-      planType,
-      planDate: date,
-      promptGist: this.STUBBED_PROMPT
+    const request: GenerateMealRequest = {
+      promptGist: this.STUBBED_PROMPT,
+      ...(name ? { name } : {})
     };
 
     try {
-      const plan = await firstValueFrom(
-        this.http.post<Plan>(`${this.baseUrl}/plan/generate`, request)
+      const meal = await firstValueFrom(
+        this.http.post<Meal>(`${this.baseUrl}/meal/generate`, request)
       );
-      this.currentPlanSignal.set(plan);
-      return plan;
+      this.currentMealSignal.set(meal);
+      return meal;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to generate plan';
+      const message = err instanceof Error ? err.message : 'Failed to generate meal';
       this.errorSignal.set(message);
       throw err;
     } finally {
@@ -71,20 +74,20 @@ export class PlanningService {
   }
 
   /**
-   * Get a plan by ID
+   * Get a meal by ID
    */
-  async getPlan(planId: number): Promise<Plan> {
+  async getMeal(mealId: number): Promise<Meal> {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
     try {
-      const plan = await firstValueFrom(
-        this.http.get<Plan>(`${this.baseUrl}/plan/${planId}`)
+      const meal = await firstValueFrom(
+        this.http.get<Meal>(`${this.baseUrl}/meal/${mealId}`)
       );
-      this.currentPlanSignal.set(plan);
-      return plan;
+      this.currentMealSignal.set(meal);
+      return meal;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load plan';
+      const message = err instanceof Error ? err.message : 'Failed to load meal';
       this.errorSignal.set(message);
       throw err;
     } finally {
@@ -93,20 +96,20 @@ export class PlanningService {
   }
 
   /**
-   * Update plan (name, favorite status, items)
+   * Update meal (name, favorite status, items)
    */
-  async updatePlan(planId: number, updates: UpdatePlanRequest): Promise<Plan> {
+  async updateMeal(mealId: number, updates: UpdateMealRequest): Promise<Meal> {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
     try {
-      const plan = await firstValueFrom(
-        this.http.put<Plan>(`${this.baseUrl}/plan/${planId}`, updates)
+      const meal = await firstValueFrom(
+        this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, updates)
       );
-      this.currentPlanSignal.set(plan);
-      return plan;
+      this.currentMealSignal.set(meal);
+      return meal;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to update plan';
+      const message = err instanceof Error ? err.message : 'Failed to update meal';
       this.errorSignal.set(message);
       throw err;
     } finally {
@@ -118,48 +121,53 @@ export class PlanningService {
    * Toggle favorite status
    */
   async toggleFavorite(): Promise<void> {
-    const plan = this.currentPlanSignal();
-    if (!plan) return;
+    const meal = this.currentMealSignal();
+    if (!meal) return;
 
-    await this.updatePlan(plan.id, { isFavorite: !plan.isFavorite });
+    await this.updateMeal(meal.id, { isFavorite: !meal.isFavorite });
   }
 
   /**
-   * Delete a plan item (local only for now)
+   * Delete a meal item (local only for now)
    */
   deleteItem(itemId: number): void {
-    const plan = this.currentPlanSignal();
-    if (!plan) return;
+    const meal = this.currentMealSignal();
+    if (!meal) return;
 
-    const updatedItems = plan.items.filter(item => item.id !== itemId);
-    this.currentPlanSignal.set({
-      ...plan,
+    const updatedItems = meal.items.filter(item => item.id !== itemId);
+    this.currentMealSignal.set({
+      ...meal,
       items: updatedItems
     });
   }
 
   /**
-   * List plans with filters
+   * List meals with filters
    */
-  listPlans(params?: ListPlansRequest): Observable<ListPlansResponse> {
+  listMeals(params?: ListMealsRequest): Observable<ListMealsResponse> {
     const queryParams = new URLSearchParams();
     if (params?.planType) queryParams.set('planType', params.planType);
     if (params?.status) queryParams.set('status', params.status);
     if (params?.isFavorite !== undefined) queryParams.set('isFavorite', String(params.isFavorite));
-    if (params?.startDate) queryParams.set('startDate', params.startDate);
-    if (params?.endDate) queryParams.set('endDate', params.endDate);
+    if (params?.includeYeh !== undefined) queryParams.set('includeYeh', String(params.includeYeh));
     if (params?.limit) queryParams.set('limit', String(params.limit));
     if (params?.offset) queryParams.set('offset', String(params.offset));
 
-    const url = `${this.baseUrl}/plans?${queryParams.toString()}`;
-    return this.http.get<ListPlansResponse>(url);
+    const url = `${this.baseUrl}/meal?${queryParams.toString()}`;
+    return this.http.get<ListMealsResponse>(url);
   }
 
   /**
-   * Clear current plan
+   * Clear current meal
    */
-  clearPlan(): void {
-    this.currentPlanSignal.set(null);
+  clearMeal(): void {
+    this.currentMealSignal.set(null);
     this.errorSignal.set(null);
   }
+
+  // Legacy aliases
+  async generatePlan(): Promise<Meal> { return this.generateMeal(); }
+  async getPlan(id: number): Promise<Meal> { return this.getMeal(id); }
+  async updatePlan(id: number, updates: UpdateMealRequest): Promise<Meal> { return this.updateMeal(id, updates); }
+  clearPlan(): void { this.clearMeal(); }
 }

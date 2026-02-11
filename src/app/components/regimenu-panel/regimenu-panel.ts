@@ -8,7 +8,6 @@ import { ChatService } from '../../services/chat.service';
 import { PlanningService } from '../../services/planning.service';
 import { NotificationService } from '../../services/notification.service';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
-import { getMealSlotName } from '../../models/planning.model';
 
 @Component({
   selector: 'app-regimenu-panel',
@@ -107,9 +106,6 @@ import { getMealSlotName } from '../../models/planning.model';
                 (touchend)="onTouchEnd($event, i)">
 
                 <div class="item-content">
-                  <!-- Meal slot badge -->
-                  <span class="meal-slot">{{ getMealSlotName(item.mealSlot) }}</span>
-
                   <!-- Thumbnail -->
                   <div class="item-thumbnail">
                     @if (item.foodImageThumbnail) {
@@ -122,7 +118,7 @@ import { getMealSlotName } from '../../models/planning.model';
                   <!-- Description and quantity -->
                   <div class="item-details">
                     <span class="item-description">
-                      {{ item.shortDescription || item.description || item.foodName }}
+                      {{ item.shortDescription || item.foodName }}
                     </span>
                     <span class="item-quantity">{{ formatQuantity(item.quantity, item.unit) }} {{ item.unit }}</span>
                   </div>
@@ -197,9 +193,6 @@ export class RegimenuPanelComponent {
 
   hasRegimenuMessages = computed(() => this.chatService.regimenuMessages().length > 0);
 
-  // Expose helper to template
-  getMealSlotName = getMealSlotName;
-
   formatQuantity(quantity: number, unit: string): string {
     if (unit === 'g') {
       return String(Math.ceil(quantity));
@@ -251,7 +244,7 @@ export class RegimenuPanelComponent {
 
   async generatePlan(): Promise<void> {
     try {
-      await this.planningService.generatePlan('day');
+      await this.planningService.generatePlan();
       this.notificationService.show('Meal plan generated', 'success');
     } catch {
       this.notificationService.show('Failed to generate plan', 'error');

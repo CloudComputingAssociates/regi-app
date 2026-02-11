@@ -1,11 +1,10 @@
 // src/app/models/planning.model.ts
-// Types for meal plan generation and management
+// Types for standalone meal generation and day plan assembly
 
-export interface PlanItem {
+export interface MealItem {
   id?: number;
   foodId: number;
   foodName: string;
-  mealSlot: number;  // 1=Breakfast, 2=Lunch, 3=Dinner, 4+=Snack
   quantity: number;
   unit: string;
   calories?: number;
@@ -15,75 +14,119 @@ export interface PlanItem {
   fiberG?: number;
   sodiumMg?: number;
   sortOrder?: number;
-  // For display - populated from Foods table
   foodImageThumbnail?: string;
   shortDescription?: string;
-  description?: string;
 }
 
-export interface Plan {
+export interface Meal {
   id: number;
   name: string;
-  planType: 'day' | 'week';
-  planDate: string;  // YYYY-MM-DD
-  endDate?: string;  // For week plans
+  planType: 'meal' | 'snack';
+  mealSeqNum: number;
+  primaryProteinFoodId?: number;
+  primaryProteinName?: string;
+  isYeh: boolean;
   isFavorite: boolean;
-  status: 'active' | 'completed' | 'archived';
+  status: 'active' | 'archived';
   totalCalories?: number;
   totalProteinG?: number;
   totalFatG?: number;
   totalCarbG?: number;
   totalFiberG?: number;
   totalSodiumMg?: number;
-  items: PlanItem[];
+  items: MealItem[];
   createdAt: string;
   updatedAt: string;
 }
 
-export interface GeneratePlanRequest {
-  planType: 'day' | 'week';
-  planDate: string;  // YYYY-MM-DD
+export interface GenerateMealRequest {
   promptGist: string;
   name?: string;
 }
 
-export interface UpdatePlanRequest {
+export interface UpdateMealRequest {
   name?: string;
   isFavorite?: boolean;
-  status?: 'active' | 'completed' | 'archived';
-  items?: PlanItem[];
+  status?: 'active' | 'archived';
+  items?: MealItem[];
 }
 
-export interface PlanSummary {
+export interface MealSummary {
   id: number;
   name: string;
-  planType: 'day' | 'week';
-  planDate: string;
-  endDate?: string;
+  planType: 'meal' | 'snack';
+  mealSeqNum: number;
+  primaryProteinFoodId?: number;
+  primaryProteinName?: string;
+  isYeh: boolean;
   isFavorite: boolean;
   status: string;
   totalCalories?: number;
+  totalProteinG?: number;
   createdAt: string;
 }
 
-export interface ListPlansRequest {
-  planType?: 'day' | 'week';
-  status?: 'active' | 'completed' | 'archived';
+export interface ListMealsRequest {
+  planType?: 'meal' | 'snack';
+  status?: 'active' | 'archived';
   isFavorite?: boolean;
-  startDate?: string;
-  endDate?: string;
+  includeYeh?: boolean;
   limit?: number;
   offset?: number;
 }
 
-export interface ListPlansResponse {
-  plans: PlanSummary[];
+export interface ListMealsResponse {
+  meals: MealSummary[];
   total: number;
   limit: number;
   offset: number;
 }
 
+// DayPlan types
+export interface DayPlanMeal {
+  id: number;
+  mealId: number;
+  mealSlot: number;  // 1, 2, 3... order in day
+  meal?: Meal;
+}
+
+export interface DayPlan {
+  id: number;
+  planDate: string;  // YYYY-MM-DD
+  year: number;
+  weekOfYear: number;
+  dayOfWeek: number;  // 1=Mon..7=Sun
+  targetCalories?: number;
+  targetProteinG?: number;
+  targetFatG?: number;
+  targetCarbG?: number;
+  targetFiberG?: number;
+  maxSodiumMg?: number;
+  meals: DayPlanMeal[];
+  createdAt: string;
+}
+
+export interface CreateDayPlanRequest {
+  planDate: string;  // YYYY-MM-DD
+}
+
+export interface AssignMealRequest {
+  mealId: number;
+  mealSlot: number;
+}
+
+export interface WeekViewResponse {
+  year: number;
+  weekOfYear: number;
+  days: DayPlan[];
+}
+
 // Helper to get meal slot name
 export function getMealSlotName(slot: number): string {
-  return `Meal ${slot}`;
+  switch (slot) {
+    case 1: return 'Breakfast';
+    case 2: return 'Lunch';
+    case 3: return 'Dinner';
+    default: return `Snack ${slot - 3}`;
+  }
 }
