@@ -144,11 +144,15 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
       <!-- Totals footer -->
       @if (planningService.hasPlan()) {
         <div class="plan-totals">
-          <span class="total-label">Daily Totals:</span>
+          <span class="total-label">Meal totals:</span>
           <span class="total-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
           <span class="total-value">{{ planningService.currentPlan()?.totalProteinG?.toFixed(0) ?? 0 }}g P</span>
           <span class="total-value">{{ planningService.currentPlan()?.totalCarbG?.toFixed(0) ?? 0 }}g C</span>
           <span class="total-value">{{ planningService.currentPlan()?.totalFatG?.toFixed(0) ?? 0 }}g F</span>
+        </div>
+        <div class="plan-totals plan-totals-secondary">
+          <span class="total-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
+          <span class="total-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg sodium</span>
         </div>
       }
 

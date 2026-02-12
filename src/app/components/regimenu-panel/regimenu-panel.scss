@@ -397,6 +397,12 @@
     color: #4da6ff;
     font-weight: 600;
   }
+
+  &.plan-totals-secondary {
+    border-top: none;
+    padding-top: 0;
+    padding-left: 95px;
+  }
 }
 
 // Mini chat panel (bottom-attached, collapsible)

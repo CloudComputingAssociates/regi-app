@@ -34,7 +34,8 @@ const DEFAULT_DAILY_GOALS: DailyGoals = {
   carbs: 200,
   fat: 65,
   fiber: 30,
-  sodium: 2300
+  sodium: 2300,
+  isOverridden: false
 };
 
 const DEFAULT_PERSONAL_INFO: PersonalInfo = {};
@@ -175,7 +176,8 @@ export class PreferencesService {
     return Math.max(0, Math.round(remaining / 9));
   });
 
-  /** Sync computed macros into dailyGoals when personal info yields values */
+  /** Sync computed macros: always stores calc* in personalInfo;
+   *  only writes to dailyGoals when isOverridden is false. */
   syncComputedMacros(): void {
     const protein = this.computedProteinGrams();
     const fat = this.computedFatGrams();
@@ -183,18 +185,67 @@ export class PreferencesService {
     const carbs = pi.carbScaleGrams;
     const targetCals = this.computedTargetCalories();
 
-    const updates: Partial<DailyGoals> = {};
-    if (protein !== null) updates.protein = protein;
-    if (carbs !== undefined) updates.carbs = carbs;
-    if (fat !== null) updates.fat = fat;
-    if (targetCals !== null) updates.calories = targetCals;
+    // Always persist calculated values into personalInfo for the suggestion line
+    const calcUpdates: Partial<PersonalInfo> = {};
+    if (targetCals !== null) calcUpdates.calcCalories = targetCals;
+    if (protein !== null) calcUpdates.calcProtein = protein;
+    if (fat !== null) calcUpdates.calcFats = fat;
+    if (carbs !== undefined) calcUpdates.calcCarbs = carbs;
 
-    if (Object.keys(updates).length === 0) return;
+    if (Object.keys(calcUpdates).length > 0) {
+      this.preferencesSignal.update(p => ({
+        ...p,
+        personalInfo: { ...p.personalInfo, ...calcUpdates }
+      }));
+      this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
+    }
+
+    // Only flow into dailyGoals when user has NOT overridden
+    if (this.dailyGoals().isOverridden) return;
+
+    const goalUpdates: Partial<DailyGoals> = {};
+    if (protein !== null) goalUpdates.protein = protein;
+    if (carbs !== undefined) goalUpdates.carbs = carbs;
+    if (fat !== null) goalUpdates.fat = fat;
+    if (targetCals !== null) goalUpdates.calories = targetCals;
+
+    if (Object.keys(goalUpdates).length === 0) return;
 
     this.preferencesSignal.update(p => ({
       ...p,
-      dailyGoals: { ...p.dailyGoals, ...updates }
+      dailyGoals: { ...p.dailyGoals, ...goalUpdates }
     }));
+    this.dirtyGroups.update(d => ({ ...d, dailyGoals: true }));
+  }
+
+  /** Set or clear the isOverridden flag on dailyGoals.
+   *  When clearing (false), writes current calc* values into dailyGoals. */
+  setIsOverridden(value: boolean): void {
+    if (value) {
+      this.preferencesSignal.update(p => ({
+        ...p,
+        dailyGoals: { ...p.dailyGoals, isOverridden: true }
+      }));
+    } else {
+      // Uncheck: fill dailyGoals from calc* values
+      const pi = this.personalInfo();
+      const protein = this.computedProteinGrams();
+      const fat = this.computedFatGrams();
+      const carbs = pi.carbScaleGrams;
+      const targetCals = this.computedTargetCalories();
+
+      this.preferencesSignal.update(p => ({
+        ...p,
+        dailyGoals: {
+          ...p.dailyGoals,
+          isOverridden: false,
+          ...(protein !== null ? { protein } : {}),
+          ...(fat !== null ? { fat } : {}),
+          ...(carbs !== undefined ? { carbs } : {}),
+          ...(targetCals !== null ? { calories: targetCals } : {})
+        }
+      }));
+    }
     this.dirtyGroups.update(d => ({ ...d, dailyGoals: true }));
   }
 

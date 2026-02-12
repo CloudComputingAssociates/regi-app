@@ -33,6 +33,7 @@ export interface DailyGoals {
   fat: number;
   fiber: number;
   sodium: number;
+  isOverridden?: boolean;
 }
 
 // GET/PUT /api/user/settings/personalinfo
@@ -46,6 +47,10 @@ export interface PersonalInfo {
   proteinRatio?: number;    // g per lb of target weight (0.8, 1.0, 1.2)
   carbScaleGrams?: number;  // daily carb target in grams (slider value)
   deficitPercent?: number;  // negative = deficit (losing), positive = surplus (gaining), e.g. -20 or +10
+  calcCalories?: number;    // calculated daily calorie target from BMR/TDEE/deficit
+  calcProtein?: number;     // calculated daily protein (proteinRatio × targetWeight in lbs)
+  calcFats?: number;        // calculated daily fat (remaining calories after protein and carbs)
+  calcCarbs?: number;       // calculated daily carbs (from carbScaleGrams)
 }
 
 // GET/PUT /api/user/settings/defaultfoodlist
