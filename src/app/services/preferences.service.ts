@@ -218,6 +218,18 @@ export class PreferencesService {
     this.dirtyGroups.update(d => ({ ...d, dailyGoals: true }));
   }
 
+  /** Stamp today's date (YYYY-MM-DD) on personalInfo.lastUpdated.
+   *  Call from component when user changes personal-info fields. */
+  stampPersonalInfoLastUpdated(): void {
+    const d = new Date();
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    this.preferencesSignal.update(p => ({
+      ...p,
+      personalInfo: { ...p.personalInfo, lastUpdated: iso }
+    }));
+    this.dirtyGroups.update(dg => ({ ...dg, personalInfo: true }));
+  }
+
   /** Set or clear the isOverridden flag on dailyGoals.
    *  When clearing (false), writes current calc* values into dailyGoals. */
   setIsOverridden(value: boolean): void {

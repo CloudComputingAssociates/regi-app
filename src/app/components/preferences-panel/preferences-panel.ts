@@ -215,19 +215,17 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <span class="macro-hint">of body weight</span>
                 </div>
                 <div class="macro-separator"></div>
-                <div class="override-row">
-                  <label class="override-label">
-                    User set
-                    <input type="checkbox"
-                      [ngModel]="userSettingsService.dailyGoals().isOverridden"
-                      (ngModelChange)="onOverrideChange($event)" />
-                  </label>
-                </div>
-                <div class="targets-grid">
-                  <div class="target-field">
-                    <label>Calories</label>
+                <div class="target-field">
+                  <label>Calories</label>
+                  <div class="calories-override-row">
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
                            (ngModelChange)="onMacroFieldChange('calories', $event)" />
+                    <label class="override-label">
+                      User set
+                      <input type="checkbox"
+                        [ngModel]="userSettingsService.dailyGoals().isOverridden"
+                        (ngModelChange)="onOverrideChange($event)" />
+                    </label>
                   </div>
                 </div>
                 <div class="targets-grid">
@@ -387,6 +385,7 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     const all = this.settingsService.allSettings();
     if (all && !this.userSettingsService.isLoaded()) {
       this.userSettingsService.loadPreferences();
+      this.tryStampOnLoad();
     }
   });
 
@@ -416,15 +415,38 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     return `${hours}:${minutes}`;
   });
 
-  // Tracks when personal info was last modified (set by syncMacros)
+  // Tracks when personal info was last modified — display format MM/DD/YYYY
   private lastComputedDateSignal = signal('');
   lastComputedDate = this.lastComputedDateSignal.asReadonly();
+  private hasStampedOnLoad = false;
 
+  /** Convert YYYY-MM-DD → MM/DD/YYYY for display */
+  private static isoToDisplay(iso: string): string {
+    const [y, m, d] = iso.split('-');
+    return `${m}/${d}/${y}`;
+  }
+
+  /** Set today's date on display signal AND persist to personalInfo.lastUpdated */
   private stampLastUpdated(): void {
     const d = new Date();
     this.lastComputedDateSignal.set(
       `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`
     );
+    this.userSettingsService.stampPersonalInfoLastUpdated();
+  }
+
+  /** On initial load, read persisted lastUpdated from personalInfo */
+  private tryStampOnLoad(): void {
+    if (this.hasStampedOnLoad || !this.userSettingsService.isLoaded()) return;
+    const pi = this.userSettingsService.personalInfo();
+    if (pi.lastUpdated) {
+      this.hasStampedOnLoad = true;
+      this.lastComputedDateSignal.set(PreferencesPanelComponent.isoToDisplay(pi.lastUpdated));
+    } else if (this.userSettingsService.computedTargetCalories() !== null) {
+      // No persisted date but we have computable data — stamp today
+      this.hasStampedOnLoad = true;
+      this.stampLastUpdated();
+    }
   }
 
   // Computed height in ft/in from stored cm
@@ -454,6 +476,7 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
 
   ngOnInit(): void {
     this.userSettingsService.loadPreferences();
+    this.tryStampOnLoad();
   }
 
   ngAfterViewInit(): void {

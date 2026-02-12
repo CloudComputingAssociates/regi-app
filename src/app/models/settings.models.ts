@@ -51,6 +51,7 @@ export interface PersonalInfo {
   calcProtein?: number;     // calculated daily protein (proteinRatio × targetWeight in lbs)
   calcFats?: number;        // calculated daily fat (remaining calories after protein and carbs)
   calcCarbs?: number;       // calculated daily carbs (from carbScaleGrams)
+  lastUpdated?: string;     // ISO date (YYYY-MM-DD) when personal info was last updated
 }
 
 // GET/PUT /api/user/settings/defaultfoodlist
