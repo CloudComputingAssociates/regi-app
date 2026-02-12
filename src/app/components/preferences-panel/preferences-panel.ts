@@ -187,7 +187,9 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <option [ngValue]="0.5">0.5 g/lb</option>
                     <option [ngValue]="0.7">0.7 g/lb</option>
                     <option [ngValue]="0.8">0.8 g/lb</option>
+                    <option [ngValue]="0.9">0.9 g/lb</option>
                     <option [ngValue]="1.0">1.0 g/lb</option>
+                    <option [ngValue]="1.1">1.1 g/lb</option>
                     <option [ngValue]="1.2">1.2 g/lb</option>
                   </select>
                   <span class="macro-hint">of body weight</span>
