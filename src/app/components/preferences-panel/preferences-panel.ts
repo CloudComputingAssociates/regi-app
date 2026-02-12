@@ -157,7 +157,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <option value="extremely_active">Ext. Active</option>
                   </select>
                 </div>
-                <div class="pi-last-updated">(last updated {{ lastComputedDate() }})</div>
+                <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
               </div>
             </div>
 
