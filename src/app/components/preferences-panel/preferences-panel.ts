@@ -194,7 +194,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                 </div>
                 <div class="macro-separator"></div>
                 <div class="calories-label-row">
-                  <label>{{ userSettingsService.showPercent() ? '% Deficit' : 'Calories' }}</label>
+                  <label>Calories</label>
                   <label class="override-label">
                     <input type="checkbox"
                       [ngModel]="userSettingsService.dailyGoals().isOverridden"
@@ -765,6 +765,11 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     }
 
     this.userSettingsService.updateDailyGoal(field, grams);
+
+    // Keep carb slider in sync when carbs field changes
+    if (field === 'carbs') {
+      this.userSettingsService.setCarbScaleGrams(grams);
+    }
 
     // Auto-rebalance: keep calories constant, adjust the complement
     const dg = this.userSettingsService.dailyGoals();
