@@ -792,7 +792,7 @@
 
   // Goal weight percentage label (inline next to goal weight)
   .goal-pct {
-    font-size: 10px;
+    font-size: 0.75rem;
     font-style: italic;
     margin-left: 2px;
     white-space: nowrap;
@@ -800,7 +800,6 @@
 
   .goal-green { color: #4caf50; }
   .goal-amber { color: #ff9800; }
-  .goal-red { color: #ff6b6b; }
 
   .height-imperial,
   .height-metric,

@@ -488,14 +488,13 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     return `(${sign}${pct.toFixed(1)}%)`;
   });
 
-  /** Color class for goal weight percentage: green ≤10%, amber 10-25%, red >25% */
+  /** Color class for goal weight percentage: green ≤10%, amber >10% */
   goalWeightPctClass = computed(() => {
     const pi = this.userSettingsService.personalInfo();
     if (!pi.currentWeightKg || !pi.targetWeightKg) return 'goal-green';
     const absPct = Math.abs(((pi.targetWeightKg - pi.currentWeightKg) / pi.currentWeightKg) * 100);
     if (absPct <= 10) return 'goal-green';
-    if (absPct <= 25) return 'goal-amber';
-    return 'goal-red';
+    return 'goal-amber';
   });
 
   ngOnInit(): void {

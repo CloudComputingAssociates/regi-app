@@ -57,25 +57,17 @@ export interface MacroDisplayData {
                     <span class="bar-label" [style.color]="getLabelColor(macro.name)">{{ macro.name }}</span>
                     @if ($last) {
                       <div class="mode-toggle-container">
-                        @if (context() === 'preferences') {
-                          <div class="unit-toggle">
-                            <span class="unit-label left">%</span>
-                            <span class="unit-thumb right"></span>
-                            <span class="unit-label right">g</span>
-                          </div>
-                        } @else {
-                          <button
-                            type="button"
-                            class="unit-toggle"
-                            (click)="toggleDisplayMode()"
-                            matTooltip="Percent/Grams"
-                            matTooltipPosition="above"
-                            [matTooltipShowDelay]="300">
-                            <span class="unit-label left">%</span>
-                            <span class="unit-thumb" [class.right]="!showPercent"></span>
-                            <span class="unit-label right">g</span>
-                          </button>
-                        }
+                        <button
+                          type="button"
+                          class="unit-toggle"
+                          (click)="toggleDisplayMode()"
+                          matTooltip="Percent/Grams"
+                          matTooltipPosition="above"
+                          [matTooltipShowDelay]="300">
+                          <span class="unit-label left">%</span>
+                          <span class="unit-thumb" [class.right]="!showPercent"></span>
+                          <span class="unit-label right">g</span>
+                        </button>
                       </div>
                     }
                   </div>
@@ -201,6 +193,16 @@ export class MacrosComponent implements OnInit {
    */
   getBarDisplayValue(macro: MacroNutrient): string {
     if (this.context() === 'preferences') {
+      if (this.showPercent) {
+        // Show percentage of total calories for this macro
+        const calories = this.preferencesService.dailyGoals()?.calories;
+        if (calories && calories > 0) {
+          const calPerGram = macro.name === 'fats' ? 9 : 4;
+          const pct = Math.round((macro.target * calPerGram / calories) * 100);
+          return `${pct}%`;
+        }
+        return '0%';
+      }
       return `${macro.target}g`;
     }
     return this.showPercent ? `${macro.percentage}%` : `${macro.actual}g`;
