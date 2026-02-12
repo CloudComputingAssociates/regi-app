@@ -200,13 +200,13 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                 <div class="calories-deficit-row">
                   <input type="number" class="cal-input"
                     [ngModel]="userSettingsService.dailyGoals().calories"
-                    (ngModelChange)="onMacroFieldChange('calories', $event)" />
+                    (ngModelChange)="onCaloriesChange($event)" />
                   <input type="number" class="deficit-input"
                     [ngModel]="deficitAbsValue()"
                     (ngModelChange)="onDeficitChange($event)" />
                   <span class="deficit-direction">{{ deficitDirectionLabel() }}</span>
                 </div>
-                <div class="weeks-to-goal">{{ userSettingsService.computedWeeksToGoal() ?? 0 }} weeks to goal</div>
+                <div class="weeks-to-goal">{{ weeksToGoalLabel() }}</div>
                 <div class="targets-grid">
                   <div class="target-field">
                     <label>Proteins</label>
@@ -463,6 +463,16 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     return pct < 0 ? '% deficit' : '% surplus';
   });
 
+  weeksToGoalLabel = computed(() => {
+    const weeks = this.userSettingsService.computedWeeksToGoal() ?? 0;
+    const tdee = this.userSettingsService.computedTDEE();
+    const cals = this.userSettingsService.dailyGoals().calories;
+    if (!tdee || !cals) return `${weeks} weeks to goal`;
+    const gap = Math.abs(tdee - cals);
+    const direction = tdee > cals ? 'deficit' : 'surplus';
+    return `${weeks} weeks to goal at ${gap} cal ${direction}`;
+  });
+
   ngOnInit(): void {
     this.userSettingsService.loadPreferences();
     this.tryStampOnLoad();
@@ -539,10 +549,29 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     this.syncMacros();
   }
 
+  /** User changed calories → reverse-compute deficit percent */
+  onCaloriesChange(newCals: number): void {
+    if (!this.userSettingsService.dailyGoals().isOverridden) {
+      this.userSettingsService.setIsOverridden(true);
+    }
+    this.userSettingsService.updateDailyGoal('calories', newCals);
+    const tdee = this.userSettingsService.computedTDEE();
+    if (tdee && tdee > 0) {
+      this.userSettingsService.setDeficitPercent(Math.round(((newCals / tdee) - 1) * 100));
+    }
+    this.settingsChanged.set(true);
+  }
+
+  /** User changed deficit percent → compute calories from TDEE */
   onDeficitChange(absValue: number): void {
     const currentPct = this.userSettingsService.personalInfo().deficitPercent ?? 0;
     const sign = currentPct >= 0 && currentPct !== 0 ? 1 : -1;
-    this.userSettingsService.setDeficitPercent(sign * Math.abs(absValue));
+    const newPct = sign * Math.abs(absValue);
+    this.userSettingsService.setDeficitPercent(newPct);
+    const tdee = this.userSettingsService.computedTDEE();
+    if (tdee) {
+      this.userSettingsService.updateDailyGoal('calories', Math.round(tdee * (1 + newPct / 100)));
+    }
     this.syncMacros();
   }
 

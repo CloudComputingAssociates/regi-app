@@ -502,21 +502,16 @@
       align-items: center;
       gap: 6px;
 
-      .cal-input {
-        width: 60px;
-      }
-
-      .deficit-input {
-        width: 36px;
-        padding: 3px 4px;
-        font-size: 11px;
-        text-align: center;
-        background: #2a2a2a;
+      input[type="number"] {
+        background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
         color: #ffffff;
-        border: 1px solid #4a4a4a;
+        border: 1px solid #5a5a5a;
         border-radius: 4px;
-        outline: none;
+        padding: 6px 8px;
+        font-size: 13px;
         font-family: inherit;
+        outline: none;
+        box-sizing: border-box;
 
         &:hover { border-color: #6a6a6a; }
         &:focus {
@@ -530,6 +525,15 @@
           margin: 0;
         }
         -moz-appearance: textfield;
+      }
+
+      .cal-input {
+        width: 60px;
+      }
+
+      .deficit-input {
+        width: 42px;
+        text-align: center;
       }
 
       .deficit-direction {
