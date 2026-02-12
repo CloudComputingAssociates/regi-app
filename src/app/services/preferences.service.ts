@@ -122,25 +122,27 @@ export class PreferencesService {
     return Math.round(tdee * (1 + pct / 100));
   });
 
-  /** Label for the deficit/surplus annotation, e.g. "20% lowered" or "10% raised" */
+  /** Label for the deficit/surplus annotation, e.g. "25% deficit" or "10% surplus" */
   readonly deficitLabel = computed(() => {
     const pi = this.personalInfo();
     const pct = pi.deficitPercent;
     if (!pct || pct === 0) return null;
     const absPct = Math.abs(pct);
-    return pct < 0 ? `${absPct}% decreased` : `${absPct}% increased`;
+    return pct < 0 ? `${absPct}% deficit` : `${absPct}% surplus`;
   });
 
-  /** Estimated weeks to reach target weight from current weight */
+  /** Estimated weeks to reach target weight from current weight.
+   *  Uses dailyGoals().calories (Nutrition Targets) so it auto-recalculates
+   *  when the user overrides calories. */
   readonly computedWeeksToGoal = computed(() => {
     const tdee = this.computedTDEE();
-    const target = this.computedTargetCalories();
+    const targetCal = this.dailyGoals().calories;
     const pi = this.personalInfo();
-    if (!tdee || !target || !pi.currentWeightKg || !pi.targetWeightKg) return null;
+    if (!tdee || !targetCal || !pi.currentWeightKg || !pi.targetWeightKg) return null;
     const weightDiffKg = Math.abs(pi.currentWeightKg - pi.targetWeightKg);
     if (weightDiffKg < 0.1) return 0;
-    // Daily caloric gap
-    const dailyGap = Math.abs(tdee - target);
+    // Daily caloric gap = difference between maintenance TDEE and actual intake
+    const dailyGap = Math.abs(tdee - targetCal);
     if (dailyGap === 0) return null;
     // 7700 kcal ≈ 1 kg of body weight
     const kgPerWeek = (dailyGap * 7) / 7700;

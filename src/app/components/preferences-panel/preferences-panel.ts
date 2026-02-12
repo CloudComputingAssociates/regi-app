@@ -163,9 +163,6 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <input type="text" class="pi-input pi-small pi-readonly" readonly
                     [value]="userSettingsService.computedTargetCalories() ?? '—'" />
                   <span class="unit-label">cals</span>
-                  @if (userSettingsService.deficitLabel()) {
-                    <span class="pi-deficit-label">{{ userSettingsService.deficitLabel() }}</span>
-                  }
                 </div>
                 <div class="pi-row pi-daily-row pi-calc-suggestion">
                   <label class="setting-label"></label>
@@ -178,12 +175,6 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <input type="text" class="pi-input pi-macro-box pi-readonly" readonly
                     [value]="userSettingsService.personalInfo().calcCarbs ?? '—'" />
                   <span class="unit-label">C</span>
-                </div>
-                <div class="pi-row pi-daily-row">
-                  <label class="setting-label">Weeks</label>
-                  <input type="text" class="pi-input pi-small pi-readonly" readonly
-                    [value]="userSettingsService.computedWeeksToGoal() ?? '—'" />
-                  <span class="unit-label">to goal weight</span>
                 </div>
               </div>
             </div>
@@ -221,11 +212,14 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
                            (ngModelChange)="onMacroFieldChange('calories', $event)" />
                     <label class="override-label">
-                      User set
                       <input type="checkbox"
                         [ngModel]="userSettingsService.dailyGoals().isOverridden"
                         (ngModelChange)="onOverrideChange($event)" />
+                      User set
                     </label>
+                    @if (userSettingsService.deficitLabel()) {
+                      <span class="pi-deficit-label">{{ userSettingsService.deficitLabel() }}</span>
+                    }
                   </div>
                 </div>
                 <div class="targets-grid">
@@ -255,6 +249,19 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <label>Sodium</label>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().sodium"
                            (ngModelChange)="onDailyGoalChange('sodium', $event)" />
+                  </div>
+                </div>
+                <div class="targets-grid targets-derived">
+                  <div class="target-field">
+                    <label>Weeks</label>
+                    <input type="text" class="pi-readonly" readonly
+                      [value]="userSettingsService.computedWeeksToGoal() ?? '—'" />
+                    <span class="derived-hint">to goal weight</span>
+                  </div>
+                  <div class="target-field">
+                    <label>% deficit</label>
+                    <input type="text" class="pi-readonly" readonly
+                      [value]="userSettingsService.deficitLabel() ?? '—'" />
                   </div>
                 </div>
               </div>
