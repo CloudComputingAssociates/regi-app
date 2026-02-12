@@ -166,10 +166,17 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <span class="pi-deficit-label">{{ userSettingsService.deficitLabel() }}</span>
                   }
                 </div>
-                <div class="pi-row pi-calc-suggestion">
-                  <span class="calc-macro">Prot {{ userSettingsService.personalInfo().calcProtein ?? '—' }}g</span>
-                  <span class="calc-macro">Fats {{ userSettingsService.personalInfo().calcFats ?? '—' }}g</span>
-                  <span class="calc-macro">Carbs {{ userSettingsService.personalInfo().calcCarbs ?? '—' }}g</span>
+                <div class="pi-row pi-daily-row pi-calc-suggestion">
+                  <label class="setting-label"></label>
+                  <input type="text" class="pi-input pi-macro-box pi-readonly" readonly
+                    [value]="userSettingsService.personalInfo().calcProtein ?? '—'" />
+                  <span class="unit-label">P</span>
+                  <input type="text" class="pi-input pi-macro-box pi-readonly" readonly
+                    [value]="userSettingsService.personalInfo().calcFats ?? '—'" />
+                  <span class="unit-label">F</span>
+                  <input type="text" class="pi-input pi-macro-box pi-readonly" readonly
+                    [value]="userSettingsService.personalInfo().calcCarbs ?? '—'" />
+                  <span class="unit-label">C</span>
                 </div>
                 <div class="pi-row pi-daily-row">
                   <label class="setting-label">Weeks</label>
@@ -208,44 +215,36 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <span class="macro-hint">of body weight</span>
                 </div>
                 <div class="macro-separator"></div>
-                <div class="override-row">
-                  <label class="override-label">
-                    <input type="checkbox"
-                      [ngModel]="userSettingsService.dailyGoals().isOverridden"
-                      (ngModelChange)="onOverrideChange($event)" />
-                    User set values
-                  </label>
-                </div>
                 <div class="targets-grid">
                   <div class="target-field">
-                    <label>Calories</label>
+                    <div class="calories-header">
+                      <label>Calories</label>
+                      <label class="override-label">
+                        <input type="checkbox"
+                          [ngModel]="userSettingsService.dailyGoals().isOverridden"
+                          (ngModelChange)="onOverrideChange($event)" />
+                        User set
+                      </label>
+                    </div>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
-                           [readonly]="!userSettingsService.dailyGoals().isOverridden"
-                           [class.target-readonly]="!userSettingsService.dailyGoals().isOverridden"
-                           (ngModelChange)="onDailyGoalChange('calories', $event)" />
+                           (ngModelChange)="onMacroFieldChange('calories', $event)" />
                   </div>
                 </div>
                 <div class="targets-grid">
                   <div class="target-field">
                     <label>Proteins</label>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().protein"
-                           [readonly]="!userSettingsService.dailyGoals().isOverridden"
-                           [class.target-readonly]="!userSettingsService.dailyGoals().isOverridden"
-                           (ngModelChange)="onDailyGoalChange('protein', $event)" />
+                           (ngModelChange)="onMacroFieldChange('protein', $event)" />
                   </div>
                   <div class="target-field">
                     <label>Fats</label>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().fat"
-                           [readonly]="!userSettingsService.dailyGoals().isOverridden"
-                           [class.target-readonly]="!userSettingsService.dailyGoals().isOverridden"
-                           (ngModelChange)="onDailyGoalChange('fat', $event)" />
+                           (ngModelChange)="onMacroFieldChange('fat', $event)" />
                   </div>
                   <div class="target-field">
                     <label>Carbs</label>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().carbs"
-                           [readonly]="!userSettingsService.dailyGoals().isOverridden"
-                           [class.target-readonly]="!userSettingsService.dailyGoals().isOverridden"
-                           (ngModelChange)="onDailyGoalChange('carbs', $event)" />
+                           (ngModelChange)="onMacroFieldChange('carbs', $event)" />
                   </div>
                 </div>
                 <div class="targets-grid">
@@ -555,6 +554,15 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
 
   onOverrideChange(checked: boolean): void {
     this.userSettingsService.setIsOverridden(checked);
+    this.settingsChanged.set(true);
+  }
+
+  /** User typed in a macro field (calories/protein/fat/carbs) — auto-set override */
+  onMacroFieldChange(field: keyof DailyGoals, value: number): void {
+    if (!this.userSettingsService.dailyGoals().isOverridden) {
+      this.userSettingsService.setIsOverridden(true);
+    }
+    this.userSettingsService.updateDailyGoal(field, value);
     this.settingsChanged.set(true);
   }
 
