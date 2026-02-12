@@ -660,7 +660,7 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     this.syncMacros();
   }
 
-  /** User changed calories → reverse-compute deficit percent */
+  /** User changed calories → reverse-compute deficit percent and rebalance fat */
   onCaloriesChange(newCals: number): void {
     if (!this.userSettingsService.dailyGoals().isOverridden) {
       this.userSettingsService.setIsOverridden(true);
@@ -670,10 +670,14 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     if (tdee && tdee > 0) {
       this.userSettingsService.setDeficitPercent(Math.round(((newCals / tdee) - 1) * 100));
     }
+    // Rebalance: fat absorbs the calorie change
+    const dg = this.userSettingsService.dailyGoals();
+    const newFat = Math.max(0, Math.round((newCals - dg.protein * 4 - dg.carbs * 4) / 9));
+    this.userSettingsService.updateDailyGoal('fat', newFat);
     this.settingsChanged.set(true);
   }
 
-  /** User changed deficit percent → compute calories from TDEE */
+  /** User changed deficit percent → compute calories from TDEE and rebalance fat */
   onDeficitChange(absValue: number): void {
     const currentPct = this.userSettingsService.personalInfo().deficitPercent ?? 0;
     const sign = currentPct >= 0 && currentPct !== 0 ? 1 : -1;
@@ -681,7 +685,12 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     this.userSettingsService.setDeficitPercent(newPct);
     const tdee = this.userSettingsService.computedTDEE();
     if (tdee) {
-      this.userSettingsService.updateDailyGoal('calories', Math.round(tdee * (1 + newPct / 100)));
+      const newCals = Math.round(tdee * (1 + newPct / 100));
+      this.userSettingsService.updateDailyGoal('calories', newCals);
+      // Rebalance: fat absorbs the calorie change
+      const dg = this.userSettingsService.dailyGoals();
+      const newFat = Math.max(0, Math.round((newCals - dg.protein * 4 - dg.carbs * 4) / 9));
+      this.userSettingsService.updateDailyGoal('fat', newFat);
     }
     this.syncMacros();
   }
