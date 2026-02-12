@@ -479,6 +479,7 @@
       display: flex;
       align-items: center;
       gap: 4px;
+      margin-left: auto;
       color: #4da6ff;
       font-size: 10px;
       font-weight: 500;
@@ -492,6 +493,14 @@
         width: 12px;
         height: 12px;
       }
+    }
+
+    .weeks-to-goal {
+      color: #4da6ff;
+      font-size: 0.65rem;
+      font-style: italic;
+      margin: -1px 0 2px 0;
+      padding-left: 2px;
     }
 
     .macro-separator {

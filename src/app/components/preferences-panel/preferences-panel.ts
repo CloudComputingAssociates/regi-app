@@ -211,17 +211,18 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <div class="calories-override-row">
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
                            (ngModelChange)="onMacroFieldChange('calories', $event)" />
+                    @if (userSettingsService.deficitLabel()) {
+                      <span class="pi-deficit-label">{{ userSettingsService.deficitLabel() }}</span>
+                    }
                     <label class="override-label">
                       <input type="checkbox"
                         [ngModel]="userSettingsService.dailyGoals().isOverridden"
                         (ngModelChange)="onOverrideChange($event)" />
                       User set
                     </label>
-                    @if (userSettingsService.deficitLabel()) {
-                      <span class="pi-deficit-label">{{ userSettingsService.deficitLabel() }}</span>
-                    }
                   </div>
                 </div>
+                <div class="weeks-to-goal">{{ userSettingsService.computedWeeksToGoal() ?? 0 }} weeks to goal</div>
                 <div class="targets-grid">
                   <div class="target-field">
                     <label>Proteins</label>
@@ -249,19 +250,6 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <label>Sodium</label>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().sodium"
                            (ngModelChange)="onDailyGoalChange('sodium', $event)" />
-                  </div>
-                </div>
-                <div class="targets-grid targets-derived">
-                  <div class="target-field">
-                    <label>Weeks</label>
-                    <input type="text" class="pi-readonly" readonly
-                      [value]="userSettingsService.computedWeeksToGoal() ?? '—'" />
-                    <span class="derived-hint">to goal weight</span>
-                  </div>
-                  <div class="target-field">
-                    <label>% deficit</label>
-                    <input type="text" class="pi-readonly" readonly
-                      [value]="userSettingsService.deficitLabel() ?? '—'" />
                   </div>
                 </div>
               </div>
@@ -445,13 +433,11 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
   /** On initial load, read persisted lastUpdated from personalInfo */
   private tryStampOnLoad(): void {
     if (this.hasStampedOnLoad || !this.userSettingsService.isLoaded()) return;
+    this.hasStampedOnLoad = true;
     const pi = this.userSettingsService.personalInfo();
     if (pi.lastUpdated) {
-      this.hasStampedOnLoad = true;
       this.lastComputedDateSignal.set(PreferencesPanelComponent.isoToDisplay(pi.lastUpdated));
-    } else if (this.userSettingsService.computedTargetCalories() !== null) {
-      // No persisted date but we have computable data — stamp today
-      this.hasStampedOnLoad = true;
+    } else {
       this.stampLastUpdated();
     }
   }
