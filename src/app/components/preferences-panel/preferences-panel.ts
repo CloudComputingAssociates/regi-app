@@ -157,6 +157,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <option value="extremely_active">Ext. Active</option>
                   </select>
                 </div>
+                <div class="pi-last-updated">(last updated {{ lastComputedDate() }})</div>
                 <div class="pi-row pi-daily-row">
                   <label class="setting-label">Daily</label>
                   <input type="text" class="pi-input pi-small pi-readonly" readonly
@@ -184,7 +185,6 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     [value]="userSettingsService.computedWeeksToGoal() ?? '—'" />
                   <span class="unit-label">to goal weight</span>
                 </div>
-                <div class="pi-last-updated">(last updated {{ lastComputedDate() }})</div>
               </div>
             </div>
 
@@ -215,19 +215,19 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <span class="macro-hint">of body weight</span>
                 </div>
                 <div class="macro-separator"></div>
+                <div class="override-row">
+                  <label class="override-label">
+                    User set
+                    <input type="checkbox"
+                      [ngModel]="userSettingsService.dailyGoals().isOverridden"
+                      (ngModelChange)="onOverrideChange($event)" />
+                  </label>
+                </div>
                 <div class="targets-grid">
                   <div class="target-field">
                     <label>Calories</label>
-                    <div class="calories-input-row">
-                      <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
-                             (ngModelChange)="onMacroFieldChange('calories', $event)" />
-                      <label class="override-label">
-                        User set
-                        <input type="checkbox"
-                          [ngModel]="userSettingsService.dailyGoals().isOverridden"
-                          (ngModelChange)="onOverrideChange($event)" />
-                      </label>
-                    </div>
+                    <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
+                           (ngModelChange)="onMacroFieldChange('calories', $event)" />
                   </div>
                 </div>
                 <div class="targets-grid">
@@ -416,14 +416,16 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     return `${hours}:${minutes}`;
   });
 
-  // Format today's date as MM/DD/YYYY for "last updated" display
-  lastComputedDate = computed(() => {
-    // Re-read deficitPercent so this recomputes when it changes
-    const pct = this.userSettingsService.personalInfo().deficitPercent;
-    if (pct === undefined || pct === null) return '';
+  // Tracks when personal info was last modified (set by syncMacros)
+  private lastComputedDateSignal = signal('');
+  lastComputedDate = this.lastComputedDateSignal.asReadonly();
+
+  private stampLastUpdated(): void {
     const d = new Date();
-    return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
-  });
+    this.lastComputedDateSignal.set(
+      `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`
+    );
+  }
 
   // Computed height in ft/in from stored cm
   heightFt = computed(() => {
@@ -547,6 +549,7 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
   private syncMacros(): void {
     this.userSettingsService.computeDeficitPercent();
     this.userSettingsService.syncComputedMacros();
+    this.stampLastUpdated();
     this.settingsChanged.set(true);
   }
 
