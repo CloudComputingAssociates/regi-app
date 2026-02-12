@@ -84,6 +84,9 @@ export class PreferencesService {
   // Unit preference for height/weight display
   readonly useImperial = signal(localStorage.getItem('yeh_useImperial') !== 'false');
 
+  // Display mode: true = show percentages, false = show grams/absolute values
+  readonly showPercent = signal(true);
+
   readonly preferences = this.preferencesSignal.asReadonly();
   readonly isLoading = this.loadingSignal.asReadonly();
   readonly isLoaded = this.loadedSignal.asReadonly();

@@ -139,7 +139,6 @@ export class MacrosComponent implements OnInit {
 
   // Component state
   isLoading = false;
-  showPercent = true;
 
   ngOnInit(): void {
     this.subscriptionData.set(this.transformNutritionData(
@@ -184,8 +183,12 @@ export class MacrosComponent implements OnInit {
     return Math.min(Math.round((actual / target) * 100), 100);
   }
 
+  get showPercent(): boolean {
+    return this.preferencesService.showPercent();
+  }
+
   toggleDisplayMode(): void {
-    this.showPercent = !this.showPercent;
+    this.preferencesService.showPercent.update(v => !v);
   }
 
   /**

@@ -143,7 +143,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                       (ngModelChange)="onTargetWeightChange($event)" />
                     <span class="unit-label">{{ userSettingsService.useImperial() ? 'lbs' : 'kg' }}</span>
                     @if (goalWeightPctLabel()) {
-                      <span class="goal-pct" [class]="goalWeightPctClass()">{{ goalWeightPctLabel() }}</span>
+                      <span class="goal-pct">{{ goalWeightPctLabel() }}</span>
                     }
                   </div>
                 </div>
@@ -194,7 +194,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                 </div>
                 <div class="macro-separator"></div>
                 <div class="calories-label-row">
-                  <label>Calories</label>
+                  <label>{{ userSettingsService.showPercent() ? '% Deficit' : 'Calories' }}</label>
                   <label class="override-label">
                     <input type="checkbox"
                       [ngModel]="userSettingsService.dailyGoals().isOverridden"
@@ -203,40 +203,47 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   </label>
                 </div>
                 <div class="calories-deficit-row">
-                  <input type="number" class="cal-input"
-                    [ngModel]="userSettingsService.dailyGoals().calories"
-                    (ngModelChange)="onCaloriesChange($event)" />
-                  <input type="number" class="deficit-input"
-                    [ngModel]="deficitAbsValue()"
-                    (ngModelChange)="onDeficitChange($event)" />
-                  <span class="deficit-direction">{{ deficitDirectionLabel() }}</span>
+                  @if (userSettingsService.showPercent()) {
+                    <input type="number" class="deficit-input"
+                      [ngModel]="deficitAbsValue()"
+                      (ngModelChange)="onDeficitChange($event)" />
+                    <span class="deficit-direction">{{ deficitDirectionLabel() }}</span>
+                  } @else {
+                    <input type="number" class="cal-input"
+                      [ngModel]="userSettingsService.dailyGoals().calories"
+                      (ngModelChange)="onCaloriesChange($event)" />
+                    <input type="number" class="deficit-input"
+                      [ngModel]="deficitAbsValue()"
+                      (ngModelChange)="onDeficitChange($event)" />
+                    <span class="deficit-direction">{{ deficitDirectionLabel() }}</span>
+                  }
                 </div>
                 <div class="weeks-to-goal">{{ weeksToGoalLabel() }}</div>
                 <div class="targets-grid">
                   <div class="target-field">
-                    <label>Proteins</label>
-                    <input type="number" [ngModel]="userSettingsService.dailyGoals().protein"
+                    <label>Proteins {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
+                    <input type="number" [ngModel]="proteinDisplay()"
                            (ngModelChange)="onMacroFieldChange('protein', $event)" />
                   </div>
                   <div class="target-field">
-                    <label>Fats</label>
-                    <input type="number" [ngModel]="userSettingsService.dailyGoals().fat"
+                    <label>Fats {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
+                    <input type="number" [ngModel]="fatDisplay()"
                            (ngModelChange)="onMacroFieldChange('fat', $event)" />
                   </div>
                   <div class="target-field">
-                    <label>Carbs</label>
-                    <input type="number" [ngModel]="userSettingsService.dailyGoals().carbs"
+                    <label>Carbs {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
+                    <input type="number" [ngModel]="carbsDisplay()"
                            (ngModelChange)="onMacroFieldChange('carbs', $event)" />
                   </div>
                 </div>
                 <div class="targets-grid">
                   <div class="target-field">
-                    <label>Fiber</label>
+                    <label>Fiber G</label>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().fiber"
                            (ngModelChange)="onDailyGoalChange('fiber', $event)" />
                   </div>
                   <div class="target-field">
-                    <label>Sodium</label>
+                    <label>Sodium mg</label>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().sodium"
                            (ngModelChange)="onDailyGoalChange('sodium', $event)" />
                   </div>
@@ -478,23 +485,46 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     return `${weeks} weeks to goal at ${gap} cal ${direction}`;
   });
 
-  /** Inline label showing weight change percentage, e.g. "(-14.3%)" or "(+5.3%)" */
+  /** Inline label: % mode shows "(-39.0%)", g mode shows "(-150 lbs)" or "(-68 kg)" */
   goalWeightPctLabel = computed(() => {
     const pi = this.userSettingsService.personalInfo();
     if (!pi.currentWeightKg || !pi.targetWeightKg) return '';
-    const pct = ((pi.targetWeightKg - pi.currentWeightKg) / pi.currentWeightKg) * 100;
-    if (Math.abs(pct) < 0.1) return '';
-    const sign = pct > 0 ? '+' : '';
-    return `(${sign}${pct.toFixed(1)}%)`;
+    const diffKg = pi.targetWeightKg - pi.currentWeightKg;
+    if (Math.abs(diffKg) < 0.1) return '';
+
+    if (this.userSettingsService.showPercent()) {
+      const pct = (diffKg / pi.currentWeightKg) * 100;
+      const sign = pct > 0 ? '+' : '';
+      return `(${sign}${pct.toFixed(1)}%)`;
+    }
+    // Grams/absolute mode: show weight difference in lbs or kg
+    if (this.userSettingsService.useImperial()) {
+      const diffLbs = Math.round(diffKg / 0.453592);
+      const sign = diffLbs > 0 ? '+' : '';
+      return `(${sign}${diffLbs} lbs)`;
+    }
+    const diff = Math.round(diffKg);
+    const sign = diff > 0 ? '+' : '';
+    return `(${sign}${diff} kg)`;
   });
 
-  /** Color class for goal weight percentage: green ≤10%, amber >10% */
-  goalWeightPctClass = computed(() => {
-    const pi = this.userSettingsService.personalInfo();
-    if (!pi.currentWeightKg || !pi.targetWeightKg) return 'goal-green';
-    const absPct = Math.abs(((pi.targetWeightKg - pi.currentWeightKg) / pi.currentWeightKg) * 100);
-    if (absPct <= 10) return 'goal-green';
-    return 'goal-amber';
+  /** Display values for macro fields: grams in G mode, % of calories in % mode */
+  proteinDisplay = computed(() => {
+    const dg = this.userSettingsService.dailyGoals();
+    if (!this.userSettingsService.showPercent()) return dg.protein;
+    return dg.calories ? Math.round((dg.protein * 4 / dg.calories) * 100) : 0;
+  });
+
+  fatDisplay = computed(() => {
+    const dg = this.userSettingsService.dailyGoals();
+    if (!this.userSettingsService.showPercent()) return dg.fat;
+    return dg.calories ? Math.round((dg.fat * 9 / dg.calories) * 100) : 0;
+  });
+
+  carbsDisplay = computed(() => {
+    const dg = this.userSettingsService.dailyGoals();
+    if (!this.userSettingsService.showPercent()) return dg.carbs;
+    return dg.calories ? Math.round((dg.carbs * 4 / dg.calories) * 100) : 0;
   });
 
   ngOnInit(): void {
@@ -632,23 +662,31 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     this.settingsChanged.set(true);
   }
 
-  /** User typed in a macro field (protein/fat/carbs) — auto-set override and rebalance */
+  /** User typed in a macro field (protein/fat/carbs) — auto-set override and rebalance.
+   *  In % mode, converts percentage input to grams before storing. */
   onMacroFieldChange(field: keyof DailyGoals, value: number): void {
     if (!this.userSettingsService.dailyGoals().isOverridden) {
       this.userSettingsService.setIsOverridden(true);
     }
-    this.userSettingsService.updateDailyGoal(field, value);
+
+    // Convert % → grams if in percent mode
+    let grams = value;
+    if (this.userSettingsService.showPercent()) {
+      const cals = this.userSettingsService.dailyGoals().calories;
+      const calPerGram = field === 'fat' ? 9 : 4;
+      grams = cals ? Math.round((value / 100 * cals) / calPerGram) : 0;
+    }
+
+    this.userSettingsService.updateDailyGoal(field, grams);
 
     // Auto-rebalance: keep calories constant, adjust the complement
     const dg = this.userSettingsService.dailyGoals();
     const cals = dg.calories;
 
     if (field === 'protein' || field === 'carbs') {
-      // Fat absorbs the remainder
       const newFat = Math.max(0, Math.round((cals - dg.protein * 4 - dg.carbs * 4) / 9));
       this.userSettingsService.updateDailyGoal('fat', newFat);
     } else if (field === 'fat') {
-      // Carbs absorb the remainder
       const newCarbs = Math.max(0, Math.round((cals - dg.protein * 4 - dg.fat * 9) / 4));
       this.userSettingsService.updateDailyGoal('carbs', newCarbs);
     }
