@@ -173,10 +173,10 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <label class="setting-label">Carbs</label>
                   <input type="range" class="carb-slider"
                     [min]="0"
-                    [max]="userSettingsService.maxCarbGrams()"
-                    [ngModel]="userSettingsService.personalInfo().carbScaleGrams ?? userSettingsService.defaultCarbGrams()"
+                    [max]="carbSliderMax()"
+                    [ngModel]="carbSliderValue()"
                     (ngModelChange)="onCarbScaleChange($event)" />
-                  <span class="slider-value">{{ userSettingsService.personalInfo().carbScaleGrams ?? userSettingsService.defaultCarbGrams() }}g</span>
+                  <span class="slider-value">{{ carbSliderLabel() }}</span>
                 </div>
                 <!-- Protein ratio dropdown -->
                 <div class="macro-control-row">
@@ -203,20 +203,13 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   </label>
                 </div>
                 <div class="calories-deficit-row">
-                  @if (userSettingsService.showPercent()) {
-                    <input type="number" class="deficit-input"
-                      [ngModel]="deficitAbsValue()"
-                      (ngModelChange)="onDeficitChange($event)" />
-                    <span class="deficit-direction">{{ deficitDirectionLabel() }}</span>
-                  } @else {
-                    <input type="number" class="cal-input"
-                      [ngModel]="userSettingsService.dailyGoals().calories"
-                      (ngModelChange)="onCaloriesChange($event)" />
-                    <input type="number" class="deficit-input"
-                      [ngModel]="deficitAbsValue()"
-                      (ngModelChange)="onDeficitChange($event)" />
-                    <span class="deficit-direction">{{ deficitDirectionLabel() }}</span>
-                  }
+                  <input type="number" class="cal-input"
+                    [ngModel]="userSettingsService.dailyGoals().calories"
+                    (ngModelChange)="onCaloriesChange($event)" />
+                  <input type="number" class="deficit-input"
+                    [ngModel]="deficitAbsValue()"
+                    (ngModelChange)="onDeficitChange($event)" />
+                  <span class="deficit-direction">{{ deficitDirectionLabel() }}</span>
                 </div>
                 <div class="weeks-to-goal">{{ weeksToGoalLabel() }}</div>
                 <div class="targets-grid">
@@ -508,6 +501,25 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     return `(${sign}${diff} kg)`;
   });
 
+  /** Carb slider: shows grams in G mode, % of calories in % mode */
+  carbSliderValue = computed(() => {
+    const pi = this.userSettingsService.personalInfo();
+    const grams = pi.carbScaleGrams ?? this.userSettingsService.defaultCarbGrams();
+    if (!this.userSettingsService.showPercent()) return grams;
+    const cals = this.userSettingsService.dailyGoals().calories;
+    return cals ? Math.round((grams * 4 / cals) * 100) : 0;
+  });
+
+  carbSliderMax = computed(() => {
+    if (this.userSettingsService.showPercent()) return 100;
+    return this.userSettingsService.maxCarbGrams();
+  });
+
+  carbSliderLabel = computed(() => {
+    const val = this.carbSliderValue();
+    return this.userSettingsService.showPercent() ? `${val}%` : `${val}g`;
+  });
+
   /** Display values for macro fields: grams in G mode, % of calories in % mode */
   proteinDisplay = computed(() => {
     const dg = this.userSettingsService.dailyGoals();
@@ -644,8 +656,20 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
   }
 
   onCarbScaleChange(value: number): void {
-    this.userSettingsService.setCarbScaleGrams(+value);
+    // Convert % → grams if in percent mode
+    let grams = +value;
+    if (this.userSettingsService.showPercent()) {
+      const cals = this.userSettingsService.dailyGoals().calories;
+      grams = cals ? Math.round((value / 100 * cals) / 4) : 0;
+    }
+    this.userSettingsService.setCarbScaleGrams(grams);
     this.syncMacros();
+
+    // Always flow carbs + rebalanced fat into dailyGoals (even when overridden)
+    this.userSettingsService.updateDailyGoal('carbs', grams);
+    const dg = this.userSettingsService.dailyGoals();
+    const newFat = Math.max(0, Math.round((dg.calories - dg.protein * 4 - dg.carbs * 4) / 9));
+    this.userSettingsService.updateDailyGoal('fat', newFat);
   }
 
   private syncMacros(): void {
