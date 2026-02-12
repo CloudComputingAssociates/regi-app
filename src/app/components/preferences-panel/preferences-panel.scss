@@ -364,6 +364,7 @@
     flex-direction: column;
     gap: 6px;
     flex-shrink: 0;
+    flex: 1;
 
     .column-label-row {
       display: flex;
@@ -381,7 +382,7 @@
     .targets-body {
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 0;
 
       &.targets-disabled {
         opacity: 0.4;
@@ -397,6 +398,7 @@
       display: grid;
       grid-template-columns: repeat(3, 60px);
       gap: 6px;
+      margin-top: 1px;
     }
 
     .target-field {
@@ -445,6 +447,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      margin-bottom: 3px;
 
       .setting-label {
         color: #ffffff;
@@ -490,7 +493,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: -4px;
+      margin-bottom: 1px;
 
       > label {
         color: #ccc;
@@ -568,20 +571,20 @@
       color: #4da6ff;
       font-size: 0.75rem;
       font-style: italic;
-      margin: 0;
+      margin: 1px 0 0 0;
       padding-left: 2px;
     }
 
     .macro-separator {
       border-top: 1px solid #4a4a4a;
-      margin: 0;
+      margin: 2px 0 1px 0;
     }
 
     .fiber-pie-row {
       display: flex;
       align-items: flex-end;
       gap: 6px;
-      margin-top: -4px;
+      margin-top: 1px;
 
       .target-field input {
         width: 60px;
