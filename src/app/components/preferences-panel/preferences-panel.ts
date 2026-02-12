@@ -143,7 +143,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                       (ngModelChange)="onTargetWeightChange($event)" />
                     <span class="unit-label">{{ userSettingsService.useImperial() ? 'lbs' : 'kg' }}</span>
                     @if (goalWeightPctLabel()) {
-                      <span class="goal-pct">{{ goalWeightPctLabel() }}</span>
+                      <span class="goal-pct">&emsp;&emsp;{{ goalWeightPctLabel() }}</span>
                     }
                   </div>
                 </div>
@@ -167,15 +167,14 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
             <!-- Nutrition Targets -->
             <div class="settings-section">
               <div class="targets-column">
-                <div class="column-label-row">
-                  <span class="column-label">Nutrition Targets</span>
+                <span class="column-label">Nutrition Targets
                   <label class="override-label">
                     <input type="checkbox"
                       [ngModel]="userSettingsService.dailyGoals().isOverridden"
                       (ngModelChange)="onOverrideChange($event)" />
                     User override
                   </label>
-                </div>
+                </span>
                 <div class="targets-body" [class.targets-disabled]="!userSettingsService.dailyGoals().isOverridden">
                   <!-- Carb scale slider -->
                   <div class="macro-control-row">
@@ -222,7 +221,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   </div>
                   <div class="weeks-to-goal">{{ weeksToGoalLabel() }}</div>
                   <div class="macro-separator"></div>
-                  <div class="targets-grid">
+                  <div class="macro-grid">
                     <div class="target-field">
                       <label>Proteins {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
                       <input type="number" [ngModel]="proteinDisplay()"
@@ -241,8 +240,14 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                              (ngModelChange)="onMacroFieldChange('carbs', $event)"
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     </div>
-                  </div>
-                  <div class="fiber-pie-row">
+                    <svg viewBox="0 0 60 60" class="macro-pie" xmlns="http://www.w3.org/2000/svg">
+                      @for (seg of pieChartSegments(); track seg.label) {
+                        <path [attr.d]="seg.path" [attr.fill]="seg.color" />
+                        <text [attr.x]="seg.labelX" [attr.y]="seg.labelY"
+                          text-anchor="middle" dominant-baseline="central"
+                          fill="#fff" font-size="9" font-weight="700">{{ seg.label }}</text>
+                      }
+                    </svg>
                     <div class="target-field">
                       <label>Fiber G</label>
                       <input type="number" [ngModel]="userSettingsService.dailyGoals().fiber"
@@ -255,14 +260,6 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                              (ngModelChange)="onDailyGoalChange('sodium', $event)"
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     </div>
-                    <svg viewBox="0 0 60 60" class="macro-pie" xmlns="http://www.w3.org/2000/svg">
-                      @for (seg of pieChartSegments(); track seg.label) {
-                        <path [attr.d]="seg.path" [attr.fill]="seg.color" />
-                        <text [attr.x]="seg.labelX" [attr.y]="seg.labelY"
-                          text-anchor="middle" dominant-baseline="central"
-                          fill="#fff" font-size="9" font-weight="700">{{ seg.label }}</text>
-                      }
-                    </svg>
                   </div>
                 </div>
               </div>

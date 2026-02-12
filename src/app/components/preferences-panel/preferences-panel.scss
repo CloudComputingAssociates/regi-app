@@ -364,25 +364,20 @@
     flex-direction: column;
     gap: 6px;
     flex-shrink: 0;
-    flex: 1;
-
-    .column-label-row {
-      display: flex;
-      align-items: center;
-      gap: 32px;
-    }
 
     .column-label {
       color: #4da6ff;
       font-size: 14px;
       font-weight: 500;
       letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
     }
 
     .targets-body {
       display: flex;
       flex-direction: column;
-      gap: 0;
+      gap: 4px;
 
       &.targets-disabled {
         opacity: 0.4;
@@ -394,11 +389,18 @@
       }
     }
 
-    .targets-grid {
+    .macro-grid {
       display: grid;
-      grid-template-columns: repeat(3, 60px);
-      gap: 6px;
-      margin-top: 1px;
+      grid-template-columns: 60px 60px 60px auto;
+      grid-template-rows: auto auto;
+      gap: 2px 6px;
+
+      .macro-pie {
+        grid-column: 4;
+        grid-row: 1 / 3;
+        align-self: center;
+        justify-self: start;
+      }
     }
 
     .target-field {
@@ -447,7 +449,6 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-bottom: 3px;
 
       .setting-label {
         color: #ffffff;
@@ -493,7 +494,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 1px;
+      margin-bottom: -2px;
 
       > label {
         color: #ccc;
@@ -507,6 +508,7 @@
       align-items: center;
       gap: 4px;
       margin-left: auto;
+      margin-right: 6px;
       color: #ffffff;
       font-size: 11px;
       font-weight: 500;
@@ -571,25 +573,16 @@
       color: #4da6ff;
       font-size: 0.75rem;
       font-style: italic;
-      margin: 1px 0 0 0;
+      margin: 0;
       padding-left: 2px;
     }
 
     .macro-separator {
       border-top: 1px solid #4a4a4a;
-      margin: 2px 0 1px 0;
+      margin: 2px 0;
     }
 
-    .fiber-pie-row {
-      display: flex;
-      align-items: flex-end;
-      gap: 6px;
-      margin-top: 1px;
-
-      .target-field input {
-        width: 60px;
-      }
-    }
+    // fiber-pie-row removed — merged into macro-grid
 
     .macro-pie {
       width: 88px;
@@ -818,7 +811,7 @@
 
   .unit-label {
     color: #ffffff;
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .pi-last-updated {
@@ -832,11 +825,10 @@
 
   // Goal weight percentage label (inline next to goal weight)
   .goal-pct {
-    font-size: 0.75rem;
-    font-style: italic;
-    margin-left: 2px;
+    font-size: 11px;
+    margin-left: 0;
     white-space: nowrap;
-    color: #4da6ff;
+    color: #ffffff;
   }
 
   .height-imperial,
