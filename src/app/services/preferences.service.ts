@@ -282,6 +282,12 @@ export class PreferencesService {
     this.preferencesSignal.set(prefs);
     this.loadedSignal.set(true);
     this.loadingSignal.set(false);
+
+    // Populate calc* fields from existing personal info on load
+    this.computeDeficitPercent();
+    this.syncComputedMacros();
+
+    // Reset dirty flags — the sync above is initialization, not a user change
     this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false });
   }
 

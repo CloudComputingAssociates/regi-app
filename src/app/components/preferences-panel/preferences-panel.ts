@@ -215,17 +215,17 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <span class="macro-hint">of body weight</span>
                 </div>
                 <div class="macro-separator"></div>
+                <div class="override-row">
+                  <label class="override-label">
+                    User set
+                    <input type="checkbox"
+                      [ngModel]="userSettingsService.dailyGoals().isOverridden"
+                      (ngModelChange)="onOverrideChange($event)" />
+                  </label>
+                </div>
                 <div class="targets-grid">
                   <div class="target-field">
-                    <div class="calories-header">
-                      <label>Calories</label>
-                      <label class="override-label">
-                        <input type="checkbox"
-                          [ngModel]="userSettingsService.dailyGoals().isOverridden"
-                          (ngModelChange)="onOverrideChange($event)" />
-                        User set
-                      </label>
-                    </div>
+                    <label>Calories</label>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
                            (ngModelChange)="onMacroFieldChange('calories', $event)" />
                   </div>
