@@ -457,7 +457,9 @@
         font-size: 12px;
         font-family: inherit;
         color: #ffffff;
-        background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+        background:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L2 4h8z'/%3E%3C/svg%3E") no-repeat right 4px center,
+          linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
         border: 1px solid #5a5a5a;
         border-radius: 4px;
         padding: 4px 20px 4px 6px;
@@ -465,9 +467,6 @@
         outline: none;
         appearance: none;
         box-sizing: border-box;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 4px center;
 
         &:hover { border-color: #6a6a6a; }
         &:focus {
@@ -504,15 +503,15 @@
       display: flex;
       align-items: center;
       gap: 4px;
-      color: #4da6ff;
-      font-size: 10px;
+      color: #ffffff;
+      font-size: 11px;
       font-weight: 500;
       cursor: pointer;
       user-select: none;
       white-space: nowrap;
 
       input[type="checkbox"] {
-        accent-color: #4da6ff;
+        accent-color: #ffffff;
         cursor: pointer;
         width: 12px;
         height: 12px;
@@ -581,7 +580,7 @@
       display: flex;
       align-items: flex-end;
       gap: 6px;
-      margin-top: -4px;
+      margin-top: -6px;
 
       .target-field input {
         width: 60px;
@@ -663,16 +662,15 @@
       font-size: 11px;
       font-family: inherit;
       color: #ffffff;
-      background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L2 4h8z'/%3E%3C/svg%3E") no-repeat right 4px center,
+        linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
       border: 1px solid #5a5a5a;
       border-radius: 4px;
       padding: 4px 20px 4px 6px;
       cursor: pointer;
       outline: none;
       appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 4px center;
 
       &:hover {
         border-color: #6a6a6a;
@@ -712,7 +710,7 @@
     }
 
     .pi-scale-label {
-      color: #4da6ff;
+      color: #ffffff;
       font-size: 11px;
       margin-left: auto;
       margin-right: 6px;
@@ -741,16 +739,15 @@
       font-size: 11px;
       font-family: inherit;
       color: #ffffff;
-      background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L2 4h8z'/%3E%3C/svg%3E") no-repeat right 4px center,
+        linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
       border: 1px solid #5a5a5a;
       border-radius: 4px;
       padding: 4px 20px 4px 6px;
       cursor: pointer;
       outline: none;
       appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 4px center;
 
       &:hover { border-color: #6a6a6a; }
       &:focus {
@@ -816,7 +813,7 @@
   }
 
   .unit-label {
-    color: #999;
+    color: #ffffff;
     font-size: 10px;
   }
 
@@ -877,16 +874,15 @@
       font-size: 11px;
       font-family: inherit;
       color: #ffffff;
-      background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L2 4h8z'/%3E%3C/svg%3E") no-repeat right 4px center,
+        linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
       border: 1px solid #5a5a5a;
       border-radius: 4px;
       padding: 4px 20px 4px 6px;
       cursor: pointer;
       outline: none;
       appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 4px center;
 
       &:hover {
         border-color: #6a6a6a;
