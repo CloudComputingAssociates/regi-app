@@ -781,23 +781,6 @@
     font-size: 10px;
   }
 
-  .pi-daily-row {
-    .setting-label, .unit-label {
-      color: #4da6ff;
-    }
-  }
-
-  .pi-calc-suggestion {
-    margin-top: -2px;
-    margin-bottom: -2px;
-  }
-
-  .pi-macro-box {
-    width: 42px;
-    text-align: center;
-    font-size: 11px;
-  }
-
   .pi-last-updated {
     color: #4da6ff;
     font-size: 0.75rem;
@@ -807,21 +790,17 @@
     margin-top: -2px;
   }
 
-  .pi-deficit-label {
-    color: #4da6ff;
-    font-size: 0.75rem;
+  // Goal weight percentage label (inline next to goal weight)
+  .goal-pct {
+    font-size: 10px;
     font-style: italic;
-    margin-left: 6px;
+    margin-left: 2px;
     white-space: nowrap;
   }
 
-  .pi-readonly {
-    background: #2a2a2a;
-    color: #4da6ff;
-    border-color: #3a3a3a;
-    cursor: default;
-    &:hover { border-color: #3a3a3a; }
-  }
+  .goal-green { color: #4caf50; }
+  .goal-amber { color: #ff9800; }
+  .goal-red { color: #ff6b6b; }
 
   .height-imperial,
   .height-metric,

@@ -142,6 +142,9 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                       [ngModel]="targetWeightDisplay()"
                       (ngModelChange)="onTargetWeightChange($event)" />
                     <span class="unit-label">{{ userSettingsService.useImperial() ? 'lbs' : 'kg' }}</span>
+                    @if (goalWeightPctLabel()) {
+                      <span class="goal-pct" [class]="goalWeightPctClass()">{{ goalWeightPctLabel() }}</span>
+                    }
                   </div>
                 </div>
                 <div class="pi-row">
@@ -171,9 +174,9 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <input type="range" class="carb-slider"
                     [min]="0"
                     [max]="userSettingsService.maxCarbGrams()"
-                    [ngModel]="userSettingsService.personalInfo().carbScaleGrams ?? 50"
+                    [ngModel]="userSettingsService.personalInfo().carbScaleGrams ?? userSettingsService.defaultCarbGrams()"
                     (ngModelChange)="onCarbScaleChange($event)" />
-                  <span class="slider-value">{{ userSettingsService.personalInfo().carbScaleGrams ?? 50 }}g</span>
+                  <span class="slider-value">{{ userSettingsService.personalInfo().carbScaleGrams ?? userSettingsService.defaultCarbGrams() }}g</span>
                 </div>
                 <!-- Protein ratio dropdown -->
                 <div class="macro-control-row">
@@ -181,6 +184,8 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <select class="setting-select"
                     [ngModel]="userSettingsService.personalInfo().proteinRatio ?? 1.0"
                     (ngModelChange)="onProteinRatioChange($event)">
+                    <option [ngValue]="0.5">0.5 g/lb</option>
+                    <option [ngValue]="0.7">0.7 g/lb</option>
                     <option [ngValue]="0.8">0.8 g/lb</option>
                     <option [ngValue]="1.0">1.0 g/lb</option>
                     <option [ngValue]="1.2">1.2 g/lb</option>
@@ -473,6 +478,26 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     return `${weeks} weeks to goal at ${gap} cal ${direction}`;
   });
 
+  /** Inline label showing weight change percentage, e.g. "(-14.3%)" or "(+5.3%)" */
+  goalWeightPctLabel = computed(() => {
+    const pi = this.userSettingsService.personalInfo();
+    if (!pi.currentWeightKg || !pi.targetWeightKg) return '';
+    const pct = ((pi.targetWeightKg - pi.currentWeightKg) / pi.currentWeightKg) * 100;
+    if (Math.abs(pct) < 0.1) return '';
+    const sign = pct > 0 ? '+' : '';
+    return `(${sign}${pct.toFixed(1)}%)`;
+  });
+
+  /** Color class for goal weight percentage: green ≤10%, amber 10-25%, red >25% */
+  goalWeightPctClass = computed(() => {
+    const pi = this.userSettingsService.personalInfo();
+    if (!pi.currentWeightKg || !pi.targetWeightKg) return 'goal-green';
+    const absPct = Math.abs(((pi.targetWeightKg - pi.currentWeightKg) / pi.currentWeightKg) * 100);
+    if (absPct <= 10) return 'goal-green';
+    if (absPct <= 25) return 'goal-amber';
+    return 'goal-red';
+  });
+
   ngOnInit(): void {
     this.userSettingsService.loadPreferences();
     this.tryStampOnLoad();
@@ -608,12 +633,27 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     this.settingsChanged.set(true);
   }
 
-  /** User typed in a macro field (calories/protein/fat/carbs) — auto-set override */
+  /** User typed in a macro field (protein/fat/carbs) — auto-set override and rebalance */
   onMacroFieldChange(field: keyof DailyGoals, value: number): void {
     if (!this.userSettingsService.dailyGoals().isOverridden) {
       this.userSettingsService.setIsOverridden(true);
     }
     this.userSettingsService.updateDailyGoal(field, value);
+
+    // Auto-rebalance: keep calories constant, adjust the complement
+    const dg = this.userSettingsService.dailyGoals();
+    const cals = dg.calories;
+
+    if (field === 'protein' || field === 'carbs') {
+      // Fat absorbs the remainder
+      const newFat = Math.max(0, Math.round((cals - dg.protein * 4 - dg.carbs * 4) / 9));
+      this.userSettingsService.updateDailyGoal('fat', newFat);
+    } else if (field === 'fat') {
+      // Carbs absorb the remainder
+      const newCarbs = Math.max(0, Math.round((cals - dg.protein * 4 - dg.fat * 9) / 4));
+      this.userSettingsService.updateDailyGoal('carbs', newCarbs);
+    }
+
     this.settingsChanged.set(true);
   }
 
@@ -655,6 +695,20 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
   async save(): Promise<void> {
     if (!this.hasAnyChanges()) return;
 
+    const warnings = this.userSettingsService.validateOnSave();
+    if (warnings.length > 0) {
+      this.notificationService.showConfirmation(
+        warnings.join('\n'),
+        'warning',
+        () => this.doSave(),
+        () => { /* cancel — stay in edit mode, button stays green */ }
+      );
+    } else {
+      this.doSave();
+    }
+  }
+
+  private async doSave(): Promise<void> {
     this.isSaving.set(true);
     try {
       await this.userSettingsService.savePreferences();

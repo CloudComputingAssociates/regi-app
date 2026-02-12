@@ -40,6 +40,15 @@ const DEFAULT_DAILY_GOALS: DailyGoals = {
 
 const DEFAULT_PERSONAL_INFO: PersonalInfo = {};
 
+// Validation thresholds (used by validateOnSave)
+const CALORIE_MISMATCH_TOLERANCE = 10;   // cal difference before warning
+const MACRO_BALANCE_TOLERANCE = 10;       // cal difference before warning
+const GOAL_LOSS_AMBITIOUS_PCT = 15;       // % loss → ambitious warning
+const GOAL_LOSS_AGGRESSIVE_PCT = 25;      // % loss → aggressive warning
+const GOAL_LOSS_EXTREME_PCT = 50;         // % loss → medical warning
+const GOAL_GAIN_WARN_PCT = 10;            // % gain → consult warning
+const FIBER_TO_CARB_RATIO = 0.25;         // fiber > carbs * this → warning
+
 const DEFAULT_PREFERENCES: Preferences = {
   mealsPerDay: 3,
   fastingType: 'none',
@@ -157,6 +166,14 @@ export class PreferencesService {
     return Math.min(200, Math.floor(tdee / 4));
   });
 
+  /** Default carb grams = 25% of target calories from carbs.
+   *  Used when user hasn't set carbScaleGrams yet. */
+  readonly defaultCarbGrams = computed(() => {
+    const targetCals = this.computedTargetCalories();
+    if (!targetCals) return 125; // fallback: 25% of 2000 cal default
+    return Math.round((targetCals * 0.25) / 4);
+  });
+
   /** Protein grams computed from target weight * ratio */
   readonly computedProteinGrams = computed(() => {
     const pi = this.personalInfo();
@@ -172,7 +189,7 @@ export class PreferencesService {
     const targetCals = this.computedTargetCalories();
     const protein = this.computedProteinGrams();
     const pi = this.personalInfo();
-    const carbs = pi.carbScaleGrams ?? 50;
+    const carbs = pi.carbScaleGrams ?? this.defaultCarbGrams();
     if (!targetCals || !protein) return null;
     const remaining = targetCals - (protein * 4) - (carbs * 4);
     return Math.max(0, Math.round(remaining / 9));
@@ -184,7 +201,7 @@ export class PreferencesService {
     const protein = this.computedProteinGrams();
     const fat = this.computedFatGrams();
     const pi = this.personalInfo();
-    const carbs = pi.carbScaleGrams;
+    const carbs = pi.carbScaleGrams ?? this.defaultCarbGrams();
     const targetCals = this.computedTargetCalories();
 
     // Always persist calculated values into personalInfo for the suggestion line
@@ -529,6 +546,86 @@ export class PreferencesService {
       case 'extremely_active': return 1.9;
       default: return 1.2;
     }
+  }
+
+  // ========================================================
+  // SAVE-TIME VALIDATION
+  // ========================================================
+
+  /** Run all validation checks and return warning messages.
+   *  Called before save — empty array means no warnings. */
+  validateOnSave(): string[] {
+    const warnings: string[] = [];
+    const dg = this.dailyGoals();
+    const pi = this.personalInfo();
+
+    // 1. Calorie target locked while calculated value differs
+    if (dg.isOverridden) {
+      const calc = this.computedTargetCalories();
+      if (calc !== null && Math.abs(calc - dg.calories) > CALORIE_MISMATCH_TOLERANCE) {
+        warnings.push(
+          `Calculated calories are ${calc} but your target is ${dg.calories} (User Set is checked).`
+        );
+      }
+    }
+
+    // 2. Carb slider out of sync with carbs field
+    const sliderCarbs = pi.carbScaleGrams;
+    if (sliderCarbs !== undefined && sliderCarbs !== null && sliderCarbs !== dg.carbs) {
+      warnings.push(
+        `Carb slider (${sliderCarbs}g) doesn't match Carbs target (${dg.carbs}g).`
+      );
+    }
+
+    // 3. Macro math doesn't match calorie target
+    const macroTotal = (dg.protein * 4) + (dg.fat * 9) + (dg.carbs * 4);
+    const macroDiff = macroTotal - dg.calories;
+    if (Math.abs(macroDiff) > MACRO_BALANCE_TOLERANCE) {
+      const direction = macroDiff > 0 ? 'over' : 'under';
+      warnings.push(
+        `Macros total ${macroTotal} cal (${Math.abs(macroDiff)} ${direction} your ${dg.calories} cal target).`
+      );
+    }
+
+    // 4. Unrealistic goal weight
+    if (pi.currentWeightKg && pi.targetWeightKg) {
+      const pctChange = ((pi.targetWeightKg - pi.currentWeightKg) / pi.currentWeightKg) * 100;
+      const absLoss = Math.abs(pctChange);
+
+      if (pctChange < 0) {
+        // Weight loss
+        if (absLoss > GOAL_LOSS_EXTREME_PCT) {
+          warnings.push(
+            `Losing ${absLoss.toFixed(1)}% may not be safe without medical supervision. Please consult a healthcare provider.`
+          );
+        } else if (absLoss > GOAL_LOSS_AGGRESSIVE_PCT) {
+          const milestoneKg = Math.round(pi.currentWeightKg * 0.9 * 10) / 10;
+          const milestoneLbs = PreferencesService.kgToLbs(milestoneKg);
+          const display = this.useImperial() ? `${milestoneLbs} lbs` : `${milestoneKg} kg`;
+          warnings.push(
+            `Losing ${absLoss.toFixed(1)}% is very aggressive. Consider a 10% milestone of ${display} first.`
+          );
+        } else if (absLoss > GOAL_LOSS_AMBITIOUS_PCT) {
+          warnings.push(
+            `Losing ${absLoss.toFixed(1)}% is ambitious. Research shows 5-15% delivers the biggest health benefits.`
+          );
+        }
+      } else if (pctChange > GOAL_GAIN_WARN_PCT) {
+        // Weight gain
+        warnings.push(
+          `Gaining ${pctChange.toFixed(1)}% — consider consulting a healthcare provider for guidance.`
+        );
+      }
+    }
+
+    // 5. Fiber vs carbs feasibility
+    if (dg.fiber > dg.carbs * FIBER_TO_CARB_RATIO) {
+      warnings.push(
+        `Hitting ${dg.fiber}g fiber on ${dg.carbs}g carbs may be challenging. Consider adjusting.`
+      );
+    }
+
+    return warnings;
   }
 
   // ========================================================

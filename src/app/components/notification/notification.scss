@@ -22,33 +22,50 @@
 }
 
 .notification {
-  background-color: #f4c430;  // Yellow
+  background-color: #f4c430;  // Yellow (success)
   color: #000000;
   padding: 12px 16px;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   pointer-events: auto;
   min-width: 200px;
   max-width: 400px;
 
   &.error {
-    background-color: #ff6b6b;  // Red for errors
+    background-color: #ff6b6b;
     color: #ffffff;
   }
 
   &.warning {
-    background-color: #ff9800;  // Orange for warnings
+    background-color: #ff9800;
     color: #000000;
   }
 
-  .message {
+  &.info {
+    background-color: #4da6ff;
+    color: #000000;
+  }
+
+  // Wider layout for confirmation toasts with multi-line messages
+  &.confirmation {
+    max-width: 520px;
+  }
+
+  .message-area {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .message-line {
     font-size: 13px;
     font-weight: 500;
     line-height: 1.4;
+    display: block;
   }
 
   .close-btn {
@@ -63,6 +80,7 @@
     transition: opacity 0.2s ease;
     width: 20px;
     height: 20px;
+    flex-shrink: 0;
 
     &:hover {
       opacity: 0.7;
@@ -78,6 +96,52 @@
 
   &.error .close-btn {
     color: #ffffff;
+  }
+
+  // Confirmation ✓/✕ buttons
+  .confirm-buttons {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    align-items: flex-start;
+    margin-top: 2px;
+  }
+
+  .confirm-btn {
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+      opacity: 0.8;
+    }
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  .confirm-ok {
+    background-color: #4caf50;
+    color: #ffffff;
+  }
+
+  .confirm-cancel {
+    background-color: rgba(0, 0, 0, 0.2);
+    color: #000000;
+  }
+
+  &.error .confirm-cancel {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.2);
   }
 }
 
