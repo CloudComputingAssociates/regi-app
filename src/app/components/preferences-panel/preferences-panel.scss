@@ -503,6 +503,8 @@
       display: flex;
       align-items: center;
       gap: 4px;
+      margin-left: auto;
+      padding-left: 24px;
       color: #ffffff;
       font-size: 11px;
       font-weight: 500;
@@ -580,7 +582,7 @@
       display: flex;
       align-items: flex-end;
       gap: 6px;
-      margin-top: -6px;
+      margin-top: -8px;
 
       .target-field input {
         width: 60px;
@@ -588,8 +590,8 @@
     }
 
     .macro-pie {
-      width: 70px;
-      height: 70px;
+      width: 88px;
+      height: 88px;
       flex-shrink: 0;
     }
 

@@ -221,6 +221,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <span class="deficit-direction">{{ deficitDirectionLabel() }}</span>
                   </div>
                   <div class="weeks-to-goal">{{ weeksToGoalLabel() }}</div>
+                  <div class="macro-separator"></div>
                   <div class="targets-grid">
                     <div class="target-field">
                       <label>Proteins {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
