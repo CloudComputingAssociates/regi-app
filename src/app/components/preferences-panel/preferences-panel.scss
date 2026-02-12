@@ -555,6 +555,22 @@
       margin: 4px 0;
     }
 
+    .fiber-pie-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+
+      .target-field input {
+        width: 60px;
+      }
+    }
+
+    .macro-pie {
+      width: 48px;
+      height: 48px;
+      margin-left: auto;
+    }
+
     .carb-slider {
       flex: 1;
       height: 4px;

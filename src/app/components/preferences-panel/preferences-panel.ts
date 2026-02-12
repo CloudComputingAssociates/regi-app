@@ -229,7 +229,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                            (ngModelChange)="onMacroFieldChange('carbs', $event)" />
                   </div>
                 </div>
-                <div class="targets-grid">
+                <div class="fiber-pie-row">
                   <div class="target-field">
                     <label>Fiber G</label>
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().fiber"
@@ -240,6 +240,14 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <input type="number" [ngModel]="userSettingsService.dailyGoals().sodium"
                            (ngModelChange)="onDailyGoalChange('sodium', $event)" />
                   </div>
+                  <svg viewBox="0 0 60 60" class="macro-pie" xmlns="http://www.w3.org/2000/svg">
+                    @for (seg of pieChartSegments(); track seg.label) {
+                      <path [attr.d]="seg.path" [attr.fill]="seg.color" />
+                      <text [attr.x]="seg.labelX" [attr.y]="seg.labelY"
+                        text-anchor="middle" dominant-baseline="central"
+                        fill="#fff" font-size="9" font-weight="700">{{ seg.label }}</text>
+                    }
+                  </svg>
                 </div>
               </div>
             </div>
@@ -537,6 +545,43 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     const dg = this.userSettingsService.dailyGoals();
     if (!this.userSettingsService.showPercent()) return dg.carbs;
     return dg.calories ? Math.round((dg.carbs * 4 / dg.calories) * 100) : 0;
+  });
+
+  /** Pie chart segments for P/F/C calorie distribution */
+  pieChartSegments = computed(() => {
+    const dg = this.userSettingsService.dailyGoals();
+    const proteinCals = dg.protein * 4;
+    const fatCals = dg.fat * 9;
+    const carbsCals = dg.carbs * 4;
+    const total = proteinCals + fatCals + carbsCals;
+    if (total <= 0) return [];
+
+    const raw = [
+      { pct: proteinCals / total, color: '#41ac17', label: 'P' },
+      { pct: fatCals / total, color: '#902ee3', label: 'F' },
+      { pct: carbsCals / total, color: '#e67300', label: 'C' }
+    ];
+
+    const cx = 30, cy = 30, r = 25;
+    let angle = -Math.PI / 2;
+    return raw.filter(s => s.pct > 0.001).map(seg => {
+      const start = angle;
+      const sweep = seg.pct * 2 * Math.PI;
+      const end = start + sweep;
+      const x1 = cx + r * Math.cos(start);
+      const y1 = cy + r * Math.sin(start);
+      const x2 = cx + r * Math.cos(end);
+      const y2 = cy + r * Math.sin(end);
+      const large = sweep > Math.PI ? 1 : 0;
+      // For near-full circle, nudge end point slightly to avoid collapsed arc
+      const path = seg.pct > 0.999
+        ? `M ${cx},${cy - r} A ${r},${r} 0 1,1 ${cx - 0.01},${cy - r} Z`
+        : `M ${cx},${cy} L ${x1},${y1} A ${r},${r} 0 ${large},1 ${x2},${y2} Z`;
+      const mid = start + sweep / 2;
+      const lr = r * 0.6;
+      angle = end;
+      return { path, color: seg.color, label: seg.label, labelX: cx + lr * Math.cos(mid), labelY: cy + lr * Math.sin(mid) };
+    });
   });
 
   ngOnInit(): void {
