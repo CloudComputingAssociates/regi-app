@@ -167,89 +167,102 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
             <!-- Nutrition Targets -->
             <div class="settings-section">
               <div class="targets-column">
-                <span class="column-label">Nutrition Targets</span>
-                <!-- Carb scale slider -->
-                <div class="macro-control-row">
-                  <label class="setting-label">Carbs</label>
-                  <input type="range" class="carb-slider"
-                    [min]="0"
-                    [max]="carbSliderMax()"
-                    [ngModel]="carbSliderValue()"
-                    (ngModelChange)="onCarbScaleChange($event)" />
-                  <span class="slider-value">{{ carbSliderLabel() }}</span>
-                </div>
-                <!-- Protein ratio dropdown -->
-                <div class="macro-control-row">
-                  <label class="setting-label">Proteins</label>
-                  <select class="setting-select"
-                    [ngModel]="userSettingsService.personalInfo().proteinRatio ?? 1.0"
-                    (ngModelChange)="onProteinRatioChange($event)">
-                    <option [ngValue]="0.5">0.5 g/lb</option>
-                    <option [ngValue]="0.7">0.7 g/lb</option>
-                    <option [ngValue]="0.8">0.8 g/lb</option>
-                    <option [ngValue]="0.9">0.9 g/lb</option>
-                    <option [ngValue]="1.0">1.0 g/lb</option>
-                    <option [ngValue]="1.1">1.1 g/lb</option>
-                    <option [ngValue]="1.2">1.2 g/lb</option>
-                  </select>
-                  <span class="macro-hint">of body weight</span>
-                </div>
-                <div class="macro-separator"></div>
-                <div class="calories-label-row">
-                  <label>Calories</label>
+                <div class="column-label-row">
+                  <span class="column-label">Nutrition Targets</span>
                   <label class="override-label">
                     <input type="checkbox"
                       [ngModel]="userSettingsService.dailyGoals().isOverridden"
                       (ngModelChange)="onOverrideChange($event)" />
-                    User set
+                    User override
                   </label>
                 </div>
-                <div class="calories-deficit-row">
-                  <input type="number" class="cal-input"
-                    [ngModel]="userSettingsService.dailyGoals().calories"
-                    (ngModelChange)="onCaloriesChange($event)" />
-                  <input type="number" class="deficit-input"
-                    [ngModel]="deficitAbsValue()"
-                    (ngModelChange)="onDeficitChange($event)" />
-                  <span class="deficit-direction">{{ deficitDirectionLabel() }}</span>
-                </div>
-                <div class="weeks-to-goal">{{ weeksToGoalLabel() }}</div>
-                <div class="targets-grid">
-                  <div class="target-field">
-                    <label>Proteins {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
-                    <input type="number" [ngModel]="proteinDisplay()"
-                           (ngModelChange)="onMacroFieldChange('protein', $event)" />
+                <div class="targets-body" [class.targets-disabled]="!userSettingsService.dailyGoals().isOverridden">
+                  <!-- Carb scale slider -->
+                  <div class="macro-control-row">
+                    <label class="setting-label">Carbs</label>
+                    <input type="range" class="carb-slider"
+                      [min]="0"
+                      [max]="carbSliderMax()"
+                      [ngModel]="carbSliderValue()"
+                      (ngModelChange)="onCarbScaleChange($event)"
+                      [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                    <span class="slider-value">{{ carbSliderLabel() }}</span>
                   </div>
-                  <div class="target-field">
-                    <label>Fats {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
-                    <input type="number" [ngModel]="fatDisplay()"
-                           (ngModelChange)="onMacroFieldChange('fat', $event)" />
+                  <!-- Protein ratio dropdown -->
+                  <div class="macro-control-row">
+                    <label class="setting-label">Proteins</label>
+                    <select class="setting-select"
+                      [ngModel]="userSettingsService.personalInfo().proteinRatio ?? 0.7"
+                      (ngModelChange)="onProteinRatioChange($event)"
+                      [disabled]="!userSettingsService.dailyGoals().isOverridden">
+                      <option [ngValue]="0.5">0.5 g/lb</option>
+                      <option [ngValue]="0.7">0.7 g/lb</option>
+                      <option [ngValue]="0.8">0.8 g/lb</option>
+                      <option [ngValue]="0.9">0.9 g/lb</option>
+                      <option [ngValue]="1.0">1.0 g/lb</option>
+                      <option [ngValue]="1.1">1.1 g/lb</option>
+                      <option [ngValue]="1.2">1.2 g/lb</option>
+                    </select>
+                    <span class="macro-hint">of body weight</span>
                   </div>
-                  <div class="target-field">
-                    <label>Carbs {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
-                    <input type="number" [ngModel]="carbsDisplay()"
-                           (ngModelChange)="onMacroFieldChange('carbs', $event)" />
+                  <div class="macro-separator"></div>
+                  <div class="calories-label-row">
+                    <label>Calories</label>
                   </div>
-                </div>
-                <div class="fiber-pie-row">
-                  <div class="target-field">
-                    <label>Fiber G</label>
-                    <input type="number" [ngModel]="userSettingsService.dailyGoals().fiber"
-                           (ngModelChange)="onDailyGoalChange('fiber', $event)" />
+                  <div class="calories-deficit-row">
+                    <input type="number" class="cal-input"
+                      [ngModel]="userSettingsService.dailyGoals().calories"
+                      (ngModelChange)="onCaloriesChange($event)"
+                      [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                    <input type="number" class="deficit-input"
+                      [ngModel]="deficitAbsValue()"
+                      (ngModelChange)="onDeficitChange($event)"
+                      [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                    <span class="deficit-direction">{{ deficitDirectionLabel() }}</span>
                   </div>
-                  <div class="target-field">
-                    <label>Sodium mg</label>
-                    <input type="number" [ngModel]="userSettingsService.dailyGoals().sodium"
-                           (ngModelChange)="onDailyGoalChange('sodium', $event)" />
+                  <div class="weeks-to-goal">{{ weeksToGoalLabel() }}</div>
+                  <div class="targets-grid">
+                    <div class="target-field">
+                      <label>Proteins {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
+                      <input type="number" [ngModel]="proteinDisplay()"
+                             (ngModelChange)="onMacroFieldChange('protein', $event)"
+                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                    </div>
+                    <div class="target-field">
+                      <label>Fats {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
+                      <input type="number" [ngModel]="fatDisplay()"
+                             (ngModelChange)="onMacroFieldChange('fat', $event)"
+                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                    </div>
+                    <div class="target-field">
+                      <label>Carbs {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
+                      <input type="number" [ngModel]="carbsDisplay()"
+                             (ngModelChange)="onMacroFieldChange('carbs', $event)"
+                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                    </div>
                   </div>
-                  <svg viewBox="0 0 60 60" class="macro-pie" xmlns="http://www.w3.org/2000/svg">
-                    @for (seg of pieChartSegments(); track seg.label) {
-                      <path [attr.d]="seg.path" [attr.fill]="seg.color" />
-                      <text [attr.x]="seg.labelX" [attr.y]="seg.labelY"
-                        text-anchor="middle" dominant-baseline="central"
-                        fill="#fff" font-size="9" font-weight="700">{{ seg.label }}</text>
-                    }
-                  </svg>
+                  <div class="fiber-pie-row">
+                    <div class="target-field">
+                      <label>Fiber G</label>
+                      <input type="number" [ngModel]="userSettingsService.dailyGoals().fiber"
+                             (ngModelChange)="onDailyGoalChange('fiber', $event)"
+                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                    </div>
+                    <div class="target-field">
+                      <label>Sodium mg</label>
+                      <input type="number" [ngModel]="userSettingsService.dailyGoals().sodium"
+                             (ngModelChange)="onDailyGoalChange('sodium', $event)"
+                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                    </div>
+                    <svg viewBox="0 0 60 60" class="macro-pie" xmlns="http://www.w3.org/2000/svg">
+                      @for (seg of pieChartSegments(); track seg.label) {
+                        <path [attr.d]="seg.path" [attr.fill]="seg.color" />
+                        <text [attr.x]="seg.labelX" [attr.y]="seg.labelY"
+                          text-anchor="middle" dominant-baseline="central"
+                          fill="#fff" font-size="9" font-weight="700">{{ seg.label }}</text>
+                      }
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
@@ -747,8 +760,28 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
   // --- Existing handlers ---
 
   onOverrideChange(checked: boolean): void {
-    this.userSettingsService.setIsOverridden(checked);
-    this.settingsChanged.set(true);
+    if (checked) {
+      this.userSettingsService.setIsOverridden(true);
+      this.settingsChanged.set(true);
+      return;
+    }
+    // Unchecking: confirm before resetting overrides
+    this.notificationService.showConfirmation(
+      'This will reset all Nutrition Target overrides to calculated defaults.',
+      'warning',
+      () => {
+        // OK — reset to formula defaults
+        this.userSettingsService.setProteinRatio(0.7);
+        this.userSettingsService.clearCarbScaleGrams();
+        this.userSettingsService.setIsOverridden(false);
+        this.syncMacros();
+        this.settingsChanged.set(true);
+      },
+      () => {
+        // Cancel — re-check the checkbox (keep overridden)
+        this.userSettingsService.setIsOverridden(true);
+      }
+    );
   }
 
   /** User typed in a macro field (protein/fat/carbs) — auto-set override and rebalance.

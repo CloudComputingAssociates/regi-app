@@ -365,11 +365,32 @@
     gap: 6px;
     flex-shrink: 0;
 
+    .column-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
     .column-label {
       color: #4da6ff;
       font-size: 14px;
       font-weight: 500;
       letter-spacing: 0.5px;
+    }
+
+    .targets-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      &.targets-disabled {
+        opacity: 0.4;
+        pointer-events: none;
+
+        .macro-pie {
+          opacity: 0.5;
+        }
+      }
     }
 
     .targets-grid {
@@ -385,7 +406,7 @@
 
       label {
         color: #ffffff;
-        font-size: 10px;
+        font-size: 11px;
         font-weight: 500;
       }
 
@@ -433,7 +454,7 @@
       }
 
       .setting-select {
-        font-size: 11px;
+        font-size: 12px;
         font-family: inherit;
         color: #ffffff;
         background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
@@ -443,6 +464,7 @@
         cursor: pointer;
         outline: none;
         appearance: none;
+        box-sizing: border-box;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 4px center;
@@ -469,7 +491,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 2px;
+      margin-bottom: -4px;
 
       > label {
         color: #ccc;
@@ -507,8 +529,8 @@
         color: #ffffff;
         border: 1px solid #5a5a5a;
         border-radius: 4px;
-        padding: 6px 8px;
-        font-size: 13px;
+        padding: 4px 6px;
+        font-size: 12px;
         font-family: inherit;
         outline: none;
         box-sizing: border-box;
@@ -559,6 +581,7 @@
       display: flex;
       align-items: flex-end;
       gap: 6px;
+      margin-top: -4px;
 
       .target-field input {
         width: 60px;

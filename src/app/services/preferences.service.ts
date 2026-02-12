@@ -180,7 +180,7 @@ export class PreferencesService {
   /** Protein grams computed from target weight * ratio */
   readonly computedProteinGrams = computed(() => {
     const pi = this.personalInfo();
-    const ratio = pi.proteinRatio ?? 1.0;
+    const ratio = pi.proteinRatio ?? 0.7;
     const targetKg = pi.targetWeightKg;
     if (!targetKg) return null;
     const targetLbs = PreferencesService.kgToLbs(targetKg);
@@ -497,6 +497,13 @@ export class PreferencesService {
   setCarbScaleGrams(value: number): void {
     this.preferencesSignal.update(p => ({
       ...p, personalInfo: { ...p.personalInfo, carbScaleGrams: value }
+    }));
+    this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
+  }
+
+  clearCarbScaleGrams(): void {
+    this.preferencesSignal.update(p => ({
+      ...p, personalInfo: { ...p.personalInfo, carbScaleGrams: undefined }
     }));
     this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
   }
