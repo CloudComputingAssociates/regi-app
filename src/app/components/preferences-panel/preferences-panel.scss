@@ -465,10 +465,17 @@
       font-size: 10px;
     }
 
-    .override-row {
+    .calories-label-row {
       display: flex;
-      justify-content: flex-end;
+      align-items: center;
+      justify-content: space-between;
       margin-bottom: 2px;
+
+      > label {
+        color: #ccc;
+        font-size: 11px;
+        font-weight: 500;
+      }
     }
 
     .override-label {
@@ -490,11 +497,14 @@
       }
     }
 
-    .deficit-row {
+    .calories-deficit-row {
       display: flex;
       align-items: center;
-      gap: 4px;
-      margin: 1px 0;
+      gap: 6px;
+
+      .cal-input {
+        width: 60px;
+      }
 
       .deficit-input {
         width: 36px;
@@ -514,7 +524,6 @@
           box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.2);
         }
 
-        // Hide spinners
         &::-webkit-outer-spin-button,
         &::-webkit-inner-spin-button {
           -webkit-appearance: none;
@@ -533,7 +542,7 @@
       color: #4da6ff;
       font-size: 0.6rem;
       font-style: italic;
-      margin: 0 0 3px 0;
+      margin: 1px 0 3px 0;
       padding-left: 2px;
     }
 

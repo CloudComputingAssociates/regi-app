@@ -158,24 +158,6 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   </select>
                 </div>
                 <div class="pi-last-updated">(last updated {{ lastComputedDate() }})</div>
-                <div class="pi-row pi-daily-row">
-                  <label class="setting-label">Daily</label>
-                  <input type="text" class="pi-input pi-small pi-readonly" readonly
-                    [value]="userSettingsService.computedTargetCalories() ?? '—'" />
-                  <span class="unit-label">cals</span>
-                </div>
-                <div class="pi-row pi-daily-row pi-calc-suggestion">
-                  <label class="setting-label"></label>
-                  <input type="text" class="pi-input pi-macro-box pi-readonly" readonly
-                    [value]="userSettingsService.personalInfo().calcProtein ?? '—'" />
-                  <span class="unit-label">P</span>
-                  <input type="text" class="pi-input pi-macro-box pi-readonly" readonly
-                    [value]="userSettingsService.personalInfo().calcFats ?? '—'" />
-                  <span class="unit-label">F</span>
-                  <input type="text" class="pi-input pi-macro-box pi-readonly" readonly
-                    [value]="userSettingsService.personalInfo().calcCarbs ?? '—'" />
-                  <span class="unit-label">C</span>
-                </div>
               </div>
             </div>
 
@@ -206,7 +188,8 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <span class="macro-hint">of body weight</span>
                 </div>
                 <div class="macro-separator"></div>
-                <div class="override-row">
+                <div class="calories-label-row">
+                  <label>Calories</label>
                   <label class="override-label">
                     <input type="checkbox"
                       [ngModel]="userSettingsService.dailyGoals().isOverridden"
@@ -214,12 +197,10 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     User set
                   </label>
                 </div>
-                <div class="target-field">
-                  <label>Calories</label>
-                  <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
-                         (ngModelChange)="onMacroFieldChange('calories', $event)" />
-                </div>
-                <div class="deficit-row">
+                <div class="calories-deficit-row">
+                  <input type="number" class="cal-input"
+                    [ngModel]="userSettingsService.dailyGoals().calories"
+                    (ngModelChange)="onMacroFieldChange('calories', $event)" />
                   <input type="number" class="deficit-input"
                     [ngModel]="deficitAbsValue()"
                     (ngModelChange)="onDeficitChange($event)" />
