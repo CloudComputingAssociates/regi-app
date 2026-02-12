@@ -707,6 +707,15 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
   onProteinRatioChange(value: number): void {
     this.userSettingsService.setProteinRatio(+value);
     this.syncMacros();
+
+    // Always flow computed protein into dailyGoals and rebalance fat
+    const protein = this.userSettingsService.computedProteinGrams();
+    if (protein !== null) {
+      this.userSettingsService.updateDailyGoal('protein', protein);
+      const dg = this.userSettingsService.dailyGoals();
+      const newFat = Math.max(0, Math.round((dg.calories - dg.protein * 4 - dg.carbs * 4) / 9));
+      this.userSettingsService.updateDailyGoal('fat', newFat);
+    }
   }
 
   onCarbScaleChange(value: number): void {
