@@ -465,21 +465,16 @@
       font-size: 10px;
     }
 
-    .calories-override-row {
+    .override-row {
       display: flex;
-      align-items: center;
-      gap: 10px;
-
-      input[type="number"] {
-        width: 60px;
-      }
+      justify-content: flex-end;
+      margin-bottom: 2px;
     }
 
     .override-label {
       display: flex;
       align-items: center;
       gap: 4px;
-      margin-left: auto;
       color: #4da6ff;
       font-size: 10px;
       font-weight: 500;
@@ -495,11 +490,50 @@
       }
     }
 
+    .deficit-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin: 1px 0;
+
+      .deficit-input {
+        width: 36px;
+        padding: 3px 4px;
+        font-size: 11px;
+        text-align: center;
+        background: #2a2a2a;
+        color: #ffffff;
+        border: 1px solid #4a4a4a;
+        border-radius: 4px;
+        outline: none;
+        font-family: inherit;
+
+        &:hover { border-color: #6a6a6a; }
+        &:focus {
+          border-color: #4da6ff;
+          box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.2);
+        }
+
+        // Hide spinners
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        -moz-appearance: textfield;
+      }
+
+      .deficit-direction {
+        color: #ffffff;
+        font-size: 11px;
+      }
+    }
+
     .weeks-to-goal {
       color: #4da6ff;
-      font-size: 0.65rem;
+      font-size: 0.6rem;
       font-style: italic;
-      margin: -1px 0 2px 0;
+      margin: 0 0 3px 0;
       padding-left: 2px;
     }
 

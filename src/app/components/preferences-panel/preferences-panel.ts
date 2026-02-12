@@ -206,21 +206,24 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <span class="macro-hint">of body weight</span>
                 </div>
                 <div class="macro-separator"></div>
+                <div class="override-row">
+                  <label class="override-label">
+                    <input type="checkbox"
+                      [ngModel]="userSettingsService.dailyGoals().isOverridden"
+                      (ngModelChange)="onOverrideChange($event)" />
+                    User set
+                  </label>
+                </div>
                 <div class="target-field">
                   <label>Calories</label>
-                  <div class="calories-override-row">
-                    <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
-                           (ngModelChange)="onMacroFieldChange('calories', $event)" />
-                    @if (userSettingsService.deficitLabel()) {
-                      <span class="pi-deficit-label">{{ userSettingsService.deficitLabel() }}</span>
-                    }
-                    <label class="override-label">
-                      <input type="checkbox"
-                        [ngModel]="userSettingsService.dailyGoals().isOverridden"
-                        (ngModelChange)="onOverrideChange($event)" />
-                      User set
-                    </label>
-                  </div>
+                  <input type="number" [ngModel]="userSettingsService.dailyGoals().calories"
+                         (ngModelChange)="onMacroFieldChange('calories', $event)" />
+                </div>
+                <div class="deficit-row">
+                  <input type="number" class="deficit-input"
+                    [ngModel]="deficitAbsValue()"
+                    (ngModelChange)="onDeficitChange($event)" />
+                  <span class="deficit-direction">{{ deficitDirectionLabel() }}</span>
                 </div>
                 <div class="weeks-to-goal">{{ userSettingsService.computedWeeksToGoal() ?? 0 }} weeks to goal</div>
                 <div class="targets-grid">
@@ -467,6 +470,18 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     return this.userSettingsService.useImperial() ? PreferencesService.kgToLbs(kg) : kg;
   });
 
+  deficitAbsValue = computed(() => {
+    const pct = this.userSettingsService.personalInfo().deficitPercent;
+    if (pct === undefined || pct === null) return 0;
+    return Math.abs(pct);
+  });
+
+  deficitDirectionLabel = computed(() => {
+    const pct = this.userSettingsService.personalInfo().deficitPercent;
+    if (!pct || pct === 0) return '% deficit';
+    return pct < 0 ? '% deficit' : '% surplus';
+  });
+
   ngOnInit(): void {
     this.userSettingsService.loadPreferences();
     this.tryStampOnLoad();
@@ -540,6 +555,13 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
 
   onActivityLevelChange(value: string): void {
     this.userSettingsService.setActivityLevel(value);
+    this.syncMacros();
+  }
+
+  onDeficitChange(absValue: number): void {
+    const currentPct = this.userSettingsService.personalInfo().deficitPercent ?? 0;
+    const sign = currentPct >= 0 && currentPct !== 0 ? 1 : -1;
+    this.userSettingsService.setDeficitPercent(sign * Math.abs(absValue));
     this.syncMacros();
   }
 
