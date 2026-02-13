@@ -191,7 +191,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <div class="macro-control-row">
                     <label class="setting-label">Proteins</label>
                     <select class="setting-select protein-select"
-                      [ngModel]="userSettingsService.personalInfo().proteinRatio ?? 0.7"
+                      [ngModel]="userSettingsService.effectiveProteinRatio()"
                       (ngModelChange)="onProteinRatioChange($event)"
                       [disabled]="!userSettingsService.dailyGoals().isOverridden">
                       <option [ngValue]="0.5">0.5 g/lb</option>
@@ -769,7 +769,7 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
       'warning',
       () => {
         // OK — reset to formula defaults
-        this.userSettingsService.setProteinRatio(0.7);
+        this.userSettingsService.clearProteinRatio();
         this.userSettingsService.clearCarbScaleGrams();
         this.userSettingsService.setIsOverridden(false);
         this.syncMacros();

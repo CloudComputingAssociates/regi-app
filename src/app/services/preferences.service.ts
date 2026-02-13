@@ -177,10 +177,52 @@ export class PreferencesService {
     return Math.round((targetCals * 0.25) / 4);
   });
 
-  /** Protein grams computed from target weight * ratio */
+  /** Goal weight spread as % of current weight: abs(current - target) / current × 100 */
+  readonly goalSpreadPct = computed(() => {
+    const pi = this.personalInfo();
+    if (!pi.currentWeightKg || !pi.targetWeightKg) return 0;
+    return Math.abs(pi.currentWeightKg - pi.targetWeightKg) / pi.currentWeightKg * 100;
+  });
+
+  /** Auto protein ratio stepped by spread: 0.7 → 1.1 g/lb as spread grows.
+   *  Values snap to dropdown increments (0.1 steps). */
+  readonly autoProteinRatio = computed(() => {
+    const spread = this.goalSpreadPct();
+    if (spread < 15) return 0.7;
+    if (spread < 25) return 0.8;
+    if (spread < 35) return 0.9;
+    if (spread < 45) return 1.0;
+    return 1.1;
+  });
+
+  /** Auto deficit/surplus percent from spread: -15% to -25% for loss, 5% to 15% for gain. */
+  readonly autoDeficitPercent = computed(() => {
+    const pi = this.personalInfo();
+    if (!pi.currentWeightKg || !pi.targetWeightKg) return 0;
+    const diff = pi.targetWeightKg - pi.currentWeightKg;
+    if (Math.abs(diff) < 0.5) return 0;
+    const spread = this.goalSpreadPct();
+    if (diff < 0) {
+      if (spread <= 10) return -15;
+      if (spread >= 50) return -25;
+      return -Math.round(15 + (spread - 10) * 0.25);
+    } else {
+      if (spread <= 10) return 5;
+      if (spread >= 50) return 15;
+      return Math.round(5 + (spread - 10) * 0.25);
+    }
+  });
+
+  /** Effective protein ratio: user-set value if present, otherwise auto-computed */
+  readonly effectiveProteinRatio = computed(() => {
+    const pi = this.personalInfo();
+    return pi.proteinRatio ?? this.autoProteinRatio();
+  });
+
+  /** Protein grams computed from target weight * effective ratio */
   readonly computedProteinGrams = computed(() => {
     const pi = this.personalInfo();
-    const ratio = pi.proteinRatio ?? 0.7;
+    const ratio = this.effectiveProteinRatio();
     const targetKg = pi.targetWeightKg;
     if (!targetKg) return null;
     const targetLbs = PreferencesService.kgToLbs(targetKg);
@@ -462,6 +504,13 @@ export class PreferencesService {
     this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
   }
 
+  clearProteinRatio(): void {
+    this.preferencesSignal.update(p => ({
+      ...p, personalInfo: { ...p.personalInfo, proteinRatio: undefined }
+    }));
+    this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
+  }
+
   setDeficitPercent(value: number): void {
     this.preferencesSignal.update(p => ({
       ...p, personalInfo: { ...p.personalInfo, deficitPercent: value }
@@ -469,29 +518,14 @@ export class PreferencesService {
     this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
   }
 
-  /** Compute a conservative deficit/surplus percent from weight gap.
-   *  Only runs if deficitPercent is not already set and both weights are present. */
+  /** Compute deficit/surplus percent from goal weight spread.
+   *  Only runs if deficitPercent is not already set and both weights are present.
+   *  Uses autoDeficitPercent (spread-based interpolation: -15% → -25% for loss). */
   computeDeficitPercent(): void {
     const pi = this.personalInfo();
     if (pi.deficitPercent !== undefined && pi.deficitPercent !== null) return;
     if (!pi.currentWeightKg || !pi.targetWeightKg) return;
-    const diff = pi.targetWeightKg - pi.currentWeightKg;
-    if (Math.abs(diff) < 0.5) {
-      // At goal — explicitly set 0% so Target = TDEE
-      this.setDeficitPercent(0);
-      return;
-    }
-
-    const gapKg = Math.abs(diff);
-    let pct: number;
-    if (diff < 0) {
-      // Losing weight: conservative deficit
-      pct = gapKg < 10 ? -15 : gapKg < 30 ? -20 : -25;
-    } else {
-      // Gaining weight: conservative surplus
-      pct = gapKg < 5 ? 5 : gapKg < 15 ? 10 : 15;
-    }
-    this.setDeficitPercent(pct);
+    this.setDeficitPercent(this.autoDeficitPercent());
   }
 
   setCarbScaleGrams(value: number): void {
