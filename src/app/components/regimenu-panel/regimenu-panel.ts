@@ -6,6 +6,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { TabService } from '../../services/tab.service';
 import { ChatService } from '../../services/chat.service';
 import { PlanningService } from '../../services/planning.service';
+import { PreferencesService } from '../../services/preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
 
@@ -120,7 +121,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <span class="item-description">
                       {{ item.shortDescription || item.foodName }}
                     </span>
-                    <span class="item-quantity">{{ formatQuantity(item.quantity, item.unit) }} {{ item.unit }}</span>
+                    <span class="item-quantity">{{ formatQuantity(item.quantity, item.unit) }} {{ displayUnit(item.unit) }}</span>
                   </div>
 
                   <!-- Macros summary -->
@@ -176,6 +177,7 @@ export class RegimenuPanelComponent {
   private tabService = inject(TabService);
   chatService = inject(ChatService);
   planningService = inject(PlanningService);
+  private preferencesService = inject(PreferencesService);
   private notificationService = inject(NotificationService);
 
   @ViewChild('planList') planListRef!: ElementRef<HTMLElement>;
@@ -198,6 +200,10 @@ export class RegimenuPanelComponent {
   hasRegimenuMessages = computed(() => this.chatService.regimenuMessages().length > 0);
 
   formatQuantity(quantity: number, unit: string): string {
+    if (unit === 'g' && this.preferencesService.useImperial()) {
+      const oz = quantity / 28.3495;
+      return String(Math.round(oz * 10) / 10);
+    }
     if (unit === 'g') {
       return String(Math.ceil(quantity));
     }
@@ -205,6 +211,13 @@ export class RegimenuPanelComponent {
       return String(Math.ceil(quantity * 10) / 10);
     }
     return String(Math.round(quantity * 10) / 10);
+  }
+
+  displayUnit(unit: string): string {
+    if (unit === 'g' && this.preferencesService.useImperial()) {
+      return 'oz';
+    }
+    return unit;
   }
 
   toggleChat(): void {
