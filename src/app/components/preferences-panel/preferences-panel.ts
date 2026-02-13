@@ -143,7 +143,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                       (ngModelChange)="onTargetWeightChange($event)" />
                     <span class="unit-label">{{ userSettingsService.useImperial() ? 'lbs' : 'kg' }}</span>
                     @if (goalWeightPctLabel()) {
-                      <span class="goal-pct">&emsp;&emsp;{{ goalWeightPctLabel() }}</span>
+                      <span class="goal-pct">{{ goalWeightPctLabel() }}</span>
                     }
                   </div>
                 </div>
@@ -190,7 +190,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <!-- Protein ratio dropdown -->
                   <div class="macro-control-row">
                     <label class="setting-label">Proteins</label>
-                    <select class="setting-select"
+                    <select class="setting-select protein-select"
                       [ngModel]="userSettingsService.personalInfo().proteinRatio ?? 0.7"
                       (ngModelChange)="onProteinRatioChange($event)"
                       [disabled]="!userSettingsService.dailyGoals().isOverridden">
@@ -222,19 +222,19 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   <div class="weeks-to-goal">{{ weeksToGoalLabel() }}</div>
                   <div class="macro-separator"></div>
                   <div class="macro-grid">
-                    <div class="target-field">
+                    <div class="target-field macro-protein">
                       <label>Proteins {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
                       <input type="number" [ngModel]="proteinDisplay()"
                              (ngModelChange)="onMacroFieldChange('protein', $event)"
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     </div>
-                    <div class="target-field">
+                    <div class="target-field macro-fat">
                       <label>Fats {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
                       <input type="number" [ngModel]="fatDisplay()"
                              (ngModelChange)="onMacroFieldChange('fat', $event)"
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     </div>
-                    <div class="target-field">
+                    <div class="target-field macro-carbs">
                       <label>Carbs {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
                       <input type="number" [ngModel]="carbsDisplay()"
                              (ngModelChange)="onMacroFieldChange('carbs', $event)"
@@ -509,7 +509,7 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     if (this.userSettingsService.showPercent()) {
       const pct = (diffKg / pi.currentWeightKg) * 100;
       const sign = pct > 0 ? '+' : '';
-      return `(${sign}${pct.toFixed(1)}%)`;
+      return `(${sign}${pct.toFixed(0)}%)`;
     }
     // Grams/absolute mode: show weight difference in lbs or kg
     if (this.userSettingsService.useImperial()) {

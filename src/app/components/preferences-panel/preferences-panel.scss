@@ -401,6 +401,21 @@
         align-self: center;
         justify-self: start;
       }
+
+      .macro-protein input {
+        background: linear-gradient(180deg, #3d5a35 0%, #2d4a25 100%);
+        border-color: #41ac1766;
+      }
+
+      .macro-fat input {
+        background: linear-gradient(180deg, #4a3a5e 0%, #3a2a4e 100%);
+        border-color: #902ee366;
+      }
+
+      .macro-carbs input {
+        background: linear-gradient(180deg, #5a4530 0%, #4a3520 100%);
+        border-color: #e6730066;
+      }
     }
 
     .target-field {
@@ -410,7 +425,7 @@
 
       label {
         color: #ffffff;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 500;
       }
 
@@ -452,7 +467,7 @@
 
       .setting-label {
         color: #ffffff;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 500;
         min-width: 45px;
       }
@@ -485,9 +500,16 @@
       }
     }
 
+    .protein-select {
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L2 4h8z'/%3E%3C/svg%3E") no-repeat right 4px center,
+        linear-gradient(180deg, #3d5a35 0%, #2d4a25 100%) !important;
+      border-color: #41ac1766;
+    }
+
     .macro-hint {
       color: #999;
-      font-size: 10px;
+      font-size: 12px;
     }
 
     .calories-label-row {
@@ -498,7 +520,7 @@
 
       > label {
         color: #ccc;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 500;
       }
     }
@@ -510,7 +532,7 @@
       margin-left: auto;
       margin-right: 6px;
       color: #ffffff;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
       cursor: pointer;
       user-select: none;
@@ -565,7 +587,7 @@
 
       .deficit-direction {
         color: #ffffff;
-        font-size: 11px;
+        font-size: 12px;
       }
     }
 
@@ -594,7 +616,7 @@
       flex: 1;
       height: 4px;
       appearance: none;
-      background: linear-gradient(90deg, #3a6a3a 0%, #4da6ff 100%);
+      background: linear-gradient(90deg, #5a3a1a 0%, #e67300 100%);
       border-radius: 2px;
       outline: none;
       cursor: pointer;
@@ -605,7 +627,7 @@
         height: 16px;
         border-radius: 50%;
         background: linear-gradient(180deg, #6a6a6a 0%, #4a4a4a 100%);
-        border: 2px solid #4da6ff;
+        border: 2px solid #e67300;
         cursor: pointer;
       }
 
@@ -614,14 +636,14 @@
         height: 16px;
         border-radius: 50%;
         background: linear-gradient(180deg, #6a6a6a 0%, #4a4a4a 100%);
-        border: 2px solid #4da6ff;
+        border: 2px solid #e67300;
         cursor: pointer;
       }
     }
 
     .slider-value {
-      color: #4da6ff;
-      font-size: 11px;
+      color: #ffb347;
+      font-size: 12px;
       font-weight: 500;
       min-width: 32px;
       text-align: right;
@@ -650,13 +672,13 @@
 
     .setting-label {
       color: #ffffff;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
       min-width: 45px;
     }
 
     .setting-select {
-      font-size: 11px;
+      font-size: 12px;
       font-family: inherit;
       color: #ffffff;
       background:
@@ -708,7 +730,7 @@
 
     .pi-scale-label {
       color: #ffffff;
-      font-size: 11px;
+      font-size: 12px;
       margin-left: auto;
       margin-right: 6px;
       font-weight: 500;
@@ -722,7 +744,7 @@
 
     .setting-label {
       color: #ffffff;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
       min-width: 45px;
     }
@@ -733,7 +755,7 @@
     }
 
     .setting-select {
-      font-size: 11px;
+      font-size: 12px;
       font-family: inherit;
       color: #ffffff;
       background:
@@ -791,11 +813,11 @@
   .pi-date {
     width: 120px;
     color-scheme: dark;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .unit-toggle {
-    font-size: 11px;
+    font-size: 12px;
     padding: 4px 8px;
     border-radius: 4px;
     border: 1px solid #5a5a5a;
@@ -811,7 +833,7 @@
 
   .unit-label {
     color: #ffffff;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .pi-last-updated {
@@ -825,8 +847,8 @@
 
   // Goal weight percentage label (inline next to goal weight)
   .goal-pct {
-    font-size: 11px;
-    margin-left: 0;
+    font-size: 12px;
+    margin-left: 12px;
     white-space: nowrap;
     color: #ffffff;
   }
@@ -861,13 +883,13 @@
 
     .setting-label {
       color: #ffffff;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
       min-width: 75px;
     }
 
     .setting-select {
-      font-size: 11px;
+      font-size: 12px;
       font-family: inherit;
       color: #ffffff;
       background:
