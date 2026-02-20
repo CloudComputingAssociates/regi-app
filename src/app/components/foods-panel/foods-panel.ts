@@ -1,15 +1,15 @@
 // src/app/components/foods-panel/foods-panel.ts
-import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, viewChild, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { FoodsComponent, SelectedFoodEvent } from '../foods/foods';
+import { FoodsListComponent, SelectedFoodEvent } from '../foods-list/foods-list';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { TabService } from '../../services/tab.service';
 
 @Component({
   selector: 'app-foods-panel',
-  imports: [CommonModule, MatTooltipModule, FoodsComponent],
+  imports: [CommonModule, MatTooltipModule, FoodsListComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="foods-panel-container">
@@ -35,7 +35,7 @@ import { TabService } from '../../services/tab.service';
       </div>
 
       <div class="foods-content">
-        <app-foods
+        <app-foods-list
           [mode]="'search'"
           [showAiButton]="false"
           [showPreferenceIcons]="true"
@@ -51,7 +51,18 @@ export class FoodsPanelComponent {
   protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
 
+  private foodsList = viewChild(FoodsListComponent);
+
   isSaving = signal(false);
+
+  constructor() {
+    effect(() => {
+      const comp = this.foodsList();
+      if (comp) {
+        this.tabService.updateTabBadge('foods', comp.totalCount());
+      }
+    });
+  }
 
   closePanel(): void {
     this.tabService.closeTab('foods');
