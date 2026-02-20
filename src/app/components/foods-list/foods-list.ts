@@ -242,7 +242,7 @@ export class FoodsListComponent implements OnInit {
   totalCount = computed(() => this.foods().length);
 
   private setFoods(foods: Food[]): void {
-    this.setFoods(foods);
+    this.foods.set(foods);
     this.tabService.updateTabBadge('foods', foods.length);
   }
 
