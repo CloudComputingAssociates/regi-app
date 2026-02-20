@@ -238,10 +238,12 @@ export class TabService {
   /** Update the badge count shown on a tab label */
   updateTabBadge(tabId: string, count: number): void {
     const currentTabs = this.tabsSignal();
-    const idx = currentTabs.findIndex(t => t.id === tabId);
-    if (idx === -1) return;
+    const tab = currentTabs.find(t => t.id === tabId);
+    if (!tab) return;
+    const newBadge = count > 0 ? count : undefined;
+    if (tab.badgeCount === newBadge) return;
     const updated = currentTabs.map(t =>
-      t.id === tabId ? { ...t, badgeCount: count > 0 ? count : undefined } : t
+      t.id === tabId ? { ...t, badgeCount: newBadge } : t
     );
     this.tabsSignal.set(updated);
   }

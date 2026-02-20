@@ -1,5 +1,5 @@
 // src/app/components/foods-panel/foods-panel.ts
-import { Component, ChangeDetectionStrategy, signal, inject, viewChild, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, viewChild, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FoodsListComponent, SelectedFoodEvent } from '../foods-list/foods-list';
@@ -58,9 +58,8 @@ export class FoodsPanelComponent {
   constructor() {
     effect(() => {
       const comp = this.foodsList();
-      if (comp) {
-        this.tabService.updateTabBadge('foods', comp.totalCount());
-      }
+      const count = comp?.totalCount() ?? 0;
+      untracked(() => this.tabService.updateTabBadge('foods', count));
     });
   }
 
