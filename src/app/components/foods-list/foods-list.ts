@@ -9,6 +9,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { FoodsService } from '../../services/foods.service';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
+import { TabService } from '../../services/tab.service';
 import { Food } from '../../models/food.model';
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -180,6 +181,7 @@ export class FoodsListComponent implements OnInit {
   private foodsService = inject(FoodsService);
   protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
+  private tabService = inject(TabService);
 
   // Inputs
   mode = input<'search' | 'display'>('search');
@@ -238,6 +240,11 @@ export class FoodsListComponent implements OnInit {
   });
 
   totalCount = computed(() => this.foods().length);
+
+  private setFoods(foods: Food[]): void {
+    this.setFoods(foods);
+    this.tabService.updateTabBadge('foods', foods.length);
+  }
 
   toggleCollapse(category: string): void {
     this.collapsedCategories.update(set => {
@@ -308,7 +315,7 @@ export class FoodsListComponent implements OnInit {
       next: (response) => {
         if (response && response.foods && Array.isArray(response.foods)) {
           this.yehApprovedCache.set(response.foods);
-          this.foods.set(response.foods);
+          this.setFoods(response.foods);
 
           if (response.foods.length > 0) {
             this.selectFood(0);
@@ -341,7 +348,7 @@ export class FoodsListComponent implements OnInit {
         }
 
         this.favoritesCache.set(favoriteFoods);
-        this.foods.set(favoriteFoods);
+        this.setFoods(favoriteFoods);
 
         if (favoriteFoods.length > 0) {
           this.selectFood(0);
@@ -375,7 +382,7 @@ export class FoodsListComponent implements OnInit {
         }
 
         this.restrictedCache.set(restrictedFoods);
-        this.foods.set(restrictedFoods);
+        this.setFoods(restrictedFoods);
 
         if (restrictedFoods.length > 0) {
           this.selectFood(0);
@@ -402,7 +409,7 @@ export class FoodsListComponent implements OnInit {
       case 'yeh-approved':
         this.isYehApproved.set(true);
         if (this.yehApprovedCache().length > 0) {
-          this.foods.set(this.yehApprovedCache());
+          this.setFoods(this.yehApprovedCache());
           if (this.foods().length > 0) {
             this.selectFood(0);
           }
@@ -423,7 +430,7 @@ export class FoodsListComponent implements OnInit {
 
       case 'clear':
         this.isYehApproved.set(false);
-        this.foods.set([]);
+        this.setFoods([]);
         break;
     }
   }
@@ -450,13 +457,13 @@ export class FoodsListComponent implements OnInit {
 
     if (cache.length > 0) {
       if (trimmedQuery.length === 0) {
-        this.foods.set(cache);
+        this.setFoods(cache);
       } else {
         const filtered = cache.filter(food =>
           food.description.toLowerCase().includes(trimmedQuery) ||
           (food.shortDescription && food.shortDescription.toLowerCase().includes(trimmedQuery))
         );
-        this.foods.set(filtered);
+        this.setFoods(filtered);
       }
 
       if (this.foods().length > 0) {
@@ -487,7 +494,7 @@ export class FoodsListComponent implements OnInit {
       this.loadYehApprovedFoods();
     } else {
       this.yehApprovedCache.set([]);
-      this.foods.set([]);
+      this.setFoods([]);
       this.selectedIndex.set(-1);
     }
   }
@@ -510,7 +517,7 @@ export class FoodsListComponent implements OnInit {
     this.foodsService.searchFoods(query, this.maxCount).subscribe({
       next: (response) => {
         if (response && response.foods && Array.isArray(response.foods)) {
-          this.foods.set(response.foods);
+          this.setFoods(response.foods);
 
           if (response.foods.length > 0) {
             this.selectFood(0);
@@ -518,14 +525,14 @@ export class FoodsListComponent implements OnInit {
             this.selectedIndex.set(-1);
           }
         } else {
-          this.foods.set([]);
+          this.setFoods([]);
           this.selectedIndex.set(-1);
         }
         this.isLoading.set(false);
       },
       error: (error: HttpErrorResponse) => {
         console.error('Food search error:', error);
-        this.foods.set([]);
+        this.setFoods([]);
         this.selectedIndex.set(-1);
         this.isLoading.set(false);
 

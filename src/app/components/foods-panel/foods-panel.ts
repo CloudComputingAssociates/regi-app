@@ -1,5 +1,5 @@
 // src/app/components/foods-panel/foods-panel.ts
-import { Component, ChangeDetectionStrategy, signal, inject, viewChild, effect, untracked } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FoodsListComponent, SelectedFoodEvent } from '../foods-list/foods-list';
@@ -51,17 +51,7 @@ export class FoodsPanelComponent {
   protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
 
-  private foodsList = viewChild(FoodsListComponent);
-
   isSaving = signal(false);
-
-  constructor() {
-    effect(() => {
-      const comp = this.foodsList();
-      const count = comp?.totalCount() ?? 0;
-      untracked(() => this.tabService.updateTabBadge('foods', count));
-    });
-  }
 
   closePanel(): void {
     this.tabService.closeTab('foods');
