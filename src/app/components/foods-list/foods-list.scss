@@ -1,4 +1,4 @@
-// src/app/components/selected-foods/selected-foods.scss
+// src/app/components/foods-list/foods-list.scss
 
 :host {
   display: flex;
@@ -7,7 +7,7 @@
   width: 100%;
 }
 
-.selected-foods-container {
+.foods-list-container {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -16,20 +16,20 @@
   overflow: hidden;
 }
 
-.selected-foods-list {
-  overflow-y: scroll;  // ALWAYS show scrollbar
+.foods-list {
+  overflow-y: scroll;
   overflow-x: hidden;
   flex: 1;
   min-height: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid #2a2a2a;  // Subtle left edge for 3D inset
-  border-bottom: 1px solid #2a2a2a;  // Subtle bottom edge for 3D inset
-  border-top: 1px solid #4a4a4a;  // Lighter top edge for 3D inset
-  border-right: 1px solid #4a4a4a;  // Lighter right edge for 3D inset
+  border-left: 1px solid #2a2a2a;
+  border-bottom: 1px solid #2a2a2a;
+  border-top: 1px solid #4a4a4a;
+  border-right: 1px solid #4a4a4a;
 
-  // Custom scrollbar styling - matching foods component
+  // Custom scrollbar styling
   &::-webkit-scrollbar {
     width: 16px;
   }
@@ -49,14 +49,12 @@
     }
   }
 
-  // Down arrow at bottom
   &::-webkit-scrollbar-button:single-button:increment {
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><path fill="%23ffffff" d="M7 10L3 5h8z"/></svg>');
     background-repeat: no-repeat;
     background-position: center;
   }
 
-  // Up arrow at top
   &::-webkit-scrollbar-button:single-button:decrement {
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><path fill="%23ffffff" d="M7 4L3 9h8z"/></svg>');
     background-repeat: no-repeat;
@@ -84,6 +82,52 @@
   }
 }
 
+// Accordion category header
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: linear-gradient(180deg, #505050 0%, #454545 100%);
+  font-size: 12px;
+  font-weight: 600;
+  color: #ddd;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid #3a3a3a;
+  border-top: 1px solid #5a5a5a;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+
+  &:hover {
+    background: linear-gradient(180deg, #585858 0%, #4d4d4d 100%);
+  }
+}
+
+.collapse-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  transition: transform 0.2s ease;
+  color: #aaa;
+
+  &.collapsed {
+    transform: rotate(-90deg);
+  }
+}
+
+.category-name {
+  flex: 1;
+}
+
+.category-count {
+  font-size: 11px;
+  font-weight: 400;
+  color: #999;
+}
+
 .empty-message {
   display: flex;
   align-items: center;
@@ -99,7 +143,7 @@
   }
 }
 
-.selected-food-item {
+.food-item {
   padding: 4px 8px;
   cursor: pointer;
   border-bottom: 1px solid #3a3a3a;
@@ -111,11 +155,11 @@
   margin: 1.5px;
   border-radius: 4px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  min-height: 48px;  // Increased to accommodate thumbnail
+  min-height: 48px;
   display: flex;
   align-items: center;
   overflow: hidden;
-  gap: 8px;  // Space between thumbnail and text
+  gap: 8px;
 
   &:hover:not(.selected) {
     background: linear-gradient(180deg, #484848 0%, #404040 100%);
@@ -128,7 +172,7 @@
   }
 
   &.selected {
-    background: linear-gradient(180deg, #4da6ff 0%, #3a8ee6 100%);  // Blue gradient for selection
+    background: linear-gradient(180deg, #4da6ff 0%, #3a8ee6 100%);
     border-top: 1px solid #5ab3ff;
     border-left: 1px solid #4da6ff;
     border-right: 1px solid #4da6ff;
@@ -170,7 +214,7 @@
 
 .food-description {
   font-size: 14px;
-  color: #ffffff;  // White - text
+  color: #ffffff;
   line-height: 1.4;
   display: block;
   white-space: nowrap;
@@ -181,7 +225,7 @@
 
 // Responsive adjustments
 @media (max-width: 480px) {
-  .selected-food-item {
+  .food-item {
     padding: 3px 6px;
     min-height: 44px;
     gap: 6px;

@@ -7,6 +7,7 @@ export interface Tab {
   closeable: boolean;
   icon?: string;
   emoji?: string;
+  badgeCount?: number;
 }
 
 @Injectable({
@@ -232,6 +233,17 @@ export class TabService {
       { id: 'chat', label: 'Chat', closeable: true, icon: this.tabIcons['chat'] }
     ]);
     this.activeTabIndexSignal.set(0);
+  }
+
+  /** Update the badge count shown on a tab label */
+  updateTabBadge(tabId: string, count: number): void {
+    const currentTabs = this.tabsSignal();
+    const idx = currentTabs.findIndex(t => t.id === tabId);
+    if (idx === -1) return;
+    const updated = currentTabs.map(t =>
+      t.id === tabId ? { ...t, badgeCount: count > 0 ? count : undefined } : t
+    );
+    this.tabsSignal.set(updated);
   }
 
   /** Get current open tab IDs - used for saving settings */

@@ -58,6 +58,9 @@ import { NotificationComponent } from '../notification/notification';
                     <span class="tab-emoji">{{ tab.emoji }}</span>
                   }
                   <span class="tab-label-text">{{ tab.label }}</span>
+                  @if (tab.badgeCount) {
+                    <span class="tab-badge">({{ tab.badgeCount }})</span>
+                  }
                 </span>
               </ng-template>
 
