@@ -1,46 +1,105 @@
 // src/app/components/regimenu-panel/regimenu-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal, computed, ElementRef, ViewChild } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  signal,
+  computed,
+  ElementRef,
+  ViewChild,
+  OnInit,
+  OnDestroy
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatIconModule } from '@angular/material/icon';
 import { TabService } from '../../services/tab.service';
 import { ChatService } from '../../services/chat.service';
 import { PlanningService } from '../../services/planning.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
+import { MealSummary } from '../../models/planning.model';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-regimenu-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, ChatOutputComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, ChatOutputComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
       <!-- Header with plan name and actions -->
-      <div class="plan-header">
+      <div class="plan-header" [class.stippled]="foodPickerOpen()">
         <div class="header-left">
           <span class="plan-label">Plan</span>
-          @if (planningService.hasPlan()) {
+
+          <!-- Combo-box dropdown for plan name -->
+          <div class="plan-combo" (focusout)="onComboFocusOut($event)">
             <input
+              #planNameInput
               type="text"
               class="plan-name-input"
-              [value]="planningService.planName()"
+              [class.stippled-entry]="isNewPlanMode() && !newPlanNameCommitted()"
+              [value]="displayPlanName()"
               (input)="onPlanNameInput($event)"
-              (blur)="onPlanNameBlur()"
-              (keydown.enter)="$event.target.blur()"
+              (focus)="onComboInputFocus()"
+              (keydown.enter)="onPlanNameCommit($event)"
+              (keydown.escape)="closeDropdown()"
+              (keydown.arrowDown)="onArrowDown($event)"
+              placeholder="Plan name..."
               spellcheck="false" />
             <button
-              class="favorite-btn"
-              [class.active]="planningService.isFavorite()"
-              (click)="toggleFavorite()"
-              matTooltip="Toggle Favorite"
-              matTooltipPosition="above">
-              {{ planningService.isFavorite() ? '★' : '☆' }}
+              class="combo-toggle"
+              (mousedown)="onDropdownToggleMousedown($event)"
+              tabindex="-1"
+              aria-label="Show saved plans">
+              <mat-icon class="combo-arrow">expand_more</mat-icon>
             </button>
-          } @else {
-            <span class="plan-name empty">RegiMenu℠</span>
-          }
+
+            @if (dropdownOpen()) {
+              <div class="combo-dropdown" role="listbox">
+                <button
+                  class="dropdown-item create-new"
+                  [class.highlighted]="dropdownHighlight() === -1"
+                  (mousedown)="onCreateNewPlan($event)"
+                  role="option">
+                  + Create new plan...
+                </button>
+                @for (plan of savedPlans(); track plan.id; let i = $index) {
+                  <button
+                    class="dropdown-item"
+                    [class.highlighted]="dropdownHighlight() === i"
+                    [class.active]="planningService.currentPlan()?.id === plan.id"
+                    (mousedown)="onSelectPlan(plan, $event)"
+                    role="option">
+                    <span class="dropdown-item-name">{{ plan.name }}</span>
+                    @if (plan.totalCalories) {
+                      <span class="dropdown-item-cal">{{ plan.totalCalories }} cal</span>
+                    }
+                  </button>
+                }
+                @if (savedPlans().length === 0 && !savedPlansLoading()) {
+                  <div class="dropdown-empty">No saved plans</div>
+                }
+                @if (savedPlansLoading()) {
+                  <div class="dropdown-empty">Loading...</div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Add food button (replaces favorite star) -->
+          <button
+            class="icon-btn add-food-btn"
+            (click)="openFoodPicker()"
+            [disabled]="!planningService.hasPlan() || foodPickerOpen()"
+            matTooltip="Add Food"
+            matTooltipPosition="above">
+            <mat-icon>add</mat-icon>
+          </button>
         </div>
+
         <div class="header-actions">
           @if (planningService.hasPlan()) {
             <button
@@ -60,7 +119,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
           <button
             class="generate-btn"
             (click)="generatePlan()"
-            [disabled]="planningService.loading() || planningService.hasPlan()"
+            [disabled]="planningService.loading() || planningService.hasPlan() || isNewPlanUnnamed()"
             matTooltip="Generate Meal Plan"
             matTooltipPosition="above">
             @if (planningService.loading()) {
@@ -173,7 +232,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
   `,
   styleUrls: ['./regimenu-panel.scss']
 })
-export class RegimenuPanelComponent {
+export class RegimenuPanelComponent implements OnInit, OnDestroy {
   private tabService = inject(TabService);
   chatService = inject(ChatService);
   planningService = inject(PlanningService);
@@ -181,11 +240,26 @@ export class RegimenuPanelComponent {
   private notificationService = inject(NotificationService);
 
   @ViewChild('planList') planListRef!: ElementRef<HTMLElement>;
+  @ViewChild('planNameInput') planNameInputRef!: ElementRef<HTMLInputElement>;
 
   isChatCollapsed = signal(false);
   hasChanges = signal(false);
   isSaving = signal(false);
   private pendingName: string | null = null;
+
+  // Dropdown state
+  savedPlans = signal<MealSummary[]>([]);
+  savedPlansLoading = signal(false);
+  dropdownOpen = signal(false);
+  dropdownHighlight = signal<number>(-2); // -2 = none, -1 = "create new", 0+ = plan index
+
+  // New plan mode
+  isNewPlanMode = signal(false);
+  newPlanNameCommitted = signal(false);
+  private newPlanName = '';
+
+  // Food picker overlay state
+  foodPickerOpen = signal(false);
 
   // Swipe state
   swipingIndex = signal<number | null>(null);
@@ -197,7 +271,166 @@ export class RegimenuPanelComponent {
   private touchStartTime = 0;
   private isSwiping = false;
 
+  private subscriptions: Subscription[] = [];
+
   hasRegimenuMessages = computed(() => this.chatService.regimenuMessages().length > 0);
+
+  displayPlanName = computed(() => {
+    if (this.isNewPlanMode()) {
+      return this.newPlanName;
+    }
+    return this.planningService.planName();
+  });
+
+  isNewPlanUnnamed = computed(() => {
+    return this.isNewPlanMode() && !this.newPlanNameCommitted();
+  });
+
+  ngOnInit(): void {
+    this.fetchSavedPlans();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.forEach(s => s.unsubscribe());
+  }
+
+  fetchSavedPlans(): void {
+    this.savedPlansLoading.set(true);
+    const sub = this.planningService.listMeals({ status: 'active', limit: 50 }).subscribe({
+      next: (response) => {
+        this.savedPlans.set(response.meals);
+        this.savedPlansLoading.set(false);
+      },
+      error: () => {
+        this.savedPlansLoading.set(false);
+      }
+    });
+    this.subscriptions.push(sub);
+  }
+
+  // Combo-box interactions
+  onComboInputFocus(): void {
+    this.openDropdown();
+  }
+
+  onDropdownToggleMousedown(event: MouseEvent): void {
+    event.preventDefault(); // prevent input blur
+    if (this.dropdownOpen()) {
+      this.closeDropdown();
+    } else {
+      this.openDropdown();
+      this.planNameInputRef?.nativeElement?.focus();
+    }
+  }
+
+  openDropdown(): void {
+    if (!this.dropdownOpen()) {
+      this.fetchSavedPlans();
+      this.dropdownOpen.set(true);
+      this.dropdownHighlight.set(-2);
+    }
+  }
+
+  closeDropdown(): void {
+    this.dropdownOpen.set(false);
+    this.dropdownHighlight.set(-2);
+  }
+
+  onComboFocusOut(event: FocusEvent): void {
+    const related = event.relatedTarget as HTMLElement | null;
+    const combo = (event.currentTarget as HTMLElement);
+    if (related && combo.contains(related)) {
+      return; // focus moved within the combo — don't close
+    }
+    this.closeDropdown();
+
+    // If in new plan mode and user blurs out, commit the name if non-empty
+    if (this.isNewPlanMode() && !this.newPlanNameCommitted() && this.newPlanName.trim()) {
+      this.commitNewPlanName();
+    }
+  }
+
+  onArrowDown(event: Event): void {
+    event.preventDefault();
+    if (!this.dropdownOpen()) {
+      this.openDropdown();
+      return;
+    }
+    const max = this.savedPlans().length - 1;
+    const current = this.dropdownHighlight();
+    if (current < max) {
+      this.dropdownHighlight.set(current + 1);
+    }
+  }
+
+  onCreateNewPlan(event: MouseEvent): void {
+    event.preventDefault();
+    this.planningService.clearPlan();
+    this.isNewPlanMode.set(true);
+    this.newPlanNameCommitted.set(false);
+    this.newPlanName = '';
+    this.closeDropdown();
+
+    // Focus the input for naming
+    setTimeout(() => {
+      const input = this.planNameInputRef?.nativeElement;
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    });
+  }
+
+  onSelectPlan(plan: MealSummary, event: MouseEvent): void {
+    event.preventDefault();
+    this.isNewPlanMode.set(false);
+    this.newPlanNameCommitted.set(false);
+    this.newPlanName = '';
+    this.closeDropdown();
+    this.loadPlan(plan.id);
+  }
+
+  private async loadPlan(mealId: number): Promise<void> {
+    try {
+      await this.planningService.getMeal(mealId);
+    } catch {
+      this.notificationService.show('Failed to load plan', 'error');
+    }
+  }
+
+  onPlanNameInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    if (this.isNewPlanMode()) {
+      this.newPlanName = value;
+    } else {
+      this.pendingName = value;
+      this.hasChanges.set(true);
+    }
+  }
+
+  onPlanNameCommit(event: Event): void {
+    (event.target as HTMLInputElement).blur();
+    if (this.isNewPlanMode() && this.newPlanName.trim()) {
+      this.commitNewPlanName();
+    }
+    this.closeDropdown();
+  }
+
+  private commitNewPlanName(): void {
+    if (this.newPlanName.trim()) {
+      this.newPlanNameCommitted.set(true);
+    }
+  }
+
+  // Food picker
+  openFoodPicker(): void {
+    this.foodPickerOpen.set(true);
+    // Food picker overlay component (Prompt B) will be integrated here
+  }
+
+  closeFoodPicker(): void {
+    this.foodPickerOpen.set(false);
+  }
 
   formatQuantity(quantity: number, unit: string): string {
     if (unit === 'g' && this.preferencesService.useImperial()) {
@@ -222,16 +455,6 @@ export class RegimenuPanelComponent {
 
   toggleChat(): void {
     this.isChatCollapsed.update(v => !v);
-  }
-
-  onPlanNameInput(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.pendingName = value;
-    this.hasChanges.set(true);
-  }
-
-  onPlanNameBlur(): void {
-    // Changes are saved via the save button
   }
 
   async savePlan(): Promise<void> {
@@ -261,19 +484,36 @@ export class RegimenuPanelComponent {
 
   async generatePlan(): Promise<void> {
     try {
-      await this.planningService.generatePlan();
+      let name: string | undefined;
+      if (this.isNewPlanMode() && this.newPlanNameCommitted() && this.newPlanName.trim()) {
+        name = this.newPlanName.trim();
+      } else {
+        // Auto-assign name: "Meal Plan [n]"
+        name = this.getNextPlanName();
+      }
+      await this.planningService.generateMeal(name);
+      this.isNewPlanMode.set(false);
+      this.newPlanNameCommitted.set(false);
+      this.newPlanName = '';
       this.notificationService.show('Meal plan generated', 'success');
+      this.fetchSavedPlans(); // refresh list
     } catch {
       this.notificationService.show('Failed to generate plan', 'error');
     }
   }
 
-  async toggleFavorite(): Promise<void> {
-    try {
-      await this.planningService.toggleFavorite();
-    } catch {
-      this.notificationService.show('Failed to update favorite', 'error');
+  private getNextPlanName(): string {
+    const plans = this.savedPlans();
+    let maxN = 0;
+    const pattern = /^Meal Plan (\d+)$/;
+    for (const plan of plans) {
+      const match = plan.name.match(pattern);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxN) maxN = n;
+      }
     }
+    return `Meal Plan ${maxN + 1}`;
   }
 
   // Swipe handling for delete
@@ -290,7 +530,6 @@ export class RegimenuPanelComponent {
     const deltaX = touch.clientX - this.touchStartX;
     const deltaY = touch.clientY - this.touchStartY;
 
-    // Only allow left swipe (negative deltaX) and ignore vertical scrolling
     if (Math.abs(deltaY) > Math.abs(deltaX)) {
       return;
     }
@@ -298,7 +537,6 @@ export class RegimenuPanelComponent {
     if (deltaX < -10) {
       this.isSwiping = true;
       this.swipingIndex.set(index);
-      // Limit swipe to -100px (delete action width)
       this.swipeOffset.set(Math.max(deltaX, -100));
       event.preventDefault();
     }
@@ -311,9 +549,8 @@ export class RegimenuPanelComponent {
     }
 
     const deltaTime = Date.now() - this.touchStartTime;
-    const threshold = -50; // Halfway point
+    const threshold = -50;
 
-    // If swiped past threshold or fast swipe, trigger delete
     if (this.swipeOffset() < threshold || (this.swipeOffset() < -20 && deltaTime < 200)) {
       this.deleteItem(index);
     }
