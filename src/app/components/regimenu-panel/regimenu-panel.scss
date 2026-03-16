@@ -205,17 +205,23 @@
   font-style: italic;
 }
 
-// Inline meal totals in header
-.header-totals {
+// Totals row beneath header
+.totals-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 1;
-  min-width: 0;
-  overflow: hidden;
+  padding: 2px 12px 4px;
+  background: linear-gradient(180deg, #3a3a3a 0%, #363636 100%);
+  flex-shrink: 0;
+  transition: opacity 0.2s ease;
 
-  .header-total-label {
-    font-size: 10px;
+  &.stippled {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  .totals-label {
+    font-size: 12px;
     font-weight: 600;
     color: #4da6ff;
     text-transform: uppercase;
@@ -224,8 +230,8 @@
     flex-shrink: 0;
   }
 
-  .header-total-value {
-    font-size: 11px;
+  .totals-value {
+    font-size: 12px;
     font-weight: 600;
     color: #4da6ff;
     white-space: nowrap;
@@ -517,6 +523,37 @@
   }
 }
 
+// Delete button on each item row
+.item-delete-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.35);
+  transition: color 0.15s ease;
+  border-radius: 4px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    color: #ff6666;
+  }
+
+  &:active {
+    color: #ff4444;
+  }
+}
+
 // Macros
 .item-macros {
   flex-shrink: 0;
@@ -606,18 +643,6 @@
       font-size: 18px;
       width: 18px;
       height: 18px;
-    }
-  }
-
-  .header-totals {
-    gap: 4px;
-
-    .header-total-label {
-      font-size: 9px;
-    }
-
-    .header-total-value {
-      font-size: 10px;
     }
   }
 

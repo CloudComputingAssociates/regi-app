@@ -21,7 +21,7 @@ import { PreferencesService } from '../../services/preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
 import { FoodPickerComponent, FoodPickerAddEvent } from '../food-picker/food-picker';
-import { MealSummary } from '../../models/planning.model';
+import { MealSummary, UpdateMealRequest } from '../../models/planning.model';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -99,16 +99,6 @@ import { Subscription } from 'rxjs';
             matTooltipPosition="above">
             <mat-icon>add</mat-icon>
           </button>
-
-          <!-- Inline meal totals -->
-          @if (planningService.hasPlan()) {
-            <div class="header-totals">
-              <span class="header-total-label">MEAL TOTALS:</span>
-              <span class="header-total-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
-              <span class="header-total-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
-              <span class="header-total-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg sodium</span>
-            </div>
-          }
         </div>
 
         <div class="header-actions">
@@ -148,6 +138,16 @@ import { Subscription } from 'rxjs';
           </button>
         </div>
       </div>
+
+      <!-- Totals row beneath header -->
+      @if (planningService.hasPlan()) {
+        <div class="totals-row" [class.stippled]="foodPickerOpen()">
+          <span class="totals-label">TOTALS:</span>
+          <span class="totals-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
+          <span class="totals-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
+          <span class="totals-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg sodium</span>
+        </div>
+      }
 
       <!-- Plan items list -->
       <div class="plan-list-container">
@@ -200,6 +200,11 @@ import { Subscription } from 'rxjs';
                       <span class="macro">{{ item.calories }} cal</span>
                     }
                   </div>
+
+                  <!-- Delete button -->
+                  <button class="item-delete-btn" (click)="deleteItem(i)" aria-label="Delete item">
+                    <mat-icon>delete</mat-icon>
+                  </button>
                 </div>
 
                 <!-- Delete action (revealed on swipe) -->
@@ -290,10 +295,9 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     return this.isNewPlanMode() && !this.newPlanNameCommitted();
   });
 
-  // Generate is disabled when a plan is loaded or in new-plan mode until saved
+  // Generate is disabled until the current plan is saved
   canGenerate = computed(() => {
     if (this.planningService.loading()) return false;
-    if (this.planningService.hasPlan()) return false;
     if (this.isNewPlanMode() && !this.newPlanNameCommitted()) return false;
     if (this.needsSaveBeforeGenerate()) return false;
     return true;
@@ -504,9 +508,12 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
     this.isSaving.set(true);
     try {
-      const updates: { name?: string } = {};
+      const updates: UpdateMealRequest = {};
       if (this.pendingName !== null) {
         updates.name = this.pendingName;
+      }
+      if (this.hasChanges()) {
+        updates.items = plan.items;
       }
       await this.planningService.updatePlan(plan.id, updates);
       this.pendingName = null;
@@ -617,6 +624,8 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     const items = this.planningService.planItems();
     if (items[index]) {
       this.planningService.deleteItem(items[index].id!);
+      this.hasChanges.set(true);
+      this.needsSaveBeforeGenerate.set(true);
       this.notificationService.show('Item removed', 'success');
     }
   }
