@@ -90,7 +90,7 @@ import { Subscription } from 'rxjs';
             }
           </div>
 
-          <!-- Add food button (replaces favorite star) -->
+          <!-- Add food button -->
           <button
             class="icon-btn add-food-btn"
             (click)="openFoodPicker()"
@@ -99,6 +99,16 @@ import { Subscription } from 'rxjs';
             matTooltipPosition="above">
             <mat-icon>add</mat-icon>
           </button>
+
+          <!-- Inline meal totals -->
+          @if (planningService.hasPlan()) {
+            <div class="header-totals">
+              <span class="header-total-label">MEAL TOTALS:</span>
+              <span class="header-total-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
+              <span class="header-total-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
+              <span class="header-total-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg sodium</span>
+            </div>
+          }
         </div>
 
         <div class="header-actions">
@@ -120,7 +130,7 @@ import { Subscription } from 'rxjs';
           <button
             class="generate-btn"
             (click)="generatePlan()"
-            [disabled]="planningService.loading() || planningService.hasPlan() || isNewPlanUnnamed()"
+            [disabled]="!canGenerate()"
             matTooltip="Generate Meal Plan"
             matTooltipPosition="above">
             @if (planningService.loading()) {
@@ -202,21 +212,6 @@ import { Subscription } from 'rxjs';
         }
       </div>
 
-      <!-- Totals footer -->
-      @if (planningService.hasPlan()) {
-        <div class="plan-totals">
-          <span class="total-label">Meal totals:</span>
-          <span class="total-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
-          <span class="total-value">{{ planningService.currentPlan()?.totalProteinG?.toFixed(0) ?? 0 }}g P</span>
-          <span class="total-value">{{ planningService.currentPlan()?.totalCarbG?.toFixed(0) ?? 0 }}g C</span>
-          <span class="total-value">{{ planningService.currentPlan()?.totalFatG?.toFixed(0) ?? 0 }}g F</span>
-        </div>
-        <div class="plan-totals plan-totals-secondary">
-          <span class="total-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
-          <span class="total-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg sodium</span>
-        </div>
-      }
-
       <!-- Mini chat panel (bottom-attached, collapsible) -->
       @if (hasRegimenuMessages() || chatService.regimenuIsLoading()) {
         <div class="mini-chat-panel" [class.collapsed]="isChatCollapsed()">
@@ -294,6 +289,18 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   isNewPlanUnnamed = computed(() => {
     return this.isNewPlanMode() && !this.newPlanNameCommitted();
   });
+
+  // Generate is disabled when a plan is loaded or in new-plan mode until saved
+  canGenerate = computed(() => {
+    if (this.planningService.loading()) return false;
+    if (this.planningService.hasPlan()) return false;
+    if (this.isNewPlanMode() && !this.newPlanNameCommitted()) return false;
+    if (this.needsSaveBeforeGenerate()) return false;
+    return true;
+  });
+
+  // Tracks whether a save is needed before Generate is allowed
+  needsSaveBeforeGenerate = signal(false);
 
   ngOnInit(): void {
     this.fetchSavedPlans();
@@ -378,6 +385,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     this.planningService.clearPlan();
     this.isNewPlanMode.set(true);
     this.newPlanNameCommitted.set(false);
+    this.needsSaveBeforeGenerate.set(true);
     this.newPlanName = '';
     this.closeDropdown();
 
@@ -395,6 +403,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     event.preventDefault();
     this.isNewPlanMode.set(false);
     this.newPlanNameCommitted.set(false);
+    this.needsSaveBeforeGenerate.set(true);
     this.newPlanName = '';
     this.closeDropdown();
     this.loadPlan(plan.id);
@@ -502,6 +511,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
       await this.planningService.updatePlan(plan.id, updates);
       this.pendingName = null;
       this.hasChanges.set(false);
+      this.needsSaveBeforeGenerate.set(false);
       this.notificationService.show('Plan saved', 'success');
     } catch {
       this.notificationService.show('Failed to save plan', 'error');

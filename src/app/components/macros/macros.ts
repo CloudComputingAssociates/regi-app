@@ -6,6 +6,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MacrosService } from '../../services/macros.service';
 import { PreferencesService } from '../../services/preferences.service';
+import { PlanningService } from '../../services/planning.service';
 import { TabService } from '../../services/tab.service';
 import { TimePeriod, NutritionResponse } from '../../models/nutrition.model';
 
@@ -99,6 +100,7 @@ export class MacrosComponent implements OnInit {
 
   private macrosService = inject(MacrosService);
   private preferencesService = inject(PreferencesService);
+  private planningService = inject(PlanningService);
   private tabService = inject(TabService);
 
   // Derive context from active tab
@@ -126,14 +128,36 @@ export class MacrosComponent implements OnInit {
     };
   });
 
+  // Signal-based display data for regimenu context (live from PlanningService)
+  readonly regimenuDisplayData = computed<MacroDisplayData>(() => {
+    const meal = this.planningService.currentMeal();
+    const goals = this.preferencesService.dailyGoals();
+    const targetP = goals?.protein ?? 150;
+    const targetF = goals?.fat ?? 78;
+    const targetC = goals?.carbs ?? 175;
+
+    const actualP = meal?.totalProteinG ?? 0;
+    const actualF = meal?.totalFatG ?? 0;
+    const actualC = meal?.totalCarbG ?? 0;
+
+    return {
+      macros: [
+        { name: 'proteins', actual: Math.round(actualP), target: targetP, percentage: this.calculatePercentage(actualP, targetP) },
+        { name: 'fats', actual: Math.round(actualF), target: targetF, percentage: this.calculatePercentage(actualF, targetF) },
+        { name: 'carbs', actual: Math.round(actualC), target: targetC, percentage: this.calculatePercentage(actualC, targetC) },
+      ],
+      timePeriod: 'day'
+    };
+  });
+
   // Signal for subscription-based display data (non-preferences contexts)
   private subscriptionData = signal<MacroDisplayData>({ macros: [], timePeriod: 'day' });
 
-  // Combined display: picks preferences signal or subscription-based data
+  // Combined display: picks context-appropriate data source
   readonly effectiveDisplayData = computed<MacroDisplayData>(() => {
-    if (this.context() === 'preferences') {
-      return this.preferencesDisplayData();
-    }
+    const ctx = this.context();
+    if (ctx === 'preferences') return this.preferencesDisplayData();
+    if (ctx === 'regimenu') return this.regimenuDisplayData();
     return this.subscriptionData();
   });
 
@@ -195,9 +219,9 @@ export class MacrosComponent implements OnInit {
    * Get the value to display inside the progress bar
    */
   getBarDisplayValue(macro: MacroNutrient): string {
-    if (this.context() === 'preferences') {
+    const ctx = this.context();
+    if (ctx === 'preferences') {
       if (this.showPercent) {
-        // Show percentage of total calories for this macro
         const calories = this.preferencesService.dailyGoals()?.calories;
         if (calories && calories > 0) {
           const calPerGram = macro.name === 'fats' ? 9 : 4;
@@ -207,6 +231,9 @@ export class MacrosComponent implements OnInit {
         return '0%';
       }
       return `${macro.target}g`;
+    }
+    if (ctx === 'regimenu') {
+      return this.showPercent ? `${macro.percentage}%` : `${macro.actual}g`;
     }
     return this.showPercent ? `${macro.percentage}%` : `${macro.actual}g`;
   }

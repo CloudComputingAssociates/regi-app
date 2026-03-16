@@ -205,6 +205,33 @@
   font-style: italic;
 }
 
+// Inline meal totals in header
+.header-totals {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+
+  .header-total-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #4da6ff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .header-total-value {
+    font-size: 11px;
+    font-weight: 600;
+    color: #4da6ff;
+    white-space: nowrap;
+  }
+}
+
 // Add food button (replaces favorite star)
 .add-food-btn {
   flex-shrink: 0;
@@ -501,35 +528,6 @@
   }
 }
 
-// Totals footer
-.plan-totals {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  background: linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%);
-  border-top: 1px solid #4a4a4a;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-
-  .total-label {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
-    font-weight: 500;
-  }
-
-  .total-value {
-    font-size: 12px;
-    color: #4da6ff;
-    font-weight: 600;
-  }
-
-  &.plan-totals-secondary {
-    border-top: none;
-    padding-top: 0;
-    padding-left: 95px;
-  }
-}
 
 // Mini chat panel (bottom-attached, collapsible)
 .mini-chat-panel {
@@ -611,6 +609,18 @@
     }
   }
 
+  .header-totals {
+    gap: 4px;
+
+    .header-total-label {
+      font-size: 9px;
+    }
+
+    .header-total-value {
+      font-size: 10px;
+    }
+  }
+
   .generate-btn {
     font-size: 12px;
     padding: 6px 12px;
@@ -652,13 +662,4 @@
     }
   }
 
-  .plan-totals {
-    gap: 8px;
-    padding: 8px 10px;
-
-    .total-label,
-    .total-value {
-      font-size: 11px;
-    }
-  }
 }
