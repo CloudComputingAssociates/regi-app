@@ -5,6 +5,7 @@ import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   Meal,
+  MealItem,
   MealSummary,
   GenerateMealRequest,
   UpdateMealRequest,
@@ -125,6 +126,41 @@ export class PlanningService {
     if (!meal) return;
 
     await this.updateMeal(meal.id, { isFavorite: !meal.isFavorite });
+  }
+
+  /**
+   * Add a meal item locally to the current meal
+   */
+  addItem(item: Omit<MealItem, 'id' | 'sortOrder'>): void {
+    const meal = this.currentMealSignal();
+    if (!meal) return;
+
+    const maxSort = meal.items.reduce((max, i) => Math.max(max, i.sortOrder ?? 0), 0);
+    const newItem: MealItem = {
+      ...item,
+      sortOrder: maxSort + 1,
+    };
+
+    const updatedItems = [...meal.items, newItem];
+
+    // Recalculate totals
+    const totalCalories = updatedItems.reduce((sum, i) => sum + (i.calories ?? 0), 0);
+    const totalProteinG = updatedItems.reduce((sum, i) => sum + (i.proteinG ?? 0), 0);
+    const totalFatG = updatedItems.reduce((sum, i) => sum + (i.fatG ?? 0), 0);
+    const totalCarbG = updatedItems.reduce((sum, i) => sum + (i.carbG ?? 0), 0);
+    const totalFiberG = updatedItems.reduce((sum, i) => sum + (i.fiberG ?? 0), 0);
+    const totalSodiumMg = updatedItems.reduce((sum, i) => sum + (i.sodiumMg ?? 0), 0);
+
+    this.currentMealSignal.set({
+      ...meal,
+      items: updatedItems,
+      totalCalories,
+      totalProteinG,
+      totalFatG,
+      totalCarbG,
+      totalFiberG,
+      totalSodiumMg,
+    });
   }
 
   /**

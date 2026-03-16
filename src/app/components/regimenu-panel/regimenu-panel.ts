@@ -20,7 +20,7 @@ import { PlanningService } from '../../services/planning.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
-import { FoodPickerComponent } from '../food-picker/food-picker';
+import { FoodPickerComponent, FoodPickerAddEvent } from '../food-picker/food-picker';
 import { MealSummary } from '../../models/planning.model';
 import { Subscription } from 'rxjs';
 
@@ -441,9 +441,27 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     this.foodPickerOpen.set(false);
   }
 
-  onFoodPickerAdd(event: { foodId: number; amount: number; unit: string }): void {
-    // Food added live — will be handled by Prompt C integration
-    console.log('Food added from picker:', event);
+  onFoodPickerAdd(event: FoodPickerAddEvent): void {
+    const { food, amount, unit } = event;
+    const nf = food.nutritionFacts;
+    const scale = nf?.servingSizeG ? amount / nf.servingSizeG : 1;
+
+    this.planningService.addItem({
+      foodId: food.id,
+      foodName: food.description,
+      shortDescription: food.shortDescription ?? undefined,
+      foodImageThumbnail: food.foodImageThumbnail ?? undefined,
+      quantity: amount,
+      unit,
+      calories: nf?.calories ? Math.round(nf.calories * scale) : undefined,
+      proteinG: nf?.proteinG ? Math.round(nf.proteinG * scale * 10) / 10 : undefined,
+      fatG: nf?.totalFatG ? Math.round(nf.totalFatG * scale * 10) / 10 : undefined,
+      carbG: nf?.totalCarbohydrateG ? Math.round(nf.totalCarbohydrateG * scale * 10) / 10 : undefined,
+      fiberG: nf?.dietaryFiberG ? Math.round(nf.dietaryFiberG * scale * 10) / 10 : undefined,
+      sodiumMg: nf?.sodiumMG ? Math.round(nf.sodiumMG * scale) : undefined,
+    });
+    this.hasChanges.set(true);
+    this.notificationService.show(`Added ${food.shortDescription || food.description}`, 'success');
   }
 
   formatQuantity(quantity: number, unit: string): string {

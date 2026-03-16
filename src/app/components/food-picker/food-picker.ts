@@ -3,14 +3,18 @@ import {
   Component,
   ChangeDetectionStrategy,
   input,
-  output,
-  inject
+  output
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FoodsListComponent, AddFoodEvent } from '../foods-list/foods-list';
-import { FoodsService } from '../../services/foods.service';
 import { Food } from '../../models/food.model';
+
+export interface FoodPickerAddEvent {
+  food: Food;
+  amount: number;
+  unit: string;
+}
 
 @Component({
   selector: 'app-food-picker',
@@ -46,15 +50,13 @@ import { Food } from '../../models/food.model';
   styleUrls: ['./food-picker.scss']
 })
 export class FoodPickerComponent {
-  private foodsService = inject(FoodsService);
-
   // Inputs
   mealPlanId = input<string>('');
   isOpen = input<boolean>(false);
   showNameField = input<boolean>(false);
 
   // Outputs
-  foodAdded = output<{ foodId: number; amount: number; unit: string }>();
+  foodAdded = output<FoodPickerAddEvent>();
   closed = output<void>();
 
   onBackdropClick(): void {
@@ -68,14 +70,8 @@ export class FoodPickerComponent {
   onFoodAdded(event: AddFoodEvent): void {
     const food = event.food;
     const nf = food.nutritionFacts;
-    // Default serving: use servingSize if available, otherwise 100g
     const amount = nf?.servingSizeG ?? 100;
-    const unit = 'g';
 
-    this.foodAdded.emit({
-      foodId: food.id,
-      amount,
-      unit
-    });
+    this.foodAdded.emit({ food, amount, unit: 'g' });
   }
 }
