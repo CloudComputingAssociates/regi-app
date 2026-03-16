@@ -297,11 +297,12 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   fetchSavedPlans(): void {
     this.savedPlansLoading.set(true);
     const sub = this.planningService.listMeals({ status: 'active', limit: 50 }).subscribe({
-      next: (response) => {
-        this.savedPlans.set(response.meals);
+      next: (meals) => {
+        this.savedPlans.set(meals);
         this.savedPlansLoading.set(false);
       },
-      error: () => {
+      error: (err) => {
+        console.error('Failed to fetch saved plans:', err);
         this.savedPlansLoading.set(false);
       }
     });

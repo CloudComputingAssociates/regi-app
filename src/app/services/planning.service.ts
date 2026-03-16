@@ -5,9 +5,9 @@ import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   Meal,
+  MealSummary,
   GenerateMealRequest,
   UpdateMealRequest,
-  ListMealsResponse,
   ListMealsRequest
 } from '../models/planning.model';
 
@@ -144,7 +144,7 @@ export class PlanningService {
   /**
    * List meals with filters
    */
-  listMeals(params?: ListMealsRequest): Observable<ListMealsResponse> {
+  listMeals(params?: ListMealsRequest): Observable<MealSummary[]> {
     const queryParams = new URLSearchParams();
     if (params?.planType) queryParams.set('planType', params.planType);
     if (params?.status) queryParams.set('status', params.status);
@@ -154,7 +154,7 @@ export class PlanningService {
     if (params?.offset) queryParams.set('offset', String(params.offset));
 
     const url = `${this.baseUrl}/meal?${queryParams.toString()}`;
-    return this.http.get<ListMealsResponse>(url);
+    return this.http.get<MealSummary[]>(url);
   }
 
   /**
