@@ -20,12 +20,13 @@ import { PlanningService } from '../../services/planning.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
+import { FoodPickerComponent } from '../food-picker/food-picker';
 import { MealSummary } from '../../models/planning.model';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-regimenu-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, ChatOutputComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, ChatOutputComponent, FoodPickerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
@@ -228,6 +229,14 @@ import { Subscription } from 'rxjs';
           }
         </div>
       }
+
+      <!-- Food picker overlay (never destroyed, shown/hidden via isOpen) -->
+      <app-food-picker
+        [mealPlanId]="planningService.currentPlan()?.id?.toString() ?? ''"
+        [isOpen]="foodPickerOpen()"
+        [showNameField]="isNewPlanMode() && !newPlanNameCommitted()"
+        (foodAdded)="onFoodPickerAdd($event)"
+        (closed)="closeFoodPicker()" />
     </div>
   `,
   styleUrls: ['./regimenu-panel.scss']
@@ -426,11 +435,15 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   // Food picker
   openFoodPicker(): void {
     this.foodPickerOpen.set(true);
-    // Food picker overlay component (Prompt B) will be integrated here
   }
 
   closeFoodPicker(): void {
     this.foodPickerOpen.set(false);
+  }
+
+  onFoodPickerAdd(event: { foodId: number; amount: number; unit: string }): void {
+    // Food added live — will be handled by Prompt C integration
+    console.log('Food added from picker:', event);
   }
 
   formatQuantity(quantity: number, unit: string): string {

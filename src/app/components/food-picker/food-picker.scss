@@ -1,0 +1,115 @@
+// src/app/components/food-picker/food-picker.scss
+
+:host {
+  display: contents;
+}
+
+.picker-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.picker-panel {
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 420px;
+  height: 80%;
+  max-height: 600px;
+  background: linear-gradient(180deg, #404040 0%, #3a3a3a 100%);
+  border-radius: 10px;
+  border: 1px solid #5a5a5a;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+
+.picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  border-bottom: 1px solid #2a2a2a;
+  flex-shrink: 0;
+}
+
+.picker-title {
+  color: #4da6ff;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+  border-top: 1px solid #6a6a6a;
+  border-left: 1px solid #5a5a5a;
+  border-right: 1px solid #5a5a5a;
+  border-bottom: 2px solid #1a1a1a;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #ffffff;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    background: linear-gradient(180deg, #606060 0%, #454545 100%);
+  }
+
+  &:active {
+    transform: translateY(1px);
+    border-bottom-width: 1px;
+  }
+}
+
+.picker-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  app-foods-list {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+// Mobile responsive
+@media (max-width: 480px) {
+  .picker-panel {
+    width: 95%;
+    height: 85%;
+    max-height: none;
+    border-radius: 8px;
+  }
+
+  .picker-header {
+    padding: 8px 10px;
+  }
+
+  .picker-title {
+    font-size: 13px;
+  }
+}
