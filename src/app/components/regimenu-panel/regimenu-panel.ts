@@ -143,7 +143,7 @@ import { Subscription } from 'rxjs';
         @if (planningService.loading()) {
           <div class="loading-message">
             <div class="spinner-large"></div>
-            <p>Generating your meal plan...</p>
+            <p>Please wait, meal plan coming...</p>
           </div>
         } @else if (planningService.error()) {
           <div class="error-message">
