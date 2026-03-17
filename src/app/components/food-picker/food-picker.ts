@@ -70,10 +70,8 @@ export class FoodPickerComponent {
   onFoodAdded(event: AddFoodEvent): void {
     const food = event.food;
     const nf = food.nutritionFacts;
-    // Use servingSizeMultiplicand to get the actual household serving weight
-    const baseServingG = nf?.servingSizeG ?? 100;
-    const multiplicand = food.servingSizeMultiplicand ?? 1;
-    const amount = Math.round(baseServingG * multiplicand);
+    // One serving = servingSizeG (e.g. 50g for an egg)
+    const amount = nf?.servingSizeG ?? 100;
 
     this.foodAdded.emit({ food, amount, unit: 'g' });
   }
