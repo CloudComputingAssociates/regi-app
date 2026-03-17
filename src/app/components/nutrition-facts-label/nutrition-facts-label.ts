@@ -36,7 +36,7 @@ function dvPercent(actual: number | undefined | null, reference: number): number
         </div>
         <div class="nf-serving-size">
           <span class="nf-serving-label">Serving size</span>
-          <span class="nf-serving-value">{{ data().servingSizeHousehold ?? '' }} ({{ data().servingSizeG ?? 0 }}g)</span>
+          <span class="nf-serving-value">{{ servingSizeDisplay() }}</span>
         </div>
       </div>
 
@@ -270,6 +270,23 @@ export class NutritionFactsLabelComponent {
 
   // Scale factor — 1.0 = base serving, can be changed externally
   scale = input<number>(1);
+
+  // Display unit and quantity (shown on serving size line)
+  displayUnit = input<string>('g');
+  displayQuantity = input<number | null>(null);
+
+  servingSizeDisplay = computed(() => {
+    const dq = this.displayQuantity();
+    const du = this.displayUnit();
+    const d = this.data();
+    if (dq !== null && du !== 'g') {
+      return `${dq} ${du} (${d.servingSizeG ?? 0}g)`;
+    }
+    const household = d.servingSizeHousehold;
+    return household
+      ? `${household} (${d.servingSizeG ?? 0}g)`
+      : `(${d.servingSizeG ?? 0}g)`;
+  });
 
   data = computed(() => {
     const nf = this.nutritionFacts();

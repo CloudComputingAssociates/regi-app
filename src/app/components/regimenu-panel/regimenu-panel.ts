@@ -478,15 +478,20 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     this.foodPickerOpen.set(false);
   }
 
+  // Unit conversion factors (must match editor)
+  private readonly toGrams: Record<string, number> = {
+    g: 1, oz: 28.3495, lbs: 453.592, tsp: 4.92892, ml: 1,
+  };
+
   // Food amount editor
   openAmountEditor(index: number): void {
     const items = this.planningService.planItems();
     const item = items[index];
     if (!item) return;
 
-    // Build NutritionFacts from the MealItem's stored values, scaled back to per-serving basis
-    // The item stores values for its current quantity; we need the base per-serving values
-    const baseServingG = item.quantity;
+    // quantity is in display units; convert to grams for nutrition base
+    const convFactor = this.toGrams[item.unit] ?? 1;
+    const baseServingG = item.quantity * convFactor;
     const nf: NutritionFacts = {
       foodName: item.shortDescription || item.foodName,
       servingSizeG: baseServingG,
@@ -518,7 +523,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
   onAmountChanged(event: FoodAmountUpdate): void {
     this.planningService.updateItem(event.itemIndex, {
-      quantity: event.quantityG,
+      quantity: event.displayQuantity,
       unit: event.displayUnit,
       calories: event.scaledCalories,
       proteinG: event.scaledProteinG,

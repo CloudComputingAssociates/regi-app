@@ -119,7 +119,9 @@ export interface FoodAmountUpdate {
         <div class="editor-body">
           <yeh-nutrition-label
             [nutritionFacts]="baseNutritionFacts()"
-            [scale]="scale()" />
+            [scale]="scale()"
+            [displayUnit]="selectedUnit()"
+            [displayQuantity]="displayQty()" />
         </div>
       </div>
     </div>
@@ -178,12 +180,13 @@ export class FoodAmountEditorComponent {
       const i = this.item();
       const open = this.isOpen();
       if (i && open) {
-        const qtyG = i.quantity;
-        this.initialQtyG = qtyG;
-        this.selectedUnit.set((i.unit as EditorUnit) || 'g');
-        // Convert grams to the item's stored unit for display
         const unit = (i.unit as EditorUnit) || 'g';
-        this.displayQty.set(Math.round(qtyG / TO_GRAMS[unit] * 100) / 100);
+        // quantity is stored in display units (e.g. 8 oz, not 226.8g)
+        const displayQty = i.quantity;
+        const qtyG = displayQty * TO_GRAMS[unit];
+        this.initialQtyG = qtyG;
+        this.selectedUnit.set(unit);
+        this.displayQty.set(displayQty);
       }
     });
   }
