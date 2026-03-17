@@ -457,7 +457,9 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   onFoodPickerAdd(event: FoodPickerAddEvent): void {
     const { food, amount, unit } = event;
     const nf = food.nutritionFacts;
-    const scale = nf?.servingSizeG ? amount / nf.servingSizeG : 1;
+    // Nutrition values are per servingSizeG; scale to the actual amount being added
+    const servingG = nf?.servingSizeG || 100;
+    const scale = amount / servingG;
 
     this.planningService.addItem({
       foodId: food.id,
