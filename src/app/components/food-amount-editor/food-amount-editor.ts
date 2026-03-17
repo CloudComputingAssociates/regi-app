@@ -17,23 +17,26 @@ import { NotificationService } from '../../services/notification.service';
 import { MealItem } from '../../models/planning.model';
 import { NutritionFacts } from '../../models/food.model';
 
-export type EditorUnit = 'g' | 'oz' | 'lbs' | 'tsp' | 'ml' | 'whole';
+export type EditorUnit = 'g' | 'oz' | 'lbs' | 'cup' | 'tsp' | 'tbsp' | 'ml' | 'whole';
 
 const UNIT_LABELS: Record<EditorUnit, string> = {
   g: 'grams',
   oz: 'ounces',
   lbs: 'pounds',
+  cup: 'cups',
   tsp: 'teaspoons',
+  tbsp: 'tablespoons',
   ml: 'milliliters',
   whole: 'whole',
 };
 
-// Conversion factors TO grams (whole is dynamic, placeholder here)
-const STATIC_TO_GRAMS: Record<Exclude<EditorUnit, 'whole'>, number> = {
+// Conversion factors TO grams (whole and cup are dynamic per food, placeholder here)
+const STATIC_TO_GRAMS: Record<Exclude<EditorUnit, 'whole' | 'cup'>, number> = {
   g: 1,
   oz: 28.3495,
   lbs: 453.592,
   tsp: 4.92892,
+  tbsp: 14.7868,
   ml: 1, // approximate for water-density foods
 };
 
@@ -42,7 +45,9 @@ const INCREMENTS: Record<EditorUnit, number> = {
   g: 1,
   oz: 0.5,
   lbs: 0.25,
+  cup: 0.25,
   tsp: 0.5,
+  tbsp: 0.5,
   ml: 5,
   whole: 0.25,
 };
@@ -151,7 +156,7 @@ export class FoodAmountEditorComponent {
   private initialQtyG = 0;
   private initialUnit: EditorUnit = 'g';
 
-  readonly units: EditorUnit[] = ['whole', 'g', 'oz', 'lbs', 'tsp', 'ml'];
+  readonly units: EditorUnit[] = ['whole', 'cup', 'g', 'oz', 'lbs', 'tbsp', 'tsp', 'ml'];
   readonly unitLabels = UNIT_LABELS;
 
   itemName = computed(() => {
@@ -159,15 +164,16 @@ export class FoodAmountEditorComponent {
     return i?.shortDescription || i?.foodName || 'Food';
   });
 
-  // Grams per "whole" unit for this food (from servingSizeG)
-  private wholeGrams = computed(() => {
+  // Grams per "whole"/"cup" unit for this food (from servingSizeG)
+  private servingGrams = computed(() => {
     const i = this.item();
     return i?.servingSizeG ?? this.baseServingSizeG();
   });
 
   // Conversion factor for the current unit
   toGramsForUnit(unit: EditorUnit): number {
-    return unit === 'whole' ? this.wholeGrams() : STATIC_TO_GRAMS[unit];
+    if (unit === 'whole' || unit === 'cup') return this.servingGrams();
+    return STATIC_TO_GRAMS[unit];
   }
 
   currentIncrement = computed(() => INCREMENTS[this.selectedUnit()]);

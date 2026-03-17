@@ -480,7 +480,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
   // Unit conversion factors (must match editor)
   private readonly toGrams: Record<string, number> = {
-    g: 1, oz: 28.3495, lbs: 453.592, tsp: 4.92892, ml: 1,
+    g: 1, oz: 28.3495, lbs: 453.592, tbsp: 14.7868, tsp: 4.92892, ml: 1,
   };
 
   // Food amount editor
@@ -490,8 +490,8 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     if (!item) return;
 
     // quantity is in display units; convert to grams for nutrition base
-    // "whole" uses servingSizeG as the gram weight
-    const convFactor = item.unit === 'whole'
+    // "whole" and "cup" use servingSizeG as the gram weight
+    const convFactor = (item.unit === 'whole' || item.unit === 'cup')
       ? (item.servingSizeG ?? 100)
       : (this.toGrams[item.unit] ?? 1);
     const baseServingG = item.quantity * convFactor;
