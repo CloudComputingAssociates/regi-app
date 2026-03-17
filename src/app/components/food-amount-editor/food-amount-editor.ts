@@ -7,12 +7,13 @@ import {
   signal,
   computed,
   effect,
-  OnInit
+  inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
+import { NotificationService } from '../../services/notification.service';
 import { MealItem } from '../../models/planning.model';
 import { NutritionFacts } from '../../models/food.model';
 
@@ -129,6 +130,8 @@ export interface FoodAmountUpdate {
   styleUrls: ['./food-amount-editor.scss']
 })
 export class FoodAmountEditorComponent {
+  private notificationService = inject(NotificationService);
+
   // Inputs
   isOpen = input<boolean>(false);
   item = input<MealItem | null>(null);
@@ -216,7 +219,6 @@ export class FoodAmountEditorComponent {
   onConfirm(): void {
     const nf = this.nutritionFacts();
     const s = this.scale();
-    const baseG = this.baseServingSizeG();
 
     this.amountChanged.emit({
       itemIndex: this.itemIndex(),
@@ -232,6 +234,7 @@ export class FoodAmountEditorComponent {
     });
 
     this.initialQtyG = this.quantityG();
+    this.closed.emit();
   }
 
   onBackdropClick(): void {
@@ -240,9 +243,13 @@ export class FoodAmountEditorComponent {
 
   onClose(): void {
     if (this.hasChanges()) {
-      if (!confirm('You have unsaved changes. Discard them?')) {
-        return;
-      }
+      this.notificationService.showConfirmation(
+        'You have unsaved changes. Discard them?',
+        'warning',
+        () => this.closed.emit(),
+        () => {}
+      );
+      return;
     }
     this.closed.emit();
   }
