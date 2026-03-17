@@ -149,6 +149,7 @@ export class FoodAmountEditorComponent {
   selectedUnit = signal<EditorUnit>('g');
   displayQty = signal<number>(0);
   private initialQtyG = 0;
+  private initialUnit: EditorUnit = 'g';
 
   readonly units: EditorUnit[] = ['whole', 'g', 'oz', 'lbs', 'tsp', 'ml'];
   readonly unitLabels = UNIT_LABELS;
@@ -187,7 +188,8 @@ export class FoodAmountEditorComponent {
   baseNutritionFacts = computed(() => this.nutritionFacts());
 
   hasChanges = computed(() => {
-    return Math.abs(this.quantityG() - this.initialQtyG) > 0.01;
+    return Math.abs(this.quantityG() - this.initialQtyG) > 0.01
+      || this.selectedUnit() !== this.initialUnit;
   });
 
   constructor() {
@@ -201,6 +203,7 @@ export class FoodAmountEditorComponent {
         const displayQty = i.quantity;
         const qtyG = displayQty * this.toGramsForUnit(unit);
         this.initialQtyG = qtyG;
+        this.initialUnit = unit;
         this.selectedUnit.set(unit);
         this.displayQty.set(displayQty);
       }
@@ -247,6 +250,7 @@ export class FoodAmountEditorComponent {
     });
 
     this.initialQtyG = this.quantityG();
+    this.initialUnit = this.selectedUnit();
     this.closed.emit();
   }
 
