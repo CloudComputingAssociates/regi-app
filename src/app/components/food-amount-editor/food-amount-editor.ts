@@ -17,7 +17,7 @@ import { NotificationService } from '../../services/notification.service';
 import { MealItem } from '../../models/planning.model';
 import { NutritionFacts } from '../../models/food.model';
 
-export type EditorUnit = 'g' | 'oz' | 'lbs' | 'tsp' | 'ml';
+export type EditorUnit = 'g' | 'oz' | 'lbs' | 'tsp' | 'ml' | 'whole';
 
 const UNIT_LABELS: Record<EditorUnit, string> = {
   g: 'grams',
@@ -25,10 +25,11 @@ const UNIT_LABELS: Record<EditorUnit, string> = {
   lbs: 'pounds',
   tsp: 'teaspoons',
   ml: 'milliliters',
+  whole: 'whole',
 };
 
-// Conversion factors TO grams
-const TO_GRAMS: Record<EditorUnit, number> = {
+// Conversion factors TO grams (whole is dynamic, placeholder here)
+const STATIC_TO_GRAMS: Record<Exclude<EditorUnit, 'whole'>, number> = {
   g: 1,
   oz: 28.3495,
   lbs: 453.592,
@@ -43,6 +44,7 @@ const INCREMENTS: Record<EditorUnit, number> = {
   lbs: 0.25,
   tsp: 0.5,
   ml: 5,
+  whole: 0.25,
 };
 
 export interface FoodAmountUpdate {
@@ -148,7 +150,7 @@ export class FoodAmountEditorComponent {
   displayQty = signal<number>(0);
   private initialQtyG = 0;
 
-  readonly units: EditorUnit[] = ['g', 'oz', 'lbs', 'tsp', 'ml'];
+  readonly units: EditorUnit[] = ['whole', 'g', 'oz', 'lbs', 'tsp', 'ml'];
   readonly unitLabels = UNIT_LABELS;
 
   itemName = computed(() => {
@@ -156,11 +158,22 @@ export class FoodAmountEditorComponent {
     return i?.shortDescription || i?.foodName || 'Food';
   });
 
+  // Grams per "whole" unit for this food (from servingSizeG)
+  private wholeGrams = computed(() => {
+    const i = this.item();
+    return i?.servingSizeG ?? this.baseServingSizeG();
+  });
+
+  // Conversion factor for the current unit
+  toGramsForUnit(unit: EditorUnit): number {
+    return unit === 'whole' ? this.wholeGrams() : STATIC_TO_GRAMS[unit];
+  }
+
   currentIncrement = computed(() => INCREMENTS[this.selectedUnit()]);
 
   // Quantity in grams regardless of display unit
   quantityG = computed(() => {
-    return this.displayQty() * TO_GRAMS[this.selectedUnit()];
+    return this.displayQty() * this.toGramsForUnit(this.selectedUnit());
   });
 
   // Scale relative to base serving size (nutrition facts are per base serving)
@@ -186,7 +199,7 @@ export class FoodAmountEditorComponent {
         const unit = (i.unit as EditorUnit) || 'g';
         // quantity is stored in display units (e.g. 8 oz, not 226.8g)
         const displayQty = i.quantity;
-        const qtyG = displayQty * TO_GRAMS[unit];
+        const qtyG = displayQty * this.toGramsForUnit(unit);
         this.initialQtyG = qtyG;
         this.selectedUnit.set(unit);
         this.displayQty.set(displayQty);
@@ -203,7 +216,7 @@ export class FoodAmountEditorComponent {
     // Convert current grams to new unit
     const currentG = this.quantityG();
     this.selectedUnit.set(unit);
-    this.displayQty.set(Math.round(currentG / TO_GRAMS[unit] * 100) / 100);
+    this.displayQty.set(Math.round(currentG / this.toGramsForUnit(unit) * 100) / 100);
   }
 
   increment(): void {

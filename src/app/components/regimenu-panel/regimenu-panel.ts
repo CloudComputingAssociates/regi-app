@@ -490,7 +490,10 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     if (!item) return;
 
     // quantity is in display units; convert to grams for nutrition base
-    const convFactor = this.toGrams[item.unit] ?? 1;
+    // "whole" uses servingSizeG as the gram weight
+    const convFactor = item.unit === 'whole'
+      ? (item.servingSizeG ?? 100)
+      : (this.toGrams[item.unit] ?? 1);
     const baseServingG = item.quantity * convFactor;
     const nf: NutritionFacts = {
       foodName: item.shortDescription || item.foodName,
@@ -539,9 +542,8 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   onFoodPickerAdd(event: FoodPickerAddEvent): void {
     const { food, amount, unit } = event;
     const nf = food.nutritionFacts;
-    // Nutrition values are per servingSizeG; scale to the actual amount being added
-    const servingG = nf?.servingSizeG || 100;
-    const scale = amount / servingG;
+    // Nutrition values from the API are per 100g (USDA standard); scale to the actual amount
+    const scale = amount / 100;
 
     this.planningService.addItem({
       foodId: food.id,
@@ -550,6 +552,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
       foodImageThumbnail: food.foodImageThumbnail ?? undefined,
       quantity: amount,
       unit,
+      servingSizeG: nf?.servingSizeG ?? 100,
       calories: nf?.calories ? Math.round(nf.calories * scale) : undefined,
       proteinG: nf?.proteinG ? Math.round(nf.proteinG * scale * 10) / 10 : undefined,
       fatG: nf?.totalFatG ? Math.round(nf.totalFatG * scale * 10) / 10 : undefined,

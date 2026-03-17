@@ -139,6 +139,10 @@ export interface FoodSchema {
    */
   servingSizeMultiplicand: number;
   /**
+   * Preferred display unit for serving (e.g. "whole", "cup", "oz", "g")
+   */
+  servingUnit?: string | null;
+  /**
    * Source of nutrition data (e.g., 'USDA-FNDDS', 'FatSecret')
    */
   dataSource: string;
