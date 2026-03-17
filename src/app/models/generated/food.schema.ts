@@ -143,6 +143,10 @@ export interface FoodSchema {
    */
   servingUnit?: string | null;
   /**
+   * Grams per one unit of servingUnit (e.g. 50 for 1 whole egg, 30 for 1 cup spinach)
+   */
+  servingGramsPerUnit?: number | null;
+  /**
    * Source of nutrition data (e.g., 'USDA-FNDDS', 'FatSecret')
    */
   dataSource: string;

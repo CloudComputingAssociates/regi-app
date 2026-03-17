@@ -14,6 +14,7 @@ export interface MealItem {
   fiberG?: number;
   sodiumMg?: number;
   servingSizeG?: number;
+  servingGramsPerUnit?: number;
   sortOrder?: number;
   foodImageThumbnail?: string;
   shortDescription?: string;

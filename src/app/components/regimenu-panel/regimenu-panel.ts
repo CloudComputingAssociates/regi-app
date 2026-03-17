@@ -470,9 +470,9 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     if (!item) return;
 
     // quantity is in display units; convert to grams for nutrition base
-    // "whole" and "cup" use servingSizeG as the gram weight
+    // "whole" and "cup" use servingGramsPerUnit as the gram weight
     const convFactor = (item.unit === 'whole' || item.unit === 'cup')
-      ? (item.servingSizeG ?? 100)
+      ? (item.servingGramsPerUnit ?? item.servingSizeG ?? 100)
       : (this.toGrams[item.unit] ?? 1);
     const baseServingG = item.quantity * convFactor;
     const nf: NutritionFacts = {
@@ -532,6 +532,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
       quantity: amount,
       unit,
       servingSizeG: nf?.servingSizeG ?? 100,
+      servingGramsPerUnit: food.servingGramsPerUnit ?? undefined,
       calories: nf?.calories ? Math.round(nf.calories * scale) : undefined,
       proteinG: nf?.proteinG ? Math.round(nf.proteinG * scale * 10) / 10 : undefined,
       fatG: nf?.totalFatG ? Math.round(nf.totalFatG * scale * 10) / 10 : undefined,

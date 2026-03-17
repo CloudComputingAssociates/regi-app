@@ -164,10 +164,10 @@ export class FoodAmountEditorComponent {
     return i?.shortDescription || i?.foodName || 'Food';
   });
 
-  // Grams per "whole"/"cup" unit for this food (from servingSizeG)
+  // Grams per "whole"/"cup" unit for this food (from servingGramsPerUnit)
   private servingGrams = computed(() => {
     const i = this.item();
-    return i?.servingSizeG ?? this.baseServingSizeG();
+    return i?.servingGramsPerUnit ?? i?.servingSizeG ?? this.baseServingSizeG();
   });
 
   // Conversion factor for the current unit
