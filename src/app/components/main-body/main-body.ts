@@ -9,7 +9,7 @@ import { PreferencesService } from '../../services/preferences.service';
 import { ChatComponent } from '../chat/chat';
 import { RegimenuPanelComponent } from '../regimenu-panel/regimenu-panel';
 import { ShoppingPanelComponent } from '../shopping-panel/shopping-panel';
-import { ProgressPanelComponent } from '../progress-panel/progress-panel';
+import { WeekPlanPanelComponent } from '../progress-panel/progress-panel';
 import { FoodsPanelComponent } from '../foods-panel/foods-panel';
 import { AccountPanelComponent } from '../account-panel/account-panel';
 import { PreferencesPanelComponent } from '../preferences-panel/preferences-panel';
@@ -27,7 +27,7 @@ import { NotificationComponent } from '../notification/notification';
     ChatComponent,
     RegimenuPanelComponent,
     ShoppingPanelComponent,
-    ProgressPanelComponent,
+    WeekPlanPanelComponent,
     FoodsPanelComponent,
     AccountPanelComponent,
     PreferencesPanelComponent,
@@ -76,7 +76,7 @@ import { NotificationComponent } from '../notification/notification';
                 } @else if (tab.id === 'shop') {
                   <app-shopping-panel />
                 } @else if (tab.id === 'review') {
-                  <app-progress-panel />
+                  <app-week-plan-panel />
                 } @else if (tab.id === 'preferences') {
                   <app-preferences-panel />
                 } @else if (tab.id === 'account') {

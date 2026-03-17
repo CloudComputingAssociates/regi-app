@@ -106,9 +106,9 @@ export class LeftNavComponent {
     { label: 'Today', iconImage: 'images/AI-star.png', tabId: 'today' },
     { label: 'Chat', iconImage: 'images/AI-star.png', tabId: 'chat' },
     { label: 'RegiMenu', iconImage: 'images/AI-star.png', tabId: 'meal-planning' },
+    { label: 'Week Plan', icon: '📅', tabId: 'review' },
     { label: 'Foods', iconImage: 'favicon.ico', tabId: 'foods' },
     { label: 'Shopping', icon: '🛒', tabId: 'shop' },
-    { label: 'Progress', icon: '📈', tabId: 'review' },
     { label: 'Preferences', iconImage: 'images/AI-star.png', tabId: 'preferences' }
   ];
 

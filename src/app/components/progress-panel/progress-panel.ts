@@ -1,15 +1,15 @@
-// src/app/components/progress-panel/progress-panel.ts
+// src/app/components/progress-panel/progress-panel.ts (Week Plan panel)
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TabService } from '../../services/tab.service';
 
 @Component({
-  selector: 'app-progress-panel',
+  selector: 'app-week-plan-panel',
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Action buttons - top right (X only for Progress) -->
+      <!-- Action buttons - top right -->
       <div class="action-buttons">
         <button
           class="icon-btn close-btn"
@@ -22,15 +22,15 @@ import { TabService } from '../../services/tab.service';
       <!-- Main content area -->
       <div class="panel-content">
         <div class="content-placeholder">
-          <p class="placeholder-text">Progress</p>
-          <p class="placeholder-subtext">Track your nutrition journey</p>
+          <p class="placeholder-text">Week Plan</p>
+          <p class="placeholder-subtext">Plan and track your weekly meals</p>
         </div>
       </div>
     </div>
   `,
   styleUrls: ['./progress-panel.scss']
 })
-export class ProgressPanelComponent {
+export class WeekPlanPanelComponent {
   private tabService = inject(TabService);
 
   close(): void {

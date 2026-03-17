@@ -80,7 +80,7 @@ export class TabService {
   // Define menu order - this determines tab insertion order
   // Left nav: meal-planning, foods, shop (Shopping List), review, preferences
   // Right nav (profile menu): account, help
-  private menuOrder = ['today', 'chat', 'meal-planning', 'foods', 'shop', 'review', 'preferences', 'account', 'help'];
+  private menuOrder = ['today', 'chat', 'meal-planning', 'review', 'foods', 'shop', 'preferences', 'account', 'help'];
 
   // Tabs that get an image icon
   private tabIcons: Record<string, string> = {
@@ -94,7 +94,7 @@ export class TabService {
   // Tabs that get an emoji icon
   private tabEmojis: Record<string, string> = {
     'shop': '🛒',
-    'review': '📈'
+    'review': '📅'
   };
 
   toggleTab(tabId: string, label: string): void {
@@ -268,7 +268,7 @@ export class TabService {
       'meal-planning': 'RegiMenu',
       'foods': 'Foods',
       'shop': 'Shopping List',
-      'review': 'Review',
+      'review': 'Week Plan',
       'preferences': 'Preferences',
       'account': 'Account',
       'help': 'Help'

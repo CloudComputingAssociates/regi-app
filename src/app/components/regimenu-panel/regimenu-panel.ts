@@ -63,11 +63,18 @@ import { Subscription } from 'rxjs';
             @if (dropdownOpen()) {
               <div class="combo-dropdown" role="listbox">
                 <button
+                  class="dropdown-item create-new ai-generate"
+                  [class.highlighted]="dropdownHighlight() === -2"
+                  (mousedown)="onAIGeneratePlan($event)"
+                  role="option">
+                  AI Generate Plan
+                </button>
+                <button
                   class="dropdown-item create-new"
                   [class.highlighted]="dropdownHighlight() === -1"
                   (mousedown)="onCreateNewPlan($event)"
                   role="option">
-                  + Create new plan...
+                  + Create Empty Plan
                 </button>
                 @for (plan of savedPlans(); track plan.id; let i = $index) {
                   <button
@@ -104,33 +111,6 @@ import { Subscription } from 'rxjs';
         </div>
 
         <div class="header-actions">
-          @if (planningService.hasPlan()) {
-            <button
-              class="icon-btn save-btn"
-              [class.has-changes]="hasChanges()"
-              [disabled]="!hasChanges() || isSaving()"
-              (click)="savePlan()"
-              matTooltip="Save Plan"
-              matTooltipPosition="above">
-              @if (isSaving()) {
-                <span class="spinner"></span>
-              } @else {
-                ✓
-              }
-            </button>
-          }
-          <button
-            class="generate-btn"
-            (click)="generatePlan()"
-            [disabled]="!canGenerate()"
-            matTooltip="Generate Meal Plan"
-            matTooltipPosition="above">
-            @if (planningService.loading()) {
-              <span class="spinner"></span>
-            } @else {
-              Generate
-            }
-          </button>
           <button
             class="icon-btn close-btn"
             (click)="closePanel()"
@@ -165,7 +145,7 @@ import { Subscription } from 'rxjs';
         } @else if (!planningService.hasPlan()) {
           <div class="empty-message">
             <p class="placeholder-text">Intelligent meal planning powered by AI</p>
-            <p class="placeholder-subtext">Click "Generate" to create a meal plan</p>
+            <p class="placeholder-subtext">Select a plan or choose "AI Generate Plan" from the dropdown</p>
           </div>
         } @else {
           <div class="plan-list" #planList>
@@ -270,7 +250,6 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
   isChatCollapsed = signal(false);
   hasChanges = signal(false);
-  isSaving = signal(false);
   private pendingName: string | null = null;
 
   // Dropdown state
@@ -319,16 +298,6 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     return this.isNewPlanMode() && !this.newPlanNameCommitted();
   });
 
-  // Generate is disabled until the current plan is saved
-  canGenerate = computed(() => {
-    if (this.planningService.loading()) return false;
-    if (this.isNewPlanMode() && !this.newPlanNameCommitted()) return false;
-    if (this.needsSaveBeforeGenerate()) return false;
-    return true;
-  });
-
-  // Tracks whether a save is needed before Generate is allowed
-  needsSaveBeforeGenerate = signal(false);
 
   ngOnInit(): void {
     this.fetchSavedPlans();
@@ -393,6 +362,11 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     if (this.isNewPlanMode() && !this.newPlanNameCommitted() && this.newPlanName.trim()) {
       this.commitNewPlanName();
     }
+
+    // Auto-save if plan name was changed on an existing plan
+    if (!this.isNewPlanMode() && this.pendingName !== null) {
+      this.autoSave();
+    }
   }
 
   onArrowDown(event: Event): void {
@@ -408,12 +382,18 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     }
   }
 
+  onAIGeneratePlan(event: MouseEvent): void {
+    event.preventDefault();
+    this.closeDropdown();
+    this.generatePlan();
+  }
+
   onCreateNewPlan(event: MouseEvent): void {
     event.preventDefault();
     this.planningService.clearPlan();
     this.isNewPlanMode.set(true);
     this.newPlanNameCommitted.set(false);
-    this.needsSaveBeforeGenerate.set(true);
+
     this.newPlanName = '';
     this.closeDropdown();
 
@@ -431,7 +411,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     event.preventDefault();
     this.isNewPlanMode.set(false);
     this.newPlanNameCommitted.set(false);
-    this.needsSaveBeforeGenerate.set(true);
+
     this.newPlanName = '';
     this.closeDropdown();
     this.loadPlan(plan.id);
@@ -535,8 +515,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
       fiberG: event.scaledFiberG,
       sodiumMg: event.scaledSodiumMg,
     });
-    this.hasChanges.set(true);
-    this.needsSaveBeforeGenerate.set(true);
+    this.autoSave();
   }
 
   onFoodPickerAdd(event: FoodPickerAddEvent): void {
@@ -560,8 +539,8 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
       fiberG: nf?.dietaryFiberG ? Math.round(nf.dietaryFiberG * scale * 10) / 10 : undefined,
       sodiumMg: nf?.sodiumMG ? Math.round(nf.sodiumMG * scale) : undefined,
     });
-    this.hasChanges.set(true);
     this.notificationService.show(`Added ${food.shortDescription || food.description}`, 'success');
+    this.autoSave();
   }
 
   formatQuantity(quantity: number, unit: string): string {
@@ -589,28 +568,21 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     this.isChatCollapsed.update(v => !v);
   }
 
-  async savePlan(): Promise<void> {
+  private async autoSave(): Promise<void> {
     const plan = this.planningService.currentPlan();
     if (!plan) return;
 
-    this.isSaving.set(true);
     try {
       const updates: UpdateMealRequest = {};
       if (this.pendingName !== null) {
         updates.name = this.pendingName;
+        this.pendingName = null;
       }
-      if (this.hasChanges()) {
-        updates.items = plan.items;
-      }
+      updates.items = plan.items;
       await this.planningService.updatePlan(plan.id, updates);
-      this.pendingName = null;
       this.hasChanges.set(false);
-      this.needsSaveBeforeGenerate.set(false);
-      this.notificationService.show('Plan saved', 'success');
     } catch {
       this.notificationService.show('Failed to save plan', 'error');
-    } finally {
-      this.isSaving.set(false);
     }
   }
 
@@ -711,9 +683,8 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     const items = this.planningService.planItems();
     if (items[index]) {
       this.planningService.deleteItem(items[index].id!);
-      this.hasChanges.set(true);
-      this.needsSaveBeforeGenerate.set(true);
       this.notificationService.show('Item removed', 'success');
+      this.autoSave();
     }
   }
 }
