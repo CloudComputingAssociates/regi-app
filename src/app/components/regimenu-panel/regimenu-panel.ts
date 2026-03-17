@@ -521,8 +521,9 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   onFoodPickerAdd(event: FoodPickerAddEvent): void {
     const { food, amount, unit } = event;
     const nf = food.nutritionFacts;
-    // amount is always in grams (for nutrition scaling); scale from per-100g basis
-    const scale = amount / 100;
+    // amount is always in grams; nutrition values are per serving (servingSizeG)
+    const servingSizeG = nf?.servingSizeG ?? 100;
+    const scale = amount / servingSizeG;
 
     // Convert gram amount to display quantity for the given unit
     let displayQty: number;
@@ -564,7 +565,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     if (unit === 'oz') {
       return String(Math.ceil(quantity * 10) / 10);
     }
-    return String(Math.round(quantity * 10) / 10);
+    return String(Math.round(quantity * 100) / 100);
   }
 
   displayUnit(unit: string): string {
