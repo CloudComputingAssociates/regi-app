@@ -521,15 +521,24 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   onFoodPickerAdd(event: FoodPickerAddEvent): void {
     const { food, amount, unit } = event;
     const nf = food.nutritionFacts;
-    // Nutrition values from the API are per 100g (USDA standard); scale to the actual amount
+    // amount is always in grams (for nutrition scaling); scale from per-100g basis
     const scale = amount / 100;
+
+    // Convert gram amount to display quantity for the given unit
+    let displayQty: number;
+    if (unit === 'whole' || unit === 'cup' || unit === 'tbsp') {
+      displayQty = amount / (food.servingGramsPerUnit ?? amount);
+    } else {
+      const convFactor = this.toGrams[unit] ?? 1;
+      displayQty = amount / convFactor;
+    }
 
     this.planningService.addItem({
       foodId: food.id,
       foodName: food.description,
       shortDescription: food.shortDescription ?? undefined,
       foodImageThumbnail: food.foodImageThumbnail ?? undefined,
-      quantity: amount,
+      quantity: displayQty,
       unit,
       servingSizeG: nf?.servingSizeG ?? 100,
       servingGramsPerUnit: food.servingGramsPerUnit ?? undefined,

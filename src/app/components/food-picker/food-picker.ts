@@ -70,9 +70,14 @@ export class FoodPickerComponent {
   onFoodAdded(event: AddFoodEvent): void {
     const food = event.food;
     const nf = food.nutritionFacts;
-    // One serving = servingSizeG (e.g. 50g for an egg)
-    const amount = nf?.servingSizeG ?? 100;
 
-    this.foodAdded.emit({ food, amount, unit: 'g' });
+    if (food.servingUnit && food.servingGramsPerUnit) {
+      // Food has a preferred unit — add as 1 of that unit (grams amount for scaling)
+      this.foodAdded.emit({ food, amount: food.servingGramsPerUnit, unit: food.servingUnit });
+    } else {
+      // Default: add one serving in grams
+      const amount = nf?.servingSizeG ?? 100;
+      this.foodAdded.emit({ food, amount, unit: 'g' });
+    }
   }
 }
