@@ -523,6 +523,37 @@
   }
 }
 
+// Edit button on each item row
+.item-edit-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.35);
+  transition: color 0.15s ease;
+  border-radius: 4px;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    color: #4da6ff;
+  }
+
+  &:active {
+    color: #3a8ee6;
+  }
+}
+
 // Delete button on each item row
 .item-delete-btn {
   flex-shrink: 0;

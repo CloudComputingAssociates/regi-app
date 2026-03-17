@@ -164,6 +164,40 @@ export class PlanningService {
   }
 
   /**
+   * Update a meal item locally by index
+   */
+  updateItem(index: number, updates: Partial<MealItem>): void {
+    const meal = this.currentMealSignal();
+    if (!meal) return;
+
+    const sorted = [...meal.items].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    if (index < 0 || index >= sorted.length) return;
+
+    const targetId = sorted[index].id;
+    const updatedItems = meal.items.map(item =>
+      item.id === targetId ? { ...item, ...updates } : item
+    );
+
+    const totalCalories = updatedItems.reduce((sum, i) => sum + (i.calories ?? 0), 0);
+    const totalProteinG = updatedItems.reduce((sum, i) => sum + (i.proteinG ?? 0), 0);
+    const totalFatG = updatedItems.reduce((sum, i) => sum + (i.fatG ?? 0), 0);
+    const totalCarbG = updatedItems.reduce((sum, i) => sum + (i.carbG ?? 0), 0);
+    const totalFiberG = updatedItems.reduce((sum, i) => sum + (i.fiberG ?? 0), 0);
+    const totalSodiumMg = updatedItems.reduce((sum, i) => sum + (i.sodiumMg ?? 0), 0);
+
+    this.currentMealSignal.set({
+      ...meal,
+      items: updatedItems,
+      totalCalories,
+      totalProteinG,
+      totalFatG,
+      totalCarbG,
+      totalFiberG,
+      totalSodiumMg,
+    });
+  }
+
+  /**
    * Delete a meal item (local only for now)
    */
   deleteItem(itemId: number): void {

@@ -21,12 +21,14 @@ import { PreferencesService } from '../../services/preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
 import { FoodPickerComponent, FoodPickerAddEvent } from '../food-picker/food-picker';
-import { MealSummary, UpdateMealRequest } from '../../models/planning.model';
+import { FoodAmountEditorComponent, FoodAmountUpdate } from '../food-amount-editor/food-amount-editor';
+import { MealSummary, MealItem, UpdateMealRequest } from '../../models/planning.model';
+import { NutritionFacts } from '../../models/food.model';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-regimenu-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, ChatOutputComponent, FoodPickerComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, ChatOutputComponent, FoodPickerComponent, FoodAmountEditorComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
@@ -201,6 +203,11 @@ import { Subscription } from 'rxjs';
                     }
                   </div>
 
+                  <!-- Edit button -->
+                  <button class="item-edit-btn" (click)="openAmountEditor(i)" aria-label="Edit amount">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+
                   <!-- Delete button -->
                   <button class="item-delete-btn" (click)="deleteItem(i)" aria-label="Delete item">
                     <mat-icon>delete</mat-icon>
@@ -237,6 +244,16 @@ import { Subscription } from 'rxjs';
         [showNameField]="isNewPlanMode() && !newPlanNameCommitted()"
         (foodAdded)="onFoodPickerAdd($event)"
         (closed)="closeFoodPicker()" />
+
+      <!-- Food amount editor overlay -->
+      <app-food-amount-editor
+        [isOpen]="amountEditorOpen()"
+        [item]="editingItem()"
+        [itemIndex]="editingIndex()"
+        [nutritionFacts]="editingNutritionFacts()"
+        [baseServingSizeG]="editingBaseServingG()"
+        (amountChanged)="onAmountChanged($event)"
+        (closed)="closeAmountEditor()" />
     </div>
   `,
   styleUrls: ['./regimenu-panel.scss']
@@ -269,6 +286,13 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
   // Food picker overlay state
   foodPickerOpen = signal(false);
+
+  // Food amount editor state
+  amountEditorOpen = signal(false);
+  editingIndex = signal(-1);
+  editingItem = signal<MealItem | null>(null);
+  editingNutritionFacts = signal<NutritionFacts | null>(null);
+  editingBaseServingG = signal(100);
 
   // Swipe state
   swipingIndex = signal<number | null>(null);
@@ -452,6 +476,59 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
   closeFoodPicker(): void {
     this.foodPickerOpen.set(false);
+  }
+
+  // Food amount editor
+  openAmountEditor(index: number): void {
+    const items = this.planningService.planItems();
+    const item = items[index];
+    if (!item) return;
+
+    // Build NutritionFacts from the MealItem's stored values, scaled back to per-serving basis
+    // The item stores values for its current quantity; we need the base per-serving values
+    const baseServingG = item.quantity;
+    const nf: NutritionFacts = {
+      foodName: item.shortDescription || item.foodName,
+      servingSizeG: baseServingG,
+      calories: item.calories ?? 0,
+      totalFatG: item.fatG ?? 0,
+      saturatedFatG: 0,
+      cholesterolMG: 0,
+      sodiumMG: item.sodiumMg ?? 0,
+      totalCarbohydrateG: item.carbG ?? 0,
+      dietaryFiberG: item.fiberG ?? 0,
+      totalSugarsG: 0,
+      proteinG: item.proteinG ?? 0,
+      vitaminDMcg: 0,
+      calciumMG: 0,
+      ironMG: 0,
+      potassiumMG: 0,
+    };
+
+    this.editingIndex.set(index);
+    this.editingItem.set(item);
+    this.editingNutritionFacts.set(nf);
+    this.editingBaseServingG.set(baseServingG);
+    this.amountEditorOpen.set(true);
+  }
+
+  closeAmountEditor(): void {
+    this.amountEditorOpen.set(false);
+  }
+
+  onAmountChanged(event: FoodAmountUpdate): void {
+    this.planningService.updateItem(event.itemIndex, {
+      quantity: event.quantityG,
+      unit: event.displayUnit,
+      calories: event.scaledCalories,
+      proteinG: event.scaledProteinG,
+      fatG: event.scaledFatG,
+      carbG: event.scaledCarbG,
+      fiberG: event.scaledFiberG,
+      sodiumMg: event.scaledSodiumMg,
+    });
+    this.hasChanges.set(true);
+    this.needsSaveBeforeGenerate.set(true);
   }
 
   onFoodPickerAdd(event: FoodPickerAddEvent): void {
