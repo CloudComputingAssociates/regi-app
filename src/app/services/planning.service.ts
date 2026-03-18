@@ -157,13 +157,14 @@ export class PlanningService {
     const meal = this.currentMealSignal();
     if (!meal) return;
 
-    const maxSort = meal.items.reduce((max, i) => Math.max(max, i.sortOrder ?? 0), 0);
+    const items = meal.items ?? [];
+    const maxSort = items.reduce((max, i) => Math.max(max, i.sortOrder ?? 0), 0);
     const newItem: MealItem = {
       ...item,
       sortOrder: maxSort + 1,
     };
 
-    const updatedItems = [...meal.items, newItem];
+    const updatedItems = [...items, newItem];
 
     // Recalculate totals
     const totalCalories = updatedItems.reduce((sum, i) => sum + (i.calories ?? 0), 0);
