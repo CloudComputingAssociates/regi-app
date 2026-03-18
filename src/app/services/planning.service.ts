@@ -221,13 +221,17 @@ export class PlanningService {
   }
 
   /**
-   * Delete a meal item (local only for now)
+   * Delete a meal item by sorted index
    */
-  deleteItem(itemId: number): void {
+  deleteItemByIndex(index: number): void {
     const meal = this.currentMealSignal();
     if (!meal) return;
 
-    const updatedItems = meal.items.filter(item => item.id !== itemId);
+    const sorted = [...(meal.items ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    if (index < 0 || index >= sorted.length) return;
+
+    const target = sorted[index];
+    const updatedItems = meal.items.filter(item => item !== target);
     this.currentMealSignal.set({
       ...meal,
       items: updatedItems

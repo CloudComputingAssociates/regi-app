@@ -731,7 +731,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   deleteItem(index: number): void {
     const items = this.planningService.planItems();
     if (items[index]) {
-      this.planningService.deleteItem(items[index].id!);
+      this.planningService.deleteItemByIndex(index);
       this.notificationService.show('Item removed', 'success');
       this.autoSave();
     }
