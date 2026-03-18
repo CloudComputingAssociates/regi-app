@@ -268,11 +268,15 @@
   }
 
   &:not(:disabled) {
-    color: #4da6ff;
+    color: #4caf50;
 
     &:hover {
-      color: #7ac0ff;
+      color: #66cc6a;
     }
+  }
+
+  &:disabled {
+    color: rgba(255, 255, 255, 0.3);
   }
 }
 
