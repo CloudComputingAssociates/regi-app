@@ -3,7 +3,8 @@
     "additionalDirectories": [
       "c:\\git\\foods-tool-ui\\src\\app\\models",
       "c:\\git\\foods-tool-ui\\src\\app\\foods",
-      "c:\\git\\foods-tool-ui\\src\\app"
+      "c:\\git\\foods-tool-ui\\src\\app",
+      "c:\\git\\yeh-api\\services"
     ]
   }
 }
