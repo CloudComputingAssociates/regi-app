@@ -521,9 +521,8 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   onFoodPickerAdd(event: FoodPickerAddEvent): void {
     const { food, amount, unit } = event;
     const nf = food.nutritionFacts;
-    // amount is always in grams; nutrition values are per serving (servingSizeG)
-    const servingSizeG = nf?.servingSizeG ?? 100;
-    const scale = amount / servingSizeG;
+    // amount is always in grams; nutrition values are per 100g (USDA standard)
+    const scale = amount / 100;
 
     // Convert gram amount to display quantity for the given unit
     let displayQty: number;
