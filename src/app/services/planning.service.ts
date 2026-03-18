@@ -251,6 +251,16 @@ export class PlanningService {
   }
 
   /**
+   * Delete a meal plan permanently
+   */
+  async deleteMeal(mealId: number): Promise<void> {
+    await firstValueFrom(
+      this.http.delete(`${this.baseUrl}/meal/${mealId}`)
+    );
+    this.currentMealSignal.set(null);
+  }
+
+  /**
    * Clear current meal
    */
   clearMeal(): void {

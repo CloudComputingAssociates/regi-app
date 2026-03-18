@@ -238,7 +238,26 @@
   }
 }
 
-// Add food button (replaces favorite star)
+// Delete plan button
+.delete-plan-btn {
+  flex-shrink: 0;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:not(:disabled) {
+    color: #ff6b6b;
+
+    &:hover {
+      color: #ff4444;
+    }
+  }
+}
+
+// Add food button
 .add-food-btn {
   flex-shrink: 0;
 

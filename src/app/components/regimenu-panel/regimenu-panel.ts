@@ -108,6 +108,16 @@ import { Subscription } from 'rxjs';
             matTooltipPosition="above">
             <mat-icon>add</mat-icon>
           </button>
+
+          <!-- Delete plan button -->
+          <button
+            class="icon-btn delete-plan-btn"
+            (click)="onDeletePlan()"
+            [disabled]="!planningService.hasPlan()"
+            matTooltip="Delete Plan"
+            matTooltipPosition="above">
+            <mat-icon>delete</mat-icon>
+          </button>
         </div>
 
         <div class="header-actions">
@@ -456,6 +466,26 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     } catch {
       this.notificationService.show('Failed to create plan', 'error');
     }
+  }
+
+  onDeletePlan(): void {
+    const plan = this.planningService.currentPlan();
+    if (!plan) return;
+
+    this.notificationService.showConfirmation(
+      `Delete "${plan.name}"? This cannot be undone.`,
+      'warning',
+      async () => {
+        try {
+          await this.planningService.deleteMeal(plan.id);
+          this.notificationService.show('Plan deleted', 'success');
+          this.fetchSavedPlans();
+        } catch {
+          this.notificationService.show('Failed to delete plan', 'error');
+        }
+      },
+      () => {}
+    );
   }
 
   // Food picker
