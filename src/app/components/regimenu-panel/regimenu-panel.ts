@@ -103,7 +103,7 @@ import { Subscription } from 'rxjs';
           <button
             class="icon-btn add-food-btn"
             (click)="openFoodPicker()"
-            [disabled]="!planningService.hasPlan() || foodPickerOpen()"
+            [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()"
             matTooltip="Add Food"
             matTooltipPosition="above">
             <mat-icon>add</mat-icon>
@@ -443,9 +443,18 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     this.closeDropdown();
   }
 
-  private commitNewPlanName(): void {
-    if (this.newPlanName.trim()) {
+  private async commitNewPlanName(): Promise<void> {
+    const name = this.newPlanName.trim();
+    if (!name) return;
+
+    try {
+      await this.planningService.createMeal(name);
       this.newPlanNameCommitted.set(true);
+      this.isNewPlanMode.set(false);
+      this.newPlanName = '';
+      this.fetchSavedPlans();
+    } catch {
+      this.notificationService.show('Failed to create plan', 'error');
     }
   }
 

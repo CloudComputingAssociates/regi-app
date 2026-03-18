@@ -75,6 +75,28 @@ export class PlanningService {
   }
 
   /**
+   * Create an empty meal with a name
+   */
+  async createMeal(name: string): Promise<Meal> {
+    this.loadingSignal.set(true);
+    this.errorSignal.set(null);
+
+    try {
+      const meal = await firstValueFrom(
+        this.http.post<Meal>(`${this.baseUrl}/meal/create`, { name })
+      );
+      this.currentMealSignal.set(meal);
+      return meal;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create meal';
+      this.errorSignal.set(message);
+      throw err;
+    } finally {
+      this.loadingSignal.set(false);
+    }
+  }
+
+  /**
    * Get a meal by ID
    */
   async getMeal(mealId: number): Promise<Meal> {
