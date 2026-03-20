@@ -119,15 +119,6 @@ import { Subscription } from 'rxjs';
             <mat-icon>delete</mat-icon>
           </button>
 
-          <!-- AI Recipe button -->
-          <button
-            class="icon-btn ai-recipe-btn"
-            (click)="onAiRecipe()"
-            [disabled]="planningService.mealItems().length === 0"
-            matTooltip="AI Recipe"
-            matTooltipPosition="above">
-            <img src="images/AI-star.png" alt="AI" class="ai-icon" />
-          </button>
         </div>
 
         <div class="header-actions">
@@ -144,6 +135,13 @@ import { Subscription } from 'rxjs';
       <!-- Totals row beneath header -->
       @if (planningService.hasPlan()) {
         <div class="totals-row" [class.stippled]="foodPickerOpen()">
+          <button
+            class="ai-recipe-btn"
+            (click)="onAiRecipe()"
+            [disabled]="planningService.mealItems().length === 0">
+            <img src="images/AI-star.png" alt="AI" class="ai-recipe-icon" />
+            <span>Recipe prep</span>
+          </button>
           <span class="totals-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
           <span class="totals-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
           <span class="totals-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg sodium</span>

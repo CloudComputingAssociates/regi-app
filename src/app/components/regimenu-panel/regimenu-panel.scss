@@ -257,19 +257,36 @@
   }
 }
 
-// AI Recipe button
+// AI Recipe button (in totals row)
 .ai-recipe-btn {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.15s ease;
 
-  .ai-icon {
-    width: 18px;
-    height: 18px;
+  .ai-recipe-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover:not(:disabled) {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
   }
 
   &:disabled {
-    .ai-icon {
-      opacity: 0.3;
-    }
+    opacity: 0.3;
+    cursor: not-allowed;
   }
 }
 
