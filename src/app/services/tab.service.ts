@@ -108,7 +108,16 @@ export class TabService {
       } else {
         const currentId = this.activeTabId();
         if (currentId !== tabId && this.guardLeave(tabId)) return;
-        this.activeTabIndexSignal.set(existingTabIndex);
+        // Defer so mat-tab-group picks up the change
+        this._pendingActiveIndex = existingTabIndex;
+        setTimeout(() => {
+          if (this._pendingActiveIndex !== null) {
+            this.activeTabIndexSignal.set(this._pendingActiveIndex);
+            setTimeout(() => {
+              this._pendingActiveIndex = null;
+            }, 0);
+          }
+        }, 0);
       }
     } else {
       // Opening a new tab also leaves current tab
@@ -166,8 +175,16 @@ export class TabService {
     const existingTabIndex = currentTabs.findIndex(t => t.id === tabId);
 
     if (existingTabIndex !== -1) {
-      // Tab already exists, just switch to it
-      this.activeTabIndexSignal.set(existingTabIndex);
+      // Tab already exists — defer so mat-tab-group picks up the change
+      this._pendingActiveIndex = existingTabIndex;
+      setTimeout(() => {
+        if (this._pendingActiveIndex !== null) {
+          this.activeTabIndexSignal.set(this._pendingActiveIndex);
+          setTimeout(() => {
+            this._pendingActiveIndex = null;
+          }, 0);
+        }
+      }, 0);
     } else {
       // Find the correct insertion position based on menu order
       let insertIndex = currentTabs.length;
