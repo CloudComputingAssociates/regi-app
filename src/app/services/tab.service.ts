@@ -145,21 +145,24 @@ export class TabService {
         }
       }
 
+      // If inserting before the current active tab, shift the active index
+      // so it keeps pointing at the same tab (avoids signal dedup when we
+      // later set the index to the new tab's position).
+      const currentActive = this.activeTabIndexSignal();
+      if (insertIndex <= currentActive) {
+        this.activeTabIndexSignal.set(currentActive + 1);
+      }
+
       // Insert the tab at the correct position
       const newTabs = [...currentTabs];
       newTabs.splice(insertIndex, 0, newTab);
       this.tabsSignal.set(newTabs);
 
       // Defer focus to the new tab so mat-tab-group renders it first.
-      // Keep _pendingActiveIndex set through TWO cycles: the first setTimeout
-      // sets the index, and the second clears the guard AFTER mat-tab-group
-      // emits its reactive selectedIndexChange in response.
       this._pendingActiveIndex = insertIndex;
       setTimeout(() => {
         if (this._pendingActiveIndex !== null) {
           this.activeTabIndexSignal.set(this._pendingActiveIndex);
-          // Clear guard after the next cycle so the resulting
-          // selectedIndexChange emission is still blocked
           setTimeout(() => {
             this._pendingActiveIndex = null;
           }, 0);
@@ -187,6 +190,12 @@ export class TabService {
             break;
           }
         }
+      }
+
+      // Shift active index if inserting before it (avoids signal dedup)
+      const currentActive = this.activeTabIndexSignal();
+      if (insertIndex <= currentActive) {
+        this.activeTabIndexSignal.set(currentActive + 1);
       }
 
       const newTabs = [...currentTabs];
