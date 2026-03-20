@@ -144,7 +144,7 @@ import { Subscription } from 'rxjs';
             (click)="onAiRecipe()"
             [disabled]="planningService.mealItems().length === 0">
             <img src="images/AI-star.png" alt="AI" class="ai-recipe-icon" />
-            <span class="ai-recipe-label">Recipe gen</span>
+            <span class="ai-recipe-label">Generate recipe</span>
           </button>
         </div>
       }

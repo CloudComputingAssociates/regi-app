@@ -169,19 +169,39 @@ export class TabService {
       // Tab already exists, just switch to it
       this.activeTabIndexSignal.set(existingTabIndex);
     } else {
-      // Add new tab
-      this.tabsSignal.set([
-        ...currentTabs,
-        {
-          id: tabId,
-          label,
-          closeable: true,
-          icon: this.tabIcons[tabId],
-          emoji: this.tabEmojis[tabId]
+      // Find the correct insertion position based on menu order
+      let insertIndex = currentTabs.length;
+      const menuIndex = this.menuOrder.indexOf(tabId);
+      if (menuIndex !== -1) {
+        for (let i = 0; i < currentTabs.length; i++) {
+          const currentTabMenuIndex = this.menuOrder.indexOf(currentTabs[i].id);
+          if (currentTabMenuIndex > menuIndex) {
+            insertIndex = i;
+            break;
+          }
         }
-      ]);
-      // Switch to the new tab
-      this.activeTabIndexSignal.set(currentTabs.length);
+      }
+
+      const newTabs = [...currentTabs];
+      newTabs.splice(insertIndex, 0, {
+        id: tabId,
+        label,
+        closeable: true,
+        icon: this.tabIcons[tabId],
+        emoji: this.tabEmojis[tabId]
+      });
+      this.tabsSignal.set(newTabs);
+
+      // Defer focus so mat-tab-group renders the new tab first
+      this._pendingActiveIndex = insertIndex;
+      setTimeout(() => {
+        if (this._pendingActiveIndex !== null) {
+          this.activeTabIndexSignal.set(this._pendingActiveIndex);
+          setTimeout(() => {
+            this._pendingActiveIndex = null;
+          }, 0);
+        }
+      }, 0);
     }
   }
 
