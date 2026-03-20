@@ -53,6 +53,21 @@ export class TabService {
     this.blockedTabSwitch.set(null);
   }
 
+  /** Force-focus a tab index, even if it's the current value (signal dedup workaround) */
+  private _focusTab(index: number): void {
+    this._pendingActiveIndex = index;
+    // Force signal change by resetting first, then setting target on next tick
+    this.activeTabIndexSignal.set(-1);
+    setTimeout(() => {
+      if (this._pendingActiveIndex !== null) {
+        this.activeTabIndexSignal.set(this._pendingActiveIndex);
+        setTimeout(() => {
+          this._pendingActiveIndex = null;
+        }, 0);
+      }
+    }, 0);
+  }
+
   private _switchToTabInternal(tabId: string): void {
     const currentTabs = this.tabsSignal();
     const tabIndex = currentTabs.findIndex(t => t.id === tabId);
@@ -108,16 +123,7 @@ export class TabService {
       } else {
         const currentId = this.activeTabId();
         if (currentId !== tabId && this.guardLeave(tabId)) return;
-        // Defer so mat-tab-group picks up the change
-        this._pendingActiveIndex = existingTabIndex;
-        setTimeout(() => {
-          if (this._pendingActiveIndex !== null) {
-            this.activeTabIndexSignal.set(this._pendingActiveIndex);
-            setTimeout(() => {
-              this._pendingActiveIndex = null;
-            }, 0);
-          }
-        }, 0);
+        this._focusTab(existingTabIndex);
       }
     } else {
       // Opening a new tab also leaves current tab
@@ -175,16 +181,8 @@ export class TabService {
     const existingTabIndex = currentTabs.findIndex(t => t.id === tabId);
 
     if (existingTabIndex !== -1) {
-      // Tab already exists — defer so mat-tab-group picks up the change
-      this._pendingActiveIndex = existingTabIndex;
-      setTimeout(() => {
-        if (this._pendingActiveIndex !== null) {
-          this.activeTabIndexSignal.set(this._pendingActiveIndex);
-          setTimeout(() => {
-            this._pendingActiveIndex = null;
-          }, 0);
-        }
-      }, 0);
+      // Tab already exists, switch to it
+      this._focusTab(existingTabIndex);
     } else {
       // Find the correct insertion position based on menu order
       let insertIndex = currentTabs.length;
