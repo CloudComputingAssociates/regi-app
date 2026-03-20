@@ -257,6 +257,22 @@
   }
 }
 
+// AI Recipe button
+.ai-recipe-btn {
+  flex-shrink: 0;
+
+  .ai-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:disabled {
+    .ai-icon {
+      opacity: 0.3;
+    }
+  }
+}
+
 // Add food button
 .add-food-btn {
   flex-shrink: 0;

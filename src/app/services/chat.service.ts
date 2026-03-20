@@ -37,6 +37,16 @@ interface StoredSession {
   lastActivity: number;
 }
 
+/** Describes how the user arrived at the Chat tab — drives contextual UI in chat-input */
+export interface ChatEntryContext {
+  /** Identifies the entry point (determines which UI to show above input) */
+  type: 'ai-recipe' | 'help' | 'explain';
+  /** Pre-filled text for the chat input */
+  prefill: string;
+  /** Arbitrary data the context area may need (e.g., cooking methods, meal items) */
+  data?: Record<string, unknown>;
+}
+
 interface ContextState {
   messages: ChatMessage[];
   streamingContent: string;
@@ -99,6 +109,23 @@ export class ChatService {
 
   setPromptMe(active: boolean): void {
     this.isPromptMeActive.set(active);
+  }
+
+  // ============================================
+  // CHAT ENTRY CONTEXT
+  // ============================================
+
+  /** Active entry context — drives contextual UI in chat-input */
+  readonly entryContext = signal<ChatEntryContext | null>(null);
+
+  /** Set a context (called by other panels before opening Chat tab) */
+  setEntryContext(ctx: ChatEntryContext): void {
+    this.entryContext.set(ctx);
+  }
+
+  /** Clear context (called after user sends the message) */
+  clearEntryContext(): void {
+    this.entryContext.set(null);
   }
 
   // ============================================

@@ -1,11 +1,11 @@
 // src/app/components/chat/chat-input/chat-input.ts
-import { Component, signal, computed, ChangeDetectionStrategy, output, inject } from '@angular/core';
+import { Component, signal, computed, effect, ChangeDetectionStrategy, output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ChatService, ChatContext } from '../../../services/chat.service';
+import { ChatService, ChatContext, ChatEntryContext } from '../../../services/chat.service';
 import { TabService } from '../../../services/tab.service';
 
 @Component({
@@ -14,6 +14,29 @@ import { TabService } from '../../../services/tab.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="chat-input-container">
+
+      <!-- Context area (grows above input when entry context is set) -->
+      @if (entryContext(); as ctx) {
+        <div class="context-area">
+          @if (ctx.type === 'ai-recipe') {
+            <div class="context-row">
+              <img src="images/AI-star.png" alt="AI" class="context-icon" />
+              <span class="context-label">Cooking method:</span>
+              <select class="context-select"
+                      [ngModel]="selectedCookingMethod()"
+                      (ngModelChange)="selectedCookingMethod.set($event)">
+                @for (method of cookingMethods(); track method) {
+                  <option [value]="method">{{ method }}</option>
+                }
+              </select>
+              <button class="context-dismiss" (click)="dismissContext()" aria-label="Dismiss">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+
       <div class="input-wrapper">
 
         <!-- Prompt Me Button (Left) -->
@@ -67,6 +90,29 @@ export class ChatInputComponent {
   messageSubmit = output<string>();
   promptMeToggle = output<boolean>();
 
+  // Entry context from ChatService
+  entryContext = this.chatService.entryContext;
+  selectedCookingMethod = signal('stovetop');
+
+  cookingMethods = computed(() => {
+    const ctx = this.entryContext();
+    if (ctx?.type === 'ai-recipe' && ctx.data?.['cookingMethods']) {
+      return ctx.data['cookingMethods'] as string[];
+    }
+    return [];
+  });
+
+  constructor() {
+    // When entry context arrives, prefill the input
+    effect(() => {
+      const ctx = this.chatService.entryContext();
+      if (ctx?.prefill) {
+        this.messageText = ctx.prefill;
+        this.selectedCookingMethod.set('stovetop');
+      }
+    });
+  }
+
   /** Determine chat context from active tab */
   private activeContext = computed((): ChatContext => {
     const tabId = this.tabService.activeTabId();
@@ -89,12 +135,25 @@ export class ChatInputComponent {
   }
 
   submitMessage(): void {
-    const text = this.messageText.trim();
+    let text = this.messageText.trim();
     const ctx = this.activeContext();
+
+    // Weave in context data (e.g., cooking method) before sending
+    const entry = this.chatService.entryContext();
+    if (entry?.type === 'ai-recipe' && text) {
+      text = `${text}\n\nCooking method: ${this.selectedCookingMethod()}`;
+    }
+
     if (text && !this.chatService.getIsLoading(ctx)) {
       this.chatService.sendMessage(text, ctx);
       this.messageSubmit.emit(text);
       this.messageText = '';
+      this.chatService.clearEntryContext();
     }
+  }
+
+  dismissContext(): void {
+    this.chatService.clearEntryContext();
+    this.messageText = '';
   }
 }

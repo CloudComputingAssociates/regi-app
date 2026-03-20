@@ -118,6 +118,16 @@ import { Subscription } from 'rxjs';
             matTooltipPosition="above">
             <mat-icon>delete</mat-icon>
           </button>
+
+          <!-- AI Recipe button -->
+          <button
+            class="icon-btn ai-recipe-btn"
+            (click)="onAiRecipe()"
+            [disabled]="planningService.mealItems().length === 0"
+            matTooltip="AI Recipe"
+            matTooltipPosition="above">
+            <img src="images/AI-star.png" alt="AI" class="ai-icon" />
+          </button>
         </div>
 
         <div class="header-actions">
@@ -134,7 +144,6 @@ import { Subscription } from 'rxjs';
       <!-- Totals row beneath header -->
       @if (planningService.hasPlan()) {
         <div class="totals-row" [class.stippled]="foodPickerOpen()">
-          <span class="totals-label">TOTALS:</span>
           <span class="totals-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
           <span class="totals-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
           <span class="totals-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg sodium</span>
@@ -486,6 +495,25 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
       },
       () => {}
     );
+  }
+
+  onAiRecipe(): void {
+    const items = this.planningService.mealItems();
+    if (items.length === 0) return;
+
+    const itemLines = items
+      .map(i => `- ${this.formatQuantity(i.quantity, i.unit)} ${i.unit} ${i.shortDescription || i.foodName}`)
+      .join('\n');
+
+    const prefill = `Create a recipe to prepare this meal:\n${itemLines}`;
+
+    this.chatService.setEntryContext({
+      type: 'ai-recipe',
+      prefill,
+      data: { cookingMethods: ['stovetop', 'bake', 'broil', 'grill', 'air fryer', 'braise', 'poach', 'smoker', 'microwave', 'instant pot'] }
+    });
+
+    this.tabService.openTab('chat', 'Chat');
   }
 
   // Food picker
