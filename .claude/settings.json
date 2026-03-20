@@ -5,6 +5,9 @@
       "c:\\git\\foods-tool-ui\\src\\app\\foods",
       "c:\\git\\foods-tool-ui\\src\\app",
       "c:\\git\\yeh-api\\services"
+    ],
+    "allow": [
+      "Bash(npx tsc:*)"
     ]
   }
 }

@@ -497,9 +497,9 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     this.foodPickerOpen.set(false);
   }
 
-  // Unit conversion factors (must match editor)
-  private readonly toGrams: Record<string, number> = {
-    g: 1, oz: 28.3495, lbs: 453.592, tbsp: 14.7868, tsp: 4.92892, ml: 1,
+  // Weight-to-weight conversion factors (always valid)
+  private readonly weightToGrams: Record<string, number> = {
+    g: 1, oz: 28.3495, lbs: 453.592,
   };
 
   // Food amount editor
@@ -509,10 +509,11 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     if (!item) return;
 
     // quantity is in display units; convert to grams for nutrition base
-    // "whole" and "cup" use servingGramsPerUnit as the gram weight
-    const convFactor = (item.unit === 'whole' || item.unit === 'cup')
-      ? (item.servingGramsPerUnit ?? item.servingSizeG ?? 100)
-      : (this.toGrams[item.unit] ?? 1);
+    // Weight units use fixed constants; food-specific units use servingGramsPerUnit
+    const convFactor = this.weightToGrams[item.unit]
+      ?? item.servingGramsPerUnit
+      ?? item.servingSizeG
+      ?? 100;
     const baseServingG = item.quantity * convFactor;
     const nf: NutritionFacts = {
       foodName: item.shortDescription || item.foodName,
@@ -564,13 +565,11 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     const scale = amount / 100;
 
     // Convert gram amount to display quantity for the given unit
-    let displayQty: number;
-    if (unit === 'whole' || unit === 'cup' || unit === 'tbsp') {
-      displayQty = amount / (food.servingGramsPerUnit ?? amount);
-    } else {
-      const convFactor = this.toGrams[unit] ?? 1;
-      displayQty = amount / convFactor;
-    }
+    // Weight units use fixed constants; food-specific units use servingGramsPerUnit
+    const convFactor = this.weightToGrams[unit]
+      ?? food.servingGramsPerUnit
+      ?? amount;
+    const displayQty = amount / convFactor;
 
     this.planningService.addItem({
       foodId: food.id,

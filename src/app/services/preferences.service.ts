@@ -85,7 +85,7 @@ export class PreferencesService {
   readonly useImperial = signal(localStorage.getItem('yeh_useImperial') !== 'false');
 
   // Display mode: true = show percentages, false = show grams/absolute values
-  readonly showPercent = signal(true);
+  readonly showPercent = signal(false);
 
   readonly preferences = this.preferencesSignal.asReadonly();
   readonly isLoading = this.loadingSignal.asReadonly();

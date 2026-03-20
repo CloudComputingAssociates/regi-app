@@ -30,15 +30,18 @@ const UNIT_LABELS: Record<EditorUnit, string> = {
   whole: 'whole',
 };
 
-// Conversion factors TO grams (whole and cup are dynamic per food, placeholder here)
-const STATIC_TO_GRAMS: Record<Exclude<EditorUnit, 'whole' | 'cup'>, number> = {
+// Weight-to-weight conversions (always valid, no density needed)
+const WEIGHT_TO_GRAMS: Record<string, number> = {
   g: 1,
   oz: 28.3495,
   lbs: 453.592,
-  tsp: 4.92892,
-  tbsp: 14.7868,
-  ml: 1, // approximate for water-density foods
 };
+
+// Units that always appear in the dropdown (weight-based)
+const WEIGHT_UNITS: EditorUnit[] = ['g', 'oz', 'lbs'];
+
+// Units that require food-specific ServingGramsPerUnit (volumetric or food-specific)
+const FOOD_SPECIFIC_UNITS: EditorUnit[] = ['whole', 'cup', 'tbsp', 'tsp', 'ml'];
 
 // Default increment per unit
 const INCREMENTS: Record<EditorUnit, number> = {
@@ -117,7 +120,7 @@ export interface FoodAmountUpdate {
           <select class="unit-select"
                   [ngModel]="selectedUnit()"
                   (ngModelChange)="onUnitChange($event)">
-            @for (u of units; track u) {
+            @for (u of availableUnits(); track u) {
               <option [value]="u">{{ unitLabels[u] }}</option>
             }
           </select>
@@ -156,8 +159,22 @@ export class FoodAmountEditorComponent {
   private initialQtyG = 0;
   private initialUnit: EditorUnit = 'g';
 
-  readonly units: EditorUnit[] = ['whole', 'cup', 'g', 'oz', 'lbs', 'tbsp', 'tsp', 'ml'];
   readonly unitLabels = UNIT_LABELS;
+
+  // Dynamic unit list: always show weight units, only show food-specific units if food supports them
+  availableUnits = computed(() => {
+    const i = this.item();
+    const foodUnit = (i?.unit as EditorUnit) || null;
+    const hasGramsPerUnit = i?.servingGramsPerUnit != null && i.servingGramsPerUnit > 0;
+    const units: EditorUnit[] = [...WEIGHT_UNITS];
+
+    // Add the food's serving unit if it's food-specific and has valid grams-per-unit data
+    if (foodUnit && hasGramsPerUnit && FOOD_SPECIFIC_UNITS.includes(foodUnit) && !units.includes(foodUnit)) {
+      units.unshift(foodUnit);
+    }
+
+    return units;
+  });
 
   itemName = computed(() => {
     const i = this.item();
@@ -172,8 +189,10 @@ export class FoodAmountEditorComponent {
 
   // Conversion factor for the current unit
   toGramsForUnit(unit: EditorUnit): number {
-    if (unit === 'whole' || unit === 'cup') return this.servingGrams();
-    return STATIC_TO_GRAMS[unit];
+    // Weight-to-weight: use fixed constants
+    if (unit in WEIGHT_TO_GRAMS) return WEIGHT_TO_GRAMS[unit];
+    // Food-specific (whole, cup, tbsp, tsp, ml): use food's servingGramsPerUnit
+    return this.servingGrams();
   }
 
   currentIncrement = computed(() => INCREMENTS[this.selectedUnit()]);
@@ -204,9 +223,16 @@ export class FoodAmountEditorComponent {
       const i = this.item();
       const open = this.isOpen();
       if (i && open) {
-        const unit = (i.unit as EditorUnit) || 'g';
-        // quantity is stored in display units (e.g. 8 oz, not 226.8g)
-        const displayQty = i.quantity;
+        let unit = (i.unit as EditorUnit) || 'g';
+        let displayQty = i.quantity;
+
+        // If stored unit isn't available for this food, convert to grams
+        if (!this.availableUnits().includes(unit)) {
+          const storedGrams = displayQty * (WEIGHT_TO_GRAMS[unit] ?? 1);
+          unit = 'g';
+          displayQty = Math.round(storedGrams * 100) / 100;
+        }
+
         const qtyG = displayQty * this.toGramsForUnit(unit);
         this.initialQtyG = qtyG;
         this.initialUnit = unit;
