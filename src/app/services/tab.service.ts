@@ -53,19 +53,9 @@ export class TabService {
     this.blockedTabSwitch.set(null);
   }
 
-  /** Force-focus a tab index, even if it's the current value (signal dedup workaround) */
+  /** Focus a tab by index */
   private _focusTab(index: number): void {
-    this._pendingActiveIndex = index;
-    // Force signal change by resetting first, then setting target on next tick
-    this.activeTabIndexSignal.set(-1);
-    setTimeout(() => {
-      if (this._pendingActiveIndex !== null) {
-        this.activeTabIndexSignal.set(this._pendingActiveIndex);
-        setTimeout(() => {
-          this._pendingActiveIndex = null;
-        }, 0);
-      }
-    }, 0);
+    this.activeTabIndexSignal.set(index);
   }
 
   private _switchToTabInternal(tabId: string): void {
