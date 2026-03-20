@@ -137,13 +137,13 @@ import { Subscription } from 'rxjs';
         <div class="totals-row" [class.stippled]="foodPickerOpen()">
           <span class="totals-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
           <span class="totals-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
-          <span class="totals-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg sodium</span>
+          <span class="totals-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg salt</span>
           <button
             class="icon-btn ai-recipe-btn"
             (click)="onAiRecipe()"
             [disabled]="planningService.mealItems().length === 0">
             <img src="images/AI-star.png" alt="AI" class="ai-recipe-icon" />
-            <span class="ai-recipe-label">Recipe generation</span>
+            <span class="ai-recipe-label">Recipe gen</span>
           </button>
         </div>
       }
