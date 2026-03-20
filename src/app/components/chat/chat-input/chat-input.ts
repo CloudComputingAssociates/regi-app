@@ -64,18 +64,6 @@ import { TabService } from '../../../services/tab.service';
           [attr.aria-label]="'Message input'"
           rows="2"></textarea>
 
-        <!-- Clear conversation button -->
-        <button
-          class="clear-btn"
-          (click)="clearConversation()"
-          [disabled]="chatService.isLoading() || !hasMessages()"
-          aria-label="Clear conversation"
-          matTooltip="Clear conversation"
-          matTooltipPosition="above"
-          [matTooltipShowDelay]="500">
-          <mat-icon>auto_delete</mat-icon>
-        </button>
-
         <!-- Send Button (Right) -->
         <button
           class="send-btn"
@@ -169,13 +157,4 @@ export class ChatInputComponent {
     this.messageText = '';
   }
 
-  hasMessages = computed(() => {
-    const ctx = this.activeContext();
-    return this.chatService.getMessages(ctx).length > 0;
-  });
-
-  clearConversation(): void {
-    const ctx = this.activeContext();
-    this.chatService.clearContextSession(ctx);
-  }
 }

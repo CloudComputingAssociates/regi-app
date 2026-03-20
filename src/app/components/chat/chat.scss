@@ -98,6 +98,18 @@
         cursor: not-allowed;
       }
     }
+
+    .clear-chat-btn {
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+
+      &:hover:not(:disabled) mat-icon {
+        color: #ff6b6b;
+      }
+    }
   }
 
   // Chat output takes remaining space

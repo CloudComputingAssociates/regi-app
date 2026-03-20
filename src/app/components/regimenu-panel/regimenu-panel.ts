@@ -504,7 +504,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
       .map(i => `- ${this.formatQuantity(i.quantity, i.unit)} ${i.unit} ${i.shortDescription || i.foodName}`)
       .join('\n');
 
-    const prefill = `Create a recipe to prepare this meal:\n${itemLines}`;
+    const prefill = `Create a recipe to prepare this meal. Include detailed prep instructions and enumerated step-by-step cooking directions for the selected cooking method.\n\nIngredients:\n${itemLines}`;
 
     this.chatService.setEntryContext({
       type: 'ai-recipe',
