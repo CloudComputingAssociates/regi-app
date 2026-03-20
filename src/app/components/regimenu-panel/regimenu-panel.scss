@@ -236,6 +236,10 @@
     color: #4da6ff;
     white-space: nowrap;
   }
+
+  .totals-spacer {
+    flex: 1;
+  }
 }
 
 // Delete plan button
@@ -257,11 +261,25 @@
   }
 }
 
-// AI Recipe button (in totals row, uses icon-btn base)
+// AI Recipe button (in totals row)
 .ai-recipe-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+  border-top: 1px solid #6a6a6a;
+  border-left: 1px solid #5a5a5a;
+  border-right: 1px solid #5a5a5a;
+  border-bottom: 2px solid #1a1a1a;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
   width: auto;
-  padding: 0 10px;
-  gap: 5px;
+  height: auto;
 
   .ai-recipe-icon {
     width: 16px;
@@ -275,8 +293,18 @@
     white-space: nowrap;
   }
 
-  &:disabled .ai-recipe-label {
+  &:hover:not(:disabled) {
+    background: linear-gradient(180deg, #606060 0%, #454545 100%);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+    border-bottom-width: 1px;
+  }
+
+  &:disabled {
     opacity: 0.4;
+    cursor: not-allowed;
   }
 }
 
