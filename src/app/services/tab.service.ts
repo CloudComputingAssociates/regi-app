@@ -108,7 +108,9 @@ export class TabService {
 
     if (existingTabIndex !== -1) {
       // Tab exists - if it's already active, close it; otherwise focus it
+      console.log(`[TabService] toggleTab('${tabId}'): existingTabIndex=${existingTabIndex}, activeTabIndex=${this.activeTabIndexSignal()}, activeTabId=${this.activeTabId()}`);
       if (this.activeTabIndexSignal() === existingTabIndex) {
+        console.log(`[TabService] toggleTab('${tabId}'): CLOSING (signal matches)`);
         this.closeTab(tabId);
       } else {
         const currentId = this.activeTabId();
