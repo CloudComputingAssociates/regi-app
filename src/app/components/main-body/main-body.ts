@@ -124,7 +124,6 @@ export class MainBodyComponent {
   }
 
   onTabIndexChange(index: number): void {
-    console.log(`[MainBody] onTabIndexChange(${index}), pending=${this.tabService.hasPendingFocus()}, signalIndex=${this.tabService.activeTabIndex()}`);
     if (this.tabService.hasPendingFocus()) return;
 
     const tabs = this.tabService.tabs();
