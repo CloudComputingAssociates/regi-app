@@ -59,12 +59,31 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
           <mat-icon>check</mat-icon>
         </button>
 
+        <button class="delete-btn"
+                [disabled]="!currentWeek() || weekPlanService.loading()"
+                (click)="confirmDelete()"
+                title="Delete week plan">
+          <mat-icon>delete</mat-icon>
+        </button>
+
         <button class="close-header-btn"
                 (click)="close()"
                 title="Close">
           ✕
         </button>
       </div>
+
+      @if (showDeleteConfirm()) {
+        <div class="confirm-overlay" (click)="showDeleteConfirm.set(false)">
+          <div class="confirm-dialog" (click)="$event.stopPropagation()">
+            <p>Are you sure you want to delete this week plan?</p>
+            <div class="confirm-buttons">
+              <button class="confirm-btn delete" (click)="deleteWeekPlan()">Delete</button>
+              <button class="confirm-btn cancel" (click)="showDeleteConfirm.set(false)">Cancel</button>
+            </div>
+          </div>
+        </div>
+      }
 
       <!-- Week grid -->
       <div class="week-grid">
@@ -119,6 +138,7 @@ export class WeekPlanPanelComponent implements OnInit {
 
   selectedDate = signal<Date>(new Date());
   weekName = signal('');
+  showDeleteConfirm = signal(false);
 
   /** Filter: only allow picking dates that match user's week-start day */
   weekStartFilter = (d: Date | null): boolean => {
@@ -197,15 +217,31 @@ export class WeekPlanPanelComponent implements OnInit {
     }
   }
 
+  confirmDelete(): void {
+    this.showDeleteConfirm.set(true);
+  }
+
+  async deleteWeekPlan(): Promise<void> {
+    const wp = this.currentWeek();
+    if (!wp) return;
+    this.showDeleteConfirm.set(false);
+    try {
+      await this.weekPlanService.deleteWeekPlan(wp.id);
+      await this.weekPlanService.listWeekPlans();
+    } catch {
+      // error is captured in service
+    }
+  }
+
   close(): void {
     this.tabService.closeTab('review');
   }
 
   private formatDefaultName(date: Date): string {
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
     const yyyy = date.getFullYear();
-    return `${mm}${dd}${yyyy}-week`;
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    return `${yyyy}-${months[date.getMonth()]}-${dd}-week`;
   }
 
   private toDateString(date: Date): string {
