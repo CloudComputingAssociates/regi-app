@@ -123,6 +123,45 @@ export interface WeekViewResponse {
   days: DayPlan[];
 }
 
+// WeekPlan types
+export interface WeekPlan {
+  id: number;
+  name: string;
+  startDate: string;  // YYYY-MM-DD
+  isFavorite: boolean;
+  days: DayPlan[];
+  createdAt: string;
+}
+
+export interface WeekPlanSummary {
+  id: number;
+  name: string;
+  startDate: string;
+  isFavorite: boolean;
+  dayCount: number;
+  createdAt: string;
+}
+
+export interface CreateWeekPlanRequest {
+  startDate: string;
+  name?: string;
+}
+
+export interface UpdateWeekPlanRequest {
+  name?: string;
+  isFavorite?: boolean;
+}
+
+export interface CopyWeekPlanRequest {
+  startDate: string;
+  name?: string;
+}
+
+export interface ListWeekPlansResponse {
+  weekPlans: WeekPlanSummary[];
+  total: number;
+}
+
 // Helper to get meal slot name
 export function getMealSlotName(slot: number): string {
   switch (slot) {

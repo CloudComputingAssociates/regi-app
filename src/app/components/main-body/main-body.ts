@@ -9,7 +9,7 @@ import { PreferencesService } from '../../services/preferences.service';
 import { ChatComponent } from '../chat/chat';
 import { RegimenuPanelComponent } from '../regimenu-panel/regimenu-panel';
 import { ShoppingPanelComponent } from '../shopping-panel/shopping-panel';
-import { WeekPlanPanelComponent } from '../progress-panel/progress-panel';
+import { WeekPlanPanelComponent } from '../week-plan-panel/week-plan-panel';
 import { FoodsPanelComponent } from '../foods-panel/foods-panel';
 import { AccountPanelComponent } from '../account-panel/account-panel';
 import { PreferencesPanelComponent } from '../preferences-panel/preferences-panel';

@@ -1,13 +1,15 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(pushd \"c:\\\\git\\\\yeh-api\")",
+      "Bash(popd)"
+    ],
     "additionalDirectories": [
       "c:\\git\\foods-tool-ui\\src\\app\\models",
       "c:\\git\\foods-tool-ui\\src\\app\\foods",
       "c:\\git\\foods-tool-ui\\src\\app",
       "c:\\git\\yeh-api\\services"
-    ],
-    "allow": [
-      "Bash(npx tsc:*)"
     ]
   }
 }
