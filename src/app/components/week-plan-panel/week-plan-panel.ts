@@ -31,21 +31,11 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Action buttons - top right -->
-      <div class="action-buttons">
-        <button
-          class="icon-btn close-btn"
-          (click)="close()"
-          title="Close">
-          ✕
-        </button>
-      </div>
-
-      <!-- Header row: calendar + week name + save -->
+      <!-- Header row: calendar + week name + save + close -->
       <div class="week-header">
         <div class="calendar-section">
           <mat-form-field appearance="outline" class="date-field">
-            <mat-label>Week starting</mat-label>
+            <mat-label>Start date</mat-label>
             <input matInput [matDatepicker]="picker"
                    [value]="selectedDate()"
                    (dateChange)="onDateChange($event.value)"
@@ -62,14 +52,18 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                  placeholder="Week plan name" />
         </div>
 
-        <div class="save-section">
-          <button class="save-btn"
-                  [disabled]="weekPlanService.loading()"
-                  (click)="saveWeekPlan()">
-            <mat-icon>save</mat-icon>
-            Save
-          </button>
-        </div>
+        <button class="save-check-btn"
+                [disabled]="weekPlanService.loading()"
+                (click)="saveWeekPlan()"
+                title="Save">
+          <mat-icon>check</mat-icon>
+        </button>
+
+        <button class="close-header-btn"
+                (click)="close()"
+                title="Close">
+          ✕
+        </button>
       </div>
 
       <!-- Week grid -->

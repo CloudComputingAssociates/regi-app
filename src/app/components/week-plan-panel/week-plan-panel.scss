@@ -17,65 +17,12 @@
   flex-direction: column;
 }
 
-// Action buttons - top right corner
-.action-buttons {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 10;
-  display: flex;
-  gap: 8px;
-
-  .icon-btn {
-    font-size: 18px;
-    font-weight: 700;
-    color: #ffffff;
-    background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.2s ease;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border-radius: 6px;
-    border-top: 1px solid #6a6a6a;
-    border-left: 1px solid #5a5a5a;
-    border-right: 1px solid #5a5a5a;
-    border-bottom: 2px solid #1a1a1a;
-    outline: none;
-    font-family: inherit;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow:
-      0 3px 6px rgba(0, 0, 0, 0.4),
-      0 -1px 0 rgba(255, 255, 255, 0.2) inset;
-
-    &:hover:not(:disabled) {
-      background: linear-gradient(180deg, #606060 0%, #454545 100%);
-      border-top-color: #757575;
-    }
-
-    &:active:not(:disabled) {
-      background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
-      border-bottom-width: 1px;
-      transform: translateY(1px);
-    }
-
-    &:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-  }
-}
-
-// Header row with calendar, name, save
+// Header row with calendar, name, save, close
 .week-header {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  padding-right: 50px; // space for close button
   border-bottom: 1px solid #555;
   flex-shrink: 0;
 
@@ -132,40 +79,71 @@
     }
   }
 
-  .save-section {
-    flex-shrink: 0;
+}
 
-    .save-btn {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: linear-gradient(180deg, #4caf50 0%, #388e3c 100%);
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 16px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      border-top: 1px solid #66bb6a;
-      border-bottom: 2px solid #1b5e20;
+// Green check save button
+.save-check-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: linear-gradient(180deg, #4caf50 0%, #388e3c 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  border-top: 1px solid #66bb6a;
+  border-bottom: 2px solid #1b5e20;
 
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
+  mat-icon {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+  }
 
-      &:hover:not(:disabled) {
-        background: linear-gradient(180deg, #56c05a 0%, #43a047 100%);
-      }
+  &:hover:not(:disabled) {
+    background: linear-gradient(180deg, #56c05a 0%, #43a047 100%);
+  }
 
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-    }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Close button in header
+.close-header-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+  cursor: pointer;
+  border-radius: 6px;
+  border-top: 1px solid #6a6a6a;
+  border-left: 1px solid #5a5a5a;
+  border-right: 1px solid #5a5a5a;
+  border-bottom: 2px solid #1a1a1a;
+  outline: none;
+  font-family: inherit;
+
+  &:hover {
+    background: linear-gradient(180deg, #606060 0%, #454545 100%);
+  }
+
+  &:active {
+    background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
+    border-bottom-width: 1px;
+    transform: translateY(1px);
   }
 }
 
@@ -315,15 +293,5 @@
 @media (max-width: 480px) {
   .week-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .action-buttons {
-    gap: 6px;
-
-    .icon-btn {
-      width: 28px;
-      height: 28px;
-      font-size: 16px;
-    }
   }
 }
