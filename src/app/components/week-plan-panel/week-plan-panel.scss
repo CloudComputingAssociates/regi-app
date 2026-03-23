@@ -1,5 +1,11 @@
 // src/app/components/week-plan-panel/week-plan-panel.scss
 
+$input-font: 13px;
+$input-bg: #1a1a1a;
+$input-border: #555555;
+$input-border-dark: #333333;
+$input-left-offset: 86px; // labels are ~80px + gap
+
 :host {
   display: flex;
   height: 100%;
@@ -16,58 +22,76 @@
   overflow: hidden;
 }
 
-// ── Header (matches RegiMenu pattern) ──
-.plan-header {
+// ── Floating close button (top-right) ──
+.panel-close-btn {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 10;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
-  border-bottom: 1px solid #2a2a2a;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(180deg, #555 0%, #3a3a3a 100%);
+  cursor: pointer;
+  border-radius: 5px;
+  border-top: 1px solid #6a6a6a;
+  border-left: 1px solid #5a5a5a;
+  border-right: 1px solid #5a5a5a;
+  border-bottom: 2px solid #1a1a1a;
+  outline: none;
+  font-family: inherit;
+
+  &:hover { background: linear-gradient(180deg, #606060 0%, #454545 100%); }
+  &:active {
+    background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
+    border-bottom-width: 1px;
+    transform: translateY(1px);
+  }
+}
+
+// ── Header rows ──
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
   flex-shrink: 0;
-  min-height: 48px;
+  background: linear-gradient(180deg, #4a4a4a 0%, #3e3e3e 100%);
 
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .plan-label {
-    color: #4da6ff;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    flex-shrink: 0;
+  &:last-of-type {
+    border-bottom: 1px solid #2a2a2a;
+    padding-bottom: 7px;
   }
 }
 
-// ── Combo-box (same as RegiMenu) ──
-.plan-combo {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex: 1;
-  min-width: 0;
-  max-width: 220px;
+.row-label {
+  color: #4da6ff;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+  width: 74px;
+  text-align: right;
 }
 
-.plan-name-input {
-  color: #ffffff;
-  font-size: 15px;
+// ── Shared input style (date + plan name) ──
+.header-input {
+  color: #fff;
+  font-size: $input-font;
   font-weight: 500;
   font-family: inherit;
-  background: #1a1a1a;
-  border: 1px solid #555555;
-  border-top-color: #333333;
-  border-left-color: #333333;
-  border-radius: 4px 0 0 4px;
+  background: $input-bg;
+  border: 1px solid $input-border;
+  border-top-color: $input-border-dark;
+  border-left-color: $input-border-dark;
   padding: 4px 8px;
-  min-width: 0;
-  width: 100%;
   outline: none;
   box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
 
@@ -82,19 +106,53 @@
   }
 }
 
+// ── Date input ──
+.date-input {
+  border-radius: 4px;
+  width: 100px;
+  cursor: pointer;
+}
+
+.date-toggle {
+  flex-shrink: 0;
+
+  ::ng-deep .mat-mdc-icon-button {
+    width: 28px;
+    height: 28px;
+    padding: 2px;
+    color: #4da6ff;
+  }
+}
+
+// ── Combo-box ──
+.plan-combo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  max-width: 220px;
+}
+
+.plan-name-input {
+  border-radius: 4px 0 0 4px;
+  min-width: 0;
+  width: 100%;
+}
+
 .combo-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #1a1a1a;
-  border: 1px solid #555555;
+  background: $input-bg;
+  border: 1px solid $input-border;
   border-left: none;
-  border-top-color: #333333;
+  border-top-color: $input-border-dark;
   border-radius: 0 4px 4px 0;
   padding: 0 2px;
   cursor: pointer;
   height: 100%;
-  min-height: 30px;
+  min-height: 28px;
   color: rgba(255, 255, 255, 0.6);
   transition: color 0.15s ease;
 
@@ -116,7 +174,7 @@
   max-height: 240px;
   overflow-y: auto;
   background: #2a2a2a;
-  border: 1px solid #555555;
+  border: 1px solid $input-border;
   border-top: none;
   border-radius: 0 0 6px 6px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
@@ -132,9 +190,9 @@
   padding: 8px 10px;
   background: none;
   border: none;
-  border-bottom: 1px solid #333333;
-  color: #ffffff;
-  font-size: 13px;
+  border-bottom: 1px solid #333;
+  color: #fff;
+  font-size: $input-font;
   font-family: inherit;
   cursor: pointer;
   text-align: left;
@@ -180,13 +238,13 @@
   text-align: center;
 }
 
-// ── Icon buttons (header) ──
+// ── Icon buttons (delete, save) ──
 .icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   border: none;
   border-radius: 5px;
@@ -195,7 +253,7 @@
   flex-shrink: 0;
   outline: none;
 
-  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
 
   &:disabled { opacity: 0.35; cursor: not-allowed; }
 
@@ -211,47 +269,6 @@
     border-top: 1px solid #ef5350;
     border-bottom: 2px solid #7f0000;
     &:hover:not(:disabled) { background: linear-gradient(180deg, #ef5350 0%, #c62828 100%); }
-  }
-
-  &.close-btn {
-    background: linear-gradient(180deg, #555 0%, #3a3a3a 100%);
-    border-top: 1px solid #6a6a6a;
-    border-bottom: 2px solid #1a1a1a;
-    &:hover { background: linear-gradient(180deg, #606060 0%, #454545 100%); }
-  }
-}
-
-// ── Calendar date input (plain, no mat-form-field wrapper) ──
-.date-input {
-  background: #1a1a1a;
-  border: 1px solid #555;
-  border-top-color: #333;
-  border-left-color: #333;
-  border-radius: 4px;
-  color: #fff;
-  font-size: 13px;
-  font-family: inherit;
-  padding: 4px 8px;
-  width: 90px;
-  outline: none;
-  cursor: pointer;
-  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
-
-  &:focus {
-    border-color: #4da6ff;
-  }
-}
-
-.date-toggle {
-  flex-shrink: 0;
-
-  ::ng-deep {
-    .mat-mdc-icon-button {
-      width: 28px;
-      height: 28px;
-      padding: 2px;
-      color: #4da6ff;
-    }
   }
 }
 
@@ -601,22 +618,16 @@
 
 // ── Mobile responsive ──
 @media (max-width: 480px) {
-  .plan-header {
-    padding: 6px 10px;
-    min-height: 44px;
+  .row-label {
+    width: 60px;
+    font-size: 10px;
   }
 
   .plan-combo {
     max-width: 160px;
   }
 
-  .plan-name-input {
-    font-size: 13px;
-    padding: 3px 6px;
-  }
-
   .date-input {
-    width: 75px;
-    font-size: 11px;
+    width: 80px;
   }
 }

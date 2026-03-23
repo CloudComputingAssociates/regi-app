@@ -36,95 +36,91 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Header -->
-      <div class="plan-header">
-        <div class="header-left">
-          <span class="plan-label">Week Plan</span>
+      <!-- Close floats top-right -->
+      <button class="panel-close-btn"
+              (click)="close()"
+              title="Close">
+        ✕
+      </button>
 
-          <!-- Combo-box dropdown for week plan selection/rename -->
-          <div class="plan-combo" (focusout)="onComboFocusOut($event)">
-            <input
-              #planNameInput
-              type="text"
-              class="plan-name-input"
-              [value]="weekName()"
-              (input)="onNameChange($event)"
-              (focus)="onComboInputFocus()"
-              (keydown.enter)="onPlanNameCommit($event)"
-              (keydown.escape)="closeDropdown()"
-              (keydown.arrowDown)="onArrowDown($event)"
-              placeholder="Plan name..."
-              spellcheck="false" />
-            <button
-              class="combo-toggle"
-              (mousedown)="onDropdownToggleMousedown($event)"
-              tabindex="-1"
-              aria-label="Show saved week plans">
-              <mat-icon class="combo-arrow">expand_more</mat-icon>
-            </button>
+      <!-- Row 1: START DATE + calendar -->
+      <div class="header-row">
+        <span class="row-label">Start Date</span>
+        <input
+          class="header-input date-input"
+          [matDatepicker]="picker"
+          [value]="selectedDate()"
+          (dateChange)="onDateChange($event.value)"
+          [matDatepickerFilter]="weekStartFilter"
+          readonly />
+        <mat-datepicker-toggle [for]="picker" class="date-toggle" />
+        <mat-datepicker #picker />
+      </div>
 
-            @if (dropdownOpen()) {
-              <div class="combo-dropdown" role="listbox">
-                <button
-                  class="dropdown-item create-new"
-                  [class.highlighted]="dropdownHighlight() === -1"
-                  (mousedown)="onCreateNewPlan($event)"
-                  role="option">
-                  + New Week Plan
-                </button>
-                @for (wp of weekPlanService.weekPlans(); track wp.id; let i = $index) {
-                  <button
-                    class="dropdown-item"
-                    [class.highlighted]="dropdownHighlight() === i"
-                    [class.active]="currentWeek()?.id === wp.id"
-                    (mousedown)="onSelectPlan(wp, $event)"
-                    role="option">
-                    <span class="dropdown-item-name">{{ wp.name }}</span>
-                    <span class="dropdown-item-date">{{ wp.startDate }}</span>
-                  </button>
-                }
-                @if (weekPlanService.weekPlans().length === 0) {
-                  <div class="dropdown-empty">No saved plans</div>
-                }
-              </div>
-            }
-          </div>
-
-          <!-- Save (green check) -->
-          <button class="icon-btn save-btn"
-                  [disabled]="weekPlanService.loading()"
-                  (click)="saveWeekPlan()"
-                  title="Save">
-            <mat-icon>check</mat-icon>
-          </button>
-
-          <!-- Calendar date input (plain) -->
+      <!-- Row 2: WEEK PLAN + combo-box + delete + save -->
+      <div class="header-row">
+        <span class="row-label">Week Plan</span>
+        <div class="plan-combo" (focusout)="onComboFocusOut($event)">
           <input
-            class="date-input"
-            [matDatepicker]="picker"
-            [value]="selectedDate()"
-            (dateChange)="onDateChange($event.value)"
-            [matDatepickerFilter]="weekStartFilter"
-            placeholder="Start date"
-            readonly />
-          <mat-datepicker-toggle [for]="picker" class="date-toggle" />
-          <mat-datepicker #picker />
-
-          <!-- Delete week plan -->
-          <button class="icon-btn delete-btn"
-                  [disabled]="!currentWeek() || weekPlanService.loading()"
-                  (click)="confirmDeletePlan()"
-                  title="Delete week plan">
-            <mat-icon>delete</mat-icon>
+            #planNameInput
+            type="text"
+            class="header-input plan-name-input"
+            [value]="weekName()"
+            (input)="onNameChange($event)"
+            (focus)="onComboInputFocus()"
+            (keydown.enter)="onPlanNameCommit($event)"
+            (keydown.escape)="closeDropdown()"
+            (keydown.arrowDown)="onArrowDown($event)"
+            placeholder="Plan name..."
+            spellcheck="false" />
+          <button
+            class="combo-toggle"
+            (mousedown)="onDropdownToggleMousedown($event)"
+            tabindex="-1"
+            aria-label="Show saved week plans">
+            <mat-icon class="combo-arrow">expand_more</mat-icon>
           </button>
 
-          <!-- Close -->
-          <button class="icon-btn close-btn"
-                  (click)="close()"
-                  title="Close">
-            <mat-icon>close</mat-icon>
-          </button>
+          @if (dropdownOpen()) {
+            <div class="combo-dropdown" role="listbox">
+              <button
+                class="dropdown-item create-new"
+                [class.highlighted]="dropdownHighlight() === -1"
+                (mousedown)="onCreateNewPlan($event)"
+                role="option">
+                + New Week Plan
+              </button>
+              @for (wp of weekPlanService.weekPlans(); track wp.id; let i = $index) {
+                <button
+                  class="dropdown-item"
+                  [class.highlighted]="dropdownHighlight() === i"
+                  [class.active]="currentWeek()?.id === wp.id"
+                  (mousedown)="onSelectPlan(wp, $event)"
+                  role="option">
+                  <span class="dropdown-item-name">{{ wp.name }}</span>
+                  <span class="dropdown-item-date">{{ wp.startDate }}</span>
+                </button>
+              }
+              @if (weekPlanService.weekPlans().length === 0) {
+                <div class="dropdown-empty">No saved plans</div>
+              }
+            </div>
+          }
         </div>
+
+        <button class="icon-btn delete-btn"
+                [disabled]="!currentWeek() || weekPlanService.loading()"
+                (click)="confirmDeletePlan()"
+                title="Delete week plan">
+          <mat-icon>delete</mat-icon>
+        </button>
+
+        <button class="icon-btn save-btn"
+                [disabled]="weekPlanService.loading()"
+                (click)="saveWeekPlan()"
+                title="Save">
+          <mat-icon>check</mat-icon>
+        </button>
       </div>
 
       @if (showDeletePlanConfirm()) {
@@ -369,9 +365,17 @@ export class WeekPlanPanelComponent implements OnInit {
   onDateChange(date: Date | null): void {
     if (!date) return;
     this.selectedDate.set(date);
-    this.weekName.set(this.formatDefaultName(date));
-    this.weekPlanService.clearCurrentWeekPlan();
     this.clearSelections();
+
+    // Check if a saved plan exists for this start date
+    const dateStr = this.toDateString(date);
+    const match = this.weekPlanService.weekPlans().find(wp => wp.startDate === dateStr);
+    if (match) {
+      this.loadWeekPlan(match.id);
+    } else {
+      this.weekPlanService.clearCurrentWeekPlan();
+      this.weekName.set(this.formatDefaultName(date));
+    }
   }
 
   onNameChange(event: Event): void {
