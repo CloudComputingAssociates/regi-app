@@ -16,78 +16,172 @@
   overflow: hidden;
 }
 
-// ── Header ──
-.week-header {
+// ── Header (matches RegiMenu pattern) ──
+.plan-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
   padding: 8px 12px;
-  border-bottom: 1px solid #555;
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  border-bottom: 1px solid #2a2a2a;
   flex-shrink: 0;
-  flex-wrap: wrap;
+  min-height: 48px;
 
-  .plan-select-field {
-    flex-shrink: 0;
-    width: 160px;
-
-    ::ng-deep {
-      .mat-mdc-form-field-subscript-wrapper { display: none; }
-      .mat-mdc-text-field-wrapper { background: #333; }
-      .mat-mdc-form-field-flex { height: 36px; }
-      .mdc-text-field--outlined .mdc-notched-outline__leading,
-      .mdc-text-field--outlined .mdc-notched-outline__notch,
-      .mdc-text-field--outlined .mdc-notched-outline__trailing { border-color: #666; }
-      .mat-mdc-select-value-text { color: #fff; font-size: 12px; }
-      .mat-mdc-select-arrow { color: #4da6ff; }
-      .mdc-floating-label,
-      .mdc-floating-label--float-above { color: #4da6ff !important; }
-    }
-  }
-
-  .calendar-section {
-    flex-shrink: 0;
-
-    .date-field {
-      width: 130px;
-
-      ::ng-deep {
-        .mat-mdc-form-field-subscript-wrapper { display: none; }
-        .mat-mdc-text-field-wrapper { background: #333; }
-        .mat-mdc-form-field-flex { height: 36px; }
-        .mdc-text-field--outlined .mdc-notched-outline__leading,
-        .mdc-text-field--outlined .mdc-notched-outline__notch,
-        .mdc-text-field--outlined .mdc-notched-outline__trailing { border-color: #666; }
-        .mat-mdc-input-element { color: #fff; font-size: 12px; }
-        .mdc-floating-label,
-        .mdc-floating-label--float-above { color: #4da6ff !important; }
-        .mat-datepicker-toggle { color: #4da6ff; }
-      }
-    }
-  }
-
-  .name-section {
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     flex: 1;
-    min-width: 80px;
+    min-width: 0;
+  }
 
-    .week-name-input {
-      width: 100%;
-      background: #333;
-      border: 1px solid #666;
-      border-radius: 4px;
-      color: #fff;
-      font-size: 12px;
-      padding: 7px 10px;
-      outline: none;
-      font-family: inherit;
-
-      &:focus { border-color: #4da6ff; }
-    }
+  .plan-label {
+    color: #4da6ff;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
   }
 }
 
-// ── Small header buttons ──
-.header-btn {
-  flex-shrink: 0;
+// ── Combo-box (same as RegiMenu) ──
+.plan-combo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  max-width: 220px;
+}
+
+.plan-name-input {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  background: #1a1a1a;
+  border: 1px solid #555555;
+  border-top-color: #333333;
+  border-left-color: #333333;
+  border-radius: 4px 0 0 4px;
+  padding: 4px 8px;
+  min-width: 0;
+  width: 100%;
+  outline: none;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
+
+  &:focus {
+    border-color: #4da6ff;
+    box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(77, 166, 255, 0.3);
+  }
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+    font-style: italic;
+  }
+}
+
+.combo-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  border: 1px solid #555555;
+  border-left: none;
+  border-top-color: #333333;
+  border-radius: 0 4px 4px 0;
+  padding: 0 2px;
+  cursor: pointer;
+  height: 100%;
+  min-height: 30px;
+  color: rgba(255, 255, 255, 0.6);
+  transition: color 0.15s ease;
+
+  &:hover { color: #ffffff; }
+
+  .combo-arrow {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.combo-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  min-width: 200px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #2a2a2a;
+  border: 1px solid #555555;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+  z-index: 100;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #333333;
+  color: #ffffff;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s ease;
+
+  &:hover,
+  &.highlighted { background: #3a3a3a; }
+
+  &.active {
+    background: #3a4a5a;
+    border-left: 3px solid #4da6ff;
+    padding-left: 7px;
+  }
+
+  &.create-new {
+    color: #4da6ff;
+    font-weight: 500;
+    font-style: italic;
+    padding: 10px;
+  }
+
+  &:last-child { border-bottom: none; }
+
+  .dropdown-item-name {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dropdown-item-date {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+}
+
+.dropdown-empty {
+  padding: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+  text-align: center;
+}
+
+// ── Icon buttons (header) ──
+.icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -98,9 +192,7 @@
   border-radius: 5px;
   cursor: pointer;
   color: #fff;
-  font-family: inherit;
-  font-size: 16px;
-  font-weight: 700;
+  flex-shrink: 0;
   outline: none;
 
   mat-icon { font-size: 20px; width: 20px; height: 20px; }
@@ -114,7 +206,7 @@
     &:hover:not(:disabled) { background: linear-gradient(180deg, #56c05a 0%, #43a047 100%); }
   }
 
-  &.del-plan-btn {
+  &.delete-btn {
     background: linear-gradient(180deg, #e53935 0%, #b71c1c 100%);
     border-top: 1px solid #ef5350;
     border-bottom: 2px solid #7f0000;
@@ -129,7 +221,41 @@
   }
 }
 
-// ── Action bar (+ / delete for selected days) ──
+// ── Calendar date input (plain, no mat-form-field wrapper) ──
+.date-input {
+  background: #1a1a1a;
+  border: 1px solid #555;
+  border-top-color: #333;
+  border-left-color: #333;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 13px;
+  font-family: inherit;
+  padding: 4px 8px;
+  width: 90px;
+  outline: none;
+  cursor: pointer;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
+
+  &:focus {
+    border-color: #4da6ff;
+  }
+}
+
+.date-toggle {
+  flex-shrink: 0;
+
+  ::ng-deep {
+    .mat-mdc-icon-button {
+      width: 28px;
+      height: 28px;
+      padding: 2px;
+      color: #4da6ff;
+    }
+  }
+}
+
+// ── Action bar ──
 .action-bar {
   display: flex;
   align-items: center;
@@ -177,7 +303,7 @@
 // ── Vertical day list ──
 .day-list {
   flex: 1;
-  overflow-y: scroll;     // always show scrollbar
+  overflow-y: scroll;
   min-height: 0;
   padding: 4px 0;
 
@@ -195,7 +321,7 @@
     &.selected {
       background: #3a5a7a;
       border-left: 3px solid #4da6ff;
-      padding-left: 9px;   // compensate for border
+      padding-left: 9px;
     }
 
     .day-label {
@@ -470,5 +596,27 @@
 
     &:hover:not(:disabled) { background: linear-gradient(180deg, #56c05a 0%, #43a047 100%); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+}
+
+// ── Mobile responsive ──
+@media (max-width: 480px) {
+  .plan-header {
+    padding: 6px 10px;
+    min-height: 44px;
+  }
+
+  .plan-combo {
+    max-width: 160px;
+  }
+
+  .plan-name-input {
+    font-size: 13px;
+    padding: 3px 6px;
+  }
+
+  .date-input {
+    width: 75px;
+    font-size: 11px;
   }
 }

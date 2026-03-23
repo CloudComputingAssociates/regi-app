@@ -1,18 +1,24 @@
 // src/app/components/week-plan-panel/week-plan-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  signal,
+  computed,
+  OnInit,
+  ViewChild,
+  ElementRef
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
 import { TabService } from '../../services/tab.service';
 import { WeekPlanService } from '../../services/week-plan.service';
 import { PlanningService } from '../../services/planning.service';
 import { PreferencesService, WeekStartDay } from '../../services/preferences.service';
-import { getMealSlotName, MealSummary, DayPlan, DayPlanMeal } from '../../models/planning.model';
+import { getMealSlotName, MealSummary, DayPlan } from '../../models/planning.model';
 
 const DAY_TO_NUM: Record<WeekStartDay, number> = {
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
@@ -25,63 +31,100 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   selector: 'app-week-plan-panel',
   imports: [
     CommonModule, FormsModule,
-    MatDatepickerModule, MatNativeDateModule, MatFormFieldModule,
-    MatInputModule, MatIconModule, MatSelectModule
+    MatDatepickerModule, MatNativeDateModule, MatIconModule
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Header: dropdown + calendar + name + save + delete + close -->
-      <div class="week-header">
-        <mat-form-field appearance="outline" class="plan-select-field">
-          <mat-label>Week Plan</mat-label>
-          <mat-select [value]="currentWeek()?.id ?? ''"
-                      (selectionChange)="onPlanSelected($event.value)">
-            <mat-option value="">-- New Plan --</mat-option>
-            @for (wp of weekPlanService.weekPlans(); track wp.id) {
-              <mat-option [value]="wp.id">{{ wp.name }}</mat-option>
+      <!-- Header -->
+      <div class="plan-header">
+        <div class="header-left">
+          <span class="plan-label">Week Plan</span>
+
+          <!-- Combo-box dropdown for week plan selection/rename -->
+          <div class="plan-combo" (focusout)="onComboFocusOut($event)">
+            <input
+              #planNameInput
+              type="text"
+              class="plan-name-input"
+              [value]="weekName()"
+              (input)="onNameChange($event)"
+              (focus)="onComboInputFocus()"
+              (keydown.enter)="onPlanNameCommit($event)"
+              (keydown.escape)="closeDropdown()"
+              (keydown.arrowDown)="onArrowDown($event)"
+              placeholder="Plan name..."
+              spellcheck="false" />
+            <button
+              class="combo-toggle"
+              (mousedown)="onDropdownToggleMousedown($event)"
+              tabindex="-1"
+              aria-label="Show saved week plans">
+              <mat-icon class="combo-arrow">expand_more</mat-icon>
+            </button>
+
+            @if (dropdownOpen()) {
+              <div class="combo-dropdown" role="listbox">
+                <button
+                  class="dropdown-item create-new"
+                  [class.highlighted]="dropdownHighlight() === -1"
+                  (mousedown)="onCreateNewPlan($event)"
+                  role="option">
+                  + New Week Plan
+                </button>
+                @for (wp of weekPlanService.weekPlans(); track wp.id; let i = $index) {
+                  <button
+                    class="dropdown-item"
+                    [class.highlighted]="dropdownHighlight() === i"
+                    [class.active]="currentWeek()?.id === wp.id"
+                    (mousedown)="onSelectPlan(wp, $event)"
+                    role="option">
+                    <span class="dropdown-item-name">{{ wp.name }}</span>
+                    <span class="dropdown-item-date">{{ wp.startDate }}</span>
+                  </button>
+                }
+                @if (weekPlanService.weekPlans().length === 0) {
+                  <div class="dropdown-empty">No saved plans</div>
+                }
+              </div>
             }
-          </mat-select>
-        </mat-form-field>
+          </div>
 
-        <div class="calendar-section">
-          <mat-form-field appearance="outline" class="date-field">
-            <mat-label>Start</mat-label>
-            <input matInput [matDatepicker]="picker"
-                   [value]="selectedDate()"
-                   (dateChange)="onDateChange($event.value)"
-                   [matDatepickerFilter]="weekStartFilter">
-            <mat-datepicker-toggle matSuffix [for]="picker" />
-            <mat-datepicker #picker />
-          </mat-form-field>
+          <!-- Save (green check) -->
+          <button class="icon-btn save-btn"
+                  [disabled]="weekPlanService.loading()"
+                  (click)="saveWeekPlan()"
+                  title="Save">
+            <mat-icon>check</mat-icon>
+          </button>
+
+          <!-- Calendar date input (plain) -->
+          <input
+            class="date-input"
+            [matDatepicker]="picker"
+            [value]="selectedDate()"
+            (dateChange)="onDateChange($event.value)"
+            [matDatepickerFilter]="weekStartFilter"
+            placeholder="Start date"
+            readonly />
+          <mat-datepicker-toggle [for]="picker" class="date-toggle" />
+          <mat-datepicker #picker />
+
+          <!-- Delete week plan -->
+          <button class="icon-btn delete-btn"
+                  [disabled]="!currentWeek() || weekPlanService.loading()"
+                  (click)="confirmDeletePlan()"
+                  title="Delete week plan">
+            <mat-icon>delete</mat-icon>
+          </button>
+
+          <!-- Close -->
+          <button class="icon-btn close-btn"
+                  (click)="close()"
+                  title="Close">
+            <mat-icon>close</mat-icon>
+          </button>
         </div>
-
-        <div class="name-section">
-          <input class="week-name-input"
-                 [value]="weekName()"
-                 (input)="onNameChange($event)"
-                 placeholder="Plan name" />
-        </div>
-
-        <button class="header-btn save-btn"
-                [disabled]="weekPlanService.loading()"
-                (click)="saveWeekPlan()"
-                title="Save">
-          <mat-icon>check</mat-icon>
-        </button>
-
-        <button class="header-btn del-plan-btn"
-                [disabled]="!currentWeek() || weekPlanService.loading()"
-                (click)="confirmDeletePlan()"
-                title="Delete week plan">
-          <mat-icon>delete</mat-icon>
-        </button>
-
-        <button class="header-btn close-btn"
-                (click)="close()"
-                title="Close">
-          ✕
-        </button>
       </div>
 
       @if (showDeletePlanConfirm()) {
@@ -96,7 +139,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         </div>
       }
 
-      <!-- Action bar: + and delete for selected days -->
+      <!-- Action bar -->
       <div class="action-bar">
         <button class="action-btn add-meal-btn"
                 [disabled]="selectedDays().length === 0 || !currentWeek()"
@@ -172,9 +215,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                      (click)="pickerSelectedMealId.set(meal.id)"
                      (dblclick)="addMealFromPicker(meal)">
                   <span class="picker-meal-name">{{ meal.name }}</span>
-                  <span class="picker-meal-info">
-                    {{ meal.totalCalories ?? '—' }} cal
-                  </span>
+                  <span class="picker-meal-info">{{ meal.totalCalories ?? '—' }} cal</span>
                 </div>
               } @empty {
                 <div class="picker-empty">No meals found</div>
@@ -195,6 +236,8 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   styleUrls: ['./week-plan-panel.scss']
 })
 export class WeekPlanPanelComponent implements OnInit {
+  @ViewChild('planNameInput') planNameInput!: ElementRef<HTMLInputElement>;
+
   private tabService = inject(TabService);
   private prefs = inject(PreferencesService);
   private planningService = inject(PlanningService);
@@ -207,10 +250,12 @@ export class WeekPlanPanelComponent implements OnInit {
   weekName = signal('');
   showDeletePlanConfirm = signal(false);
 
-  // Multi-select days (set of dayOffsets)
-  selectedDays = signal<number[]>([]);
+  // Combo-box state
+  dropdownOpen = signal(false);
+  dropdownHighlight = signal(-1);
 
-  // Per-day meal selection for deletion: dayOffset → dayPlanMealId
+  // Multi-select days
+  selectedDays = signal<number[]>([]);
   selectedMealIds = signal<Record<number, number>>({});
 
   // Meal picker state
@@ -226,24 +271,18 @@ export class WeekPlanPanelComponent implements OnInit {
 
   currentWeek = this.weekPlanService.currentWeekPlan;
 
-  /** Show repeat interval when single day selected and repeatMeals > 1 */
   repeatInfo = computed(() => {
     if (this.selectedDays().length !== 1) return null;
     const repeat = this.prefs.repeatMeals();
     return repeat > 1 ? repeat : null;
   });
 
-  canRemoveMeal = computed(() => {
-    const sel = this.selectedMealIds();
-    return Object.keys(sel).length > 0;
-  });
+  canRemoveMeal = computed(() => Object.keys(this.selectedMealIds()).length > 0);
 
   filteredMeals = computed(() => {
     const search = this.pickerSearch().toLowerCase();
     if (!search) return this.availableMeals();
-    return this.availableMeals().filter(m =>
-      m.name.toLowerCase().includes(search)
-    );
+    return this.availableMeals().filter(m => m.name.toLowerCase().includes(search));
   });
 
   ngOnInit(): void {
@@ -259,17 +298,73 @@ export class WeekPlanPanelComponent implements OnInit {
     this.weekPlanService.listWeekPlans();
   }
 
-  // --- Header actions ---
+  // --- Combo-box ---
 
-  onPlanSelected(value: number | string): void {
-    if (value === '' || value === null) {
-      this.weekPlanService.clearCurrentWeekPlan();
-      this.weekName.set(this.formatDefaultName(this.selectedDate()));
-      this.clearSelections();
+  onComboInputFocus(): void {
+    this.dropdownOpen.set(true);
+    this.dropdownHighlight.set(-1);
+  }
+
+  onComboFocusOut(event: FocusEvent): void {
+    const related = event.relatedTarget as HTMLElement | null;
+    const combo = (event.currentTarget as HTMLElement);
+    if (related && combo.contains(related)) return;
+    this.dropdownOpen.set(false);
+
+    // Auto-save name change on existing plan
+    const wp = this.currentWeek();
+    if (wp && this.weekName() !== wp.name) {
+      this.weekPlanService.updateWeekPlan(wp.id, { name: this.weekName() });
+      this.weekPlanService.listWeekPlans();
+    }
+  }
+
+  closeDropdown(): void {
+    this.dropdownOpen.set(false);
+    this.planNameInput?.nativeElement.blur();
+  }
+
+  onDropdownToggleMousedown(event: MouseEvent): void {
+    event.preventDefault();
+    this.dropdownOpen.update(v => !v);
+    if (!this.dropdownOpen()) {
+      this.planNameInput?.nativeElement.focus();
+    }
+  }
+
+  onArrowDown(event: Event): void {
+    event.preventDefault();
+    if (!this.dropdownOpen()) {
+      this.dropdownOpen.set(true);
+      this.dropdownHighlight.set(-1);
       return;
     }
-    this.loadWeekPlan(value as number);
+    const max = this.weekPlanService.weekPlans().length - 1;
+    this.dropdownHighlight.update(h => Math.min(h + 1, max));
   }
+
+  onPlanNameCommit(event: Event): void {
+    event.preventDefault();
+    this.closeDropdown();
+    this.saveWeekPlan();
+  }
+
+  onCreateNewPlan(event: MouseEvent): void {
+    event.preventDefault();
+    this.weekPlanService.clearCurrentWeekPlan();
+    this.weekName.set(this.formatDefaultName(this.selectedDate()));
+    this.clearSelections();
+    this.closeDropdown();
+    this.planNameInput?.nativeElement.focus();
+  }
+
+  onSelectPlan(wp: { id: number; name: string; startDate: string }, event: MouseEvent): void {
+    event.preventDefault();
+    this.loadWeekPlan(wp.id);
+    this.closeDropdown();
+  }
+
+  // --- Header actions ---
 
   onDateChange(date: Date | null): void {
     if (!date) return;
@@ -308,21 +403,18 @@ export class WeekPlanPanelComponent implements OnInit {
   toggleDay(dayOffset: number, event: MouseEvent): void {
     const current = this.selectedDays();
     if (event.ctrlKey || event.metaKey) {
-      // Toggle this day in multi-select
       if (current.includes(dayOffset)) {
         this.selectedDays.set(current.filter(d => d !== dayOffset));
       } else {
         this.selectedDays.set([...current, dayOffset].sort());
       }
     } else {
-      // Single select (toggle off if already sole selection)
       if (current.length === 1 && current[0] === dayOffset) {
         this.selectedDays.set([]);
       } else {
         this.selectedDays.set([dayOffset]);
       }
     }
-    // Clear meal selections when day selection changes
     this.selectedMealIds.set({});
   }
 
@@ -330,7 +422,7 @@ export class WeekPlanPanelComponent implements OnInit {
     return this.selectedDays().includes(dayOffset);
   }
 
-  // --- Meal selection within days ---
+  // --- Meal selection ---
 
   toggleMealSelection(dayOffset: number, dayPlanMealId: number, event: MouseEvent): void {
     event.stopPropagation();
@@ -341,7 +433,6 @@ export class WeekPlanPanelComponent implements OnInit {
     } else {
       this.selectedMealIds.set({ ...current, [dayOffset]: dayPlanMealId });
     }
-    // Ensure this day is also selected
     if (!this.selectedDays().includes(dayOffset)) {
       this.selectedDays.set([...this.selectedDays(), dayOffset].sort());
     }
@@ -351,7 +442,7 @@ export class WeekPlanPanelComponent implements OnInit {
     return this.selectedMealIds()[dayOffset] === dayPlanMealId;
   }
 
-  // --- Compute target days based on repeat-meals preference ---
+  // --- Repeat logic ---
 
   private getTargetDayOffsets(): number[] {
     const selected = this.selectedDays();
@@ -360,7 +451,6 @@ export class WeekPlanPanelComponent implements OnInit {
     const repeat = this.prefs.repeatMeals();
     if (repeat <= 1) return selected;
 
-    // Single day selected with repeat > 1: add meal every Nth day from selected
     const base = selected[0];
     const targets: number[] = [];
     for (let offset = base; offset < 7; offset += repeat) {

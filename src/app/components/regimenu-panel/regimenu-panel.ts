@@ -35,7 +35,7 @@ import { Subscription } from 'rxjs';
       <!-- Header with plan name and actions -->
       <div class="plan-header" [class.stippled]="foodPickerOpen()">
         <div class="header-left">
-          <span class="plan-label">Plan</span>
+          <span class="plan-label">Meal Plan</span>
 
           <!-- Combo-box dropdown for plan name -->
           <div class="plan-combo" (focusout)="onComboFocusOut($event)">
