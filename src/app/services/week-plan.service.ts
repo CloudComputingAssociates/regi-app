@@ -6,9 +6,13 @@ import { environment } from '../../environments/environment';
 import {
   WeekPlan,
   WeekPlanSummary,
+  DayPlan,
+  DayPlanMeal,
   CreateWeekPlanRequest,
   UpdateWeekPlanRequest,
   CopyWeekPlanRequest,
+  CreateDayPlanRequest,
+  AssignMealRequest,
   ListWeekPlansResponse
 } from '../models/planning.model';
 
@@ -116,6 +120,32 @@ export class WeekPlanService {
       throw err;
     } finally {
       this.loadingSignal.set(false);
+    }
+  }
+
+  async createDayPlan(req: CreateDayPlanRequest): Promise<DayPlan> {
+    return firstValueFrom(
+      this.http.post<DayPlan>(`${this.baseUrl}/dayplan`, req)
+    );
+  }
+
+  async assignMealToDayPlan(dayPlanId: number, req: AssignMealRequest): Promise<DayPlanMeal> {
+    return firstValueFrom(
+      this.http.post<DayPlanMeal>(`${this.baseUrl}/dayplan/${dayPlanId}/meals`, req)
+    );
+  }
+
+  async removeMealFromDayPlan(dayPlanId: number, dayPlanMealId: number): Promise<void> {
+    await firstValueFrom(
+      this.http.delete(`${this.baseUrl}/dayplan/${dayPlanId}/meals/${dayPlanMealId}`)
+    );
+  }
+
+  /** Refresh the current week plan from the server */
+  async refreshCurrentWeekPlan(): Promise<void> {
+    const wp = this.currentWeekPlanSignal();
+    if (wp) {
+      await this.getWeekPlan(wp.id);
     }
   }
 

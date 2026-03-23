@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npx tsc:*)",
       "Bash(pushd \"c:\\\\git\\\\yeh-api\")",
-      "Bash(popd)"
+      "Bash(popd)",
+      "Read(//c/git/yeh-api/api/**)"
     ],
     "additionalDirectories": [
       "c:\\git\\foods-tool-ui\\src\\app\\models",
