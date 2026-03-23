@@ -335,7 +335,6 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <option [ngValue]="1">1</option>
                     <option [ngValue]="2">2</option>
                     <option [ngValue]="3">3</option>
-                    <option [ngValue]="4">4</option>
                   </select>
                 </div>
                 <div class="setting-row">
