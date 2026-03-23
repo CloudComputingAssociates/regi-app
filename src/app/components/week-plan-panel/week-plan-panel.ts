@@ -241,7 +241,7 @@ export class WeekPlanPanelComponent implements OnInit {
     const dd = String(date.getDate()).padStart(2, '0');
     const yyyy = date.getFullYear();
     const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-    return `${yyyy}-${months[date.getMonth()]}-${dd}-week`;
+    return `${yyyy}-${months[date.getMonth()]}-${dd}-plan`;
   }
 
   private toDateString(date: Date): string {
