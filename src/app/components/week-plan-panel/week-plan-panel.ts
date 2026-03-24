@@ -19,7 +19,7 @@ import { WeekPlanService } from '../../services/week-plan.service';
 import { PreferencesService, WeekStartDay } from '../../services/preferences.service';
 import { WeekPlanMacrosService } from '../../services/week-plan-macros.service';
 import { getMealSlotName, DayPlan, DayPlanMeal } from '../../models/planning.model';
-import { MealPickerComponent, MealPickerResult, MealSwapResult } from '../meal-picker/meal-picker';
+import { MealPickerComponent, MealPickerResult, MealSwapResult, StagedMeal } from '../meal-picker/meal-picker';
 import { MealDetailComponent } from '../meal-detail/meal-detail';
 
 const DAY_TO_NUM: Record<WeekStartDay, number> = {
@@ -190,6 +190,13 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                      (dblclick)="onSlotDoubleClick(dayOffset, slotNum, $event)">
                   <span class="slot-label">{{ getMealSlotName(slotNum) }}</span>
                   <span class="slot-meal">{{ meal?.meal?.name ?? meal?.mealId ?? '—' }}</span>
+                  @if (meal) {
+                    <button class="slot-view-btn"
+                            (click)="onViewMeal(dayOffset, slotNum, $event)"
+                            title="View Meal">
+                      <mat-icon>visibility</mat-icon>
+                    </button>
+                  }
                 </div>
               }
             </div>
@@ -201,6 +208,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       @if (pickerOpen()) {
         <app-meal-picker
           [swapSlot]="pickerSwapSlot()"
+          [existingMeals]="pickerExistingMeals()"
           (committed)="onPickerCommitted($event)"
           (swapped)="onPickerSwapped($event)"
           (closed)="closeMealPicker()" />
@@ -247,6 +255,9 @@ export class WeekPlanPanelComponent implements OnInit {
 
   // Detail panel state
   detailMealId = signal<number | null>(null);
+
+  // Existing meals for picker pre-population
+  pickerExistingMeals = signal<StagedMeal[]>([]);
 
   // Busy state
   saving = signal(false);
@@ -395,6 +406,13 @@ export class WeekPlanPanelComponent implements OnInit {
     this.detailMealId.set(dpm.mealId);
   }
 
+  onViewMeal(dayOffset: number, slotNum: number, event: MouseEvent): void {
+    event.stopPropagation();
+    const dpm = this.getMealInSlot(dayOffset, slotNum);
+    if (!dpm) return;
+    this.detailMealId.set(dpm.mealId);
+  }
+
   closeDetail(): void {
     this.detailMealId.set(null);
     this.publishDayMacros();
@@ -443,6 +461,26 @@ export class WeekPlanPanelComponent implements OnInit {
 
   openMealPicker(): void {
     this.pickerSwapSlot.set(null);
+
+    // Pre-populate with existing meals from the first selected day
+    const days = this.selectedDays();
+    const existing: StagedMeal[] = [];
+    if (days.length > 0) {
+      const dp = this.getDayPlan(days[0]);
+      if (dp?.meals) {
+        for (const dpm of dp.meals) {
+          existing.push({
+            slotNum: dpm.mealSlot,
+            mealId: dpm.mealId,
+            mealName: dpm.meal?.name ?? `Meal ${dpm.mealId}`,
+            proteinG: dpm.meal?.totalProteinG ?? 0,
+            fatG: dpm.meal?.totalFatG ?? 0,
+            carbG: dpm.meal?.totalCarbG ?? 0
+          });
+        }
+      }
+    }
+    this.pickerExistingMeals.set(existing);
     this.pickerOpen.set(true);
   }
 
@@ -484,6 +522,13 @@ export class WeekPlanPanelComponent implements OnInit {
 
         if (!dayPlan) {
           dayPlan = await this.weekPlanService.createDayPlan({ planDate: dateStr });
+        }
+
+        // Remove existing meals in this day plan first
+        if (dayPlan.meals) {
+          for (const existing of dayPlan.meals) {
+            await this.weekPlanService.removeMealFromDayPlan(dayPlan.id, existing.id);
+          }
         }
 
         for (const slot of slots) {

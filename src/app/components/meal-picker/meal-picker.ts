@@ -128,6 +128,9 @@ export class MealPickerComponent implements OnInit {
   /** If set, picker is in swap mode for a single slot */
   swapSlot = input<number | null>(null);
 
+  /** Pre-existing meals already assigned to the day's slots */
+  existingMeals = input<StagedMeal[]>([]);
+
   /** Emitted when user commits staged meals (fill mode) */
   committed = output<MealPickerResult>();
 
@@ -148,6 +151,13 @@ export class MealPickerComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
+    // Pre-populate with existing meals
+    const existing = this.existingMeals();
+    if (existing.length > 0) {
+      this.stagedSlots.set([...existing]);
+      this.publishMacros(existing);
+    }
+
     try {
       const result = await firstValueFrom(
         this.planningService.listMeals({ limit: 100 })
