@@ -410,23 +410,27 @@ export class WeekPlanPanelComponent implements OnInit {
 
     let wp = this.currentWeek();
 
+    // Auto-create week plan if needed, then re-fetch to get day plans
     if (!wp) {
       try {
         const startDate = this.toDateString(this.selectedDate());
         const name = this.weekName() || undefined;
-        wp = await this.weekPlanService.createWeekPlan({ startDate, name });
+        await this.weekPlanService.createWeekPlan({ startDate, name });
         await this.weekPlanService.listWeekPlans();
+        wp = this.currentWeek();
+        if (!wp) return;
       } catch {
         return;
       }
     }
 
+    const days = wp.days ?? [];
     const targetOffsets = this.getTargetDayOffsets();
 
     try {
       for (const offset of targetOffsets) {
         const dateStr = this.toDateString(this.getDayDate(offset));
-        let dayPlan = wp.days.find(d => d.planDate === dateStr);
+        let dayPlan = days.find(d => d.planDate === dateStr);
 
         if (!dayPlan) {
           dayPlan = await this.weekPlanService.createDayPlan({ planDate: dateStr });

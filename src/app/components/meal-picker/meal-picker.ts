@@ -51,7 +51,14 @@ export interface MealSwapResult {
               Fill Meals · {{ stagedSlots().length }} of {{ totalSlots() }}
             }
           </h3>
-          <button class="picker-close-btn" (click)="onClose()">✕</button>
+          <div class="picker-header-actions">
+            <button class="picker-ok-btn"
+                    [disabled]="stagedSlots().length === 0 && !swapSlot()"
+                    (click)="commit()">
+              <mat-icon>check</mat-icon>
+            </button>
+            <button class="picker-close-btn" (click)="onClose()">✕</button>
+          </div>
         </div>
 
         <!-- Staged meals (reorderable) -->
@@ -102,14 +109,6 @@ export interface MealSwapResult {
           }
         </div>
 
-        <!-- Footer -->
-        <div class="picker-footer">
-          <button class="picker-ok-btn"
-                  [disabled]="stagedSlots().length === 0 && !swapSlot()"
-                  (click)="commit()">
-            <mat-icon>check</mat-icon>
-          </button>
-        </div>
       </div>
     </div>
   `,
