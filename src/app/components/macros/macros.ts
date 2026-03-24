@@ -8,10 +8,11 @@ import { MacrosService } from '../../services/macros.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { PlanningService } from '../../services/planning.service';
 import { TabService } from '../../services/tab.service';
+import { WeekPlanMacrosService } from '../../services/week-plan-macros.service';
 import { TimePeriod, NutritionResponse } from '../../models/nutrition.model';
 
 // Context determines how the macros component behaves
-export type MacrosContext = 'preferences' | 'foods' | 'regimenu' | 'today' | 'shopping' | 'default';
+export type MacrosContext = 'preferences' | 'foods' | 'regimenu' | 'weekplan' | 'today' | 'shopping' | 'default';
 
 export interface MacroNutrient {
   name: string;
@@ -102,6 +103,7 @@ export class MacrosComponent implements OnInit {
   private preferencesService = inject(PreferencesService);
   private planningService = inject(PlanningService);
   private tabService = inject(TabService);
+  private weekPlanMacros = inject(WeekPlanMacrosService);
 
   // Derive context from active tab
   readonly context = computed<MacrosContext>(() => {
@@ -110,6 +112,7 @@ export class MacrosComponent implements OnInit {
     if (tabId === 'preferences') return 'preferences';
     if (tabId === 'foods') return 'foods';
     if (tabId === 'meal-planning') return 'regimenu';
+    if (tabId === 'review') return 'weekplan';
     if (tabId === 'today') return 'today';
     if (tabId === 'shopping') return 'shopping';
     return 'default';
@@ -150,6 +153,24 @@ export class MacrosComponent implements OnInit {
     };
   });
 
+  // Signal-based display data for week plan context
+  readonly weekPlanDisplayData = computed<MacroDisplayData>(() => {
+    const totals = this.weekPlanMacros.totals();
+    const goals = this.preferencesService.dailyGoals();
+    const targetP = goals?.protein ?? 150;
+    const targetF = goals?.fat ?? 78;
+    const targetC = goals?.carbs ?? 175;
+
+    return {
+      macros: [
+        { name: 'proteins', actual: Math.round(totals.proteinG), target: targetP, percentage: this.calculatePercentage(totals.proteinG, targetP) },
+        { name: 'fats', actual: Math.round(totals.fatG), target: targetF, percentage: this.calculatePercentage(totals.fatG, targetF) },
+        { name: 'carbs', actual: Math.round(totals.carbG), target: targetC, percentage: this.calculatePercentage(totals.carbG, targetC) },
+      ],
+      timePeriod: 'day'
+    };
+  });
+
   // Signal for subscription-based display data (non-preferences contexts)
   private subscriptionData = signal<MacroDisplayData>({ macros: [], timePeriod: 'day' });
 
@@ -158,6 +179,7 @@ export class MacrosComponent implements OnInit {
     const ctx = this.context();
     if (ctx === 'preferences') return this.preferencesDisplayData();
     if (ctx === 'regimenu') return this.regimenuDisplayData();
+    if (ctx === 'weekplan') return this.weekPlanDisplayData();
     return this.subscriptionData();
   });
 
@@ -232,7 +254,7 @@ export class MacrosComponent implements OnInit {
       }
       return `${macro.target}g`;
     }
-    if (ctx === 'regimenu') {
+    if (ctx === 'regimenu' || ctx === 'weekplan') {
       return this.showPercent ? `${macro.percentage}%` : `${macro.actual}g`;
     }
     return this.showPercent ? `${macro.percentage}%` : `${macro.actual}g`;

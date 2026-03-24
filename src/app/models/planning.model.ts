@@ -65,6 +65,8 @@ export interface MealSummary {
   status: string;
   totalCalories?: number;
   totalProteinG?: number;
+  totalFatG?: number;
+  totalCarbG?: number;
   createdAt: string;
 }
 

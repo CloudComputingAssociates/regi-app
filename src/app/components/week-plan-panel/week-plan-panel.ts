@@ -17,8 +17,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { TabService } from '../../services/tab.service';
 import { WeekPlanService } from '../../services/week-plan.service';
 import { PreferencesService, WeekStartDay } from '../../services/preferences.service';
+import { WeekPlanMacrosService } from '../../services/week-plan-macros.service';
 import { getMealSlotName, DayPlan, DayPlanMeal } from '../../models/planning.model';
-// MealPickerComponent handles meal listing internally
 import { MealPickerComponent, MealPickerResult, MealSwapResult } from '../meal-picker/meal-picker';
 
 const DAY_TO_NUM: Record<WeekStartDay, number> = {
@@ -208,6 +208,7 @@ export class WeekPlanPanelComponent implements OnInit {
 
   private tabService = inject(TabService);
   private prefs = inject(PreferencesService);
+  private weekPlanMacros = inject(WeekPlanMacrosService);
   weekPlanService = inject(WeekPlanService);
 
   readonly dayOffsets = [0, 1, 2, 3, 4, 5, 6];
@@ -315,6 +316,7 @@ export class WeekPlanPanelComponent implements OnInit {
       }
     }
     this.selectedSlot.set(null);
+    this.publishDayMacros();
   }
 
   isDaySelected(dayOffset: number): boolean {
@@ -370,6 +372,7 @@ export class WeekPlanPanelComponent implements OnInit {
       await this.weekPlanService.removeMealFromDayPlan(dp.id, dpm.id);
       this.selectedSlot.set(null);
       await this.weekPlanService.refreshCurrentWeekPlan();
+      this.publishDayMacros();
     } catch {
       // error in service
     }
@@ -445,6 +448,7 @@ export class WeekPlanPanelComponent implements OnInit {
       }
 
       await this.weekPlanService.refreshCurrentWeekPlan();
+      this.publishDayMacros();
     } catch {
       // error in service
     }
@@ -469,6 +473,7 @@ export class WeekPlanPanelComponent implements OnInit {
       });
 
       await this.weekPlanService.refreshCurrentWeekPlan();
+      this.publishDayMacros();
     } catch {
       // error in service
     }
@@ -622,6 +627,36 @@ export class WeekPlanPanelComponent implements OnInit {
   private clearSelections(): void {
     this.selectedDays.set([]);
     this.selectedSlot.set(null);
+    this.weekPlanMacros.clear();
+  }
+
+  /** Publish macro totals for the first selected day to the macros component */
+  private publishDayMacros(): void {
+    const days = this.selectedDays();
+    if (days.length === 0) {
+      this.weekPlanMacros.clear();
+      return;
+    }
+
+    // Show macros for the first selected day
+    const dp = this.getDayPlan(days[0]);
+    if (!dp?.meals) {
+      this.weekPlanMacros.clear();
+      return;
+    }
+
+    let proteinG = 0;
+    let fatG = 0;
+    let carbG = 0;
+    for (const dpm of dp.meals) {
+      if (dpm.meal) {
+        proteinG += dpm.meal.totalProteinG ?? 0;
+        fatG += dpm.meal.totalFatG ?? 0;
+        carbG += dpm.meal.totalCarbG ?? 0;
+      }
+    }
+
+    this.weekPlanMacros.setTotals({ proteinG, fatG, carbG });
   }
 
   private formatDefaultName(date: Date): string {

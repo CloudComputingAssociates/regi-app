@@ -14,6 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
 import { PlanningService } from '../../services/planning.service';
 import { PreferencesService } from '../../services/preferences.service';
+import { WeekPlanMacrosService } from '../../services/week-plan-macros.service';
 import { getMealSlotName, MealSummary } from '../../models/planning.model';
 
 /** A staged meal assignment before committing */
@@ -21,6 +22,9 @@ export interface StagedMeal {
   slotNum: number;
   mealId: number;
   mealName: string;
+  proteinG: number;
+  fatG: number;
+  carbG: number;
 }
 
 /** Emitted when the user commits their selections */
@@ -48,7 +52,7 @@ export interface MealSwapResult {
             @if (swapSlot()) {
               Swap {{ getMealSlotName(swapSlot()!) }}
             } @else {
-              Fill Meals · {{ stagedSlots().length }} of {{ totalSlots() }}
+              Meal Selection · {{ stagedSlots().length }} of {{ totalSlots() }}
             }
           </h3>
           <div class="picker-header-actions">
@@ -117,6 +121,7 @@ export interface MealSwapResult {
 export class MealPickerComponent implements OnInit {
   private planningService = inject(PlanningService);
   private prefs = inject(PreferencesService);
+  private weekPlanMacros = inject(WeekPlanMacrosService);
 
   readonly getMealSlotName = getMealSlotName;
 
@@ -169,11 +174,16 @@ export class MealPickerComponent implements OnInit {
 
     const current = this.stagedSlots();
     const nextSlot = current.length + 1;
-    this.stagedSlots.set([...current, {
+    const updated = [...current, {
       slotNum: nextSlot,
       mealId: meal.id,
-      mealName: meal.name
-    }]);
+      mealName: meal.name,
+      proteinG: meal.totalProteinG ?? 0,
+      fatG: meal.totalFatG ?? 0,
+      carbG: meal.totalCarbG ?? 0
+    }];
+    this.stagedSlots.set(updated);
+    this.publishMacros(updated);
   }
 
   moveSlot(index: number, direction: -1 | 1): void {
@@ -186,8 +196,19 @@ export class MealPickerComponent implements OnInit {
   }
 
   unstageSlot(index: number): void {
-    const slots = this.stagedSlots().filter((_, i) => i !== index);
-    this.stagedSlots.set(slots.map((s, i) => ({ ...s, slotNum: i + 1 })));
+    const updated = this.stagedSlots()
+      .filter((_, i) => i !== index)
+      .map((s, i) => ({ ...s, slotNum: i + 1 }));
+    this.stagedSlots.set(updated);
+    this.publishMacros(updated);
+  }
+
+  private publishMacros(slots: StagedMeal[]): void {
+    this.weekPlanMacros.setTotals({
+      proteinG: slots.reduce((sum, s) => sum + s.proteinG, 0),
+      fatG: slots.reduce((sum, s) => sum + s.fatG, 0),
+      carbG: slots.reduce((sum, s) => sum + s.carbG, 0)
+    });
   }
 
   commit(): void {
