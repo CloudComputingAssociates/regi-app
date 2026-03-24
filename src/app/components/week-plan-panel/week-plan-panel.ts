@@ -5,7 +5,7 @@ import {
   inject,
   signal,
   computed,
-  OnInit,
+  effect,
   ViewChild,
   ElementRef
 } from '@angular/core';
@@ -217,7 +217,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   `,
   styleUrls: ['./week-plan-panel.scss']
 })
-export class WeekPlanPanelComponent implements OnInit {
+export class WeekPlanPanelComponent {
   @ViewChild('planNameInput') planNameInput!: ElementRef<HTMLInputElement>;
 
   private tabService = inject(TabService);
@@ -274,10 +274,20 @@ export class WeekPlanPanelComponent implements OnInit {
     return repeat > 1 ? repeat : null;
   });
 
-  async ngOnInit(): Promise<void> {
-    // Wait for preferences to load so weekStartDay is correct
-    await this.waitForPreferences();
+  private initialized = false;
 
+  constructor() {
+    // React when preferences finish loading
+    effect(() => {
+      const loaded = this.prefs.isLoaded();
+      if (loaded && !this.initialized) {
+        this.initialized = true;
+        this.initPanel();
+      }
+    });
+  }
+
+  private async initPanel(): Promise<void> {
     const today = new Date();
     const weekStartNum = DAY_TO_NUM[this.prefs.weekStartDay()];
     const currentDay = today.getDay();
@@ -295,20 +305,6 @@ export class WeekPlanPanelComponent implements OnInit {
       this.weekName.set(this.formatDefaultName(startDate));
       this.nameEdited.set(true);
     }
-  }
-
-  private waitForPreferences(): Promise<void> {
-    if (this.prefs.isLoaded()) return Promise.resolve();
-    return new Promise(resolve => {
-      const check = setInterval(() => {
-        if (this.prefs.isLoaded()) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 50);
-      // Safety timeout after 3s — use defaults
-      setTimeout(() => { clearInterval(check); resolve(); }, 3000);
-    });
   }
 
   // === Day/Slot helpers ===
