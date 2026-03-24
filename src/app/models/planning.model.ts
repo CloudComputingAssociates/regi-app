@@ -164,10 +164,5 @@ export interface ListWeekPlansResponse {
 
 // Helper to get meal slot name
 export function getMealSlotName(slot: number): string {
-  switch (slot) {
-    case 1: return 'Breakfast';
-    case 2: return 'Lunch';
-    case 3: return 'Dinner';
-    default: return `Snack ${slot - 3}`;
-  }
+  return `Meal ${slot}`;
 }
