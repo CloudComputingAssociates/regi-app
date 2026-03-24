@@ -11,7 +11,7 @@ import {
 // Narrower types for UI
 export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6;
 export type FastingType = 'none' | '16_8' | '18_6' | '20_4' | 'omad';
-export type RepeatMeals = 1 | 2 | 3;
+export type RepeatMeals = 1 | 2 | 3 | 4;
 export type FoodListSource = 'yeh_plus_myfoods' | 'yeh' | 'myfoods';
 export type WeekStartDay = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
 

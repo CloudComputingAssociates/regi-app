@@ -152,7 +152,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
           } @else {
             {{ selectedDays().length }} day{{ selectedDays().length > 1 ? 's' : '' }} selected
             @if (repeatInfo()) {
-              · repeat every {{ repeatInfo() }} days
+              · {{ repeatInfo() }}x across week
             }
           }
         </span>
@@ -463,13 +463,17 @@ export class WeekPlanPanelComponent {
     const selected = this.selectedDays();
     if (selected.length !== 1) return selected;
 
-    const repeat = this.prefs.repeatMeals();
-    if (repeat <= 1) return selected;
+    const repeatCount = this.prefs.repeatMeals();
+    if (repeatCount <= 1) return selected;
 
+    // repeatCount = how many times to repeat across the week
+    // spacing = days between each occurrence
+    const spacing = Math.ceil(7 / repeatCount);
     const base = selected[0];
     const targets: number[] = [];
-    for (let offset = base; offset < 7; offset += repeat) {
-      targets.push(offset);
+    for (let i = 0; i < repeatCount; i++) {
+      const offset = base + (i * spacing);
+      if (offset < 7) targets.push(offset);
     }
     return targets;
   }

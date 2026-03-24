@@ -265,10 +265,10 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
               </div>
             </div>
 
-            <!-- Bottom row: Eating Window + Regimenu side by side -->
+            <!-- RegiMenu + Planning Options -->
             <div class="settings-section bottom-row">
+              <span class="section-title">RegiMenu + Planning Options</span>
               <div class="plan-column">
-                <span class="column-label">Eating Window</span>
                 <div class="setting-row">
                   <label class="setting-label">Meals</label>
                   <select
@@ -310,7 +310,6 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
               </div>
 
               <div class="regimenu-column">
-                <span class="column-label">RegiMenu</span>
                 <div class="setting-row">
                   <label class="setting-label">Week Starts</label>
                   <select
@@ -327,7 +326,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   </select>
                 </div>
                 <div class="setting-row">
-                  <label class="setting-label">Repeat Meals</label>
+                  <label class="setting-label">Repeat</label>
                   <select
                     class="setting-select"
                     [ngModel]="userSettingsService.repeatMeals()"
@@ -335,7 +334,13 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <option [ngValue]="1">1</option>
                     <option [ngValue]="2">2</option>
                     <option [ngValue]="3">3</option>
+                    <option [ngValue]="4">4</option>
                   </select>
+                  <span class="setting-suffix">day-plans</span>
+                  <span class="info-icon"
+                        matTooltip="By repeating day plans, you optimize grocery lists and reduce waste"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="200">&#9432;</span>
                 </div>
                 <div class="setting-row">
                   <label class="setting-label">Foods from</label>
