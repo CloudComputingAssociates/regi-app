@@ -16,9 +16,10 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatIconModule } from '@angular/material/icon';
 import { TabService } from '../../services/tab.service';
 import { WeekPlanService } from '../../services/week-plan.service';
-import { PlanningService } from '../../services/planning.service';
 import { PreferencesService, WeekStartDay } from '../../services/preferences.service';
-import { getMealSlotName, MealSummary, DayPlan, DayPlanMeal } from '../../models/planning.model';
+import { getMealSlotName, DayPlan, DayPlanMeal } from '../../models/planning.model';
+// MealPickerComponent handles meal listing internally
+import { MealPickerComponent, MealPickerResult, MealSwapResult } from '../meal-picker/meal-picker';
 
 const DAY_TO_NUM: Record<WeekStartDay, number> = {
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
@@ -27,18 +28,12 @@ const DAY_TO_NUM: Record<WeekStartDay, number> = {
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-/** A meal selected in the picker, before committing */
-interface PickerSlot {
-  slotNum: number;     // 1-based
-  mealId: number;
-  mealName: string;
-}
-
 @Component({
   selector: 'app-week-plan-panel',
   imports: [
     CommonModule, FormsModule,
-    MatDatepickerModule, MatNativeDateModule, MatIconModule
+    MatDatepickerModule, MatNativeDateModule, MatIconModule,
+    MealPickerComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -196,78 +191,13 @@ interface PickerSlot {
         }
       </div>
 
-      <!-- Meal Picker Popup -->
+      <!-- Meal Picker -->
       @if (pickerOpen()) {
-        <div class="picker-overlay" (click)="closeMealPicker()">
-          <div class="picker-dialog" (click)="$event.stopPropagation()">
-            <div class="picker-header">
-              <h3>
-                @if (pickerSwapSlot()) {
-                  Swap {{ getMealSlotName(pickerSwapSlot()!) }}
-                } @else {
-                  Fill Meals · {{ pickerSlots().length }} of {{ totalPickerSlots() }} slots
-                }
-              </h3>
-              <button class="picker-close-btn" (click)="closeMealPicker()">✕</button>
-            </div>
-
-            <!-- Selected meals area (reorderable) -->
-            @if (!pickerSwapSlot() && pickerSlots().length > 0) {
-              <div class="picker-selected">
-                @for (ps of pickerSlots(); track ps.slotNum; let i = $index) {
-                  <div class="picker-selected-row">
-                    <span class="picker-slot-label">{{ getMealSlotName(ps.slotNum) }}</span>
-                    <span class="picker-slot-name">{{ ps.mealName }}</span>
-                    <div class="picker-slot-actions">
-                      <button class="picker-slot-btn"
-                              [disabled]="i === 0"
-                              (click)="movePickerSlot(i, -1)"
-                              title="Move up">
-                        <mat-icon>arrow_upward</mat-icon>
-                      </button>
-                      <button class="picker-slot-btn"
-                              [disabled]="i === pickerSlots().length - 1"
-                              (click)="movePickerSlot(i, 1)"
-                              title="Move down">
-                        <mat-icon>arrow_downward</mat-icon>
-                      </button>
-                      <button class="picker-slot-btn remove"
-                              (click)="removePickerSlot(i)"
-                              title="Remove">
-                        <mat-icon>close</mat-icon>
-                      </button>
-                    </div>
-                  </div>
-                }
-              </div>
-            }
-
-            <div class="picker-search">
-              <input class="picker-search-input"
-                     placeholder="Search meals..."
-                     [value]="pickerSearch()"
-                     (input)="onPickerSearch($event)" />
-            </div>
-            <div class="picker-list">
-              @for (meal of filteredMeals(); track meal.id) {
-                <div class="picker-meal-row"
-                     (click)="onPickerMealClick(meal)">
-                  <span class="picker-meal-name">{{ meal.name }}</span>
-                  <span class="picker-meal-info">{{ meal.totalCalories ?? '—' }} cal</span>
-                </div>
-              } @empty {
-                <div class="picker-empty">No meals found</div>
-              }
-            </div>
-            <div class="picker-footer">
-              <button class="picker-add-btn"
-                      [disabled]="pickerSlots().length === 0"
-                      (click)="commitPickerSlots()">
-                <mat-icon>check</mat-icon> OK
-              </button>
-            </div>
-          </div>
-        </div>
+        <app-meal-picker
+          [swapSlot]="pickerSwapSlot()"
+          (committed)="onPickerCommitted($event)"
+          (swapped)="onPickerSwapped($event)"
+          (closed)="closeMealPicker()" />
       }
     </div>
   `,
@@ -278,7 +208,6 @@ export class WeekPlanPanelComponent implements OnInit {
 
   private tabService = inject(TabService);
   private prefs = inject(PreferencesService);
-  private planningService = inject(PlanningService);
   weekPlanService = inject(WeekPlanService);
 
   readonly dayOffsets = [0, 1, 2, 3, 4, 5, 6];
@@ -299,11 +228,8 @@ export class WeekPlanPanelComponent implements OnInit {
 
   // Picker state
   pickerOpen = signal(false);
-  pickerSearch = signal('');
-  pickerSlots = signal<PickerSlot[]>([]);
-  pickerSwapSlot = signal<number | null>(null);  // non-null = swap mode for this slot
+  pickerSwapSlot = signal<number | null>(null);
   pickerSwapDayOffset = signal<number>(0);
-  availableMeals = signal<MealSummary[]>([]);
 
   weekStartFilter = (d: Date | null): boolean => {
     if (!d) return false;
@@ -318,18 +244,10 @@ export class WeekPlanPanelComponent implements OnInit {
     return Array.from({ length: n }, (_, i) => i + 1);
   });
 
-  totalPickerSlots = computed(() => this.prefs.mealsPerDay());
-
   repeatInfo = computed(() => {
     if (this.selectedDays().length !== 1) return null;
     const repeat = this.prefs.repeatMeals();
     return repeat > 1 ? repeat : null;
-  });
-
-  filteredMeals = computed(() => {
-    const search = this.pickerSearch().toLowerCase();
-    if (!search) return this.availableMeals();
-    return this.availableMeals().filter(m => m.name.toLowerCase().includes(search));
   });
 
   async ngOnInit(): Promise<void> {
@@ -365,14 +283,14 @@ export class WeekPlanPanelComponent implements OnInit {
 
   getDayPlan(offset: number): DayPlan | null {
     const wp = this.currentWeek();
-    if (!wp) return null;
+    if (!wp?.days) return null;
     const dateStr = this.toDateString(this.getDayDate(offset));
     return wp.days.find(d => d.planDate === dateStr) ?? null;
   }
 
   getMealInSlot(dayOffset: number, slotNum: number): DayPlanMeal | null {
     const dp = this.getDayPlan(dayOffset);
-    if (!dp) return null;
+    if (!dp?.meals) return null;
     return dp.meals.find(m => m.mealSlot === slotNum) ?? null;
   }
 
@@ -429,14 +347,11 @@ export class WeekPlanPanelComponent implements OnInit {
   swapSlot(dayOffset: number, slotNum: number, event: MouseEvent): void {
     event.stopPropagation();
     const meal = this.getMealInSlot(dayOffset, slotNum);
-    if (!meal) return; // only swap filled slots
+    if (!meal) return;
 
     this.pickerSwapSlot.set(slotNum);
     this.pickerSwapDayOffset.set(dayOffset);
-    this.pickerSlots.set([]);
-    this.pickerSearch.set('');
     this.pickerOpen.set(true);
-    this.loadAvailableMeals();
   }
 
   // === Remove selected slot ===
@@ -479,12 +394,9 @@ export class WeekPlanPanelComponent implements OnInit {
 
   // === Meal picker ===
 
-  async openMealPicker(): Promise<void> {
+  openMealPicker(): void {
     this.pickerSwapSlot.set(null);
-    this.pickerSlots.set([]);
-    this.pickerSearch.set('');
     this.pickerOpen.set(true);
-    this.loadAvailableMeals();
   }
 
   closeMealPicker(): void {
@@ -492,63 +404,12 @@ export class WeekPlanPanelComponent implements OnInit {
     this.pickerSwapSlot.set(null);
   }
 
-  onPickerSearch(event: Event): void {
-    this.pickerSearch.set((event.target as HTMLInputElement).value);
-  }
-
-  private loadAvailableMeals(): void {
-    this.planningService.listMeals({ status: 'active', limit: 100 }).subscribe(meals => {
-      this.availableMeals.set(meals);
-    });
-  }
-
-  onPickerMealClick(meal: MealSummary): void {
-    // Swap mode: replace the slot directly and close
-    if (this.pickerSwapSlot()) {
-      this.doSwap(meal);
-      return;
-    }
-
-    // Fill mode: add to next available slot
-    const current = this.pickerSlots();
-    const maxSlots = this.prefs.mealsPerDay();
-    if (current.length >= maxSlots) return; // all slots filled
-
-    const nextSlotNum = current.length + 1;
-    this.pickerSlots.set([...current, {
-      slotNum: nextSlotNum,
-      mealId: meal.id,
-      mealName: meal.name
-    }]);
-  }
-
-  // Reorder
-  movePickerSlot(index: number, direction: -1 | 1): void {
-    const slots = [...this.pickerSlots()];
-    const target = index + direction;
-    if (target < 0 || target >= slots.length) return;
-
-    // Swap positions
-    [slots[index], slots[target]] = [slots[target], slots[index]];
-
-    // Renumber
-    this.pickerSlots.set(slots.map((s, i) => ({ ...s, slotNum: i + 1 })));
-  }
-
-  removePickerSlot(index: number): void {
-    const slots = this.pickerSlots().filter((_, i) => i !== index);
-    // Renumber
-    this.pickerSlots.set(slots.map((s, i) => ({ ...s, slotNum: i + 1 })));
-  }
-
-  // Commit all picker slots to the selected day(s)
-  async commitPickerSlots(): Promise<void> {
-    const slots = this.pickerSlots();
+  async onPickerCommitted(result: MealPickerResult): Promise<void> {
+    const slots = result.slots;
     if (slots.length === 0) return;
 
     let wp = this.currentWeek();
 
-    // Auto-create week plan if needed
     if (!wp) {
       try {
         const startDate = this.toDateString(this.selectedDate());
@@ -587,24 +448,20 @@ export class WeekPlanPanelComponent implements OnInit {
     this.closeMealPicker();
   }
 
-  // Swap a single slot
-  private async doSwap(meal: MealSummary): Promise<void> {
-    const slotNum = this.pickerSwapSlot()!;
+  async onPickerSwapped(result: MealSwapResult): Promise<void> {
     const dayOffset = this.pickerSwapDayOffset();
     const dp = this.getDayPlan(dayOffset);
     if (!dp) return;
 
     try {
-      // Remove existing meal in this slot
-      const existing = dp.meals.find(m => m.mealSlot === slotNum);
+      const existing = dp.meals.find(m => m.mealSlot === result.slotNum);
       if (existing) {
         await this.weekPlanService.removeMealFromDayPlan(dp.id, existing.id);
       }
 
-      // Assign new meal
       await this.weekPlanService.assignMealToDayPlan(dp.id, {
-        mealId: meal.id,
-        mealSlot: slotNum
+        mealId: result.mealId,
+        mealSlot: result.slotNum
       });
 
       await this.weekPlanService.refreshCurrentWeekPlan();
