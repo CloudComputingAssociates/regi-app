@@ -274,14 +274,20 @@ export class WeekPlanPanelComponent {
     return repeat > 1 ? repeat : null;
   });
 
-  private initialized = false;
+  private lastWeekStartDay: string | null = null;
 
   constructor() {
-    // React when preferences finish loading
+    // Re-init when preferences load or tab becomes active with changed preferences
     effect(() => {
       const loaded = this.prefs.isLoaded();
-      if (loaded && !this.initialized) {
-        this.initialized = true;
+      const activeTab = this.tabService.activeTabId();
+      const weekStart = this.prefs.weekStartDay();
+
+      if (!loaded) return;
+
+      // Init on first load, or re-init when tab is focused and weekStartDay changed
+      if (activeTab === 'review' && weekStart !== this.lastWeekStartDay) {
+        this.lastWeekStartDay = weekStart;
         this.initPanel();
       }
     });
@@ -397,6 +403,7 @@ export class WeekPlanPanelComponent {
     if (!this.selectedDays().includes(dayOffset)) {
       this.selectedDays.set([dayOffset]);
     }
+    this.publishDayMacros();
   }
 
   isSlotSelected(dayOffset: number, slotNum: number): boolean {
@@ -411,6 +418,7 @@ export class WeekPlanPanelComponent {
     const dpm = this.getMealInSlot(dayOffset, slotNum);
     if (!dpm) return;
 
+    document.body.style.cursor = 'wait';
     this.detailMealId.set(dpm.mealId);
   }
 
@@ -418,6 +426,7 @@ export class WeekPlanPanelComponent {
     event.stopPropagation();
     const dpm = this.getMealInSlot(dayOffset, slotNum);
     if (!dpm) return;
+    document.body.style.cursor = 'wait';
     this.detailMealId.set(dpm.mealId);
   }
 

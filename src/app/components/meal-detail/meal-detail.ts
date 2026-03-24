@@ -94,6 +94,7 @@ export class MealDetailComponent implements OnInit {
     } catch {
       this.meal.set(null);
     }
+    document.body.style.cursor = '';
   }
 
   onClose(): void {
