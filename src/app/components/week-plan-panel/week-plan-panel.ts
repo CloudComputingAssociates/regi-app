@@ -49,7 +49,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
       <!-- Row 1: START DATE -->
       <div class="header-row">
-        <span class="row-label">Start Date</span>
+        <span class="row-label">Plan Date</span>
         <input
           class="header-input date-input"
           [matDatepicker]="picker"
@@ -275,6 +275,9 @@ export class WeekPlanPanelComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
+    // Wait for preferences to load so weekStartDay is correct
+    await this.waitForPreferences();
+
     const today = new Date();
     const weekStartNum = DAY_TO_NUM[this.prefs.weekStartDay()];
     const currentDay = today.getDay();
@@ -282,14 +285,30 @@ export class WeekPlanPanelComponent implements OnInit {
     const startDate = new Date(today);
     startDate.setDate(today.getDate() - diff);
     this.selectedDate.set(startDate);
-    this.weekName.set(this.formatDefaultName(startDate));
 
     await this.weekPlanService.listWeekPlans();
     const dateStr = this.toDateString(startDate);
     const match = this.weekPlanService.weekPlans().find(wp => wp.startDate === dateStr);
     if (match) {
       await this.loadWeekPlan(match.id);
+    } else {
+      this.weekName.set(this.formatDefaultName(startDate));
+      this.nameEdited.set(true);
     }
+  }
+
+  private waitForPreferences(): Promise<void> {
+    if (this.prefs.isLoaded()) return Promise.resolve();
+    return new Promise(resolve => {
+      const check = setInterval(() => {
+        if (this.prefs.isLoaded()) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 50);
+      // Safety timeout after 3s — use defaults
+      setTimeout(() => { clearInterval(check); resolve(); }, 3000);
+    });
   }
 
   // === Day/Slot helpers ===
@@ -655,10 +674,12 @@ export class WeekPlanPanelComponent implements OnInit {
     const name = this.weekName() || undefined;
     const wp = this.currentWeek();
 
-    if (!wp) return; // only save name on existing plans; auto-create happens on meal add
-
     try {
-      await this.weekPlanService.updateWeekPlan(wp.id, { name });
+      if (wp) {
+        await this.weekPlanService.updateWeekPlan(wp.id, { name });
+      } else {
+        await this.weekPlanService.createWeekPlan({ startDate, name });
+      }
       this.nameEdited.set(false);
       await this.weekPlanService.listWeekPlans();
     } catch {
