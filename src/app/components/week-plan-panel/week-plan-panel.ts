@@ -705,20 +705,24 @@ export class WeekPlanPanelComponent implements OnInit {
     const wp = this.currentWeek();
     if (!wp) return;
     this.showDeletePlanConfirm.set(false);
+
+    const defaultName = this.formatDefaultName(this.selectedDate());
+
     try {
       await this.weekPlanService.deleteWeekPlan(wp.id);
-      await this.weekPlanService.listWeekPlans();
-      const defaultName = this.formatDefaultName(this.selectedDate());
-      this.weekName.set(defaultName);
-      this.nameEdited.set(false);
-      this.clearSelections();
-
-      // Force the input element to update (OnPush + native input workaround)
-      if (this.planNameInput?.nativeElement) {
-        this.planNameInput.nativeElement.value = defaultName;
-      }
     } catch {
-      // error in service
+      // may already be deleted
+    }
+
+    // Always clear regardless of API result
+    this.weekPlanService.clearCurrentWeekPlan();
+    await this.weekPlanService.listWeekPlans();
+    this.weekName.set(defaultName);
+    this.nameEdited.set(false);
+    this.clearSelections();
+
+    if (this.planNameInput?.nativeElement) {
+      this.planNameInput.nativeElement.value = defaultName;
     }
   }
 
