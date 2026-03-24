@@ -248,6 +248,9 @@ export class WeekPlanPanelComponent implements OnInit {
   // Detail panel state
   detailMealId = signal<number | null>(null);
 
+  // Busy state
+  saving = signal(false);
+
   weekStartFilter = (d: Date | null): boolean => {
     if (!d) return false;
     return d.getDay() === DAY_TO_NUM[this.prefs.weekStartDay()];
@@ -452,6 +455,9 @@ export class WeekPlanPanelComponent implements OnInit {
     const slots = result.slots;
     if (slots.length === 0) return;
 
+    this.saving.set(true);
+    document.body.style.cursor = 'wait';
+
     let wp = this.currentWeek();
 
     // Auto-create week plan if needed, then re-fetch to get day plans
@@ -494,6 +500,8 @@ export class WeekPlanPanelComponent implements OnInit {
       // error in service
     }
 
+    this.saving.set(false);
+    document.body.style.cursor = '';
     this.closeMealPicker();
   }
 
@@ -655,6 +663,8 @@ export class WeekPlanPanelComponent implements OnInit {
     try {
       await this.weekPlanService.deleteWeekPlan(wp.id);
       await this.weekPlanService.listWeekPlans();
+      this.weekName.set(this.formatDefaultName(this.selectedDate()));
+      this.nameEdited.set(false);
       this.clearSelections();
     } catch {
       // error in service
