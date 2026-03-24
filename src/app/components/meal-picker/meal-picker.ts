@@ -65,30 +65,34 @@ export interface MealSwapResult {
           </div>
         </div>
 
-        <!-- Staged meals (reorderable) -->
-        @if (!swapSlot() && stagedSlots().length > 0) {
+        <!-- Fixed slot rows (always visible) -->
+        @if (!swapSlot()) {
           <div class="picker-staged">
-            @for (ps of stagedSlots(); track ps.slotNum; let i = $index) {
-              <div class="picker-staged-row">
-                <span class="staged-slot">{{ getMealSlotName(ps.slotNum) }}</span>
-                <span class="staged-name">{{ ps.mealName }}</span>
-                <button class="staged-btn"
-                        [disabled]="i === 0"
-                        (click)="moveSlot(i, -1)"
-                        title="Move up">
-                  <mat-icon>arrow_upward</mat-icon>
-                </button>
-                <button class="staged-btn"
-                        [disabled]="i === stagedSlots().length - 1"
-                        (click)="moveSlot(i, 1)"
-                        title="Move down">
-                  <mat-icon>arrow_downward</mat-icon>
-                </button>
-                <button class="staged-btn remove"
-                        (click)="unstageSlot(i)"
-                        title="Remove">
-                  <mat-icon>delete</mat-icon>
-                </button>
+            @for (slotNum of slotNums(); track slotNum) {
+              @let staged = getStagedBySlot(slotNum);
+              <div class="picker-staged-row" [class.empty]="!staged">
+                <span class="staged-slot">{{ getMealSlotName(slotNum) }}</span>
+                <span class="staged-name">{{ staged?.mealName ?? '' }}</span>
+                @if (staged) {
+                  @let i = getStagedIndex(slotNum);
+                  <button class="staged-btn"
+                          [disabled]="i === 0"
+                          (click)="moveSlot(i, -1)"
+                          title="Move up">
+                    <mat-icon>arrow_upward</mat-icon>
+                  </button>
+                  <button class="staged-btn"
+                          [disabled]="i === stagedSlots().length - 1"
+                          (click)="moveSlot(i, 1)"
+                          title="Move down">
+                    <mat-icon>arrow_downward</mat-icon>
+                  </button>
+                  <button class="staged-btn remove"
+                          (click)="unstageSlot(i)"
+                          title="Remove">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                }
               </div>
             }
           </div>
@@ -145,6 +149,12 @@ export class MealPickerComponent implements OnInit {
 
   totalSlots = computed(() => this.prefs.mealsPerDay());
 
+  /** Array [1, 2, 3...] for fixed slot rows */
+  slotNums = computed(() => {
+    const n = this.totalSlots();
+    return Array.from({ length: n }, (_, i) => i + 1);
+  });
+
   canAdd = computed(() => {
     if (this.swapSlot()) return true;
     return this.stagedSlots().length < this.totalSlots();
@@ -166,6 +176,14 @@ export class MealPickerComponent implements OnInit {
     } catch {
       this.meals.set([]);
     }
+  }
+
+  getStagedBySlot(slotNum: number): StagedMeal | undefined {
+    return this.stagedSlots().find(s => s.slotNum === slotNum);
+  }
+
+  getStagedIndex(slotNum: number): number {
+    return this.stagedSlots().findIndex(s => s.slotNum === slotNum);
   }
 
   addMeal(meal: MealSummary): void {

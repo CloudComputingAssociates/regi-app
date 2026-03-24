@@ -15,7 +15,7 @@
   border-radius: 8px;
   width: 380px;
   max-width: 90vw;
-  max-height: 520px;
+  height: 480px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -85,8 +85,7 @@
   padding: 6px 10px;
   border-bottom: 1px solid #555;
   background: #333;
-  max-height: 140px;
-  overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .picker-staged-row {
@@ -97,6 +96,12 @@
   border-radius: 3px;
   margin-bottom: 2px;
   background: #3a4a5a;
+  min-height: 26px;
+
+  &.empty {
+    background: #333;
+    border: 1px dashed #555;
+  }
 
   .staged-slot {
     color: rgba(255, 255, 255, 0.5);
@@ -145,10 +150,9 @@
 // ── Meal list ──
 .picker-list {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: scroll;
   padding: 0 6px;
   min-height: 0;
-  max-height: 240px;
 
   .picker-meal-row {
     display: flex;
