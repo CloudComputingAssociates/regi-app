@@ -266,8 +266,8 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
             </div>
 
             <!-- RegiMenu + Planning Options -->
+            <span class="section-title">RegiMenu + Planning</span>
             <div class="settings-section bottom-row">
-              <span class="section-title">RegiMenu + Planning Options</span>
               <div class="plan-column">
                 <div class="setting-row">
                   <label class="setting-label">Meals</label>

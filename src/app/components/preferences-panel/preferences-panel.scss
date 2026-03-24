@@ -343,6 +343,15 @@
     gap: 12px;
   }
 
+  .section-title {
+    color: #4da6ff;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 0 16px;
+    margin-bottom: -8px;
+  }
+
   // Settings Section
   .settings-section {
     width: 100%;
@@ -364,15 +373,6 @@
     flex-direction: column;
     gap: 6px;
     flex-shrink: 0;
-
-    .section-title {
-      color: #4da6ff;
-      font-size: 14px;
-      font-weight: 500;
-      letter-spacing: 0.5px;
-      width: 100%;
-      margin-bottom: 4px;
-    }
 
     .column-label {
       color: #4da6ff;
