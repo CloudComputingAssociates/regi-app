@@ -83,9 +83,9 @@ export class TabService {
   }
 
   // Define menu order - this determines tab insertion order
-  // Left nav: meal-planning, foods, shop (Shopping List), review, preferences
+  // Left nav: chat, today, review (Week Plan), meal-planning, foods, shop, preferences
   // Right nav (profile menu): account, help
-  private menuOrder = ['today', 'chat', 'meal-planning', 'review', 'foods', 'shop', 'preferences', 'account', 'help'];
+  private menuOrder = ['chat', 'today', 'review', 'meal-planning', 'foods', 'shop', 'preferences', 'account', 'help'];
 
   // Tabs that get an image icon
   private tabIcons: Record<string, string> = {
@@ -297,7 +297,7 @@ export class TabService {
 
     // Map of tab ID to label
     const tabLabels: Record<string, string> = {
-      'today': 'Today',
+      'today': 'Today Progress',
       'chat': 'Chat',
       'meal-planning': 'RegiMenu Meals',
       'foods': 'Foods',
