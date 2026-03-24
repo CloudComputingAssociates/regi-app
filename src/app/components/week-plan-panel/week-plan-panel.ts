@@ -708,9 +708,15 @@ export class WeekPlanPanelComponent implements OnInit {
     try {
       await this.weekPlanService.deleteWeekPlan(wp.id);
       await this.weekPlanService.listWeekPlans();
-      this.weekName.set(this.formatDefaultName(this.selectedDate()));
+      const defaultName = this.formatDefaultName(this.selectedDate());
+      this.weekName.set(defaultName);
       this.nameEdited.set(false);
       this.clearSelections();
+
+      // Force the input element to update (OnPush + native input workaround)
+      if (this.planNameInput?.nativeElement) {
+        this.planNameInput.nativeElement.value = defaultName;
+      }
     } catch {
       // error in service
     }
