@@ -98,15 +98,15 @@ export interface MealSwapResult {
         <div class="picker-list">
           @for (meal of meals(); track meal.id) {
             <div class="picker-meal-row">
+              <span class="picker-meal-name"
+                    (dblclick)="addMeal(meal)">{{ meal.name }}</span>
+              <span class="picker-meal-info">{{ meal.totalCalories ?? '—' }} cal</span>
               <button class="picker-add-btn"
                       [disabled]="!canAdd()"
                       (click)="addMeal(meal)"
                       title="Add">
                 <mat-icon>add</mat-icon>
               </button>
-              <span class="picker-meal-name"
-                    (dblclick)="addMeal(meal)">{{ meal.name }}</span>
-              <span class="picker-meal-info">{{ meal.totalCalories ?? '—' }} cal</span>
             </div>
           } @empty {
             <div class="picker-empty">No meals available</div>
