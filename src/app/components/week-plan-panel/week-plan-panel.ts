@@ -20,6 +20,7 @@ import { PreferencesService, WeekStartDay } from '../../services/preferences.ser
 import { WeekPlanMacrosService } from '../../services/week-plan-macros.service';
 import { getMealSlotName, DayPlan, DayPlanMeal } from '../../models/planning.model';
 import { MealPickerComponent, MealPickerResult, MealSwapResult } from '../meal-picker/meal-picker';
+import { MealDetailComponent } from '../meal-detail/meal-detail';
 
 const DAY_TO_NUM: Record<WeekStartDay, number> = {
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
@@ -33,7 +34,8 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   imports: [
     CommonModule, FormsModule,
     MatDatepickerModule, MatNativeDateModule, MatIconModule,
-    MealPickerComponent
+    MealPickerComponent,
+    MealDetailComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -185,7 +187,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                      [class.slot-filled]="!!meal"
                      [class.slot-selected]="isSlotSelected(dayOffset, slotNum)"
                      (click)="selectSlot(dayOffset, slotNum, $event)"
-                     (dblclick)="swapSlot(dayOffset, slotNum, $event)">
+                     (dblclick)="onSlotDoubleClick(dayOffset, slotNum, $event)">
                   <span class="slot-label">{{ getMealSlotName(slotNum) }}</span>
                   <span class="slot-meal">{{ meal?.meal?.name ?? meal?.mealId ?? '—' }}</span>
                 </div>
@@ -202,6 +204,13 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
           (committed)="onPickerCommitted($event)"
           (swapped)="onPickerSwapped($event)"
           (closed)="closeMealPicker()" />
+      }
+
+      <!-- Meal Detail (read-only) -->
+      @if (detailMealId()) {
+        <app-meal-detail
+          [mealId]="detailMealId()!"
+          (closed)="closeDetail()" />
       }
     </div>
   `,
@@ -235,6 +244,9 @@ export class WeekPlanPanelComponent implements OnInit {
   pickerOpen = signal(false);
   pickerSwapSlot = signal<number | null>(null);
   pickerSwapDayOffset = signal<number>(0);
+
+  // Detail panel state
+  detailMealId = signal<number | null>(null);
 
   weekStartFilter = (d: Date | null): boolean => {
     if (!d) return false;
@@ -372,14 +384,17 @@ export class WeekPlanPanelComponent implements OnInit {
 
   // === Swap slot (double-click) ===
 
-  swapSlot(dayOffset: number, slotNum: number, event: MouseEvent): void {
+  onSlotDoubleClick(dayOffset: number, slotNum: number, event: MouseEvent): void {
     event.stopPropagation();
-    const meal = this.getMealInSlot(dayOffset, slotNum);
-    if (!meal) return;
+    const dpm = this.getMealInSlot(dayOffset, slotNum);
+    if (!dpm) return;
 
-    this.pickerSwapSlot.set(slotNum);
-    this.pickerSwapDayOffset.set(dayOffset);
-    this.pickerOpen.set(true);
+    this.detailMealId.set(dpm.mealId);
+  }
+
+  closeDetail(): void {
+    this.detailMealId.set(null);
+    this.publishDayMacros();
   }
 
   // === Remove selected slot ===
