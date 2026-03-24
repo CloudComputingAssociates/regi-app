@@ -173,6 +173,10 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             <div class="day-label">
               <span class="day-name">{{ getDayName(dayDate) }}</span>
               <span class="day-date">{{ dayDate | date:'M/d' }}</span>
+              @if (hasDayMeals(dayOffset)) {
+                @let dt = getDayTotals(dayOffset);
+                <span class="day-totals">{{ dt.cal }} cal&nbsp;&nbsp;{{ dt.fiber }}g fiber&nbsp;&nbsp;{{ dt.sodium }}mg salt</span>
+              }
             </div>
             <div class="day-slots">
               @for (slotNum of mealSlotNums(); track slotNum) {
@@ -293,6 +297,28 @@ export class WeekPlanPanelComponent implements OnInit {
     const dp = this.getDayPlan(dayOffset);
     if (!dp?.meals) return null;
     return dp.meals.find(m => m.mealSlot === slotNum) ?? null;
+  }
+
+  // === Nutrition totals ===
+
+  getDayTotals(dayOffset: number): { cal: number; fiber: number; sodium: number } {
+    const dp = this.getDayPlan(dayOffset);
+    if (!dp?.meals) return { cal: 0, fiber: 0, sodium: 0 };
+
+    let cal = 0, fiber = 0, sodium = 0;
+    for (const dpm of dp.meals) {
+      if (dpm.meal) {
+        cal += dpm.meal.totalCalories ?? 0;
+        fiber += dpm.meal.totalFiberG ?? 0;
+        sodium += dpm.meal.totalSodiumMg ?? 0;
+      }
+    }
+    return { cal, fiber: Math.round(fiber), sodium };
+  }
+
+  hasDayMeals(dayOffset: number): boolean {
+    const dp = this.getDayPlan(dayOffset);
+    return !!(dp?.meals && dp.meals.length > 0);
   }
 
   // === Day selection ===
