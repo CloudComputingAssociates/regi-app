@@ -87,13 +87,6 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
           @if (dropdownOpen()) {
             <div class="combo-dropdown" role="listbox">
-              <button
-                class="dropdown-item create-new"
-                [class.highlighted]="dropdownHighlight() === -1"
-                (mousedown)="onCreateNewPlan($event)"
-                role="option">
-                + New Week Plan
-              </button>
               @for (wp of weekPlanService.weekPlans(); track wp.id; let i = $index) {
                 <button
                   class="dropdown-item"
@@ -626,16 +619,6 @@ export class WeekPlanPanelComponent implements OnInit {
     this.saveWeekPlan();
   }
 
-  onCreateNewPlan(event: MouseEvent): void {
-    event.preventDefault();
-    this.weekPlanService.clearCurrentWeekPlan();
-    this.weekName.set(this.formatDefaultName(this.selectedDate()));
-    this.nameEdited.set(false);
-    this.clearSelections();
-    this.closeDropdown();
-    this.planNameInput?.nativeElement.focus();
-  }
-
   onSelectPlan(wp: { id: number; name: string; startDate: string }, event: MouseEvent): void {
     event.preventDefault();
     this.loadWeekPlan(wp.id);
@@ -672,12 +655,10 @@ export class WeekPlanPanelComponent implements OnInit {
     const name = this.weekName() || undefined;
     const wp = this.currentWeek();
 
+    if (!wp) return; // only save name on existing plans; auto-create happens on meal add
+
     try {
-      if (wp) {
-        await this.weekPlanService.updateWeekPlan(wp.id, { name });
-      } else {
-        await this.weekPlanService.createWeekPlan({ startDate, name });
-      }
+      await this.weekPlanService.updateWeekPlan(wp.id, { name });
       this.nameEdited.set(false);
       await this.weekPlanService.listWeekPlans();
     } catch {
