@@ -107,9 +107,8 @@ export class LeftNavComponent {
     { label: 'Chat', iconImage: 'images/AI-star.png', tabId: 'chat' },
     { label: 'Week Plans', icon: '📅', tabId: 'review' },
     { label: 'RegiMenu Meals', iconImage: 'images/AI-star.png', tabId: 'meal-planning' },
-    { label: 'Shopping', icon: '🛒', tabId: 'shop' },
-    { label: 'Food Preferences', iconImage: 'favicon.ico', tabId: 'foods' },
-    { label: 'Settings', iconImage: 'images/AI-star.png', tabId: 'preferences' }
+    { label: 'Shopping List', icon: '🛒', tabId: 'shop' },
+    { label: 'Food Preferences', iconImage: 'favicon.ico', tabId: 'foods' }
   ];
 
   tabService = inject(TabService);

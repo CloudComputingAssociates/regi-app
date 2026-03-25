@@ -42,6 +42,11 @@ import { SettingsService } from '../../services/settings.service';
           <span>Account</span>
         </button>
 
+        <button mat-menu-item class="menu-item" (click)="toggleSettings()">
+          <mat-icon>settings</mat-icon>
+          <span>Settings</span>
+        </button>
+
         <button mat-menu-item class="menu-item" (click)="toggleHelp()">
           <mat-icon>help_outline</mat-icon>
           <span>Help</span>
@@ -98,6 +103,10 @@ export class ProfileMenuComponent {
 
   toggleAccount(): void {
     this.tabService.toggleTab('account', 'Account');
+  }
+
+  toggleSettings(): void {
+    this.tabService.toggleTab('preferences', 'Settings');
   }
 
   toggleHelp(): void {

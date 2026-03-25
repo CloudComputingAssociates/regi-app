@@ -1,19 +1,16 @@
 // src/app/components/preferences-panel/preferences-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy, AfterViewInit, ElementRef, NgZone } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, AfterViewInit, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
-import { ChatService } from '../../services/chat.service';
 import { NotificationService } from '../../services/notification.service';
 import { PreferencesService, MealsPerDay, FastingType, DailyGoals, RepeatMeals, FoodListSource, WeekStartDay } from '../../services/preferences.service';
 import { SettingsService } from '../../services/settings.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
-import { ChatOutputComponent } from '../chat/chat-output/chat-output';
-
 @Component({
   selector: 'app-preferences-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, ChatOutputComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container" #panelContainer>
@@ -31,7 +28,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
       }
 
       <!-- Top pane: Settings -->
-      <div class="settings-pane" [style.flex]="aiPanelOpen() ? topFlex() : '1 1 0%'" #settingsPane (scroll)="onSettingsScroll()">
+      <div class="settings-pane" style="flex: 1 1 0%" #settingsPane (scroll)="onSettingsScroll()">
         @if (showScrollUp()) {
           <div class="scroll-hint scroll-hint-up">
             <span class="scroll-chevron">&#x25B2;</span>
@@ -45,18 +42,6 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
         <div class="panel-content">
           <!-- Action buttons -->
           <div class="action-buttons">
-            <div class="action-left">
-              <button
-                class="icon-btn ai-btn"
-                [class.ai-active]="aiPanelOpen()"
-                (click)="toggleAiPanel()"
-                matTooltip="AI assist"
-                matTooltipPosition="above"
-                [matTooltipShowDelay]="300">
-                <img src="/images/AI-star-white.png" alt="AI" class="ai-btn-icon" />
-              </button>
-              <span class="ai-label">AI assistant</span>
-            </div>
             <div class="action-right">
               <button
                 class="icon-btn save-btn"
@@ -187,6 +172,12 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                       (ngModelChange)="onOverrideChange($event)" />
                     User override
                   </label>
+                  <span class="info-icon"
+                        #overrideTooltip="matTooltip"
+                        matTooltip="Nutrition Targets calculated by your Personal Info can be overridden for more granular control."
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="0"
+                        (click)="overrideTooltip.toggle()">&#9432;</span>
                 </span>
               </button>
               @if (nutritionTargetsOpen()) {
@@ -396,35 +387,16 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
         </div>
       </div>
 
-      @if (aiPanelOpen()) {
-        <!-- Draggable splitter -->
-        <div
-          class="splitter-bar"
-          (mousedown)="onSplitterMouseDown($event)"
-          (touchstart)="onSplitterTouchStart($event)">
-          <span class="splitter-grip">⇕</span>
-        </div>
-
-        <!-- Bottom pane: AI Output -->
-        <div class="chat-pane" [style.flex]="bottomFlex()">
-          <div class="chat-pane-header">
-            <span class="chat-pane-label">Preferences AI Output</span>
-          </div>
-          <app-chat-output context="preferences" [condensed]="true" />
-        </div>
-      }
     </div>
   `,
   styleUrls: ['./preferences-panel.scss']
 })
-export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewInit {
+export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   private tabService = inject(TabService);
-  chatService = inject(ChatService);
   protected userSettingsService = inject(PreferencesService);
   private settingsService = inject(SettingsService);
   private notificationService = inject(NotificationService);
   private el = inject(ElementRef);
-  private ngZone = inject(NgZone);
 
   // Retry loading preferences when allSettings becomes available (handles page refresh race)
   private loadEffect = effect(() => {
@@ -438,26 +410,14 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
   isSaving = signal(false);
   showConfirmDialog = signal(false);
   settingsChanged = signal(false);
-  aiPanelOpen = signal(false);
-
-  // Accordion state (all collapsed by default)
-  personalInfoOpen = signal(false);
+  // Accordion state
+  personalInfoOpen = signal(true);
   nutritionTargetsOpen = signal(false);
   planningOpen = signal(false);
 
   // Scroll hint state
   showScrollUp = signal(false);
   showScrollDown = signal(false);
-
-  // Splitter state: default 2/3 top, 1/3 bottom
-  topFlex = signal('2 1 0%');
-  bottomFlex = signal('1 1 0%');
-
-  private isDragging = false;
-  private boundMouseMove: ((e: MouseEvent) => void) | null = null;
-  private boundMouseUp: (() => void) | null = null;
-  private boundTouchMove: ((e: TouchEvent) => void) | null = null;
-  private boundTouchEnd: (() => void) | null = null;
 
   // Generate 24-hour time options in 30-minute increments
   timeOptions: string[] = Array.from({ length: 48 }, (_, i) => {
@@ -653,10 +613,6 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
     setTimeout(() => this.updateScrollHints(), 0);
   }
 
-  ngOnDestroy(): void {
-    this.cleanupDragListeners();
-  }
-
   onSettingsScroll(): void {
     this.updateScrollHints();
   }
@@ -756,11 +712,6 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
 
   toggleUnits(): void {
     this.userSettingsService.toggleUnits();
-  }
-
-  toggleAiPanel(): void {
-    this.aiPanelOpen.update(v => !v);
-    this.chatService.setPromptMe(this.aiPanelOpen());
   }
 
   onProteinRatioChange(value: number): void {
@@ -945,83 +896,5 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
 
   cancelClose(): void {
     this.showConfirmDialog.set(false);
-  }
-
-  // --- Splitter drag logic ---
-
-  onSplitterMouseDown(event: MouseEvent): void {
-    event.preventDefault();
-    this.startDrag();
-
-    this.boundMouseMove = (e: MouseEvent) => this.onDrag(e.clientY);
-    this.boundMouseUp = () => this.stopDrag();
-
-    document.addEventListener('mousemove', this.boundMouseMove);
-    document.addEventListener('mouseup', this.boundMouseUp);
-  }
-
-  onSplitterTouchStart(event: TouchEvent): void {
-    event.preventDefault();
-    this.startDrag();
-
-    this.boundTouchMove = (e: TouchEvent) => this.onDrag(e.touches[0].clientY);
-    this.boundTouchEnd = () => this.stopDrag();
-
-    document.addEventListener('touchmove', this.boundTouchMove, { passive: false });
-    document.addEventListener('touchend', this.boundTouchEnd);
-  }
-
-  private startDrag(): void {
-    this.isDragging = true;
-    document.body.style.cursor = 'row-resize';
-    document.body.style.userSelect = 'none';
-  }
-
-  private onDrag(clientY: number): void {
-    if (!this.isDragging) return;
-
-    const container = this.el.nativeElement.querySelector('.panel-container') as HTMLElement;
-    if (!container) return;
-
-    const rect = container.getBoundingClientRect();
-
-    // Clamp ratio between 20% and 80%
-    let ratio = (clientY - rect.top) / rect.height;
-    ratio = Math.max(0.2, Math.min(0.8, ratio));
-
-    const topRatio = ratio;
-    const bottomRatio = 1 - ratio;
-
-    this.ngZone.run(() => {
-      this.topFlex.set(`${topRatio} 1 0%`);
-      this.bottomFlex.set(`${bottomRatio} 1 0%`);
-    });
-  }
-
-  private stopDrag(): void {
-    this.isDragging = false;
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-    this.cleanupDragListeners();
-    this.updateScrollHints();
-  }
-
-  private cleanupDragListeners(): void {
-    if (this.boundMouseMove) {
-      document.removeEventListener('mousemove', this.boundMouseMove);
-      this.boundMouseMove = null;
-    }
-    if (this.boundMouseUp) {
-      document.removeEventListener('mouseup', this.boundMouseUp);
-      this.boundMouseUp = null;
-    }
-    if (this.boundTouchMove) {
-      document.removeEventListener('touchmove', this.boundTouchMove);
-      this.boundTouchMove = null;
-    }
-    if (this.boundTouchEnd) {
-      document.removeEventListener('touchend', this.boundTouchEnd);
-      this.boundTouchEnd = null;
-    }
   }
 }
