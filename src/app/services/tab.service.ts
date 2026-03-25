@@ -299,7 +299,7 @@ export class TabService {
     const tabLabels: Record<string, string> = {
       'today': 'Today',
       'chat': 'Chat',
-      'meal-planning': 'RegiMenu Meals',
+      'meal-planning': 'RegiMenu\u2120 Meals',
       'shop': 'Shopping List',
       'foods': 'Food Preferences',
       'review': 'Week Plans',

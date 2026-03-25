@@ -37,17 +37,17 @@ import { SettingsService } from '../../services/settings.service';
 
         <mat-divider></mat-divider>
 
-        <button mat-menu-item class="menu-item" (click)="toggleAccount()">
+        <button mat-menu-item class="menu-item" [class.active]="isTabOpen('account')" (click)="toggleAccount()">
           <mat-icon>person</mat-icon>
           <span>Account</span>
         </button>
 
-        <button mat-menu-item class="menu-item" (click)="toggleSettings()">
+        <button mat-menu-item class="menu-item" [class.active]="isTabOpen('preferences')" (click)="toggleSettings()">
           <mat-icon>settings</mat-icon>
           <span>Settings</span>
         </button>
 
-        <button mat-menu-item class="menu-item" (click)="toggleHelp()">
+        <button mat-menu-item class="menu-item" [class.active]="isTabOpen('help')" (click)="toggleHelp()">
           <mat-icon>help_outline</mat-icon>
           <span>Help</span>
         </button>
@@ -99,6 +99,10 @@ export class ProfileMenuComponent {
     this.settingsService.clearSettings();
     this.tabService.closeAllTabs();
     this.auth.logout({ logoutParams: { returnTo: window.location.origin } });
+  }
+
+  isTabOpen(tabId: string): boolean {
+    return this.tabService.tabs().some(tab => tab.id === tabId);
   }
 
   toggleAccount(): void {
