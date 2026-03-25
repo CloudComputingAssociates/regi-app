@@ -100,20 +100,24 @@ export interface MealSwapResult {
 
         <!-- Meal list -->
         <div class="picker-list">
-          @for (meal of meals(); track meal.id) {
-            <div class="picker-meal-row">
-              <span class="picker-meal-name"
-                    (dblclick)="addMeal(meal)">{{ meal.name }}</span>
-              <span class="picker-meal-info">{{ meal.totalCalories ?? '—' }} cal</span>
-              <button class="picker-add-btn"
-                      [disabled]="!canAdd()"
-                      (click)="addMeal(meal)"
-                      title="Add">
-                <mat-icon>add</mat-icon>
-              </button>
-            </div>
-          } @empty {
-            <div class="picker-empty">No meals available</div>
+          @if (mealsLoading()) {
+            <div class="picker-empty">Loading...</div>
+          } @else {
+            @for (meal of meals(); track meal.id) {
+              <div class="picker-meal-row">
+                <span class="picker-meal-name"
+                      (dblclick)="addMeal(meal)">{{ meal.name }}</span>
+                <span class="picker-meal-info">{{ meal.totalCalories ?? '—' }} cal</span>
+                <button class="picker-add-btn"
+                        [disabled]="!canAdd()"
+                        (click)="addMeal(meal)"
+                        title="Add">
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+            } @empty {
+              <div class="picker-empty">No meals available</div>
+            }
           }
         </div>
 
@@ -145,6 +149,7 @@ export class MealPickerComponent implements OnInit {
   closed = output<void>();
 
   meals = signal<MealSummary[]>([]);
+  mealsLoading = signal(true);
   stagedSlots = signal<StagedMeal[]>([]);
 
   totalSlots = computed(() => this.prefs.mealsPerDay());
@@ -176,6 +181,7 @@ export class MealPickerComponent implements OnInit {
     } catch {
       this.meals.set([]);
     }
+    this.mealsLoading.set(false);
   }
 
   getStagedBySlot(slotNum: number): StagedMeal | undefined {
