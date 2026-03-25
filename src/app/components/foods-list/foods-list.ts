@@ -53,7 +53,7 @@ export interface AddFoodEvent {
             class="search-input"
             [(ngModel)]="searchQuery"
             (ngModelChange)="onSearchQueryChange($event)"
-            (keydown.enter)="performSearch()"
+            (keydown.enter)="performSearch(); $event.stopPropagation()"
             placeholder="Search food..."
             [disabled]="isLoading()" />
 
