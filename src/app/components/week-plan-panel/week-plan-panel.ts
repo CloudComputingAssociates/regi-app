@@ -63,7 +63,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
       <!-- Row 2: WEEK PLAN -->
       <div class="header-row">
-        <span class="row-label">Week Plan</span>
+        <span class="row-label">Week Plans</span>
         <div class="plan-combo" (focusout)="onComboFocusOut($event)">
           <input
             #planNameInput
@@ -721,6 +721,7 @@ export class WeekPlanPanelComponent {
   }
 
   async loadWeekPlan(id: number): Promise<void> {
+    document.body.style.cursor = 'wait';
     try {
       const wp = await this.weekPlanService.getWeekPlan(id);
       this.selectedDate.set(new Date(wp.startDate + 'T00:00:00'));
@@ -730,6 +731,7 @@ export class WeekPlanPanelComponent {
     } catch {
       // error in service
     }
+    document.body.style.cursor = '';
   }
 
   confirmDeletePlan(): void {

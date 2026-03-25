@@ -83,7 +83,7 @@ export class TabService {
   }
 
   // Define menu order - this determines tab insertion order
-  // Left nav: chat, today, review (Week Plan), meal-planning, foods, shop, preferences
+  // Left nav: chat, today, review (Week Plans), meal-planning, foods, shop, preferences
   // Right nav (profile menu): account, help
   private menuOrder = ['chat', 'today', 'review', 'meal-planning', 'foods', 'shop', 'preferences', 'account', 'help'];
 
@@ -302,7 +302,7 @@ export class TabService {
       'meal-planning': 'RegiMenu Meals',
       'foods': 'Foods',
       'shop': 'Shopping List',
-      'review': 'Week Plan',
+      'review': 'Week Plans',
       'preferences': 'Preferences',
       'account': 'Account',
       'help': 'Help'
