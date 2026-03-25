@@ -318,7 +318,7 @@ export class FoodsListComponent implements OnInit {
           this.setFoods(response.foods);
 
           if (response.foods.length > 0) {
-            this.selectFood(0);
+            this.selectFood(0, false);
           }
         }
         this.isLoading.set(false);
@@ -351,7 +351,7 @@ export class FoodsListComponent implements OnInit {
         this.setFoods(favoriteFoods);
 
         if (favoriteFoods.length > 0) {
-          this.selectFood(0);
+          this.selectFood(0, false);
         } else {
           this.selectedIndex.set(-1);
         }
@@ -385,7 +385,7 @@ export class FoodsListComponent implements OnInit {
         this.setFoods(restrictedFoods);
 
         if (restrictedFoods.length > 0) {
-          this.selectFood(0);
+          this.selectFood(0, false);
         } else {
           this.selectedIndex.set(-1);
         }
@@ -411,7 +411,7 @@ export class FoodsListComponent implements OnInit {
         if (this.yehApprovedCache().length > 0) {
           this.setFoods(this.yehApprovedCache());
           if (this.foods().length > 0) {
-            this.selectFood(0);
+            this.selectFood(0, false);
           }
         } else {
           this.loadYehApprovedFoods();
@@ -467,7 +467,7 @@ export class FoodsListComponent implements OnInit {
       }
 
       if (this.foods().length > 0) {
-        this.selectFood(0);
+        this.selectFood(0, false);
       } else {
         this.selectedIndex.set(-1);
       }
@@ -520,7 +520,7 @@ export class FoodsListComponent implements OnInit {
           this.setFoods(response.foods);
 
           if (response.foods.length > 0) {
-            this.selectFood(0);
+            this.selectFood(0, false);
           } else {
             this.selectedIndex.set(-1);
           }
@@ -563,25 +563,37 @@ export class FoodsListComponent implements OnInit {
     this.preferencesService.toggleRestrictedLocal(foodId);
   }
 
-  selectFood(index: number): void {
+  selectFood(index: number, fromUserClick = true): void {
     const foodList = this.foods();
     if (index < 0 || index >= foodList.length) {
       return;
     }
 
-    const currentTime = Date.now();
-    const timeSinceLastTap = currentTime - this.lastTapTime;
-    const isDoubleTap =
-      index === this.lastTapIndex &&
-      timeSinceLastTap < this.doubleTapDelay;
+    if (fromUserClick) {
+      const currentTime = Date.now();
+      const timeSinceLastTap = currentTime - this.lastTapTime;
+      const isDoubleTap =
+        index === this.lastTapIndex &&
+        timeSinceLastTap < this.doubleTapDelay;
 
-    if (isDoubleTap) {
-      const food = foodList[index];
-      this.addFood.emit({ food });
+      if (isDoubleTap) {
+        const food = foodList[index];
+        this.addFood.emit({ food });
 
+        this.lastTapTime = 0;
+        this.lastTapIndex = -1;
+        return;
+      }
+
+      this.lastTapTime = currentTime;
+      this.lastTapIndex = index;
+    } else {
+      // Reset double-tap tracking on programmatic selection
       this.lastTapTime = 0;
       this.lastTapIndex = -1;
-    } else {
+    }
+
+    {
       this.selectedIndex.set(index);
       const food = foodList[index];
 
@@ -596,9 +608,6 @@ export class FoodsListComponent implements OnInit {
       };
 
       this.selectedFood.emit(event);
-
-      this.lastTapTime = currentTime;
-      this.lastTapIndex = index;
     }
   }
 
