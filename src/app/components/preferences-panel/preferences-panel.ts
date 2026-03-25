@@ -353,7 +353,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   </select>
                 </div>
                 <div class="setting-row">
-                  <label class="setting-label">Repeat</label>
+                  <label class="setting-label">Meal Repeats</label>
                   <select
                     class="setting-select"
                     [ngModel]="userSettingsService.repeatMeals()"
@@ -363,7 +363,6 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <option [ngValue]="3">3</option>
                     <option [ngValue]="4">4</option>
                   </select>
-                  <span class="setting-suffix">day-plans</span>
                   <span class="info-icon"
                         matTooltip="By repeating day plans, you optimize grocery lists and reduce waste"
                         matTooltipPosition="above"
