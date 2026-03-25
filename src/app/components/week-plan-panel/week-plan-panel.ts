@@ -132,10 +132,21 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         </div>
       }
 
+      @if (showSelectDayReminder()) {
+        <div class="confirm-overlay" (click)="showSelectDayReminder.set(false)">
+          <div class="confirm-dialog" (click)="$event.stopPropagation()">
+            <p>Please select a day first</p>
+            <div class="confirm-buttons">
+              <button class="confirm-btn cancel" (click)="showSelectDayReminder.set(false)">OK</button>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Action bar -->
       <div class="action-bar">
         <button class="action-btn add-meal-btn"
-                [disabled]="selectedDays().length === 0"
+                [disabled]="!currentWeek()"
                 (click)="openMealPicker()"
                 title="Add meals to selected days">
           <mat-icon>add</mat-icon> Add Meals
@@ -480,7 +491,20 @@ export class WeekPlanPanelComponent {
 
   // === Meal picker ===
 
+  showSelectDayReminder = signal(false);
+
   openMealPicker(): void {
+    // Auto-select first day if none selected
+    if (this.selectedDays().length === 0) {
+      const firstDayPlan = this.getDayPlan(0);
+      if (firstDayPlan?.meals && firstDayPlan.meals.length > 0) {
+        // First day already has meals — remind user to pick a day
+        this.showSelectDayReminder.set(true);
+        return;
+      }
+      this.selectedDays.set([0]);
+    }
+
     this.pickerSwapSlot.set(null);
 
     // Pre-populate with existing meals from the first selected day
