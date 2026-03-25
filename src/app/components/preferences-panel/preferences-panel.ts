@@ -364,9 +364,11 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <option [ngValue]="4">4</option>
                   </select>
                   <span class="info-icon"
+                        #repeatTooltip="matTooltip"
                         matTooltip="By repeating day plans, you optimize grocery lists and reduce waste"
                         matTooltipPosition="above"
-                        [matTooltipShowDelay]="200">&#9432;</span>
+                        [matTooltipShowDelay]="0"
+                        (click)="repeatTooltip.toggle()">&#9432;</span>
                 </div>
                 <div class="setting-row">
                   <label class="setting-label">Foods from</label>
@@ -378,6 +380,12 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     <option value="yeh">YEH</option>
                     <option value="myfoods">MyFoods</option>
                   </select>
+                  <span class="info-icon"
+                        #foodsTooltip="matTooltip"
+                        matTooltip="Customize MyFoods list on the Foods tab, or use the YEH Approved list, or both."
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="0"
+                        (click)="foodsTooltip.toggle()">&#9432;</span>
                 </div>
               </div>
             </div>
