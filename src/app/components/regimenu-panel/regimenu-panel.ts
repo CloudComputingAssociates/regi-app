@@ -463,11 +463,12 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
   private async commitNewPlanName(): Promise<void> {
     const name = this.newPlanName.trim();
-    if (!name) return;
+    if (!name || this.newPlanNameCommitted()) return;
+
+    this.newPlanNameCommitted.set(true);
 
     try {
       await this.planningService.createMeal(name);
-      this.newPlanNameCommitted.set(true);
       this.isNewPlanMode.set(false);
       this.newPlanName = '';
       this.fetchSavedPlans();
