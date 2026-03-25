@@ -107,14 +107,8 @@ export class TabService {
     const existingTabIndex = currentTabs.findIndex(t => t.id === tabId);
 
     if (existingTabIndex !== -1) {
-      // Tab exists - if it's already active, close it; otherwise focus it
-      if (this.activeTabIndexSignal() === existingTabIndex) {
-        this.closeTab(tabId);
-      } else {
-        const currentId = this.activeTabId();
-        if (currentId !== tabId && this.guardLeave(tabId)) return;
-        this._focusTab(existingTabIndex);
-      }
+      // Tab exists - close it (regardless of whether it's active)
+      this.closeTab(tabId);
     } else {
       // Opening a new tab also leaves current tab
       const currentId = this.activeTabId();
@@ -299,7 +293,7 @@ export class TabService {
     const tabLabels: Record<string, string> = {
       'today': 'Today',
       'chat': 'Chat',
-      'meal-planning': 'RegiMenu\u2120 Meals',
+      'meal-planning': 'RegiMenu Meals',
       'shop': 'Shopping List',
       'foods': 'Food Preferences',
       'review': 'Week Plans',

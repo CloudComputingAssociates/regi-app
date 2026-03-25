@@ -57,7 +57,7 @@ import { NotificationComponent } from '../notification/notification';
                   } @else if (tab.emoji) {
                     <span class="tab-emoji">{{ tab.emoji }}</span>
                   }
-                  <span class="tab-label-text">{{ tab.label }}</span>
+                  <span class="tab-label-text" [innerHTML]="formatTabLabel(tab.label)"></span>
                   @if (tab.badgeCount) {
                     <span class="tab-badge">({{ tab.badgeCount }})</span>
                   }
@@ -121,6 +121,10 @@ export class MainBodyComponent {
       const currentTabId = this.tabService.activeTabId();
       return currentTabId === 'preferences' && this.preferencesService.hasDirtyGroups();
     });
+  }
+
+  formatTabLabel(label: string): string {
+    return label.replace('RegiMenu', 'RegiMenu<sup class="sm">SM</sup>');
   }
 
   onTabIndexChange(index: number): void {

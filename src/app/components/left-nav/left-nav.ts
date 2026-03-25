@@ -66,7 +66,7 @@ interface MenuItem {
                 } @else {
                   <span class="menu-icon">{{ item.icon }}</span>
                 }
-                <span class="menu-label">{{ item.label }}</span>
+                <span class="menu-label" [innerHTML]="formatLabel(item.label)"></span>
               </div>
             </mat-list-item>
           </mat-nav-list>
@@ -106,7 +106,7 @@ export class LeftNavComponent {
     { label: 'Today', iconImage: 'images/AI-star.png', tabId: 'today' },
     { label: 'Chat', iconImage: 'images/AI-star.png', tabId: 'chat' },
     { label: 'Week Plans', icon: '📅', tabId: 'review' },
-    { label: 'RegiMenu\u2120 Meals', iconImage: 'images/AI-star.png', tabId: 'meal-planning' },
+    { label: 'RegiMenu Meals', iconImage: 'images/AI-star.png', tabId: 'meal-planning' },
     { label: 'Shopping List', icon: '🛒', tabId: 'shop' },
     { label: 'Food Preferences', iconImage: 'favicon.ico', tabId: 'foods' }
   ];
@@ -115,6 +115,10 @@ export class LeftNavComponent {
 
   toggleDrawer(): void {
     this.drawer.toggle();
+  }
+
+  formatLabel(label: string): string {
+    return label.replace('RegiMenu', 'RegiMenu<sup class="sm">SM</sup>');
   }
 
   isTabOpen(tabId: string): boolean {
