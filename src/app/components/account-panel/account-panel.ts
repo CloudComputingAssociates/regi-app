@@ -14,7 +14,7 @@ import { SubscriptionService, SubscriptionStatus } from '../../services/subscrip
     <div class="panel-container">
       <div class="panel-header">
         <h2 class="panel-title">Account</h2>
-        <button class="close-btn" (click)="close()">Close</button>
+        <button class="icon-btn close-btn" (click)="close()">✕</button>
       </div>
 
       <div class="panel-content">

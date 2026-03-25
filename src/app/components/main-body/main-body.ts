@@ -83,6 +83,9 @@ import { NotificationComponent } from '../notification/notification';
                   <app-account-panel />
                 } @else if (tab.id === 'help') {
                   <div class="placeholder-content">
+                    <div class="help-header">
+                      <button class="icon-btn close-btn" (click)="closeTab('help')">✕</button>
+                    </div>
                     <p class="placeholder-text">Help - Coming soon</p>
                   </div>
                 }
@@ -143,5 +146,9 @@ export class MainBodyComponent {
 
   cancelTabSwitch(): void {
     this.tabService.cancelBlockedSwitch();
+  }
+
+  closeTab(tabId: string): void {
+    this.tabService.closeTab(tabId);
   }
 }
