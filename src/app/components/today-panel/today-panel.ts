@@ -45,14 +45,6 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                   ✓
                 }
               </button>
-              <button
-                class="icon-btn close-btn"
-                (click)="close()"
-                matTooltip="Close"
-                matTooltipPosition="above"
-                [matTooltipShowDelay]="300">
-                ✕
-              </button>
             </div>
           </div>
 

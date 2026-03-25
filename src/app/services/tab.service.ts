@@ -85,7 +85,7 @@ export class TabService {
   // Define menu order - this determines tab insertion order
   // Left nav: chat, today, review (Week Plans), meal-planning, foods, shop, preferences
   // Right nav (profile menu): account, help
-  private menuOrder = ['chat', 'today', 'review', 'meal-planning', 'foods', 'shop', 'preferences', 'account', 'help'];
+  private menuOrder = ['today', 'chat', 'review', 'meal-planning', 'shop', 'foods', 'preferences', 'account', 'help'];
 
   // Tabs that get an image icon
   private tabIcons: Record<string, string> = {
@@ -123,7 +123,7 @@ export class TabService {
       const newTab: Tab = {
         id: tabId,
         label,
-        closeable: true,
+        closeable: tabId !== 'today',
         icon: this.tabIcons[tabId],
         emoji: this.tabEmojis[tabId]
       };
@@ -200,7 +200,7 @@ export class TabService {
       newTabs.splice(insertIndex, 0, {
         id: tabId,
         label,
-        closeable: true,
+        closeable: tabId !== 'today',
         icon: this.tabIcons[tabId],
         emoji: this.tabEmojis[tabId]
       });
@@ -261,10 +261,10 @@ export class TabService {
     this.activeTabIndexSignal.set(-1);
   }
 
-  /** Reset to initial state with Chat tab open - used on login */
+  /** Reset to initial state with Today tab open - used on login */
   resetToChat(): void {
     this.tabsSignal.set([
-      { id: 'chat', label: 'Chat', closeable: true, icon: this.tabIcons['chat'] }
+      { id: 'today', label: 'Today', closeable: false, icon: this.tabIcons['today'] }
     ]);
     this.activeTabIndexSignal.set(0);
   }
@@ -297,13 +297,13 @@ export class TabService {
 
     // Map of tab ID to label
     const tabLabels: Record<string, string> = {
-      'today': 'Today Progress',
+      'today': 'Today',
       'chat': 'Chat',
       'meal-planning': 'RegiMenu Meals',
-      'foods': 'Foods',
       'shop': 'Shopping List',
+      'foods': 'Food Preferences',
       'review': 'Week Plans',
-      'preferences': 'Preferences',
+      'preferences': 'Settings',
       'account': 'Account',
       'help': 'Help'
     };
@@ -318,13 +318,18 @@ export class TabService {
       return aIndex - bIndex;
     });
 
+    // Ensure 'today' is always included
+    if (!sortedTabIds.includes('today')) {
+      sortedTabIds.unshift('today');
+    }
+
     for (const tabId of sortedTabIds) {
       const label = tabLabels[tabId];
       if (label) {
         tabs.push({
           id: tabId,
           label,
-          closeable: true,
+          closeable: tabId !== 'today',
           icon: this.tabIcons[tabId],
           emoji: this.tabEmojis[tabId]
         });

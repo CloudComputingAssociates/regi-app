@@ -103,13 +103,13 @@ export class LeftNavComponent {
   );
 
   menuItems: MenuItem[] = [
+    { label: 'Today', iconImage: 'images/AI-star.png', tabId: 'today' },
     { label: 'Chat', iconImage: 'images/AI-star.png', tabId: 'chat' },
-    { label: 'Today Progress', iconImage: 'images/AI-star.png', tabId: 'today' },
     { label: 'Week Plans', icon: '📅', tabId: 'review' },
     { label: 'RegiMenu Meals', iconImage: 'images/AI-star.png', tabId: 'meal-planning' },
-    { label: 'Foods', iconImage: 'favicon.ico', tabId: 'foods' },
     { label: 'Shopping', icon: '🛒', tabId: 'shop' },
-    { label: 'Preferences', iconImage: 'images/AI-star.png', tabId: 'preferences' }
+    { label: 'Food Preferences', iconImage: 'favicon.ico', tabId: 'foods' },
+    { label: 'Settings', iconImage: 'images/AI-star.png', tabId: 'preferences' }
   ];
 
   tabService = inject(TabService);
