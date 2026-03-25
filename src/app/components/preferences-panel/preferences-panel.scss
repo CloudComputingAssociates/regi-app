@@ -343,13 +343,57 @@
     gap: 12px;
   }
 
-  .section-title {
+  // Accordion sections
+  .accordion-section {
+    width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    margin-bottom: 8px;
+  }
+
+  .accordion-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 12px;
+    background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+    border: 1px solid #4a4a4a;
+    border-radius: 6px;
     color: #4da6ff;
     font-size: 14px;
     font-weight: 500;
-    letter-spacing: 0.5px;
-    padding: 0 16px;
-    margin-bottom: -8px;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+    text-align: left;
+
+    &:hover { background: linear-gradient(180deg, #525252 0%, #424242 100%); }
+
+    .accordion-arrow {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+
+      &.open { transform: rotate(90deg); }
+    }
+
+    .accordion-title {
+      flex-shrink: 0;
+    }
+
+    .accordion-control {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+
+  .accordion-body {
+    padding-top: 8px;
   }
 
   // Settings Section
@@ -359,7 +403,15 @@
     flex-shrink: 0;
     display: flex;
     gap: 16px;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+
+    .section-title {
+      color: #4da6ff;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      width: 100%;
+    }
     align-items: flex-start;
     background: #2a2a2a;
     border: 1px solid #4a4a4a;

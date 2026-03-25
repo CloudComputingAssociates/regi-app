@@ -8,11 +8,12 @@ import { NotificationService } from '../../services/notification.service';
 import { PreferencesService, MealsPerDay, FastingType, DailyGoals, RepeatMeals, FoodListSource, WeekStartDay } from '../../services/preferences.service';
 import { SettingsService } from '../../services/settings.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatIconModule } from '@angular/material/icon';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
 
 @Component({
   selector: 'app-preferences-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, ChatOutputComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, ChatOutputComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container" #panelContainer>
@@ -84,14 +85,21 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
 
           <div class="settings-wrapper">
             <!-- Personal Info -->
-            <div class="settings-section personal-info-section">
-              <div class="pi-column">
-                <span class="column-label">Personal Info
+            <div class="accordion-section">
+              <button class="accordion-header" (click)="personalInfoOpen.set(!personalInfoOpen())">
+                <mat-icon class="accordion-arrow" [class.open]="personalInfoOpen()">chevron_right</mat-icon>
+                <span class="accordion-title">Personal Info</span>
+                <span class="accordion-control" (click)="$event.stopPropagation()">
                   <span class="pi-scale-label">Units</span>
                   <button class="unit-toggle" (click)="toggleUnits()">
                     {{ userSettingsService.useImperial() ? 'US' : 'metric' }}
                   </button>
                 </span>
+              </button>
+              @if (personalInfoOpen()) {
+              <div class="accordion-body">
+              <div class="settings-section personal-info-section">
+              <div class="pi-column">
                 <div class="pi-row">
                   <label class="setting-label">DOB</label>
                   <input type="date" class="pi-input pi-date"
@@ -163,11 +171,16 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                 <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
               </div>
             </div>
+            </div>
+            }
+            </div>
 
             <!-- Nutrition Targets -->
-            <div class="settings-section">
-              <div class="targets-column">
-                <span class="column-label">Nutrition Targets
+            <div class="accordion-section">
+              <button class="accordion-header" (click)="nutritionTargetsOpen.set(!nutritionTargetsOpen())">
+                <mat-icon class="accordion-arrow" [class.open]="nutritionTargetsOpen()">chevron_right</mat-icon>
+                <span class="accordion-title">Nutrition Targets</span>
+                <span class="accordion-control" (click)="$event.stopPropagation()">
                   <label class="override-label">
                     <input type="checkbox"
                       [ngModel]="userSettingsService.dailyGoals().isOverridden"
@@ -175,6 +188,11 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                     User override
                   </label>
                 </span>
+              </button>
+              @if (nutritionTargetsOpen()) {
+              <div class="accordion-body">
+              <div class="settings-section">
+              <div class="targets-column">
                 <div class="targets-body" [class.targets-disabled]="!userSettingsService.dailyGoals().isOverridden">
                   <!-- Carb scale slider -->
                   <div class="macro-control-row">
@@ -264,9 +282,18 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                 </div>
               </div>
             </div>
+            </div>
+            }
+            </div>
 
-            <!-- RegiMenu + Planning Options -->
-            <span class="section-title">RegiMenu + Planning</span>
+            <!-- RegiMenu + Planning -->
+            <div class="accordion-section">
+              <button class="accordion-header" (click)="planningOpen.set(!planningOpen())">
+                <mat-icon class="accordion-arrow" [class.open]="planningOpen()">chevron_right</mat-icon>
+                <span class="accordion-title">RegiMenu + Planning</span>
+              </button>
+              @if (planningOpen()) {
+              <div class="accordion-body">
             <div class="settings-section bottom-row">
               <div class="plan-column">
                 <div class="setting-row">
@@ -355,6 +382,9 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
                 </div>
               </div>
             </div>
+            </div>
+            }
+            </div>
           </div>
         </div>
       </div>
@@ -402,6 +432,11 @@ export class PreferencesPanelComponent implements OnInit, OnDestroy, AfterViewIn
   showConfirmDialog = signal(false);
   settingsChanged = signal(false);
   aiPanelOpen = signal(false);
+
+  // Accordion state (all collapsed by default)
+  personalInfoOpen = signal(false);
+  nutritionTargetsOpen = signal(false);
+  planningOpen = signal(false);
 
   // Scroll hint state
   showScrollUp = signal(false);
