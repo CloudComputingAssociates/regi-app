@@ -23,6 +23,15 @@
   }
 }
 
+.info-icon {
+  color: #4da6ff;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover { color: #82c8ff; }
+}
+
 :host {
   display: flex;
   height: 100%;
@@ -567,14 +576,6 @@
       flex-shrink: 0;
     }
 
-    .info-icon {
-      color: #4da6ff !important;
-      font-size: 16px;
-      cursor: pointer;
-      flex-shrink: 0;
-
-      &:hover { color: #82c8ff !important; }
-    }
 
     .protein-select {
       background:
