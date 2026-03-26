@@ -83,8 +83,13 @@ import { NotificationComponent } from '../notification/notification';
                   <app-account-panel />
                 } @else if (tab.id === 'help') {
                   <div class="placeholder-content">
-                    <div class="help-header">
-                      <button class="icon-btn close-btn" (click)="closeTab('help')">✕</button>
+                    <div class="action-buttons">
+                      <button
+                        class="icon-btn close-btn"
+                        (click)="closeTab('help')"
+                        title="Close">
+                        ✕
+                      </button>
                     </div>
                     <p class="placeholder-text">Help - Coming soon</p>
                   </div>

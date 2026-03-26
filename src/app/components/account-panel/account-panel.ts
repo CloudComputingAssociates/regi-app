@@ -12,9 +12,14 @@ import { SubscriptionService, SubscriptionStatus } from '../../services/subscrip
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <div class="panel-header">
-        <h2 class="panel-title">Account</h2>
-        <button class="icon-btn close-btn" (click)="close()">✕</button>
+      <!-- Action buttons - top right -->
+      <div class="action-buttons">
+        <button
+          class="icon-btn close-btn"
+          (click)="close()"
+          title="Close">
+          ✕
+        </button>
       </div>
 
       <div class="panel-content">

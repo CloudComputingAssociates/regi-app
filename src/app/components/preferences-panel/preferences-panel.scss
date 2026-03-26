@@ -144,18 +144,12 @@
 .action-buttons {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
 
-  .action-left, .action-right {
+  .action-right {
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-
-  .ai-label {
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 500;
   }
 
   .icon-btn {
