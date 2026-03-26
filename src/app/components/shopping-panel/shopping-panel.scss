@@ -11,13 +11,14 @@
   height: 100%;
   width: 100%;
   background: linear-gradient(180deg, #404040 0%, #3a3a3a 100%);
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
+// ============================================
 // Action buttons - top right corner
+// ============================================
 .action-buttons {
   position: absolute;
   top: 8px;
@@ -98,45 +99,162 @@
   to { transform: rotate(360deg); }
 }
 
-// Scrollable content
-.panel-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 48px 12px 12px;
+// ============================================
+// Top pane: Week Plan Foods
+// ============================================
+.plan-pane {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  min-height: 60px;
 }
 
-// Week plan area (future)
-.week-plan-area {
-  flex: 3;
+.plan-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  padding-right: 90px; // Clear action buttons
+  background: #333333;
+  border-bottom: 1px solid #4a4a4a;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.plan-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.week-select {
+  background: #2a2a2a;
+  border: 1px solid #555555;
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 12px;
+  padding: 4px 8px;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+
+  &:focus {
+    border-color: #4da6ff;
+  }
+
+  option {
+    background: #2a2a2a;
+    color: #ffffff;
+  }
+}
+
+.plan-header-right {
+  display: flex;
+  align-items: center;
+}
+
+.check-all-btn {
+  font-size: 11px;
+  font-weight: 500;
+  color: #ffffff;
+  background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+  cursor: pointer;
+  border-radius: 4px;
+  border-top: 1px solid #6a6a6a;
+  border-left: 1px solid #5a5a5a;
+  border-right: 1px solid #5a5a5a;
+  border-bottom: 2px solid #1a1a1a;
+  padding: 4px 10px;
+  font-family: inherit;
+  outline: none;
+  white-space: nowrap;
+
+  &:hover {
+    background: linear-gradient(180deg, #606060 0%, #454545 100%);
+  }
+}
+
+.plan-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.plan-empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100px;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  font-style: italic;
+}
 
-  .section-placeholder {
+.plan-items-list {
+  padding: 0;
+}
+
+.plan-qty {
+  width: 60px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: right;
+  padding-right: 6px;
+}
+
+.plan-food-name {
+  flex: 1;
+  font-size: 12px;
+  color: #ffffff;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// ============================================
+// Splitter bar
+// ============================================
+.splitter-bar {
+  height: 8px;
+  background: #4a4a4a;
+  cursor: row-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+  border-top: 1px solid #5a5a5a;
+  border-bottom: 1px solid #3a3a3a;
+
+  &:hover {
+    background: #555555;
+  }
+
+  .splitter-grip {
+    font-size: 10px;
     color: rgba(255, 255, 255, 0.4);
-    font-size: 14px;
-    font-style: italic;
+    line-height: 1;
   }
 }
 
 // ============================================
-// Staples section — bottom quarter
+// Bottom pane: Staples
 // ============================================
-
-.staples-section {
-  flex: 1;
-  min-height: 200px;
-  border-top: 2px solid #4a4a4a;
+.staples-pane {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 60px;
 }
 
 .staples-header {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: 6px 12px;
   background: #333333;
+  flex-shrink: 0;
 
   .staples-title {
     color: #4da6ff;
@@ -145,7 +263,14 @@
   }
 }
 
+.staples-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+// ============================================
 // Accordion
+// ============================================
 .accordion-section {
   border-bottom: 1px solid #4a4a4a;
 }
@@ -154,7 +279,7 @@
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 6px 12px;
+  padding: 5px 12px;
   background: #383838;
   border: none;
   cursor: pointer;
@@ -197,7 +322,9 @@
   padding: 4px 0;
 }
 
+// ============================================
 // Add row
+// ============================================
 .add-row {
   display: flex;
   align-items: center;
@@ -253,7 +380,9 @@
   }
 }
 
-// Staple row
+// ============================================
+// Staple / plan food rows (shared)
+// ============================================
 .staple-row {
   display: flex;
   align-items: center;
@@ -264,6 +393,10 @@
   &:hover {
     background: rgba(255, 255, 255, 0.03);
   }
+
+  &.not-needed {
+    opacity: 0.45;
+  }
 }
 
 // Picked-up checkbox
@@ -273,6 +406,10 @@
   flex-shrink: 0;
   cursor: pointer;
   accent-color: #4a8f4a;
+
+  &:disabled {
+    cursor: default;
+  }
 }
 
 // Toggle slider (needed)
@@ -336,18 +473,9 @@
   font-family: inherit;
   outline: none;
 
-  &:hover {
-    border-color: #555555;
-  }
-
-  &:focus {
-    border-color: #4da6ff;
-    background: #2a2a2a;
-  }
-
-  &::placeholder {
-    color: rgba(255, 255, 255, 0.2);
-  }
+  &:hover { border-color: #555555; }
+  &:focus { border-color: #4da6ff; background: #2a2a2a; }
+  &::placeholder { color: rgba(255, 255, 255, 0.2); }
 }
 
 .staple-item {
@@ -362,14 +490,8 @@
   font-family: inherit;
   outline: none;
 
-  &:hover {
-    border-color: #555555;
-  }
-
-  &:focus {
-    border-color: #4da6ff;
-    background: #2a2a2a;
-  }
+  &:hover { border-color: #555555; }
+  &:focus { border-color: #4da6ff; background: #2a2a2a; }
 }
 
 .staple-store {
@@ -384,18 +506,9 @@
   font-family: inherit;
   outline: none;
 
-  &:hover {
-    border-color: #555555;
-  }
-
-  &:focus {
-    border-color: #4da6ff;
-    background: #2a2a2a;
-  }
-
-  &::placeholder {
-    color: rgba(255, 255, 255, 0.2);
-  }
+  &:hover { border-color: #555555; }
+  &:focus { border-color: #4da6ff; background: #2a2a2a; }
+  &::placeholder { color: rgba(255, 255, 255, 0.2); }
 }
 
 // Delete button
@@ -411,9 +524,7 @@
   transition: opacity 0.2s ease;
   flex-shrink: 0;
 
-  &:hover {
-    opacity: 0.8;
-  }
+  &:hover { opacity: 0.8; }
 
   .delete-icon {
     font-size: 16px;
@@ -423,12 +534,85 @@
   }
 }
 
-// Mobile responsive
-@media (max-width: 480px) {
-  .panel-content {
-    padding: 44px 8px 8px;
+// ============================================
+// Check dialog overlay
+// ============================================
+.confirm-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.check-dialog {
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  border-radius: 8px;
+  padding: 16px 20px;
+  max-width: 360px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  .check-result {
+    font-size: 14px;
+    margin: 0 0 12px;
   }
 
+  .check-success {
+    color: #4a8f4a;
+    font-weight: 600;
+  }
+
+  .check-missing {
+    color: #ffb347;
+    font-weight: 600;
+  }
+
+  .missing-group {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 8px;
+    line-height: 1.5;
+
+    strong {
+      color: #4da6ff;
+      display: block;
+      margin-bottom: 2px;
+    }
+  }
+
+  .dismiss-btn {
+    display: block;
+    margin: 12px auto 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: #ffffff;
+    background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+    cursor: pointer;
+    border-radius: 4px;
+    border-top: 1px solid #6a6a6a;
+    border-left: 1px solid #5a5a5a;
+    border-right: 1px solid #5a5a5a;
+    border-bottom: 2px solid #1a1a1a;
+    padding: 6px 20px;
+    font-family: inherit;
+    outline: none;
+
+    &:hover {
+      background: linear-gradient(180deg, #606060 0%, #454545 100%);
+    }
+  }
+}
+
+// ============================================
+// Mobile responsive
+// ============================================
+@media (max-width: 480px) {
   .action-buttons {
     gap: 6px;
 
@@ -437,6 +621,16 @@
       height: 28px;
       font-size: 16px;
     }
+  }
+
+  .plan-header {
+    padding: 6px 8px;
+    padding-right: 80px;
+  }
+
+  .check-all-btn {
+    font-size: 10px;
+    padding: 3px 8px;
   }
 
   .staple-row {
