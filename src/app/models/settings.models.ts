@@ -58,7 +58,7 @@ export interface PersonalInfo {
 // Shopping staple item
 export interface ShoppingStaple {
   id: string;
-  category: 'produce' | 'proteins' | 'dairy' | 'aisles';
+  category: 'proteins' | 'produce' | 'bulk' | 'dairy' | 'aisles' | 'non_food';
   item: string;
   qty?: string;
   store?: string;

@@ -9,7 +9,7 @@ import { SettingsService } from '../../services/settings.service';
 import { NotificationService } from '../../services/notification.service';
 import { ShoppingStaple } from '../../models/settings.models';
 
-type StapleCategory = 'produce' | 'proteins' | 'dairy' | 'aisles';
+type StapleCategory = 'proteins' | 'produce' | 'bulk' | 'dairy' | 'aisles' | 'non_food';
 
 interface CategorySection {
   id: StapleCategory;
@@ -162,10 +162,12 @@ export class ShoppingPanelComponent implements OnInit {
   private newItemTexts = signal<Record<string, string>>({});
 
   categories: CategorySection[] = [
-    { id: 'produce', label: 'Produce' },
     { id: 'proteins', label: 'Proteins' },
+    { id: 'produce', label: 'Produce/Vegetables' },
+    { id: 'bulk', label: 'Bulk' },
     { id: 'dairy', label: 'Dairy' },
-    { id: 'aisles', label: 'Aisles' }
+    { id: 'aisles', label: 'Aisles' },
+    { id: 'non_food', label: 'Non-Food Items' }
   ];
 
   ngOnInit(): void {

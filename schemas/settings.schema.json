@@ -181,7 +181,7 @@
         },
         "category": {
           "type": "string",
-          "enum": ["produce", "proteins", "dairy", "aisles"],
+          "enum": ["proteins", "produce", "bulk", "dairy", "aisles", "non_food"],
           "description": "Shopping category"
         },
         "item": {
