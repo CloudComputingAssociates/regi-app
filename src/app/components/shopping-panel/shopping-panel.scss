@@ -91,6 +91,16 @@
   min-height: 60px;
 }
 
+.plan-foods-title {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  padding-right: 90px;
+  background: #333333;
+  flex-shrink: 0;
+  border-bottom: 1px solid #4a4a4a;
+}
+
 .plan-header {
   display: flex;
   align-items: center;
@@ -400,6 +410,13 @@
 
   &.not-needed {
     opacity: 0.45;
+  }
+
+  &.picked-up {
+    .plan-qty, .plan-food-name, .staple-qty, .staple-item, .staple-store {
+      text-decoration: line-through;
+      text-decoration-color: rgba(255, 255, 255, 0.5);
+    }
   }
 }
 

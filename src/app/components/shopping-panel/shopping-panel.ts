@@ -1,5 +1,5 @@
 // src/app/components/shopping-panel/shopping-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit, OnDestroy, ElementRef, NgZone } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, effect, OnInit, OnDestroy, ElementRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -34,7 +34,24 @@ interface PlanFoodItem {
   unit: string;
   pickedUp: boolean;
   needed: boolean;
+  categoryName: string;
 }
+
+/** Plan food categories for accordion grouping */
+interface PlanCategory {
+  id: string;
+  label: string;
+}
+
+const PLAN_CATEGORIES: PlanCategory[] = [
+  { id: 'protein', label: 'Proteins' },
+  { id: 'vegetable', label: 'Produce/Vegetables' },
+  { id: 'fruit', label: 'Fruit' },
+  { id: 'grain', label: 'Grains' },
+  { id: 'dairy', label: 'Dairy' },
+  { id: 'fat', label: 'Fats/Oils' },
+  { id: 'other', label: 'Other' }
+];
 
 @Component({
   selector: 'app-shopping-panel',
@@ -57,8 +74,11 @@ interface PlanFoodItem {
         </button>
       </div>
 
-      <!-- Top pane: Week Plan Foods -->
+      <!-- Top pane: Plan Foods -->
       <div class="plan-pane" [style.flex]="topFlex()">
+        <div class="plan-foods-title">
+          <span class="staples-title">Plan Foods</span>
+        </div>
         <div class="plan-header">
           <div class="plan-header-left">
             <input
@@ -74,7 +94,7 @@ interface PlanFoodItem {
               matTooltip="Did I get everything?"
               matTooltipPosition="above"
               [matTooltipShowDelay]="300">
-              ✔ Got everything?
+              Got everything?
             </button>
           </div>
           @if (selectedPlanName()) {
@@ -93,26 +113,41 @@ interface PlanFoodItem {
             </div>
           } @else {
             <div class="plan-items-list">
-              @for (item of planFoodItems(); track item.foodId) {
-                <div class="staple-row" [class.not-needed]="!item.needed">
-                  <input type="checkbox"
-                    class="picked-up-check"
-                    [checked]="item.pickedUp"
-                    [disabled]="!item.needed"
-                    (change)="togglePlanPickedUp(item)" />
+              @for (cat of planCategories; track cat.id) {
+                @if (getPlanCategoryItems(cat.id).length > 0) {
+                  <div class="accordion-section">
+                    <button class="accordion-header" (click)="togglePlanCategory(cat.id)">
+                      <mat-icon class="accordion-arrow" [class.open]="isPlanCategoryOpen(cat.id)">chevron_right</mat-icon>
+                      <span class="accordion-title">{{ cat.label }}</span>
+                      <span class="accordion-count">({{ getPlanCategoryItems(cat.id).length }})</span>
+                    </button>
+                    @if (isPlanCategoryOpen(cat.id)) {
+                      <div class="accordion-body">
+                        @for (item of getPlanCategoryItems(cat.id); track item.foodId) {
+                          <div class="staple-row" [class.not-needed]="!item.needed" [class.picked-up]="item.pickedUp && item.needed">
+                            <input type="checkbox"
+                              class="picked-up-check"
+                              [checked]="item.pickedUp"
+                              [disabled]="!item.needed"
+                              (change)="togglePlanPickedUp(item)" />
 
-                  <label class="toggle-slider" [class.on]="item.needed">
-                    <input type="checkbox"
-                      [checked]="item.needed"
-                      (change)="togglePlanNeeded(item)" />
-                    <span class="toggle-track">
-                      <span class="toggle-thumb"></span>
-                    </span>
-                  </label>
+                            <span class="plan-qty">{{ item.totalQty }} {{ item.unit }}</span>
+                            <span class="plan-food-name">{{ item.foodName }}</span>
 
-                  <span class="plan-qty">{{ item.totalQty }} {{ item.unit }}</span>
-                  <span class="plan-food-name">{{ item.foodName }}</span>
-                </div>
+                            <label class="toggle-slider" [class.on]="item.needed">
+                              <input type="checkbox"
+                                [checked]="item.needed"
+                                (change)="togglePlanNeeded(item)" />
+                              <span class="toggle-track">
+                                <span class="toggle-thumb"></span>
+                              </span>
+                            </label>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
               }
             </div>
           }
@@ -165,21 +200,12 @@ interface PlanFoodItem {
 
                   <!-- Staple rows -->
                   @for (staple of getCategoryItems(cat.id); track staple.id) {
-                    <div class="staple-row" [class.not-needed]="staple.needed === false">
+                    <div class="staple-row" [class.not-needed]="staple.needed === false" [class.picked-up]="staple.pickedUp && staple.needed !== false">
                       <input type="checkbox"
                         class="picked-up-check"
                         [checked]="staple.pickedUp || staple.needed === false"
                         [disabled]="staple.needed === false"
                         (change)="togglePickedUp(staple)" />
-
-                      <label class="toggle-slider" [class.on]="staple.needed !== false">
-                        <input type="checkbox"
-                          [checked]="staple.needed !== false"
-                          (change)="toggleNeeded(staple)" />
-                        <span class="toggle-track">
-                          <span class="toggle-thumb"></span>
-                        </span>
-                      </label>
 
                       <input type="text"
                         class="staple-qty"
@@ -197,6 +223,15 @@ interface PlanFoodItem {
                         [value]="staple.store || ''"
                         (change)="updateField(staple, 'store', $event)"
                         placeholder="Store" />
+
+                      <label class="toggle-slider" [class.on]="staple.needed !== false">
+                        <input type="checkbox"
+                          [checked]="staple.needed !== false"
+                          (change)="toggleNeeded(staple)" />
+                        <span class="toggle-track">
+                          <span class="toggle-thumb"></span>
+                        </span>
+                      </label>
 
                       <button class="delete-btn"
                         (click)="deleteItem(staple)"
@@ -219,9 +254,9 @@ interface PlanFoodItem {
         <div class="confirm-overlay" (click)="closeCheckDialog()">
           <div class="confirm-dialog check-dialog" (click)="$event.stopPropagation()">
             @if (missingItems().planFoods.length === 0 && missingItems().staples.length === 0) {
-              <p class="check-result check-success">✔ Yes, everything is checked!</p>
+              <p class="check-result check-success">All done! Everything is checked.</p>
             } @else {
-              <p class="check-result check-missing">You still need to get:</p>
+              <p class="check-result check-missing">Missed Items</p>
               @if (missingItems().planFoods.length > 0) {
                 <div class="missing-group">
                   <strong>Plan Foods:</strong>
@@ -265,7 +300,11 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
   // Aggregated plan food items
   planFoodItems = signal<PlanFoodItem[]>([]);
 
-  // Accordion state
+  // Plan food category accordion
+  planCategories = PLAN_CATEGORIES;
+  private openPlanCategories = signal<Set<string>>(new Set(['protein', 'vegetable', 'fruit', 'grain', 'dairy']));
+
+  // Staple accordion state
   private openCategories = signal<Set<StapleCategory>>(new Set(['proteins']));
 
   // New item text per category
@@ -300,12 +339,15 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     return d.getDay() === DAY_TO_NUM[this.prefs.weekStartDay()];
   };
 
-  async ngOnInit(): Promise<void> {
-    // Load staples from settings
+  // Watch for settings to load (handles page refresh race condition)
+  private settingsEffect = effect(() => {
     const all = this.settingsService.allSettings();
-    if (all?.shoppingStaples) {
+    if (all?.shoppingStaples && this.staples().length === 0) {
       this.staples.set([...all.shoppingStaples]);
     }
+  });
+
+  async ngOnInit(): Promise<void> {
 
     // Load available week plans then auto-select
     await this.weekPlanService.listWeekPlans();
@@ -409,6 +451,19 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Map DB categoryName (e.g. "Protein", "Vegetable") to our plan category id */
+  private normalizePlanCategory(cat?: string): string {
+    if (!cat) return 'other';
+    const lower = cat.toLowerCase();
+    if (lower.includes('protein')) return 'protein';
+    if (lower.includes('vegetable')) return 'vegetable';
+    if (lower.includes('fruit')) return 'fruit';
+    if (lower.includes('grain') || lower.includes('carbohydrate')) return 'grain';
+    if (lower.includes('dairy')) return 'dairy';
+    if (lower.includes('fat') || lower.includes('oil')) return 'fat';
+    return 'other';
+  }
+
   private aggregatePlanFoods(wp: WeekPlan): void {
     const map = new Map<number, PlanFoodItem>();
 
@@ -426,7 +481,8 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
               totalQty: item.quantity,
               unit: item.unit,
               pickedUp: false,
-              needed: true
+              needed: true,
+              categoryName: this.normalizePlanCategory(item.categoryName)
             });
           }
         }
@@ -490,6 +546,25 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
   }
 
   // --- Accordion ---
+
+  // --- Plan food category accordion ---
+
+  togglePlanCategory(id: string): void {
+    const current = this.openPlanCategories();
+    const next = new Set(current);
+    if (next.has(id)) { next.delete(id); } else { next.add(id); }
+    this.openPlanCategories.set(next);
+  }
+
+  isPlanCategoryOpen(id: string): boolean {
+    return this.openPlanCategories().has(id);
+  }
+
+  getPlanCategoryItems(categoryId: string): PlanFoodItem[] {
+    return this.planFoodItems().filter(i => i.categoryName === categoryId);
+  }
+
+  // --- Staple accordion ---
 
   toggleCategory(id: StapleCategory): void {
     const current = this.openCategories();

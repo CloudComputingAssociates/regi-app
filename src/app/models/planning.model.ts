@@ -18,6 +18,7 @@ export interface MealItem {
   sortOrder?: number;
   foodImageThumbnail?: string;
   shortDescription?: string;
+  categoryName?: string;
 }
 
 export interface Meal {
