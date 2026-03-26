@@ -1,5 +1,5 @@
 // src/app/components/shopping-panel/shopping-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy, ElementRef, NgZone } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, OnDestroy, ElementRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -9,7 +9,7 @@ import { SettingsService } from '../../services/settings.service';
 import { WeekPlanService } from '../../services/week-plan.service';
 import { NotificationService } from '../../services/notification.service';
 import { ShoppingStaple } from '../../models/settings.models';
-import { WeekPlan, WeekPlanSummary, MealItem } from '../../models/planning.model';
+import { WeekPlan, WeekPlanSummary } from '../../models/planning.model';
 
 type StapleCategory = 'proteins' | 'produce' | 'bulk' | 'dairy' | 'aisles' | 'non_food';
 
@@ -36,20 +36,9 @@ interface PlanFoodItem {
     <div class="panel-container" #panelContainer>
       <!-- Action buttons - top right -->
       <div class="action-buttons">
-        <button
-          class="icon-btn save-btn"
-          [class.has-changes]="hasChanges()"
-          [disabled]="isSaving()"
-          (click)="save()"
-          matTooltip="Save"
-          matTooltipPosition="above"
-          [matTooltipShowDelay]="300">
-          @if (isSaving()) {
-            <span class="save-spinner"></span>
-          } @else {
-            ✓
-          }
-        </button>
+        @if (isSaving()) {
+          <span class="auto-save-indicator">saving...</span>
+        }
         <button
           class="icon-btn close-btn"
           (click)="close()"
@@ -249,7 +238,6 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
   private ngZone = inject(NgZone);
 
   isSaving = signal(false);
-  private dirty = signal(false);
 
   // Staples data
   staples = signal<ShoppingStaple[]>([]);
@@ -310,8 +298,17 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     this.cleanupDragListeners();
   }
 
-  hasChanges(): boolean {
-    return this.dirty();
+  // --- Auto-save ---
+
+  private async autoSave(): Promise<void> {
+    this.isSaving.set(true);
+    try {
+      await this.settingsService.saveShoppingStaples(this.staples());
+    } catch {
+      this.notificationService.show('Failed to save staples', 'error');
+    } finally {
+      this.isSaving.set(false);
+    }
   }
 
   // --- Week plan selection ---
@@ -471,7 +468,7 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
 
     this.staples.update(list => [...list, newStaple]);
     this.newItemTexts.update(texts => ({ ...texts, [category]: '' }));
-    this.dirty.set(true);
+    this.autoSave();
   }
 
   // --- Staple row actions ---
@@ -480,7 +477,7 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     this.staples.update(list =>
       list.map(s => s.id === staple.id ? { ...s, pickedUp: !s.pickedUp } : s)
     );
-    this.dirty.set(true);
+    this.autoSave();
   }
 
   toggleNeeded(staple: ShoppingStaple): void {
@@ -491,7 +488,7 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
         : s
       )
     );
-    this.dirty.set(true);
+    this.autoSave();
   }
 
   updateField(staple: ShoppingStaple, field: 'qty' | 'item' | 'store', event: Event): void {
@@ -499,28 +496,12 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     this.staples.update(list =>
       list.map(s => s.id === staple.id ? { ...s, [field]: val } : s)
     );
-    this.dirty.set(true);
+    this.autoSave();
   }
 
   deleteItem(staple: ShoppingStaple): void {
     this.staples.update(list => list.filter(s => s.id !== staple.id));
-    this.dirty.set(true);
-  }
-
-  // --- Save / Close ---
-
-  async save(): Promise<void> {
-    if (!this.hasChanges()) return;
-    this.isSaving.set(true);
-    try {
-      await this.settingsService.saveShoppingStaples(this.staples());
-      this.isSaving.set(false);
-      this.dirty.set(false);
-      this.notificationService.show('Shopping staples saved', 'success');
-    } catch {
-      this.isSaving.set(false);
-      this.notificationService.show('Failed to save staples', 'error');
-    }
+    this.autoSave();
   }
 
   close(): void {

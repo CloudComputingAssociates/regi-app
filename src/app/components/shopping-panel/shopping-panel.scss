@@ -69,29 +69,11 @@
     }
   }
 
-  .save-btn {
-    &.has-changes {
-      background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%);
-      border-top-color: #5aa55a;
-      border-left-color: #4a954a;
-      border-right-color: #4a954a;
-      border-bottom-color: #1a3a1a;
-      color: #ffffff;
-
-      &:hover:not(:disabled) {
-        background: linear-gradient(180deg, #5aa05a 0%, #408040 100%);
-        border-top-color: #6ab56a;
-      }
-    }
-  }
-
-  .save-spinner {
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #ffffff;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
+  .auto-save-indicator {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+    line-height: 32px;
   }
 }
 
