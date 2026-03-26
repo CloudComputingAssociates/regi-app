@@ -127,6 +127,13 @@ export interface WeekViewResponse {
   days: DayPlan[];
 }
 
+// Shopping progress for a single food item within a week plan
+export interface ShoppingProgressItem {
+  foodId: number;
+  pickedUp: boolean;
+  needed: boolean;
+}
+
 // WeekPlan types
 export interface WeekPlan {
   id: number;
@@ -135,6 +142,7 @@ export interface WeekPlan {
   isFavorite: boolean;
   days: DayPlan[];
   createdAt: string;
+  shoppingProgress?: ShoppingProgressItem[];
 }
 
 export interface WeekPlanSummary {
@@ -154,6 +162,7 @@ export interface CreateWeekPlanRequest {
 export interface UpdateWeekPlanRequest {
   name?: string;
   isFavorite?: boolean;
+  shoppingProgress?: ShoppingProgressItem[];
 }
 
 export interface CopyWeekPlanRequest {

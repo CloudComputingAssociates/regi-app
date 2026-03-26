@@ -13,7 +13,8 @@ import {
   CopyWeekPlanRequest,
   CreateDayPlanRequest,
   AssignMealRequest,
-  ListWeekPlansResponse
+  ListWeekPlansResponse,
+  ShoppingProgressItem
 } from '../models/planning.model';
 
 @Injectable({
@@ -147,6 +148,12 @@ export class WeekPlanService {
     if (wp) {
       await this.getWeekPlan(wp.id);
     }
+  }
+
+  async updateShoppingProgress(weekPlanId: number, progress: ShoppingProgressItem[]): Promise<void> {
+    await firstValueFrom(
+      this.http.put(`${this.baseUrl}/weekplan/${weekPlanId}`, { shoppingProgress: progress })
+    );
   }
 
   clearCurrentWeekPlan(): void {

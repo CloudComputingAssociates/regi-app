@@ -12,7 +12,7 @@ import { WeekPlanService } from '../../services/week-plan.service';
 import { PreferencesService, WeekStartDay } from '../../services/preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { ShoppingStaple } from '../../models/settings.models';
-import { WeekPlan } from '../../models/planning.model';
+import { WeekPlan, ShoppingProgressItem } from '../../models/planning.model';
 
 const DAY_TO_NUM: Record<WeekStartDay, number> = {
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
@@ -387,6 +387,16 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
         this.selectedWeekPlan.set(wp);
         this.selectedPlanName.set(wp.name || dateStr);
         this.aggregatePlanFoods(wp);
+        // Merge saved shopping progress
+        if (wp.shoppingProgress?.length) {
+          const progressMap = new Map(wp.shoppingProgress.map(p => [p.foodId, p]));
+          this.planFoodItems.update(items =>
+            items.map(item => {
+              const saved = progressMap.get(item.foodId);
+              return saved ? { ...item, pickedUp: saved.pickedUp, needed: saved.needed } : item;
+            })
+          );
+        }
       } catch {
         this.selectedWeekPlan.set(null);
         this.selectedPlanName.set('');
@@ -432,6 +442,7 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     this.planFoodItems.update(list =>
       list.map(i => i.foodId === item.foodId ? { ...i, pickedUp: !i.pickedUp } : i)
     );
+    this.savePlanProgress();
   }
 
   togglePlanNeeded(item: PlanFoodItem): void {
@@ -441,6 +452,22 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
         : i
       )
     );
+    this.savePlanProgress();
+  }
+
+  private async savePlanProgress(): Promise<void> {
+    const wp = this.selectedWeekPlan();
+    if (!wp) return;
+    const progress: ShoppingProgressItem[] = this.planFoodItems().map(item => ({
+      foodId: item.foodId,
+      pickedUp: item.pickedUp,
+      needed: item.needed
+    }));
+    try {
+      await this.weekPlanService.updateShoppingProgress(wp.id, progress);
+    } catch {
+      this.notificationService.show('Failed to save shopping progress', 'error');
+    }
   }
 
   // --- "Did I get everything?" ---
