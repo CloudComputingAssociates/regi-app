@@ -4,13 +4,15 @@
       "Bash(npx tsc:*)",
       "Bash(pushd \"c:\\\\git\\\\yeh-api\")",
       "Bash(popd)",
-      "Read(//c/git/yeh-api/api/**)"
+      "Read(//c/git/yeh-api/api/**)",
+      "Read(//c/git/yeh-api/**)"
     ],
     "additionalDirectories": [
       "c:\\git\\foods-tool-ui\\src\\app\\models",
       "c:\\git\\foods-tool-ui\\src\\app\\foods",
       "c:\\git\\foods-tool-ui\\src\\app",
-      "c:\\git\\yeh-api\\services"
+      "c:\\git\\yeh-api\\services",
+      "c:\\git\\yeh-api\\schemas"
     ]
   }
 }

@@ -8,6 +8,7 @@ export interface AllSettings {
   defaultFoodList?: string;
   dailyGoals?: DailyGoals;
   personalInfo?: PersonalInfo;
+  shoppingStaples?: ShoppingStaple[];
 }
 
 // GET/PUT /api/user/settings/tabs
@@ -52,6 +53,18 @@ export interface PersonalInfo {
   calcFats?: number;        // calculated daily fat (remaining calories after protein and carbs)
   calcCarbs?: number;       // calculated daily carbs (from carbScaleGrams)
   lastUpdated?: string;     // ISO date (YYYY-MM-DD) when personal info was last updated
+}
+
+// Shopping staple item
+export interface ShoppingStaple {
+  id: string;
+  category: 'produce' | 'proteins' | 'dairy' | 'aisles';
+  item: string;
+  qty?: string;
+  store?: string;
+  needed?: boolean;
+  pickedUp?: boolean;
+  sortOrder?: number;
 }
 
 // GET/PUT /api/user/settings/defaultfoodlist

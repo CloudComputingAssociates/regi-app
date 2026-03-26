@@ -162,8 +162,57 @@
           "description": "Default food list filter"
         },
         "dailyGoals": { "$ref": "#/definitions/DailyGoals" },
-        "personalInfo": { "$ref": "#/definitions/PersonalInfo" }
+        "personalInfo": { "$ref": "#/definitions/PersonalInfo" },
+        "shoppingStaples": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ShoppingStaple" },
+          "description": "User's recurring shopping staple items"
+        }
       },
+      "additionalProperties": false
+    },
+    "ShoppingStaple": {
+      "type": "object",
+      "description": "A single shopping staple item",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the staple"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["produce", "proteins", "dairy", "aisles"],
+          "description": "Shopping category"
+        },
+        "item": {
+          "type": "string",
+          "description": "Item name"
+        },
+        "qty": {
+          "type": "string",
+          "description": "Quantity (e.g. '2', '1 bunch')"
+        },
+        "store": {
+          "type": "string",
+          "description": "Store name (optional)"
+        },
+        "needed": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this staple is needed for the current shopping trip"
+        },
+        "pickedUp": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this item has been picked up during shopping"
+        },
+        "sortOrder": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Display order within category"
+        }
+      },
+      "required": ["id", "category", "item"],
       "additionalProperties": false
     }
   }

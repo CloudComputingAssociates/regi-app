@@ -7,7 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   AllSettings, TabSettings, RegiMenuSettings,
-  DailyGoals, PersonalInfo, DefaultFoodListData
+  DailyGoals, PersonalInfo, DefaultFoodListData, ShoppingStaple
 } from '../models/settings.models';
 
 @Injectable({
@@ -108,6 +108,11 @@ export class SettingsService {
   async savePersonalInfo(data: PersonalInfo): Promise<PersonalInfo> {
     const saved = await this.saveSettings({ personalInfo: data });
     return saved.personalInfo || data;
+  }
+
+  async saveShoppingStaples(data: ShoppingStaple[]): Promise<ShoppingStaple[]> {
+    const saved = await this.saveSettings({ shoppingStaples: data });
+    return saved.shoppingStaples || data;
   }
 
   // ========================================================
