@@ -70,8 +70,6 @@ interface PlanFoodItem {
                 <option [ngValue]="wp.id">{{ wp.name || wp.startDate }}</option>
               }
             </select>
-          </div>
-          <div class="plan-header-right">
             <button class="check-all-btn" (click)="checkEverything()"
               matTooltip="Did I get everything?"
               matTooltipPosition="above"
@@ -321,13 +319,21 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
   private autoSelectCurrentWeek(): void {
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0=Sun
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
-    const mondayStr = monday.toISOString().slice(0, 10);
+    const thisMonday = new Date(today);
+    thisMonday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
+    const thisMondayStr = thisMonday.toISOString().slice(0, 10);
 
-    // Find a plan whose startDate matches this week
+    const nextMonday = new Date(thisMonday);
+    nextMonday.setDate(thisMonday.getDate() + 7);
+    const nextMondayStr = nextMonday.toISOString().slice(0, 10);
+
     const plans = this.availableWeekPlans();
-    const match = plans.find(wp => wp.startDate === mondayStr);
+
+    // Prefer next week if a plan exists for it, else fall back to current week
+    const nextWeekPlan = plans.find(wp => wp.startDate === nextMondayStr);
+    const thisWeekPlan = plans.find(wp => wp.startDate === thisMondayStr);
+
+    const match = nextWeekPlan || thisWeekPlan;
     if (match) {
       this.onWeekPlanChange(match.id);
     }
