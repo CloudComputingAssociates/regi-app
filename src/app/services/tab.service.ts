@@ -83,9 +83,9 @@ export class TabService {
   }
 
   // Define menu order - this determines tab insertion order
-  // Left nav: today, chat, review (Week Plans), meal-planning, shop (Shopping List), foods (Food Preferences)
+  // Left nav: today, review (Week Plans), meal-planning, shop (Shopping List), foods (Food Preferences), chat
   // Right nav (profile menu): account, preferences (Settings), help
-  private menuOrder = ['today', 'chat', 'review', 'meal-planning', 'shop', 'foods', 'preferences', 'account', 'help'];
+  private menuOrder = ['today', 'review', 'meal-planning', 'shop', 'foods', 'chat', 'preferences', 'account', 'help'];
 
   // Tabs that get an image icon
   private tabIcons: Record<string, string> = {
