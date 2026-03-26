@@ -108,7 +108,7 @@
   gap: 8px;
 }
 
-.week-select {
+.date-input {
   background: #2a2a2a;
   border: 1px solid #555555;
   border-radius: 4px;
@@ -118,15 +118,31 @@
   outline: none;
   font-family: inherit;
   cursor: pointer;
+  width: 90px;
 
   &:focus {
     border-color: #4da6ff;
   }
+}
 
-  option {
-    background: #2a2a2a;
-    color: #ffffff;
+.date-toggle {
+  color: rgba(255, 255, 255, 0.7);
+  --mat-datepicker-toggle-icon-color: rgba(255, 255, 255, 0.7);
+
+  ::ng-deep .mat-mdc-icon-button {
+    width: 32px;
+    height: 32px;
+    padding: 4px;
   }
+}
+
+.plan-name-label {
+  color: #4da6ff;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: auto;
+  padding-right: 8px;
+  white-space: nowrap;
 }
 
 .check-all-btn {

@@ -4,12 +4,20 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 import { TabService } from '../../services/tab.service';
 import { SettingsService } from '../../services/settings.service';
 import { WeekPlanService } from '../../services/week-plan.service';
+import { PreferencesService, WeekStartDay } from '../../services/preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { ShoppingStaple } from '../../models/settings.models';
-import { WeekPlan, WeekPlanSummary } from '../../models/planning.model';
+import { WeekPlan } from '../../models/planning.model';
+
+const DAY_TO_NUM: Record<WeekStartDay, number> = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6
+};
 
 type StapleCategory = 'proteins' | 'produce' | 'bulk' | 'dairy' | 'aisles' | 'non_food';
 
@@ -30,7 +38,7 @@ interface PlanFoodItem {
 
 @Component({
   selector: 'app-shopping-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, MatDatepickerModule, MatNativeDateModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container" #panelContainer>
@@ -53,12 +61,15 @@ interface PlanFoodItem {
       <div class="plan-pane" [style.flex]="topFlex()">
         <div class="plan-header">
           <div class="plan-header-left">
-            <select class="week-select" [ngModel]="selectedWeekPlanId()" (ngModelChange)="onWeekPlanChange($event)">
-              <option [ngValue]="null">— Select week —</option>
-              @for (wp of availableWeekPlans(); track wp.id) {
-                <option [ngValue]="wp.id">{{ wp.name || wp.startDate }}</option>
-              }
-            </select>
+            <input
+              class="date-input"
+              [matDatepicker]="shopPicker"
+              [value]="selectedDate()"
+              (dateChange)="onDateChange($event.value)"
+              [matDatepickerFilter]="weekStartFilter"
+              readonly />
+            <mat-datepicker-toggle [for]="shopPicker" class="date-toggle" />
+            <mat-datepicker #shopPicker />
             <button class="check-all-btn" (click)="checkEverything()"
               matTooltip="Did I get everything?"
               matTooltipPosition="above"
@@ -66,12 +77,15 @@ interface PlanFoodItem {
               ✔ Got everything?
             </button>
           </div>
+          @if (selectedPlanName()) {
+            <span class="plan-name-label">{{ selectedPlanName() }}</span>
+          }
         </div>
 
         <div class="plan-content">
           @if (!selectedWeekPlan()) {
             <div class="plan-empty">
-              <p>Select a week plan to see shopping items</p>
+              <p>No plan for this week — pick a date with a slotted plan</p>
             </div>
           } @else if (planFoodItems().length === 0) {
             <div class="plan-empty">
@@ -233,6 +247,7 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
   private tabService = inject(TabService);
   private settingsService = inject(SettingsService);
   private weekPlanService = inject(WeekPlanService);
+  private prefs = inject(PreferencesService);
   private notificationService = inject(NotificationService);
   private el = inject(ElementRef);
   private ngZone = inject(NgZone);
@@ -242,10 +257,10 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
   // Staples data
   staples = signal<ShoppingStaple[]>([]);
 
-  // Week plan data
-  availableWeekPlans = signal<WeekPlanSummary[]>([]);
-  selectedWeekPlanId = signal<number | null>(null);
+  // Week plan / calendar
+  selectedDate = signal<Date>(new Date());
   selectedWeekPlan = signal<WeekPlan | null>(null);
+  selectedPlanName = signal<string>('');
 
   // Aggregated plan food items
   planFoodItems = signal<PlanFoodItem[]>([]);
@@ -279,6 +294,12 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     { id: 'non_food', label: 'Non-Food Items' }
   ];
 
+  // Calendar filter: only allow selecting week-start days
+  weekStartFilter = (d: Date | null): boolean => {
+    if (!d) return false;
+    return d.getDay() === DAY_TO_NUM[this.prefs.weekStartDay()];
+  };
+
   async ngOnInit(): Promise<void> {
     // Load staples from settings
     const all = this.settingsService.allSettings();
@@ -286,12 +307,9 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
       this.staples.set([...all.shoppingStaples]);
     }
 
-    // Load available week plans
+    // Load available week plans then auto-select
     await this.weekPlanService.listWeekPlans();
-    this.availableWeekPlans.set(this.weekPlanService.weekPlans());
-
-    // Auto-select current week's plan if one exists
-    this.autoSelectCurrentWeek();
+    this.autoSelectWeek();
   }
 
   ngOnDestroy(): void {
@@ -311,45 +329,72 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     }
   }
 
-  // --- Week plan selection ---
+  // --- Week plan selection via calendar ---
 
-  private autoSelectCurrentWeek(): void {
+  /** Calculate the week start date for a given date */
+  private getWeekStartDate(date: Date): Date {
+    const weekStartNum = DAY_TO_NUM[this.prefs.weekStartDay()];
+    const currentDay = date.getDay();
+    const diff = (currentDay - weekStartNum + 7) % 7;
+    const start = new Date(date);
+    start.setDate(date.getDate() - diff);
+    return start;
+  }
+
+  private toDateString(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  /** Auto-select: try next week's start date first, fall back to current week */
+  private autoSelectWeek(): void {
     const today = new Date();
-    const dayOfWeek = today.getDay(); // 0=Sun
-    const thisMonday = new Date(today);
-    thisMonday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
-    const thisMondayStr = thisMonday.toISOString().slice(0, 10);
+    const thisWeekStart = this.getWeekStartDate(today);
+    const nextWeekStart = new Date(thisWeekStart);
+    nextWeekStart.setDate(thisWeekStart.getDate() + 7);
 
-    const nextMonday = new Date(thisMonday);
-    nextMonday.setDate(thisMonday.getDate() + 7);
-    const nextMondayStr = nextMonday.toISOString().slice(0, 10);
+    const plans = this.weekPlanService.weekPlans();
+    const nextMatch = plans.find(wp => wp.startDate === this.toDateString(nextWeekStart));
+    const thisMatch = plans.find(wp => wp.startDate === this.toDateString(thisWeekStart));
 
-    const plans = this.availableWeekPlans();
-
-    // Prefer next week if a plan exists for it, else fall back to current week
-    const nextWeekPlan = plans.find(wp => wp.startDate === nextMondayStr);
-    const thisWeekPlan = plans.find(wp => wp.startDate === thisMondayStr);
-
-    const match = nextWeekPlan || thisWeekPlan;
-    if (match) {
-      this.onWeekPlanChange(match.id);
+    if (nextMatch) {
+      this.selectedDate.set(nextWeekStart);
+      this.loadPlanForDate(nextWeekStart);
+    } else {
+      this.selectedDate.set(thisWeekStart);
+      this.loadPlanForDate(thisWeekStart);
     }
   }
 
-  async onWeekPlanChange(id: number | null): Promise<void> {
-    this.selectedWeekPlanId.set(id);
-    if (!id) {
-      this.selectedWeekPlan.set(null);
-      this.planFoodItems.set([]);
-      return;
-    }
+  /** Calendar date changed */
+  onDateChange(date: Date | null): void {
+    if (!date) return;
+    this.selectedDate.set(date);
+    this.loadPlanForDate(date);
+  }
 
-    try {
-      const wp = await this.weekPlanService.getWeekPlan(id);
-      this.selectedWeekPlan.set(wp);
-      this.aggregatePlanFoods(wp);
-    } catch {
+  /** Find and load the week plan matching a start date */
+  private async loadPlanForDate(date: Date): Promise<void> {
+    const dateStr = this.toDateString(date);
+    const plans = this.weekPlanService.weekPlans();
+    const match = plans.find(wp => wp.startDate === dateStr);
+
+    if (match) {
+      try {
+        const wp = await this.weekPlanService.getWeekPlan(match.id);
+        this.selectedWeekPlan.set(wp);
+        this.selectedPlanName.set(wp.name || dateStr);
+        this.aggregatePlanFoods(wp);
+      } catch {
+        this.selectedWeekPlan.set(null);
+        this.selectedPlanName.set('');
+        this.planFoodItems.set([]);
+      }
+    } else {
       this.selectedWeekPlan.set(null);
+      this.selectedPlanName.set('');
       this.planFoodItems.set([]);
     }
   }
