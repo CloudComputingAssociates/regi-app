@@ -108,10 +108,12 @@ const PLAN_CATEGORIES: PlanCategory[] = [
           @if (!selectedWeekPlan()) {
             <div class="plan-empty">
               <p>No plan for this week — pick a date with a slotted plan</p>
+              <p style="font-size:10px;color:#888">{{ debugInfo() }}</p>
             </div>
           } @else if (planFoodItems().length === 0) {
             <div class="plan-empty">
               <p>No meals slotted for this week</p>
+              <p style="font-size:10px;color:#888">{{ debugInfo() }}</p>
             </div>
           } @else {
             <div class="plan-items-list">
@@ -350,10 +352,17 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     }
   });
 
+  debugInfo = signal('');
+
   async ngOnInit(): Promise<void> {
 
     // Load available week plans then auto-select
     await this.weekPlanService.listWeekPlans();
+    const plans = this.weekPlanService.weekPlans();
+    const thisWeekStart = this.getWeekStartDate(new Date());
+    const nextWeekStart = new Date(thisWeekStart);
+    nextWeekStart.setDate(thisWeekStart.getDate() + 7);
+    this.debugInfo.set(`Plans: ${plans.map(p => p.startDate).join(', ')} | This: ${this.toDateString(thisWeekStart)} | Next: ${this.toDateString(nextWeekStart)}`);
     this.autoSelectWeek();
   }
 
