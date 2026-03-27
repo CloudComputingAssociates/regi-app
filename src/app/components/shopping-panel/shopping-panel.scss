@@ -433,6 +433,15 @@
   }
 }
 
+// Buy label next to toggle
+.buy-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 // Toggle slider (needed)
 .toggle-slider {
   position: relative;

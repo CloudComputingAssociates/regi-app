@@ -30,6 +30,7 @@ interface CategorySection {
 interface PlanFoodItem {
   foodId: number;
   foodName: string;
+  displayName: string;
   totalQty: number;
   unit: string;
   pickedUp: boolean;
@@ -132,8 +133,9 @@ const PLAN_CATEGORIES: PlanCategory[] = [
                               (change)="togglePlanPickedUp(item)" />
 
                             <span class="plan-qty">{{ item.totalQty }} {{ item.unit }}</span>
-                            <span class="plan-food-name">{{ item.foodName }}</span>
+                            <span class="plan-food-name">{{ item.displayName }}</span>
 
+                            <span class="buy-label">Buy</span>
                             <label class="toggle-slider" [class.on]="item.needed">
                               <input type="checkbox"
                                 [checked]="item.needed"
@@ -224,6 +226,7 @@ const PLAN_CATEGORIES: PlanCategory[] = [
                         (change)="updateField(staple, 'store', $event)"
                         placeholder="Store" />
 
+                      <span class="buy-label">Buy</span>
                       <label class="toggle-slider" [class.on]="staple.needed !== false">
                         <input type="checkbox"
                           [checked]="staple.needed !== false"
@@ -478,6 +481,7 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
             map.set(item.foodId, {
               foodId: item.foodId,
               foodName: item.foodName,
+              displayName: item.shortDescription || item.foodName,
               totalQty: item.quantity,
               unit: item.unit,
               pickedUp: false,
@@ -490,7 +494,7 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     }
 
     this.planFoodItems.set(
-      Array.from(map.values()).sort((a, b) => a.foodName.localeCompare(b.foodName))
+      Array.from(map.values()).sort((a, b) => a.displayName.localeCompare(b.displayName))
     );
   }
 
