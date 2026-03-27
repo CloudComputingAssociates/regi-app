@@ -36,10 +36,10 @@ interface FoodPopup {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Nutrition tip -->
-      @if (tipService.tip(); as tip) {
-        <div class="nutrition-tip-card">
-          <img src="/images/TipOfTheDayApple.png" alt="Tip" class="tip-apple" />
+      <!-- Nutrition tip — apple shows immediately, content loads async -->
+      <div class="nutrition-tip-card">
+        <img src="/images/TipOfTheDayApple.png" alt="Tip of the Day" class="tip-apple" />
+        @if (tipService.tip(); as tip) {
           @if (tip.imageUrl) {
             <img [src]="tip.imageUrl" alt="" class="tip-thumbnail" />
           }
@@ -52,8 +52,10 @@ interface FoodPopup {
             }
             <span class="tip-source">NutritionFacts.org</span>
           </div>
-        </div>
-      }
+        } @else if (tipService.loading()) {
+          <span class="tip-loading">Loading tip...</span>
+        }
+      </div>
 
       <!-- Report area -->
       <div class="report-area">
@@ -235,11 +237,10 @@ export class TodayPanelComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    this.tipService.fetchTip();
-
     const resp = await this.todayService.fetchToday();
     if (!resp || resp.items.length === 0) {
       this.hasPlan.set(false);
+      this.tipService.fetchTip();
       return;
     }
 
@@ -254,6 +255,9 @@ export class TodayPanelComponent implements OnInit {
     // All items start checked
     const allIds = new Set(resp.items.map(i => i.id));
     this.checkedItems.set(allIds);
+
+    // Load nutrition tip after report is rendered (lower priority)
+    this.tipService.fetchTip();
   }
 
   private async loadMealNames(sourcePlanId: number | undefined, items: DailyLogItem[]): Promise<void> {

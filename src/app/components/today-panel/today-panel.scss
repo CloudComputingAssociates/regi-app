@@ -278,6 +278,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  .tip-loading {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 12px;
+    font-style: italic;
+  }
 }
 
 // ============================================
