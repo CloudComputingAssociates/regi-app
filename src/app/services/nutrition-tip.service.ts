@@ -28,7 +28,7 @@ export class NutritionTipService {
     this.loadingSignal.set(true);
     try {
       const tip = await firstValueFrom(
-        this.http.get<NutritionTip>(`${this.baseUrl}/api/nutrition-tip`)
+        this.http.get<NutritionTip>(`${this.baseUrl}/nutrition-tip`)
       );
       this.tipSignal.set(tip);
     } catch {
