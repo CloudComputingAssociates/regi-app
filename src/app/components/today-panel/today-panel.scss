@@ -217,15 +217,15 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 8px 10px 0;
+  margin: 0;
   padding: 6px 10px;
-  background: linear-gradient(180deg, #3a3a3a 0%, #333333 100%);
-  border: 1px solid #4a4a4a;
-  border-radius: 6px;
+  background: #000000;
+  flex-shrink: 0;
 
   .tip-apple {
-    width: 48px;
-    height: 48px;
+    height: 100%;
+    max-height: 56px;
+    width: auto;
     object-fit: contain;
     flex-shrink: 0;
   }
@@ -331,15 +331,70 @@
   font-weight: 700;
 }
 
-.print-btn {
-  background: none;
-  border: 1px solid #555;
-  border-radius: 4px;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 16px;
-  padding: 4px 8px;
-  cursor: not-allowed;
-  opacity: 0.5;
+.report-actions {
+  display: flex;
+  gap: 8px;
+
+  .icon-btn {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 6px;
+    border-top: 1px solid #6a6a6a;
+    border-left: 1px solid #5a5a5a;
+    border-right: 1px solid #5a5a5a;
+    border-bottom: 2px solid #1a1a1a;
+    outline: none;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      0 3px 6px rgba(0, 0, 0, 0.4),
+      0 -1px 0 rgba(255, 255, 255, 0.2) inset;
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(180deg, #606060 0%, #454545 100%);
+      border-top-color: #757575;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .save-btn.has-changes {
+    background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%);
+    border-top-color: #5aa55a;
+    border-left-color: #4a954a;
+    border-right-color: #4a954a;
+    border-bottom-color: #1a3a1a;
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(180deg, #5aa05a 0%, #408040 100%);
+    }
+  }
+
+  .save-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  .print-btn {
+    font-size: 16px;
+  }
 }
 
 .report-subtitle {

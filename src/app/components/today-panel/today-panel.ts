@@ -71,12 +71,26 @@ interface FoodPopup {
           <div class="report-header">
             <div class="report-title-row">
               <span class="report-plan-name">{{ planName() }}</span>
-              <button class="print-btn" disabled
-                matTooltip="Print PDF (coming soon)"
-                matTooltipPosition="above"
-                [matTooltipShowDelay]="300">
-                🖨
-              </button>
+              <div class="report-actions">
+                <button class="icon-btn print-btn" disabled
+                  matTooltip="Print PDF (coming soon)"
+                  matTooltipPosition="above"
+                  [matTooltipShowDelay]="300">
+                  🖨
+                </button>
+                <button class="icon-btn save-btn" [class.has-changes]="!isFinalized()"
+                  [disabled]="isFinalized() || isLogging()"
+                  (click)="logTheDay()"
+                  matTooltip="Log the day"
+                  matTooltipPosition="above"
+                  [matTooltipShowDelay]="300">
+                  @if (isLogging()) {
+                    <span class="save-spinner"></span>
+                  } @else {
+                    ✓
+                  }
+                </button>
+              </div>
             </div>
             <div class="report-subtitle">
               RegiMenu<sup class="sm">SM</sup> generated for {{ userName$ | async }}
@@ -130,22 +144,11 @@ interface FoodPopup {
             </div>
           }
 
-          <!-- Log the Day button -->
-          <div class="log-section">
-            @if (isFinalized()) {
+          @if (isFinalized()) {
+            <div class="log-section">
               <div class="finalized-msg">✔ Day logged</div>
-            } @else {
-              <button class="log-btn" [class.ready]="allMealsAffirmed()"
-                (click)="logTheDay()"
-                [disabled]="isLogging()">
-                @if (isLogging()) {
-                  Logging...
-                } @else {
-                  Log the Day
-                }
-              </button>
-            }
-          </div>
+            </div>
+          }
         }
       </div>
 
@@ -252,9 +255,8 @@ export class TodayPanelComponent implements OnInit {
     const plans = this.weekPlanService.weekPlans();
     await this.loadMealNames(resp.sourcePlanId, resp.items);
 
-    // All items start checked
-    const allIds = new Set(resp.items.map(i => i.id));
-    this.checkedItems.set(allIds);
+    // All items start unchecked — user affirms via YEH logo per meal
+    this.checkedItems.set(new Set());
 
     // Load nutrition tip after report is rendered (lower priority)
     this.tipService.fetchTip();
