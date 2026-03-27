@@ -1,0 +1,96 @@
+// src/app/services/today.service.ts
+import { Injectable, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+export interface DailyLogItem {
+  id: number;
+  foodId: number;
+  foodName: string;
+  mealSlot: number;
+  quantity: number;
+  unit: string;
+  calories?: number;
+  proteinG?: number;
+  fatG?: number;
+  carbG?: number;
+  fiberG?: number;
+  sodiumMg?: number;
+  isOverride: boolean;
+  originalFoodId?: number;
+  originalFoodName?: string;
+}
+
+export interface NutritionTargets {
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+  fiber: number;
+  sodium: number;
+}
+
+export interface TodayResponse {
+  id: number;
+  logDate: string;
+  sourcePlanId?: number;
+  swapCount: number;
+  canSwap: boolean;
+  nutritionTargets?: NutritionTargets;
+  totalCalories?: number;
+  totalProteinG?: number;
+  totalFatG?: number;
+  totalCarbG?: number;
+  totalFiberG?: number;
+  totalSodiumMg?: number;
+  items: DailyLogItem[];
+  finalizedAt?: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class TodayService {
+  private http = inject(HttpClient);
+  private baseUrl = environment.apiUrl;
+
+  private todaySignal = signal<TodayResponse | null>(null);
+  private loadingSignal = signal(false);
+  private errorSignal = signal<string | null>(null);
+
+  readonly today = this.todaySignal.asReadonly();
+  readonly loading = this.loadingSignal.asReadonly();
+  readonly error = this.errorSignal.asReadonly();
+
+  async fetchToday(): Promise<TodayResponse | null> {
+    this.loadingSignal.set(true);
+    this.errorSignal.set(null);
+    try {
+      const resp = await firstValueFrom(
+        this.http.get<TodayResponse>(`${this.baseUrl}/today`)
+      );
+      this.todaySignal.set(resp);
+      return resp;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to load today';
+      this.errorSignal.set(msg);
+      return null;
+    } finally {
+      this.loadingSignal.set(false);
+    }
+  }
+
+  async finalizeToday(): Promise<boolean> {
+    try {
+      await firstValueFrom(
+        this.http.post(`${this.baseUrl}/today/finalize`, {})
+      );
+      // Refresh to get finalizedAt
+      await this.fetchToday();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
