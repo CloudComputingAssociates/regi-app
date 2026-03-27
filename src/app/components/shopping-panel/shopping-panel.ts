@@ -89,10 +89,10 @@ const PLAN_CATEGORIES: PlanCategory[] = [
             <mat-datepicker-toggle [for]="shopPicker" class="date-toggle" />
             <mat-datepicker #shopPicker />
             <button class="check-all-btn" (click)="checkEverything()"
-              matTooltip="Missed Items"
+              matTooltip="Check your list for items you missed or forgot to check off"
               matTooltipPosition="above"
               [matTooltipShowDelay]="300">
-              Missed Items
+              What'd I forget?
             </button>
           </div>
         </div>
