@@ -90,7 +90,7 @@ const PLAN_CATEGORIES: PlanCategory[] = [
             <mat-datepicker #shopPicker />
           </div>
           <button class="check-all-btn" (click)="checkEverything()"
-            matTooltip="Review items you may have missed"
+            matTooltip="Use this to review for un-checked items before checkout."
             matTooltipPosition="above"
             [matTooltipShowDelay]="300">
             Missed Items
