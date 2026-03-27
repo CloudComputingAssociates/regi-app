@@ -107,13 +107,10 @@ interface FoodPopup {
           @for (meal of mealGroups(); track meal.slot) {
             <div class="meal-section">
               <div class="meal-header">
-                <button class="yeh-logo-btn" [class.affirmed]="meal.affirmed"
-                  (click)="toggleMealAffirm(meal)"
-                  matTooltip="Affirm this meal — checks all items"
-                  matTooltipPosition="above"
-                  [matTooltipShowDelay]="300">
-                  <img src="/images/yeh_logo_dark.png" alt="YEH" class="yeh-logo-img" />
-                </button>
+                <input type="checkbox"
+                  class="meal-check"
+                  [checked]="meal.affirmed"
+                  (change)="toggleMealAffirm(meal)" />
                 <span class="meal-title-line">{{ meal.time }} Meal {{ meal.slot }} - {{ meal.name }}</span>
               </div>
               <div class="meal-totals">
@@ -131,10 +128,7 @@ interface FoodPopup {
                       class="food-check"
                       [checked]="isItemChecked(item.id)"
                       (change)="toggleItem(item.id, meal)" />
-                    <span class="food-name"
-                      (click)="showFoodPopup(item, $event)"
-                      (mouseenter)="showFoodPopup(item, $event)"
-                      (mouseleave)="hideFoodPopup()">
+                    <span class="food-name" (click)="showFoodPopup(item, $event)">
                       {{ item.foodName }}
                     </span>
                     <span class="food-qty">{{ item.quantity }} {{ item.unit }}</span>
@@ -157,8 +151,8 @@ interface FoodPopup {
         <div class="food-popup-overlay" (click)="hideFoodPopup()">
           <div class="food-popup" [style.top.px]="foodPopup()!.y" [style.left.px]="foodPopup()!.x"
             (click)="$event.stopPropagation()">
-            <div class="popup-header">{{ foodPopup()!.item.foodName }}</div>
-            <div class="popup-row"><span>Quantity</span><span>{{ foodPopup()!.item.quantity }} {{ foodPopup()!.item.unit }}</span></div>
+            <button class="popup-close" (click)="hideFoodPopup()">✕</button>
+            <div class="popup-header">{{ foodPopup()!.item.quantity }} {{ foodPopup()!.item.unit }} — {{ foodPopup()!.item.foodName }}</div>
             <div class="popup-row"><span>Calories</span><span>{{ foodPopup()!.item.calories ?? 0 }}</span></div>
             <div class="popup-row"><span>Protein</span><span>{{ foodPopup()!.item.proteinG ?? 0 }}g</span></div>
             <div class="popup-row"><span>Fat</span><span>{{ foodPopup()!.item.fatG ?? 0 }}g</span></div>
