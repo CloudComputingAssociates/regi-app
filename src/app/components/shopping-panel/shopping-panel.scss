@@ -116,6 +116,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
+  justify-content: center;
 }
 
 .date-input {
@@ -405,9 +407,10 @@
   }
 
   &.picked-up {
-    .plan-qty, .plan-food-name, .staple-qty, .staple-item, .staple-store {
+    .plan-qty, .plan-food-name, .staple-qty, .staple-item {
       text-decoration: line-through;
-      text-decoration-color: rgba(255, 255, 255, 0.5);
+      text-decoration-thickness: 3px;
+      text-decoration-color: rgba(255, 255, 255, 0.6);
     }
   }
 }
@@ -425,14 +428,16 @@
   }
 }
 
-// Plan name centered in title bar
-.plan-name-center {
+// Plan name inline in title bar
+.plan-name-divider {
+  color: rgba(255, 255, 255, 0.3);
+  margin: 0 6px;
+}
+
+.plan-name-inline {
   color: #4da6ff;
   font-size: 13px;
   font-weight: 500;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
 }
 
 // Buy column heading in section headers

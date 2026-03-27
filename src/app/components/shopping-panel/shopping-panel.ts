@@ -89,17 +89,18 @@ const PLAN_CATEGORIES: PlanCategory[] = [
             <mat-datepicker-toggle [for]="shopPicker" class="date-toggle" />
             <mat-datepicker #shopPicker />
             <button class="check-all-btn" (click)="checkEverything()"
-              matTooltip="Check your list for items you missed or forgot to check off"
+              matTooltip="Review items you may have missed"
               matTooltipPosition="above"
               [matTooltipShowDelay]="300">
-              What'd I forget?
+              Review
             </button>
           </div>
         </div>
         <div class="plan-foods-title">
           <span class="staples-title">Plan Foods</span>
           @if (selectedPlanName()) {
-            <span class="plan-name-center">{{ selectedPlanName() }}</span>
+            <span class="plan-name-divider">|</span>
+            <span class="plan-name-inline">{{ selectedPlanName() }}</span>
           }
           <span class="staples-title buy-column-label">Buy</span>
         </div>
@@ -108,12 +109,10 @@ const PLAN_CATEGORIES: PlanCategory[] = [
           @if (!selectedWeekPlan()) {
             <div class="plan-empty">
               <p>No plan for this week — pick a date with a slotted plan</p>
-              <p style="font-size:10px;color:#888">{{ debugInfo() }}</p>
             </div>
           } @else if (planFoodItems().length === 0) {
             <div class="plan-empty">
               <p>No meals slotted for this week</p>
-              <p style="font-size:10px;color:#888">{{ debugInfo() }}</p>
             </div>
           } @else {
             <div class="plan-items-list">
@@ -123,7 +122,6 @@ const PLAN_CATEGORIES: PlanCategory[] = [
                     <button class="accordion-header" (click)="togglePlanCategory(cat.id)">
                       <mat-icon class="accordion-arrow" [class.open]="isPlanCategoryOpen(cat.id)">chevron_right</mat-icon>
                       <span class="accordion-title">{{ cat.label }}</span>
-                      <span class="accordion-count">({{ getPlanCategoryItems(cat.id).length }})</span>
                     </button>
                     @if (isPlanCategoryOpen(cat.id)) {
                       <div class="accordion-body">
@@ -178,7 +176,6 @@ const PLAN_CATEGORIES: PlanCategory[] = [
               <button class="accordion-header" (click)="toggleCategory(cat.id)">
                 <mat-icon class="accordion-arrow" [class.open]="isCategoryOpen(cat.id)">chevron_right</mat-icon>
                 <span class="accordion-title">{{ cat.label }}</span>
-                <span class="accordion-count">({{ getCategoryItems(cat.id).length }})</span>
               </button>
 
               @if (isCategoryOpen(cat.id)) {
@@ -352,17 +349,9 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     }
   });
 
-  debugInfo = signal('');
-
   async ngOnInit(): Promise<void> {
-
     // Load available week plans then auto-select
     await this.weekPlanService.listWeekPlans();
-    const plans = this.weekPlanService.weekPlans();
-    const thisWeekStart = this.getWeekStartDate(new Date());
-    const nextWeekStart = new Date(thisWeekStart);
-    nextWeekStart.setDate(thisWeekStart.getDate() + 7);
-    this.debugInfo.set(`Plans: ${plans.map(p => p.startDate).join(', ')} | This: ${this.toDateString(thisWeekStart)} | Next: ${this.toDateString(nextWeekStart)}`);
     this.autoSelectWeek();
   }
 
@@ -410,11 +399,6 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     nextWeekStart.setDate(thisWeekStart.getDate() + 7);
 
     const plans = this.weekPlanService.weekPlans();
-    console.log('[Shopping] autoSelectWeek:', {
-      thisWeekStart: this.toDateString(thisWeekStart),
-      nextWeekStart: this.toDateString(nextWeekStart),
-      availablePlans: plans.map(p => ({ id: p.id, startDate: p.startDate, name: p.name }))
-    });
     const nextMatch = plans.find(wp => wp.startDate === this.toDateString(nextWeekStart));
     const thisMatch = plans.find(wp => wp.startDate === this.toDateString(thisWeekStart));
 
@@ -522,7 +506,7 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
   togglePlanNeeded(item: PlanFoodItem): void {
     this.planFoodItems.update(list =>
       list.map(i => i.foodId === item.foodId
-        ? { ...i, needed: !i.needed, pickedUp: !i.needed ? i.pickedUp : true }
+        ? { ...i, needed: !i.needed, pickedUp: i.needed ? true : false }
         : i
       )
     );
