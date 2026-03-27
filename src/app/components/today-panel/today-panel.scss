@@ -212,6 +212,55 @@
   padding: 12px 16px;
 }
 
+// Nutrition tip card — slim horizontal strip
+.nutrition-tip-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 10px 0;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, #3a3a3a 0%, #333333 100%);
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+
+  .tip-thumbnail {
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .tip-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0; // allow truncation
+  }
+
+  .tip-title {
+    color: #4da6ff;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .tip-source {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 .today-placeholder {
   display: flex;
   align-items: center;

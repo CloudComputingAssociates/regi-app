@@ -175,11 +175,22 @@ export class MacrosComponent implements OnInit {
   private subscriptionData = signal<MacroDisplayData>({ macros: [], timePeriod: 'day' });
 
   // Combined display: picks context-appropriate data source
+  // Zero display for shopping context
+  private static readonly ZERO_MACROS: MacroDisplayData = {
+    macros: [
+      { name: 'proteins', actual: 0, target: 0, percentage: 0 },
+      { name: 'fats', actual: 0, target: 0, percentage: 0 },
+      { name: 'carbs', actual: 0, target: 0, percentage: 0 }
+    ],
+    timePeriod: 'day'
+  };
+
   readonly effectiveDisplayData = computed<MacroDisplayData>(() => {
     const ctx = this.context();
     if (ctx === 'preferences') return this.preferencesDisplayData();
     if (ctx === 'regimenu') return this.regimenuDisplayData();
     if (ctx === 'weekplan') return this.weekPlanDisplayData();
+    if (ctx === 'shopping') return MacrosComponent.ZERO_MACROS;
     return this.subscriptionData();
   });
 
