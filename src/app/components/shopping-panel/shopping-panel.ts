@@ -77,9 +77,6 @@ const PLAN_CATEGORIES: PlanCategory[] = [
 
       <!-- Top pane: Plan Foods -->
       <div class="plan-pane" [style.flex]="topFlex()">
-        <div class="plan-foods-title">
-          <span class="staples-title">Plan Foods</span>
-        </div>
         <div class="plan-header">
           <div class="plan-header-left">
             <input
@@ -92,15 +89,19 @@ const PLAN_CATEGORIES: PlanCategory[] = [
             <mat-datepicker-toggle [for]="shopPicker" class="date-toggle" />
             <mat-datepicker #shopPicker />
             <button class="check-all-btn" (click)="checkEverything()"
-              matTooltip="Did I get everything?"
+              matTooltip="Missed Items"
               matTooltipPosition="above"
               [matTooltipShowDelay]="300">
-              Got everything?
+              Missed Items
             </button>
           </div>
+        </div>
+        <div class="plan-foods-title">
+          <span class="staples-title">Plan Foods</span>
           @if (selectedPlanName()) {
-            <span class="plan-name-label">{{ selectedPlanName() }}</span>
+            <span class="plan-name-center">{{ selectedPlanName() }}</span>
           }
+          <span class="staples-title buy-column-label">Buy</span>
         </div>
 
         <div class="plan-content">
@@ -135,7 +136,6 @@ const PLAN_CATEGORIES: PlanCategory[] = [
                             <span class="plan-qty">{{ item.totalQty }} {{ item.unit }}</span>
                             <span class="plan-food-name">{{ item.displayName }}</span>
 
-                            <span class="buy-label">Buy</span>
                             <label class="toggle-slider" [class.on]="item.needed">
                               <input type="checkbox"
                                 [checked]="item.needed"
@@ -167,6 +167,7 @@ const PLAN_CATEGORIES: PlanCategory[] = [
       <div class="staples-pane" [style.flex]="bottomFlex()">
         <div class="staples-header">
           <span class="staples-title">Staples</span>
+          <span class="staples-title buy-column-label">Buy</span>
         </div>
 
         <div class="staples-content">
@@ -226,7 +227,6 @@ const PLAN_CATEGORIES: PlanCategory[] = [
                         (change)="updateField(staple, 'store', $event)"
                         placeholder="Store" />
 
-                      <span class="buy-label">Buy</span>
                       <label class="toggle-slider" [class.on]="staple.needed !== false">
                         <input type="checkbox"
                           [checked]="staple.needed !== false"
@@ -305,7 +305,7 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
 
   // Plan food category accordion
   planCategories = PLAN_CATEGORIES;
-  private openPlanCategories = signal<Set<string>>(new Set(['protein', 'vegetable', 'fruit', 'grain', 'dairy']));
+  private openPlanCategories = signal<Set<string>>(new Set(['protein', 'vegetable', 'fruit', 'grain', 'dairy', 'fat', 'other']));
 
   // Staple accordion state
   private openCategories = signal<Set<StapleCategory>>(new Set(['proteins']));
@@ -401,6 +401,11 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     nextWeekStart.setDate(thisWeekStart.getDate() + 7);
 
     const plans = this.weekPlanService.weekPlans();
+    console.log('[Shopping] autoSelectWeek:', {
+      thisWeekStart: this.toDateString(thisWeekStart),
+      nextWeekStart: this.toDateString(nextWeekStart),
+      availablePlans: plans.map(p => ({ id: p.id, startDate: p.startDate, name: p.name }))
+    });
     const nextMatch = plans.find(wp => wp.startDate === this.toDateString(nextWeekStart));
     const thisMatch = plans.find(wp => wp.startDate === this.toDateString(thisWeekStart));
 

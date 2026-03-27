@@ -92,10 +92,10 @@
 }
 
 .plan-foods-title {
+  position: relative;
   display: flex;
   align-items: center;
   padding: 6px 12px;
-  padding-right: 90px;
   background: #333333;
   flex-shrink: 0;
   border-bottom: 1px solid #4a4a4a;
@@ -146,14 +146,6 @@
   }
 }
 
-.plan-name-label {
-  color: #4da6ff;
-  font-size: 12px;
-  font-weight: 500;
-  margin-left: auto;
-  padding-right: 8px;
-  white-space: nowrap;
-}
 
 .check-all-btn {
   font-size: 11px;
@@ -433,13 +425,20 @@
   }
 }
 
-// Buy label next to toggle
-.buy-label {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.5);
-  flex-shrink: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+// Plan name centered in title bar
+.plan-name-center {
+  color: #4da6ff;
+  font-size: 13px;
+  font-weight: 500;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+// Buy column heading in section headers
+.buy-column-label {
+  margin-left: auto;
+  padding-right: 8px;
 }
 
 // Toggle slider (needed)
