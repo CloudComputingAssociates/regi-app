@@ -38,7 +38,7 @@ interface FoodPopup {
     <div class="panel-container">
       <!-- Nutrition tip — apple shows immediately, content loads async -->
       <div class="nutrition-tip-card">
-        <img src="/images/TipOfTheDayApple.png" alt="Tip of the Day" class="tip-apple" />
+        <img src="/images/News-YEH-Logo.png" alt="Tip of the Day" class="tip-apple" />
         @if (tipService.tip(); as tip) {
           @if (tip.imageUrl) {
             <img [src]="tip.imageUrl" alt="" class="tip-thumbnail" />
