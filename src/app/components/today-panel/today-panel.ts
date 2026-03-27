@@ -39,6 +39,7 @@ interface FoodPopup {
       <!-- Nutrition tip -->
       @if (tipService.tip(); as tip) {
         <div class="nutrition-tip-card">
+          <img src="/images/TipOfTheDayApple.png" alt="Tip" class="tip-apple" />
           @if (tip.imageUrl) {
             <img [src]="tip.imageUrl" alt="" class="tip-thumbnail" />
           }
@@ -97,10 +98,7 @@ interface FoodPopup {
                   [matTooltipShowDelay]="300">
                   <img src="/images/yeh_logo_dark.png" alt="YEH" class="yeh-logo-img" />
                 </button>
-                <div class="meal-title-block">
-                  <span class="meal-time">{{ meal.time }}</span>
-                  <span class="meal-label">Meal {{ meal.slot }} - {{ meal.name }}</span>
-                </div>
+                <span class="meal-title-line">{{ meal.time }} Meal {{ meal.slot }} - {{ meal.name }}</span>
               </div>
               <div class="meal-totals">
                 Total: {{ getMealActiveTotals(meal).calories }} cal |
@@ -155,6 +153,7 @@ interface FoodPopup {
           <div class="food-popup" [style.top.px]="foodPopup()!.y" [style.left.px]="foodPopup()!.x"
             (click)="$event.stopPropagation()">
             <div class="popup-header">{{ foodPopup()!.item.foodName }}</div>
+            <div class="popup-row"><span>Quantity</span><span>{{ foodPopup()!.item.quantity }} {{ foodPopup()!.item.unit }}</span></div>
             <div class="popup-row"><span>Calories</span><span>{{ foodPopup()!.item.calories ?? 0 }}</span></div>
             <div class="popup-row"><span>Protein</span><span>{{ foodPopup()!.item.proteinG ?? 0 }}g</span></div>
             <div class="popup-row"><span>Fat</span><span>{{ foodPopup()!.item.fatG ?? 0 }}g</span></div>
@@ -266,28 +265,25 @@ export class TodayPanelComponent implements OnInit {
       slotMap.set(item.mealSlot, list);
     }
 
-    // Try to get meal names from the week plan
+    // Find the week plan covering today's date to get plan name and meal names
     const mealNames = new Map<number, string>();
-    if (sourcePlanId) {
-      try {
-        // sourcePlanId is a DayPlan ID — find its week plan
-        for (const wp of this.weekPlanService.weekPlans()) {
-          const fullPlan = await this.weekPlanService.getWeekPlan(wp.id);
-          const todayStr = new Date().toISOString().slice(0, 10);
-          const dayPlan = fullPlan.days?.find(d => d.planDate === todayStr);
-          if (dayPlan) {
-            this.planName.set(fullPlan.name || 'Plan');
-            for (const dpm of dayPlan.meals || []) {
-              if (dpm.meal?.name) {
-                mealNames.set(dpm.mealSlot, dpm.meal.name);
-              }
+    const todayStr = new Date().toISOString().slice(0, 10);
+    try {
+      for (const wp of this.weekPlanService.weekPlans()) {
+        const fullPlan = await this.weekPlanService.getWeekPlan(wp.id);
+        const dayPlan = fullPlan.days?.find(d => d.planDate === todayStr);
+        if (dayPlan) {
+          this.planName.set(fullPlan.name || 'Plan');
+          for (const dpm of dayPlan.meals || []) {
+            if (dpm.meal?.name) {
+              mealNames.set(dpm.mealSlot, dpm.meal.name);
             }
-            break;
           }
+          break;
         }
-      } catch {
-        // Fallback — no meal names
       }
+    } catch {
+      // Fallback — no meal names
     }
 
     // Build meal groups with timing
