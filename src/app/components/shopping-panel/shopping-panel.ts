@@ -93,7 +93,7 @@ const PLAN_CATEGORIES: PlanCategory[] = [
             matTooltip="Review items you may have missed"
             matTooltipPosition="above"
             [matTooltipShowDelay]="300">
-            Review
+            Missed Items
           </button>
         </div>
         <div class="plan-foods-title">
