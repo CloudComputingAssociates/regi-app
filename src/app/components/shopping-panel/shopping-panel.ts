@@ -88,19 +88,18 @@ const PLAN_CATEGORIES: PlanCategory[] = [
               readonly />
             <mat-datepicker-toggle [for]="shopPicker" class="date-toggle" />
             <mat-datepicker #shopPicker />
-            <button class="check-all-btn" (click)="checkEverything()"
-              matTooltip="Review items you may have missed"
-              matTooltipPosition="above"
-              [matTooltipShowDelay]="300">
-              Review
-            </button>
           </div>
+          <button class="check-all-btn" (click)="checkEverything()"
+            matTooltip="Review items you may have missed"
+            matTooltipPosition="above"
+            [matTooltipShowDelay]="300">
+            Review
+          </button>
         </div>
         <div class="plan-foods-title">
           <span class="staples-title">Plan Foods</span>
           @if (selectedPlanName()) {
-            <span class="plan-name-divider">|</span>
-            <span class="plan-name-inline">{{ selectedPlanName() }}</span>
+            <span class="plan-name-center">{{ selectedPlanName() }}</span>
           }
           <span class="staples-title buy-column-label">Buy</span>
         </div>

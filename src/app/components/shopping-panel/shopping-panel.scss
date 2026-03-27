@@ -104,6 +104,7 @@
 .plan-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 8px 12px;
   padding-right: 90px; // Clear action buttons
   background: #333333;
@@ -116,8 +117,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
-  justify-content: center;
 }
 
 .date-input {
@@ -428,16 +427,14 @@
   }
 }
 
-// Plan name inline in title bar
-.plan-name-divider {
-  color: rgba(255, 255, 255, 0.3);
-  margin: 0 6px;
-}
-
-.plan-name-inline {
+// Plan name centered in title bar
+.plan-name-center {
   color: #4da6ff;
   font-size: 13px;
   font-weight: 500;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 // Buy column heading in section headers
