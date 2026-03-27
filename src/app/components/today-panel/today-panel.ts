@@ -18,7 +18,10 @@ import { NutritionTipService } from '../../services/nutrition-tip.service';
             <a [href]="tip.articleUrl" target="_blank" rel="noopener" class="tip-title">
               {{ tip.title }}
             </a>
-            <span class="tip-source">NutritionFacts.org — Daily Tip</span>
+            @if (tip.description) {
+              <span class="tip-description">{{ tip.description }}</span>
+            }
+            <span class="tip-source">NutritionFacts.org</span>
           </div>
         </div>
       }

@@ -6,6 +6,7 @@ import { environment } from '../../environments/environment';
 
 export interface NutritionTip {
   title: string;
+  description: string;
   imageUrl: string;
   articleUrl: string;
 }
@@ -24,7 +25,6 @@ export class NutritionTipService {
   readonly loading = this.loadingSignal.asReadonly();
 
   async fetchTip(): Promise<void> {
-    if (this.tipSignal()) return; // already loaded
     this.loadingSignal.set(true);
     try {
       const tip = await firstValueFrom(
