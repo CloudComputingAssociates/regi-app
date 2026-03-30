@@ -64,7 +64,12 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
           <div class="add-food-dialog" (click)="$event.stopPropagation()">
             <div class="dialog-header">
               <span class="dialog-title">Add My Food</span>
-              <button class="dialog-close" (click)="closeAddDialog()">✕</button>
+              <div class="dialog-header-right">
+                @if (sourceFoodId()) {
+                  <span class="source-food-id">{{ sourceFoodId() }}</span>
+                }
+                <button class="dialog-close" (click)="closeAddDialog()">✕</button>
+              </div>
             </div>
 
             <div class="dialog-body">
@@ -126,12 +131,14 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
               <div class="image-section">
                 <div class="image-upload">
                   <label>Product Image</label>
-                  <div class="drop-zone" (click)="productImageInput.click()">
-                    @if (newFood.foodImage) {
-                      <img [src]="newFood.foodImage" alt="" class="preview-img" />
-                    } @else {
-                      <img src="/images/food-placeholder.png" alt="" class="preview-img placeholder" />
-                      <span class="drop-hint">Click or drop image</span>
+                  <div class="drop-zone"
+                    (click)="productImageInput.click()"
+                    (dragover)="onDragOver($event)"
+                    (drop)="onDrop($event, 'foodImage')">
+                    <img [src]="newFood.foodImage || '/images/food-slug.png'" alt=""
+                      class="preview-img" [class.placeholder]="!newFood.foodImage" />
+                    @if (!newFood.foodImage) {
+                      <span class="drop-hint">Click, drop, or paste image</span>
                     }
                   </div>
                   <input #productImageInput type="file" accept="image/*" capture="environment" hidden
@@ -139,12 +146,15 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
                 </div>
 
                 <div class="image-upload">
-                  <label>Nutrition Facts Label</label>
-                  <div class="drop-zone" (click)="nutritionImageInput.click()">
+                  <label>Nutrition Facts Label (Override)</label>
+                  <div class="drop-zone"
+                    (click)="nutritionImageInput.click()"
+                    (dragover)="onDragOver($event)"
+                    (drop)="onDrop($event, 'nutritionFactsImage')">
                     @if (newFood.nutritionFactsImage) {
                       <img [src]="newFood.nutritionFactsImage" alt="" class="preview-img" />
                     } @else {
-                      <span class="drop-hint">Click or drop image</span>
+                      <span class="drop-hint">Click, drop, or paste image</span>
                     }
                   </div>
                   <input #nutritionImageInput type="file" accept="image/*" capture="environment" hidden
@@ -155,7 +165,7 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
               <div class="share-row">
                 <label class="share-check">
                   <input type="checkbox" [(ngModel)]="newFood.shareWithCommunity" />
-                  <span>Share with community</span>
+                  <span>Share w/ YEH Community</span>
                 </label>
               </div>
             </div>
@@ -187,6 +197,7 @@ export class FoodsPanelComponent {
   isSaving = signal(false);
   showAddDialog = signal(false);
   isSubmitting = signal(false);
+  sourceFoodId = signal<number | null>(null);
 
   servingUnits = SERVING_UNITS;
 
@@ -214,6 +225,7 @@ export class FoodsPanelComponent {
 
   openAddDialog(): void {
     this.newFood = this.emptyFood();
+    this.sourceFoodId.set(null);
     this.showAddDialog.set(true);
   }
 
@@ -223,8 +235,24 @@ export class FoodsPanelComponent {
 
   onImageSelected(event: Event, field: 'foodImage' | 'nutritionFactsImage'): void {
     const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
+    if (file) this.readImageFile(file, field);
+  }
 
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  onDrop(event: DragEvent, field: 'foodImage' | 'nutritionFactsImage'): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const file = event.dataTransfer?.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      this.readImageFile(file, field);
+    }
+  }
+
+  private readImageFile(file: File, field: 'foodImage' | 'nutritionFactsImage'): void {
     const reader = new FileReader();
     reader.onload = () => {
       (this.newFood as any)[field] = reader.result as string;
@@ -235,6 +263,11 @@ export class FoodsPanelComponent {
   async submitFood(): Promise<void> {
     if (!this.canSubmit()) return;
     this.isSubmitting.set(true);
+
+    // Default to slug if no product image uploaded
+    if (!this.newFood.foodImage) {
+      this.newFood.foodImage = '/images/food-slug.png';
+    }
 
     const req = this.newFood as CreateUserFoodRequest;
     const result = await this.userFoodService.createUserFood(req);
@@ -277,6 +310,7 @@ export class FoodsPanelComponent {
 
     if (event.suggestedFood) {
       const f = event.suggestedFood;
+      this.sourceFoodId.set(f.id);
       const nf = f.nutritionFacts;
       this.newFood.description = f.description;
       this.newFood.shortDescription = f.shortDescription || '';
