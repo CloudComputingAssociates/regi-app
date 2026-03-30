@@ -274,7 +274,27 @@ export class FoodsPanelComponent {
 
   onFoodNotFound(event: FoodNotFoundEvent): void {
     this.newFood = this.emptyFood();
-    this.newFood.description = event.searchQuery;
+
+    if (event.suggestedFood) {
+      const f = event.suggestedFood;
+      const nf = f.nutritionFacts;
+      this.newFood.description = f.description;
+      this.newFood.shortDescription = f.shortDescription || '';
+      this.newFood.calories = nf?.calories ?? 0;
+      this.newFood.proteinG = nf?.proteinG ?? 0;
+      this.newFood.totalFatG = nf?.totalFatG ?? 0;
+      this.newFood.totalCarbohydrateG = nf?.totalCarbohydrateG ?? 0;
+      this.newFood.dietaryFiberG = nf?.dietaryFiberG ?? 0;
+      this.newFood.sodiumMG = nf?.sodiumMG ?? 0;
+      this.newFood.servingUnit = 'g';
+      this.newFood.gramsPerServingUnit = nf?.servingSizeG ?? 0;
+      if (f.foodImageThumbnail) {
+        this.newFood.foodImage = f.foodImageThumbnail;
+      }
+    } else {
+      this.newFood.description = event.searchQuery;
+    }
+
     this.showAddDialog.set(true);
   }
 }

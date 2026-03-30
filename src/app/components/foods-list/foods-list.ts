@@ -41,6 +41,7 @@ export interface AddFoodEvent {
 
 export interface FoodNotFoundEvent {
   searchQuery: string;
+  suggestedFood?: Food;
 }
 
 @Component({
@@ -559,27 +560,44 @@ export class FoodsListComponent implements OnInit {
 
   performSearch(): void {
     const query = this.searchQuery.trim();
+    if (query.length < 2) return;
 
-    // Try local cache filter first
-    this.onSearchQueryChange(this.searchQuery);
+    // Check if food exists in any active filter list
+    const filters = this.activeFilters();
+    const localLists: Food[] = [];
+    if (filters.has('yeh-approved')) localLists.push(...this.yehApprovedCache());
+    if (filters.has('my-favorites')) localLists.push(...this.favoritesCache());
+    if (filters.has('my-restricted')) localLists.push(...this.restrictedCache());
 
-    // If local results found, done
-    if (this.foods().length > 0 || query.length < 2) {
+    const lowerQuery = query.toLowerCase();
+    const localMatch = localLists.some(f =>
+      f.description.toLowerCase().includes(lowerQuery) ||
+      (f.shortDescription && f.shortDescription.toLowerCase().includes(lowerQuery))
+    );
+
+    if (localMatch) {
+      // Found in checked lists — filter and show local results
+      const filtered = localLists.filter(f =>
+        f.description.toLowerCase().includes(lowerQuery) ||
+        (f.shortDescription && f.shortDescription.toLowerCase().includes(lowerQuery))
+      );
+      this.setFoods(filtered);
+      if (filtered.length > 0) this.selectFood(0, false);
       return;
     }
 
-    // No local results — search the API (FoodDB → FatSecret fallback)
+    // Not in user's lists — search the API (FoodDB → FatSecret fallback)
     this.isLoading.set(true);
 
-    this.foodsService.searchFoods(query, this.maxCount).subscribe({
+    this.foodsService.searchFoods(query, 50).subscribe({
       next: (response) => {
         if (response && response.foods && Array.isArray(response.foods) && response.foods.length > 0) {
-          this.setFoods(response.foods);
-          this.selectFood(0, false);
+          // Pick the best match with the lowest FoodID (original USDA entry)
+          const best = response.foods
+            .sort((a, b) => a.id - b.id)[0];
+          this.foodNotFound.emit({ searchQuery: query, suggestedFood: best });
         } else {
-          // Nothing found anywhere — emit not-found event
-          this.setFoods([]);
-          this.selectedIndex.set(-1);
+          // Nothing found anywhere — open empty Add dialog
           this.foodNotFound.emit({ searchQuery: query });
         }
         this.isLoading.set(false);
