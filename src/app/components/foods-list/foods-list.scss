@@ -546,6 +546,44 @@
   flex: 1;
 }
 
+.food-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.my-food-badge {
+  color: #4da6ff;
+  background: rgba(77, 166, 255, 0.15);
+  border: 1px solid rgba(77, 166, 255, 0.3);
+}
+
+// Filter checkboxes
+.filter-checkbox-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+
+  input {
+    accent-color: #ffffff;
+    width: 14px;
+    height: 14px;
+  }
+}
+
 // Responsive adjustments
 @media (max-width: 480px) {
   .foods-container {

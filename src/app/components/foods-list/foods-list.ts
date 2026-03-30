@@ -39,6 +39,10 @@ export interface AddFoodEvent {
   food: Food;
 }
 
+export interface FoodNotFoundEvent {
+  searchQuery: string;
+}
+
 @Component({
   selector: 'app-foods-list',
   imports: [CommonModule, FormsModule, MatIconModule, MatButtonModule, MatTooltipModule, MatRadioModule],
@@ -78,15 +82,23 @@ export interface AddFoodEvent {
           }
         </div>
 
-        <!-- Filter Radio Buttons -->
+        <!-- Filter Checkboxes -->
         @if (showFilterRadios()) {
           <div class="filter-row">
-            <mat-radio-group class="filter-radio-group" [value]="activeFilter()" (change)="onFilterChange($event.value)">
-              <mat-radio-button value="yeh-approved">YEH</mat-radio-button>
-              <mat-radio-button value="my-favorites">MyFoods</mat-radio-button>
-              <mat-radio-button value="my-restricted">Restricted</mat-radio-button>
-              <mat-radio-button value="clear">All</mat-radio-button>
-            </mat-radio-group>
+            <div class="filter-checkbox-group">
+              <label class="filter-check">
+                <input type="checkbox" [checked]="isFilterActive('yeh-approved')" (change)="onFilterToggle('yeh-approved')" />
+                <span>YEH</span>
+              </label>
+              <label class="filter-check">
+                <input type="checkbox" [checked]="isFilterActive('my-favorites')" (change)="onFilterToggle('my-favorites')" />
+                <span>MyFoods</span>
+              </label>
+              <label class="filter-check">
+                <input type="checkbox" [checked]="isFilterActive('my-restricted')" (change)="onFilterToggle('my-restricted')" />
+                <span>Restricted</span>
+              </label>
+            </div>
           </div>
         } @else {
           <!-- Original checkbox for Plan tab -->
@@ -124,7 +136,6 @@ export interface AddFoodEvent {
                   <mat-icon class="collapse-icon"
                             [class.collapsed]="group.collapsed">expand_more</mat-icon>
                   <span class="category-name">{{ group.category }}</span>
-                  <span class="category-count">{{ group.foods.length }}</span>
                 </div>
                 @if (!group.collapsed) {
                   @for (item of group.foods; track item.food.id) {
@@ -146,6 +157,9 @@ export interface AddFoodEvent {
                         }
                       </div>
                       <span class="food-description">{{ getDisplayDescription(item.food) }}</span>
+                      @if (item.food.dataSource === 'user' && item.food.userId) {
+                        <span class="food-badge my-food-badge">My Food</span>
+                      }
 
                       @if (showPreferenceIcons()) {
                         <div class="preference-icons">
@@ -193,6 +207,7 @@ export class FoodsListComponent implements OnInit {
   // Outputs
   selectedFood = output<SelectedFoodEvent>();
   addFood = output<AddFoodEvent>();
+  foodNotFound = output<FoodNotFoundEvent>();
 
   // Internal state
   searchQuery = '';
@@ -202,6 +217,7 @@ export class FoodsListComponent implements OnInit {
   isLoading = signal<boolean>(false);
   isYehApproved = signal<boolean>(true);
   activeFilter = signal<FoodFilterType>('yeh-approved');
+  activeFilters = signal<Set<string>>(new Set(['yeh-approved']));
 
   // Accordion state — all categories start collapsed
   private collapsedCategories = signal<Set<string>>(new Set(CATEGORY_ORDER));
@@ -435,6 +451,51 @@ export class FoodsListComponent implements OnInit {
     }
   }
 
+  /** Check if a filter checkbox is active */
+  isFilterActive(filter: string): boolean {
+    return this.activeFilters().has(filter);
+  }
+
+  /** Toggle a filter checkbox */
+  onFilterToggle(filter: string): void {
+    const next = new Set(this.activeFilters());
+    if (next.has(filter)) {
+      next.delete(filter);
+    } else {
+      next.add(filter);
+    }
+    this.activeFilters.set(next);
+
+    // Load the appropriate data based on active filters
+    this.searchQuery = '';
+    this.selectedIndex.set(-1);
+    const allFoods: Food[] = [];
+
+    if (next.size === 0) {
+      this.setFoods([]);
+      return;
+    }
+
+    // Use the last toggled filter to drive the primary view
+    if (next.has('yeh-approved')) {
+      this.activeFilter.set('yeh-approved');
+      this.isYehApproved.set(true);
+      if (this.yehApprovedCache().length > 0) {
+        this.setFoods(this.yehApprovedCache());
+      } else {
+        this.loadYehApprovedFoods();
+      }
+    } else if (next.has('my-favorites')) {
+      this.activeFilter.set('my-favorites');
+      this.isYehApproved.set(false);
+      this.loadFavorites();
+    } else if (next.has('my-restricted')) {
+      this.activeFilter.set('my-restricted');
+      this.isYehApproved.set(false);
+      this.loadRestricted();
+    }
+  }
+
   /** Handle search query changes */
   onSearchQueryChange(query: string): void {
     const filter = this.activeFilter();
@@ -475,10 +536,7 @@ export class FoodsListComponent implements OnInit {
   }
 
   canSearch(): boolean {
-    if (this.activeFilter() === 'clear') {
-      return this.searchQuery.trim().length >= 2;
-    }
-    return true;
+    return this.searchQuery.trim().length >= 2 || this.activeFilters().size > 0;
   }
 
   getDisplayDescription(food: Food): string {
@@ -501,32 +559,28 @@ export class FoodsListComponent implements OnInit {
 
   performSearch(): void {
     const query = this.searchQuery.trim();
-    const filter = this.activeFilter();
 
-    if (filter !== 'clear') {
-      this.onSearchQueryChange(this.searchQuery);
+    // Try local cache filter first
+    this.onSearchQueryChange(this.searchQuery);
+
+    // If local results found, done
+    if (this.foods().length > 0 || query.length < 2) {
       return;
     }
 
-    if (query.length < 2) {
-      return;
-    }
-
+    // No local results — search the API (FoodDB → FatSecret fallback)
     this.isLoading.set(true);
 
     this.foodsService.searchFoods(query, this.maxCount).subscribe({
       next: (response) => {
-        if (response && response.foods && Array.isArray(response.foods)) {
+        if (response && response.foods && Array.isArray(response.foods) && response.foods.length > 0) {
           this.setFoods(response.foods);
-
-          if (response.foods.length > 0) {
-            this.selectFood(0, false);
-          } else {
-            this.selectedIndex.set(-1);
-          }
+          this.selectFood(0, false);
         } else {
+          // Nothing found anywhere — emit not-found event
           this.setFoods([]);
           this.selectedIndex.set(-1);
+          this.foodNotFound.emit({ searchQuery: query });
         }
         this.isLoading.set(false);
       },
