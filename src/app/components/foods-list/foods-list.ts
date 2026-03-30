@@ -123,6 +123,7 @@ export interface FoodNotFoundEvent {
           tabindex="0">
           @if (isLoading()) {
             <div class="loading-message">
+              <span class="loading-spinner"></span>
               <p>Loading foods...</p>
             </div>
           } @else if (foods().length === 0) {
@@ -260,7 +261,6 @@ export class FoodsListComponent implements OnInit {
 
   private setFoods(foods: Food[]): void {
     this.foods.set(foods);
-    this.tabService.updateTabBadge('foods', foods.length);
   }
 
   toggleCollapse(category: string): void {
