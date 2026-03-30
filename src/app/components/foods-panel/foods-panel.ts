@@ -1,5 +1,5 @@
 // src/app/components/foods-panel/foods-panel.ts
-import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -193,6 +193,7 @@ export class FoodsPanelComponent {
   protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
   private userFoodService = inject(UserFoodService);
+  private cdr = inject(ChangeDetectorRef);
 
   isSaving = signal(false);
   showAddDialog = signal(false);
@@ -256,6 +257,7 @@ export class FoodsPanelComponent {
     const reader = new FileReader();
     reader.onload = () => {
       (this.newFood as any)[field] = reader.result as string;
+      this.cdr.markForCheck();
     };
     reader.readAsDataURL(file);
   }
