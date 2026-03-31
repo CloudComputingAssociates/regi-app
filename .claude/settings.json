@@ -5,7 +5,9 @@
       "Bash(pushd \"c:\\\\git\\\\yeh-api\")",
       "Bash(popd)",
       "Read(//c/git/yeh-api/api/**)",
-      "Read(//c/git/yeh-api/**)"
+      "Read(//c/git/yeh-api/**)",
+      "Bash(grep -l \"image\" /c/git/yeh-api/handlers/*.go)",
+      "Bash(grep -r image /c/git/yeh-api/api --include=*.go)"
     ],
     "additionalDirectories": [
       "c:\\git\\foods-tool-ui\\src\\app\\models",

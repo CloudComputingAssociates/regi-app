@@ -97,12 +97,32 @@ export class FoodPreferencesService {
         this.serverAllowedFoods.set(allowedMap);
         this.serverRestrictedFoods.set(restrictedMap);
 
-        // Initialize local state to match server
-        this.localAllowedFoods.set(new Set(allowedMap.keys()));
-        this.localRestrictedFoods.set(new Set(restrictedMap.keys()));
-
-        // Clear any pending changes
-        this.pendingChanges.set(new Map());
+        // Merge server state with any pending local changes (user may have toggled icons
+        // while this request was in flight — don't wipe those changes)
+        const pending = this.pendingChanges();
+        if (pending.size === 0) {
+          // No pending changes — just sync local state to server
+          this.localAllowedFoods.set(new Set(allowedMap.keys()));
+          this.localRestrictedFoods.set(new Set(restrictedMap.keys()));
+        } else {
+          // Pending changes exist — rebuild local state from server + pending
+          const localAllowed = new Set(allowedMap.keys());
+          const localRestricted = new Set(restrictedMap.keys());
+          for (const [foodId, change] of pending) {
+            if (change.type === 'add-allowed') {
+              localAllowed.add(foodId);
+              localRestricted.delete(foodId);
+            } else if (change.type === 'add-restricted') {
+              localRestricted.add(foodId);
+              localAllowed.delete(foodId);
+            } else if (change.type === 'remove') {
+              localAllowed.delete(foodId);
+              localRestricted.delete(foodId);
+            }
+          }
+          this.localAllowedFoods.set(localAllowed);
+          this.localRestrictedFoods.set(localRestricted);
+        }
       })
     );
   }
