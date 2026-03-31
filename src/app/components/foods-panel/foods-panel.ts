@@ -131,15 +131,16 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
               <div class="image-section">
                 <div class="image-upload">
                   <label>Product Image</label>
-                  <div class="drop-zone"
-                    (click)="productImageInput.click()"
+                  <div class="drop-zone" tabindex="0"
                     (dragover)="onDragOver($event)"
-                    (drop)="onDrop($event, 'foodImage')">
+                    (drop)="onDrop($event, 'foodImage')"
+                    (paste)="onPaste($event, 'foodImage')">
                     <img [src]="newFood.foodImage || '/images/food-slug.png'" alt=""
                       class="preview-img" [class.placeholder]="!newFood.foodImage" />
-                    @if (!newFood.foodImage) {
-                      <span class="drop-hint">Click, drop, or paste image</span>
-                    }
+                    <div class="drop-actions">
+                      <button type="button" class="upload-btn" (click)="productImageInput.click(); $event.stopPropagation()">📷</button>
+                      <span class="drop-hint">Drop, paste, or 📷</span>
+                    </div>
                   </div>
                   <input #productImageInput type="file" accept="image/*" capture="environment" hidden
                     (change)="onImageSelected($event, 'foodImage')" />
@@ -147,14 +148,17 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
 
                 <div class="image-upload">
                   <label>Nutrition Facts Label (Override)</label>
-                  <div class="drop-zone"
-                    (click)="nutritionImageInput.click()"
+                  <div class="drop-zone" tabindex="0"
                     (dragover)="onDragOver($event)"
-                    (drop)="onDrop($event, 'nutritionFactsImage')">
+                    (drop)="onDrop($event, 'nutritionFactsImage')"
+                    (paste)="onPaste($event, 'nutritionFactsImage')">
                     @if (newFood.nutritionFactsImage) {
                       <img [src]="newFood.nutritionFactsImage" alt="" class="preview-img" />
                     } @else {
-                      <span class="drop-hint">Click, drop, or paste image</span>
+                      <div class="drop-actions">
+                        <button type="button" class="upload-btn" (click)="nutritionImageInput.click(); $event.stopPropagation()">📷</button>
+                        <span class="drop-hint">Drop, paste, or 📷</span>
+                      </div>
                     }
                   </div>
                   <input #nutritionImageInput type="file" accept="image/*" capture="environment" hidden
@@ -237,6 +241,19 @@ export class FoodsPanelComponent {
   onImageSelected(event: Event, field: 'foodImage' | 'nutritionFactsImage'): void {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) this.readImageFile(file, field);
+  }
+
+  onPaste(event: ClipboardEvent, field: 'foodImage' | 'nutritionFactsImage'): void {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        event.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) this.readImageFile(file, field);
+        return;
+      }
+    }
   }
 
   onDragOver(event: DragEvent): void {
