@@ -5,6 +5,7 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, of, map, switchMap } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { Food } from '../models/food.model';
 import {
   GetFoodPreferencesResponse,
   FoodPreferenceItem,
@@ -14,6 +15,39 @@ import {
   CreateFoodPreferencesResponse,
   DeleteFoodPreferencesRequest,
 } from '../models/generated/food-preferences.schema';
+
+/** Shape returned by /allowed/foods and /restricted/foods endpoints */
+interface AllFoodRow {
+  foodId: number;
+  foodSource: string;
+  description: string;
+  shortDescription?: string;
+  categoryId?: number;
+  dataSource?: string;
+  servingSizeMultiplicand?: number;
+  servingUnit?: string;
+  servingGramsPerUnit?: number;
+  glycemicIndex?: number;
+  glycemicLoad?: number;
+  foodImage?: string;
+  foodImageThumbnail?: string;
+  nutritionFactsImage?: string;
+  yehApproved: boolean;
+  calories?: number;
+  proteinG?: number;
+  totalFatG?: number;
+  saturatedFatG?: number;
+  totalCarbohydrateG?: number;
+  dietaryFiberG?: number;
+  sodiumMG?: number;
+  servingSizeG?: number;
+  servingSizeHousehold?: string;
+}
+
+interface AllFoodsResponse {
+  foods: AllFoodRow[];
+  count: number;
+}
 
 // Re-export generated types for consumers
 export type {
@@ -364,5 +398,60 @@ export class FoodPreferencesService {
     this.localAllowedFoods.set(new Set());
     this.localRestrictedFoods.set(new Set());
     this.pendingChanges.set(new Map());
+  }
+
+  /**
+   * Get full Food objects for user's allowed (favorite) preferences via AllFoods view
+   */
+  getAllowedFoodsFull(): Observable<Food[]> {
+    return this.http.get<AllFoodsResponse>(`${this.baseUrl}/user/preferences/food/allowed/foods`).pipe(
+      map(response => (response.foods || []).map(row => this.allFoodRowToFood(row)))
+    );
+  }
+
+  /**
+   * Get full Food objects for user's restricted preferences via AllFoods view
+   */
+  getRestrictedFoodsFull(): Observable<Food[]> {
+    return this.http.get<AllFoodsResponse>(`${this.baseUrl}/user/preferences/food/restricted/foods`).pipe(
+      map(response => (response.foods || []).map(row => this.allFoodRowToFood(row)))
+    );
+  }
+
+  /** Map an AllFoodRow from the view endpoint to a Food object the UI can display */
+  private allFoodRowToFood(row: AllFoodRow): Food {
+    return {
+      id: row.foodSource === 'user' ? -row.foodId : row.foodId,
+      description: row.description,
+      shortDescription: row.shortDescription,
+      foodRequestType: 'unknown',
+      dataSource: row.dataSource ?? (row.foodSource === 'user' ? 'user' : 'USDA-FNDDS'),
+      yehApproved: row.yehApproved,
+      glycemicIndex: row.glycemicIndex ?? 0,
+      glycemicLoad: row.glycemicLoad,
+      servingSizeMultiplicand: row.servingSizeMultiplicand ?? 1,
+      servingUnit: row.servingUnit,
+      servingGramsPerUnit: row.servingGramsPerUnit,
+      foodImage: row.foodImage,
+      foodImageThumbnail: row.foodImageThumbnail,
+      nutritionFactsImage: row.nutritionFactsImage,
+      verifiedType: 'unknown',
+      verifiedBy: '',
+      duplicateCount: 0,
+      nutritionFacts: {
+        calories: row.calories ?? 0,
+        proteinG: row.proteinG ?? 0,
+        totalFatG: row.totalFatG ?? 0,
+        saturatedFatG: row.saturatedFatG ?? 0,
+        totalCarbohydrateG: row.totalCarbohydrateG ?? 0,
+        dietaryFiberG: row.dietaryFiberG ?? 0,
+        sodiumMG: row.sodiumMG ?? 0,
+        servingSizeG: row.servingSizeG ?? 0,
+        servingSizeHousehold: row.servingSizeHousehold ?? '',
+        transFatG: 0,
+        cholesterolMG: 0,
+        totalSugarsG: 0,
+      },
+    };
   }
 }

@@ -363,26 +363,16 @@ export class FoodsListComponent implements OnInit {
     });
   }
 
-  /** Load user's favorite foods from API */
+  /** Load user's favorite foods directly from API (full food objects via AllFoods view) */
   private loadFavorites(): void {
     this.isLoading.set(true);
 
-    this.preferencesService.getAllowedPreferences().subscribe({
-      next: () => {
-        const favoriteFoods: Food[] = [];
-        const allowedMap = this.preferencesService.allowedFoods();
+    this.preferencesService.getAllowedFoodsFull().subscribe({
+      next: (foods) => {
+        this.favoritesCache.set(foods);
+        this.setFoods(foods);
 
-        const yehFoods = this.yehApprovedCache();
-        for (const food of yehFoods) {
-          if (allowedMap.has(food.id)) {
-            favoriteFoods.push(food);
-          }
-        }
-
-        this.favoritesCache.set(favoriteFoods);
-        this.setFoods(favoriteFoods);
-
-        if (favoriteFoods.length > 0) {
+        if (foods.length > 0) {
           this.selectFood(0, false);
         } else {
           this.selectedIndex.set(-1);
@@ -397,26 +387,16 @@ export class FoodsListComponent implements OnInit {
     });
   }
 
-  /** Load user's restricted foods from API */
+  /** Load user's restricted foods directly from API (full food objects via AllFoods view) */
   private loadRestricted(): void {
     this.isLoading.set(true);
 
-    this.preferencesService.getRestrictedPreferences().subscribe({
-      next: () => {
-        const restrictedFoods: Food[] = [];
-        const restrictedMap = this.preferencesService.restrictedFoods();
+    this.preferencesService.getRestrictedFoodsFull().subscribe({
+      next: (foods) => {
+        this.restrictedCache.set(foods);
+        this.setFoods(foods);
 
-        const yehFoods = this.yehApprovedCache();
-        for (const food of yehFoods) {
-          if (restrictedMap.has(food.id)) {
-            restrictedFoods.push(food);
-          }
-        }
-
-        this.restrictedCache.set(restrictedFoods);
-        this.setFoods(restrictedFoods);
-
-        if (restrictedFoods.length > 0) {
+        if (foods.length > 0) {
           this.selectFood(0, false);
         } else {
           this.selectedIndex.set(-1);
