@@ -12,7 +12,7 @@ import {
 export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6;
 export type FastingType = 'none' | '16_8' | '18_6' | '20_4' | 'omad';
 export type RepeatMeals = 1 | 2 | 3 | 4;
-export type FoodListSource = 'yeh_plus_myfoods' | 'yeh' | 'myfoods';
+export type FoodListSource = 'yeh' | 'myfoods';
 export type WeekStartDay = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
 
 export type { DailyGoals, PersonalInfo };
@@ -55,7 +55,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   dailyGoals: DEFAULT_DAILY_GOALS,
   eatingStartTime: '08:00',
   repeatMeals: 1,
-  foodListSource: 'yeh_plus_myfoods',
+  foodListSource: 'yeh',
   personalInfo: DEFAULT_PERSONAL_INFO,
   weekStartDay: 'sunday'
 };
@@ -695,11 +695,10 @@ export class PreferencesService {
     this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false });
   }
 
-  // Map API defaultFoodList string to FoodListSource (the old API used different values)
   private mapDefaultFoodList(value?: string): FoodListSource {
     switch (value) {
       case 'yeh_approved': return 'yeh';
-      case 'all_foods': return 'yeh_plus_myfoods';
+      case 'myfoods': return 'myfoods';
       default: return DEFAULT_PREFERENCES.foodListSource;
     }
   }
@@ -707,8 +706,7 @@ export class PreferencesService {
   private mapFoodListSourceToApi(value: FoodListSource): string {
     switch (value) {
       case 'yeh': return 'yeh_approved';
-      case 'yeh_plus_myfoods': return 'all_foods';
-      case 'myfoods': return 'all_foods';
+      case 'myfoods': return 'myfoods';
       default: return 'yeh_approved';
     }
   }

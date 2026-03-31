@@ -300,19 +300,10 @@ export class FoodsListComponent implements OnInit {
     if (this.showFilterRadios()) {
       this.prefsService.loadPreferences();
       const source = this.prefsService.foodListSource();
-      const initialFilters = new Set<string>();
-      if (source === 'yeh' || source === 'yeh_plus_myfoods') {
-        initialFilters.add('yeh-approved');
-      }
-      if (source === 'myfoods' || source === 'yeh_plus_myfoods') {
-        initialFilters.add('my-favorites');
-      }
-      if (initialFilters.size === 0) {
-        initialFilters.add('yeh-approved');
-      }
-      this.activeFilters.set(initialFilters);
-      this.activeFilter.set(initialFilters.has('yeh-approved') ? 'yeh-approved' : 'my-favorites');
-      this.isYehApproved.set(initialFilters.has('yeh-approved'));
+      const initialFilter = source === 'myfoods' ? 'my-favorites' : 'yeh-approved';
+      this.activeFilters.set(new Set([initialFilter]));
+      this.activeFilter.set(initialFilter as FoodFilterType);
+      this.isYehApproved.set(initialFilter === 'yeh-approved');
     } else {
       this.activeFilter.set('yeh-approved');
       this.isYehApproved.set(true);
@@ -481,44 +472,26 @@ export class FoodsListComponent implements OnInit {
     return this.activeFilters().has(filter);
   }
 
-  /** Toggle a filter checkbox */
+  /** Toggle a filter — single-select: clicking the active one deselects all */
   onFilterToggle(filter: string): void {
-    const next = new Set(this.activeFilters());
-    if (next.has(filter)) {
-      next.delete(filter);
-    } else {
-      next.add(filter);
-    }
-    this.activeFilters.set(next);
+    const wasActive = this.activeFilters().has(filter);
 
-    // Load the appropriate data based on active filters
-    this.searchQuery = '';
-    this.selectedIndex.set(-1);
-    const allFoods: Food[] = [];
-
-    if (next.size === 0) {
+    if (wasActive) {
+      // Deselect — no filter active
+      this.activeFilters.set(new Set());
+      this.activeFilter.set('clear');
+      this.isYehApproved.set(false);
+      this.searchQuery = '';
+      this.selectedIndex.set(-1);
       this.setFoods([]);
       return;
     }
 
-    // Use the last toggled filter to drive the primary view
-    if (next.has('yeh-approved')) {
-      this.activeFilter.set('yeh-approved');
-      this.isYehApproved.set(true);
-      if (this.yehApprovedCache().length > 0) {
-        this.setFoods(this.yehApprovedCache());
-      } else {
-        this.loadYehApprovedFoods();
-      }
-    } else if (next.has('my-favorites')) {
-      this.activeFilter.set('my-favorites');
-      this.isYehApproved.set(false);
-      this.loadFavorites();
-    } else if (next.has('my-restricted')) {
-      this.activeFilter.set('my-restricted');
-      this.isYehApproved.set(false);
-      this.loadRestricted();
-    }
+    // Select this one, deselect others
+    this.activeFilters.set(new Set([filter]));
+    this.searchQuery = '';
+    this.selectedIndex.set(-1);
+    this.onFilterChange(filter as FoodFilterType);
   }
 
   /** Handle search query changes */

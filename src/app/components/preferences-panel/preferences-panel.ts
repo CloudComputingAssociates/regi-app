@@ -367,13 +367,12 @@ import { MatIconModule } from '@angular/material/icon';
                     class="setting-select"
                     [ngModel]="userSettingsService.foodListSource()"
                     (ngModelChange)="onFoodListSourceChange($event)">
-                    <option value="yeh_plus_myfoods">YEH+MyFoods</option>
                     <option value="yeh">YEH</option>
                     <option value="myfoods">MyFoods</option>
                   </select>
                   <span class="info-icon"
                         #foodsTooltip="matTooltip"
-                        matTooltip="Customize MyFoods list on the Foods tab, or use the YEH Approved list, or both."
+                        matTooltip="Choose from YEH Approved foods, or your own list. Go to Food Preferences panel, select YEH as a starter list and favorite (star) the ones you like. Click restricted on foods you cannot have."
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
                         (click)="foodsTooltip.toggle()">&#9432;</span>
