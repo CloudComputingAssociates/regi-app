@@ -10,6 +10,7 @@ import { FoodsService } from '../../services/foods.service';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { TabService } from '../../services/tab.service';
+import { PreferencesService } from '../../services/preferences.service';
 import { Food } from '../../models/food.model';
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -198,6 +199,7 @@ export class FoodsListComponent implements OnInit {
   protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
   private tabService = inject(TabService);
+  private prefsService = inject(PreferencesService);
 
   // Inputs
   mode = input<'search' | 'display'>('search');
@@ -294,12 +296,34 @@ export class FoodsListComponent implements OnInit {
   private readonly swipeTimeLimit = 500;
 
   ngOnInit(): void {
-    // Always start with YEH Approved filter
-    this.activeFilter.set('yeh-approved');
-    this.isYehApproved.set(true);
+    // Set initial filter checkboxes from foodListSource setting
+    if (this.showFilterRadios()) {
+      this.prefsService.loadPreferences();
+      const source = this.prefsService.foodListSource();
+      const initialFilters = new Set<string>();
+      if (source === 'yeh' || source === 'yeh_plus_myfoods') {
+        initialFilters.add('yeh-approved');
+      }
+      if (source === 'myfoods' || source === 'yeh_plus_myfoods') {
+        initialFilters.add('my-favorites');
+      }
+      if (initialFilters.size === 0) {
+        initialFilters.add('yeh-approved');
+      }
+      this.activeFilters.set(initialFilters);
+      this.activeFilter.set(initialFilters.has('yeh-approved') ? 'yeh-approved' : 'my-favorites');
+      this.isYehApproved.set(initialFilters.has('yeh-approved'));
+    } else {
+      this.activeFilter.set('yeh-approved');
+      this.isYehApproved.set(true);
+    }
 
     if (this.mode() === 'search') {
-      this.loadYehApprovedFoods();
+      if (this.isYehApproved()) {
+        this.loadYehApprovedFoods();
+      } else {
+        this.loadFavorites();
+      }
 
       // Load user preferences if showing preference icons
       if (this.showPreferenceIcons()) {
