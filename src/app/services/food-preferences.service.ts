@@ -23,6 +23,7 @@ interface AllFoodRow {
   description: string;
   shortDescription?: string;
   categoryId?: number;
+  categoryName?: string;
   dataSource?: string;
   servingSizeMultiplicand?: number;
   servingUnit?: string;
@@ -424,6 +425,7 @@ export class FoodPreferencesService {
       id: row.foodSource === 'user' ? -row.foodId : row.foodId,
       description: row.description,
       shortDescription: row.shortDescription,
+      categoryName: row.categoryName,
       foodRequestType: 'unknown',
       dataSource: row.dataSource ?? (row.foodSource === 'user' ? 'user' : 'USDA-FNDDS'),
       yehApproved: row.yehApproved,
