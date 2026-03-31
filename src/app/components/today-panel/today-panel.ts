@@ -96,10 +96,10 @@ interface FoodPopup {
               RegiMenu<sup class="sm">SM</sup> generated for {{ userName$ | async }}
             </div>
             <div class="report-totals">
-              Actual Daily Totals: {{ activeTotals().calories }} calories |
-              {{ activeTotals().protein }}g protein ({{ activeTotals().proteinPct }}%) |
-              {{ activeTotals().fat }}g fat ({{ activeTotals().fatPct }}%) |
-              {{ activeTotals().carbs }}g carbs ({{ activeTotals().carbsPct }}%)
+              Actual Daily Totals: {{ plannedTotals().calories }} calories |
+              {{ plannedTotals().protein }}g protein ({{ plannedTotals().proteinPct }}%) |
+              {{ plannedTotals().fat }}g fat ({{ plannedTotals().fatPct }}%) |
+              {{ plannedTotals().carbs }}g carbs ({{ plannedTotals().carbsPct }}%)
             </div>
           </div>
 
@@ -114,10 +114,10 @@ interface FoodPopup {
                 <span class="meal-title-line">{{ meal.time }} Meal {{ meal.slot }} - {{ meal.name }}</span>
               </div>
               <div class="meal-totals">
-                Total: {{ getMealActiveTotals(meal).calories }} cal |
-                {{ getMealActiveTotals(meal).protein }}g protein |
-                {{ getMealActiveTotals(meal).fat }}g fat |
-                {{ getMealActiveTotals(meal).carbs }}g carbs
+                Total: {{ meal.totalCalories }} cal |
+                {{ meal.totalProtein }}g protein |
+                {{ meal.totalFat }}g fat |
+                {{ meal.totalCarbs }}g carbs
               </div>
 
               <!-- Food items -->
@@ -200,21 +200,16 @@ export class TodayPanelComponent implements OnInit {
   foodPopup = signal<FoodPopup | null>(null);
   showGoodJob = signal(false);
 
-  // Computed active totals (adjusted for unchecked items)
-  activeTotals = computed(() => {
-    const checked = this.checkedItems();
+  // Planned totals (all items, regardless of check state)
+  plannedTotals = computed(() => {
     const meals = this.mealGroups();
     let cal = 0, pro = 0, fat = 0, carbs = 0;
 
     for (const meal of meals) {
-      for (const item of meal.items) {
-        if (checked.has(item.id)) {
-          cal += item.calories ?? 0;
-          pro += Math.round(item.proteinG ?? 0);
-          fat += Math.round(item.fatG ?? 0);
-          carbs += Math.round(item.carbG ?? 0);
-        }
-      }
+      cal += meal.totalCalories;
+      pro += meal.totalProtein;
+      fat += meal.totalFat;
+      carbs += meal.totalCarbs;
     }
 
     const total = pro * 4 + fat * 9 + carbs * 4;
