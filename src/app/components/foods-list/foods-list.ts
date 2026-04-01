@@ -303,14 +303,14 @@ export class FoodsListComponent implements OnInit {
   private readonly swipeThreshold = 0.35;
   private readonly swipeTimeLimit = 500;
 
-  // React to foodListSource preference changes (handles refresh race condition
-  // where settings load after this component initializes)
+  // React to foodListSource preference changes AFTER initial load.
+  // Handles the refresh race condition where settings load after this component initializes.
   private foodSourceEffect = effect(() => {
     if (!this.showFilterRadios()) return;
     const source = this.prefsService.foodListSource();
     const filter = source === 'myfoods' ? 'my-favorites' : 'yeh-approved';
 
-    // Only update if the filter actually changed
+    // Only react to actual changes after init
     if (this.activeFilter() === filter) return;
 
     this.activeFilters.set(new Set([filter]));
@@ -327,17 +327,24 @@ export class FoodsListComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    // Set initial filter if not using filter radios (no preference to watch)
-    if (!this.showFilterRadios()) {
+    if (this.showFilterRadios()) {
+      // Read current preference (may still be default if settings haven't loaded yet)
+      const source = this.prefsService.foodListSource();
+      const initialFilter = source === 'myfoods' ? 'my-favorites' : 'yeh-approved';
+      this.activeFilters.set(new Set([initialFilter]));
+      this.activeFilter.set(initialFilter as FoodFilterType);
+      this.isYehApproved.set(initialFilter === 'yeh-approved');
+    } else {
       this.activeFilter.set('yeh-approved');
       this.isYehApproved.set(true);
     }
 
     if (this.mode() === 'search') {
-      // If filter radios are shown, the effect above handles initial load.
-      // Otherwise, load YEH approved foods directly.
-      if (!this.showFilterRadios()) {
+      // Always load the initial list based on active filter
+      if (this.isYehApproved()) {
         this.loadYehApprovedFoods();
+      } else {
+        this.loadFavorites();
       }
 
       // Load user preferences if showing preference icons
