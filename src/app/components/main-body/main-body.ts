@@ -64,37 +64,40 @@ import { NotificationComponent } from '../notification/notification';
                 </span>
               </ng-template>
 
-              <div class="tab-content">
-                @if (tab.id === 'today') {
-                  <app-today-panel />
-                } @else if (tab.id === 'chat') {
-                  <app-chat />
-                } @else if (tab.id === 'meal-planning') {
-                  <app-regimenu-panel />
-                } @else if (tab.id === 'foods') {
-                  <app-foods-panel />
-                } @else if (tab.id === 'shop') {
-                  <app-shopping-panel />
-                } @else if (tab.id === 'review') {
-                  <app-week-plan-panel />
-                } @else if (tab.id === 'preferences') {
-                  <app-preferences-panel />
-                } @else if (tab.id === 'account') {
-                  <app-account-panel />
-                } @else if (tab.id === 'help') {
-                  <div class="placeholder-content">
-                    <div class="action-buttons">
-                      <button
-                        class="icon-btn close-btn"
-                        (click)="closeTab('help')"
-                        title="Close">
-                        ✕
-                      </button>
+              <!-- Lazy: component only created when tab is first selected -->
+              <ng-template matTabContent>
+                <div class="tab-content">
+                  @if (tab.id === 'today') {
+                    <app-today-panel />
+                  } @else if (tab.id === 'chat') {
+                    <app-chat />
+                  } @else if (tab.id === 'meal-planning') {
+                    <app-regimenu-panel />
+                  } @else if (tab.id === 'foods') {
+                    <app-foods-panel />
+                  } @else if (tab.id === 'shop') {
+                    <app-shopping-panel />
+                  } @else if (tab.id === 'review') {
+                    <app-week-plan-panel />
+                  } @else if (tab.id === 'preferences') {
+                    <app-preferences-panel />
+                  } @else if (tab.id === 'account') {
+                    <app-account-panel />
+                  } @else if (tab.id === 'help') {
+                    <div class="placeholder-content">
+                      <div class="action-buttons">
+                        <button
+                          class="icon-btn close-btn"
+                          (click)="closeTab('help')"
+                          title="Close">
+                          ✕
+                        </button>
+                      </div>
+                      <p class="placeholder-text">Help - Coming soon</p>
                     </div>
-                    <p class="placeholder-text">Help - Coming soon</p>
-                  </div>
-                }
-              </div>
+                  }
+                </div>
+              </ng-template>
             </mat-tab>
           }
 
