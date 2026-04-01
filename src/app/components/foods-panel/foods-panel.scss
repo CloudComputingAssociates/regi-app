@@ -376,20 +376,60 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
   }
 
-  .drop-icon {
-    font-size: 22px;
-    font-weight: 300;
-    color: rgba(255, 255, 255, 0.3);
+  .browse-btn {
+    background: linear-gradient(180deg, #555 0%, #3a3a3a 100%);
+    border: 1px solid #6a6a6a;
+    border-bottom: 2px solid #1a1a1a;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 11px;
+    font-family: inherit;
+    padding: 4px 12px;
+    cursor: pointer;
+    outline: none;
+
+    &:hover {
+      background: linear-gradient(180deg, #606060 0%, #454545 100%);
+    }
+  }
+
+  .camera-btn {
+    background: none;
+    border: 1px solid #555;
+    border-radius: 6px;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px 10px;
     line-height: 1;
+
+    &:hover {
+      border-color: #4da6ff;
+      background: rgba(77, 166, 255, 0.1);
+    }
   }
 
   .drop-label {
     color: rgba(255, 255, 255, 0.35);
     font-size: 10px;
     text-align: center;
+  }
+
+  // Desktop: has a fine pointer (mouse) — show browse button, hide camera
+  // Mobile: no fine pointer (touch) — show camera button, hide browse
+  .desktop-only { display: none; }
+  .mobile-only { display: inline-flex; }
+
+  @media (hover: hover) and (pointer: fine) {
+    .desktop-only { display: inline-flex; }
+    .mobile-only { display: none; }
+  }
+
+  &:focus {
+    border-color: #4da6ff;
+    outline: 1px solid rgba(77, 166, 255, 0.3);
   }
 }
 

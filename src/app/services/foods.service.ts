@@ -1,9 +1,16 @@
 // src/app/services/foods.service.ts
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { FoodSearchResponse } from '../models/food.model';
+
+export interface Category {
+  id: number;
+  name: string;
+  description?: string;
+  sortOrder: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -31,6 +38,31 @@ export class FoodsService {
   searchYehApprovedFoods(limit: number = 50): Observable<FoodSearchResponse> {
     const url = `${this.baseUrl}/foods/search/all/yehapproved?limit=${limit}`;
     return this.http.get<FoodSearchResponse>(url);
+  }
+
+  // Categories cache
+  private categoriesSignal = signal<Category[]>([]);
+  private categoriesLoaded = false;
+  readonly categories = this.categoriesSignal.asReadonly();
+
+  async loadCategories(): Promise<Category[]> {
+    if (this.categoriesLoaded) return this.categoriesSignal();
+    try {
+      const cats = await firstValueFrom(
+        this.http.get<Category[]>(`${this.baseUrl}/foods/categories`)
+      );
+      this.categoriesSignal.set(cats);
+      this.categoriesLoaded = true;
+      return cats;
+    } catch {
+      return [];
+    }
+  }
+
+  getCategoryName(categoryId: number | undefined | null): string | null {
+    if (!categoryId) return null;
+    const cat = this.categoriesSignal().find(c => c.id === categoryId);
+    return cat?.name ?? null;
   }
 
   /**

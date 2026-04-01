@@ -577,14 +577,14 @@
   border: 1px solid rgba(77, 166, 255, 0.3);
 }
 
-// Filter checkboxes
-.filter-checkbox-group {
+// Filter radio buttons (browse mode)
+.filter-radio-group {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
 }
 
-.filter-check {
+.filter-radio {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -595,25 +595,25 @@
   input {
     appearance: none;
     -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    border: 2px solid #ffffff;
-    border-radius: 3px;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #888;
+    border-radius: 50%;
     background: transparent;
     cursor: pointer;
     position: relative;
 
     &:checked {
-      background: #4da6ff;
       border-color: #4da6ff;
 
       &::after {
-        content: '✓';
-        color: #ffffff;
-        font-size: 12px;
-        font-weight: 700;
+        content: '';
+        width: 6px;
+        height: 6px;
+        background: #4da6ff;
+        border-radius: 50%;
         position: absolute;
-        top: -1px;
+        top: 2px;
         left: 2px;
       }
     }

@@ -9,6 +9,7 @@ import { FoodPreferencesService } from '../../services/food-preferences.service'
 import { NotificationService } from '../../services/notification.service';
 import { UserFoodService } from '../../services/user-food.service';
 import { ImageUploadService } from '../../services/image-upload.service';
+import { FoodsService, Category } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
 import { CreateUserFoodRequest } from '../../models/user-food.model';
 
@@ -94,6 +95,15 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
                 <input type="text" class="form-input" [(ngModel)]="newFood.shortDescription" placeholder="e.g., Greek Yogurt" />
               </div>
 
+              <div class="form-row">
+                <label>Category</label>
+                <select class="form-select" [(ngModel)]="newFood.categoryId">
+                  @for (cat of categories(); track cat.id) {
+                    <option [ngValue]="cat.id">{{ cat.name }}</option>
+                  }
+                </select>
+              </div>
+
               <div class="form-row-inline">
                 <div class="form-col">
                   <label>Serving Unit</label>
@@ -145,7 +155,6 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
                   <div class="drop-zone"
                     [class.has-image]="productImagePreview()"
                     tabindex="0"
-                    (click)="productImageInput.click()"
                     (dragover)="onDragOver($event)"
                     (drop)="onDrop($event, 'product')"
                     (paste)="onPaste($event, 'product')">
@@ -154,8 +163,10 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
                       <button type="button" class="remove-img-btn" (click)="clearImage('product'); $event.stopPropagation()">✕</button>
                     } @else {
                       <div class="drop-placeholder">
-                        <span class="drop-icon">📷</span>
-                        <span class="drop-label">Tap for camera, drop, or paste</span>
+                        <button type="button" class="browse-btn desktop-only" (click)="productImageInput.click(); $event.stopPropagation()">Browse</button>
+                        <button type="button" class="camera-btn mobile-only" (click)="productImageInput.click(); $event.stopPropagation()">📷</button>
+                        <span class="drop-label desktop-only">Drop or Ctrl+V to paste</span>
+                        <span class="drop-label mobile-only">Tap 📷 or paste</span>
                       </div>
                     }
                   </div>
@@ -168,7 +179,6 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
                   <div class="drop-zone"
                     [class.has-image]="nutritionImagePreview()"
                     tabindex="0"
-                    (click)="nutritionImageInput.click()"
                     (dragover)="onDragOver($event)"
                     (drop)="onDrop($event, 'nutrition')"
                     (paste)="onPaste($event, 'nutrition')">
@@ -177,8 +187,10 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
                       <button type="button" class="remove-img-btn" (click)="clearImage('nutrition'); $event.stopPropagation()">✕</button>
                     } @else {
                       <div class="drop-placeholder">
-                        <span class="drop-icon">📷</span>
-                        <span class="drop-label">Tap for camera, drop, or paste</span>
+                        <button type="button" class="browse-btn desktop-only" (click)="nutritionImageInput.click(); $event.stopPropagation()">Browse</button>
+                        <button type="button" class="camera-btn mobile-only" (click)="nutritionImageInput.click(); $event.stopPropagation()">📷</button>
+                        <span class="drop-label desktop-only">Drop or Ctrl+V to paste</span>
+                        <span class="drop-label mobile-only">Tap 📷 or paste</span>
                       </div>
                     }
                   </div>
@@ -208,7 +220,10 @@ export class FoodsPanelComponent {
   private notificationService = inject(NotificationService);
   private userFoodService = inject(UserFoodService);
   private imageUploadService = inject(ImageUploadService);
+  private foodsService = inject(FoodsService);
   private cdr = inject(ChangeDetectorRef);
+
+  categories = signal<Category[]>([]);
 
   isSaving = signal(false);
   showAddDialog = signal(false);
@@ -252,6 +267,10 @@ export class FoodsPanelComponent {
     this.sourceFoodId.set(null);
     this.clearImage('product');
     this.clearImage('nutrition');
+    this.foodsService.loadCategories().then(cats => {
+      this.categories.set(cats);
+      this.cdr.markForCheck();
+    });
     this.showAddDialog.set(true);
   }
 
@@ -403,6 +422,28 @@ export class FoodsPanelComponent {
     this.newFood = this.emptyFood();
     this.clearImage('product');
     this.clearImage('nutrition');
+
+    // Ensure categories are loaded for the dropdown
+    this.foodsService.loadCategories().then(cats => {
+      this.categories.set(cats);
+
+      if (event.suggestedFood) {
+        // Map categoryName to categoryId
+        const catName = event.suggestedFood.categoryName;
+        if (catName) {
+          const match = cats.find(c => c.name === catName);
+          if (match) this.newFood.categoryId = match.id;
+        }
+        // Default to first category if no match
+        if (!this.newFood.categoryId && cats.length > 0) {
+          this.newFood.categoryId = cats[0].id;
+        }
+      } else if (cats.length > 0) {
+        this.newFood.categoryId = cats[0].id;
+      }
+
+      this.cdr.markForCheck();
+    });
 
     if (event.suggestedFood) {
       const f = event.suggestedFood;

@@ -86,24 +86,24 @@ export interface FoodNotFoundEvent {
           }
         </div>
 
-        <!-- Filter Checkboxes -->
+        <!-- Filter Radio Buttons (browse mode) -->
         @if (showFilterRadios()) {
           <div class="filter-row">
-            <div class="filter-checkbox-group">
-              <label class="filter-check">
-                <input type="checkbox" [checked]="isFilterActive('my-favorites')" (change)="onFilterToggle('my-favorites')" />
+            <div class="filter-radio-group">
+              <label class="filter-radio">
+                <input type="radio" name="foodFilter" [checked]="activeFilter() === 'my-favorites'" (change)="onFilterChange('my-favorites')" />
                 <span>MyFoods</span>
               </label>
-              <label class="filter-check">
-                <input type="checkbox" [checked]="isFilterActive('my-restricted')" (change)="onFilterToggle('my-restricted')" />
+              <label class="filter-radio">
+                <input type="radio" name="foodFilter" [checked]="activeFilter() === 'my-restricted'" (change)="onFilterChange('my-restricted')" />
                 <span>Restricted</span>
               </label>
-              <label class="filter-check">
-                <input type="checkbox" [checked]="isFilterActive('community')" (change)="onFilterToggle('community')" />
+              <label class="filter-radio">
+                <input type="radio" name="foodFilter" [checked]="activeFilter() === 'community'" (change)="onFilterChange('community')" />
                 <span>Community</span>
               </label>
-              <label class="filter-check">
-                <input type="checkbox" [checked]="isFilterActive('yeh-approved')" (change)="onFilterToggle('yeh-approved')" />
+              <label class="filter-radio">
+                <input type="radio" name="foodFilter" [checked]="activeFilter() === 'yeh-approved'" (change)="onFilterChange('yeh-approved')" />
                 <span>YEH Approved</span>
               </label>
             </div>
@@ -439,6 +439,7 @@ export class FoodsListComponent implements OnInit {
   private async loadCommunity(): Promise<void> {
     this.isLoading.set(true);
     try {
+      await this.foodsService.loadCategories();
       const userFoods = await this.userFoodService.listCommunityFoods();
       const foods = userFoods.map(uf => this.userFoodToFood(uf));
       this.communityCache.set(foods);
@@ -463,7 +464,7 @@ export class FoodsListComponent implements OnInit {
       description: uf.description,
       shortDescription: uf.shortDescription,
       foodRequestType: 'unknown',
-      categoryName: null,
+      categoryName: this.foodsService.getCategoryName(uf.categoryId),
       dataSource: uf.dataSource || 'user',
       yehApproved: false,
       glycemicIndex: uf.glycemicIndex ?? 0,
@@ -490,9 +491,10 @@ export class FoodsListComponent implements OnInit {
     };
   }
 
-  /** Handle filter radio change */
+  /** Handle filter radio change (browse mode) */
   onFilterChange(filter: FoodFilterType): void {
     this.activeFilter.set(filter);
+    this.activeFilters.set(new Set([filter]));
     this.searchQuery = '';
     this.selectedIndex.set(-1);
 
