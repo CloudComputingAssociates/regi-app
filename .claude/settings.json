@@ -1,13 +1,36 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc:*)",
-      "Bash(pushd \"c:\\\\git\\\\yeh-api\")",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(ng *)",
+      "Bash(go *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git log *)",
+      "Bash(git branch *)",
+      "Bash(git checkout *)",
+      "Bash(git fetch *)",
+      "Bash(git pull *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(pushd *)",
       "Bash(popd)",
-      "Read(//c/git/yeh-api/api/**)",
-      "Read(//c/git/yeh-api/**)",
-      "Bash(grep -l \"image\" /c/git/yeh-api/handlers/*.go)",
-      "Bash(grep -r image /c/git/yeh-api/api --include=*.go)"
+      "Bash(pwd)",
+      "Bash(echo *)",
+      "Read(//c/git/**)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)"
     ],
     "additionalDirectories": [
       "c:\\git\\foods-tool-ui\\src\\app\\models",
