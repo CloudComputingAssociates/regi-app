@@ -365,6 +365,10 @@ export class FoodsListComponent implements OnInit {
         return 'No favorite foods';
       case 'my-restricted':
         return 'No restricted foods';
+      case 'community':
+        return 'No community foods';
+      case 'yeh-approved':
+        return 'No YEH approved foods';
       default:
         return '{food count: 0}';
     }
@@ -504,6 +508,7 @@ export class FoodsListComponent implements OnInit {
     this.activeFilters.set(new Set([filter]));
     this.searchQuery = '';
     this.selectedIndex.set(-1);
+    this.setFoods([]);
 
     switch (filter) {
       case 'yeh-approved':
