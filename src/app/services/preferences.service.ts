@@ -2,7 +2,7 @@
 // Manages user preferences state (regiMenu, dailyGoals, defaultFoodList, personalInfo).
 // Initializes from SettingsService cached data (consolidated GET at startup).
 // Saves via SettingsService individual PUT endpoints.
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { SettingsService } from './settings.service';
 import {
   DailyGoals, RegiMenuSettings, PersonalInfo
@@ -79,6 +79,14 @@ export class PreferencesService {
   private loadedSignal = signal(false);
   private dirtyGroups = signal<DirtyGroups>({
     regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false
+  });
+
+  // Auto-load preferences when settings arrive (handles refresh race condition)
+  private settingsWatcher = effect(() => {
+    const all = this.settingsService.allSettings();
+    if (all && !this.loadedSignal()) {
+      this.loadPreferences();
+    }
   });
 
   // Unit preference for height/weight display

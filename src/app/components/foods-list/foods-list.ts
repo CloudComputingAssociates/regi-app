@@ -1,5 +1,5 @@
 // src/app/components/foods-list/foods-list.ts
-import { Component, ChangeDetectionStrategy, signal, computed, output, input, inject, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, output, input, inject, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -295,25 +295,41 @@ export class FoodsListComponent implements OnInit {
   private readonly swipeThreshold = 0.35;
   private readonly swipeTimeLimit = 500;
 
+  // React to foodListSource preference changes (handles refresh race condition
+  // where settings load after this component initializes)
+  private foodSourceEffect = effect(() => {
+    if (!this.showFilterRadios()) return;
+    const source = this.prefsService.foodListSource();
+    const filter = source === 'myfoods' ? 'my-favorites' : 'yeh-approved';
+
+    // Only update if the filter actually changed
+    if (this.activeFilter() === filter) return;
+
+    this.activeFilters.set(new Set([filter]));
+    this.activeFilter.set(filter as FoodFilterType);
+    this.isYehApproved.set(filter === 'yeh-approved');
+
+    if (this.mode() === 'search') {
+      if (filter === 'yeh-approved') {
+        this.loadYehApprovedFoods();
+      } else {
+        this.loadFavorites();
+      }
+    }
+  });
+
   ngOnInit(): void {
-    // Set initial filter checkboxes from foodListSource setting
-    if (this.showFilterRadios()) {
-      this.prefsService.loadPreferences();
-      const source = this.prefsService.foodListSource();
-      const initialFilter = source === 'myfoods' ? 'my-favorites' : 'yeh-approved';
-      this.activeFilters.set(new Set([initialFilter]));
-      this.activeFilter.set(initialFilter as FoodFilterType);
-      this.isYehApproved.set(initialFilter === 'yeh-approved');
-    } else {
+    // Set initial filter if not using filter radios (no preference to watch)
+    if (!this.showFilterRadios()) {
       this.activeFilter.set('yeh-approved');
       this.isYehApproved.set(true);
     }
 
     if (this.mode() === 'search') {
-      if (this.isYehApproved()) {
+      // If filter radios are shown, the effect above handles initial load.
+      // Otherwise, load YEH approved foods directly.
+      if (!this.showFilterRadios()) {
         this.loadYehApprovedFoods();
-      } else {
-        this.loadFavorites();
       }
 
       // Load user preferences if showing preference icons
