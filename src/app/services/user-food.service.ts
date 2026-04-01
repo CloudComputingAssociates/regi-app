@@ -64,6 +64,17 @@ export class UserFoodService {
     }
   }
 
+  async listCommunityFoods(): Promise<UserFood[]> {
+    try {
+      const resp = await firstValueFrom(
+        this.http.get<ListUserFoodsResponse>(`${this.baseUrl}/community`)
+      );
+      return resp.foods || [];
+    } catch {
+      return [];
+    }
+  }
+
   async deleteUserFood(id: number): Promise<boolean> {
     try {
       await firstValueFrom(
