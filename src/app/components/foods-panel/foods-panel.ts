@@ -65,16 +65,26 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
             <div class="dialog-header">
               <span class="dialog-title">Add My Food</span>
               <div class="dialog-header-right">
-                @if (sourceFoodId()) {
-                  <span class="source-food-id">{{ sourceFoodId() }}</span>
-                }
+                <button class="icon-btn save-btn has-changes"
+                  [disabled]="!canSubmit() || isSubmitting()"
+                  (click)="submitFood()">
+                  @if (isSubmitting()) {
+                    <span class="save-spinner"></span>
+                  } @else {
+                    ✓
+                  }
+                </button>
                 <button class="dialog-close" (click)="closeAddDialog()">✕</button>
               </div>
             </div>
 
             <div class="dialog-body">
               <div class="form-row">
-                <label>Description <span class="required">*</span></label>
+                <label>Description <span class="required">*</span>
+                  @if (sourceFoodId()) {
+                    <span class="source-food-id">({{ sourceFoodId() }})</span>
+                  }
+                </label>
                 <input type="text" class="form-input" [(ngModel)]="newFood.description" placeholder="e.g., Organic Greek Yogurt" />
               </div>
 
@@ -94,7 +104,7 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
                 </div>
                 <div class="form-col">
                   <label>Grams/Unit</label>
-                  <input type="number" class="form-input" [(ngModel)]="newFood.gramsPerServingUnit" placeholder="0" />
+                  <input type="number" class="form-input" [(ngModel)]="newFood.servingGramsPerUnit" placeholder="0" />
                 </div>
               </div>
 
@@ -168,23 +178,12 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
 
               <div class="share-row">
                 <label class="share-check">
-                  <input type="checkbox" [(ngModel)]="newFood.shareWithCommunity" />
+                  <input type="checkbox" [(ngModel)]="newFood.shareCandidate" />
                   <span>Share w/ YEH Community</span>
                 </label>
               </div>
             </div>
 
-            <div class="dialog-footer">
-              <button class="cancel-btn" (click)="closeAddDialog()">Cancel</button>
-              <button class="submit-btn" [disabled]="!canSubmit() || isSubmitting()"
-                (click)="submitFood()">
-                @if (isSubmitting()) {
-                  Adding...
-                } @else {
-                  Add Food
-                }
-              </button>
-            </div>
           </div>
         </div>
       }
@@ -213,8 +212,8 @@ export class FoodsPanelComponent {
       description: '',
       shortDescription: '',
       servingUnit: 'whole',
-      gramsPerServingUnit: 0,
-      shareWithCommunity: false,
+      servingGramsPerUnit: 0,
+      shareCandidate: false,
       calories: 0,
       proteinG: 0,
       totalFatG: 0,
@@ -340,7 +339,7 @@ export class FoodsPanelComponent {
       this.newFood.dietaryFiberG = nf?.dietaryFiberG ?? 0;
       this.newFood.sodiumMG = nf?.sodiumMG ?? 0;
       this.newFood.servingUnit = 'g';
-      this.newFood.gramsPerServingUnit = nf?.servingSizeG ?? 0;
+      this.newFood.servingGramsPerUnit = nf?.servingSizeG ?? 0;
       if (f.foodImageThumbnail) {
         this.newFood.foodImage = f.foodImageThumbnail;
       }
