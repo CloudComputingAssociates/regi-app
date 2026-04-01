@@ -8,6 +8,7 @@ import { FoodsListComponent, SelectedFoodEvent, FoodNotFoundEvent } from '../foo
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { UserFoodService } from '../../services/user-food.service';
+import { ImageUploadService } from '../../services/image-upload.service';
 import { TabService } from '../../services/tab.service';
 import { CreateUserFoodRequest } from '../../models/user-food.model';
 
@@ -65,7 +66,7 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
             <div class="dialog-header">
               <span class="dialog-title">Add My Food</span>
               <div class="dialog-header-right">
-                <button class="icon-btn save-btn has-changes"
+                <button class="dialog-ok-btn"
                   [disabled]="!canSubmit() || isSubmitting()"
                   (click)="submitFood()">
                   @if (isSubmitting()) {
@@ -141,38 +142,48 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
               <div class="image-section">
                 <div class="image-upload">
                   <label>Product Image</label>
-                  <div class="drop-zone" tabindex="0"
+                  <div class="drop-zone"
+                    [class.has-image]="productImagePreview()"
+                    tabindex="0"
+                    (click)="productImageInput.click()"
                     (dragover)="onDragOver($event)"
-                    (drop)="onDrop($event, 'foodImage')"
-                    (paste)="onPaste($event, 'foodImage')">
-                    <img [src]="newFood.foodImage || '/images/food-slug.png'" alt=""
-                      class="preview-img" [class.placeholder]="!newFood.foodImage" />
-                    <div class="drop-actions">
-                      <button type="button" class="upload-btn" (click)="productImageInput.click(); $event.stopPropagation()">📷</button>
-                      <span class="drop-hint">Drop, paste, or 📷</span>
-                    </div>
+                    (drop)="onDrop($event, 'product')"
+                    (paste)="onPaste($event, 'product')">
+                    @if (productImagePreview()) {
+                      <img [src]="productImagePreview()" alt="" class="preview-img" />
+                      <button type="button" class="remove-img-btn" (click)="clearImage('product'); $event.stopPropagation()">✕</button>
+                    } @else {
+                      <div class="drop-placeholder">
+                        <span class="drop-icon">📷</span>
+                        <span class="drop-label">Tap for camera, drop, or paste</span>
+                      </div>
+                    }
                   </div>
                   <input #productImageInput type="file" accept="image/*" capture="environment" hidden
-                    (change)="onImageSelected($event, 'foodImage')" />
+                    (change)="onImageSelected($event, 'product')" />
                 </div>
 
                 <div class="image-upload">
-                  <label>Nutrition Facts Label (Override)</label>
-                  <div class="drop-zone" tabindex="0"
+                  <label>Nutrition Label <span class="label-hint">(auto-reads values)</span></label>
+                  <div class="drop-zone"
+                    [class.has-image]="nutritionImagePreview()"
+                    tabindex="0"
+                    (click)="nutritionImageInput.click()"
                     (dragover)="onDragOver($event)"
-                    (drop)="onDrop($event, 'nutritionFactsImage')"
-                    (paste)="onPaste($event, 'nutritionFactsImage')">
-                    @if (newFood.nutritionFactsImage) {
-                      <img [src]="newFood.nutritionFactsImage" alt="" class="preview-img" />
+                    (drop)="onDrop($event, 'nutrition')"
+                    (paste)="onPaste($event, 'nutrition')">
+                    @if (nutritionImagePreview()) {
+                      <img [src]="nutritionImagePreview()" alt="" class="preview-img" />
+                      <button type="button" class="remove-img-btn" (click)="clearImage('nutrition'); $event.stopPropagation()">✕</button>
                     } @else {
-                      <div class="drop-actions">
-                        <button type="button" class="upload-btn" (click)="nutritionImageInput.click(); $event.stopPropagation()">📷</button>
-                        <span class="drop-hint">Drop, paste, or 📷</span>
+                      <div class="drop-placeholder">
+                        <span class="drop-icon">📷</span>
+                        <span class="drop-label">Tap for camera, drop, or paste</span>
                       </div>
                     }
                   </div>
                   <input #nutritionImageInput type="file" accept="image/*" capture="environment" hidden
-                    (change)="onImageSelected($event, 'nutritionFactsImage')" />
+                    (change)="onImageSelected($event, 'nutrition')" />
                 </div>
               </div>
 
@@ -196,12 +207,21 @@ export class FoodsPanelComponent {
   protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
   private userFoodService = inject(UserFoodService);
+  private imageUploadService = inject(ImageUploadService);
   private cdr = inject(ChangeDetectorRef);
 
   isSaving = signal(false);
   showAddDialog = signal(false);
   isSubmitting = signal(false);
   sourceFoodId = signal<number | null>(null);
+
+  // File objects for upload to yeh-image
+  productImageFile = signal<File | null>(null);
+  nutritionImageFile = signal<File | null>(null);
+
+  // Local previews (object URLs)
+  productImagePreview = signal<string | null>(null);
+  nutritionImagePreview = signal<string | null>(null);
 
   servingUnits = SERVING_UNITS;
 
@@ -230,26 +250,31 @@ export class FoodsPanelComponent {
   openAddDialog(): void {
     this.newFood = this.emptyFood();
     this.sourceFoodId.set(null);
+    this.clearImage('product');
+    this.clearImage('nutrition');
     this.showAddDialog.set(true);
   }
 
   closeAddDialog(): void {
+    this.revokePreviewUrls();
     this.showAddDialog.set(false);
   }
 
-  onImageSelected(event: Event, field: 'foodImage' | 'nutritionFactsImage'): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (file) this.readImageFile(file, field);
+  onImageSelected(event: Event, type: 'product' | 'nutrition'): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) this.setImageFile(file, type);
+    input.value = '';
   }
 
-  onPaste(event: ClipboardEvent, field: 'foodImage' | 'nutritionFactsImage'): void {
+  onPaste(event: ClipboardEvent, type: 'product' | 'nutrition'): void {
     const items = event.clipboardData?.items;
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.startsWith('image/')) {
         event.preventDefault();
         const file = items[i].getAsFile();
-        if (file) this.readImageFile(file, field);
+        if (file) this.setImageFile(file, type);
         return;
       }
     }
@@ -260,42 +285,93 @@ export class FoodsPanelComponent {
     event.stopPropagation();
   }
 
-  onDrop(event: DragEvent, field: 'foodImage' | 'nutritionFactsImage'): void {
+  onDrop(event: DragEvent, type: 'product' | 'nutrition'): void {
     event.preventDefault();
     event.stopPropagation();
     const file = event.dataTransfer?.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      this.readImageFile(file, field);
+      this.setImageFile(file, type);
     }
   }
 
-  private readImageFile(file: File, field: 'foodImage' | 'nutritionFactsImage'): void {
-    const reader = new FileReader();
-    reader.onload = () => {
-      (this.newFood as any)[field] = reader.result as string;
-      this.cdr.markForCheck();
-    };
-    reader.readAsDataURL(file);
+  clearImage(type: 'product' | 'nutrition'): void {
+    if (type === 'product') {
+      if (this.productImagePreview()) URL.revokeObjectURL(this.productImagePreview()!);
+      this.productImageFile.set(null);
+      this.productImagePreview.set(null);
+    } else {
+      if (this.nutritionImagePreview()) URL.revokeObjectURL(this.nutritionImagePreview()!);
+      this.nutritionImageFile.set(null);
+      this.nutritionImagePreview.set(null);
+    }
+  }
+
+  private setImageFile(file: File, type: 'product' | 'nutrition'): void {
+    const previewUrl = URL.createObjectURL(file);
+    if (type === 'product') {
+      if (this.productImagePreview()) URL.revokeObjectURL(this.productImagePreview()!);
+      this.productImageFile.set(file);
+      this.productImagePreview.set(previewUrl);
+    } else {
+      if (this.nutritionImagePreview()) URL.revokeObjectURL(this.nutritionImagePreview()!);
+      this.nutritionImageFile.set(file);
+      this.nutritionImagePreview.set(previewUrl);
+    }
+    this.cdr.markForCheck();
+  }
+
+  private revokePreviewUrls(): void {
+    if (this.productImagePreview()) URL.revokeObjectURL(this.productImagePreview()!);
+    if (this.nutritionImagePreview()) URL.revokeObjectURL(this.nutritionImagePreview()!);
+    this.productImageFile.set(null);
+    this.nutritionImageFile.set(null);
+    this.productImagePreview.set(null);
+    this.nutritionImagePreview.set(null);
   }
 
   async submitFood(): Promise<void> {
     if (!this.canSubmit()) return;
     this.isSubmitting.set(true);
 
-    // Default to slug if no product image uploaded
-    if (!this.newFood.foodImage) {
-      this.newFood.foodImage = '/images/food-slug.png';
-    }
+    try {
+      // 1. Create the UserFood record (no image data — just metadata + nutrition)
+      const req = { ...this.newFood } as CreateUserFoodRequest;
+      delete (req as any).foodImage;
+      delete (req as any).nutritionFactsImage;
 
-    const req = this.newFood as CreateUserFoodRequest;
-    const result = await this.userFoodService.createUserFood(req);
+      const result = await this.userFoodService.createUserFood(req);
+      if (!result) {
+        this.notificationService.show('Failed to add food', 'error');
+        return;
+      }
 
-    this.isSubmitting.set(false);
-    if (result) {
+      const foodId = result.id;
+
+      // 2. Upload images to yeh-image service (source=user)
+      const uploads: Promise<unknown>[] = [];
+
+      if (this.productImageFile()) {
+        uploads.push(
+          this.imageUploadService.uploadProductImage(foodId, this.productImageFile()!).catch(() => {
+            this.notificationService.show('Food added, but product image upload failed', 'warning');
+          })
+        );
+      }
+
+      if (this.nutritionImageFile()) {
+        uploads.push(
+          this.imageUploadService.uploadNutritionImage(foodId, this.nutritionImageFile()!).catch(() => {
+            this.notificationService.show('Food added, but nutrition label upload failed', 'warning');
+          })
+        );
+      }
+
+      await Promise.all(uploads);
+
       this.notificationService.show('Food added', 'success');
       this.closeAddDialog();
-    } else {
-      this.notificationService.show('Failed to add food', 'error');
+    } finally {
+      this.isSubmitting.set(false);
     }
   }
 
@@ -325,6 +401,8 @@ export class FoodsPanelComponent {
 
   onFoodNotFound(event: FoodNotFoundEvent): void {
     this.newFood = this.emptyFood();
+    this.clearImage('product');
+    this.clearImage('nutrition');
 
     if (event.suggestedFood) {
       const f = event.suggestedFood;
@@ -340,9 +418,6 @@ export class FoodsPanelComponent {
       this.newFood.sodiumMG = nf?.sodiumMG ?? 0;
       this.newFood.servingUnit = 'g';
       this.newFood.servingGramsPerUnit = nf?.servingSizeG ?? 0;
-      if (f.foodImageThumbnail) {
-        this.newFood.foodImage = f.foodImageThumbnail;
-      }
     } else {
       this.newFood.description = event.searchQuery;
     }
