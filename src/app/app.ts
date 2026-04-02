@@ -102,7 +102,7 @@ export class AppComponent implements OnInit, OnDestroy {
         if (localState) {
           try {
             const parsed = JSON.parse(localState);
-            this.tabService.restoreFromSettings(parsed.defaultTabs, parsed.activeTabId);
+            this.tabService.restoreFromSettings(parsed.defaultTabs, 'today');
           } catch {
             this.tabService.resetToChat();
           }
