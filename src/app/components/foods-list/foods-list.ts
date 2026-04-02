@@ -291,6 +291,14 @@ export class FoodsListComponent implements OnInit {
 
   private setFoods(foods: Food[]): void {
     this.foods.set(foods);
+
+    // Collapse all, then expand the first category that has foods
+    const allCollapsed = new Set(CATEGORY_ORDER);
+    if (foods.length > 0) {
+      const firstCategory = foods[0].categoryName || 'Uncategorized';
+      allCollapsed.delete(firstCategory);
+    }
+    this.collapsedCategories.set(allCollapsed);
   }
 
   toggleCollapse(category: string): void {
