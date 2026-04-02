@@ -166,8 +166,8 @@ interface FoodPopup {
       @if (showGoodJob()) {
         <div class="food-popup-overlay" (click)="dismissGoodJob()">
           <div class="good-job-dialog" (click)="$event.stopPropagation()">
-            <p class="good-job-text">Good Job! Logging the day's meals.</p>
-            <button class="dismiss-btn" (click)="confirmLog()">OK</button>
+            <p class="good-job-text">Good Job! All meals checked off.</p>
+            <button class="dismiss-btn" (click)="dismissGoodJob()">OK</button>
           </div>
         </div>
       }
@@ -198,7 +198,6 @@ export class TodayPanelComponent implements OnInit {
   todayFormatted = signal('');
   hasPlan = signal(false);
   isFinalized = signal(false);
-  isLogging = signal(false);
 
   // Popups
   foodPopup = signal<FoodPopup | null>(null);
@@ -474,36 +473,8 @@ export class TodayPanelComponent implements OnInit {
     this.foodPopup.set(null);
   }
 
-  // --- Logging ---
-
-  async logTheDay(): Promise<void> {
-    if (this.allMealsAffirmed()) {
-      this.showGoodJob.set(true);
-    } else {
-      // Log anyway with what's checked
-      await this.doLog();
-    }
-  }
-
   dismissGoodJob(): void {
     this.showGoodJob.set(false);
-  }
-
-  async confirmLog(): Promise<void> {
-    this.showGoodJob.set(false);
-    await this.doLog();
-  }
-
-  private async doLog(): Promise<void> {
-    this.isLogging.set(true);
-    const success = await this.todayService.finalizeToday();
-    this.isLogging.set(false);
-    if (success) {
-      this.isFinalized.set(true);
-      this.notificationService.show('Day logged successfully', 'success');
-    } else {
-      this.notificationService.show('Failed to log the day', 'error');
-    }
   }
 
   closePanel(): void {
