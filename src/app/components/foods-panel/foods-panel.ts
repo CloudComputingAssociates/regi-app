@@ -70,6 +70,13 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
               </div>
             </div>
 
+            @if (isSubmitting()) {
+              <div class="submit-overlay">
+                <span class="submit-spinner"></span>
+                <span class="submit-text">Adding food...</span>
+              </div>
+            }
+
             <div class="dialog-body">
               <div class="form-row">
                 <label>Description <span class="required">*</span>
