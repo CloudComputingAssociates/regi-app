@@ -1,5 +1,5 @@
 // src/app/components/today-panel/today-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '@auth0/auth0-angular';
@@ -91,10 +91,16 @@ interface FoodPopup {
             <div class="report-subtitle">
               RegiMenu<sup class="sm">SM</sup> generated for {{ userName$ | async }}.&nbsp;&nbsp;{{ todayFormatted() }}@if (planDay()) { (Day {{ planDay() }} of plan)}</div>
             <div class="report-totals">
-              Actual Daily Totals: {{ plannedTotals().calories }} calories |
+              Target Daily Totals: {{ plannedTotals().calories }} calories |
               {{ plannedTotals().protein }}g protein ({{ plannedTotals().proteinPct }}%) |
               {{ plannedTotals().fat }}g fat ({{ plannedTotals().fatPct }}%) |
               {{ plannedTotals().carbs }}g carbs ({{ plannedTotals().carbsPct }}%)
+            </div>
+            <div class="report-totals actual-totals">
+              Actual Daily: {{ checkedTotals().calories }} calories |
+              {{ checkedTotals().protein }}g protein |
+              {{ checkedTotals().fat }}g fat |
+              {{ checkedTotals().carbs }}g carbs
             </div>
           </div>
 
@@ -220,6 +226,32 @@ export class TodayPanelComponent implements OnInit {
       fatPct: total > 0 ? Math.round((fat * 9 / total) * 100) : 0,
       carbsPct: total > 0 ? Math.round((carbs * 4 / total) * 100) : 0
     };
+  });
+
+  // Actual totals (only checked items)
+  checkedTotals = computed(() => {
+    const meals = this.mealGroups();
+    const checked = this.checkedItems();
+    let cal = 0, pro = 0, fat = 0, carbs = 0;
+
+    for (const meal of meals) {
+      for (const item of meal.items) {
+        if (checked.has(item.id)) {
+          cal += item.calories ?? 0;
+          pro += Math.round(item.proteinG ?? 0);
+          fat += Math.round(item.fatG ?? 0);
+          carbs += Math.round(item.carbG ?? 0);
+        }
+      }
+    }
+
+    return { calories: cal, protein: pro, fat, carbs };
+  });
+
+  // Push checked macros to TodayService so the macros bar can read them
+  private syncMacros = effect(() => {
+    const t = this.checkedTotals();
+    this.todayService.checkedMacros.set({ protein: t.protein, fat: t.fat, carbs: t.carbs });
   });
 
   allMealsAffirmed = computed(() => {

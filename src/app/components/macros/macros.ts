@@ -9,6 +9,7 @@ import { PreferencesService } from '../../services/preferences.service';
 import { PlanningService } from '../../services/planning.service';
 import { TabService } from '../../services/tab.service';
 import { WeekPlanMacrosService } from '../../services/week-plan-macros.service';
+import { TodayService } from '../../services/today.service';
 import { TimePeriod, NutritionResponse } from '../../models/nutrition.model';
 
 // Context determines how the macros component behaves
@@ -104,6 +105,7 @@ export class MacrosComponent implements OnInit {
   private planningService = inject(PlanningService);
   private tabService = inject(TabService);
   private weekPlanMacros = inject(WeekPlanMacrosService);
+  private todayService = inject(TodayService);
 
   // Derive context from active tab
   readonly context = computed<MacrosContext>(() => {
@@ -171,6 +173,24 @@ export class MacrosComponent implements OnInit {
     };
   });
 
+  // Signal-based display data for today context (live from checked items)
+  readonly todayDisplayData = computed<MacroDisplayData>(() => {
+    const checked = this.todayService.checkedMacros();
+    const goals = this.preferencesService.dailyGoals();
+    const targetP = goals?.protein ?? 150;
+    const targetF = goals?.fat ?? 78;
+    const targetC = goals?.carbs ?? 175;
+
+    return {
+      macros: [
+        { name: 'proteins', actual: checked.protein, target: targetP, percentage: this.calculatePercentage(checked.protein, targetP) },
+        { name: 'fats', actual: checked.fat, target: targetF, percentage: this.calculatePercentage(checked.fat, targetF) },
+        { name: 'carbs', actual: checked.carbs, target: targetC, percentage: this.calculatePercentage(checked.carbs, targetC) },
+      ],
+      timePeriod: 'day'
+    };
+  });
+
   // Signal for subscription-based display data (non-preferences contexts)
   private subscriptionData = signal<MacroDisplayData>({ macros: [], timePeriod: 'day' });
 
@@ -190,6 +210,7 @@ export class MacrosComponent implements OnInit {
     if (ctx === 'preferences') return this.preferencesDisplayData();
     if (ctx === 'regimenu') return this.regimenuDisplayData();
     if (ctx === 'weekplan') return this.weekPlanDisplayData();
+    if (ctx === 'today') return this.todayDisplayData();
     if (ctx === 'shopping') return MacrosComponent.ZERO_MACROS;
     return this.subscriptionData();
   });

@@ -64,6 +64,9 @@ export class TodayService {
   readonly loading = this.loadingSignal.asReadonly();
   readonly error = this.errorSignal.asReadonly();
 
+  // Checked macro totals — updated by today-panel when items are checked/unchecked
+  readonly checkedMacros = signal<{ protein: number; fat: number; carbs: number }>({ protein: 0, fat: 0, carbs: 0 });
+
   async fetchToday(): Promise<TodayResponse | null> {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
