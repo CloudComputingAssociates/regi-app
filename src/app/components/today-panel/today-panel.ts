@@ -258,11 +258,7 @@ export class TodayPanelComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    // Fetch today's log and week plan list in parallel
-    const [resp] = await Promise.all([
-      this.todayService.fetchToday(),
-      this.weekPlanService.listWeekPlans()
-    ]);
+    const resp = await this.todayService.fetchToday();
 
     if (!resp || resp.items.length === 0) {
       this.hasPlan.set(false);
@@ -303,16 +299,13 @@ export class TodayPanelComponent implements OnInit {
     this.todayFormatted.set(`${mm}/${dd}/${today.getFullYear()}`);
 
     try {
-      const plans = this.weekPlanService.weekPlans();
-      const fullPlans = await Promise.all(
-        plans.map(wp => this.weekPlanService.getWeekPlan(wp.id))
-      );
-      for (const fullPlan of fullPlans) {
+      // Use sourcePlanId to fetch only the relevant week plan (1 call instead of N)
+      if (sourcePlanId) {
+        const fullPlan = await this.weekPlanService.getWeekPlan(sourcePlanId);
         const dayPlan = fullPlan.days?.find(d => d.planDate === todayStr);
         if (dayPlan) {
           this.planName.set(fullPlan.name || 'Plan');
 
-          // Calculate day number within the plan
           if (fullPlan.startDate) {
             const start = new Date(fullPlan.startDate + 'T00:00:00');
             const diffMs = today.getTime() - start.getTime();
@@ -327,7 +320,6 @@ export class TodayPanelComponent implements OnInit {
               mealNames.set(dpm.mealSlot, dpm.meal.name);
             }
           }
-          break;
         }
       }
     } catch {
