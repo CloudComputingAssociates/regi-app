@@ -59,6 +59,27 @@ export class FoodsService {
     }
   }
 
+  /** Use AI to categorize a food name. Returns the matching Category or null. */
+  async categorizeFood(foodName: string, categories: Category[]): Promise<Category | null> {
+    if (!foodName || categories.length === 0) return null;
+
+    const catList = categories.map(c => c.name).join(', ');
+    try {
+      const resp = await firstValueFrom(
+        this.http.post<{ content: string }>(`${this.baseUrl}/ai`, {
+          systemPrompt: `You are a food categorizer. Given a food name, respond with ONLY the category name from this list: ${catList}. No explanation, just the category name.`,
+          userPrompt: `Categorize: "${foodName}"`,
+          maxTokens: 20,
+          temperature: 0
+        })
+      );
+      const name = resp.content.trim();
+      return categories.find(c => c.name.toLowerCase() === name.toLowerCase()) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   getCategoryName(categoryId: number | undefined | null): string | null {
     if (!categoryId) return null;
     const cat = this.categoriesSignal().find(c => c.id === categoryId);

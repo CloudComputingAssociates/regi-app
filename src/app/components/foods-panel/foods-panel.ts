@@ -396,28 +396,6 @@ export class FoodsPanelComponent {
     this.clearImage('product');
     this.clearImage('nutrition');
 
-    // Ensure categories are loaded for the dropdown
-    this.foodsService.loadCategories().then(cats => {
-      this.categories.set(cats);
-
-      if (event.suggestedFood) {
-        // Map categoryName to categoryId
-        const catName = event.suggestedFood.categoryName;
-        if (catName) {
-          const match = cats.find(c => c.name === catName);
-          if (match) this.newFood.categoryId = match.id;
-        }
-        // Default to first category if no match
-        if (!this.newFood.categoryId && cats.length > 0) {
-          this.newFood.categoryId = cats[0].id;
-        }
-      } else if (cats.length > 0) {
-        this.newFood.categoryId = cats[0].id;
-      }
-
-      this.cdr.markForCheck();
-    });
-
     if (event.suggestedFood) {
       const f = event.suggestedFood;
       this.sourceFoodId.set(f.id);
@@ -435,6 +413,35 @@ export class FoodsPanelComponent {
     } else {
       this.newFood.description = event.searchQuery;
     }
+
+    // Load categories, then auto-categorize with AI
+    this.foodsService.loadCategories().then(async cats => {
+      this.categories.set(cats);
+
+      if (event.suggestedFood) {
+        const catName = event.suggestedFood.categoryName;
+        if (catName) {
+          const match = cats.find(c => c.name === catName);
+          if (match) this.newFood.categoryId = match.id;
+        }
+      }
+
+      // AI categorize if no category set yet
+      if (!this.newFood.categoryId) {
+        const foodName = event.suggestedFood?.description ?? event.searchQuery;
+        const cat = await this.foodsService.categorizeFood(foodName, cats);
+        if (cat) {
+          this.newFood.categoryId = cat.id;
+        }
+      }
+
+      // Fallback to first category
+      if (!this.newFood.categoryId && cats.length > 0) {
+        this.newFood.categoryId = cats[0].id;
+      }
+
+      this.cdr.markForCheck();
+    });
 
     this.showAddDialog.set(true);
   }
