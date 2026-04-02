@@ -7,7 +7,6 @@ import { map } from 'rxjs';
 import { NutritionTipService } from '../../services/nutrition-tip.service';
 import { TodayService, DailyLogItem } from '../../services/today.service';
 import { PreferencesService } from '../../services/preferences.service';
-import { WeekPlanService } from '../../services/week-plan.service';
 import { NotificationService } from '../../services/notification.service';
 import { TabService } from '../../services/tab.service';
 
@@ -179,7 +178,6 @@ export class TodayPanelComponent implements OnInit {
   tipService = inject(NutritionTipService);
   todayService = inject(TodayService);
   private prefs = inject(PreferencesService);
-  private weekPlanService = inject(WeekPlanService);
   private notificationService = inject(NotificationService);
   private auth = inject(AuthService);
   private tabService = inject(TabService);
@@ -269,7 +267,24 @@ export class TodayPanelComponent implements OnInit {
     this.hasPlan.set(true);
     this.isFinalized.set(!!resp.finalizedAt);
 
-    await this.loadMealNames(resp.sourcePlanId, resp.items);
+    // Plan metadata from the response (no extra API calls)
+    if (resp.planName) {
+      this.planName.set(resp.planName);
+    }
+    if (resp.planStartDate) {
+      const today = new Date();
+      const start = new Date(resp.planStartDate + 'T00:00:00');
+      const dayNum = Math.floor((today.getTime() - start.getTime()) / 86400000) + 1;
+      if (dayNum > 0) {
+        this.planDay.set(dayNum);
+      }
+    }
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    this.todayFormatted.set(`${mm}/${dd}/${today.getFullYear()}`);
+
+    this.buildMealGroups(resp.items, resp.mealNames ?? {});
 
     // Restore checked state from API
     const checked = new Set(resp.items.filter(i => i.isChecked).map(i => i.id));
@@ -279,8 +294,7 @@ export class TodayPanelComponent implements OnInit {
     this.tipService.fetchTip();
   }
 
-  private async loadMealNames(sourcePlanId: number | undefined, items: DailyLogItem[]): Promise<void> {
-    // Group items by mealSlot
+  private buildMealGroups(items: DailyLogItem[], mealNames: Record<number, string>): void {
     const slotMap = new Map<number, DailyLogItem[]>();
     for (const item of items) {
       const list = slotMap.get(item.mealSlot) || [];
@@ -288,45 +302,6 @@ export class TodayPanelComponent implements OnInit {
       slotMap.set(item.mealSlot, list);
     }
 
-    // Fetch all week plans in parallel, then find the one covering today
-    const mealNames = new Map<number, string>();
-    const today = new Date();
-    const todayStr = today.toISOString().slice(0, 10);
-
-    // Format today's date as MM/DD/YYYY
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    this.todayFormatted.set(`${mm}/${dd}/${today.getFullYear()}`);
-
-    try {
-      // Use sourcePlanId to fetch only the relevant week plan (1 call instead of N)
-      if (sourcePlanId) {
-        const fullPlan = await this.weekPlanService.getWeekPlan(sourcePlanId);
-        const dayPlan = fullPlan.days?.find(d => d.planDate === todayStr);
-        if (dayPlan) {
-          this.planName.set(fullPlan.name || 'Plan');
-
-          if (fullPlan.startDate) {
-            const start = new Date(fullPlan.startDate + 'T00:00:00');
-            const diffMs = today.getTime() - start.getTime();
-            const dayNum = Math.floor(diffMs / 86400000) + 1;
-            if (dayNum > 0) {
-              this.planDay.set(dayNum);
-            }
-          }
-
-          for (const dpm of dayPlan.meals || []) {
-            if (dpm.meal?.name) {
-              mealNames.set(dpm.mealSlot, dpm.meal.name);
-            }
-          }
-        }
-      }
-    } catch {
-      // Fallback — no meal names
-    }
-
-    // Build meal groups with timing
     const startTime = this.prefs.eatingStartTime();
     const mealsPerDay = this.prefs.mealsPerDay();
     const fastingType = this.prefs.fastingType();
@@ -352,7 +327,7 @@ export class TodayPanelComponent implements OnInit {
       groups.push({
         slot,
         time,
-        name: mealNames.get(slot) || `Meal ${slot}`,
+        name: mealNames[slot] || `Meal ${slot}`,
         items: slotItems,
         totalCalories: totalCal,
         totalProtein: totalPro,

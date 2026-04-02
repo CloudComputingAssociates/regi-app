@@ -47,6 +47,9 @@ export interface TodayResponse {
   totalSodiumMg?: number;
   items: DailyLogItem[];
   finalizedAt?: string;
+  planName?: string;
+  planStartDate?: string;
+  mealNames?: Record<number, string>;
 }
 
 @Injectable({
