@@ -505,7 +505,7 @@ export class FoodsListComponent implements OnInit {
   /** Map a UserFood to a Food for display in the list */
   private userFoodToFood(uf: UserFood): Food {
     return {
-      id: -uf.id, // negative ID to distinguish from system foods
+      id: uf.id, // real ID — use dataSource to distinguish from USDA foods
       description: uf.description,
       shortDescription: uf.shortDescription,
       foodRequestType: 'unknown',
