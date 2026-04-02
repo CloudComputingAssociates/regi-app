@@ -1,5 +1,5 @@
 // src/app/components/foods-panel/foods-panel.ts
-import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, inject, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -213,6 +213,8 @@ export class FoodsPanelComponent {
   private foodsService = inject(FoodsService);
   private cdr = inject(ChangeDetectorRef);
 
+  private foodsList = viewChild(FoodsListComponent);
+
   categories = signal<Category[]>([]);
 
   showAddDialog = signal(false);
@@ -378,6 +380,9 @@ export class FoodsPanelComponent {
 
       this.notificationService.show('Food added', 'success');
       this.closeAddDialog();
+
+      // Switch to MyFoods to show the newly added (auto-favorited) food
+      this.foodsList()?.onFilterChange('my-favorites');
     } finally {
       this.isSubmitting.set(false);
     }
