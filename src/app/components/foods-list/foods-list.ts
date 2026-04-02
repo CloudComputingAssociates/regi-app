@@ -140,7 +140,7 @@ export interface FoodNotFoundEvent {
           } @else {
             @if (showPreferenceIcons()) {
               <div class="preference-column-header">
-                <span>MyFood / Restrict</span>
+                <span>{{ (activeFilter() === 'my-favorites' || activeFilter() === 'my-restricted') ? 'Remove' : 'MyFood / Restrict' }}</span>
               </div>
             }
             @for (group of groupedFoods(); track group.category) {
@@ -177,20 +177,36 @@ export interface FoodNotFoundEvent {
 
                       @if (showPreferenceIcons()) {
                         <div class="preference-icons">
-                          <mat-icon
-                            class="favorite-icon"
-                            [class.active]="preferencesService.isAllowed(item.food.id)"
-                            (click)="toggleFavorite($event, item.food.id)"
-                            aria-label="Toggle favorite">
-                            {{ preferencesService.isAllowed(item.food.id) ? 'star' : 'star_border' }}
-                          </mat-icon>
-                          <mat-icon
-                            class="restricted-icon"
-                            [class.active]="preferencesService.isRestricted(item.food.id)"
-                            (click)="toggleRestricted($event, item.food.id)"
-                            aria-label="Toggle restricted">
-                            block
-                          </mat-icon>
+                          @if (activeFilter() === 'my-favorites') {
+                            <mat-icon
+                              class="delete-icon"
+                              (click)="removePreference($event, item.food.id)"
+                              aria-label="Remove from favorites">
+                              delete
+                            </mat-icon>
+                          } @else if (activeFilter() === 'my-restricted') {
+                            <mat-icon
+                              class="restricted-icon active"
+                              (click)="removePreference($event, item.food.id)"
+                              aria-label="Remove restriction">
+                              block
+                            </mat-icon>
+                          } @else {
+                            <mat-icon
+                              class="favorite-icon"
+                              [class.active]="preferencesService.isAllowed(item.food.id)"
+                              (click)="toggleFavorite($event, item.food.id)"
+                              aria-label="Toggle favorite">
+                              {{ preferencesService.isAllowed(item.food.id) ? 'star' : 'star_border' }}
+                            </mat-icon>
+                            <mat-icon
+                              class="restricted-icon"
+                              [class.active]="preferencesService.isRestricted(item.food.id)"
+                              (click)="toggleRestricted($event, item.food.id)"
+                              aria-label="Toggle restricted">
+                              block
+                            </mat-icon>
+                          }
                         </div>
                       }
                     </div>
@@ -723,6 +739,18 @@ export class FoodsListComponent implements OnInit {
   toggleRestricted(event: Event, foodId: number): void {
     event.stopPropagation();
     this.preferencesService.toggleRestrictedLocal(foodId);
+  }
+
+  removePreference(event: Event, foodId: number): void {
+    event.stopPropagation();
+    const filter = this.activeFilter();
+    if (filter === 'my-favorites') {
+      this.preferencesService.toggleFavoriteLocal(foodId);
+    } else if (filter === 'my-restricted') {
+      this.preferencesService.toggleRestrictedLocal(foodId);
+    }
+    // Remove from displayed list immediately
+    this.foods.update(foods => foods.filter(f => f.id !== foodId));
   }
 
   selectFood(index: number, fromUserClick = true): void {
