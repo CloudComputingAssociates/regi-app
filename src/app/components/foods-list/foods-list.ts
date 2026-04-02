@@ -303,14 +303,19 @@ export class FoodsListComponent implements OnInit {
   private readonly swipeThreshold = 0.35;
   private readonly swipeTimeLimit = 500;
 
-  // React to foodListSource preference changes AFTER initial load.
+  // Tracks whether user has manually changed the filter (radio click).
+  // Once true, the settings-driven effect won't override their choice.
+  private userChangedFilter = false;
+
   // Handles the refresh race condition where settings load after this component initializes.
+  // Only applies the saved preference if the user hasn't manually switched filters yet.
   private foodSourceEffect = effect(() => {
     if (!this.showFilterRadios()) return;
+    if (this.userChangedFilter) return;
+
     const source = this.prefsService.foodListSource();
     const filter = source === 'myfoods' ? 'my-favorites' : 'yeh-approved';
 
-    // Only react to actual changes after init
     if (this.activeFilter() === filter) return;
 
     this.activeFilters.set(new Set([filter]));
@@ -504,6 +509,7 @@ export class FoodsListComponent implements OnInit {
 
   /** Handle filter radio change (browse mode) */
   onFilterChange(filter: FoodFilterType): void {
+    this.userChangedFilter = true;
     this.activeFilter.set(filter);
     this.activeFilters.set(new Set([filter]));
     this.searchQuery = '';
