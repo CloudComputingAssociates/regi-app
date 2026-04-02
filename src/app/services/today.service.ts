@@ -93,6 +93,17 @@ export class TodayService {
     }
   }
 
+  async checkMeal(mealSlot: number, isChecked: boolean): Promise<boolean> {
+    try {
+      await firstValueFrom(
+        this.http.patch(`${this.baseUrl}/today/meals/${mealSlot}/check`, { isChecked })
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async finalizeToday(): Promise<boolean> {
     try {
       await firstValueFrom(

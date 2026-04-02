@@ -395,11 +395,12 @@ export class TodayPanelComponent implements OnInit {
       } else {
         next.delete(item.id);
       }
-      // Auto-save each item to API
-      this.todayService.checkItem(item.id, newState);
     }
     this.checkedItems.set(next);
     this.updateMealAffirmed(meal);
+
+    // Single API call for the entire meal
+    this.todayService.checkMeal(meal.slot, newState);
   }
 
   private updateMealAffirmed(meal: MealGroup): void {
