@@ -473,6 +473,19 @@
   }
 }
 
+// Column header for MyFood / Restrict above preference icons
+.preference-column-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 2px 8px 0;
+
+  span {
+    font-size: 11px;
+    color: #4da6ff;
+    white-space: nowrap;
+  }
+}
+
 // Preference icons container
 .preference-icons {
   display: flex;

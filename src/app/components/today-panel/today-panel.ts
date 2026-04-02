@@ -229,7 +229,12 @@ export class TodayPanelComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    const resp = await this.todayService.fetchToday();
+    // Fetch today's log and week plan list in parallel
+    const [resp] = await Promise.all([
+      this.todayService.fetchToday(),
+      this.weekPlanService.listWeekPlans()
+    ]);
+
     if (!resp || resp.items.length === 0) {
       this.hasPlan.set(false);
       this.tipService.fetchTip();
@@ -239,9 +244,6 @@ export class TodayPanelComponent implements OnInit {
     this.hasPlan.set(true);
     this.isFinalized.set(!!resp.finalizedAt);
 
-    // Get week plan info for meal names
-    await this.weekPlanService.listWeekPlans();
-    const plans = this.weekPlanService.weekPlans();
     await this.loadMealNames(resp.sourcePlanId, resp.items);
 
     // All items start unchecked — user affirms via YEH logo per meal
@@ -260,12 +262,15 @@ export class TodayPanelComponent implements OnInit {
       slotMap.set(item.mealSlot, list);
     }
 
-    // Find the week plan covering today's date to get plan name and meal names
+    // Fetch all week plans in parallel, then find the one covering today
     const mealNames = new Map<number, string>();
     const todayStr = new Date().toISOString().slice(0, 10);
     try {
-      for (const wp of this.weekPlanService.weekPlans()) {
-        const fullPlan = await this.weekPlanService.getWeekPlan(wp.id);
+      const plans = this.weekPlanService.weekPlans();
+      const fullPlans = await Promise.all(
+        plans.map(wp => this.weekPlanService.getWeekPlan(wp.id))
+      );
+      for (const fullPlan of fullPlans) {
         const dayPlan = fullPlan.days?.find(d => d.planDate === todayStr);
         if (dayPlan) {
           this.planName.set(fullPlan.name || 'Plan');

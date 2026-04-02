@@ -138,6 +138,11 @@ export interface FoodNotFoundEvent {
               <span class="food-description">{{ getEmptyMessage() }}</span>
             </div>
           } @else {
+            @if (showPreferenceIcons()) {
+              <div class="preference-column-header">
+                <span>MyFood / Restrict</span>
+              </div>
+            }
             @for (group of groupedFoods(); track group.category) {
               @if (group.foods.length > 0) {
                 <div class="category-header"
