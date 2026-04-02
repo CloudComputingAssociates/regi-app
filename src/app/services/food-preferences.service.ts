@@ -98,6 +98,25 @@ export class FoodPreferencesService {
   // Computed: has unsaved changes
   hasUnsavedChanges = computed(() => this.pendingChanges().size > 0);
 
+  // Debounced auto-save
+  private autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  private isSaving = false;
+
+  private scheduleAutoSave(): void {
+    if (this.autoSaveTimer) {
+      clearTimeout(this.autoSaveTimer);
+    }
+    this.autoSaveTimer = setTimeout(() => {
+      this.autoSaveTimer = null;
+      if (this.isSaving || !this.hasUnsavedChanges()) return;
+      this.isSaving = true;
+      this.saveAllChanges().subscribe({
+        next: () => { this.isSaving = false; },
+        error: () => { this.isSaving = false; }
+      });
+    }, 500);
+  }
+
   // Expose local state for UI (what the icons should show)
   isAllowed(foodId: number): boolean {
     return this.localAllowedFoods().has(foodId);
@@ -243,12 +262,12 @@ export class FoodPreferencesService {
     this.localAllowedFoods.set(localAllowed);
     this.localRestrictedFoods.set(localRestricted);
     this.pendingChanges.set(changes);
-    console.log('[FoodPreferencesService] After toggle - localAllowed:', [...this.localAllowedFoods()], 'pendingChanges:', [...this.pendingChanges().entries()]);
+    this.scheduleAutoSave();
   }
 
   /**
-   * Toggle restricted status locally (no API call)
-   * Updates local state and tracks pending change
+   * Toggle restricted status locally
+   * Updates local state, tracks pending change, and auto-saves
    */
   toggleRestrictedLocal(foodId: number): void {
     const localAllowed = new Set(this.localAllowedFoods());
@@ -296,6 +315,7 @@ export class FoodPreferencesService {
     this.localAllowedFoods.set(localAllowed);
     this.localRestrictedFoods.set(localRestricted);
     this.pendingChanges.set(changes);
+    this.scheduleAutoSave();
   }
 
   /**

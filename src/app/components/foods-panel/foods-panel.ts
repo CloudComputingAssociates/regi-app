@@ -31,16 +31,6 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
           +
         </button>
         <button
-          class="icon-btn save-btn"
-          [class.has-changes]="preferencesService.hasUnsavedChanges()"
-          (click)="save()"
-          [disabled]="!preferencesService.hasUnsavedChanges() || isSaving()"
-          matTooltip="Save"
-          matTooltipPosition="above"
-          [matTooltipShowDelay]="300">
-          ✓
-        </button>
-        <button
           class="icon-btn close-btn"
           (click)="closePanel()"
           matTooltip="Close"
@@ -225,7 +215,6 @@ export class FoodsPanelComponent {
 
   categories = signal<Category[]>([]);
 
-  isSaving = signal(false);
   showAddDialog = signal(false);
   isSubmitting = signal(false);
   sourceFoodId = signal<number | null>(null);
@@ -396,22 +385,6 @@ export class FoodsPanelComponent {
 
   closePanel(): void {
     this.tabService.closeTab('foods');
-  }
-
-  save(): void {
-    if (!this.preferencesService.hasUnsavedChanges()) return;
-
-    this.isSaving.set(true);
-    this.preferencesService.saveAllChanges().subscribe({
-      next: () => {
-        this.isSaving.set(false);
-        this.notificationService.show('Food preferences saved', 'success');
-      },
-      error: () => {
-        this.isSaving.set(false);
-        this.notificationService.show('Failed to save food preferences', 'error');
-      }
-    });
   }
 
   onFoodSelected(event: SelectedFoodEvent): void {

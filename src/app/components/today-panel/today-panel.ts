@@ -9,6 +9,7 @@ import { TodayService, DailyLogItem } from '../../services/today.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { WeekPlanService } from '../../services/week-plan.service';
 import { NotificationService } from '../../services/notification.service';
+import { TabService } from '../../services/tab.service';
 
 /** A meal group with computed timing and items */
 interface MealGroup {
@@ -78,23 +79,17 @@ interface FoodPopup {
                   [matTooltipShowDelay]="300">
                   🖨
                 </button>
-                <button class="icon-btn save-btn" [class.has-changes]="!isFinalized()"
-                  [disabled]="isFinalized() || isLogging()"
-                  (click)="logTheDay()"
-                  matTooltip="Log the day"
+                <button class="icon-btn close-btn"
+                  (click)="closePanel()"
+                  matTooltip="Close"
                   matTooltipPosition="above"
                   [matTooltipShowDelay]="300">
-                  @if (isLogging()) {
-                    <span class="save-spinner"></span>
-                  } @else {
-                    ✓
-                  }
+                  ✕
                 </button>
               </div>
             </div>
             <div class="report-subtitle">
-              RegiMenu<sup class="sm">SM</sup> generated for {{ userName$ | async }}
-            </div>
+              RegiMenu<sup class="sm">SM</sup> generated for {{ userName$ | async }}.&nbsp;&nbsp;{{ todayFormatted() }}@if (planDay()) { (Day {{ planDay() }} of plan)}</div>
             <div class="report-totals">
               Actual Daily Totals: {{ plannedTotals().calories }} calories |
               {{ plannedTotals().protein }}g protein ({{ plannedTotals().proteinPct }}%) |
@@ -181,6 +176,7 @@ export class TodayPanelComponent implements OnInit {
   private weekPlanService = inject(WeekPlanService);
   private notificationService = inject(NotificationService);
   private auth = inject(AuthService);
+  private tabService = inject(TabService);
 
   userName$ = this.auth.user$.pipe(map(u => u?.name ?? 'User'));
 
@@ -190,8 +186,10 @@ export class TodayPanelComponent implements OnInit {
   // Meal groups built from today's log
   mealGroups = signal<MealGroup[]>([]);
 
-  // Plan name
+  // Plan name and date info
   planName = signal('');
+  planDay = signal(0);
+  todayFormatted = signal('');
   hasPlan = signal(false);
   isFinalized = signal(false);
   isLogging = signal(false);
@@ -246,8 +244,9 @@ export class TodayPanelComponent implements OnInit {
 
     await this.loadMealNames(resp.sourcePlanId, resp.items);
 
-    // All items start unchecked — user affirms via YEH logo per meal
-    this.checkedItems.set(new Set());
+    // Restore checked state from API
+    const checked = new Set(resp.items.filter(i => i.isChecked).map(i => i.id));
+    this.checkedItems.set(checked);
 
     // Load nutrition tip after report is rendered (lower priority)
     this.tipService.fetchTip();
@@ -264,7 +263,14 @@ export class TodayPanelComponent implements OnInit {
 
     // Fetch all week plans in parallel, then find the one covering today
     const mealNames = new Map<number, string>();
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+
+    // Format today's date as MM/DD/YYYY
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    this.todayFormatted.set(`${mm}/${dd}/${today.getFullYear()}`);
+
     try {
       const plans = this.weekPlanService.weekPlans();
       const fullPlans = await Promise.all(
@@ -274,6 +280,17 @@ export class TodayPanelComponent implements OnInit {
         const dayPlan = fullPlan.days?.find(d => d.planDate === todayStr);
         if (dayPlan) {
           this.planName.set(fullPlan.name || 'Plan');
+
+          // Calculate day number within the plan
+          if (fullPlan.startDate) {
+            const start = new Date(fullPlan.startDate + 'T00:00:00');
+            const diffMs = today.getTime() - start.getTime();
+            const dayNum = Math.floor(diffMs / 86400000) + 1;
+            if (dayNum > 0) {
+              this.planDay.set(dayNum);
+            }
+          }
+
           for (const dpm of dayPlan.meals || []) {
             if (dpm.meal?.name) {
               mealNames.set(dpm.mealSlot, dpm.meal.name);
@@ -318,7 +335,7 @@ export class TodayPanelComponent implements OnInit {
         totalProtein: totalPro,
         totalFat: totalFat,
         totalCarbs: totalCarbs,
-        affirmed: false
+        affirmed: slotItems.every(i => i.isChecked)
       });
     }
 
@@ -353,15 +370,17 @@ export class TodayPanelComponent implements OnInit {
 
   toggleItem(itemId: number, meal: MealGroup): void {
     const next = new Set(this.checkedItems());
-    if (next.has(itemId)) {
-      next.delete(itemId);
-    } else {
+    const isChecked = !next.has(itemId);
+    if (isChecked) {
       next.add(itemId);
+    } else {
+      next.delete(itemId);
     }
     this.checkedItems.set(next);
-
-    // Update meal affirmed state — affirmed only if all items checked
     this.updateMealAffirmed(meal);
+
+    // Auto-save to API
+    this.todayService.checkItem(itemId, isChecked);
   }
 
   toggleMealAffirm(meal: MealGroup): void {
@@ -369,16 +388,15 @@ export class TodayPanelComponent implements OnInit {
     const allChecked = meal.items.every(i => checked.has(i.id));
 
     const next = new Set(checked);
-    if (allChecked) {
-      // Un-affirm: uncheck all items in this meal
-      for (const item of meal.items) {
+    const newState = !allChecked;
+    for (const item of meal.items) {
+      if (newState) {
+        next.add(item.id);
+      } else {
         next.delete(item.id);
       }
-    } else {
-      // Affirm: check all items in this meal
-      for (const item of meal.items) {
-        next.add(item.id);
-      }
+      // Auto-save each item to API
+      this.todayService.checkItem(item.id, newState);
     }
     this.checkedItems.set(next);
     this.updateMealAffirmed(meal);
@@ -453,5 +471,9 @@ export class TodayPanelComponent implements OnInit {
     } else {
       this.notificationService.show('Failed to log the day', 'error');
     }
+  }
+
+  closePanel(): void {
+    this.tabService.closeTab('today');
   }
 }

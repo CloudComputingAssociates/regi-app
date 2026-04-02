@@ -117,7 +117,7 @@ export class TabService {
       const newTab: Tab = {
         id: tabId,
         label,
-        closeable: tabId !== 'today',
+        closeable: true,
         icon: this.tabIcons[tabId],
         emoji: this.tabEmojis[tabId]
       };
@@ -194,7 +194,7 @@ export class TabService {
       newTabs.splice(insertIndex, 0, {
         id: tabId,
         label,
-        closeable: tabId !== 'today',
+        closeable: true,
         icon: this.tabIcons[tabId],
         emoji: this.tabEmojis[tabId]
       });
@@ -258,7 +258,7 @@ export class TabService {
   /** Reset to initial state with Today tab open - used on login */
   resetToChat(): void {
     this.tabsSignal.set([
-      { id: 'today', label: 'Today', closeable: false, emoji: this.tabEmojis['today'] }
+      { id: 'today', label: 'Today', closeable: true, emoji: this.tabEmojis['today'] }
     ]);
     this.activeTabIndexSignal.set(0);
   }
@@ -323,7 +323,7 @@ export class TabService {
         tabs.push({
           id: tabId,
           label,
-          closeable: tabId !== 'today',
+          closeable: true,
           icon: this.tabIcons[tabId],
           emoji: this.tabEmojis[tabId]
         });

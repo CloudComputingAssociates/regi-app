@@ -177,19 +177,11 @@
       0 1px 0 rgba(0, 0, 0, 0.1) inset;
   }
 
-  .save-btn {
-    &.has-changes {
-      background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%);
-      border-top-color: #5aa55a;
-      border-left-color: #4a954a;
-      border-right-color: #4a954a;
-      border-bottom-color: #1a3a1a;
-      color: #ffffff;
+  .close-btn {
+    color: #aaaaaa;
 
-      &:hover:not(:disabled) {
-        background: linear-gradient(180deg, #5aa05a 0%, #408040 100%);
-        border-top-color: #6ab56a;
-      }
+    &:hover {
+      color: #ffffff;
     }
   }
 

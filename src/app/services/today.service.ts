@@ -20,6 +20,7 @@ export interface DailyLogItem {
   isOverride: boolean;
   originalFoodId?: number;
   originalFoodName?: string;
+  isChecked: boolean;
 }
 
 export interface NutritionTargets {
@@ -78,6 +79,17 @@ export class TodayService {
       return null;
     } finally {
       this.loadingSignal.set(false);
+    }
+  }
+
+  async checkItem(itemId: number, isChecked: boolean): Promise<boolean> {
+    try {
+      await firstValueFrom(
+        this.http.patch(`${this.baseUrl}/today/items/${itemId}/check`, { isChecked })
+      );
+      return true;
+    } catch {
+      return false;
     }
   }
 
