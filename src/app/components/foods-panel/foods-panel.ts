@@ -414,29 +414,25 @@ export class FoodsPanelComponent {
       this.newFood.description = event.searchQuery;
     }
 
-    // Load categories, then auto-categorize with AI
+    // Load categories, then AI-categorize (DB category is fallback only)
     this.foodsService.loadCategories().then(async cats => {
       this.categories.set(cats);
 
-      if (event.suggestedFood) {
-        const catName = event.suggestedFood.categoryName;
-        if (catName) {
-          const match = cats.find(c => c.name === catName);
-          if (match) this.newFood.categoryId = match.id;
-        }
+      // DB category as fallback
+      let dbCategoryId = 0;
+      if (event.suggestedFood?.categoryName) {
+        const match = cats.find(c => c.name === event.suggestedFood!.categoryName);
+        if (match) dbCategoryId = match.id;
       }
 
-      // AI categorize if no category set yet
-      if (!this.newFood.categoryId) {
-        const foodName = event.suggestedFood?.description ?? event.searchQuery;
-        const cat = await this.foodsService.categorizeFood(foodName, cats);
-        if (cat) {
-          this.newFood.categoryId = cat.id;
-        }
-      }
-
-      // Fallback to first category
-      if (!this.newFood.categoryId && cats.length > 0) {
+      // Always use AI to categorize
+      const foodName = event.suggestedFood?.description ?? event.searchQuery;
+      const aiCat = await this.foodsService.categorizeFood(foodName, cats);
+      if (aiCat) {
+        this.newFood.categoryId = aiCat.id;
+      } else if (dbCategoryId) {
+        this.newFood.categoryId = dbCategoryId;
+      } else if (cats.length > 0) {
         this.newFood.categoryId = cats[0].id;
       }
 
