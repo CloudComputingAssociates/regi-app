@@ -43,6 +43,7 @@ interface AllFoodRow {
   sodiumMG?: number;
   servingSizeG?: number;
   servingSizeHousehold?: string;
+  productPurchaseLink?: string;
 }
 
 interface AllFoodsResponse {
@@ -442,7 +443,7 @@ export class FoodPreferencesService {
   /** Map an AllFoodRow from the view endpoint to a Food object the UI can display */
   private allFoodRowToFood(row: AllFoodRow): Food {
     return {
-      id: row.foodSource === 'user' ? -row.foodId : row.foodId,
+      id: row.foodId,
       description: row.description,
       shortDescription: row.shortDescription,
       categoryName: row.categoryName,
@@ -460,6 +461,7 @@ export class FoodPreferencesService {
       verifiedType: 'unknown',
       verifiedBy: '',
       duplicateCount: 0,
+      productPurchaseLink: row.productPurchaseLink,
       nutritionFacts: {
         calories: row.calories ?? 0,
         proteinG: row.proteinG ?? 0,

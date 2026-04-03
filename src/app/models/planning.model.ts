@@ -19,6 +19,7 @@ export interface MealItem {
   foodImageThumbnail?: string;
   shortDescription?: string;
   categoryName?: string;
+  productPurchaseLink?: string;
 }
 
 export interface Meal {

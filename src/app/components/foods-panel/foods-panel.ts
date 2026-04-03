@@ -93,6 +93,16 @@ const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
               </div>
 
               <div class="form-row">
+                <label>Product Link <span class="optional-hint">(optional)</span></label>
+                <div class="link-input-row">
+                  <input type="url" class="form-input" [(ngModel)]="newFood.productPurchaseLink" placeholder="https://amazon.com/..." />
+                  @if (newFood.productPurchaseLink) {
+                    <button type="button" class="test-link-btn" (click)="testProductLink()">Test</button>
+                  }
+                </div>
+              </div>
+
+              <div class="form-row">
                 <label>Category</label>
                 <select class="form-select" [(ngModel)]="newFood.categoryId">
                   @for (cat of categories(); track cat.id) {
@@ -246,6 +256,7 @@ export class FoodsPanelComponent {
       shortDescription: '',
       servingUnit: 'whole',
       servingGramsPerUnit: 0,
+      productPurchaseLink: '',
       shareCandidate: false,
       calories: 0,
       proteinG: 0,
@@ -392,6 +403,13 @@ export class FoodsPanelComponent {
       this.foodsList()?.onFilterChange('my-favorites');
     } finally {
       this.isSubmitting.set(false);
+    }
+  }
+
+  testProductLink(): void {
+    const url = this.newFood.productPurchaseLink;
+    if (url) {
+      window.open(url, '_blank', 'noopener');
     }
   }
 

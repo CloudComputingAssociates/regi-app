@@ -220,6 +220,12 @@
   white-space: nowrap;
 }
 
+.food-link {
+  text-decoration: none;
+  color: #4da6ff !important;
+  &:hover { text-decoration: underline; }
+}
+
 // ============================================
 // Splitter bar
 // ============================================

@@ -170,7 +170,11 @@ export interface FoodNotFoundEvent {
                           <div class="thumbnail-placeholder"></div>
                         }
                       </div>
-                      <span class="food-description">{{ getDisplayDescription(item.food) }}</span>
+                      @if (item.food.productPurchaseLink) {
+                        <a class="food-description food-link" [href]="item.food.productPurchaseLink" target="_blank" rel="noopener" (click)="$event.stopPropagation()">{{ getDisplayDescription(item.food) }}</a>
+                      } @else {
+                        <span class="food-description">{{ getDisplayDescription(item.food) }}</span>
+                      }
                       @if (item.food.dataSource === 'user' && item.food.userId) {
                         <span class="food-badge my-food-badge">My Food</span>
                       }
@@ -520,6 +524,7 @@ export class FoodsListComponent implements OnInit {
       foodImage: uf.foodImage,
       foodImageThumbnail: uf.foodImageThumbnail,
       nutritionFactsImage: uf.nutritionFactsImage,
+      productPurchaseLink: uf.productPurchaseLink,
       verifiedType: 'unknown',
       verifiedBy: '',
       duplicateCount: 0,

@@ -453,6 +453,15 @@
 }
 
 // Thumbnail styles
+.food-link {
+  text-decoration: none;
+  color: #4da6ff !important;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .food-thumbnail {
   width: 40px;
   height: 40px;

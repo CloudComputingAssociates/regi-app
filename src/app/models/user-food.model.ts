@@ -26,6 +26,7 @@ export interface UserFood {
   ingredientsImagePending?: string;
   ingredientsAreAllergens: boolean;
   gtinUpc?: string;
+  productPurchaseLink?: string;
   shareCandidate: boolean;
   shareApproved: boolean;
   createdAt: string;
@@ -90,5 +91,6 @@ export interface CreateUserFoodRequest {
   calciumMG?: number;
   ironMG?: number;
   potassiumMG?: number;
+  productPurchaseLink?: string;
   shareCandidate?: boolean;
 }

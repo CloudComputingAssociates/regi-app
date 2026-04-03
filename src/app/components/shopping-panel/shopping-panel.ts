@@ -36,6 +36,7 @@ interface PlanFoodItem {
   pickedUp: boolean;
   needed: boolean;
   categoryName: string;
+  productPurchaseLink?: string;
 }
 
 /** Plan food categories for accordion grouping */
@@ -133,7 +134,11 @@ const PLAN_CATEGORIES: PlanCategory[] = [
                               (change)="togglePlanPickedUp(item)" />
 
                             <span class="plan-qty">{{ item.totalQty }} {{ item.unit }}</span>
-                            <span class="plan-food-name">{{ item.displayName }}</span>
+                            @if (item.productPurchaseLink) {
+                              <a class="plan-food-name food-link" [href]="item.productPurchaseLink" target="_blank" rel="noopener" (click)="$event.stopPropagation()">{{ item.displayName }}</a>
+                            } @else {
+                              <span class="plan-food-name">{{ item.displayName }}</span>
+                            }
 
                             <label class="toggle-slider" [class.on]="item.needed">
                               <input type="checkbox"
@@ -483,7 +488,8 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
               unit: item.unit,
               pickedUp: false,
               needed: true,
-              categoryName: this.normalizePlanCategory(item.categoryName)
+              categoryName: this.normalizePlanCategory(item.categoryName),
+              productPurchaseLink: item.productPurchaseLink
             });
           }
         }

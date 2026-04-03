@@ -207,6 +207,10 @@ export interface FoodSchema {
    */
   gtinUpc?: string | null;
   /**
+   * URL to purchase this product (e.g., Amazon, Costco)
+   */
+  productPurchaseLink?: string | null;
+  /**
    * AI tokens consumed for this food
    */
   tokensUsed?: number | null;

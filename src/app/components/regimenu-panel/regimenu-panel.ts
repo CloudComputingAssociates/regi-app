@@ -188,9 +188,11 @@ import { Subscription } from 'rxjs';
 
                   <!-- Description and quantity -->
                   <div class="item-details">
-                    <span class="item-description">
-                      {{ item.shortDescription || item.foodName }}
-                    </span>
+                    @if (item.productPurchaseLink) {
+                      <a class="item-description food-link" [href]="item.productPurchaseLink" target="_blank" rel="noopener" (click)="$event.stopPropagation()">{{ item.shortDescription || item.foodName }}</a>
+                    } @else {
+                      <span class="item-description">{{ item.shortDescription || item.foodName }}</span>
+                    }
                     <span class="item-quantity">{{ formatQuantity(item.quantity, item.unit) }} {{ displayUnit(item.unit) }}</span>
                   </div>
 
