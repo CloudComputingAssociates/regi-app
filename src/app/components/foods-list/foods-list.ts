@@ -140,7 +140,7 @@ export interface FoodNotFoundEvent {
           } @else {
             @if (showPreferenceIcons()) {
               <div class="preference-column-header">
-                <span>{{ (activeFilter() === 'my-favorites' || activeFilter() === 'my-restricted') ? 'Remove' : 'MyFood / Restrict' }}</span>
+                <span matTooltip="Star adds to MyFoods, Block adds to Restricted" matTooltipPosition="below">{{ (activeFilter() === 'my-favorites' || activeFilter() === 'my-restricted') ? 'Remove' : 'Add MyFood / Restrict' }}</span>
               </div>
             }
             @for (group of groupedFoods(); track group.category) {
@@ -744,14 +744,19 @@ export class FoodsListComponent implements OnInit {
     });
   }
 
+  private getFoodSource(foodId: number): string | undefined {
+    const food = this.foods().find(f => f.id === foodId);
+    return food?.dataSource === 'user' ? 'user' : undefined;
+  }
+
   toggleFavorite(event: Event, foodId: number): void {
     event.stopPropagation();
-    this.preferencesService.toggleFavoriteLocal(foodId);
+    this.preferencesService.toggleFavoriteLocal(foodId, this.getFoodSource(foodId));
   }
 
   toggleRestricted(event: Event, foodId: number): void {
     event.stopPropagation();
-    this.preferencesService.toggleRestrictedLocal(foodId);
+    this.preferencesService.toggleRestrictedLocal(foodId, this.getFoodSource(foodId));
   }
 
   removePreference(event: Event, foodId: number): void {

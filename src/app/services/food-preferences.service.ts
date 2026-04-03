@@ -75,6 +75,7 @@ export type PendingChangeType = 'add-allowed' | 'add-restricted' | 'remove';
 export interface PendingChange {
   foodId: number;
   type: PendingChangeType;
+  foodSource?: string; // 'usda' or 'user'
   originalPreferenceId?: number; // For removals, we need to know what to delete
 }
 
@@ -214,8 +215,7 @@ export class FoodPreferencesService {
    * Toggle favorite status locally (no API call)
    * Updates local state and tracks pending change
    */
-  toggleFavoriteLocal(foodId: number): void {
-    console.log('[FoodPreferencesService] toggleFavoriteLocal called with foodId:', foodId);
+  toggleFavoriteLocal(foodId: number, foodSource?: string): void {
     const localAllowed = new Set(this.localAllowedFoods());
     const localRestricted = new Set(this.localRestrictedFoods());
     const changes = new Map(this.pendingChanges());
@@ -231,32 +231,23 @@ export class FoodPreferencesService {
       localAllowed.delete(foodId);
 
       if (serverAllowedPrefId) {
-        // Was saved on server, need to delete
-        changes.set(foodId, { foodId, type: 'remove', originalPreferenceId: serverAllowedPrefId });
+        changes.set(foodId, { foodId, type: 'remove', foodSource, originalPreferenceId: serverAllowedPrefId });
       } else {
-        // Was only local (pending add), just remove the pending change
         changes.delete(foodId);
       }
     } else {
-      // Not allowed -> make it allowed
       localAllowed.add(foodId);
 
-      // If it was restricted, remove from restricted
       if (wasRestricted) {
         localRestricted.delete(foodId);
       }
 
-      // Track the change
       if (serverAllowedPrefId) {
-        // Already saved as allowed on server, no change needed
         changes.delete(foodId);
       } else if (serverRestrictedPrefId) {
-        // Was restricted on server, need to delete that and add allowed
-        // For simplicity, we'll handle this as add-allowed (server will handle conflict)
-        changes.set(foodId, { foodId, type: 'add-allowed', originalPreferenceId: serverRestrictedPrefId });
+        changes.set(foodId, { foodId, type: 'add-allowed', foodSource, originalPreferenceId: serverRestrictedPrefId });
       } else {
-        // New preference
-        changes.set(foodId, { foodId, type: 'add-allowed' });
+        changes.set(foodId, { foodId, type: 'add-allowed', foodSource });
       }
     }
 
@@ -270,7 +261,7 @@ export class FoodPreferencesService {
    * Toggle restricted status locally
    * Updates local state, tracks pending change, and auto-saves
    */
-  toggleRestrictedLocal(foodId: number): void {
+  toggleRestrictedLocal(foodId: number, foodSource?: string): void {
     const localAllowed = new Set(this.localAllowedFoods());
     const localRestricted = new Set(this.localRestrictedFoods());
     const changes = new Map(this.pendingChanges());
@@ -281,35 +272,26 @@ export class FoodPreferencesService {
     const serverRestrictedPrefId = this.serverRestrictedFoods().get(foodId);
 
     if (wasRestricted) {
-      // Currently restricted -> remove it
       localRestricted.delete(foodId);
 
       if (serverRestrictedPrefId) {
-        // Was saved on server, need to delete
-        changes.set(foodId, { foodId, type: 'remove', originalPreferenceId: serverRestrictedPrefId });
+        changes.set(foodId, { foodId, type: 'remove', foodSource, originalPreferenceId: serverRestrictedPrefId });
       } else {
-        // Was only local (pending add), just remove the pending change
         changes.delete(foodId);
       }
     } else {
-      // Not restricted -> make it restricted
       localRestricted.add(foodId);
 
-      // If it was allowed, remove from allowed
       if (wasAllowed) {
         localAllowed.delete(foodId);
       }
 
-      // Track the change
       if (serverRestrictedPrefId) {
-        // Already saved as restricted on server, no change needed
         changes.delete(foodId);
       } else if (serverAllowedPrefId) {
-        // Was allowed on server, need to delete that and add restricted
-        changes.set(foodId, { foodId, type: 'add-restricted', originalPreferenceId: serverAllowedPrefId });
+        changes.set(foodId, { foodId, type: 'add-restricted', foodSource, originalPreferenceId: serverAllowedPrefId });
       } else {
-        // New preference
-        changes.set(foodId, { foodId, type: 'add-restricted' });
+        changes.set(foodId, { foodId, type: 'add-restricted', foodSource });
       }
     }
 
@@ -349,11 +331,9 @@ export class FoodPreferencesService {
           toDelete.push(change.originalPreferenceId);
         }
       } else if (change.type === 'add-allowed') {
-        // Add or flip to allowed - API will upsert
-        toUpsert.push({ foodId: change.foodId, allowed: true });
+        toUpsert.push({ foodId: change.foodId, allowed: true, foodSource: change.foodSource });
       } else if (change.type === 'add-restricted') {
-        // Add or flip to restricted - API will upsert
-        toUpsert.push({ foodId: change.foodId, allowed: false });
+        toUpsert.push({ foodId: change.foodId, allowed: false, foodSource: change.foodSource });
       }
     }
 
