@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatRadioModule } from '@angular/material/radio';
+import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { FoodsService } from '../../services/foods.service';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
@@ -49,7 +50,7 @@ export interface FoodNotFoundEvent {
 
 @Component({
   selector: 'app-foods-list',
-  imports: [CommonModule, FormsModule, MatIconModule, MatButtonModule, MatTooltipModule, MatRadioModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatButtonModule, MatTooltipModule, MatRadioModule, NutritionFactsLabelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="foods-container">
@@ -157,9 +158,12 @@ export interface FoodNotFoundEvent {
                       class="food-item"
                       [class.selected]="selectedIndex() === item.flatIndex"
                       (click)="selectFood(item.flatIndex)"
-                      (touchstart)="onTouchStart($event, item.flatIndex)"
-                      (touchmove)="onTouchMove($event, item.flatIndex)"
-                      (touchend)="onTouchEnd($event, item.flatIndex)"
+                      (dblclick)="showNfPopup(item.food)"
+                      (mouseenter)="onFoodMouseEnter(item.food)"
+                      (mouseleave)="onFoodMouseLeave()"
+                      (touchstart)="onTouchStart($event, item.flatIndex); onFoodLongPressStart($event, item.food)"
+                      (touchmove)="onTouchMove($event, item.flatIndex); onFoodLongPressEnd()"
+                      (touchend)="onTouchEnd($event, item.flatIndex); onFoodLongPressEnd()"
                       tabindex="0"
                       role="button"
                       [attr.aria-label]="item.food.description">
@@ -221,6 +225,19 @@ export interface FoodNotFoundEvent {
           }
         </div>
       </div>
+
+      <!-- Nutrition Facts popup -->
+      @if (nfPopupFood()) {
+        <div class="nf-popup-overlay" (click)="closeNfPopup()">
+          <div class="nf-popup" (click)="$event.stopPropagation()">
+            <div class="nf-popup-header">
+              <span class="nf-popup-title">{{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}</span>
+              <button class="nf-popup-close" (click)="closeNfPopup()">✕</button>
+            </div>
+            <yeh-nutrition-label [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null" />
+          </div>
+        </div>
+      }
     </div>
   `,
   styleUrls: ['./foods-list.scss']
@@ -292,6 +309,44 @@ export class FoodsListComponent implements OnInit {
   });
 
   totalCount = computed(() => this.foods().length);
+
+  // Nutrition Facts popup
+  nfPopupFood = signal<Food | null>(null);
+  private nfHoverTimer: ReturnType<typeof setTimeout> | null = null;
+  private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+  showNfPopup(food: Food): void {
+    this.nfPopupFood.set(food);
+  }
+
+  closeNfPopup(): void {
+    this.nfPopupFood.set(null);
+  }
+
+  onFoodMouseEnter(food: Food): void {
+    this.nfHoverTimer = setTimeout(() => this.showNfPopup(food), 600);
+  }
+
+  onFoodMouseLeave(): void {
+    if (this.nfHoverTimer) {
+      clearTimeout(this.nfHoverTimer);
+      this.nfHoverTimer = null;
+    }
+  }
+
+  onFoodLongPressStart(event: TouchEvent, food: Food): void {
+    this.longPressTimer = setTimeout(() => {
+      event.preventDefault();
+      this.showNfPopup(food);
+    }, 500);
+  }
+
+  onFoodLongPressEnd(): void {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+  }
 
   private setFoods(foods: Food[]): void {
     this.foods.set(foods);
