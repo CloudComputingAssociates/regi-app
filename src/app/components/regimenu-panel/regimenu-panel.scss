@@ -591,9 +591,9 @@
   }
 
   .food-link {
-    text-decoration: none;
-    color: #4da6ff !important;
-    &:hover { text-decoration: underline; }
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    color: inherit !important;
   }
 
   .item-quantity {
