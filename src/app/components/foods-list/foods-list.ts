@@ -159,8 +159,6 @@ export interface FoodNotFoundEvent {
                       [class.selected]="selectedIndex() === item.flatIndex"
                       (click)="selectFood(item.flatIndex)"
                       (dblclick)="showNfPopup(item.food)"
-                      (mouseenter)="onFoodMouseEnter(item.food)"
-                      (mouseleave)="onFoodMouseLeave()"
                       (touchstart)="onTouchStart($event, item.flatIndex); onFoodLongPressStart($event, item.food)"
                       (touchmove)="onTouchMove($event, item.flatIndex); onFoodLongPressEnd()"
                       (touchend)="onTouchEnd($event, item.flatIndex); onFoodLongPressEnd()"
@@ -312,7 +310,6 @@ export class FoodsListComponent implements OnInit {
 
   // Nutrition Facts popup
   nfPopupFood = signal<Food | null>(null);
-  private nfHoverTimer: ReturnType<typeof setTimeout> | null = null;
   private longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
   showNfPopup(food: Food): void {
@@ -321,17 +318,6 @@ export class FoodsListComponent implements OnInit {
 
   closeNfPopup(): void {
     this.nfPopupFood.set(null);
-  }
-
-  onFoodMouseEnter(food: Food): void {
-    this.nfHoverTimer = setTimeout(() => this.showNfPopup(food), 600);
-  }
-
-  onFoodMouseLeave(): void {
-    if (this.nfHoverTimer) {
-      clearTimeout(this.nfHoverTimer);
-      this.nfHoverTimer = null;
-    }
   }
 
   onFoodLongPressStart(event: TouchEvent, food: Food): void {
