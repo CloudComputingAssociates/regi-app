@@ -455,8 +455,9 @@
 // Thumbnail styles
 .food-link {
   text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.6);
   text-underline-offset: 2px;
-  color: inherit !important;
+  color: #ffffff !important;
 }
 
 .food-thumbnail {

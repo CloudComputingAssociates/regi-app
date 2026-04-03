@@ -34,7 +34,7 @@
     font-size: 18px;
     font-weight: 700;
     color: #ffffff;
-    background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+    background: #444;
     cursor: pointer;
     user-select: none;
     transition: all 0.2s ease;
@@ -42,18 +42,13 @@
     height: 32px;
     padding: 0;
     border-radius: 6px;
-    border-top: 1px solid #6a6a6a;
-    border-left: 1px solid #5a5a5a;
-    border-right: 1px solid #5a5a5a;
-    border-bottom: 2px solid #1a1a1a;
+    border: 1px solid #555;
     outline: none;
     font-family: inherit;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow:
-      0 3px 6px rgba(0, 0, 0, 0.4),
-      0 -1px 0 rgba(255, 255, 255, 0.2) inset;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 
     &:hover:not(:disabled) {
       background: linear-gradient(180deg, #606060 0%, #454545 100%);
