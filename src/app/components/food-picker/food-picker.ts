@@ -133,9 +133,8 @@ export class FoodPickerComponent {
     const unit = this.selectedUnit();
     const gpuFactor = unit in WEIGHT_TO_GRAMS ? WEIGHT_TO_GRAMS[unit] : this.gramsPerUnit;
     const totalG = qty * gpuFactor;
-    const food = this.selectedFood();
-    const baseG = food?.nutritionFacts?.servingSizeG || 100;
-    return baseG > 0 ? totalG / baseG : 1;
+    // Nutrition data is stored normalized to per-100g
+    return totalG / 100;
   });
 
   onClose(): void {
