@@ -7,7 +7,9 @@ import {
   signal,
   computed,
   effect,
-  inject
+  inject,
+  viewChild,
+  ElementRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -102,6 +104,7 @@ export interface FoodAmountUpdate {
           <label class="qty-label">Qty:</label>
           <div class="qty-input-group">
             <input
+              #qtyInput
               type="number"
               class="qty-input"
               [ngModel]="displayQty()"
@@ -148,10 +151,22 @@ export class FoodAmountEditorComponent {
   itemIndex = input<number>(-1);
   nutritionFacts = input<NutritionFacts | null>(null);
   baseServingSizeG = input<number>(100);
+  titlePrefix = input<string>('EDIT');
 
   // Outputs
   amountChanged = output<FoodAmountUpdate>();
   closed = output<void>();
+
+  // Auto-focus QTY input when editor opens
+  private qtyInput = viewChild<ElementRef>('qtyInput');
+  private focusEffect = effect(() => {
+    if (this.isOpen()) {
+      setTimeout(() => {
+        this.qtyInput()?.nativeElement?.focus();
+        this.qtyInput()?.nativeElement?.select();
+      }, 100);
+    }
+  });
 
   // Internal state
   selectedUnit = signal<EditorUnit>('g');
@@ -178,7 +193,7 @@ export class FoodAmountEditorComponent {
 
   itemName = computed(() => {
     const i = this.item();
-    return 'EDIT: ' + (i?.shortDescription || i?.foodName || 'Food');
+    return this.titlePrefix() + ': ' + (i?.shortDescription || i?.foodName || 'Food');
   });
 
   // Grams per "whole"/"cup" unit for this food (from servingGramsPerUnit)

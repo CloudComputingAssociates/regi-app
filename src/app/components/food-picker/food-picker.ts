@@ -3,12 +3,15 @@ import {
   Component,
   ChangeDetectionStrategy,
   input,
-  output
+  output,
+  signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FoodsListComponent, AddFoodEvent } from '../foods-list/foods-list';
-import { Food } from '../../models/food.model';
+import { FoodAmountEditorComponent, FoodAmountUpdate } from '../food-amount-editor/food-amount-editor';
+import { Food, NutritionFacts } from '../../models/food.model';
+import { MealItem } from '../../models/planning.model';
 
 export interface FoodPickerAddEvent {
   food: Food;
@@ -25,7 +28,7 @@ const WEIGHT_TO_GRAMS: Record<string, number> = {
 
 @Component({
   selector: 'app-food-picker',
-  imports: [CommonModule, MatIconModule, FoodsListComponent],
+  imports: [CommonModule, MatIconModule, FoodsListComponent, FoodAmountEditorComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
@@ -49,10 +52,21 @@ const WEIGHT_TO_GRAMS: Record<string, number> = {
             [showAiButton]="false"
             [showPreferenceIcons]="false"
             [showFilterRadios]="false"
-            (addFood)="onFoodAdded($event)" />
+            (addFood)="onFoodSelected($event)" />
         </div>
       </div>
     </div>
+
+    <!-- Amount editor overlay -->
+    <app-food-amount-editor
+      [isOpen]="editorOpen()"
+      [item]="editorItem()"
+      [itemIndex]="0"
+      [nutritionFacts]="editorNutritionFacts()"
+      [baseServingSizeG]="editorBaseServingG()"
+      titlePrefix="ADD"
+      (amountChanged)="onAmountConfirmed($event)"
+      (closed)="closeEditor()" />
   `,
   styleUrls: ['./food-picker.scss']
 })
@@ -66,6 +80,13 @@ export class FoodPickerComponent {
   foodAdded = output<FoodPickerAddEvent>();
   closed = output<void>();
 
+  // Editor state
+  editorOpen = signal(false);
+  editorItem = signal<MealItem | null>(null);
+  editorNutritionFacts = signal<NutritionFacts | null>(null);
+  editorBaseServingG = signal(100);
+  private pendingFood: Food | null = null;
+
   onBackdropClick(): void {
     this.onClose();
   }
@@ -74,23 +95,61 @@ export class FoodPickerComponent {
     this.closed.emit();
   }
 
-  onFoodAdded(event: AddFoodEvent): void {
+  onFoodSelected(event: AddFoodEvent): void {
     const food = event.food;
     const nf = food.nutritionFacts;
-    const unit = food.servingUnit;
+    const unit = food.servingUnit ?? 'g';
+    const gramsPerUnit = food.servingGramsPerUnit ?? nf?.servingSizeG ?? 100;
 
-    if (unit && unit in WEIGHT_TO_GRAMS) {
-      // Weight-based unit (oz, lbs, g): use constant, no ServingGramsPerUnit needed
-      // Default to 1 unit worth of grams
-      const amount = WEIGHT_TO_GRAMS[unit];
-      this.foodAdded.emit({ food, amount, unit });
-    } else if (unit && food.servingGramsPerUnit) {
-      // Food-specific unit (whole, cup, tbsp, etc.): use stored grams-per-unit
-      this.foodAdded.emit({ food, amount: food.servingGramsPerUnit, unit });
-    } else {
-      // No preferred unit: add one serving in grams
-      const amount = nf?.servingSizeG ?? 100;
-      this.foodAdded.emit({ food, amount, unit: 'g' });
+    // Default quantity
+    let defaultQty = 1;
+    if (unit === 'g') {
+      defaultQty = nf?.servingSizeG ?? 100;
     }
+
+    // Build a temporary MealItem for the editor
+    const tempItem: MealItem = {
+      foodId: food.id,
+      foodName: food.description,
+      shortDescription: food.shortDescription ?? undefined,
+      quantity: defaultQty,
+      unit,
+      calories: nf?.calories,
+      proteinG: nf?.proteinG,
+      fatG: nf?.totalFatG,
+      carbG: nf?.totalCarbohydrateG,
+      fiberG: nf?.dietaryFiberG,
+      sodiumMg: nf?.sodiumMG,
+      servingSizeG: nf?.servingSizeG,
+      servingGramsPerUnit: food.servingGramsPerUnit ?? undefined,
+      foodImageThumbnail: food.foodImageThumbnail ?? undefined,
+      categoryName: food.categoryName ?? undefined,
+      productPurchaseLink: food.productPurchaseLink ?? undefined,
+    };
+
+    const baseServingG = defaultQty * (unit in WEIGHT_TO_GRAMS ? WEIGHT_TO_GRAMS[unit] : gramsPerUnit);
+
+    this.pendingFood = food;
+    this.editorItem.set(tempItem);
+    this.editorNutritionFacts.set(nf ?? null);
+    this.editorBaseServingG.set(baseServingG);
+    this.editorOpen.set(true);
+  }
+
+  onAmountConfirmed(event: FoodAmountUpdate): void {
+    if (!this.pendingFood) return;
+
+    this.foodAdded.emit({
+      food: this.pendingFood,
+      amount: event.quantityG,
+      unit: event.displayUnit,
+    });
+
+    this.closeEditor();
+  }
+
+  closeEditor(): void {
+    this.editorOpen.set(false);
+    this.pendingFood = null;
   }
 }
