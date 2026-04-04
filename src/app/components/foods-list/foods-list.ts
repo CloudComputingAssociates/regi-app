@@ -150,6 +150,7 @@ export interface FoodNotFoundEvent {
                       (dblclick)="onFoodDblClick(item.food)"
                       [matTooltip]="showPreferenceIcons() ? 'Double-click (Web) or press-and-hold (Mobile) on list item for Nutrition Facts. Click on underlined link to find food.' : ''"
                       [matTooltipShowDelay]="2000"
+                      [matTooltipHideDelay]="4000"
                       matTooltipPosition="above"
                       (touchstart)="onTouchStart($event, item.flatIndex); onFoodLongPressStart($event, item.food)"
                       (touchmove)="onTouchMove($event, item.flatIndex); onFoodLongPressEnd()"

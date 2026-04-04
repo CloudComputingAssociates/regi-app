@@ -113,8 +113,7 @@ export class FoodPickerComponent {
   selectedFood = signal<Food | null>(null);
   displayQty = signal<number>(1);
   selectedUnit = signal<EditorUnit>('whole');
-
-  private gramsPerUnit = 100;
+  private gramsPerUnit = signal(100);
 
   availableUnits = computed<EditorUnit[]>(() => {
     const food = this.selectedFood();
@@ -131,7 +130,7 @@ export class FoodPickerComponent {
   scale = computed(() => {
     const qty = this.displayQty();
     const unit = this.selectedUnit();
-    const gpuFactor = unit in WEIGHT_TO_GRAMS ? WEIGHT_TO_GRAMS[unit] : this.gramsPerUnit;
+    const gpuFactor = unit in WEIGHT_TO_GRAMS ? WEIGHT_TO_GRAMS[unit] : this.gramsPerUnit();
     const totalG = qty * gpuFactor;
     // Nutrition data is stored normalized to per-100g
     return totalG / 100;
@@ -147,7 +146,7 @@ export class FoodPickerComponent {
     const nf = food.nutritionFacts;
     const unit = (food.servingUnit as EditorUnit) || 'g';
 
-    this.gramsPerUnit = food.servingGramsPerUnit ?? nf?.servingSizeG ?? 100;
+    this.gramsPerUnit.set(food.servingGramsPerUnit ?? nf?.servingSizeG ?? 100);
 
     let defaultQty = 1;
     if (unit === 'g') {
@@ -172,7 +171,7 @@ export class FoodPickerComponent {
   private emitAdd(food: Food): void {
     const qty = this.displayQty();
     const unit = this.selectedUnit();
-    const gpuFactor = unit in WEIGHT_TO_GRAMS ? WEIGHT_TO_GRAMS[unit] : this.gramsPerUnit;
+    const gpuFactor = unit in WEIGHT_TO_GRAMS ? WEIGHT_TO_GRAMS[unit] : this.gramsPerUnit();
     const amountG = qty * gpuFactor;
 
     this.foodAdded.emit({ food, amount: amountG, unit });

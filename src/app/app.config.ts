@@ -1,4 +1,5 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
+import { MAT_TOOLTIP_DEFAULT_OPTIONS } from '@angular/material/tooltip';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAuth0, authHttpInterceptorFn } from '@auth0/auth0-angular';
@@ -28,6 +29,10 @@ export const appConfig: ApplicationConfig = {
           `${environment.apiUrl}/*`
         ]
       }
-    })
+    }),
+    {
+      provide: MAT_TOOLTIP_DEFAULT_OPTIONS,
+      useValue: { showDelay: 300, hideDelay: 0, touchendHideDelay: 0, disableTooltipInteractivity: true }
+    }
   ]
 };
