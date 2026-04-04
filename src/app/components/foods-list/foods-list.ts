@@ -334,10 +334,8 @@ export class FoodsListComponent implements OnInit {
   onFoodDblClick(food: Food): void {
     if (this.showPreferenceIcons()) {
       this.showNfPopup(food);
-    } else {
-      // Plan tab — double-click adds to meal
-      this.addFood.emit({ food });
     }
+    // Plan tab: adding is handled by selectFood's double-tap detection — don't duplicate
   }
 
   showNfPopup(food: Food): void {
@@ -349,6 +347,7 @@ export class FoodsListComponent implements OnInit {
   }
 
   onFoodLongPressStart(event: TouchEvent, food: Food): void {
+    if (!this.showPreferenceIcons()) return; // Plan tab uses swipe-to-add, not long-press
     this.longPressTimer = setTimeout(() => {
       event.preventDefault();
       this.showNfPopup(food);
@@ -856,12 +855,17 @@ export class FoodsListComponent implements OnInit {
       const timeSinceLastTap = currentTime - this.lastTapTime;
       const isDoubleTap =
         index === this.lastTapIndex &&
-        timeSinceLastTap < this.doubleTapDelay;
+        timeSinceLastTap < this.doubleTapDelay &&
+        timeSinceLastTap > 50; // ignore impossibly fast clicks (debounce)
 
       if (isDoubleTap) {
-        const food = foodList[index];
-        this.addFood.emit({ food });
+        // Only emit addFood from the food picker (not Food Preferences)
+        if (!this.showPreferenceIcons()) {
+          const food = foodList[index];
+          this.addFood.emit({ food });
+        }
 
+        // Cooldown — prevent next click from pairing
         this.lastTapTime = 0;
         this.lastTapIndex = -1;
         return;
