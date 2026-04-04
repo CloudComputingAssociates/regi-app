@@ -172,9 +172,13 @@ import { Subscription } from 'rxjs';
                 class="plan-item"
                 [class.swiping]="swipingIndex() === i"
                 [style.transform]="getSwipeTransform(i)"
-                (touchstart)="onTouchStart($event, i)"
-                (touchmove)="onTouchMove($event, i)"
-                (touchend)="onTouchEnd($event, i)">
+                (dblclick)="openAmountEditor(i)"
+                (touchstart)="onTouchStart($event, i); onItemLongPressStart(i)"
+                (touchmove)="onTouchMove($event, i); onItemLongPressEnd()"
+                (touchend)="onTouchEnd($event, i); onItemLongPressEnd()"
+                matTooltip="Double-click (Web) or press-and-hold (Mobile) to edit"
+                [matTooltipShowDelay]="2000"
+                matTooltipPosition="above">
 
                 <div class="item-content">
                   <!-- Thumbnail -->
@@ -189,7 +193,7 @@ import { Subscription } from 'rxjs';
                   <!-- Description and quantity -->
                   <div class="item-details">
                     @if (item.productPurchaseLink) {
-                      <a class="item-description food-link" [href]="item.productPurchaseLink" target="_blank" rel="noopener" (click)="$event.stopPropagation()">{{ item.shortDescription || item.foodName }}</a>
+                      <span class="item-description food-link" (click)="openProductLink($event, item.productPurchaseLink!)">{{ item.shortDescription || item.foodName }}</span>
                     } @else {
                       <span class="item-description">{{ item.shortDescription || item.foodName }}</span>
                     }
@@ -531,6 +535,27 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   private readonly weightToGrams: Record<string, number> = {
     g: 1, oz: 28.3495, lbs: 453.592,
   };
+
+  openProductLink(event: Event, url: string): void {
+    event.stopPropagation();
+    window.open(url, '_blank', 'noopener');
+  }
+
+  // Long-press to edit (mobile)
+  private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onItemLongPressStart(index: number): void {
+    this.longPressTimer = setTimeout(() => {
+      this.openAmountEditor(index);
+    }, 500);
+  }
+
+  onItemLongPressEnd(): void {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+  }
 
   // Food amount editor
   openAmountEditor(index: number): void {

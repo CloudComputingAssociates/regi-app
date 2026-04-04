@@ -177,6 +177,15 @@
 .yeh-approved-row {
   padding: 2px 4px 4px 4px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .dblclick-hint {
+    color: #4da6ff;
+    font-size: 11px;
+    font-style: italic;
+  }
 
   .checkbox-control {
     display: flex;

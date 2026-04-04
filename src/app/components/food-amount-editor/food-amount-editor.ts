@@ -178,7 +178,7 @@ export class FoodAmountEditorComponent {
 
   itemName = computed(() => {
     const i = this.item();
-    return i?.shortDescription || i?.foodName || 'Food';
+    return 'EDIT: ' + (i?.shortDescription || i?.foodName || 'Food');
   });
 
   // Grams per "whole"/"cup" unit for this food (from servingGramsPerUnit)

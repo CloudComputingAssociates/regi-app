@@ -110,15 +110,8 @@ export interface FoodNotFoundEvent {
             </div>
           </div>
         } @else {
-          <!-- Original checkbox for Plan tab -->
           <div class="yeh-approved-row">
-            <label class="checkbox-control">
-              <input
-                type="checkbox"
-                [checked]="isYehApproved()"
-                (change)="onYehApprovedChange($event)" />
-              <span>YEH Approved</span>
-            </label>
+            <span class="dblclick-hint">(double-click to add)</span>
           </div>
         }
       }
@@ -158,8 +151,8 @@ export interface FoodNotFoundEvent {
                       class="food-item"
                       [class.selected]="selectedIndex() === item.flatIndex"
                       (click)="selectFood(item.flatIndex)"
-                      (dblclick)="showNfPopup(item.food)"
-                      matTooltip="Double-click (Web) or press-and-hold (Mobile) on list item for Nutrition Facts. Click on underlined link to find food."
+                      (dblclick)="onFoodDblClick(item.food)"
+                      [matTooltip]="showPreferenceIcons() ? 'Double-click (Web) or press-and-hold (Mobile) on list item for Nutrition Facts. Click on underlined link to find food.' : ''"
                       [matTooltipShowDelay]="2000"
                       matTooltipPosition="above"
                       (touchstart)="onTouchStart($event, item.flatIndex); onFoodLongPressStart($event, item.food)"
@@ -338,6 +331,15 @@ export class FoodsListComponent implements OnInit {
     }
   }
 
+  onFoodDblClick(food: Food): void {
+    if (this.showPreferenceIcons()) {
+      this.showNfPopup(food);
+    } else {
+      // Plan tab — double-click adds to meal
+      this.addFood.emit({ food });
+    }
+  }
+
   showNfPopup(food: Food): void {
     this.nfPopupFood.set(food);
   }
@@ -410,8 +412,7 @@ export class FoodsListComponent implements OnInit {
   // Handles the refresh race condition where settings load after this component initializes.
   // Only applies the saved preference if the user hasn't manually switched filters yet.
   private foodSourceEffect = effect(() => {
-    if (!this.showFilterRadios()) return;
-    if (this.userChangedFilter) return;
+    if (this.showFilterRadios() && this.userChangedFilter) return;
 
     const source = this.prefsService.foodListSource();
     const filter = source === 'myfoods' ? 'my-favorites' : 'yeh-approved';
@@ -440,8 +441,11 @@ export class FoodsListComponent implements OnInit {
       this.activeFilter.set(initialFilter as FoodFilterType);
       this.isYehApproved.set(initialFilter === 'yeh-approved');
     } else {
-      this.activeFilter.set('yeh-approved');
-      this.isYehApproved.set(true);
+      // Plan tab — use preference setting, no checkbox
+      const source = this.prefsService.foodListSource();
+      const filter = source === 'myfoods' ? 'my-favorites' : 'yeh-approved';
+      this.activeFilter.set(filter as FoodFilterType);
+      this.isYehApproved.set(filter === 'yeh-approved');
     }
 
     if (this.mode() === 'search') {
