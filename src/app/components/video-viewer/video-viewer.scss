@@ -1,5 +1,12 @@
 // src/app/components/video-viewer/video-viewer.scss
 
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
 .video-viewer-container {
   display: flex;
   flex-direction: column;
