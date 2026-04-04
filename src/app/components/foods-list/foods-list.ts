@@ -159,7 +159,7 @@ export interface FoodNotFoundEvent {
                       [class.selected]="selectedIndex() === item.flatIndex"
                       (click)="selectFood(item.flatIndex)"
                       (dblclick)="showNfPopup(item.food)"
-                      matTooltip="Double-click (Web) or press-and-hold (Mobile) for Nutrition Facts"
+                      matTooltip="Double-click (Web) or press-and-hold (Mobile) on list item for Nutrition Facts. Click on underlined link to find food."
                       [matTooltipShowDelay]="2000"
                       matTooltipPosition="above"
                       (touchstart)="onTouchStart($event, item.flatIndex); onFoodLongPressStart($event, item.food)"
