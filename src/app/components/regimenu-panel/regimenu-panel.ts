@@ -151,8 +151,8 @@ import { Subscription } from 'rxjs';
             (ngModelChange)="onPrepVideoChange($event)"
             placeholder="https://youtube.com/..." />
           @if (prepVideoLink()) {
-            <button class="prep-video-test-btn" (click)="testPrepVideo()" matTooltip="Test link" matTooltipPosition="above">
-              <mat-icon>arrow_forward</mat-icon>
+            <button class="prep-video-test-btn" (click)="testPrepVideo()" matTooltip="Watch video" matTooltipPosition="above">
+              <mat-icon>visibility</mat-icon>
             </button>
           }
           <button
@@ -543,7 +543,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
   testPrepVideo(): void {
     const url = this.prepVideoLink();
-    if (url) window.open(url, '_blank', 'noopener');
+    if (url) this.tabService.openVideoViewer(url);
   }
 
   savePrepVideo(): void {

@@ -1,5 +1,5 @@
 // src/app/services/tab.service.ts
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, WritableSignal } from '@angular/core';
 
 export interface Tab {
   id: string;
@@ -85,7 +85,10 @@ export class TabService {
   // Define menu order - this determines tab insertion order
   // Left nav: today, review (Week Plans), meal-planning, shop (Shopping List), foods (Food Preferences), chat
   // Right nav (profile menu): account, preferences (Settings), help
-  private menuOrder = ['today', 'review', 'meal-planning', 'shop', 'foods', 'chat', 'preferences', 'account', 'help'];
+  private menuOrder = ['today', 'review', 'meal-planning', 'shop', 'foods', 'chat', 'video-viewer', 'preferences', 'account', 'help'];
+
+  /** URL for the video-viewer tab (set before opening the tab) */
+  videoViewerUrl: WritableSignal<string> = signal('');
 
   // Tabs that get an image icon
   private tabIcons: Record<string, string> = {
@@ -263,6 +266,12 @@ export class TabService {
     this.activeTabIndexSignal.set(0);
   }
 
+  /** Open the video viewer tab with the given URL */
+  openVideoViewer(url: string): void {
+    this.videoViewerUrl.set(url);
+    this.openTab('video-viewer', 'Prep Video');
+  }
+
   /** Update the badge count shown on a tab label */
   updateTabBadge(tabId: string, count: number): void {
     const currentTabs = this.tabsSignal();
@@ -299,7 +308,8 @@ export class TabService {
       'review': 'Week',
       'preferences': 'Settings',
       'account': 'Account',
-      'help': 'Help'
+      'help': 'Help',
+      'video-viewer': 'Prep Video'
     };
 
     // Create tabs in the order they were saved, but sorted by menuOrder

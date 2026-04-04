@@ -1,0 +1,81 @@
+// src/app/components/video-viewer/video-viewer.scss
+
+.video-viewer-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #000000;
+}
+
+.video-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  border-bottom: 1px solid #2a2a2a;
+  flex-shrink: 0;
+}
+
+.video-title {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+.video-frame-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.no-video {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.5);
+
+  .no-video-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+  }
+
+  p {
+    font-size: 14px;
+    margin: 0;
+  }
+}

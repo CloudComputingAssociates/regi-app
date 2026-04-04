@@ -15,6 +15,7 @@ import { AccountPanelComponent } from '../account-panel/account-panel';
 import { PreferencesPanelComponent } from '../preferences-panel/preferences-panel';
 import { TodayPanelComponent } from '../today-panel/today-panel';
 import { NotificationComponent } from '../notification/notification';
+import { VideoViewerComponent } from '../video-viewer/video-viewer';
 
 @Component({
   selector: 'app-main-body',
@@ -32,7 +33,8 @@ import { NotificationComponent } from '../notification/notification';
     AccountPanelComponent,
     PreferencesPanelComponent,
     TodayPanelComponent,
-    NotificationComponent
+    NotificationComponent,
+    VideoViewerComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -83,6 +85,8 @@ import { NotificationComponent } from '../notification/notification';
                     <app-preferences-panel />
                   } @else if (tab.id === 'account') {
                     <app-account-panel />
+                  } @else if (tab.id === 'video-viewer') {
+                    <app-video-viewer />
                   } @else if (tab.id === 'help') {
                     <div class="placeholder-content">
                       <div class="action-buttons">
