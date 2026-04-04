@@ -149,9 +149,11 @@ export interface FoodNotFoundEvent {
                       (click)="selectFood(item.flatIndex)"
                       (dblclick)="onFoodDblClick(item.food)"
                       [matTooltip]="showPreferenceIcons() ? 'Double-click (Web) or press-and-hold (Mobile) on list item for Nutrition Facts. Click on underlined link to find food.' : ''"
+                      #foodTooltip="matTooltip"
                       [matTooltipShowDelay]="2000"
-                      [matTooltipHideDelay]="4000"
                       matTooltipPosition="above"
+                      (mouseenter)="scheduleTooltipHide(foodTooltip)"
+                      (mouseleave)="clearTooltipHide()"
                       (touchstart)="onTouchStart($event, item.flatIndex); onFoodLongPressStart($event, item.food)"
                       (touchmove)="onTouchMove($event, item.flatIndex); onFoodLongPressEnd()"
                       (touchend)="onTouchEnd($event, item.flatIndex); onFoodLongPressEnd()"
@@ -325,6 +327,20 @@ export class FoodsListComponent implements OnInit {
         this.linkClickTimer = null;
         this.linkClickFood = null;
       }, 300);
+    }
+  }
+
+  private tooltipHideTimer: ReturnType<typeof setTimeout> | null = null;
+
+  scheduleTooltipHide(tooltip: { hide: () => void }): void {
+    this.clearTooltipHide();
+    this.tooltipHideTimer = setTimeout(() => tooltip.hide(), 6000);
+  }
+
+  clearTooltipHide(): void {
+    if (this.tooltipHideTimer) {
+      clearTimeout(this.tooltipHideTimer);
+      this.tooltipHideTimer = null;
     }
   }
 

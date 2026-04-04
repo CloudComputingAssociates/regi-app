@@ -177,8 +177,11 @@ import { Subscription } from 'rxjs';
                 (touchmove)="onTouchMove($event, i); onItemLongPressEnd()"
                 (touchend)="onTouchEnd($event, i); onItemLongPressEnd()"
                 matTooltip="Double-click (Web) or press-and-hold (Mobile) to edit"
+                #itemTooltip="matTooltip"
                 [matTooltipShowDelay]="2000"
-                matTooltipPosition="above">
+                matTooltipPosition="above"
+                (mouseenter)="scheduleTooltipHide(itemTooltip)"
+                (mouseleave)="clearTooltipHide()">
 
                 <div class="item-content">
                   <!-- Thumbnail -->
@@ -535,6 +538,20 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   private readonly weightToGrams: Record<string, number> = {
     g: 1, oz: 28.3495, lbs: 453.592,
   };
+
+  private tooltipHideTimer: ReturnType<typeof setTimeout> | null = null;
+
+  scheduleTooltipHide(tooltip: { hide: () => void }): void {
+    this.clearTooltipHide();
+    this.tooltipHideTimer = setTimeout(() => tooltip.hide(), 6000); // 2s show delay + 4s visible
+  }
+
+  clearTooltipHide(): void {
+    if (this.tooltipHideTimer) {
+      clearTimeout(this.tooltipHideTimer);
+      this.tooltipHideTimer = null;
+    }
+  }
 
   openProductLink(event: Event, url: string): void {
     event.stopPropagation();
