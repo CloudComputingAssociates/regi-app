@@ -4,14 +4,16 @@ import {
   ChangeDetectionStrategy,
   input,
   output,
-  signal
+  signal,
+  computed
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { FoodsListComponent, AddFoodEvent } from '../foods-list/foods-list';
-import { FoodAmountEditorComponent, FoodAmountUpdate } from '../food-amount-editor/food-amount-editor';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { FoodsListComponent, AddFoodEvent, SelectedFoodEvent } from '../foods-list/foods-list';
+import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { Food, NutritionFacts } from '../../models/food.model';
-import { MealItem } from '../../models/planning.model';
 
 export interface FoodPickerAddEvent {
   food: Food;
@@ -19,16 +21,18 @@ export interface FoodPickerAddEvent {
   unit: string;
 }
 
-// Weight-to-weight conversions (always valid, no density needed)
+type EditorUnit = 'g' | 'oz' | 'lbs' | 'cup' | 'tsp' | 'tbsp' | 'ml' | 'whole';
+
 const WEIGHT_TO_GRAMS: Record<string, number> = {
-  g: 1,
-  oz: 28.3495,
-  lbs: 453.592,
+  g: 1, oz: 28.3495, lbs: 453.592,
 };
+
+const WEIGHT_UNITS: EditorUnit[] = ['g', 'oz', 'lbs'];
+const FOOD_SPECIFIC_UNITS: EditorUnit[] = ['whole', 'cup', 'tsp', 'tbsp', 'ml'];
 
 @Component({
   selector: 'app-food-picker',
-  imports: [CommonModule, MatIconModule, FoodsListComponent, FoodAmountEditorComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, FoodsListComponent, NutritionFactsLabelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
@@ -40,116 +44,158 @@ const WEIGHT_TO_GRAMS: Record<string, number> = {
         <!-- Header -->
         <div class="picker-header">
           <span class="picker-title">Add Food</span>
-          <button class="close-btn" (click)="onClose()" aria-label="Close">
-            <mat-icon>close</mat-icon>
-          </button>
+          <div class="picker-header-actions">
+            <button class="add-btn"
+              [disabled]="!selectedFood()"
+              (click)="onAddClick()"
+              matTooltip="Add food to meal"
+              matTooltipPosition="below"
+              aria-label="Add food to meal">
+              <mat-icon>check</mat-icon>
+            </button>
+            <button class="close-btn" (click)="onClose()" aria-label="Close">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
         </div>
 
-        <!-- Foods list (reused component) -->
-        <div class="picker-body">
+        <!-- Foods list (fixed height) -->
+        <div class="picker-list">
           <app-foods-list
             mode="search"
             [showAiButton]="false"
             [showPreferenceIcons]="false"
             [showFilterRadios]="false"
-            (addFood)="onFoodSelected($event)" />
+            (selectedFood)="onFoodSelected($event)"
+            (addFood)="onFoodAdded($event)" />
         </div>
+
+        <!-- QTY / Units / Nutrition (shown when a food is selected) -->
+        @if (selectedFood()) {
+          <div class="picker-details">
+            <div class="qty-row">
+              <label class="qty-label">QTY:</label>
+              <input
+                type="number"
+                class="qty-input"
+                [ngModel]="displayQty()"
+                (ngModelChange)="onQtyChange($event)"
+                min="0"
+                step="0.5" />
+              <select class="unit-select" [ngModel]="selectedUnit()" (ngModelChange)="onUnitChange($event)">
+                @for (u of availableUnits(); track u) {
+                  <option [ngValue]="u">{{ u }}</option>
+                }
+              </select>
+            </div>
+            <div class="nf-scroll">
+              <yeh-nutrition-label
+                [nutritionFacts]="selectedFood()!.nutritionFacts ?? null"
+                [scale]="scale()"
+                [displayUnit]="selectedUnit()"
+                [displayQuantity]="displayQty()" />
+            </div>
+          </div>
+        }
       </div>
     </div>
-
-    <!-- Amount editor overlay -->
-    <app-food-amount-editor
-      [isOpen]="editorOpen()"
-      [item]="editorItem()"
-      [itemIndex]="0"
-      [nutritionFacts]="editorNutritionFacts()"
-      [baseServingSizeG]="editorBaseServingG()"
-      titlePrefix="ADD"
-      (amountChanged)="onAmountConfirmed($event)"
-      (closed)="closeEditor()" />
   `,
   styleUrls: ['./food-picker.scss']
 })
 export class FoodPickerComponent {
-  // Inputs
   mealPlanId = input<string>('');
   isOpen = input<boolean>(false);
   showNameField = input<boolean>(false);
 
-  // Outputs
   foodAdded = output<FoodPickerAddEvent>();
   closed = output<void>();
 
-  // Editor state
-  editorOpen = signal(false);
-  editorItem = signal<MealItem | null>(null);
-  editorNutritionFacts = signal<NutritionFacts | null>(null);
-  editorBaseServingG = signal(100);
-  private pendingFood: Food | null = null;
+  selectedFood = signal<Food | null>(null);
+  displayQty = signal<number>(1);
+  selectedUnit = signal<EditorUnit>('whole');
+
+  private gramsPerUnit = 100;
+
+  availableUnits = computed<EditorUnit[]>(() => {
+    const food = this.selectedFood();
+    const units: EditorUnit[] = [...WEIGHT_UNITS];
+    const foodUnit = (food?.servingUnit as EditorUnit) || null;
+    const hasGpu = food?.servingGramsPerUnit != null && food.servingGramsPerUnit > 0;
+
+    if (foodUnit && hasGpu && FOOD_SPECIFIC_UNITS.includes(foodUnit) && !units.includes(foodUnit)) {
+      units.unshift(foodUnit);
+    }
+    return units;
+  });
+
+  scale = computed(() => {
+    const qty = this.displayQty();
+    const unit = this.selectedUnit();
+    const gpuFactor = unit in WEIGHT_TO_GRAMS ? WEIGHT_TO_GRAMS[unit] : this.gramsPerUnit;
+    const totalG = qty * gpuFactor;
+    const food = this.selectedFood();
+    const baseG = food?.nutritionFacts?.servingSizeG || 100;
+    return baseG > 0 ? totalG / baseG : 1;
+  });
 
   onBackdropClick(): void {
     this.onClose();
   }
 
   onClose(): void {
+    this.selectedFood.set(null);
     this.closed.emit();
   }
 
-  onFoodSelected(event: AddFoodEvent): void {
+  onFoodSelected(event: SelectedFoodEvent): void {
     const food = event.food;
     const nf = food.nutritionFacts;
-    const unit = food.servingUnit ?? 'g';
-    const gramsPerUnit = food.servingGramsPerUnit ?? nf?.servingSizeG ?? 100;
+    const unit = (food.servingUnit as EditorUnit) || 'g';
 
-    // Default quantity
+    this.gramsPerUnit = food.servingGramsPerUnit ?? nf?.servingSizeG ?? 100;
+
     let defaultQty = 1;
     if (unit === 'g') {
       defaultQty = nf?.servingSizeG ?? 100;
     }
 
-    // Build a temporary MealItem for the editor
-    const tempItem: MealItem = {
-      foodId: food.id,
-      foodName: food.description,
-      shortDescription: food.shortDescription ?? undefined,
-      quantity: defaultQty,
-      unit,
-      calories: nf?.calories,
-      proteinG: nf?.proteinG,
-      fatG: nf?.totalFatG,
-      carbG: nf?.totalCarbohydrateG,
-      fiberG: nf?.dietaryFiberG,
-      sodiumMg: nf?.sodiumMG,
-      servingSizeG: nf?.servingSizeG,
-      servingGramsPerUnit: food.servingGramsPerUnit ?? undefined,
-      foodImageThumbnail: food.foodImageThumbnail ?? undefined,
-      categoryName: food.categoryName ?? undefined,
-      productPurchaseLink: food.productPurchaseLink ?? undefined,
-    };
-
-    const baseServingG = defaultQty * (unit in WEIGHT_TO_GRAMS ? WEIGHT_TO_GRAMS[unit] : gramsPerUnit);
-
-    this.pendingFood = food;
-    this.editorItem.set(tempItem);
-    this.editorNutritionFacts.set(nf ?? null);
-    this.editorBaseServingG.set(baseServingG);
-    this.editorOpen.set(true);
+    this.selectedFood.set(food);
+    this.selectedUnit.set(unit);
+    this.displayQty.set(defaultQty);
   }
 
-  onAmountConfirmed(event: FoodAmountUpdate): void {
-    if (!this.pendingFood) return;
-
-    this.foodAdded.emit({
-      food: this.pendingFood,
-      amount: event.quantityG,
-      unit: event.displayUnit,
-    });
-
-    this.closeEditor();
+  onAddClick(): void {
+    const food = this.selectedFood();
+    if (!food) return;
+    this.emitAdd(food);
   }
 
-  closeEditor(): void {
-    this.editorOpen.set(false);
-    this.pendingFood = null;
+  onFoodAdded(event: AddFoodEvent): void {
+    this.emitAdd(event.food);
+  }
+
+  private emitAdd(food: Food): void {
+    const qty = this.displayQty();
+    const unit = this.selectedUnit();
+    const gpuFactor = unit in WEIGHT_TO_GRAMS ? WEIGHT_TO_GRAMS[unit] : this.gramsPerUnit;
+    const amountG = qty * gpuFactor;
+
+    this.foodAdded.emit({ food, amount: amountG, unit });
+    // Stay open — reset selection for next add
+    this.selectedFood.set(null);
+  }
+
+  onQtyChange(value: number): void {
+    this.displayQty.set(value);
+  }
+
+  onUnitChange(unit: EditorUnit): void {
+    this.selectedUnit.set(unit);
+    // Reset qty to sensible default for new unit
+    if (unit === 'g') {
+      this.displayQty.set(this.selectedFood()?.nutritionFacts?.servingSizeG ?? 100);
+    } else {
+      this.displayQty.set(1);
+    }
   }
 }

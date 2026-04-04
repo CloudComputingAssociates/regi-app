@@ -109,10 +109,6 @@ export interface FoodNotFoundEvent {
               </label>
             </div>
           </div>
-        } @else {
-          <div class="yeh-approved-row">
-            <span class="dblclick-hint">(double-click to add)</span>
-          </div>
         }
       }
 
