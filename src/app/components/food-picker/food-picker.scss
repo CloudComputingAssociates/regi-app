@@ -15,6 +15,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
+}
+
+.picker-panel {
+  pointer-events: auto;
 }
 
 .picker-panel {
