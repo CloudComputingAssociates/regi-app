@@ -462,12 +462,12 @@
 }
 
 // Thumbnail styles
-.food-link {
+.food-description.food-link {
   text-decoration: underline;
   text-decoration-color: rgba(255, 255, 255, 0.6);
   text-underline-offset: 2px;
   color: #ffffff !important;
-  flex: 0 1 auto;
+  flex: 0 1 auto !important;
   cursor: pointer;
 }
 

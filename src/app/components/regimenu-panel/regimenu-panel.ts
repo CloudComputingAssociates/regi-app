@@ -8,7 +8,8 @@ import {
   ElementRef,
   ViewChild,
   OnInit,
-  OnDestroy
+  OnDestroy,
+  effect
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -138,13 +139,29 @@ import { Subscription } from 'rxjs';
           <span class="totals-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
           <span class="totals-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
           <span class="totals-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg salt</span>
-          <span class="totals-spacer"></span>
+        </div>
+
+        <!-- Prep Video row -->
+        <div class="prep-video-row">
+          <label class="prep-video-label">Prep Video</label>
+          <input
+            type="url"
+            class="prep-video-input"
+            [ngModel]="prepVideoLink()"
+            (ngModelChange)="onPrepVideoChange($event)"
+            placeholder="https://youtube.com/..." />
+          @if (prepVideoLink()) {
+            <button class="prep-video-test-btn" (click)="testPrepVideo()" matTooltip="Test link" matTooltipPosition="above">
+              <mat-icon>arrow_forward</mat-icon>
+            </button>
+          }
           <button
-            class="ai-recipe-btn"
-            (click)="onAiRecipe()"
-            [disabled]="planningService.mealItems().length === 0">
-            <img src="images/AI-star.png" alt="AI" class="ai-recipe-icon" />
-            <span class="ai-recipe-label">Generate recipe</span>
+            class="prep-video-save-btn"
+            [disabled]="!prepVideoDirty()"
+            (click)="savePrepVideo()"
+            matTooltip="Save prep video link"
+            matTooltipPosition="above">
+            <mat-icon>check</mat-icon>
           </button>
         </div>
       }
@@ -506,23 +523,37 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     );
   }
 
-  onAiRecipe(): void {
-    const items = this.planningService.mealItems();
-    if (items.length === 0) return;
+  // Prep Video
+  prepVideoLink = signal('');
+  prepVideoDirty = signal(false);
+  private prepVideoOriginal = '';
 
-    const itemLines = items
-      .map(i => `- ${this.formatQuantity(i.quantity, i.unit)} ${i.unit} ${i.shortDescription || i.foodName}`)
-      .join('\n');
+  private syncPrepVideo = effect(() => {
+    const meal = this.planningService.currentPlan();
+    const link = meal?.prepVideoLink ?? '';
+    this.prepVideoLink.set(link);
+    this.prepVideoOriginal = link;
+    this.prepVideoDirty.set(false);
+  });
 
-    const prefill = `Create a recipe to prepare this meal. Include detailed prep instructions and enumerated step-by-step cooking directions for the selected cooking method.\n\nIngredients:\n${itemLines}`;
+  onPrepVideoChange(value: string): void {
+    this.prepVideoLink.set(value);
+    this.prepVideoDirty.set(value !== this.prepVideoOriginal);
+  }
 
-    this.chatService.setEntryContext({
-      type: 'ai-recipe',
-      prefill,
-      data: { cookingMethods: ['stovetop', 'bake', 'broil', 'grill', 'air fryer', 'braise', 'poach', 'smoker', 'microwave', 'instant pot'] }
+  testPrepVideo(): void {
+    const url = this.prepVideoLink();
+    if (url) window.open(url, '_blank', 'noopener');
+  }
+
+  savePrepVideo(): void {
+    const plan = this.planningService.currentPlan();
+    if (!plan) return;
+    const link = this.prepVideoLink();
+    this.planningService.updateMeal(plan.id, { prepVideoLink: link }).then(() => {
+      this.prepVideoOriginal = link;
+      this.prepVideoDirty.set(false);
     });
-
-    this.tabService.openTab('chat', 'Chat');
   }
 
   // Food picker

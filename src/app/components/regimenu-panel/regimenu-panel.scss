@@ -261,51 +261,74 @@
   }
 }
 
-// AI Recipe button (in totals row)
-.ai-recipe-btn {
+// Prep Video row
+.prep-video-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
-  background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
-  border-top: 1px solid #6a6a6a;
-  border-left: 1px solid #5a5a5a;
-  border-right: 1px solid #5a5a5a;
-  border-bottom: 2px solid #1a1a1a;
-  border-radius: 6px;
+  padding: 4px 10px;
+  background: #333;
+  border-bottom: 1px solid #444;
+}
+
+.prep-video-label {
+  color: #4da6ff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.prep-video-input {
+  flex: 1;
+  padding: 3px 6px;
+  font-size: 12px;
+  background: #2a2a2a;
+  color: #ffffff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  min-width: 0;
+
+  &:focus {
+    outline: none;
+    border-color: #4da6ff;
+  }
+}
+
+.prep-video-test-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: #444;
+  border: 1px solid #555;
+  border-radius: 4px;
   cursor: pointer;
-  font-family: inherit;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
-  transition: all 0.2s ease;
+  color: #ffffff;
   flex-shrink: 0;
-  width: auto;
-  height: auto;
 
-  .ai-recipe-icon {
-    width: 16px;
-    height: 16px;
-  }
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  &:hover { background: #555; }
+}
 
-  .ai-recipe-label {
-    font-size: 13px;
-    font-weight: 500;
-    color: #ffffff;
-    white-space: nowrap;
-  }
+.prep-video-save-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: #357035;
+  border: 1px solid #4a954a;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #ffffff;
+  flex-shrink: 0;
 
-  &:hover:not(:disabled) {
-    background: linear-gradient(180deg, #606060 0%, #454545 100%);
-  }
-
-  &:active:not(:disabled) {
-    transform: translateY(1px);
-    border-bottom-width: 1px;
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  &:hover:not(:disabled) { background: #408040; }
+  &:disabled { opacity: 0.3; cursor: not-allowed; }
 }
 
 // Add food button
@@ -591,9 +614,14 @@
   }
 
   .food-link {
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    text-decoration: none;
     color: inherit !important;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+      color: #4da6ff !important;
+    }
   }
 
   .item-quantity {
