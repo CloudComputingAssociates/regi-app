@@ -180,7 +180,7 @@ export interface FoodNotFoundEvent {
                       } @else {
                         <span class="food-description">{{ getDisplayDescription(item.food) }}</span>
                       }
-                      @if (item.food.dataSource === 'user' && item.food.userId) {
+                      @if (!item.food.dataSource?.startsWith('USDA') && item.food.userId) {
                         <span class="food-badge my-food-badge">My Food</span>
                       }
 
@@ -813,7 +813,9 @@ export class FoodsListComponent implements OnInit {
 
   private getFoodSource(foodId: number): string | undefined {
     const food = this.foods().find(f => f.id === foodId);
-    return food?.dataSource === 'user' ? 'user' : undefined;
+    if (!food) return undefined;
+    // USDA foods have DataSource like 'USDA-FNDDS-...' — anything else is a user food
+    return food.dataSource?.startsWith('USDA') ? undefined : 'user';
   }
 
   toggleFavorite(event: Event, foodId: number): void {
@@ -829,10 +831,11 @@ export class FoodsListComponent implements OnInit {
   removePreference(event: Event, foodId: number): void {
     event.stopPropagation();
     const filter = this.activeFilter();
+    const source = this.getFoodSource(foodId);
     if (filter === 'my-favorites') {
-      this.preferencesService.toggleFavoriteLocal(foodId);
+      this.preferencesService.toggleFavoriteLocal(foodId, source);
     } else if (filter === 'my-restricted') {
-      this.preferencesService.toggleRestrictedLocal(foodId);
+      this.preferencesService.toggleRestrictedLocal(foodId, source);
     }
     // Remove from displayed list immediately
     this.foods.update(foods => foods.filter(f => f.id !== foodId));
