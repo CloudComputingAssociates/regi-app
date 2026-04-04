@@ -38,7 +38,8 @@ const FOOD_SPECIFIC_UNITS: EditorUnit[] = ['whole', 'cup', 'tsp', 'tbsp', 'ml'];
     <div
       class="picker-backdrop"
       [style.display]="isOpen() ? 'flex' : 'none'"
-      (click)="onBackdropClick()">
+      (mousedown)="onBackdropMouseDown($event)"
+      (mouseup)="onBackdropMouseUp($event)">
 
       <div class="picker-panel" (click)="$event.stopPropagation()">
         <!-- Header -->
@@ -138,8 +139,18 @@ export class FoodPickerComponent {
     return baseG > 0 ? totalG / baseG : 1;
   });
 
-  onBackdropClick(): void {
-    this.onClose();
+  private backdropMouseDownTarget: EventTarget | null = null;
+
+  onBackdropMouseDown(event: MouseEvent): void {
+    this.backdropMouseDownTarget = event.target;
+  }
+
+  onBackdropMouseUp(event: MouseEvent): void {
+    // Only close if both mousedown and mouseup were on the backdrop itself
+    if (this.backdropMouseDownTarget === event.target) {
+      this.onClose();
+    }
+    this.backdropMouseDownTarget = null;
   }
 
   onClose(): void {
