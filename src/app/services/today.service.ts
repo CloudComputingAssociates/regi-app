@@ -50,6 +50,7 @@ export interface TodayResponse {
   planName?: string;
   planStartDate?: string;
   mealNames?: Record<number, string>;
+  mealVideoLinks?: Record<number, string>;
 }
 
 @Injectable({

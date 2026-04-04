@@ -2,6 +2,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '@auth0/auth0-angular';
 import { map } from 'rxjs';
 import { NutritionTipService } from '../../services/nutrition-tip.service';
@@ -15,6 +16,7 @@ interface MealGroup {
   slot: number;
   time: string;
   name: string;
+  videoLink?: string;
   items: DailyLogItem[];
   totalCalories: number;
   totalProtein: number;
@@ -32,7 +34,7 @@ interface FoodPopup {
 
 @Component({
   selector: 'app-today-panel',
-  imports: [CommonModule, AsyncPipe, MatTooltipModule],
+  imports: [CommonModule, AsyncPipe, MatTooltipModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
@@ -64,7 +66,7 @@ interface FoodPopup {
         } @else if (!hasPlan()) {
           <div class="no-plan-state">
             <p>No Plan scheduled for today.</p>
-            <p class="no-plan-hint">Use RegiMenu℠ Meals to create meals and assign to a Week Plan.</p>
+            <p class="no-plan-hint">Use RegiMenu℠ MealPlans to create meals and assign to a Week Plan.</p>
           </div>
         } @else {
           <!-- Header -->
@@ -87,19 +89,23 @@ interface FoodPopup {
                 </button>
               </div>
             </div>
-            <div class="report-subtitle">
-              RegiMenu<sup class="sm">SM</sup> generated for {{ userName$ | async }}.&nbsp;&nbsp;{{ todayFormatted() }}@if (planDay()) { (Day {{ planDay() }} of plan)}</div>
-            <div class="report-totals">
-              Target Daily Totals: {{ plannedTotals().calories }} calories |
-              {{ plannedTotals().protein }}g protein ({{ plannedTotals().proteinPct }}%) |
-              {{ plannedTotals().fat }}g fat ({{ plannedTotals().fatPct }}%) |
-              {{ plannedTotals().carbs }}g carbs ({{ plannedTotals().carbsPct }}%)
+            <div class="report-totals target-totals">
+              <span class="totals-label">Target:</span>
+              <span class="totals-grid">
+                <span class="totals-val">{{ plannedTotals().calories }}</span><span class="totals-unit">cal</span>
+                <span class="totals-val">{{ plannedTotals().protein }}g</span><span class="totals-unit">protein</span>
+                <span class="totals-val">{{ plannedTotals().fat }}g</span><span class="totals-unit">fat</span>
+                <span class="totals-val">{{ plannedTotals().carbs }}g</span><span class="totals-unit">carbs</span>
+              </span>
             </div>
             <div class="report-totals actual-totals">
-              Actual Daily: {{ checkedTotals().calories }} calories |
-              {{ checkedTotals().protein }}g protein |
-              {{ checkedTotals().fat }}g fat |
-              {{ checkedTotals().carbs }}g carbs
+              <span class="totals-label">Actual:</span>
+              <span class="totals-grid">
+                <span class="totals-val">{{ checkedTotals().calories }}</span><span class="totals-unit">cal</span>
+                <span class="totals-val">{{ checkedTotals().protein }}g</span><span class="totals-unit">protein</span>
+                <span class="totals-val">{{ checkedTotals().fat }}g</span><span class="totals-unit">fat</span>
+                <span class="totals-val">{{ checkedTotals().carbs }}g</span><span class="totals-unit">carbs</span>
+              </span>
             </div>
           </div>
 
@@ -111,7 +117,13 @@ interface FoodPopup {
                   class="meal-check"
                   [checked]="meal.affirmed"
                   (change)="toggleMealAffirm(meal)" />
-                <span class="meal-title-line">{{ meal.time }} Meal {{ meal.slot }} - {{ meal.name }}</span>
+                <span class="meal-title-line">{{ meal.time }} {{ meal.name }}</span>
+                @if (meal.videoLink) {
+                  <button class="video-link-btn" (click)="openMealVideo(meal.videoLink)"
+                    matTooltip="Watch Prep Video" matTooltipPosition="above">
+                    <mat-icon class="video-icon">visibility</mat-icon>
+                  </button>
+                }
               </div>
               <div class="meal-totals">
                 Total: {{ meal.totalCalories }} cal |
@@ -137,6 +149,10 @@ interface FoodPopup {
               </div>
             </div>
           }
+
+          <div class="report-subtitle">
+            RegiMenu<sup class="sm">SM</sup> generated for {{ userName$ | async }}.&nbsp;&nbsp;{{ todayFormatted() }}@if (planDay()) { (Day {{ planDay() }} of plan)}
+          </div>
 
           @if (isFinalized()) {
             <div class="log-section">
@@ -284,7 +300,7 @@ export class TodayPanelComponent implements OnInit {
     const dd = String(today.getDate()).padStart(2, '0');
     this.todayFormatted.set(`${mm}/${dd}/${today.getFullYear()}`);
 
-    this.buildMealGroups(resp.items, resp.mealNames ?? {});
+    this.buildMealGroups(resp.items, resp.mealNames ?? {}, resp.mealVideoLinks ?? {});
 
     // Restore checked state from API
     const checked = new Set(resp.items.filter(i => i.isChecked).map(i => i.id));
@@ -294,7 +310,7 @@ export class TodayPanelComponent implements OnInit {
     this.tipService.fetchTip();
   }
 
-  private buildMealGroups(items: DailyLogItem[], mealNames: Record<number, string>): void {
+  private buildMealGroups(items: DailyLogItem[], mealNames: Record<number, string>, mealVideoLinks: Record<number, string>): void {
     const slotMap = new Map<number, DailyLogItem[]>();
     for (const item of items) {
       const list = slotMap.get(item.mealSlot) || [];
@@ -328,6 +344,7 @@ export class TodayPanelComponent implements OnInit {
         slot,
         time,
         name: mealNames[slot] || `Meal ${slot}`,
+        videoLink: mealVideoLinks[slot] || undefined,
         items: slotItems,
         totalCalories: totalCal,
         totalProtein: totalPro,
@@ -442,6 +459,10 @@ export class TodayPanelComponent implements OnInit {
 
   dismissGoodJob(): void {
     this.showGoodJob.set(false);
+  }
+
+  openMealVideo(url: string): void {
+    this.tabService.openVideoViewer(url);
   }
 
   closePanel(): void {
