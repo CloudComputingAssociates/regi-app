@@ -41,6 +41,14 @@ interface AllFoodRow {
   totalCarbohydrateG?: number;
   dietaryFiberG?: number;
   sodiumMG?: number;
+  transFatG?: number;
+  cholesterolMG?: number;
+  totalSugarsG?: number;
+  addedSugarsG?: number;
+  vitaminDMcg?: number;
+  calciumMG?: number;
+  ironMG?: number;
+  potassiumMG?: number;
   servingSizeG?: number;
   servingSizeHousehold?: string;
   productPurchaseLink?: string;
@@ -447,14 +455,19 @@ export class FoodPreferencesService {
         proteinG: row.proteinG ?? 0,
         totalFatG: row.totalFatG ?? 0,
         saturatedFatG: row.saturatedFatG ?? 0,
+        transFatG: row.transFatG ?? 0,
+        cholesterolMG: row.cholesterolMG ?? 0,
         totalCarbohydrateG: row.totalCarbohydrateG ?? 0,
         dietaryFiberG: row.dietaryFiberG ?? 0,
+        totalSugarsG: row.totalSugarsG ?? 0,
+        addedSugarsG: row.addedSugarsG,
         sodiumMG: row.sodiumMG ?? 0,
+        vitaminDMcg: row.vitaminDMcg ?? 0,
+        calciumMG: row.calciumMG ?? 0,
+        ironMG: row.ironMG ?? 0,
+        potassiumMG: row.potassiumMG ?? 0,
         servingSizeG: row.servingSizeG ?? 0,
         servingSizeHousehold: row.servingSizeHousehold ?? '',
-        transFatG: 0,
-        cholesterolMG: 0,
-        totalSugarsG: 0,
       },
     };
   }

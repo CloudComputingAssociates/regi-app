@@ -176,7 +176,7 @@ export interface FoodNotFoundEvent {
                         }
                       </div>
                       @if (item.food.productPurchaseLink) {
-                        <a class="food-description food-link" [href]="item.food.productPurchaseLink" target="_blank" rel="noopener" (click)="$event.stopPropagation()">{{ getDisplayDescription(item.food) }}</a>
+                        <span class="food-description food-link" (click)="onFoodLinkClick($event, item.food)">{{ getDisplayDescription(item.food) }}</span>
                       } @else {
                         <span class="food-description">{{ getDisplayDescription(item.food) }}</span>
                       }
@@ -314,6 +314,29 @@ export class FoodsListComponent implements OnInit {
   // Nutrition Facts popup
   nfPopupFood = signal<Food | null>(null);
   private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private linkClickTimer: ReturnType<typeof setTimeout> | null = null;
+  private linkClickFood: Food | null = null;
+
+  onFoodLinkClick(event: Event, food: Food): void {
+    event.stopPropagation();
+    if (this.linkClickFood === food && this.linkClickTimer) {
+      // Double click on link — show nutrition facts
+      clearTimeout(this.linkClickTimer);
+      this.linkClickTimer = null;
+      this.linkClickFood = null;
+      this.showNfPopup(food);
+    } else {
+      // First click — wait to see if double click follows
+      this.linkClickFood = food;
+      this.linkClickTimer = setTimeout(() => {
+        // Single click — open link
+        window.open(food.productPurchaseLink!, '_blank', 'noopener');
+        this.linkClickTimer = null;
+        this.linkClickFood = null;
+      }, 300);
+    }
+  }
 
   showNfPopup(food: Food): void {
     this.nfPopupFood.set(food);
