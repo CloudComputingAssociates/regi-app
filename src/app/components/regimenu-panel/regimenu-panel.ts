@@ -145,7 +145,7 @@ import { Subscription } from 'rxjs';
         <div class="prep-video-row">
           <label class="prep-video-label">Video</label>
           @if (prepVideoLink()) {
-            <button class="prep-video-test-btn" (click)="testPrepVideo()" matTooltip="Watch video" matTooltipPosition="above">
+            <button class="prep-video-test-btn" (click)="testPrepVideo()" matTooltip="YouTube video" matTooltipPosition="above">
               <svg class="yt-icon" viewBox="0 0 28 20"><rect rx="4" width="28" height="20" fill="#FF0000"/><polygon points="11,4 11,16 20,10" fill="#FFF"/></svg>
             </button>
           }

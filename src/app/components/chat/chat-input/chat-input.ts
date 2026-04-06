@@ -63,6 +63,9 @@ import { TabService } from '../../../services/tab.service';
           [placeholder]="placeholder()"
           [disabled]="chatService.isLoading()"
           [attr.aria-label]="'Message input'"
+          data-gramm="false"
+          data-gramm_editor="false"
+          data-enable-grammarly="false"
           rows="2"></textarea>
 
         <!-- Send Button (Right) -->
