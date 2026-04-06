@@ -324,6 +324,59 @@
   font-weight: 700;
 }
 
+// Date navigator: DAY < date > arrows
+.date-navigator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-day-of-week {
+  color: #4da6ff;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-right: 2px;
+}
+
+.nav-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.nav-date {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 80px;
+  text-align: center;
+}
+
+.date-navigator.centered {
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
 .report-actions {
   display: flex;
   gap: 8px;
@@ -423,7 +476,7 @@
   }
 }
 
-.report-totals {
+.report-totals, .meal-totals {
   display: flex;
   align-items: baseline;
   gap: 8px;
@@ -431,10 +484,9 @@
   font-weight: 500;
   margin-top: 6px;
   padding: 6px 0;
-  border-bottom: 2px solid #4a4a4a;
 
   .totals-label {
-    color: rgba(255, 255, 255, 0.8);
+    color: #4da6ff;
     flex-shrink: 0;
     min-width: 50px;
   }
@@ -447,23 +499,27 @@
 
   .totals-val {
     text-align: right;
-    color: rgba(255, 255, 255, 0.8);
+    color: #4da6ff;
   }
 
   .totals-unit {
     text-align: left;
     color: rgba(255, 255, 255, 0.5);
   }
+}
 
-  &.actual-totals {
-    border-bottom: none;
-    margin-top: 0;
-    padding-top: 2px;
+.report-totals.target-totals {
+  border-bottom: 2px solid #4a4a4a;
+}
 
-    .totals-label,
-    .totals-val {
-      color: #ffffff;
-    }
+.report-totals.actual-totals {
+  border-bottom: none;
+  margin-top: 0;
+  padding-top: 2px;
+
+  .totals-label,
+  .totals-val {
+    color: #ffffff;
   }
 }
 
@@ -497,10 +553,8 @@
 }
 
 .meal-totals {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 11px;
   margin-bottom: 6px;
-  padding-left: 32px; // align with food list (past checkbox)
+  padding-left: 32px;
 }
 
 // Food items

@@ -65,7 +65,17 @@ interface FoodPopup {
           <div class="loading-state">Loading today's plan...</div>
         } @else if (!hasPlan()) {
           <div class="no-plan-state">
-            <p>No Plan scheduled for today.</p>
+            <div class="date-navigator centered">
+              <span class="nav-day-of-week">{{ dayOfWeek() }}</span>
+              <button class="nav-arrow" (click)="goToPreviousDay()" matTooltip="Previous day" matTooltipPosition="above">
+                <mat-icon>chevron_left</mat-icon>
+              </button>
+              <span class="nav-date">{{ displayDate() }}</span>
+              <button class="nav-arrow" (click)="goToNextDay()" matTooltip="Next day" matTooltipPosition="above">
+                <mat-icon>chevron_right</mat-icon>
+              </button>
+            </div>
+            <p>No Plan scheduled for this day.</p>
             <p class="no-plan-hint">Use RegiMenu℠ MealPlans to create meals and assign to a Week Plan.</p>
           </div>
         } @else {
@@ -73,6 +83,16 @@ interface FoodPopup {
           <div class="report-header">
             <div class="report-title-row">
               <span class="report-plan-name">{{ planName() }}</span>
+              <div class="date-navigator">
+                <span class="nav-day-of-week">{{ dayOfWeek() }}</span>
+                <button class="nav-arrow" (click)="goToPreviousDay()" matTooltip="Previous day" matTooltipPosition="above">
+                  <mat-icon>chevron_left</mat-icon>
+                </button>
+                <span class="nav-date">{{ displayDate() }}</span>
+                <button class="nav-arrow" (click)="goToNextDay()" matTooltip="Next day" matTooltipPosition="above">
+                  <mat-icon>chevron_right</mat-icon>
+                </button>
+              </div>
               <div class="report-actions">
                 <button class="icon-btn print-btn" disabled
                   matTooltip="Print PDF (coming soon)"
@@ -126,10 +146,13 @@ interface FoodPopup {
                 }
               </div>
               <div class="meal-totals">
-                Total: {{ meal.totalCalories }} cal |
-                {{ meal.totalProtein }}g protein |
-                {{ meal.totalFat }}g fat |
-                {{ meal.totalCarbs }}g carbs
+                <span class="totals-label">Total:</span>
+                <span class="totals-grid">
+                  <span class="totals-val">{{ meal.totalCalories }}</span><span class="totals-unit">cal</span>
+                  <span class="totals-val">{{ meal.totalProtein }}g</span><span class="totals-unit">protein</span>
+                  <span class="totals-val">{{ meal.totalFat }}g</span><span class="totals-unit">fat</span>
+                  <span class="totals-val">{{ meal.totalCarbs }}g</span><span class="totals-unit">carbs</span>
+                </span>
               </div>
 
               <!-- Food items -->
@@ -199,6 +222,18 @@ export class TodayPanelComponent implements OnInit {
   private tabService = inject(TabService);
 
   userName$ = this.auth.user$.pipe(map(u => u?.name ?? 'User'));
+
+  // Date navigation
+  private currentDate = signal(new Date());
+  private static readonly DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+  dayOfWeek = computed(() => TodayPanelComponent.DAYS[this.currentDate().getDay()]);
+  displayDate = computed(() => {
+    const d = this.currentDate();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${mm}/${dd}/${d.getFullYear()}`;
+  });
 
   // Checked food item IDs
   private checkedItems = signal<Set<number>>(new Set());
@@ -272,42 +307,61 @@ export class TodayPanelComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    const resp = await this.todayService.fetchToday();
+    await this.loadDate(this.currentDate());
+    this.tipService.fetchTip();
+  }
+
+  goToPreviousDay(): void {
+    const d = new Date(this.currentDate());
+    d.setDate(d.getDate() - 1);
+    this.currentDate.set(d);
+    this.loadDate(d);
+  }
+
+  goToNextDay(): void {
+    const d = new Date(this.currentDate());
+    d.setDate(d.getDate() + 1);
+    this.currentDate.set(d);
+    this.loadDate(d);
+  }
+
+  private async loadDate(date: Date): Promise<void> {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+
+    this.todayFormatted.set(`${mm}/${dd}/${yyyy}`);
+
+    const resp = await this.todayService.fetchToday(dateStr);
 
     if (!resp || resp.items.length === 0) {
       this.hasPlan.set(false);
-      this.tipService.fetchTip();
+      this.mealGroups.set([]);
+      this.checkedItems.set(new Set());
+      this.planName.set('');
+      this.planDay.set(0);
       return;
     }
 
     this.hasPlan.set(true);
     this.isFinalized.set(!!resp.finalizedAt);
 
-    // Plan metadata from the response (no extra API calls)
     if (resp.planName) {
       this.planName.set(resp.planName);
     }
     if (resp.planStartDate) {
-      const today = new Date();
       const start = new Date(resp.planStartDate + 'T00:00:00');
-      const dayNum = Math.floor((today.getTime() - start.getTime()) / 86400000) + 1;
+      const dayNum = Math.floor((date.getTime() - start.getTime()) / 86400000) + 1;
       if (dayNum > 0) {
         this.planDay.set(dayNum);
       }
     }
-    const today = new Date();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    this.todayFormatted.set(`${mm}/${dd}/${today.getFullYear()}`);
 
     this.buildMealGroups(resp.items, resp.mealNames ?? {}, resp.mealVideoLinks ?? {});
 
-    // Restore checked state from API
     const checked = new Set(resp.items.filter(i => i.isChecked).map(i => i.id));
     this.checkedItems.set(checked);
-
-    // Load nutrition tip after report is rendered (lower priority)
-    this.tipService.fetchTip();
   }
 
   private buildMealGroups(items: DailyLogItem[], mealNames: Record<number, string>, mealVideoLinks: Record<number, string>): void {

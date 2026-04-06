@@ -611,35 +611,7 @@ export class PreferencesService {
     const dg = this.dailyGoals();
     const pi = this.personalInfo();
 
-    // 1. Calorie target locked while calculated value differs
-    if (dg.isOverridden) {
-      const calc = this.computedTargetCalories();
-      if (calc !== null && Math.abs(calc - dg.calories) > CALORIE_MISMATCH_TOLERANCE) {
-        warnings.push(
-          `Calculated calories are ${calc} but your target is ${dg.calories} (User Set is checked).`
-        );
-      }
-    }
-
-    // 2. Carb slider out of sync with carbs field
-    const sliderCarbs = pi.carbScaleGrams;
-    if (sliderCarbs !== undefined && sliderCarbs !== null && sliderCarbs !== dg.carbs) {
-      warnings.push(
-        `Carb slider (${sliderCarbs}g) doesn't match Carbs target (${dg.carbs}g).`
-      );
-    }
-
-    // 3. Macro math doesn't match calorie target
-    const macroTotal = (dg.protein * 4) + (dg.fat * 9) + (dg.carbs * 4);
-    const macroDiff = macroTotal - dg.calories;
-    if (Math.abs(macroDiff) > MACRO_BALANCE_TOLERANCE) {
-      const direction = macroDiff > 0 ? 'over' : 'under';
-      warnings.push(
-        `Macros total ${macroTotal} cal (${Math.abs(macroDiff)} ${direction} your ${dg.calories} cal target).`
-      );
-    }
-
-    // 4. Unrealistic goal weight
+    // 1. Unrealistic goal weight
     if (pi.currentWeightKg && pi.targetWeightKg) {
       const pctChange = ((pi.targetWeightKg - pi.currentWeightKg) / pi.currentWeightKg) * 100;
       const absLoss = Math.abs(pctChange);
