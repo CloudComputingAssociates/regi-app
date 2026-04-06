@@ -3,6 +3,8 @@ import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, e
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 import { AuthService } from '@auth0/auth0-angular';
 import { map } from 'rxjs';
 import { NutritionTipService } from '../../services/nutrition-tip.service';
@@ -34,31 +36,10 @@ interface FoodPopup {
 
 @Component({
   selector: 'app-today-panel',
-  imports: [CommonModule, AsyncPipe, MatTooltipModule, MatIconModule],
+  imports: [CommonModule, AsyncPipe, MatTooltipModule, MatIconModule, MatDatepickerModule, MatNativeDateModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Nutrition tip — apple shows immediately, content loads async -->
-      <div class="nutrition-tip-card">
-        <img src="/images/News-YEH-Logo.png" alt="Tip of the Day" class="tip-apple" />
-        @if (tipService.tip(); as tip) {
-          @if (tip.imageUrl) {
-            <img [src]="tip.imageUrl" alt="" class="tip-thumbnail" />
-          }
-          <div class="tip-text">
-            <a [href]="tip.articleUrl" target="_blank" rel="noopener" class="tip-title">
-              {{ tip.title }}
-            </a>
-            @if (tip.description) {
-              <span class="tip-description">{{ tip.description }}</span>
-            }
-            <span class="tip-source">NutritionFacts.org</span>
-          </div>
-        } @else if (tipService.loading()) {
-          <span class="tip-loading">Loading tip...</span>
-        }
-      </div>
-
       <!-- Report area -->
       <div class="report-area">
         @if (todayService.loading()) {
@@ -67,11 +48,13 @@ interface FoodPopup {
           <div class="no-plan-state">
             <div class="date-navigator centered">
               <span class="nav-day-of-week">{{ dayOfWeek() }}</span>
-              <button class="nav-arrow" (click)="goToPreviousDay()" matTooltip="Previous day" matTooltipPosition="above">
+              <button class="nav-arrow icon-btn" (click)="goToPreviousDay()" matTooltip="Previous day" matTooltipPosition="above">
                 <mat-icon>chevron_left</mat-icon>
               </button>
-              <span class="nav-date">{{ displayDate() }}</span>
-              <button class="nav-arrow" (click)="goToNextDay()" matTooltip="Next day" matTooltipPosition="above">
+              <span class="nav-date" (click)="datePicker2.open()">{{ displayDate() }}</span>
+              <input class="hidden-date-input" [matDatepicker]="datePicker2" [value]="currentDate()" (dateChange)="onDatePicked($event.value)" />
+              <mat-datepicker #datePicker2 />
+              <button class="nav-arrow icon-btn" (click)="goToNextDay()" matTooltip="Next day" matTooltipPosition="above">
                 <mat-icon>chevron_right</mat-icon>
               </button>
             </div>
@@ -83,16 +66,6 @@ interface FoodPopup {
           <div class="report-header">
             <div class="report-title-row">
               <span class="report-plan-name">{{ planName() }}</span>
-              <div class="date-navigator">
-                <span class="nav-day-of-week">{{ dayOfWeek() }}</span>
-                <button class="nav-arrow" (click)="goToPreviousDay()" matTooltip="Previous day" matTooltipPosition="above">
-                  <mat-icon>chevron_left</mat-icon>
-                </button>
-                <span class="nav-date">{{ displayDate() }}</span>
-                <button class="nav-arrow" (click)="goToNextDay()" matTooltip="Next day" matTooltipPosition="above">
-                  <mat-icon>chevron_right</mat-icon>
-                </button>
-              </div>
               <div class="report-actions">
                 <button class="icon-btn print-btn" disabled
                   matTooltip="Print PDF (coming soon)"
@@ -108,6 +81,18 @@ interface FoodPopup {
                   ✕
                 </button>
               </div>
+            </div>
+            <div class="date-navigator">
+              <span class="nav-day-of-week">{{ dayOfWeek() }}</span>
+              <button class="nav-arrow icon-btn" (click)="goToPreviousDay()" matTooltip="Previous day" matTooltipPosition="above">
+                <mat-icon>chevron_left</mat-icon>
+              </button>
+              <span class="nav-date" (click)="datePicker.open()">{{ displayDate() }}</span>
+              <input class="hidden-date-input" [matDatepicker]="datePicker" [value]="currentDate()" (dateChange)="onDatePicked($event.value)" />
+              <mat-datepicker #datePicker />
+              <button class="nav-arrow icon-btn" (click)="goToNextDay()" matTooltip="Next day" matTooltipPosition="above">
+                <mat-icon>chevron_right</mat-icon>
+              </button>
             </div>
             <div class="report-totals target-totals">
               <span class="totals-label">Target:</span>
@@ -130,7 +115,7 @@ interface FoodPopup {
           </div>
 
           <!-- Meals -->
-          @for (meal of mealGroups(); track meal.slot) {
+          @for (meal of mealGroups(); track meal.slot; let idx = $index) {
             <div class="meal-section">
               <div class="meal-header">
                 <input type="checkbox"
@@ -171,6 +156,29 @@ interface FoodPopup {
                 }
               </div>
             </div>
+
+            <!-- Nutrition tip after first meal -->
+            @if (idx === 0) {
+              <div class="nutrition-tip-card">
+                <img src="/images/News-YEH-Logo.png" alt="Tip of the Day" class="tip-apple" />
+                @if (tipService.tip(); as tip) {
+                  @if (tip.imageUrl) {
+                    <img [src]="tip.imageUrl" alt="" class="tip-thumbnail" />
+                  }
+                  <div class="tip-text">
+                    <a [href]="tip.articleUrl" target="_blank" rel="noopener" class="tip-title">
+                      {{ tip.title }}
+                    </a>
+                    @if (tip.description) {
+                      <span class="tip-description">{{ tip.description }}</span>
+                    }
+                    <span class="tip-source">NutritionFacts.org</span>
+                  </div>
+                } @else if (tipService.loading()) {
+                  <span class="tip-loading">Loading tip...</span>
+                }
+              </div>
+            }
           }
 
           <div class="report-subtitle">
@@ -224,7 +232,7 @@ export class TodayPanelComponent implements OnInit {
   userName$ = this.auth.user$.pipe(map(u => u?.name ?? 'User'));
 
   // Date navigation
-  private currentDate = signal(new Date());
+  currentDate = signal(new Date());
   private static readonly DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
   dayOfWeek = computed(() => TodayPanelComponent.DAYS[this.currentDate().getDay()]);
@@ -323,6 +331,12 @@ export class TodayPanelComponent implements OnInit {
     d.setDate(d.getDate() + 1);
     this.currentDate.set(d);
     this.loadDate(d);
+  }
+
+  onDatePicked(date: Date | null): void {
+    if (!date) return;
+    this.currentDate.set(date);
+    this.loadDate(date);
   }
 
   private async loadDate(date: Date): Promise<void> {
