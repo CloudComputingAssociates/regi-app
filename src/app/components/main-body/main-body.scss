@@ -6,6 +6,7 @@
   background-color: #3a3a3a;
   border-radius: 12px;
   border: 2px solid #6a6a6a;
+  border-top: none;
   overflow: hidden;
   flex: 1;
   min-height: 0;
@@ -57,7 +58,7 @@
 }
 
 ::ng-deep .mat-mdc-tab-labels {
-  background-color: #3a3a3a;  // Gray background
+  background-color: #000000;  // Black - inactive tabs sit on app background
   justify-content: flex-start !important;  // Force left-align tabs
   gap: 2px;  // Minimal gap between tabs
 }
@@ -153,6 +154,7 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  border-top: 2px solid #6a6a6a;  // Connects to active tab's side borders
 }
 
 ::ng-deep .mat-mdc-tab-body {
