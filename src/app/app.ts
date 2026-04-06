@@ -82,8 +82,17 @@ export class AppComponent implements OnInit, OnDestroy {
   private notification = inject(NotificationService);
   private errorSub?: Subscription;
 
-  tipDismissed = signal(false);
-  dismissTip(): void { this.tipDismissed.set(true); }
+  tipDismissed = signal(this.isTipDismissedToday());
+
+  dismissTip(): void {
+    this.tipDismissed.set(true);
+    localStorage.setItem('yeh_tipDismissed', new Date().toDateString());
+  }
+
+  private isTipDismissedToday(): boolean {
+    const stored = localStorage.getItem('yeh_tipDismissed');
+    return stored === new Date().toDateString();
+  }
   title = 'yeh-web-app';
 
   ngOnDestroy(): void {
