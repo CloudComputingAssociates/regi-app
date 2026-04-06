@@ -25,8 +25,13 @@ export class RoleService {
     ).subscribe(() => {
       this.auth.idTokenClaims$.pipe(take(1)).subscribe(claims => {
         if (claims) {
+          console.log('[RoleService] ID token claims:', JSON.stringify(Object.keys(claims)));
+          console.log('[RoleService] Roles claim:', claims[ROLES_CLAIM]);
           const roles = (claims[ROLES_CLAIM] as string[]) ?? [];
           this.rolesSignal.set(roles as AppRole[]);
+          console.log('[RoleService] Resolved roles:', roles);
+        } else {
+          console.log('[RoleService] No claims found');
         }
       });
     });
