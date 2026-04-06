@@ -1,6 +1,6 @@
 // src/app/app.ts
 // Main App Component - Modern Angular with Material Design
-import { Component, ChangeDetectionStrategy, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '@auth0/auth0-angular';
 import { Subscription } from 'rxjs';
@@ -17,6 +17,7 @@ import { SettingsService } from './services/settings.service';
 import { TabService } from './services/tab.service';
 import { ChatService } from './services/chat.service';
 import { NotificationService } from './services/notification.service';
+import { NutritionTipService } from './services/nutrition-tip.service';
 
 @Component({
   selector: 'app-root',
@@ -42,6 +43,16 @@ import { NotificationService } from './services/notification.service';
           <main class="main-content">
             @if (isAuthenticated()) {
               <app-macros />
+              @if (!tipDismissed() && tipService.tip(); as tip) {
+                <div class="nutrition-tip-bar">
+                  <img src="/images/News-YEH-Logo.png" alt="Tip" class="tip-bar-logo" />
+                  @if (tip.imageUrl) {
+                    <img [src]="tip.imageUrl" alt="" class="tip-bar-thumb" />
+                  }
+                  <a [href]="tip.articleUrl" target="_blank" rel="noopener" class="tip-bar-title">{{ tip.title }}</a>
+                  <button class="tip-bar-close" (click)="dismissTip()">✕</button>
+                </div>
+              }
             }
             <app-main-body />
             @if (isAuthenticated()) {
@@ -64,11 +75,15 @@ export class AppComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
   isAuthenticated = toSignal(this.auth.isAuthenticated$, { initialValue: false });
   subscriptionService = inject(SubscriptionService);
+  tipService = inject(NutritionTipService);
   private settingsService = inject(SettingsService);
   private tabService = inject(TabService);
   private chatService = inject(ChatService);
   private notification = inject(NotificationService);
   private errorSub?: Subscription;
+
+  tipDismissed = signal(false);
+  dismissTip(): void { this.tipDismissed.set(true); }
   title = 'yeh-web-app';
 
   ngOnDestroy(): void {
@@ -96,6 +111,7 @@ export class AppComponent implements OnInit, OnDestroy {
       if (isAuthenticated) {
         // Only check subscription status if user is authenticated
         this.subscriptionService.checkSubscriptionStatus().subscribe();
+        this.tipService.fetchTip();
 
         // Restore tabs: check localStorage first (page refresh), then API (login)
         const localState = localStorage.getItem('yeh_tabState');

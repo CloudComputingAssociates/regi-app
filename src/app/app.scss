@@ -99,6 +99,62 @@
   }
 }
 
+// Nutrition tip bar — slim strip between macros and tabs
+.nutrition-tip-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: #000000;
+  border-radius: 6px;
+  flex-shrink: 0;
+  min-height: 0;
+
+  .tip-bar-logo {
+    height: 28px;
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .tip-bar-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 3px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .tip-bar-title {
+    color: #4da6ff;
+    font-size: 11px;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .tip-bar-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0 2px;
+    flex-shrink: 0;
+
+    &:hover {
+      color: #ffffff;
+    }
+  }
+}
+
 // Global responsive utilities
 @media (max-width: 767px) {
   // Mobile styles - already handled above
