@@ -3,10 +3,9 @@
 .main-body-container {
   display: flex;
   flex-direction: column;
-  background-color: #3a3a3a;
-  border-radius: 0 0 12px 12px;
-  border: 2px solid #6a6a6a;
-  border-top: none;
+  background-color: #2a2a2a;
+  border-radius: 12px;
+  border: none;
   overflow: hidden;
   flex: 1;
   min-height: 0;
@@ -44,9 +43,9 @@
 }
 
 ::ng-deep .mat-mdc-tab-header {
-  background-color: #000000 !important;  // Black background to match tab labels
-  border-bottom: 2px solid #6a6a6a !important;  // Top border of content frame
-  padding-left: 0;  // No padding for balanced look
+  background-color: #000000 !important;
+  border-bottom: none !important;
+  padding-left: 0;
 }
 
 ::ng-deep .mat-mdc-tab-header-border-bottom {
@@ -72,15 +71,15 @@
   height: 31px !important;  // Reduced from 41px (25% reduction)
   min-height: 31px !important;  // Force minimum height
   position: relative;
-  background: linear-gradient(180deg, #4e4e4e 0%, #424242 100%) !important;  // Subtly lighter than background
+  background: linear-gradient(180deg, #333333 0%, #222222 100%) !important;  // Dark, recessed
   border-radius: 6px 6px 0 0;  // Reduced from 8px
   margin-bottom: -1px;  // Overlap bottom border
-  border-top: 2px solid #5a5a5a !important;  // Subtle lighter top edge
-  border-left: 1px solid #4a4a4a !important;
-  border-right: 1px solid #4a4a4a !important;
+  border-top: 1px solid #444444 !important;
+  border-left: 1px solid #333333 !important;
+  border-right: 1px solid #333333 !important;
   border-bottom: none;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4) !important;  // Moderate shadow
+  box-shadow: none !important;
 
   // Force white text and remove internal padding on all child elements
   .mdc-tab__text-label,
@@ -102,10 +101,10 @@
   }
 
   &:hover {
-    background: linear-gradient(180deg, #505050 0%, #3d3d3d 100%);
-    border-top-color: #656565;
-    border-left-color: #555555;
-    border-right-color: #555555;
+    background: linear-gradient(180deg, #3a3a3a 0%, #282828 100%);
+    border-top-color: #505050;
+    border-left-color: #3a3a3a;
+    border-right-color: #3a3a3a;
     color: rgba(255, 255, 255, 0.9) !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);  // Slightly stronger shadow on hover
 
@@ -118,15 +117,15 @@
 }
 
 ::ng-deep .mat-mdc-tab.mdc-tab--active {
-  background: linear-gradient(180deg, #6a6a6a 0%, #3a3a3a 100%) !important;  // Gradient that flows into content area
+  background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%) !important;  // Light fade at top, flows into content
   color: #ffffff !important;  // White - clickable
-  border-top: 3px solid #808080 !important;  // Thicker, brighter top border
-  border-left: 2px solid #6a6a6a !important;
-  border-right: 2px solid #6a6a6a !important;
-  border-bottom: 2px solid #3a3a3a !important;  // Matches content background - covers the top border
-  margin-bottom: -2px !important;  // Overlap the body wrapper's top border
-  z-index: 2;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5) !important;  // Stronger shadow for prominence
+  border-top: 2px solid #555555 !important;
+  border-left: 1px solid #333333 !important;
+  border-right: 1px solid #333333 !important;
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+  z-index: 1;
+  box-shadow: none !important;
 
   // Force white text on all child elements for active tab
   .mdc-tab__text-label,
