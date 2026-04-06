@@ -158,18 +158,30 @@ export class ChatInputComponent {
       this.messageText = '';
       this.chatService.clearEntryContext();
 
-      // Enter conversation mode: clear placeholder and refocus
+      // Enter conversation mode: clear placeholder and refocus after Angular settles
       this.inConversation = true;
       this.placeholder.set('');
-      setTimeout(() => this.textInputRef?.nativeElement?.focus(), 50);
+      // Retry focus until textarea is not disabled (loading state may briefly disable it)
+      const refocus = () => {
+        const el = this.textInputRef?.nativeElement;
+        if (el && !el.disabled) {
+          el.focus();
+        } else {
+          setTimeout(refocus, 100);
+        }
+      };
+      setTimeout(refocus, 150);
     }
   }
 
   onInputBlur(): void {
-    if (this.inConversation) {
-      this.inConversation = false;
-      this.placeholder.set('yeh? ');
-    }
+    // Delay so refocus attempts don't prematurely end conversation mode
+    setTimeout(() => {
+      if (this.inConversation && document.activeElement !== this.textInputRef?.nativeElement) {
+        this.inConversation = false;
+        this.placeholder.set('yeh? ');
+      }
+    }, 200);
   }
 
   dismissContext(): void {
