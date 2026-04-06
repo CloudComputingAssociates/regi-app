@@ -100,7 +100,7 @@ export class ChatService {
     if (this.isPromptMeActive()) {
       return `YEH is prompting ${this.userFirstName()}`;
     }
-    return 'Nutrition Chat Output';
+    return 'Chat';
   });
 
   togglePromptMe(): void {
