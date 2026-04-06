@@ -152,7 +152,7 @@ import { Subscription } from 'rxjs';
             placeholder="https://youtube.com/..." />
           @if (prepVideoLink()) {
             <button class="prep-video-test-btn" (click)="testPrepVideo()" matTooltip="Watch video" matTooltipPosition="above">
-              <mat-icon>visibility</mat-icon>
+              <mat-icon>smart_display</mat-icon>
             </button>
           }
           <button

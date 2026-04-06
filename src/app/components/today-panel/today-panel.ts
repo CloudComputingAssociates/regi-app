@@ -126,15 +126,6 @@ interface FoodPopup {
                 <span class="totals-val">{{ plannedTotals().carbs }}g</span><span class="totals-unit">carbs</span>
               </span>
             </div>
-            <div class="report-totals actual-totals">
-              <span class="totals-label">Actual:</span>
-              <span class="totals-grid">
-                <span class="totals-val">{{ checkedTotals().calories }}</span><span class="totals-unit">cal</span>
-                <span class="totals-val">{{ checkedTotals().protein }}g</span><span class="totals-unit">protein</span>
-                <span class="totals-val">{{ checkedTotals().fat }}g</span><span class="totals-unit">fat</span>
-                <span class="totals-val">{{ checkedTotals().carbs }}g</span><span class="totals-unit">carbs</span>
-              </span>
-            </div>
           </div>
 
           <!-- Meals -->
@@ -149,7 +140,7 @@ interface FoodPopup {
                 @if (meal.videoLink) {
                   <button class="icon-btn video-btn" (click)="openMealVideo(meal.videoLink)"
                     matTooltip="Watch Prep Video" matTooltipPosition="above">
-                    <mat-icon>play_circle</mat-icon>
+                    <mat-icon>smart_display</mat-icon>
                   </button>
                 }
               </div>
@@ -214,17 +205,21 @@ interface FoodPopup {
         <div class="food-popup-overlay" (click)="closePrintDialog()">
           <div class="print-dialog" (click)="$event.stopPropagation()">
             <button class="popup-close" (click)="closePrintDialog()">✕</button>
-            <p class="print-dialog-title">Print Week Plan</p>
+            <p class="print-dialog-title">Print Plan Details</p>
             <label class="print-option">
-              <input type="checkbox" [checked]="printIncludeMeals()" (change)="printIncludeMeals.set(!printIncludeMeals())" />
-              Days & Meals
+              <input type="checkbox" [checked]="printIncludeToday()" (change)="printIncludeToday.set(!printIncludeToday())" />
+              Today
+            </label>
+            <label class="print-option">
+              <input type="checkbox" [checked]="printIncludeWeek()" (change)="printIncludeWeek.set(!printIncludeWeek())" />
+              Week
             </label>
             <label class="print-option">
               <input type="checkbox" [checked]="printIncludeShoppingList()" (change)="printIncludeShoppingList.set(!printIncludeShoppingList())" />
               Shopping List
             </label>
             <div class="print-dialog-actions">
-              <button class="dismiss-btn print-go-btn" [disabled]="printLoading() || (!printIncludeMeals() && !printIncludeShoppingList())" (click)="executePrint()">
+              <button class="dismiss-btn print-go-btn" [disabled]="printLoading() || (!printIncludeToday() && !printIncludeWeek() && !printIncludeShoppingList())" (click)="executePrint()">
                 @if (printLoading()) { Loading... } @else { Print }
               </button>
               <button class="dismiss-btn" (click)="closePrintDialog()">Cancel</button>
@@ -290,8 +285,9 @@ export class TodayPanelComponent implements OnInit {
 
   // Print dialog
   showPrintDialog = signal(false);
-  printIncludeMeals = signal(true);
-  printIncludeShoppingList = signal(true);
+  printIncludeToday = signal(true);
+  printIncludeWeek = signal(false);
+  printIncludeShoppingList = signal(false);
   printLoading = signal(false);
 
   // Planned totals (all items, regardless of check state)
@@ -573,7 +569,10 @@ export class TodayPanelComponent implements OnInit {
   }
 
   // Print
-  openPrintDialog(): void {
+  openPrintDialog(defaults?: { today?: boolean; week?: boolean; shopping?: boolean }): void {
+    this.printIncludeToday.set(defaults?.today ?? true);
+    this.printIncludeWeek.set(defaults?.week ?? false);
+    this.printIncludeShoppingList.set(defaults?.shopping ?? false);
     this.showPrintDialog.set(true);
   }
 
@@ -589,10 +588,16 @@ export class TodayPanelComponent implements OnInit {
     try {
       const wp = await this.weekPlanService.getWeekPlan(wpId);
       const userName = await firstValueFrom(this.userName$);
+      const d = this.currentDate();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
 
       this.printService.print(wp, {
-        includeMeals: this.printIncludeMeals(),
+        includeToday: this.printIncludeToday(),
+        includeWeek: this.printIncludeWeek(),
         includeShoppingList: this.printIncludeShoppingList(),
+        todayDate: `${yyyy}-${mm}-${dd}`,
         userName: userName ?? 'User',
         eatingStartTime: this.prefs.eatingStartTime(),
         mealsPerDay: this.prefs.mealsPerDay(),

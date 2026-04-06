@@ -21,6 +21,10 @@ import { WeekPlanMacrosService } from '../../services/week-plan-macros.service';
 import { getMealSlotName, DayPlan, DayPlanMeal } from '../../models/planning.model';
 import { MealPickerComponent, MealPickerResult, MealSwapResult, StagedMeal } from '../meal-picker/meal-picker';
 import { MealDetailComponent } from '../meal-detail/meal-detail';
+import { WeekPlanPrintService } from '../../services/week-plan-print.service';
+import { NotificationService } from '../../services/notification.service';
+import { AuthService } from '@auth0/auth0-angular';
+import { map, firstValueFrom } from 'rxjs';
 
 const DAY_TO_NUM: Record<WeekStartDay, number> = {
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
@@ -40,16 +44,24 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Close floats top-right -->
-      <button class="panel-close-btn"
-              (click)="close()"
-              title="Close">
-        ✕
-      </button>
+      <!-- Action buttons top-right -->
+      <div class="panel-action-btns">
+        <button class="panel-close-btn"
+                (click)="openPrintDialog()"
+                [disabled]="!weekPlanService.currentWeekPlan()"
+                title="Print Plan Details">
+          <mat-icon>print</mat-icon>
+        </button>
+        <button class="panel-close-btn"
+                (click)="close()"
+                title="Close">
+          ✕
+        </button>
+      </div>
 
       <!-- Row 1: START DATE -->
       <div class="header-row">
-        <span class="row-label">Plan Date</span>
+        <span class="row-label">Week Starting</span>
         <input
           class="header-input date-input"
           [matDatepicker]="picker"
@@ -63,7 +75,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
       <!-- Row 2: WEEK PLAN -->
       <div class="header-row">
-        <span class="row-label">Week Plans</span>
+        <span class="row-label">Plan Name</span>
         <div class="plan-combo" (focusout)="onComboFocusOut($event)">
           <input
             #planNameInput
@@ -224,6 +236,34 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
           [mealId]="detailMealId()!"
           (closed)="closeDetail()" />
       }
+
+      <!-- Print options dialog -->
+      @if (showPrintDialog()) {
+        <div class="confirm-overlay" (click)="closePrintDialog()">
+          <div class="confirm-dialog print-dialog" (click)="$event.stopPropagation()">
+            <button class="popup-close" (click)="closePrintDialog()">✕</button>
+            <p class="print-dialog-title">Print Plan Details</p>
+            <label class="print-option">
+              <input type="checkbox" [checked]="printIncludeToday()" (change)="printIncludeToday.set(!printIncludeToday())" />
+              Today
+            </label>
+            <label class="print-option">
+              <input type="checkbox" [checked]="printIncludeWeek()" (change)="printIncludeWeek.set(!printIncludeWeek())" />
+              Week
+            </label>
+            <label class="print-option">
+              <input type="checkbox" [checked]="printIncludeShoppingList()" (change)="printIncludeShoppingList.set(!printIncludeShoppingList())" />
+              Shopping List
+            </label>
+            <div class="print-dialog-actions">
+              <button class="dismiss-btn print-go-btn" [disabled]="printLoading() || (!printIncludeToday() && !printIncludeWeek() && !printIncludeShoppingList())" (click)="executePrint()">
+                @if (printLoading()) { Loading... } @else { Print }
+              </button>
+              <button class="dismiss-btn" (click)="closePrintDialog()">Cancel</button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `,
   styleUrls: ['./week-plan-panel.scss']
@@ -234,7 +274,19 @@ export class WeekPlanPanelComponent {
   private tabService = inject(TabService);
   private prefs = inject(PreferencesService);
   private weekPlanMacros = inject(WeekPlanMacrosService);
+  private printService = inject(WeekPlanPrintService);
+  private notificationService = inject(NotificationService);
+  private auth = inject(AuthService);
   weekPlanService = inject(WeekPlanService);
+
+  private userName$ = this.auth.user$.pipe(map(u => u?.name ?? 'User'));
+
+  // Print dialog
+  showPrintDialog = signal(false);
+  printIncludeToday = signal(false);
+  printIncludeWeek = signal(true);
+  printIncludeShoppingList = signal(false);
+  printLoading = signal(false);
 
   readonly dayOffsets = [0, 1, 2, 3, 4, 5, 6];
   readonly getMealSlotName = getMealSlotName;
@@ -765,6 +817,48 @@ export class WeekPlanPanelComponent {
 
   close(): void {
     this.tabService.closeTab('review');
+  }
+
+  openPrintDialog(): void {
+    this.printIncludeToday.set(false);
+    this.printIncludeWeek.set(true);
+    this.printIncludeShoppingList.set(false);
+    this.showPrintDialog.set(true);
+  }
+
+  closePrintDialog(): void {
+    this.showPrintDialog.set(false);
+  }
+
+  async executePrint(): Promise<void> {
+    const wp = this.weekPlanService.currentWeekPlan();
+    if (!wp) return;
+
+    this.printLoading.set(true);
+    try {
+      const userName = await firstValueFrom(this.userName$);
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+
+      this.printService.print(wp, {
+        includeToday: this.printIncludeToday(),
+        includeWeek: this.printIncludeWeek(),
+        includeShoppingList: this.printIncludeShoppingList(),
+        todayDate: `${yyyy}-${mm}-${dd}`,
+        userName: userName ?? 'User',
+        eatingStartTime: this.prefs.eatingStartTime(),
+        mealsPerDay: this.prefs.mealsPerDay(),
+        fastingType: this.prefs.fastingType()
+      });
+
+      this.closePrintDialog();
+    } catch {
+      this.notificationService.show('Failed to print', 'error');
+    } finally {
+      this.printLoading.set(false);
+    }
   }
 
   private clearSelections(): void {

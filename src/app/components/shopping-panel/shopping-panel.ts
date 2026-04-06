@@ -13,6 +13,9 @@ import { PreferencesService, WeekStartDay } from '../../services/preferences.ser
 import { NotificationService } from '../../services/notification.service';
 import { ShoppingStaple } from '../../models/settings.models';
 import { WeekPlan, ShoppingProgressItem } from '../../models/planning.model';
+import { WeekPlanPrintService } from '../../services/week-plan-print.service';
+import { AuthService } from '@auth0/auth0-angular';
+import { map, firstValueFrom } from 'rxjs';
 
 const DAY_TO_NUM: Record<WeekStartDay, number> = {
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
@@ -67,6 +70,15 @@ const PLAN_CATEGORIES: PlanCategory[] = [
           <span class="auto-save-indicator">saving...</span>
         }
         <button
+          class="icon-btn print-btn"
+          (click)="openPrintDialog()"
+          [disabled]="!selectedWeekPlan()"
+          matTooltip="Print Plan Details"
+          matTooltipPosition="above"
+          [matTooltipShowDelay]="300">
+          <mat-icon>print</mat-icon>
+        </button>
+        <button
           class="icon-btn close-btn"
           (click)="close()"
           matTooltip="Close"
@@ -89,20 +101,19 @@ const PLAN_CATEGORIES: PlanCategory[] = [
               readonly />
             <mat-datepicker-toggle [for]="shopPicker" class="date-toggle" />
             <mat-datepicker #shopPicker />
+            <button class="check-all-btn" (click)="checkEverything()"
+              matTooltip="Use this to review for un-checked items before checkout."
+              matTooltipPosition="above"
+              [matTooltipShowDelay]="300">
+              Missed Items
+            </button>
           </div>
-          <button class="check-all-btn" (click)="checkEverything()"
-            matTooltip="Use this to review for un-checked items before checkout."
-            matTooltipPosition="above"
-            [matTooltipShowDelay]="300">
-            Missed Items
-          </button>
         </div>
         <div class="plan-foods-title">
-          <span class="staples-title">Plan Foods</span>
           @if (selectedPlanName()) {
-            <span class="plan-name-center">{{ selectedPlanName() }}</span>
+            <span class="staples-title">{{ selectedPlanName() }}</span>
           }
-          <span class="staples-title buy-column-label">Buy</span>
+          <span class="staples-title buy-column-label">Need</span>
         </div>
 
         <div class="plan-content">
@@ -256,6 +267,34 @@ const PLAN_CATEGORIES: PlanCategory[] = [
       </div>
 
       <!-- "Did I get everything?" confirmation dialog -->
+      <!-- Print options dialog -->
+      @if (showPrintDialog()) {
+        <div class="confirm-overlay" (click)="closePrintDialog()">
+          <div class="confirm-dialog print-dialog" (click)="$event.stopPropagation()">
+            <button class="popup-close" (click)="closePrintDialog()">✕</button>
+            <p class="print-dialog-title">Print Plan Details</p>
+            <label class="print-option">
+              <input type="checkbox" [checked]="printIncludeToday()" (change)="printIncludeToday.set(!printIncludeToday())" />
+              Today
+            </label>
+            <label class="print-option">
+              <input type="checkbox" [checked]="printIncludeWeek()" (change)="printIncludeWeek.set(!printIncludeWeek())" />
+              Week
+            </label>
+            <label class="print-option">
+              <input type="checkbox" [checked]="printIncludeShoppingList()" (change)="printIncludeShoppingList.set(!printIncludeShoppingList())" />
+              Shopping List
+            </label>
+            <div class="print-dialog-actions">
+              <button class="dismiss-btn print-go-btn" [disabled]="printLoading() || (!printIncludeToday() && !printIncludeWeek() && !printIncludeShoppingList())" (click)="executePrint()">
+                @if (printLoading()) { Loading... } @else { Print }
+              </button>
+              <button class="dismiss-btn" (click)="closePrintDialog()">Cancel</button>
+            </div>
+          </div>
+        </div>
+      }
+
       @if (showCheckDialog()) {
         <div class="confirm-overlay" (click)="closeCheckDialog()">
           <div class="confirm-dialog check-dialog" (click)="$event.stopPropagation()">
@@ -290,10 +329,21 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
   private weekPlanService = inject(WeekPlanService);
   private prefs = inject(PreferencesService);
   private notificationService = inject(NotificationService);
+  private printService = inject(WeekPlanPrintService);
+  private auth = inject(AuthService);
   private el = inject(ElementRef);
   private ngZone = inject(NgZone);
 
+  private userName$ = this.auth.user$.pipe(map(u => u?.name ?? 'User'));
+
   isSaving = signal(false);
+
+  // Print dialog
+  showPrintDialog = signal(false);
+  printIncludeToday = signal(false);
+  printIncludeWeek = signal(false);
+  printIncludeShoppingList = signal(true);
+  printLoading = signal(false);
 
   // Staples data
   staples = signal<ShoppingStaple[]>([]);
@@ -660,6 +710,48 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
 
   close(): void {
     this.tabService.closeTab('shop');
+  }
+
+  openPrintDialog(): void {
+    this.printIncludeToday.set(false);
+    this.printIncludeWeek.set(false);
+    this.printIncludeShoppingList.set(true);
+    this.showPrintDialog.set(true);
+  }
+
+  closePrintDialog(): void {
+    this.showPrintDialog.set(false);
+  }
+
+  async executePrint(): Promise<void> {
+    const wp = this.selectedWeekPlan();
+    if (!wp) return;
+
+    this.printLoading.set(true);
+    try {
+      const userName = await firstValueFrom(this.userName$);
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+
+      this.printService.print(wp, {
+        includeToday: this.printIncludeToday(),
+        includeWeek: this.printIncludeWeek(),
+        includeShoppingList: this.printIncludeShoppingList(),
+        todayDate: `${yyyy}-${mm}-${dd}`,
+        userName: userName ?? 'User',
+        eatingStartTime: this.prefs.eatingStartTime(),
+        mealsPerDay: this.prefs.mealsPerDay(),
+        fastingType: this.prefs.fastingType()
+      });
+
+      this.closePrintDialog();
+    } catch {
+      this.notificationService.show('Failed to print', 'error');
+    } finally {
+      this.printLoading.set(false);
+    }
   }
 
   // --- Splitter drag logic ---

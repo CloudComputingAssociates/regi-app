@@ -3,8 +3,10 @@ import { Injectable } from '@angular/core';
 import { WeekPlan, DayPlan, Meal, MealItem } from '../models/planning.model';
 
 export interface PrintOptions {
-  includeMeals: boolean;
+  includeToday: boolean;
+  includeWeek: boolean;
   includeShoppingList: boolean;
+  todayDate?: string; // YYYY-MM-DD for single day print
   userName: string;
   eatingStartTime: string;
   mealsPerDay: number;
@@ -42,7 +44,15 @@ export class WeekPlanPrintService {
     const totalDays = activeDays.length;
     let bodyContent = '';
 
-    if (options.includeMeals) {
+    if (options.includeToday && options.todayDate) {
+      const todayDay = activeDays.find(d => d.planDate === options.todayDate);
+      if (todayDay) {
+        const todayIdx = activeDays.indexOf(todayDay);
+        bodyContent += this.buildDaySection(todayDay, todayIdx + 1, totalDays, wp, options);
+      }
+    }
+
+    if (options.includeWeek) {
       activeDays.forEach((day, idx) => {
         bodyContent += this.buildDaySection(day, idx + 1, totalDays, wp, options);
       });
