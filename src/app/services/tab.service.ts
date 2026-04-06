@@ -85,7 +85,7 @@ export class TabService {
   // Define menu order - this determines tab insertion order
   // Left nav: today, review (Week Plans), meal-planning, shop (Shopping List), foods (Food Preferences), chat
   // Right nav (profile menu): account, preferences (Settings), help
-  private menuOrder = ['today', 'review', 'meal-planning', 'shop', 'foods', 'chat', 'video-viewer', 'preferences', 'account', 'help'];
+  private menuOrder = ['today', 'review', 'meal-planning', 'shop', 'foods', 'chat', 'video-viewer', 'defect', 'preferences', 'account', 'help'];
 
   /** URL for the video-viewer tab (set before opening the tab) */
   videoViewerUrl: WritableSignal<string> = signal('');
@@ -309,7 +309,8 @@ export class TabService {
       'preferences': 'Settings',
       'account': 'Account',
       'help': 'Help',
-      'video-viewer': 'YouTube'
+      'video-viewer': 'YouTube',
+      'defect': 'Submit Defect'
     };
 
     // Create tabs in the order they were saved, but sorted by menuOrder

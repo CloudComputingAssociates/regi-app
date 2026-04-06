@@ -9,6 +9,7 @@ import { SubscriptionService } from '../../services/subscription.service';
 import { TabService } from '../../services/tab.service';
 import { ChatService } from '../../services/chat.service';
 import { SettingsService } from '../../services/settings.service';
+import { RoleService } from '../../services/role.service';
 
 @Component({
   selector: 'app-profile-menu',
@@ -47,6 +48,13 @@ import { SettingsService } from '../../services/settings.service';
           <span>Settings</span>
         </button>
 
+        @if (roleService.isDevOrQA()) {
+          <button mat-menu-item class="menu-item" [class.active]="isTabOpen('defect')" (click)="toggleDefect()">
+            <mat-icon>bug_report</mat-icon>
+            <span>Submit Defect</span>
+          </button>
+        }
+
         <button mat-menu-item class="menu-item" [class.active]="isTabOpen('help')" (click)="toggleHelp()">
           <mat-icon>help_outline</mat-icon>
           <span>Help</span>
@@ -71,6 +79,7 @@ export class ProfileMenuComponent {
   @Input() defaultImage = 'images/yeh_logo_dark.png';
   auth = inject(AuthService);
   subscriptionService = inject(SubscriptionService);
+  roleService = inject(RoleService);
   private tabService = inject(TabService);
   private chatService = inject(ChatService);
   private settingsService = inject(SettingsService);
@@ -115,5 +124,9 @@ export class ProfileMenuComponent {
 
   toggleHelp(): void {
     this.tabService.toggleTab('help', 'Help');
+  }
+
+  toggleDefect(): void {
+    this.tabService.toggleTab('defect', 'Submit Defect');
   }
 }

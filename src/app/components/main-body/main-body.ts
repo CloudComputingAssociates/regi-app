@@ -16,6 +16,7 @@ import { PreferencesPanelComponent } from '../preferences-panel/preferences-pane
 import { TodayPanelComponent } from '../today-panel/today-panel';
 import { NotificationComponent } from '../notification/notification';
 import { VideoViewerComponent } from '../video-viewer/video-viewer';
+import { DefectPanelComponent } from '../defect-panel/defect-panel';
 
 @Component({
   selector: 'app-main-body',
@@ -34,7 +35,8 @@ import { VideoViewerComponent } from '../video-viewer/video-viewer';
     PreferencesPanelComponent,
     TodayPanelComponent,
     NotificationComponent,
-    VideoViewerComponent
+    VideoViewerComponent,
+    DefectPanelComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -87,6 +89,8 @@ import { VideoViewerComponent } from '../video-viewer/video-viewer';
                     <app-account-panel />
                   } @else if (tab.id === 'video-viewer') {
                     <app-video-viewer />
+                  } @else if (tab.id === 'defect') {
+                    <app-defect-panel />
                   } @else if (tab.id === 'help') {
                     <div class="placeholder-content">
                       <div class="action-buttons">
