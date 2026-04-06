@@ -18,14 +18,14 @@ export class RoleService {
   readonly roles = this.rolesSignal.asReadonly();
 
   constructor() {
-    // Read roles from user profile once authenticated
+    // Read roles from ID token claims once authenticated
     this.auth.isAuthenticated$.pipe(
       filter(isAuth => isAuth),
       take(1)
     ).subscribe(() => {
-      this.auth.user$.pipe(take(1)).subscribe(user => {
-        if (user) {
-          const roles = (user[ROLES_CLAIM] as string[]) ?? [];
+      this.auth.idTokenClaims$.pipe(take(1)).subscribe(claims => {
+        if (claims) {
+          const roles = (claims[ROLES_CLAIM] as string[]) ?? [];
           this.rolesSignal.set(roles as AppRole[]);
         }
       });
