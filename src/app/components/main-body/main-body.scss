@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   background-color: #3a3a3a;
-  border-radius: 12px;
+  border-radius: 0 0 12px 12px;
   border: 2px solid #6a6a6a;
   border-top: none;
   overflow: hidden;
@@ -45,7 +45,7 @@
 
 ::ng-deep .mat-mdc-tab-header {
   background-color: #000000 !important;  // Black background to match tab labels
-  border-bottom: none !important;  // No border
+  border-bottom: 2px solid #6a6a6a !important;  // Top border of content frame
   padding-left: 0;  // No padding for balanced look
 }
 
@@ -123,9 +123,9 @@
   border-top: 3px solid #808080 !important;  // Thicker, brighter top border
   border-left: 2px solid #6a6a6a !important;
   border-right: 2px solid #6a6a6a !important;
-  border-bottom: none !important;  // No bottom border - seamless connection to content
-  margin-bottom: 0 !important;  // No margin - flush with content
-  z-index: 1;
+  border-bottom: 2px solid #3a3a3a !important;  // Matches content background - covers the top border
+  margin-bottom: -2px !important;  // Overlap the body wrapper's top border
+  z-index: 2;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5) !important;  // Stronger shadow for prominence
 
   // Force white text on all child elements for active tab
@@ -154,7 +154,6 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  border-top: 2px solid #6a6a6a;  // Connects to active tab's side borders
 }
 
 ::ng-deep .mat-mdc-tab-body {
