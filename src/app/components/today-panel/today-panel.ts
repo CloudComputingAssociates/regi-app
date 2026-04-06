@@ -125,9 +125,9 @@ interface FoodPopup {
                   (change)="toggleMealAffirm(meal)" />
                 <span class="meal-title-line">{{ meal.time }} Meal {{ meal.slot }}@if (meal.name) { -<span class="meal-plan-name"> {{ meal.name }}</span>}</span>
                 @if (meal.videoLink) {
-                  <button class="video-link-btn" (click)="openMealVideo(meal.videoLink)"
+                  <button class="icon-btn video-btn" (click)="openMealVideo(meal.videoLink)"
                     matTooltip="Watch Prep Video" matTooltipPosition="above">
-                    <mat-icon class="video-icon">visibility</mat-icon>
+                    <mat-icon>play_circle</mat-icon>
                   </button>
                 }
               </div>
