@@ -174,7 +174,7 @@ interface FoodPopup {
           }
 
           <div class="report-subtitle">
-            RegiMenu<sup class="sm">SM</sup> generated for {{ userName$ | async }}.&nbsp;&nbsp;{{ todayFormatted() }}@if (planDay()) { (Day {{ planDay() }} of plan)}
+            RegiMenu<sup class="sm">SM</sup> generated for {{ userName$ | async }}.&nbsp;&nbsp;{{ todayFormatted() }}@if (planDay()) { (Day {{ planDay() }})}
           </div>
 
           @if (isFinalized()) {
