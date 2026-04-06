@@ -123,7 +123,7 @@ interface FoodPopup {
                   class="meal-check"
                   [checked]="meal.affirmed"
                   (change)="toggleMealAffirm(meal)" />
-                <span class="meal-title-line">{{ meal.time }} Meal {{ meal.slot }} -<span class="meal-plan-name"> {{ meal.name }}</span></span>
+                <span class="meal-title-line">{{ meal.time }} Meal {{ meal.slot }}@if (meal.name) { -<span class="meal-plan-name"> {{ meal.name }}</span>}</span>
                 @if (meal.videoLink) {
                   <button class="video-link-btn" (click)="openMealVideo(meal.videoLink)"
                     matTooltip="Watch Prep Video" matTooltipPosition="above">
@@ -388,7 +388,7 @@ export class TodayPanelComponent implements OnInit {
       groups.push({
         slot,
         time,
-        name: mealNames[slot] || `Meal ${slot}`,
+        name: mealNames[slot] || '',
         videoLink: mealVideoLinks[slot] || undefined,
         items: slotItems,
         totalCalories: totalCal,
