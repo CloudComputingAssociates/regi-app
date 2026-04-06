@@ -269,7 +269,7 @@ export class TabService {
   /** Open the video viewer tab with the given URL */
   openVideoViewer(url: string): void {
     this.videoViewerUrl.set(url);
-    this.openTab('video-viewer', 'Prep Video');
+    this.openTab('video-viewer', 'YouTube');
   }
 
   /** Update the badge count shown on a tab label */
@@ -309,7 +309,7 @@ export class TabService {
       'preferences': 'Settings',
       'account': 'Account',
       'help': 'Help',
-      'video-viewer': 'Prep Video'
+      'video-viewer': 'YouTube'
     };
 
     // Create tabs in the order they were saved, but sorted by menuOrder

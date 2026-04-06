@@ -11,7 +11,7 @@ import { TabService } from '../../services/tab.service';
   template: `
     <div class="video-viewer-container">
       <div class="video-toolbar">
-        <span class="video-title">Prep Video</span>
+        <span class="video-title">YouTube Player</span>
         <button class="close-btn" (click)="close()">
           <mat-icon>close</mat-icon>
         </button>
