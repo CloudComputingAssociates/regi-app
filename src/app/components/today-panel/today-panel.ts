@@ -86,9 +86,9 @@ interface FoodPopup {
         } @else {
           <!-- Header -->
           <div class="report-header">
+            <div class="nav-day-of-week">{{ dayOfWeek() }}</div>
             <div class="report-title-row">
               <div class="date-navigator">
-                <span class="nav-day-of-week">{{ dayOfWeek() }}</span>
                 <button class="nav-arrow icon-btn" (click)="goToPreviousDay()" matTooltip="Previous day" matTooltipPosition="above">
                   <mat-icon>chevron_left</mat-icon>
                 </button>

@@ -143,18 +143,18 @@ import { Subscription } from 'rxjs';
 
         <!-- Prep Video row -->
         <div class="prep-video-row">
-          <label class="prep-video-label">Prep Video</label>
+          <label class="prep-video-label">Video</label>
+          @if (prepVideoLink()) {
+            <button class="prep-video-test-btn" (click)="testPrepVideo()" matTooltip="Watch video" matTooltipPosition="above">
+              <svg class="yt-icon" viewBox="0 0 28 20"><rect rx="4" width="28" height="20" fill="#FF0000"/><polygon points="11,4 11,16 20,10" fill="#FFF"/></svg>
+            </button>
+          }
           <input
             type="url"
             class="prep-video-input"
             [ngModel]="prepVideoLink()"
             (ngModelChange)="onPrepVideoChange($event)"
             placeholder="https://youtube.com/..." />
-          @if (prepVideoLink()) {
-            <button class="prep-video-test-btn" (click)="testPrepVideo()" matTooltip="Watch video" matTooltipPosition="above">
-              <svg class="yt-icon" viewBox="0 0 28 20"><rect rx="4" width="28" height="20" fill="#FF0000"/><polygon points="11,4 11,16 20,10" fill="#FFF"/></svg>
-            </button>
-          }
           <button
             class="prep-video-save-btn"
             [disabled]="!prepVideoDirty()"
