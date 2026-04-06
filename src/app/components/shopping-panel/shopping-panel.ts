@@ -182,7 +182,7 @@ const PLAN_CATEGORIES: PlanCategory[] = [
       <div class="staples-pane" [style.flex]="bottomFlex()">
         <div class="staples-header">
           <span class="staples-title">Staples</span>
-          <span class="staples-title buy-column-label">Buy</span>
+          <span class="staples-title buy-column-label">Need</span>
         </div>
 
         <div class="staples-content">
