@@ -145,6 +145,11 @@ export class ChatInputComponent {
     }
 
     if (text && !this.chatService.getIsLoading(ctx)) {
+      // Open and focus the chat tab if sending to main chat context
+      if (ctx === 'chat') {
+        this.tabService.openTab('chat', 'Chat');
+        this.tabService.switchToTab('chat');
+      }
       this.chatService.sendMessage(text, ctx);
       this.messageSubmit.emit(text);
       this.messageText = '';

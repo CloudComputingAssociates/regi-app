@@ -344,7 +344,13 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
 
   ngOnInit(): void {
-    this.fetchSavedPlans();
+    // Use preloaded cache if available, otherwise fetch
+    const cached = this.planningService.savedMeals();
+    if (cached.length > 0) {
+      this.savedPlans.set(cached);
+    } else {
+      this.fetchSavedPlans();
+    }
   }
 
   ngOnDestroy(): void {

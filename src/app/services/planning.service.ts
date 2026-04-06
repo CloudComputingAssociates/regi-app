@@ -24,6 +24,11 @@ export class PlanningService {
   private loadingSignal = signal(false);
   private errorSignal = signal<string | null>(null);
 
+  // Cached meal plans list (preloaded for instant dropdown)
+  private savedMealsSignal = signal<MealSummary[]>([]);
+  private savedMealsLoaded = false;
+  readonly savedMeals = this.savedMealsSignal.asReadonly();
+
   // Stubbed prompt for first pass (will come from PromptMe chat later)
   private readonly STUBBED_PROMPT = 'I want a meal with dark chicken, eggs, cottage cheese and ground beef plus vegetables and pecorino romano cheese 1 oz';
 
@@ -241,6 +246,24 @@ export class PlanningService {
   /**
    * List meals with filters
    */
+  /** Preload saved meals list in background for instant dropdown access */
+  preloadSavedMeals(): void {
+    if (this.savedMealsLoaded) return;
+    this.listMeals({ status: 'active', limit: 50 }).subscribe({
+      next: (meals) => {
+        this.savedMealsSignal.set(meals);
+        this.savedMealsLoaded = true;
+      },
+      error: () => {} // silently fail
+    });
+  }
+
+  /** Refresh the saved meals cache */
+  refreshSavedMeals(): void {
+    this.savedMealsLoaded = false;
+    this.preloadSavedMeals();
+  }
+
   listMeals(params?: ListMealsRequest): Observable<MealSummary[]> {
     const queryParams = new URLSearchParams();
     if (params?.planType) queryParams.set('planType', params.planType);

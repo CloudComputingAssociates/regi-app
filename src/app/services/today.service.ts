@@ -72,7 +72,19 @@ export class TodayService {
   // Checked macro totals — updated by today-panel when items are checked/unchecked
   readonly checkedMacros = signal<{ protein: number; fat: number; carbs: number }>({ protein: 0, fat: 0, carbs: 0 });
 
+  // Date cache for instant arrow navigation
+  private cache = new Map<string, TodayResponse>();
+
   async fetchToday(date?: string): Promise<TodayResponse | null> {
+    const key = date ?? this.todayKey();
+
+    // Return cached if available (don't show loading spinner)
+    const cached = this.cache.get(key);
+    if (cached) {
+      this.todaySignal.set(cached);
+      return cached;
+    }
+
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
     try {
@@ -82,6 +94,7 @@ export class TodayService {
       const resp = await firstValueFrom(
         this.http.get<TodayResponse>(url)
       );
+      this.cache.set(key, resp);
       this.todaySignal.set(resp);
       return resp;
     } catch (err) {
@@ -91,6 +104,43 @@ export class TodayService {
     } finally {
       this.loadingSignal.set(false);
     }
+  }
+
+  /** Preload a week's worth of days around the given date */
+  preloadWeek(startDate: string): void {
+    const start = new Date(startDate + 'T00:00:00');
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
+      const key = this.formatDate(d);
+      if (!this.cache.has(key)) {
+        // Fire and forget — populate cache in background
+        const url = `${this.baseUrl}/today?date=${key}`;
+        firstValueFrom(this.http.get<TodayResponse>(url))
+          .then(resp => this.cache.set(key, resp))
+          .catch(() => {}); // silently skip failed days
+      }
+    }
+  }
+
+  /** Invalidate cache for a specific date (e.g., after checking items) */
+  invalidateCache(date?: string): void {
+    if (date) {
+      this.cache.delete(date);
+    } else {
+      this.cache.clear();
+    }
+  }
+
+  private todayKey(): string {
+    return this.formatDate(new Date());
+  }
+
+  private formatDate(d: Date): string {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   }
 
   async checkItem(itemId: number, isChecked: boolean): Promise<boolean> {

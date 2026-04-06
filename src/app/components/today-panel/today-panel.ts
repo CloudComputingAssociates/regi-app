@@ -368,6 +368,14 @@ export class TodayPanelComponent implements OnInit {
     this.loadDate(date);
   }
 
+  private currentDateStr(): string {
+    const d = this.currentDate();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
   private async loadDate(date: Date): Promise<void> {
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -401,6 +409,8 @@ export class TodayPanelComponent implements OnInit {
       if (dayNum > 0) {
         this.planDay.set(dayNum);
       }
+      // Preload the rest of the week in background
+      this.todayService.preloadWeek(resp.planStartDate);
     }
 
     this.buildMealGroups(resp.items, resp.mealNames ?? {}, resp.mealVideoLinks ?? {});
@@ -493,8 +503,9 @@ export class TodayPanelComponent implements OnInit {
     this.checkedItems.set(next);
     this.updateMealAffirmed(meal);
 
-    // Auto-save to API
+    // Auto-save to API and invalidate cache for this date
     this.todayService.checkItem(itemId, isChecked);
+    this.todayService.invalidateCache(this.currentDateStr());
   }
 
   toggleMealAffirm(meal: MealGroup): void {
@@ -513,8 +524,9 @@ export class TodayPanelComponent implements OnInit {
     this.checkedItems.set(next);
     this.updateMealAffirmed(meal);
 
-    // Single API call for the entire meal
+    // Single API call for the entire meal and invalidate cache
     this.todayService.checkMeal(meal.slot, newState);
+    this.todayService.invalidateCache(this.currentDateStr());
   }
 
   private updateMealAffirmed(meal: MealGroup): void {
