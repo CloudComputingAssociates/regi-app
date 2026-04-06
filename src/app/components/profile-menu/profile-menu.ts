@@ -49,9 +49,9 @@ import { RoleService } from '../../services/role.service';
         </button>
 
         @if (roleService.isDevOrQA()) {
-          <button mat-menu-item class="menu-item" [class.active]="isTabOpen('defect')" (click)="toggleDefect()">
+          <button mat-menu-item class="menu-item" [class.active]="isTabOpen('issue')" (click)="toggleIssue()">
             <mat-icon>bug_report</mat-icon>
-            <span>Submit Defect</span>
+            <span>Bug</span>
           </button>
         }
 
@@ -126,7 +126,7 @@ export class ProfileMenuComponent {
     this.tabService.toggleTab('help', 'Help');
   }
 
-  toggleDefect(): void {
-    this.tabService.toggleTab('defect', 'Submit Defect');
+  toggleIssue(): void {
+    this.tabService.toggleTab('issue', 'Bug');
   }
 }
