@@ -100,7 +100,7 @@ export class ChatService {
     if (this.isPromptMeActive()) {
       return `YEH is prompting ${this.userFirstName()}`;
     }
-    return 'AI-driven Nutrition Planner';
+    return 'Nutrition Chat Output';
   });
 
   togglePromptMe(): void {

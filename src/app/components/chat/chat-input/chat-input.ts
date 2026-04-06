@@ -1,5 +1,5 @@
 // src/app/components/chat/chat-input/chat-input.ts
-import { Component, signal, computed, effect, ChangeDetectionStrategy, output, inject } from '@angular/core';
+import { Component, signal, computed, effect, ChangeDetectionStrategy, output, inject, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -59,6 +59,7 @@ import { TabService } from '../../../services/tab.service';
           class="message-input"
           [(ngModel)]="messageText"
           (keydown)="onKeyDown($event)"
+          (blur)="onInputBlur()"
           [placeholder]="placeholder()"
           [disabled]="chatService.isLoading()"
           [attr.aria-label]="'Message input'"
@@ -84,9 +85,11 @@ import { TabService } from '../../../services/tab.service';
 export class ChatInputComponent {
   chatService = inject(ChatService);
   private tabService = inject(TabService);
+  @ViewChild('textInput') textInputRef!: ElementRef<HTMLTextAreaElement>;
 
   messageText = '';
   placeholder = signal('yeh? ');
+  private inConversation = false;
   messageSubmit = output<string>();
   promptMeToggle = output<boolean>();
 
@@ -154,6 +157,18 @@ export class ChatInputComponent {
       this.messageSubmit.emit(text);
       this.messageText = '';
       this.chatService.clearEntryContext();
+
+      // Enter conversation mode: clear placeholder and refocus
+      this.inConversation = true;
+      this.placeholder.set('');
+      setTimeout(() => this.textInputRef?.nativeElement?.focus(), 50);
+    }
+  }
+
+  onInputBlur(): void {
+    if (this.inConversation) {
+      this.inConversation = false;
+      this.placeholder.set('yeh? ');
     }
   }
 
