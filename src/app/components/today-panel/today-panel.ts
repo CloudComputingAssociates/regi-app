@@ -44,19 +44,38 @@ interface FoodPopup {
         @if (todayService.loading()) {
           <div class="loading-state">Loading today's plan...</div>
         } @else if (!hasPlan()) {
-          <div class="no-plan-state">
-            <div class="date-navigator centered">
-              <span class="nav-day-of-week">{{ dayOfWeek() }}</span>
-              <button class="nav-arrow icon-btn" (click)="goToPreviousDay()" matTooltip="Previous day" matTooltipPosition="above">
-                <mat-icon>chevron_left</mat-icon>
-              </button>
-              <span class="nav-date" (click)="datePicker2.open()">{{ displayDate() }}</span>
-              <input class="hidden-date-input" [matDatepicker]="datePicker2" [value]="currentDate()" (dateChange)="onDatePicked($event.value)" />
-              <mat-datepicker #datePicker2 />
-              <button class="nav-arrow icon-btn" (click)="goToNextDay()" matTooltip="Next day" matTooltipPosition="above">
-                <mat-icon>chevron_right</mat-icon>
-              </button>
+          <div class="report-header">
+            <div class="report-title-row">
+              <div class="date-navigator">
+                <span class="nav-day-of-week">{{ dayOfWeek() }}</span>
+                <button class="nav-arrow icon-btn" (click)="goToPreviousDay()" matTooltip="Previous day" matTooltipPosition="above">
+                  <mat-icon>chevron_left</mat-icon>
+                </button>
+                <span class="nav-date" (click)="datePicker2.open()">{{ displayDate() }}</span>
+                <input class="hidden-date-input" [matDatepicker]="datePicker2" [value]="currentDate()" (dateChange)="onDatePicked($event.value)" />
+                <mat-datepicker #datePicker2 />
+                <button class="nav-arrow icon-btn" (click)="goToNextDay()" matTooltip="Next day" matTooltipPosition="above">
+                  <mat-icon>chevron_right</mat-icon>
+                </button>
+              </div>
+              <div class="report-actions">
+                <button class="icon-btn print-btn" disabled
+                  matTooltip="Print PDF (coming soon)"
+                  matTooltipPosition="above"
+                  [matTooltipShowDelay]="300">
+                  🖨
+                </button>
+                <button class="icon-btn close-btn"
+                  (click)="closePanel()"
+                  matTooltip="Close"
+                  matTooltipPosition="above"
+                  [matTooltipShowDelay]="300">
+                  ✕
+                </button>
+              </div>
             </div>
+          </div>
+          <div class="no-plan-state">
             <p>No Plan scheduled for this day.</p>
             <p class="no-plan-hint">Use RegiMenu℠ MealPlans to create meals and assign to a Week Plan.</p>
           </div>
