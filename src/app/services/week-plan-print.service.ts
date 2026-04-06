@@ -102,10 +102,13 @@ export class WeekPlanPrintService {
       mealsHtml += this.buildMealSection(dpm.meal, dpm.mealSlot, mealTime);
     });
 
+    const dateFormatted = this.formatDateDisplay(day.planDate);
+
     return `
     <div class="page">
-      ${this.buildHeader(wp.name)}
+      ${this.buildHeader(dateFormatted)}
       <div class="day-name">${dayName} <span class="day-num">(Day ${dayNum} of ${totalDays})</span></div>
+      <div class="plan-name-line">${this.escHtml(wp.name)}</div>
       <div class="daily-targets">
         Daily Targets: ${totalCal} calories | ${totalPro}g protein (${proPct}%) | ${totalCarb}g carbs (${carbPct}%) | ${totalFat}g fat (${fatPct}%)
       </div>
@@ -178,10 +181,13 @@ export class WeekPlanPrintService {
         </div>`;
     }
 
+    const startDate = this.formatDateDisplay(wp.startDate);
+
     return `
     <div class="page">
-      ${this.buildHeader(wp.name)}
+      ${this.buildHeader(startDate)}
       <div class="day-name">${dayCount} Day Shopping List</div>
+      <div class="plan-name-line">${this.escHtml(wp.name)}</div>
       ${sectionsHtml}
       ${this.buildFooter('')}
     </div>`;
@@ -215,7 +221,7 @@ export class WeekPlanPrintService {
     return `
       <div class="header">
         <div class="header-title">${this.escHtml(planName)}</div>
-        <img src="/images/YEH-Logo-Isolated.png" class="header-logo" alt="YEH" />
+        <img src="/images/yeh_logo_dark.png" class="header-logo" alt="YEH" />
       </div>`;
   }
 
@@ -224,8 +230,8 @@ export class WeekPlanPrintService {
     return `
       <div class="footer">
         <div class="footer-left">
-          <img src="/images/YEH-Logo-Isolated.png" class="footer-logo" alt="" />
-          <span>: <strong>Regimenu&trade;</strong> MealPlan${userLine}</span>
+          <img src="/images/yeh_logo_dark.png" class="footer-logo" alt="" />
+          <span>: <strong>RegiMenu&trade;</strong> MealPlan${userLine}</span>
         </div>
         <span class="page-num"></span>
       </div>`;
@@ -251,6 +257,13 @@ export class WeekPlanPrintService {
       case 'omad': return 0;
       default: return 14;
     }
+  }
+
+  private formatDateDisplay(planDate: string): string {
+    const d = new Date(planDate + 'T00:00:00');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${mm}/${dd}/${d.getFullYear()}`;
   }
 
   private formatQty(qty: number): string {
@@ -296,15 +309,20 @@ export class WeekPlanPrintService {
       }
 
       .day-name {
-        font-size: 20px;
-        font-weight: 600;
+        font-size: 22px;
+        font-weight: 700;
         color: #4a7fb5;
-        margin: 4px 0;
+        margin: 4px 0 2px;
       }
       .day-num {
         font-size: 14px;
         font-weight: 400;
         color: #888;
+      }
+      .plan-name-line {
+        font-size: 12px;
+        color: #888;
+        margin-bottom: 8px;
       }
 
       .daily-targets {

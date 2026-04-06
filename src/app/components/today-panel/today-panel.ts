@@ -67,7 +67,7 @@ interface FoodPopup {
                   matTooltip="Print Week Plan"
                   matTooltipPosition="above"
                   [matTooltipShowDelay]="300">
-                  🖨
+                  <mat-icon>print</mat-icon>
                 </button>
                 <button class="icon-btn close-btn"
                   (click)="closePanel()"
@@ -109,7 +109,7 @@ interface FoodPopup {
                   matTooltip="Print Week Plan"
                   matTooltipPosition="above"
                   [matTooltipShowDelay]="300">
-                  🖨
+                  <mat-icon>print</mat-icon>
                 </button>
                 <button class="icon-btn close-btn"
                   (click)="closePanel()"
