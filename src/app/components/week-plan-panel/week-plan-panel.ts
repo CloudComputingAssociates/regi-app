@@ -61,7 +61,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
       <!-- Row 1: START DATE -->
       <div class="header-row">
-        <span class="row-label">Week Starting</span>
+        <span class="row-label">Starting</span>
         <input
           class="header-input date-input"
           [matDatepicker]="picker"
