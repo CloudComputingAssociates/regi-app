@@ -71,7 +71,7 @@
   height: 31px !important;  // Reduced from 41px (25% reduction)
   min-height: 31px !important;  // Force minimum height
   position: relative;
-  background: linear-gradient(180deg, #4e4e4e 0%, #424242 100%) !important;  // Lighter, inactive
+  background: linear-gradient(180deg, #2a2a2a 0%, #1e1e1e 100%) !important;  // Dark, recessed inactive
   border-radius: 6px 6px 0 0;  // Reduced from 8px
   margin-bottom: -1px;  // Overlap bottom border
   border-top: 2px solid #5a5a5a !important;
@@ -117,7 +117,7 @@
 }
 
 ::ng-deep .mat-mdc-tab.mdc-tab--active {
-  background: linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%) !important;  // Subtle fade, merges into content
+  background: linear-gradient(180deg, #555555 0%, #424242 100%) !important;  // Lighter active tab
   color: #ffffff !important;  // White - clickable
   border-top: 2px solid #4a4a4a !important;
   border-left: 1px solid #333333 !important;
