@@ -86,19 +86,8 @@ interface FoodPopup {
         } @else {
           <!-- Header -->
           <div class="report-header">
-            <div class="nav-day-of-week">{{ dayOfWeek() }}</div>
             <div class="report-title-row">
-              <div class="date-navigator">
-                <button class="nav-arrow icon-btn" (click)="goToPreviousDay()" matTooltip="Previous day" matTooltipPosition="above">
-                  <mat-icon>chevron_left</mat-icon>
-                </button>
-                <span class="nav-date" (click)="datePicker.open()">{{ displayDate() }}</span>
-                <input class="hidden-date-input" [matDatepicker]="datePicker" [value]="currentDate()" (dateChange)="onDatePicked($event.value)" />
-                <mat-datepicker #datePicker />
-                <button class="nav-arrow icon-btn" (click)="goToNextDay()" matTooltip="Next day" matTooltipPosition="above">
-                  <mat-icon>chevron_right</mat-icon>
-                </button>
-              </div>
+              <div class="nav-day-of-week">{{ dayOfWeek() }}</div>
               <div class="report-actions">
                 <button class="icon-btn print-btn"
                   [disabled]="!weekPlanId()"
@@ -116,6 +105,17 @@ interface FoodPopup {
                   ✕
                 </button>
               </div>
+            </div>
+            <div class="date-navigator">
+              <button class="nav-arrow icon-btn" (click)="goToPreviousDay()" matTooltip="Previous day" matTooltipPosition="above">
+                <mat-icon>chevron_left</mat-icon>
+              </button>
+              <span class="nav-date" (click)="datePicker.open()">{{ displayDate() }}</span>
+              <input class="hidden-date-input" [matDatepicker]="datePicker" [value]="currentDate()" (dateChange)="onDatePicked($event.value)" />
+              <mat-datepicker #datePicker />
+              <button class="nav-arrow icon-btn" (click)="goToNextDay()" matTooltip="Next day" matTooltipPosition="above">
+                <mat-icon>chevron_right</mat-icon>
+              </button>
             </div>
             <div class="report-totals target-totals">
               <span class="totals-label">Target:</span>
