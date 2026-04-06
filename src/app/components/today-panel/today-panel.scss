@@ -657,6 +657,82 @@
   }
 }
 
+// Print dialog
+.print-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  border-radius: 8px;
+  padding: 20px 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  z-index: 101;
+  min-width: 260px;
+
+  .popup-close {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 4px;
+
+    &:hover { color: #ffffff; }
+  }
+}
+
+.print-dialog-title {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.print-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 13px;
+  margin-bottom: 8px;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #4a8f4a;
+    cursor: pointer;
+  }
+}
+
+.print-dialog-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+.print-go-btn {
+  background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%) !important;
+  border-top-color: #5aa55a !important;
+  border-left-color: #4a954a !important;
+  border-right-color: #4a954a !important;
+  border-bottom-color: #1a3a1a !important;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(180deg, #5aa05a 0%, #408040 100%) !important;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
 // SM superscript
 sup.sm {
   font-size: 0.5em;

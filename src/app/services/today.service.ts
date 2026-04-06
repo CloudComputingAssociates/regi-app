@@ -49,6 +49,7 @@ export interface TodayResponse {
   finalizedAt?: string;
   planName?: string;
   planStartDate?: string;
+  weekPlanId?: number;
   mealNames?: Record<number, string>;
   mealVideoLinks?: Record<number, string>;
 }

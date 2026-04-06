@@ -6,11 +6,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { AuthService } from '@auth0/auth0-angular';
-import { map } from 'rxjs';
+import { map, firstValueFrom } from 'rxjs';
 import { TodayService, DailyLogItem } from '../../services/today.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { TabService } from '../../services/tab.service';
+import { WeekPlanService } from '../../services/week-plan.service';
+import { WeekPlanPrintService } from '../../services/week-plan-print.service';
 
 /** A meal group with computed timing and items */
 interface MealGroup {
@@ -59,8 +61,10 @@ interface FoodPopup {
                 </button>
               </div>
               <div class="report-actions">
-                <button class="icon-btn print-btn" disabled
-                  matTooltip="Print PDF (coming soon)"
+                <button class="icon-btn print-btn"
+                  [disabled]="!weekPlanId()"
+                  (click)="openPrintDialog()"
+                  matTooltip="Print Week Plan"
                   matTooltipPosition="above"
                   [matTooltipShowDelay]="300">
                   🖨
@@ -99,8 +103,10 @@ interface FoodPopup {
                 <span class="report-plan-name">{{ planName() }}</span>
               }
               <div class="report-actions">
-                <button class="icon-btn print-btn" disabled
-                  matTooltip="Print PDF (coming soon)"
+                <button class="icon-btn print-btn"
+                  [disabled]="!weekPlanId()"
+                  (click)="openPrintDialog()"
+                  matTooltip="Print Week Plan"
                   matTooltipPosition="above"
                   [matTooltipShowDelay]="300">
                   🖨
@@ -206,6 +212,30 @@ interface FoodPopup {
         </div>
       }
 
+      <!-- Print options dialog -->
+      @if (showPrintDialog()) {
+        <div class="food-popup-overlay" (click)="closePrintDialog()">
+          <div class="print-dialog" (click)="$event.stopPropagation()">
+            <button class="popup-close" (click)="closePrintDialog()">✕</button>
+            <p class="print-dialog-title">Print Week Plan</p>
+            <label class="print-option">
+              <input type="checkbox" [checked]="printIncludeMeals()" (change)="printIncludeMeals.set(!printIncludeMeals())" />
+              Days & Meals
+            </label>
+            <label class="print-option">
+              <input type="checkbox" [checked]="printIncludeShoppingList()" (change)="printIncludeShoppingList.set(!printIncludeShoppingList())" />
+              Shopping List
+            </label>
+            <div class="print-dialog-actions">
+              <button class="dismiss-btn print-go-btn" [disabled]="printLoading() || (!printIncludeMeals() && !printIncludeShoppingList())" (click)="executePrint()">
+                @if (printLoading()) { Loading... } @else { Print }
+              </button>
+              <button class="dismiss-btn" (click)="closePrintDialog()">Cancel</button>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Good Job popup -->
       @if (showGoodJob()) {
         <div class="food-popup-overlay" (click)="dismissGoodJob()">
@@ -225,6 +255,8 @@ export class TodayPanelComponent implements OnInit {
   private notificationService = inject(NotificationService);
   private auth = inject(AuthService);
   private tabService = inject(TabService);
+  private weekPlanService = inject(WeekPlanService);
+  private printService = inject(WeekPlanPrintService);
 
   userName$ = this.auth.user$.pipe(map(u => u?.name ?? 'User'));
 
@@ -253,9 +285,17 @@ export class TodayPanelComponent implements OnInit {
   hasPlan = signal(false);
   isFinalized = signal(false);
 
+  weekPlanId = signal<number | undefined>(undefined);
+
   // Popups
   foodPopup = signal<FoodPopup | null>(null);
   showGoodJob = signal(false);
+
+  // Print dialog
+  showPrintDialog = signal(false);
+  printIncludeMeals = signal(true);
+  printIncludeShoppingList = signal(true);
+  printLoading = signal(false);
 
   // Planned totals (all items, regardless of check state)
   plannedTotals = computed(() => {
@@ -351,11 +391,13 @@ export class TodayPanelComponent implements OnInit {
       this.checkedItems.set(new Set());
       this.planName.set('');
       this.planDay.set(0);
+      this.weekPlanId.set(undefined);
       return;
     }
 
     this.hasPlan.set(true);
     this.isFinalized.set(!!resp.finalizedAt);
+    this.weekPlanId.set(resp.weekPlanId);
 
     if (resp.planName) {
       this.planName.set(resp.planName);
@@ -531,5 +573,40 @@ export class TodayPanelComponent implements OnInit {
 
   closePanel(): void {
     this.tabService.closeTab('today');
+  }
+
+  // Print
+  openPrintDialog(): void {
+    this.showPrintDialog.set(true);
+  }
+
+  closePrintDialog(): void {
+    this.showPrintDialog.set(false);
+  }
+
+  async executePrint(): Promise<void> {
+    const wpId = this.weekPlanId();
+    if (!wpId) return;
+
+    this.printLoading.set(true);
+    try {
+      const wp = await this.weekPlanService.getWeekPlan(wpId);
+      const userName = await firstValueFrom(this.userName$);
+
+      this.printService.print(wp, {
+        includeMeals: this.printIncludeMeals(),
+        includeShoppingList: this.printIncludeShoppingList(),
+        userName: userName ?? 'User',
+        eatingStartTime: this.prefs.eatingStartTime(),
+        mealsPerDay: this.prefs.mealsPerDay(),
+        fastingType: this.prefs.fastingType()
+      });
+
+      this.closePrintDialog();
+    } catch {
+      this.notificationService.show('Failed to load week plan for printing', 'error');
+    } finally {
+      this.printLoading.set(false);
+    }
   }
 }
