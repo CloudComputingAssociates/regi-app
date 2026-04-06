@@ -298,18 +298,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  background: #444;
-  border: 1px solid #555;
-  border-radius: 4px;
+  padding: 2px;
+  background: none;
+  border: none;
   cursor: pointer;
-  color: #ffffff;
   flex-shrink: 0;
+  opacity: 0.85;
+  transition: opacity 0.15s ease;
 
-  mat-icon { font-size: 16px; width: 16px; height: 16px; }
-  &:hover { background: #555; }
+  .yt-icon { width: 28px; height: 20px; }
+  &:hover { opacity: 1; }
 }
 
 .prep-video-save-btn {

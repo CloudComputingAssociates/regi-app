@@ -303,7 +303,6 @@ export class WeekPlanPrintService {
 
       .page {
         page-break-after: always;
-        min-height: 100vh;
         padding: 30px 40px;
         position: relative;
         display: flex;

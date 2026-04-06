@@ -360,16 +360,23 @@
   border-top: 1px solid #4a4a4a;
 }
 
-// Video button on meal header — uses shared icon-btn style
+// YouTube-style video button on meal header
 .video-btn {
   margin-left: 8px;
-  width: 28px !important;
-  height: 28px !important;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.85;
+  transition: opacity 0.15s ease;
 
-  mat-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
+  &:hover { opacity: 1; }
+
+  .yt-icon {
+    width: 28px;
+    height: 20px;
   }
 }
 
