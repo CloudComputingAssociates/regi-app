@@ -106,9 +106,7 @@ export class WeekPlanPrintService {
 
     return `
     <div class="page">
-      ${this.buildHeader(dateFormatted)}
-      <div class="day-name">${dayName} <span class="day-num">(Day ${dayNum} of ${totalDays})</span></div>
-      <div class="plan-name-line">${this.escHtml(wp.name)}</div>
+      ${this.buildDayHeader(dayName, dayNum, totalDays, dateFormatted)}
       <div class="daily-targets">
         Daily Targets: ${totalCal} calories | ${totalPro}g protein (${proPct}%) | ${totalCarb}g carbs (${carbPct}%) | ${totalFat}g fat (${fatPct}%)
       </div>
@@ -181,13 +179,14 @@ export class WeekPlanPrintService {
         </div>`;
     }
 
-    const startDate = this.formatDateDisplay(wp.startDate);
-
     return `
     <div class="page">
-      ${this.buildHeader(startDate)}
-      <div class="day-name">${dayCount} Day Shopping List</div>
-      <div class="plan-name-line">${this.escHtml(wp.name)}</div>
+      <div class="header">
+        <div class="header-left">
+          <span class="header-day">${dayCount} Day Shopping List</span>
+        </div>
+        <img src="/images/yeh_logo_dark.png" class="header-logo" alt="YEH" />
+      </div>
       ${sectionsHtml}
       ${this.buildFooter('')}
     </div>`;
@@ -215,6 +214,18 @@ export class WeekPlanPrintService {
       }
     }
     return Array.from(map.values());
+  }
+
+  private buildDayHeader(dayName: string, dayNum: number, totalDays: number, date: string): string {
+    return `
+      <div class="header">
+        <div class="header-left">
+          <span class="header-day">${dayName}</span>
+          <span class="header-day-num">(Day ${dayNum} of ${totalDays})</span>
+        </div>
+        <img src="/images/yeh_logo_dark.png" class="header-logo" alt="YEH" />
+      </div>
+      <div class="sub-header-date">${date}</div>`;
   }
 
   private buildHeader(planName: string): string {
@@ -293,36 +304,39 @@ export class WeekPlanPrintService {
       .header {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 8px;
+        align-items: center;
         border-bottom: 3px solid #4a7fb5;
-        padding-bottom: 8px;
+        padding-bottom: 6px;
+        margin-bottom: 4px;
+      }
+      .header-left {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .header-day {
+        font-size: 22px;
+        font-weight: 700;
+        color: #333;
+      }
+      .header-day-num {
+        font-size: 13px;
+        font-weight: 400;
+        color: #888;
       }
       .header-title {
-        font-size: 28px;
-        font-weight: 800;
+        font-size: 22px;
+        font-weight: 700;
         color: #333;
       }
       .header-logo {
         width: 60px;
         height: auto;
       }
-
-      .day-name {
-        font-size: 22px;
-        font-weight: 700;
-        color: #4a7fb5;
-        margin: 4px 0 2px;
-      }
-      .day-num {
-        font-size: 14px;
-        font-weight: 400;
-        color: #888;
-      }
-      .plan-name-line {
-        font-size: 12px;
-        color: #888;
-        margin-bottom: 8px;
+      .sub-header-date {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 10px;
       }
 
       .daily-targets {

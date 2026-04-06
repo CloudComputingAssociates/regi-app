@@ -99,9 +99,6 @@ interface FoodPopup {
                   <mat-icon>chevron_right</mat-icon>
                 </button>
               </div>
-              @if (planName()) {
-                <span class="report-plan-name">{{ planName() }}</span>
-              }
               <div class="report-actions">
                 <button class="icon-btn print-btn"
                   [disabled]="!weekPlanId()"
