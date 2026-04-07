@@ -36,7 +36,7 @@ import { Subscription } from 'rxjs';
       <!-- Header with plan name and actions -->
       <div class="plan-header" [class.stippled]="foodPickerOpen()">
         <div class="header-left">
-          <span class="plan-label">Meal Plan</span>
+          <span class="plan-label">Name</span>
 
           <!-- Combo-box dropdown for plan name -->
           <div class="plan-combo" (focusout)="onComboFocusOut($event)">
@@ -132,6 +132,7 @@ import { Subscription } from 'rxjs';
           </button>
         </div>
       </div>
+      <div class="powered-by"><img src="/images/AI-star.png" class="powered-by-icon" alt="" /> powered by RegiMenu<sup class="sm">SM</sup></div>
 
       <!-- Totals row beneath header -->
       @if (planningService.hasPlan()) {

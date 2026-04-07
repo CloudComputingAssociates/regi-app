@@ -31,7 +31,7 @@ const APP_AREAS = [
   template: `
     <div class="panel-container">
       <div class="panel-header">
-        <span class="panel-title">Submit Issue</span>
+        <span class="panel-title">Submit Bug</span>
         <button class="icon-btn close-btn" (click)="close()" matTooltip="Close" matTooltipPosition="above">
           ✕
         </button>
@@ -86,7 +86,7 @@ const APP_AREAS = [
             @if (submitting()) {
               Submitting...
             } @else {
-              Submit Issue
+              Submit Bug
             }
           </button>
         }
