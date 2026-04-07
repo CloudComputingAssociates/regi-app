@@ -51,7 +51,7 @@ import { Subscription } from 'rxjs';
               (keydown.enter)="onPlanNameCommit($event)"
               (keydown.escape)="closeDropdown()"
               (keydown.arrowDown)="onArrowDown($event)"
-              placeholder="Plan name..."
+              placeholder="MealPlan name..."
               spellcheck="false" />
             <button
               class="combo-toggle"
@@ -68,14 +68,14 @@ import { Subscription } from 'rxjs';
                   [class.highlighted]="dropdownHighlight() === -2"
                   (mousedown)="onAIGeneratePlan($event)"
                   role="option">
-                  AI Generate Plan
+                  AutoCreate RegiMenu Plan...
                 </button>
                 <button
                   class="dropdown-item create-new"
                   [class.highlighted]="dropdownHighlight() === -1"
                   (mousedown)="onCreateNewPlan($event)"
                   role="option">
-                  + Create Empty Plan
+                  + Create Empty MealPlan
                 </button>
                 @for (plan of savedPlans(); track plan.id; let i = $index) {
                   <button
@@ -91,7 +91,7 @@ import { Subscription } from 'rxjs';
                   </button>
                 }
                 @if (savedPlans().length === 0 && !savedPlansLoading()) {
-                  <div class="dropdown-empty">No saved plans</div>
+                  <div class="dropdown-empty">No saved MealPlans</div>
                 }
                 @if (savedPlansLoading()) {
                   <div class="dropdown-empty">Loading...</div>
@@ -115,7 +115,7 @@ import { Subscription } from 'rxjs';
             class="icon-btn delete-plan-btn"
             (click)="onDeletePlan()"
             [disabled]="!planningService.hasPlan()"
-            matTooltip="Delete Plan"
+            matTooltip="Delete MealPlan"
             matTooltipPosition="above">
             <mat-icon>delete</mat-icon>
           </button>
@@ -132,7 +132,7 @@ import { Subscription } from 'rxjs';
           </button>
         </div>
       </div>
-      <div class="powered-by"><img src="/images/AI-star.png" class="powered-by-icon" alt="" /> powered by RegiMenu<sup class="sm">SM</sup></div>
+      <div class="powered-by"><img src="/images/AI-star.png" class="powered-by-icon" alt="" /> MealPlans by RegiMenu<sup class="sm">SM</sup></div>
 
       <!-- Totals row beneath header -->
       @if (planningService.hasPlan()) {
@@ -172,7 +172,7 @@ import { Subscription } from 'rxjs';
         @if (planningService.loading()) {
           <div class="loading-message">
             <div class="spinner-large"></div>
-            <p>Please wait, meal plan coming...</p>
+            <p>Please wait, MealPlan coming...</p>
           </div>
         } @else if (planningService.error()) {
           <div class="error-message">
@@ -181,7 +181,7 @@ import { Subscription } from 'rxjs';
         } @else if (!planningService.hasPlan()) {
           <div class="empty-message">
             <p class="placeholder-text">Intelligent meal planning powered by AI</p>
-            <p class="placeholder-subtext">Select a plan or choose "AI Generate Plan" from the dropdown</p>
+            <p class="placeholder-subtext">Select existing plan, or AutoGenerate an AI-Assisted RegiMenu<sup class="sm">SM</sup> Plan</p>
           </div>
         } @else {
           <div class="plan-list" #planList>
@@ -366,7 +366,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
         this.savedPlansLoading.set(false);
       },
       error: (err) => {
-        console.error('Failed to fetch saved plans:', err);
+        console.error('Failed to fetch saved MealPlans:', err);
         this.savedPlansLoading.set(false);
       }
     });
@@ -472,7 +472,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     try {
       await this.planningService.getMeal(mealId);
     } catch {
-      this.notificationService.show('Failed to load plan', 'error');
+      this.notificationService.show('Failed to load MealPlan', 'error');
     }
   }
 
@@ -506,7 +506,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
       this.newPlanName = '';
       this.fetchSavedPlans();
     } catch {
-      this.notificationService.show('Failed to create plan', 'error');
+      this.notificationService.show('Failed to create MealPlan', 'error');
     }
   }
 
@@ -520,10 +520,10 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
       async () => {
         try {
           await this.planningService.deleteMeal(plan.id);
-          this.notificationService.show('Plan deleted', 'success');
+          this.notificationService.show('MealPlan deleted', 'success');
           this.fetchSavedPlans();
         } catch {
-          this.notificationService.show('Failed to delete plan', 'error');
+          this.notificationService.show('Failed to delete MealPlan', 'error');
         }
       },
       () => {}
@@ -740,7 +740,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
       await this.planningService.updatePlan(plan.id, updates);
       this.hasChanges.set(false);
     } catch {
-      this.notificationService.show('Failed to save plan', 'error');
+      this.notificationService.show('Failed to save MealPlan', 'error');
     }
   }
 
@@ -761,10 +761,10 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
       this.isNewPlanMode.set(false);
       this.newPlanNameCommitted.set(false);
       this.newPlanName = '';
-      this.notificationService.show('Meal plan generated', 'success');
+      this.notificationService.show('MealPlan generated', 'success');
       this.fetchSavedPlans(); // refresh list
     } catch {
-      this.notificationService.show('Failed to generate plan', 'error');
+      this.notificationService.show('Failed to generate MealPlan', 'error');
     }
   }
 
