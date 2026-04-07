@@ -29,8 +29,9 @@ export class PlanningService {
   private savedMealsLoaded = false;
   readonly savedMeals = this.savedMealsSignal.asReadonly();
 
-  // Stubbed prompt for first pass (will come from PromptMe chat later)
-  private readonly STUBBED_PROMPT = 'I want a meal with dark chicken, eggs, cottage cheese and ground beef plus vegetables and pecorino romano cheese 1 oz';
+  // Prompt gist — the API uses user's settings/preferences for food selection,
+  // this is just a hint passed along for future chat-driven refinements.
+  private readonly DEFAULT_PROMPT = 'Generate a meal based on my preferences and goals';
 
   // Public accessors
   readonly currentMeal = this.currentMealSignal.asReadonly();
@@ -60,7 +61,7 @@ export class PlanningService {
     this.errorSignal.set(null);
 
     const request: GenerateMealRequest = {
-      promptGist: this.STUBBED_PROMPT,
+      promptGist: this.DEFAULT_PROMPT,
       ...(name ? { name } : {})
     };
 
