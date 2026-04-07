@@ -68,7 +68,7 @@ import { Subscription } from 'rxjs';
                   [class.highlighted]="dropdownHighlight() === -2"
                   (mousedown)="onAIGeneratePlan($event)"
                   role="option">
-                  AutoCreate RegiMenu Plan...
+                  Create RegiMenu Plan...
                 </button>
                 <button
                   class="dropdown-item create-new"
@@ -180,8 +180,8 @@ import { Subscription } from 'rxjs';
           </div>
         } @else if (!planningService.hasPlan()) {
           <div class="empty-message">
-            <p class="placeholder-text">Intelligent meal planning powered by AI</p>
-            <p class="placeholder-subtext">Select existing plan, or AutoGenerate an AI-Assisted RegiMenu<sup class="sm">SM</sup> Plan</p>
+            <p class="placeholder-text">Intelligent meal planning powered by RegiMenu<sup class="sm">SM</sup></p>
+            <p class="placeholder-subtext">Select an existing plan or Create one with <img src="/images/AI-star.png" class="powered-by-icon" alt="" /> RegiMenu<sup class="sm">SM</sup></p>
           </div>
         } @else {
           <div class="plan-list" #planList>
