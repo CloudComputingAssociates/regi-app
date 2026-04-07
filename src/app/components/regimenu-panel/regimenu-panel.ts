@@ -132,7 +132,7 @@ import { Subscription } from 'rxjs';
           </button>
         </div>
       </div>
-      <div class="powered-by"><img src="/images/AI-star.png" class="powered-by-icon" alt="" /> MealPlans by RegiMenu<sup class="sm">SM</sup></div>
+      <div class="powered-by">MealPlans by RegiMenu<sup class="sm">SM</sup></div>
 
       <!-- Totals row beneath header -->
       @if (planningService.hasPlan()) {

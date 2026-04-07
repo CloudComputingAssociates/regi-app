@@ -514,6 +514,20 @@
     color: rgba(255, 255, 255, 0.5);
     font-size: 13px;
   }
+
+  .powered-by-icon {
+    height: 1.1em;
+    width: auto;
+    vertical-align: middle;
+    margin-right: 1px;
+  }
+
+  sup.sm {
+    font-size: 0.5em;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 400;
+    vertical-align: super;
+  }
 }
 
 .error-message p {
