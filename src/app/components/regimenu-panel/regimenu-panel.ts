@@ -100,16 +100,6 @@ import { Subscription } from 'rxjs';
             }
           </div>
 
-          <!-- Add food button -->
-          <button
-            class="icon-btn add-food-btn"
-            (click)="openFoodPicker()"
-            [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()"
-            matTooltip="Add Food"
-            matTooltipPosition="above">
-            <mat-icon>add</mat-icon>
-          </button>
-
           <!-- Delete plan button -->
           <button
             class="icon-btn delete-plan-btn"
@@ -140,6 +130,14 @@ import { Subscription } from 'rxjs';
           <span class="totals-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
           <span class="totals-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
           <span class="totals-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg salt</span>
+          <button
+            class="icon-btn add-food-btn"
+            (click)="openFoodPicker()"
+            [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()"
+            matTooltip="Add Food"
+            matTooltipPosition="above">
+            <mat-icon>add</mat-icon>
+          </button>
         </div>
 
         <!-- Prep Video row -->
