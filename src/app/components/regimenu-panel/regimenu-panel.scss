@@ -515,6 +515,18 @@
     font-size: 13px;
   }
 
+  .placeholder-steps {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    text-align: left;
+    margin: 0;
+    padding-left: 24px;
+
+    li {
+      margin-bottom: 8px;
+    }
+  }
+
   .powered-by-icon {
     height: 1.1em;
     width: auto;

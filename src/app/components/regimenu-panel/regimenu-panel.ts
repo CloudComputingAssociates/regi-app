@@ -180,8 +180,13 @@ import { Subscription } from 'rxjs';
           </div>
         } @else if (!planningService.hasPlan()) {
           <div class="empty-message">
-            <p class="placeholder-text">Intelligent meal planning powered by RegiMenu<sup class="sm">SM</sup></p>
-            <p class="placeholder-subtext">Select an existing plan or Create one with <img src="/images/AI-star.png" class="powered-by-icon" alt="" /> RegiMenu<sup class="sm">SM</sup></p>
+            <p class="placeholder-text">Intelligent meal planning powered by <img src="/images/AI-star.png" class="powered-by-icon" alt="" /> RegiMenu<sup class="sm">SM</sup></p>
+            <ol class="placeholder-steps">
+              <li>NAME dropdown, select <strong>Create RegiMenu<sup class="sm">SM</sup> Plan...</strong></li>
+              <li>RegiMenu<sup class="sm">SM</sup> looks at your Foods preferences, your Settings and generates a plan to fit your goals</li>
+              <li>Name the plan, if you like or delete it and start over, or</li>
+              <li>Use the plan as a base, and make modifications to it</li>
+            </ol>
           </div>
         } @else {
           <div class="plan-list" #planList>
