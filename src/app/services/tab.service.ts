@@ -85,10 +85,13 @@ export class TabService {
   // Define menu order - this determines tab insertion order
   // Left nav: today, review (Week Plans), meal-planning, shop (Shopping List), foods (Food Preferences), chat
   // Right nav (profile menu): account, preferences (Settings), help
-  private menuOrder = ['today', 'review', 'meal-planning', 'shop', 'foods', 'chat', 'video-viewer', 'issue', 'preferences', 'account', 'help'];
+  private menuOrder = ['today', 'review', 'meal-planning', 'shop', 'foods', 'chat', 'video-viewer', 'recipe-viewer', 'issue', 'preferences', 'account', 'help'];
 
   /** URL for the video-viewer tab (set before opening the tab) */
   videoViewerUrl: WritableSignal<string> = signal('');
+
+  /** URL for the recipe-viewer tab (set before opening the tab) */
+  recipeViewerUrl: WritableSignal<string> = signal('');
 
   // Tabs that get an image icon
   private tabIcons: Record<string, string> = {
@@ -270,6 +273,12 @@ export class TabService {
   openVideoViewer(url: string): void {
     this.videoViewerUrl.set(url);
     this.openTab('video-viewer', 'YouTube');
+  }
+
+  /** Open the recipe viewer tab with the given URL */
+  openRecipeViewer(url: string): void {
+    this.recipeViewerUrl.set(url);
+    this.openTab('recipe-viewer', 'Recipe');
   }
 
   /** Update the badge count shown on a tab label */

@@ -286,31 +286,39 @@
 }
 
 // Prep Video row
-.prep-video-row {
+// Video + Recipe link rows
+.link-rows {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 2px;
   padding: 4px 10px;
   background: #333;
   border-bottom: 1px solid #444;
 }
 
-.prep-video-label {
-  color: #4da6ff;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
+.link-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 50%;
 }
 
-.prep-video-input {
+.link-label {
+  color: #4da6ff;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 40px;
+}
+
+.link-input {
   flex: 1;
-  max-width: 50%;
-  padding: 3px 6px;
-  font-size: 12px;
+  padding: 2px 5px;
+  font-size: 11px;
   background: #2a2a2a;
   color: #ffffff;
   border: 1px solid #555;
-  border-radius: 4px;
+  border-radius: 3px;
   min-width: 0;
 
   &:focus {
@@ -319,11 +327,30 @@
   }
 }
 
-.prep-video-test-btn {
+.link-save-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: #357035;
+  border: 1px solid #4a954a;
+  border-radius: 3px;
+  cursor: pointer;
+  color: #ffffff;
+  flex-shrink: 0;
+
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  &:hover:not(:disabled) { background: #408040; }
+  &:disabled { opacity: 0.3; cursor: not-allowed; }
+}
+
+.link-open-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
   background: none;
   border: none;
   cursor: pointer;
@@ -331,27 +358,9 @@
   opacity: 0.85;
   transition: opacity 0.15s ease;
 
-  .yt-icon { width: 28px; height: 20px; }
+  .yt-icon { width: 24px; height: 17px; }
+  .recipe-icon { font-size: 16px; width: 16px; height: 16px; color: #4da6ff; }
   &:hover { opacity: 1; }
-}
-
-.prep-video-save-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  background: #357035;
-  border: 1px solid #4a954a;
-  border-radius: 4px;
-  cursor: pointer;
-  color: #ffffff;
-  flex-shrink: 0;
-
-  mat-icon { font-size: 16px; width: 16px; height: 16px; }
-  &:hover:not(:disabled) { background: #408040; }
-  &:disabled { opacity: 0.3; cursor: not-allowed; }
 }
 
 // Add food button
@@ -486,6 +495,16 @@
   border-bottom: 1px solid #444;
 }
 
+.approved-badge {
+  background: #4a8f4a;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
 .meal-image-zone {
   border: 2px dashed #555;
   border-radius: 6px;
@@ -499,6 +518,14 @@
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
   position: relative;
+
+  &.locked {
+    border-style: solid;
+    border-color: #444;
+    cursor: default;
+    opacity: 0.7;
+    &:hover { border-color: #444; background: none; }
+  }
 
   &:hover {
     border-color: #4da6ff;

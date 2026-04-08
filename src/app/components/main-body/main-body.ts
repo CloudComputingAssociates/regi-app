@@ -16,6 +16,7 @@ import { PreferencesPanelComponent } from '../preferences-panel/preferences-pane
 import { TodayPanelComponent } from '../today-panel/today-panel';
 import { NotificationComponent } from '../notification/notification';
 import { VideoViewerComponent } from '../video-viewer/video-viewer';
+import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
 import { IssuePanelComponent } from '../issue-panel/issue-panel';
 
 @Component({
@@ -36,6 +37,7 @@ import { IssuePanelComponent } from '../issue-panel/issue-panel';
     TodayPanelComponent,
     NotificationComponent,
     VideoViewerComponent,
+    RecipeViewerComponent,
     IssuePanelComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -89,6 +91,8 @@ import { IssuePanelComponent } from '../issue-panel/issue-panel';
                     <app-account-panel />
                   } @else if (tab.id === 'video-viewer') {
                     <app-video-viewer />
+                  } @else if (tab.id === 'recipe-viewer') {
+                    <app-recipe-viewer />
                   } @else if (tab.id === 'issue') {
                     <app-issue-panel />
                   } @else if (tab.id === 'help') {

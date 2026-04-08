@@ -141,55 +141,93 @@ import { Subscription } from 'rxjs';
           </button>
         </div>
 
-        <!-- Prep Video row -->
-        <div class="prep-video-row">
-          <label class="prep-video-label">Video</label>
-          @if (prepVideoLink()) {
-            <button class="prep-video-test-btn" (click)="testPrepVideo()" matTooltip="YouTube video" matTooltipPosition="above">
-              <svg class="yt-icon" viewBox="0 0 28 20"><rect rx="4" width="28" height="20" fill="#FF0000"/><polygon points="11,4 11,16 20,10" fill="#FFF"/></svg>
+        <!-- Video + Recipe links row -->
+        <div class="link-rows">
+          <div class="link-row">
+            <label class="link-label">Video</label>
+            <input
+              type="url"
+              class="link-input"
+              [ngModel]="prepVideoLink()"
+              (ngModelChange)="onPrepVideoChange($event)"
+              [disabled]="isShareApproved()"
+              placeholder="https://youtube.com/..." />
+            <button
+              class="link-save-btn"
+              [disabled]="!prepVideoDirty() || isShareApproved()"
+              (click)="savePrepVideo()"
+              matTooltip="Save video link"
+              matTooltipPosition="above">
+              <mat-icon>check</mat-icon>
             </button>
-          }
-          <input
-            type="url"
-            class="prep-video-input"
-            [ngModel]="prepVideoLink()"
-            (ngModelChange)="onPrepVideoChange($event)"
-            placeholder="https://youtube.com/..." />
-          <button
-            class="prep-video-save-btn"
-            [disabled]="!prepVideoDirty()"
-            (click)="savePrepVideo()"
-            matTooltip="Save prep video link"
-            matTooltipPosition="above">
-            <mat-icon>check</mat-icon>
-          </button>
+            @if (prepVideoLink()) {
+              <button class="link-open-btn" (click)="testPrepVideo()" matTooltip="Open in YouTube viewer" matTooltipPosition="above">
+                <svg class="yt-icon" viewBox="0 0 28 20"><rect rx="4" width="28" height="20" fill="#FF0000"/><polygon points="11,4 11,16 20,10" fill="#FFF"/></svg>
+              </button>
+            }
+          </div>
+          <div class="link-row">
+            <label class="link-label">Recipe</label>
+            <input
+              type="url"
+              class="link-input"
+              [ngModel]="recipeLink()"
+              (ngModelChange)="onRecipeLinkChange($event)"
+              [disabled]="isShareApproved()"
+              placeholder="https://recipe-site.com/..." />
+            <button
+              class="link-save-btn"
+              [disabled]="!recipeLinkDirty() || isShareApproved()"
+              (click)="saveRecipeLink()"
+              matTooltip="Save recipe link"
+              matTooltipPosition="above">
+              <mat-icon>check</mat-icon>
+            </button>
+            @if (recipeLink()) {
+              <button class="link-open-btn" (click)="openRecipeViewer()" matTooltip="Open recipe page" matTooltipPosition="above">
+                <mat-icon class="recipe-icon">open_in_new</mat-icon>
+              </button>
+            }
+          </div>
         </div>
 
         <!-- Meal Image + Share row -->
         <div class="meal-image-row">
-          <div class="meal-image-zone"
-            tabindex="0"
-            (dragover)="onMealImageDragOver($event)"
-            (drop)="onMealImageDrop($event)"
-            (paste)="onMealImagePaste($event)">
-            @if (mealImagePreview() || planningService.currentPlan()?.mealImage) {
-              <img [src]="mealImagePreview() || planningService.currentPlan()?.mealImage" alt="" class="meal-preview-img" />
-              <button type="button" class="remove-img-btn" (click)="clearMealImage(); $event.stopPropagation()">✕</button>
-            } @else {
-              <div class="drop-placeholder">
-                <button type="button" class="browse-btn desktop-only" (click)="mealImageInput.click(); $event.stopPropagation()">Browse</button>
-                <button type="button" class="camera-btn mobile-only" (click)="mealImageInput.click(); $event.stopPropagation()">📷</button>
-                <span class="drop-label desktop-only">Meal photo: drop or Ctrl+V</span>
-                <span class="drop-label mobile-only">Tap 📷 for meal photo</span>
-              </div>
-            }
-          </div>
-          <input #mealImageInput type="file" accept="image/*" capture="environment" hidden
-            (change)="onMealImageSelected($event)" />
-          <label class="share-check">
-            <input type="checkbox" [checked]="shareCandidate()" (change)="onShareCandidateChange($any($event.target).checked)" />
-            <span>Share w/ YEH Community</span>
-          </label>
+          @if (isShareApproved()) {
+            <!-- Locked: show image only, no upload -->
+            <div class="meal-image-zone locked">
+              @if (planningService.currentPlan()?.mealImage) {
+                <img [src]="planningService.currentPlan()?.mealImage" alt="" class="meal-preview-img" />
+              } @else {
+                <span class="drop-label">No image</span>
+              }
+            </div>
+            <span class="approved-badge">Community Approved</span>
+          } @else {
+            <div class="meal-image-zone"
+              tabindex="0"
+              (dragover)="onMealImageDragOver($event)"
+              (drop)="onMealImageDrop($event)"
+              (paste)="onMealImagePaste($event)">
+              @if (mealImagePreview() || planningService.currentPlan()?.mealImage) {
+                <img [src]="mealImagePreview() || planningService.currentPlan()?.mealImage" alt="" class="meal-preview-img" />
+                <button type="button" class="remove-img-btn" (click)="clearMealImage(); $event.stopPropagation()">✕</button>
+              } @else {
+                <div class="drop-placeholder">
+                  <button type="button" class="browse-btn desktop-only" (click)="mealImageInput.click(); $event.stopPropagation()">Browse</button>
+                  <button type="button" class="camera-btn mobile-only" (click)="mealImageInput.click(); $event.stopPropagation()">📷</button>
+                  <span class="drop-label desktop-only">Meal photo: drop or Ctrl+V</span>
+                  <span class="drop-label mobile-only">Tap 📷 for meal photo</span>
+                </div>
+              }
+            </div>
+            <input #mealImageInput type="file" accept="image/*" capture="environment" hidden
+              (change)="onMealImageSelected($event)" />
+            <label class="share-check">
+              <input type="checkbox" [checked]="shareCandidate()" (change)="onShareCandidateChange($any($event.target).checked)" [disabled]="isShareApproved()" />
+              <span>Share w/ YEH Community</span>
+            </label>
+          }
         </div>
       }
 
@@ -354,6 +392,9 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   mealImageFile = signal<File | null>(null);
   mealImagePreview = signal<string | null>(null);
   shareCandidate = signal(false);
+
+  // Community approval lockdown
+  isShareApproved = computed(() => this.planningService.currentPlan()?.shareApproved === true);
 
   // Swipe state
   swipingIndex = signal<number | null>(null);
@@ -612,6 +653,39 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Recipe Link
+  recipeLink = signal('');
+  recipeLinkDirty = signal(false);
+  private recipeLinkOriginal = '';
+
+  private syncRecipeLink = effect(() => {
+    const meal = this.planningService.currentPlan();
+    const link = meal?.recipeLink ?? '';
+    this.recipeLink.set(link);
+    this.recipeLinkOriginal = link;
+    this.recipeLinkDirty.set(false);
+  });
+
+  onRecipeLinkChange(value: string): void {
+    this.recipeLink.set(value);
+    this.recipeLinkDirty.set(value !== this.recipeLinkOriginal);
+  }
+
+  saveRecipeLink(): void {
+    const plan = this.planningService.currentPlan();
+    if (!plan) return;
+    const link = this.recipeLink();
+    this.planningService.updateMeal(plan.id, { recipeLink: link }).then(() => {
+      this.recipeLinkOriginal = link;
+      this.recipeLinkDirty.set(false);
+    });
+  }
+
+  openRecipeViewer(): void {
+    const url = this.recipeLink();
+    if (url) this.tabService.openRecipeViewer(url);
+  }
+
   // Meal image upload
   onMealImageSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -678,10 +752,28 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   }
 
   onShareCandidateChange(value: boolean): void {
-    this.shareCandidate.set(value);
-    const plan = this.planningService.currentPlan();
-    if (plan) {
-      this.planningService.updateMeal(plan.id, { shareCandidate: value });
+    if (value) {
+      // Confirm before submitting as community candidate
+      this.notificationService.showConfirmation(
+        'If your meal plan is approved for community sharing, the picture, video link and recipe link will be locked and cannot be modified. Continue?',
+        'warning',
+        () => {
+          this.shareCandidate.set(true);
+          const plan = this.planningService.currentPlan();
+          if (plan) {
+            this.planningService.updateMeal(plan.id, { shareCandidate: true });
+          }
+        },
+        () => {
+          this.shareCandidate.set(false);
+        }
+      );
+    } else {
+      this.shareCandidate.set(false);
+      const plan = this.planningService.currentPlan();
+      if (plan) {
+        this.planningService.updateMeal(plan.id, { shareCandidate: false });
+      }
     }
   }
 
