@@ -20,6 +20,7 @@ import { ChatService } from '../../services/chat.service';
 import { PlanningService } from '../../services/planning.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { NotificationService } from '../../services/notification.service';
+import { ImageUploadService } from '../../services/image-upload.service';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
 import { FoodPickerComponent, FoodPickerAddEvent } from '../food-picker/food-picker';
 import { FoodAmountEditorComponent, FoodAmountUpdate } from '../food-amount-editor/food-amount-editor';
@@ -122,7 +123,7 @@ import { Subscription } from 'rxjs';
           </button>
         </div>
       </div>
-      <div class="powered-by">Start a new MealPlan with RegiMenu<sup class="sm">SM</sup></div>
+      <!-- powered-by row removed -->
 
       <!-- Totals row beneath header -->
       @if (planningService.hasPlan()) {
@@ -162,6 +163,33 @@ import { Subscription } from 'rxjs';
             matTooltipPosition="above">
             <mat-icon>check</mat-icon>
           </button>
+        </div>
+
+        <!-- Meal Image + Share row -->
+        <div class="meal-image-row">
+          <div class="meal-image-zone"
+            tabindex="0"
+            (dragover)="onMealImageDragOver($event)"
+            (drop)="onMealImageDrop($event)"
+            (paste)="onMealImagePaste($event)">
+            @if (mealImagePreview() || planningService.currentPlan()?.mealImage) {
+              <img [src]="mealImagePreview() || planningService.currentPlan()?.mealImage" alt="" class="meal-preview-img" />
+              <button type="button" class="remove-img-btn" (click)="clearMealImage(); $event.stopPropagation()">✕</button>
+            } @else {
+              <div class="drop-placeholder">
+                <button type="button" class="browse-btn desktop-only" (click)="mealImageInput.click(); $event.stopPropagation()">Browse</button>
+                <button type="button" class="camera-btn mobile-only" (click)="mealImageInput.click(); $event.stopPropagation()">📷</button>
+                <span class="drop-label desktop-only">Meal photo: drop or Ctrl+V</span>
+                <span class="drop-label mobile-only">Tap 📷 for meal photo</span>
+              </div>
+            }
+          </div>
+          <input #mealImageInput type="file" accept="image/*" capture="environment" hidden
+            (change)="onMealImageSelected($event)" />
+          <label class="share-check">
+            <input type="checkbox" [checked]="shareCandidate()" (change)="onShareCandidateChange($any($event.target).checked)" />
+            <span>Share w/ YEH Community</span>
+          </label>
         </div>
       }
 
@@ -292,6 +320,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   planningService = inject(PlanningService);
   private preferencesService = inject(PreferencesService);
   private notificationService = inject(NotificationService);
+  private imageUploadService = inject(ImageUploadService);
 
   @ViewChild('planList') planListRef!: ElementRef<HTMLElement>;
   @ViewChild('planNameInput') planNameInputRef!: ElementRef<HTMLInputElement>;
@@ -320,6 +349,11 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   editingItem = signal<MealItem | null>(null);
   editingNutritionFacts = signal<NutritionFacts | null>(null);
   editingBaseServingG = signal(100);
+
+  // Meal image upload state
+  mealImageFile = signal<File | null>(null);
+  mealImagePreview = signal<string | null>(null);
+  shareCandidate = signal(false);
 
   // Swipe state
   swipingIndex = signal<number | null>(null);
@@ -359,6 +393,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(s => s.unsubscribe());
+    if (this.mealImagePreview()) URL.revokeObjectURL(this.mealImagePreview()!);
   }
 
   fetchSavedPlans(): void {
@@ -546,6 +581,17 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     this.prepVideoDirty.set(false);
   });
 
+  private syncShareCandidate = effect(() => {
+    const meal = this.planningService.currentPlan();
+    this.shareCandidate.set(meal?.shareCandidate ?? false);
+    // Clear local image preview when switching plans
+    if (this.mealImagePreview()) {
+      URL.revokeObjectURL(this.mealImagePreview()!);
+      this.mealImageFile.set(null);
+      this.mealImagePreview.set(null);
+    }
+  });
+
   onPrepVideoChange(value: string): void {
     this.prepVideoLink.set(value);
     this.prepVideoDirty.set(value !== this.prepVideoOriginal);
@@ -564,6 +610,79 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
       this.prepVideoOriginal = link;
       this.prepVideoDirty.set(false);
     });
+  }
+
+  // Meal image upload
+  onMealImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) this.setMealImageFile(file);
+    input.value = '';
+  }
+
+  onMealImagePaste(event: ClipboardEvent): void {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        event.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) this.setMealImageFile(file);
+        return;
+      }
+    }
+  }
+
+  onMealImageDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  onMealImageDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const file = event.dataTransfer?.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      this.setMealImageFile(file);
+    }
+  }
+
+  private setMealImageFile(file: File): void {
+    if (this.mealImagePreview()) URL.revokeObjectURL(this.mealImagePreview()!);
+    this.mealImageFile.set(file);
+    this.mealImagePreview.set(URL.createObjectURL(file));
+    this.uploadMealImage();
+  }
+
+  clearMealImage(): void {
+    if (this.mealImagePreview()) URL.revokeObjectURL(this.mealImagePreview()!);
+    this.mealImageFile.set(null);
+    this.mealImagePreview.set(null);
+  }
+
+  private async uploadMealImage(): Promise<void> {
+    const plan = this.planningService.currentPlan();
+    const file = this.mealImageFile();
+    if (!plan || !file) return;
+
+    try {
+      const result = await this.imageUploadService.uploadMealImage(plan.id, file);
+      // Update the current plan with the new image URLs
+      this.planningService.updateMeal(plan.id, {});
+      this.notificationService.show('Meal image uploaded', 'success');
+      this.mealImageFile.set(null);
+      // Keep preview showing the uploaded image
+    } catch {
+      this.notificationService.show('Failed to upload meal image', 'error');
+    }
+  }
+
+  onShareCandidateChange(value: boolean): void {
+    this.shareCandidate.set(value);
+    const plan = this.planningService.currentPlan();
+    if (plan) {
+      this.planningService.updateMeal(plan.id, { shareCandidate: value });
+    }
   }
 
   // Food picker

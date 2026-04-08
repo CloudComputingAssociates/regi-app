@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-interface ProductUploadResponse {
+export interface ProductUploadResponse {
   success: boolean;
   cdn_url: string;
   thumbnail_url: string;
@@ -29,6 +29,20 @@ export class ImageUploadService {
     const formData = new FormData();
     formData.append('foodId', foodId.toString());
     formData.append('source', 'user');
+    formData.append('image', image);
+
+    return firstValueFrom(
+      this.http.post<ProductUploadResponse>(
+        `${this.imageApiUrl}/api/image/upload/product`,
+        formData
+      )
+    );
+  }
+
+  async uploadMealImage(mealId: number, image: File): Promise<ProductUploadResponse> {
+    const formData = new FormData();
+    formData.append('foodId', mealId.toString());
+    formData.append('source', 'meal');
     formData.append('image', image);
 
     return firstValueFrom(

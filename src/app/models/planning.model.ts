@@ -39,6 +39,10 @@ export interface Meal {
   totalFiberG?: number;
   totalSodiumMg?: number;
   prepVideoLink?: string;
+  mealImage?: string;
+  mealImageThumbnail?: string;
+  shareCandidate?: boolean;
+  shareApproved?: boolean;
   items: MealItem[];
   createdAt: string;
   updatedAt: string;
@@ -54,6 +58,7 @@ export interface UpdateMealRequest {
   isFavorite?: boolean;
   status?: 'active' | 'archived';
   prepVideoLink?: string;
+  shareCandidate?: boolean;
   items?: MealItem[];
 }
 
@@ -73,6 +78,8 @@ export interface MealSummary {
   totalCarbG?: number;
   totalFiberG?: number;
   totalSodiumMg?: number;
+  mealImageThumbnail?: string;
+  shareCandidate?: boolean;
   createdAt: string;
 }
 

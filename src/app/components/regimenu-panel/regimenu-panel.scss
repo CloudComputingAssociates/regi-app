@@ -476,6 +476,135 @@
   }
 }
 
+// Meal image + share row
+.meal-image-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #333;
+  border-bottom: 1px solid #444;
+}
+
+.meal-image-zone {
+  border: 2px dashed #555;
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  flex: 1;
+  max-width: 200px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+
+  &:hover {
+    border-color: #4da6ff;
+    background: rgba(77, 166, 255, 0.05);
+  }
+
+  &:focus {
+    border-color: #4da6ff;
+    outline: 1px solid rgba(77, 166, 255, 0.3);
+  }
+
+  .meal-preview-img {
+    max-width: 100%;
+    max-height: 50px;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+
+  .remove-img-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+
+    &:hover { color: #fff; background: rgba(220, 53, 69, 0.8); }
+  }
+
+  .drop-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .browse-btn {
+    background: linear-gradient(180deg, #555 0%, #3a3a3a 100%);
+    border: 1px solid #6a6a6a;
+    border-bottom: 2px solid #1a1a1a;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 11px;
+    font-family: inherit;
+    padding: 4px 12px;
+    cursor: pointer;
+    outline: none;
+
+    &:hover {
+      background: linear-gradient(180deg, #606060 0%, #454545 100%);
+    }
+  }
+
+  .camera-btn {
+    background: none;
+    border: 1px solid #555;
+    border-radius: 6px;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px 10px;
+    line-height: 1;
+
+    &:hover {
+      border-color: #4da6ff;
+      background: rgba(77, 166, 255, 0.1);
+    }
+  }
+
+  .drop-label {
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 10px;
+    text-align: center;
+  }
+
+  // Desktop: has a fine pointer (mouse) — show browse button, hide camera
+  // Mobile: no fine pointer (touch) — show camera button, hide browse
+  .desktop-only { display: none; }
+  .mobile-only { display: inline-flex; }
+
+  @media (hover: hover) and (pointer: fine) {
+    .desktop-only { display: inline-flex; }
+    .mobile-only { display: none; }
+  }
+}
+
+.share-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  input { accent-color: #4a8f4a; }
+}
+
 // Plan list container
 .plan-list-container {
   flex: 1;
