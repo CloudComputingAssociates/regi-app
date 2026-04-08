@@ -82,6 +82,27 @@
   }
 }
 
+.header-filter {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  input {
+    width: 14px;
+    height: 14px;
+    accent-color: #4da6ff;
+    cursor: pointer;
+  }
+
+  .filter-icon {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+  }
+}
+
 // Combo-box dropdown for plan name
 .plan-combo {
   position: relative;
@@ -214,10 +235,12 @@
     text-overflow: ellipsis;
   }
 
-  .dropdown-item-cal {
+  .dropdown-item-icon {
     flex-shrink: 0;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.5);
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    margin-left: 4px;
   }
 }
 

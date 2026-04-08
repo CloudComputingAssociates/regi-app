@@ -82,6 +82,7 @@ export interface MealSummary {
   totalSodiumMg?: number;
   mealImageThumbnail?: string;
   shareCandidate?: boolean;
+  shareApproved?: boolean;
   createdAt: string;
 }
 
@@ -90,6 +91,7 @@ export interface ListMealsRequest {
   status?: 'active' | 'archived';
   isFavorite?: boolean;
   includeYeh?: boolean;
+  includeCommunity?: boolean;
   limit?: number;
   offset?: number;
 }

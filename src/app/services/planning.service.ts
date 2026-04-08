@@ -271,6 +271,7 @@ export class PlanningService {
     if (params?.status) queryParams.set('status', params.status);
     if (params?.isFavorite !== undefined) queryParams.set('isFavorite', String(params.isFavorite));
     if (params?.includeYeh !== undefined) queryParams.set('includeYeh', String(params.includeYeh));
+    if (params?.includeCommunity !== undefined) queryParams.set('includeCommunity', String(params.includeCommunity));
     if (params?.limit) queryParams.set('limit', String(params.limit));
     if (params?.offset) queryParams.set('offset', String(params.offset));
 

@@ -78,7 +78,7 @@ import { Subscription } from 'rxjs';
                   role="option">
                   + Create Empty MealPlan
                 </button>
-                @for (plan of savedPlans(); track plan.id; let i = $index) {
+                @for (plan of filteredPlans(); track plan.id; let i = $index) {
                   <button
                     class="dropdown-item"
                     [class.highlighted]="dropdownHighlight() === i"
@@ -86,8 +86,10 @@ import { Subscription } from 'rxjs';
                     (mousedown)="onSelectPlan(plan, $event)"
                     role="option">
                     <span class="dropdown-item-name">{{ plan.name }}</span>
-                    @if (plan.totalCalories) {
-                      <span class="dropdown-item-cal">{{ plan.totalCalories }} cal</span>
+                    @if (plan.shareApproved) {
+                      <img src="/images/Community-C.ico" alt="Community" class="dropdown-item-icon" />
+                    } @else if (plan.isYeh) {
+                      <img src="/favicon.ico" alt="YEH" class="dropdown-item-icon" />
                     }
                   </button>
                 }
@@ -110,6 +112,16 @@ import { Subscription } from 'rxjs';
             matTooltipPosition="above">
             <mat-icon>delete</mat-icon>
           </button>
+
+          <!-- Plan list filters -->
+          <label class="header-filter" matTooltip="Show Community plans" matTooltipPosition="above">
+            <input type="checkbox" [checked]="showCommunity()" (change)="toggleCommunity()" />
+            <img src="/images/Community-C.ico" alt="C" class="filter-icon" />
+          </label>
+          <label class="header-filter" matTooltip="Show YEH plans" matTooltipPosition="above">
+            <input type="checkbox" [checked]="showYeh()" (change)="toggleYeh()" />
+            <img src="/favicon.ico" alt="Y" class="filter-icon" />
+          </label>
 
         </div>
 
@@ -377,6 +389,36 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   dropdownOpen = signal(false);
   dropdownHighlight = signal<number>(-2); // -2 = none, -1 = "create new", 0+ = plan index
 
+  // Plan list filters (checkboxes next to trash can)
+  showCommunity = signal(false);
+  showYeh = signal(false);
+
+  filteredPlans = computed(() => {
+    const plans = this.savedPlans();
+    const community = this.showCommunity();
+    const yeh = this.showYeh();
+    // No filters: show only user's own plans (not yeh, not community-from-others)
+    if (!community && !yeh) {
+      return plans.filter(p => !p.isYeh && !p.shareApproved);
+    }
+    // With filters: show user plans + matching filtered types
+    return plans.filter(p => {
+      // User's own plans always shown
+      if (!p.isYeh && !p.shareApproved) return true;
+      if (community && p.shareApproved) return true;
+      if (yeh && p.isYeh) return true;
+      return false;
+    });
+  });
+
+  toggleCommunity(): void {
+    this.showCommunity.update(v => !v);
+  }
+
+  toggleYeh(): void {
+    this.showYeh.update(v => !v);
+  }
+
   // New plan mode
   isNewPlanMode = signal(false);
   newPlanNameCommitted = signal(false);
@@ -443,7 +485,12 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
   fetchSavedPlans(): void {
     this.savedPlansLoading.set(true);
-    const sub = this.planningService.listMeals({ status: 'active', limit: 50 }).subscribe({
+    const sub = this.planningService.listMeals({
+      status: 'active',
+      limit: 100,
+      includeYeh: true,
+      includeCommunity: true
+    }).subscribe({
       next: (meals) => {
         this.savedPlans.set(meals);
         this.savedPlansLoading.set(false);
