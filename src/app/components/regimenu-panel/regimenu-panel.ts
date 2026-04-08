@@ -116,11 +116,13 @@ import { Subscription } from 'rxjs';
           <!-- Plan list filters -->
           <label class="header-filter" matTooltip="Show Community plans" matTooltipPosition="above">
             <input type="checkbox" [checked]="showCommunity()" (change)="toggleCommunity()" />
-            <img src="/images/Community-C.ico" alt="C" class="filter-icon" />
+            <img src="/images/Community-C.ico" alt="" class="filter-icon" />
+            <span class="filter-text">Community</span>
           </label>
-          <label class="header-filter" matTooltip="Show YEH plans" matTooltipPosition="above">
+          <label class="header-filter" matTooltip="Show YEH Approved plans" matTooltipPosition="above">
             <input type="checkbox" [checked]="showYeh()" (change)="toggleYeh()" />
-            <img src="/favicon.ico" alt="Y" class="filter-icon" />
+            <img src="/favicon.ico" alt="" class="filter-icon" />
+            <span class="filter-text">YEH Approved</span>
           </label>
 
         </div>
@@ -392,23 +394,30 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   // Plan list filters (checkboxes next to trash can)
   showCommunity = signal(false);
   showYeh = signal(false);
+  typeAheadFilter = signal('');
 
   filteredPlans = computed(() => {
-    const plans = this.savedPlans();
+    let plans = this.savedPlans();
     const community = this.showCommunity();
     const yeh = this.showYeh();
-    // No filters: show only user's own plans (not yeh, not community-from-others)
-    if (!community && !yeh) {
-      return plans.filter(p => !p.isYeh && !p.shareApproved);
+    const typeAhead = this.typeAheadFilter().toLowerCase();
+
+    // No checkboxes: show ALL plans
+    // Checkboxes pare down: only show the checked types
+    if (community || yeh) {
+      plans = plans.filter(p => {
+        if (community && (p.shareApproved || p.shareCandidate)) return true;
+        if (yeh && p.isYeh) return true;
+        return false;
+      });
     }
-    // With filters: show user plans + matching filtered types
-    return plans.filter(p => {
-      // User's own plans always shown
-      if (!p.isYeh && !p.shareApproved) return true;
-      if (community && p.shareApproved) return true;
-      if (yeh && p.isYeh) return true;
-      return false;
-    });
+
+    // Type-ahead: filter by name
+    if (typeAhead) {
+      plans = plans.filter(p => p.name.toLowerCase().includes(typeAhead));
+    }
+
+    return plans;
   });
 
   toggleCommunity(): void {
@@ -529,6 +538,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   closeDropdown(): void {
     this.dropdownOpen.set(false);
     this.dropdownHighlight.set(-2);
+    this.typeAheadFilter.set('');
   }
 
   onComboFocusOut(event: FocusEvent): void {
@@ -613,6 +623,10 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     } else {
       this.pendingName = value;
       this.hasChanges.set(true);
+    }
+    // Type-ahead filtering when dropdown is open
+    if (this.dropdownOpen()) {
+      this.typeAheadFilter.set(value);
     }
   }
 

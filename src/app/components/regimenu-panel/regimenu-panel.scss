@@ -85,21 +85,27 @@
 .header-filter {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   cursor: pointer;
   flex-shrink: 0;
 
   input {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
     accent-color: #4da6ff;
     cursor: pointer;
   }
 
   .filter-icon {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
     object-fit: contain;
+  }
+
+  .filter-text {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    white-space: nowrap;
   }
 }
 
