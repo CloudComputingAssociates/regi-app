@@ -454,7 +454,7 @@ export class PreferencesService {
     this.dirtyGroups.update(d => ({ ...d, dailyGoals: true }));
   }
 
-  updateDailyGoal(field: keyof DailyGoals, value: number): void {
+  updateDailyGoal(field: keyof DailyGoals, value: DailyGoals[keyof DailyGoals]): void {
     this.preferencesSignal.update(p => ({
       ...p,
       dailyGoals: { ...p.dailyGoals, [field]: value }

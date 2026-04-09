@@ -524,14 +524,87 @@
       }
     }
 
-    .water-row {
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-      padding-top: 6px;
+    .water-section {
+      padding-top: 4px;
     }
 
-    .water-glasses-row {
+    .water-heading {
+      display: block;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .water-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .water-radio {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #ffffff;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+
+      input[type="radio"] {
+        accent-color: #4da6ff;
+        cursor: pointer;
+      }
+    }
+
+    .water-input {
+      width: 50px;
+      padding: 4px 6px;
+      font-size: 12px;
+      font-family: inherit;
+      color: #ffffff;
+      background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+      border: 1px solid #5a5a5a;
+      border-radius: 4px;
+      outline: none;
+      text-align: center;
+
+      &:focus { border-color: #4da6ff; }
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      -moz-appearance: textfield;
+    }
+
+    .water-input-row {
+      display: flex;
+      align-items: center;
+    }
+
+    .water-bottle-size {
+      width: 50px;
+      padding: 4px 6px;
+      font-size: 12px;
+      font-family: inherit;
+      color: #ffffff;
+      background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+      border: 1px solid #5a5a5a;
+      border-radius: 4px;
+      outline: none;
+      text-align: center;
+
+      &:focus { border-color: #4da6ff; }
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      -moz-appearance: textfield;
+    }
+
+    .water-unit {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 11px;
+    }
+
+    .water-display-row {
       display: flex;
       flex-wrap: nowrap;
       gap: 4px;
@@ -541,6 +614,12 @@
     .water-glass-img {
       width: 24px;
       height: 24px;
+      object-fit: contain;
+    }
+
+    .water-bottle-img {
+      width: 24px;
+      height: 30px;
       object-fit: contain;
     }
 

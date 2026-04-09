@@ -270,14 +270,43 @@ import { MatIconModule } from '@angular/material/icon';
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     </div>
                   </div>
-                  <div class="water-row">
-                    <div class="target-field">
-                      <label>Water (16oz)/day</label>
-                      <input type="number" [ngModel]="waterGlasses()" disabled />
+                  <div class="macro-separator"></div>
+                  <div class="water-section">
+                    <label class="water-heading">Daily Water</label>
+                    <div class="water-option">
+                      <label class="water-radio">
+                        <input type="radio" name="waterMode" value="glasses"
+                               [checked]="waterMode() === 'glasses'"
+                               (change)="onWaterModeChange('glasses')" />
+                        16 oz glasses
+                      </label>
+                      <div class="water-input-row">
+                        <input type="number" class="water-input" [ngModel]="waterGlasses()"
+                               (ngModelChange)="onWaterGlassesChange($event)" />
+                      </div>
                     </div>
-                    <div class="water-glasses-row">
-                      @for (g of waterGlassesArray(); track g) {
-                        <img src="/images/WaterGlassFull.png" alt="glass" class="water-glass-img" />
+                    <div class="water-option">
+                      <label class="water-radio">
+                        <input type="radio" name="waterMode" value="bottle"
+                               [checked]="waterMode() === 'bottle'"
+                               (change)="onWaterModeChange('bottle')" />
+                        Water Bottle
+                      </label>
+                      <input type="number" class="water-bottle-size" [ngModel]="bottleSizeOz()"
+                             (ngModelChange)="onBottleSizeChange($event)" />
+                      <span class="water-unit">ounces</span>
+                      <div class="water-input-row">
+                        <input type="number" class="water-input" [ngModel]="waterBottles()"
+                               (ngModelChange)="onWaterBottlesChange($event)" />
+                      </div>
+                    </div>
+                    <div class="water-display-row">
+                      @for (g of waterDisplayArray(); track g) {
+                        @if (waterMode() === 'bottle') {
+                          <img src="/images/waterbottleiconblue.png" alt="bottle" class="water-bottle-img" />
+                        } @else {
+                          <img src="/images/WaterGlassFull.png" alt="glass" class="water-glass-img" />
+                        }
                       }
                     </div>
                   </div>
@@ -493,23 +522,33 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     return this.userSettingsService.useImperial() ? PreferencesService.kgToLbs(kg) : kg;
   });
 
-  // Water intake: half body weight (lbs) in oz, divided by 16oz glasses
-  waterGlasses = computed(() => {
-    const kg = this.userSettingsService.personalInfo().targetWeightKg;
-    if (!kg) return 0;
-    const lbs = PreferencesService.kgToLbs(kg);
-    const oz = lbs / 2;
-    return Math.round(oz / 16);
-  });
+  // Water intake tracking
+  waterMode = computed(() => this.userSettingsService.dailyGoals().waterMode ?? 'glasses');
+  bottleSizeOz = computed(() => this.userSettingsService.dailyGoals().bottleSizeOz ?? 32);
 
-  waterGlassesArray = computed(() => Array.from({ length: this.waterGlasses() }, (_, i) => i));
-
-  waterOz = computed(() => {
+  private calcTotalOz = computed(() => {
     const kg = this.userSettingsService.personalInfo().targetWeightKg;
     if (!kg) return 0;
     const lbs = PreferencesService.kgToLbs(kg);
     return Math.round(lbs / 2);
   });
+
+  waterGlasses = computed(() => {
+    const saved = this.userSettingsService.dailyGoals().waterGlasses;
+    if (saved && saved > 0) return saved;
+    return Math.round(this.calcTotalOz() / 16);
+  });
+
+  waterBottles = computed(() => {
+    const totalOz = this.waterGlasses() * 16;
+    const bottleOz = this.bottleSizeOz();
+    if (!bottleOz) return 0;
+    const raw = totalOz / bottleOz;
+    return raw % 1 > 0.5 ? Math.ceil(raw) : Math.floor(raw);
+  });
+
+  waterDisplayCount = computed(() => this.waterMode() === 'bottle' ? this.waterBottles() : this.waterGlasses());
+  waterDisplayArray = computed(() => Array.from({ length: this.waterDisplayCount() }, (_, i) => i));
 
   deficitAbsValue = computed(() => {
     const pct = this.userSettingsService.personalInfo().deficitPercent;
@@ -847,6 +886,37 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   onDailyGoalChange(field: keyof DailyGoals, value: number): void {
     this.userSettingsService.updateDailyGoal(field, value);
     this.settingsChanged.set(true);
+  }
+
+  onWaterModeChange(mode: 'glasses' | 'bottle'): void {
+    this.userSettingsService.updateDailyGoal('waterMode', mode);
+    this.saveWaterSettings();
+  }
+
+  onWaterGlassesChange(value: number): void {
+    if (!value || value <= 0) return;
+    this.userSettingsService.updateDailyGoal('waterGlasses', value);
+    this.saveWaterSettings();
+  }
+
+  onWaterBottlesChange(value: number): void {
+    if (!value || value <= 0) return;
+    // Back-calculate glasses from bottles
+    const bottleOz = this.bottleSizeOz();
+    const totalOz = value * bottleOz;
+    const glasses = Math.round(totalOz / 16);
+    this.userSettingsService.updateDailyGoal('waterGlasses', glasses);
+    this.saveWaterSettings();
+  }
+
+  onBottleSizeChange(value: number): void {
+    if (!value || value <= 0) return;
+    this.userSettingsService.updateDailyGoal('bottleSizeOz', value);
+    this.saveWaterSettings();
+  }
+
+  private saveWaterSettings(): void {
+    this.userSettingsService.savePreferences();
   }
 
   onMealsPerDayChange(value: MealsPerDay): void {

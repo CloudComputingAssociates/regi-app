@@ -34,6 +34,9 @@ export interface DailyGoals {
   fat: number;
   fiber: number;
   sodium: number;
+  waterMode?: 'glasses' | 'bottle';
+  bottleSizeOz?: number;
+  waterGlasses?: number;
   isOverridden?: boolean;
 }
 
