@@ -232,19 +232,19 @@ import { MatIconModule } from '@angular/material/icon';
                   <div class="macro-separator"></div>
                   <div class="macro-grid">
                     <div class="target-field macro-protein">
-                      <label>Proteins {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
+                      <label>Proteins {{ userSettingsService.showPercent() ? '%' : 'g' }}</label>
                       <input type="number" [ngModel]="proteinDisplay()"
                              (ngModelChange)="onMacroFieldChange('protein', $event)"
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     </div>
                     <div class="target-field macro-fat">
-                      <label>Fats {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
+                      <label>Fats {{ userSettingsService.showPercent() ? '%' : 'g' }}</label>
                       <input type="number" [ngModel]="fatDisplay()"
                              (ngModelChange)="onMacroFieldChange('fat', $event)"
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     </div>
                     <div class="target-field macro-carbs">
-                      <label>Carbs {{ userSettingsService.showPercent() ? '%' : 'G' }}</label>
+                      <label>Carbs {{ userSettingsService.showPercent() ? '%' : 'g' }}</label>
                       <input type="number" [ngModel]="carbsDisplay()"
                              (ngModelChange)="onMacroFieldChange('carbs', $event)"
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
@@ -258,7 +258,7 @@ import { MatIconModule } from '@angular/material/icon';
                       }
                     </svg>
                     <div class="target-field">
-                      <label>Fiber G</label>
+                      <label>Fiber g</label>
                       <input type="number" [ngModel]="userSettingsService.dailyGoals().fiber"
                              (ngModelChange)="onDailyGoalChange('fiber', $event)"
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
