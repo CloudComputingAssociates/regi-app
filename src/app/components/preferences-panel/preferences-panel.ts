@@ -271,30 +271,35 @@ import { MatIconModule } from '@angular/material/icon';
                     </div>
                   </div>
                   <div class="macro-separator"></div>
-                  <div class="water-section">
+                  <div class="water-section" [class.targets-disabled]="!userSettingsService.dailyGoals().isOverridden">
                     <label class="water-heading">Daily Water</label>
                     <div class="water-option">
                       <label class="water-radio">
                         <input type="radio" name="waterMode" value="glasses"
                                [checked]="waterMode() === 'glasses'"
+                               [disabled]="!userSettingsService.dailyGoals().isOverridden"
                                (change)="onWaterModeChange('glasses')" />
                         {{ userSettingsService.useImperial() ? '16 oz glasses' : '500 ml glasses' }}
                       </label>
                       <input type="number" class="water-input" [ngModel]="waterGlasses()"
-                             (ngModelChange)="onWaterGlassesChange($event)" />
+                             (ngModelChange)="onWaterGlassesChange($event)"
+                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     </div>
                     <div class="water-option">
                       <label class="water-radio">
                         <input type="radio" name="waterMode" value="bottle"
                                [checked]="waterMode() === 'bottle'"
+                               [disabled]="!userSettingsService.dailyGoals().isOverridden"
                                (change)="onWaterModeChange('bottle')" />
                         Water Bottles
                       </label>
                       <input type="number" class="water-input" [ngModel]="waterBottles()"
-                             (ngModelChange)="onWaterBottlesChange($event)" />
+                             (ngModelChange)="onWaterBottlesChange($event)"
+                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                       <span class="water-unit">holds</span>
                       <input type="number" class="water-bottle-size" [ngModel]="bottleSizeDisplay()"
-                             (ngModelChange)="onBottleSizeChange($event)" />
+                             (ngModelChange)="onBottleSizeChange($event)"
+                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                       <span class="water-unit">{{ userSettingsService.useImperial() ? 'oz' : 'L' }}</span>
                     </div>
                     <div class="water-display-row">
