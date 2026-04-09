@@ -354,7 +354,7 @@
 
 .date-water-row {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
 }
 
@@ -455,6 +455,11 @@
 
 .report-totals.target-totals {
   border-bottom: 2px solid #4a4a4a;
+  justify-content: flex-start;
+
+  .water-tracker {
+    margin-left: auto;
+  }
 }
 
 .report-totals.actual-totals {
