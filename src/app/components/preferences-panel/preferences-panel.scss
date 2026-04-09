@@ -524,33 +524,16 @@
       }
     }
 
-    .water-field {
-      label {
-        color: #4da6ff;
-      }
-    }
-
-    .water-value-box {
-      padding: 4px 10px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #ffffff;
-      background: #2a6cb8;
-      border-radius: 4px;
-      text-align: center;
-      width: fit-content;
-    }
-
     .water-glasses-row {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 4px;
       padding: 6px 0;
     }
 
     .water-glass-img {
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
       object-fit: contain;
     }
 

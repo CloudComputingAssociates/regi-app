@@ -269,15 +269,15 @@ import { MatIconModule } from '@angular/material/icon';
                              (ngModelChange)="onDailyGoalChange('sodium', $event)"
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     </div>
-                    <div class="target-field water-field">
+                    <div class="target-field">
                       <label>16oz Water/day</label>
-                      <div class="water-value-box">{{ waterOz() }} oz</div>
+                      <input type="number" [ngModel]="waterOz()" disabled />
                     </div>
-                    <div class="water-glasses-row">
-                      @for (g of waterGlassesArray(); track g) {
-                        <img src="/images/WaterGlassFull.png" alt="glass" class="water-glass-img" />
-                      }
-                    </div>
+                  </div>
+                  <div class="water-glasses-row">
+                    @for (g of waterGlassesArray(); track g) {
+                      <img src="/images/WaterGlassFull.png" alt="glass" class="water-glass-img" />
+                    }
                   </div>
                 </div>
               </div>
