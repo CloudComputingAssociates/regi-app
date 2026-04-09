@@ -355,15 +355,16 @@
 .water-tracker {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-right: 8px;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 2px 10px;
 }
 
 .water-label {
   color: #4da6ff;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  margin-right: 6px;
+  margin-right: 4px;
   white-space: nowrap;
 }
 
@@ -382,8 +383,8 @@
 }
 
 .water-icon {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
 }
 
