@@ -272,7 +272,14 @@ import { MatIconModule } from '@angular/material/icon';
                   </div>
                   <div class="macro-separator"></div>
                   <div class="water-section" [class.targets-disabled]="!userSettingsService.dailyGoals().isOverridden">
-                    <label class="water-heading">Daily Water</label>
+                    <label class="water-heading">Daily Water
+                      <span class="info-icon"
+                        #waterTooltip="matTooltip"
+                        matTooltip="Calculated using the Holliday-Segar formula: 100ml/kg for first 10kg, 50ml/kg for next 10kg, 20ml/kg for remaining weight"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="0"
+                        (click)="waterTooltip.toggle()">&#9432;</span>
+                    </label>
                     <div class="water-option">
                       <label class="water-radio">
                         <input type="radio" name="waterMode" value="glasses"
@@ -532,11 +539,19 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   // Glass size: 16oz (US) or 500ml (metric)
   private glassSizeOz = computed(() => this.userSettingsService.useImperial() ? 16 : 16.907); // 500ml ≈ 16.907oz
 
+  // Holliday-Segar method: 100ml/kg first 10kg + 50ml/kg next 10kg + 20ml/kg remaining
   private calcTotalOz = computed(() => {
     const kg = this.userSettingsService.personalInfo().targetWeightKg;
     if (!kg) return 0;
-    const lbs = PreferencesService.kgToLbs(kg);
-    return Math.round(lbs / 2);
+    let ml = 0;
+    if (kg <= 10) {
+      ml = kg * 100;
+    } else if (kg <= 20) {
+      ml = 1000 + (kg - 10) * 50;
+    } else {
+      ml = 1500 + (kg - 20) * 20;
+    }
+    return Math.round(ml / 29.5735); // ml to oz
   });
 
   waterGlasses = computed(() => {
