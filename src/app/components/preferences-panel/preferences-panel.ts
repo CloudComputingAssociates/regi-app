@@ -298,7 +298,7 @@ import { MatIconModule } from '@angular/material/icon';
                                [checked]="waterMode() === 'bottle'"
                                [disabled]="!userSettingsService.dailyGoals().isOverridden"
                                (change)="onWaterModeChange('bottle')" />
-                        Water Bottles
+                        My Water Bottle
                       </label>
                       <input type="number" class="water-input" [ngModel]="waterBottles()"
                              (ngModelChange)="onWaterBottlesChange($event)"

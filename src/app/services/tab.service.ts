@@ -48,9 +48,15 @@ export class TabService {
     }
   }
 
-  /** Cancel a blocked tab switch */
+  /** Cancel a blocked tab switch — restore the original tab */
   cancelBlockedSwitch(): void {
+    const currentId = this.activeTabId();
     this.blockedTabSwitch.set(null);
+    // Re-focus the original tab since Material may have visually switched
+    if (currentId) {
+      const idx = this.tabsSignal().findIndex(t => t.id === currentId);
+      if (idx !== -1) this.activeTabIndexSignal.set(idx);
+    }
   }
 
   /** Focus a tab by index */
