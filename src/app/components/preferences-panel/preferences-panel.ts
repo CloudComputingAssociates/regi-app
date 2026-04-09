@@ -269,6 +269,15 @@ import { MatIconModule } from '@angular/material/icon';
                              (ngModelChange)="onDailyGoalChange('sodium', $event)"
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     </div>
+                    <div class="target-field water-field">
+                      <label>16oz Water/day</label>
+                      <div class="water-value-box">{{ waterOz() }} oz</div>
+                    </div>
+                    <div class="water-glasses-row">
+                      @for (g of waterGlassesArray(); track g) {
+                        <img src="/images/WaterGlassFull.png" alt="glass" class="water-glass-img" />
+                      }
+                    </div>
                   </div>
                 </div>
               </div>
@@ -480,6 +489,24 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     const kg = this.userSettingsService.personalInfo().targetWeightKg;
     if (!kg) return '';
     return this.userSettingsService.useImperial() ? PreferencesService.kgToLbs(kg) : kg;
+  });
+
+  // Water intake: half body weight (lbs) in oz, divided by 16oz glasses
+  waterGlasses = computed(() => {
+    const kg = this.userSettingsService.personalInfo().targetWeightKg;
+    if (!kg) return 0;
+    const lbs = PreferencesService.kgToLbs(kg);
+    const oz = lbs / 2;
+    return Math.round(oz / 16);
+  });
+
+  waterGlassesArray = computed(() => Array.from({ length: this.waterGlasses() }, (_, i) => i));
+
+  waterOz = computed(() => {
+    const kg = this.userSettingsService.personalInfo().targetWeightKg;
+    if (!kg) return 0;
+    const lbs = PreferencesService.kgToLbs(kg);
+    return Math.round(lbs / 2);
   });
 
   deficitAbsValue = computed(() => {
