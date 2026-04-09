@@ -280,25 +280,22 @@ import { MatIconModule } from '@angular/material/icon';
                                (change)="onWaterModeChange('glasses')" />
                         16 oz glasses
                       </label>
-                      <div class="water-input-row">
-                        <input type="number" class="water-input" [ngModel]="waterGlasses()"
-                               (ngModelChange)="onWaterGlassesChange($event)" />
-                      </div>
+                      <input type="number" class="water-input" [ngModel]="waterGlasses()"
+                             (ngModelChange)="onWaterGlassesChange($event)" />
                     </div>
                     <div class="water-option">
                       <label class="water-radio">
                         <input type="radio" name="waterMode" value="bottle"
                                [checked]="waterMode() === 'bottle'"
                                (change)="onWaterModeChange('bottle')" />
-                        Water Bottle
+                        My Bottle
                       </label>
+                      <span class="water-unit">is</span>
                       <input type="number" class="water-bottle-size" [ngModel]="bottleSizeOz()"
                              (ngModelChange)="onBottleSizeChange($event)" />
-                      <span class="water-unit">ounces</span>
-                      <div class="water-input-row">
-                        <input type="number" class="water-input" [ngModel]="waterBottles()"
-                               (ngModelChange)="onWaterBottlesChange($event)" />
-                      </div>
+                      <span class="water-unit">oz</span>
+                      <input type="number" class="water-input" [ngModel]="waterBottles()"
+                             (ngModelChange)="onWaterBottlesChange($event)" />
                     </div>
                     <div class="water-display-row">
                       @for (g of waterDisplayArray(); track g) {
