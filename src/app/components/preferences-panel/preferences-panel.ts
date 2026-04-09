@@ -278,7 +278,7 @@ import { MatIconModule } from '@angular/material/icon';
                         <input type="radio" name="waterMode" value="glasses"
                                [checked]="waterMode() === 'glasses'"
                                (change)="onWaterModeChange('glasses')" />
-                        16 oz glasses
+                        {{ userSettingsService.useImperial() ? '16 oz glasses' : '500 ml glasses' }}
                       </label>
                       <input type="number" class="water-input" [ngModel]="waterGlasses()"
                              (ngModelChange)="onWaterGlassesChange($event)" />
@@ -288,14 +288,14 @@ import { MatIconModule } from '@angular/material/icon';
                         <input type="radio" name="waterMode" value="bottle"
                                [checked]="waterMode() === 'bottle'"
                                (change)="onWaterModeChange('bottle')" />
-                        Water Bottle
+                        Water Bottles
                       </label>
                       <input type="number" class="water-input" [ngModel]="waterBottles()"
                              (ngModelChange)="onWaterBottlesChange($event)" />
                       <span class="water-unit">holds</span>
-                      <input type="number" class="water-bottle-size" [ngModel]="bottleSizeOz()"
+                      <input type="number" class="water-bottle-size" [ngModel]="bottleSizeDisplay()"
                              (ngModelChange)="onBottleSizeChange($event)" />
-                      <span class="water-unit">oz</span>
+                      <span class="water-unit">{{ userSettingsService.useImperial() ? 'oz' : 'L' }}</span>
                     </div>
                     <div class="water-display-row">
                       @for (g of waterDisplayArray(); track g) {
@@ -520,8 +520,12 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   });
 
   // Water intake tracking
+  // Internal storage is always in oz (glasses=16oz each, bottle size in oz)
   waterMode = computed(() => this.userSettingsService.dailyGoals().waterMode ?? 'glasses');
   bottleSizeOz = computed(() => this.userSettingsService.dailyGoals().bottleSizeOz ?? 32);
+
+  // Glass size: 16oz (US) or 500ml (metric)
+  private glassSizeOz = computed(() => this.userSettingsService.useImperial() ? 16 : 16.907); // 500ml ≈ 16.907oz
 
   private calcTotalOz = computed(() => {
     const kg = this.userSettingsService.personalInfo().targetWeightKg;
@@ -533,15 +537,22 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   waterGlasses = computed(() => {
     const saved = this.userSettingsService.dailyGoals().waterGlasses;
     if (saved && saved > 0) return saved;
-    return Math.round(this.calcTotalOz() / 16);
+    return Math.round(this.calcTotalOz() / this.glassSizeOz());
   });
 
   waterBottles = computed(() => {
-    const totalOz = this.waterGlasses() * 16;
+    const totalOz = this.waterGlasses() * this.glassSizeOz();
     const bottleOz = this.bottleSizeOz();
     if (!bottleOz) return 0;
     const raw = totalOz / bottleOz;
     return raw % 1 > 0.5 ? Math.ceil(raw) : Math.floor(raw);
+  });
+
+  // Bottle size display: oz for US, liters for metric
+  bottleSizeDisplay = computed(() => {
+    const oz = this.bottleSizeOz();
+    if (this.userSettingsService.useImperial()) return oz;
+    return Math.round((oz * 29.5735) / 10) / 100; // oz to liters, 2 decimal places
   });
 
   waterDisplayCount = computed(() => this.waterMode() === 'bottle' ? this.waterBottles() : this.waterGlasses());
@@ -901,14 +912,15 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     // Back-calculate glasses from bottles
     const bottleOz = this.bottleSizeOz();
     const totalOz = value * bottleOz;
-    const glasses = Math.round(totalOz / 16);
+    const glasses = Math.round(totalOz / this.glassSizeOz());
     this.userSettingsService.updateDailyGoal('waterGlasses', glasses);
     this.saveWaterSettings();
   }
 
   onBottleSizeChange(value: number): void {
     if (!value || value <= 0) return;
-    this.userSettingsService.updateDailyGoal('bottleSizeOz', value);
+    const oz = this.userSettingsService.useImperial() ? value : Math.round(value * 33.814); // liters to oz
+    this.userSettingsService.updateDailyGoal('bottleSizeOz', oz);
     this.saveWaterSettings();
   }
 

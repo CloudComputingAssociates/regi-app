@@ -551,6 +551,8 @@
       font-size: 12px;
       cursor: pointer;
       white-space: nowrap;
+      width: 120px;
+      flex-shrink: 0;
 
       input[type="radio"] {
         accent-color: #4da6ff;
