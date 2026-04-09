@@ -331,15 +331,76 @@
   }
 }
 
-// Meal image floated right
-.meal-image-float {
-  float: right;
-  margin: 4px 10px 10px 14px;
+// Top pane: links + image side by side
+.top-pane {
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #3a3a3a;
+}
+
+.top-pane-content {
+  display: flex;
+  height: 100%;
+}
+
+.links-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.image-side {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  display: flex;
+  align-items: flex-start;
+}
+
+// Draggable splitter
+.pane-splitter {
+  height: 8px;
+  background: #2a2a2a;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #4da6ff33;
+  }
+}
+
+.splitter-grip {
+  width: 40px;
+  height: 3px;
+  background: #666;
+  border-radius: 2px;
+}
+
+// Meal Items heading
+.items-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: #2a4a6a;
+  flex-shrink: 0;
+}
+
+.items-heading-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4da6ff;
+  margin-right: 8px;
 }
 
 .meal-image-box {
-  width: 300px;
-  height: 300px;
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1;
   border: 3px solid #555;
   border-radius: 6px;
   display: flex;
@@ -499,7 +560,6 @@
   padding: 3px 10px;
   background: #3a3a3a;
   flex-shrink: 0;
-  max-width: 50%;
 }
 
 .link-label {

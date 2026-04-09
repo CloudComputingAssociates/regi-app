@@ -145,118 +145,100 @@ import { Subscription } from 'rxjs';
       </div>
       <!-- powered-by row removed -->
 
-      <!-- Scrollable plan content area -->
-      <div class="plan-content-scroll">
       @if (planningService.hasPlan()) {
-        <!-- Meal Image (floated right) -->
-        <div class="meal-image-float">
-          @if (isShareApproved()) {
-            <div class="meal-image-box locked">
-              @if (planningService.currentPlan()?.mealImage) {
-                <img [src]="planningService.currentPlan()?.mealImage" alt="" class="meal-box-img"
-                  (click)="showImageZoom.set(true); $event.stopPropagation()" />
-              } @else {
-                <span class="drop-label">No image</span>
-              }
+        <!-- Top pane: links + image -->
+        <div class="top-pane" [style.height.px]="topPaneHeight()">
+          <div class="top-pane-content">
+            <div class="links-side">
+              <div class="link-row">
+                <label class="link-label">Video</label>
+                <input type="url" class="link-input"
+                  [ngModel]="prepVideoLink()"
+                  (ngModelChange)="onPrepVideoChange($event)"
+                  [disabled]="isShareApproved()"
+                  placeholder="https://youtube.com/..." />
+                <button class="link-save-btn"
+                  [disabled]="!prepVideoDirty() || isShareApproved()"
+                  (click)="savePrepVideo()"
+                  matTooltip="Save video link" matTooltipPosition="above">
+                  <mat-icon>check</mat-icon>
+                </button>
+                @if (prepVideoLink()) {
+                  <button class="video-btn" (click)="testPrepVideo()" matTooltip="Open in YouTube viewer" matTooltipPosition="above">
+                    <svg class="yt-icon" viewBox="0 0 28 20"><rect rx="4" width="28" height="20" fill="#FF0000"/><polygon points="11,4 11,16 20,10" fill="#FFF"/></svg>
+                  </button>
+                }
+              </div>
+              <div class="link-row">
+                <label class="link-label">Recipe</label>
+                <input type="url" class="link-input"
+                  [ngModel]="recipeLink()"
+                  (ngModelChange)="onRecipeLinkChange($event)"
+                  [disabled]="isShareApproved()"
+                  placeholder="https://recipe-site.com/..." />
+                <button class="link-save-btn"
+                  [disabled]="!recipeLinkDirty() || isShareApproved()"
+                  (click)="saveRecipeLink()"
+                  matTooltip="Save recipe link" matTooltipPosition="above">
+                  <mat-icon>check</mat-icon>
+                </button>
+                @if (recipeLink()) {
+                  <button class="browser-btn" (click)="openRecipeInBrowser()" matTooltip="Open in browser" matTooltipPosition="above">
+                    <mat-icon class="browser-icon">language</mat-icon>
+                  </button>
+                }
+              </div>
+              <div class="share-row">
+                @if (isShareApproved()) {
+                  <span class="approved-badge">Community Approved</span>
+                } @else {
+                  <label class="share-check" matTooltip="Share Meal Plan with YEH Community" matTooltipPosition="above">
+                    <input type="checkbox" [checked]="shareCandidate()" (change)="onShareCandidateChange($any($event.target).checked)" />
+                    <span>Share with YEH Community</span>
+                  </label>
+                }
+              </div>
             </div>
-          } @else {
-            <div class="meal-image-box"
-              [class.compact]="!mealImagePreview() && !planningService.currentPlan()?.mealImage"
-              tabindex="0"
-              (dragover)="onMealImageDragOver($event)"
-              (drop)="onMealImageDrop($event)"
-              (paste)="onMealImagePaste($event)">
-              @if (mealImagePreview() || planningService.currentPlan()?.mealImage) {
-                <img [src]="mealImagePreview() || planningService.currentPlan()?.mealImage" alt="" class="meal-box-img"
-                  (click)="showImageZoom.set(true); $event.stopPropagation()" />
-                <button type="button" class="remove-img-btn" (click)="clearMealImage(); $event.stopPropagation()">✕</button>
-              } @else {
-                <div class="drop-placeholder">
-                  <button type="button" class="browse-btn" (click)="mealImageInput.click(); $event.stopPropagation()">Browse</button>
-                  <span class="drop-label">Meal photo: drop or Ctrl+V</span>
+            <div class="image-side">
+              @if (isShareApproved()) {
+                <div class="meal-image-box locked">
+                  @if (planningService.currentPlan()?.mealImage) {
+                    <img [src]="planningService.currentPlan()?.mealImage" alt="" class="meal-box-img"
+                      (click)="showImageZoom.set(true); $event.stopPropagation()" />
+                  } @else {
+                    <span class="drop-label">No image</span>
+                  }
                 </div>
+              } @else {
+                <div class="meal-image-box"
+                  [class.compact]="!mealImagePreview() && !planningService.currentPlan()?.mealImage"
+                  tabindex="0"
+                  (dragover)="onMealImageDragOver($event)"
+                  (drop)="onMealImageDrop($event)"
+                  (paste)="onMealImagePaste($event)">
+                  @if (mealImagePreview() || planningService.currentPlan()?.mealImage) {
+                    <img [src]="mealImagePreview() || planningService.currentPlan()?.mealImage" alt="" class="meal-box-img"
+                      (click)="showImageZoom.set(true); $event.stopPropagation()" />
+                    <button type="button" class="remove-img-btn" (click)="clearMealImage(); $event.stopPropagation()">✕</button>
+                  } @else {
+                    <div class="drop-placeholder">
+                      <button type="button" class="browse-btn" (click)="mealImageInput.click(); $event.stopPropagation()">Browse</button>
+                      <span class="drop-label">Meal photo: drop or Ctrl+V</span>
+                    </div>
+                  }
+                </div>
+                <input #mealImageInput type="file" accept="image/*" capture="environment" hidden
+                  (change)="onMealImageSelected($event)" />
               }
             </div>
-            <input #mealImageInput type="file" accept="image/*" capture="environment" hidden
-              (change)="onMealImageSelected($event)" />
-          }
+          </div>
         </div>
 
-        <!-- Video link row -->
-        <div class="link-row">
-          <label class="link-label">Video</label>
-          <input
-            type="url"
-            class="link-input"
-            [ngModel]="prepVideoLink()"
-            (ngModelChange)="onPrepVideoChange($event)"
-            [disabled]="isShareApproved()"
-            placeholder="https://youtube.com/..." />
-          <button
-            class="link-save-btn"
-            [disabled]="!prepVideoDirty() || isShareApproved()"
-            (click)="savePrepVideo()"
-            matTooltip="Save video link"
-            matTooltipPosition="above">
-            <mat-icon>check</mat-icon>
-          </button>
-          @if (prepVideoLink()) {
-            <button class="video-btn" (click)="testPrepVideo()" matTooltip="Open in YouTube viewer" matTooltipPosition="above">
-              <svg class="yt-icon" viewBox="0 0 28 20"><rect rx="4" width="28" height="20" fill="#FF0000"/><polygon points="11,4 11,16 20,10" fill="#FFF"/></svg>
-            </button>
-          }
-        </div>
-
-        <!-- Recipe link row -->
-        <div class="link-row">
-          <label class="link-label">Recipe</label>
-          <input
-            type="url"
-            class="link-input"
-            [ngModel]="recipeLink()"
-            (ngModelChange)="onRecipeLinkChange($event)"
-            [disabled]="isShareApproved()"
-            placeholder="https://recipe-site.com/..." />
-          <button
-            class="link-save-btn"
-            [disabled]="!recipeLinkDirty() || isShareApproved()"
-            (click)="saveRecipeLink()"
-            matTooltip="Save recipe link"
-            matTooltipPosition="above">
-            <mat-icon>check</mat-icon>
-          </button>
-          @if (recipeLink()) {
-            <button class="browser-btn" (click)="openRecipeInBrowser()" matTooltip="Open in browser" matTooltipPosition="above">
-              <mat-icon class="browser-icon">language</mat-icon>
-            </button>
-          }
-        </div>
-
-        <!-- Share with YEH Community -->
-        <div class="share-row">
-          @if (isShareApproved()) {
-            <span class="approved-badge">Community Approved</span>
-          } @else {
-            <label class="share-check" matTooltip="Share Meal Plan with YEH Community" matTooltipPosition="above">
-              <input type="checkbox" [checked]="shareCandidate()" (change)="onShareCandidateChange($any($event.target).checked)" />
-              <span>Share with YEH Community</span>
-            </label>
-          }
-        </div>
-
-        <!-- Totals + Add row -->
-        <div class="totals-row" [class.stippled]="foodPickerOpen()">
-          <span class="totals-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
-          <span class="totals-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
-          <span class="totals-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg salt</span>
-          <button
-            class="icon-btn add-food-btn"
-            (click)="openFoodPicker()"
-            [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()"
-            matTooltip="Add Food"
-            matTooltipPosition="above">
-            <mat-icon>add</mat-icon>
-          </button>
+        <!-- Draggable splitter -->
+        <div class="pane-splitter"
+          (mousedown)="onSplitterMouseDown($event)"
+          (touchstart)="onSplitterTouchStart($event)">
+          <div class="splitter-grip"></div>
         </div>
 
         @if (showImageZoom() && (mealImagePreview() || planningService.currentPlan()?.mealImage)) {
@@ -266,6 +248,26 @@ import { Subscription } from 'rxjs';
         }
       }
 
+      <!-- Bottom pane: heading + totals + food list -->
+      @if (planningService.hasPlan()) {
+        <div class="items-heading">
+          <span class="items-heading-label">Meal Items</span>
+          <span class="totals-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
+          <span class="totals-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
+          <span class="totals-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg salt</span>
+          <button
+            class="icon-btn add-food-btn"
+            [class.stippled]="foodPickerOpen()"
+            (click)="openFoodPicker()"
+            [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()"
+            matTooltip="Add Food"
+            matTooltipPosition="above">
+            <mat-icon>add</mat-icon>
+          </button>
+        </div>
+      }
+
+      <div class="plan-content-scroll">
       <!-- Plan items list -->
         @if (planningService.loading()) {
           <div class="loading-message">
@@ -475,6 +477,48 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
   // Community approval lockdown
   isShareApproved = computed(() => this.planningService.currentPlan()?.shareApproved === true);
+
+  // Splitter state
+  topPaneHeight = signal(200);
+  private splitterDragging = false;
+  private splitterStartY = 0;
+  private splitterStartHeight = 0;
+
+  onSplitterMouseDown(e: MouseEvent): void {
+    e.preventDefault();
+    this.splitterDragging = true;
+    this.splitterStartY = e.clientY;
+    this.splitterStartHeight = this.topPaneHeight();
+    const onMove = (ev: MouseEvent) => {
+      const delta = ev.clientY - this.splitterStartY;
+      this.topPaneHeight.set(Math.max(80, this.splitterStartHeight + delta));
+    };
+    const onUp = () => {
+      this.splitterDragging = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  onSplitterTouchStart(e: TouchEvent): void {
+    const touch = e.touches[0];
+    this.splitterDragging = true;
+    this.splitterStartY = touch.clientY;
+    this.splitterStartHeight = this.topPaneHeight();
+    const onMove = (ev: TouchEvent) => {
+      const delta = ev.touches[0].clientY - this.splitterStartY;
+      this.topPaneHeight.set(Math.max(80, this.splitterStartHeight + delta));
+    };
+    const onEnd = () => {
+      this.splitterDragging = false;
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+    };
+    document.addEventListener('touchmove', onMove);
+    document.addEventListener('touchend', onEnd);
+  }
 
   // Swipe state
   swipingIndex = signal<number | null>(null);
