@@ -114,14 +114,16 @@ import { Subscription } from 'rxjs';
           </button>
 
           <!-- Plan list filters -->
+          <label class="header-filter" matTooltip="Show your meal plans" matTooltipPosition="above">
+            <input type="checkbox" [checked]="showUserMeals()" (change)="toggleUserMeals()" />
+            <span class="filter-text">UserMeals</span>
+          </label>
           <label class="header-filter" matTooltip="Show Community plans" matTooltipPosition="above">
             <input type="checkbox" [checked]="showCommunity()" (change)="toggleCommunity()" />
-            <img src="/images/Community-C.ico" alt="" class="filter-icon" />
             <span class="filter-text">Community</span>
           </label>
           <label class="header-filter" matTooltip="Show YEH Approved plans" matTooltipPosition="above">
             <input type="checkbox" [checked]="showYeh()" (change)="toggleYeh()" />
-            <img src="/favicon.ico" alt="" class="filter-icon" />
             <span class="filter-text">YEH Approved</span>
           </label>
 
@@ -146,7 +148,8 @@ import { Subscription } from 'rxjs';
           @if (isShareApproved()) {
             <div class="meal-image-box locked">
               @if (planningService.currentPlan()?.mealImage) {
-                <img [src]="planningService.currentPlan()?.mealImage" alt="" class="meal-box-img" />
+                <img [src]="planningService.currentPlan()?.mealImage" alt="" class="meal-box-img"
+                  (click)="showImageZoom.set(true); $event.stopPropagation()" />
               } @else {
                 <span class="drop-label">No image</span>
               }
@@ -158,7 +161,8 @@ import { Subscription } from 'rxjs';
               (drop)="onMealImageDrop($event)"
               (paste)="onMealImagePaste($event)">
               @if (mealImagePreview() || planningService.currentPlan()?.mealImage) {
-                <img [src]="mealImagePreview() || planningService.currentPlan()?.mealImage" alt="" class="meal-box-img" />
+                <img [src]="mealImagePreview() || planningService.currentPlan()?.mealImage" alt="" class="meal-box-img"
+                  (click)="showImageZoom.set(true); $event.stopPropagation()" />
                 <button type="button" class="remove-img-btn" (click)="clearMealImage(); $event.stopPropagation()">✕</button>
               } @else {
                 <div class="drop-placeholder">
@@ -173,6 +177,12 @@ import { Subscription } from 'rxjs';
               (change)="onMealImageSelected($event)" />
           }
         </div>
+
+        @if (showImageZoom() && (mealImagePreview() || planningService.currentPlan()?.mealImage)) {
+          <div class="image-zoom-overlay" (click)="showImageZoom.set(false)">
+            <img [src]="mealImagePreview() || planningService.currentPlan()?.mealImage" alt="" class="zoom-img" />
+          </div>
+        }
 
         <!-- Video link row -->
         <div class="link-row">
@@ -392,25 +402,28 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   dropdownHighlight = signal<number>(-2); // -2 = none, -1 = "create new", 0+ = plan index
 
   // Plan list filters (checkboxes next to trash can)
-  showCommunity = signal(false);
-  showYeh = signal(false);
+  showUserMeals = signal(true);
+  showCommunity = signal(true);
+  showYeh = signal(true);
   typeAheadFilter = signal('');
 
   filteredPlans = computed(() => {
     let plans = this.savedPlans();
+    const userMeals = this.showUserMeals();
     const community = this.showCommunity();
     const yeh = this.showYeh();
     const typeAhead = this.typeAheadFilter().toLowerCase();
 
-    // No checkboxes: show ALL plans
-    // Checkboxes pare down: only show the checked types
-    if (community || yeh) {
-      plans = plans.filter(p => {
-        if (community && (p.shareApproved || p.shareCandidate)) return true;
-        if (yeh && p.isYeh) return true;
-        return false;
-      });
-    }
+    // Filter by checked categories; if none checked, show nothing
+    plans = plans.filter(p => {
+      const isCommunity = p.shareApproved || p.shareCandidate;
+      const isYeh = p.isYeh;
+      const isUserMeal = !isCommunity && !isYeh;
+      if (userMeals && isUserMeal) return true;
+      if (community && isCommunity) return true;
+      if (yeh && isYeh) return true;
+      return false;
+    });
 
     // Type-ahead: filter by name
     if (typeAhead) {
@@ -419,6 +432,10 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
     return plans;
   });
+
+  toggleUserMeals(): void {
+    this.showUserMeals.update(v => !v);
+  }
 
   toggleCommunity(): void {
     this.showCommunity.update(v => !v);
@@ -446,6 +463,7 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   // Meal image upload state
   mealImageFile = signal<File | null>(null);
   mealImagePreview = signal<string | null>(null);
+  showImageZoom = signal(false);
   shareCandidate = signal(false);
 
   // Community approval lockdown

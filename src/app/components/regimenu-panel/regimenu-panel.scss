@@ -85,26 +85,21 @@
 .header-filter {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   cursor: pointer;
   flex-shrink: 0;
 
   input {
     width: 13px;
     height: 13px;
+    margin: 0;
     accent-color: #4da6ff;
     cursor: pointer;
   }
 
-  .filter-icon {
-    width: 13px;
-    height: 13px;
-    object-fit: contain;
-  }
-
   .filter-text {
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.85);
     white-space: nowrap;
   }
 }
@@ -314,10 +309,10 @@
   }
 }
 
-// Meal image section (centered, square)
+// Meal image section (left-aligned)
 .meal-image-section {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 8px 10px;
   background: #333;
   border-bottom: 1px solid #444;
@@ -325,8 +320,8 @@
 }
 
 .meal-image-box {
-  width: 120px;
-  height: 120px;
+  width: 180px;
+  height: 180px;
   border: 2px dashed #555;
   border-radius: 6px;
   display: flex;
@@ -360,6 +355,7 @@
     height: 100%;
     object-fit: cover;
     border-radius: 4px;
+    cursor: zoom-in;
   }
 
   .remove-img-btn {
@@ -425,6 +421,29 @@
   @media (hover: hover) and (pointer: fine) {
     .desktop-only { display: inline-flex; }
     .mobile-only { display: none; }
+  }
+}
+
+// Image zoom overlay
+.image-zoom-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: zoom-out;
+
+  .zoom-img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
   }
 }
 
