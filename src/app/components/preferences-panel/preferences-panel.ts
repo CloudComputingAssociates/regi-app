@@ -288,14 +288,14 @@ import { MatIconModule } from '@angular/material/icon';
                         <input type="radio" name="waterMode" value="bottle"
                                [checked]="waterMode() === 'bottle'"
                                (change)="onWaterModeChange('bottle')" />
-                        My Bottle
+                        Water Bottle
                       </label>
-                      <span class="water-unit">is</span>
+                      <input type="number" class="water-input" [ngModel]="waterBottles()"
+                             (ngModelChange)="onWaterBottlesChange($event)" />
+                      <span class="water-unit">holds</span>
                       <input type="number" class="water-bottle-size" [ngModel]="bottleSizeOz()"
                              (ngModelChange)="onBottleSizeChange($event)" />
                       <span class="water-unit">oz</span>
-                      <input type="number" class="water-input" [ngModel]="waterBottles()"
-                             (ngModelChange)="onWaterBottlesChange($event)" />
                     </div>
                     <div class="water-display-row">
                       @for (g of waterDisplayArray(); track g) {
