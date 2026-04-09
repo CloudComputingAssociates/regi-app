@@ -265,7 +265,7 @@
   font-size: 18px;
   font-weight: 700;
   text-transform: uppercase;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .nav-arrow {
@@ -357,7 +357,7 @@
 .water-tracker {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .water-label {
@@ -471,11 +471,11 @@
 .report-totals.target-totals {
   border-bottom: 2px solid #4a4a4a;
   justify-content: flex-start;
-  padding-bottom: 8px;
+  padding-bottom: 4px;
+  margin-bottom: 12px;
 
   .water-tracker {
     margin-left: auto;
-    margin-bottom: -2px;
   }
 }
 
