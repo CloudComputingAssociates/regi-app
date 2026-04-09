@@ -58,8 +58,18 @@ export class TabService {
     this.blockedTabSwitch.set(null);
     if (blocked) {
       this._restoringTab = true;
-      this.activeTabIndexSignal.set(blocked.sourceIndex);
-      setTimeout(() => this._restoringTab = false);
+      // Force Material to see a change by toggling through a different index
+      this._pendingActiveIndex = blocked.sourceIndex;
+      this.activeTabIndexSignal.set(-1);
+      requestAnimationFrame(() => {
+        if (this._pendingActiveIndex !== null) {
+          this.activeTabIndexSignal.set(this._pendingActiveIndex);
+          requestAnimationFrame(() => {
+            this._pendingActiveIndex = null;
+            this._restoringTab = false;
+          });
+        }
+      });
     }
   }
 

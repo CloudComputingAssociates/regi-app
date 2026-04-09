@@ -27,6 +27,18 @@ import { MatIconModule } from '@angular/material/icon';
         </div>
       }
 
+      @if (showPiWarning()) {
+        <div class="confirm-overlay" (click)="cancelPiChange()">
+          <div class="confirm-dialog" (click)="$event.stopPropagation()">
+            <p>Changing Personal Info will re-calculate your nutrition targets, weeks to goal, and target date.</p>
+            <div class="confirm-buttons">
+              <button class="confirm-btn discard" (click)="confirmPiChange()">Continue</button>
+              <button class="confirm-btn cancel" (click)="cancelPiChange()">Cancel</button>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Top pane: Settings -->
       <div class="settings-pane" style="flex: 1 1 0%" #settingsPane (scroll)="onSettingsScroll()">
         @if (showScrollUp()) {
@@ -595,10 +607,18 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     const weeks = this.userSettingsService.computedWeeksToGoal() ?? 0;
     const tdee = this.userSettingsService.computedTDEE();
     const cals = this.userSettingsService.dailyGoals().calories;
-    if (!tdee || !cals) return `${weeks} weeks to goal`;
+    const lastUpdated = this.userSettingsService.personalInfo().lastUpdated;
+    if (!tdee || !cals || !weeks) return '';
     const gap = Math.abs(tdee - cals);
     const direction = tdee > cals ? 'deficit' : 'surplus';
-    return `${weeks} weeks to goal at ${gap} cal ${direction}`;
+
+    // Calculate goal date from anchor (lastUpdated or today)
+    const anchor = lastUpdated ? new Date(lastUpdated) : new Date();
+    const goalDate = new Date(anchor);
+    goalDate.setDate(goalDate.getDate() + weeks * 7);
+    const goalStr = goalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    return `${weeks} weeks to goal at ${gap} cal ${direction} (${goalStr})`;
   });
 
   /** Inline label: % mode shows "(-39.0%)", g mode shows "(-150 lbs)" or "(-68 kg)" */
@@ -727,48 +747,92 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
 
   // --- Personal Info handlers ---
 
+  // Personal Info change guard — warns user once per session that changes recalculate targets
+  private piChangeConfirmed = false;
+  private pendingPiAction: (() => void) | null = null;
+  showPiWarning = signal(false);
+
+  private guardedPiChange(action: () => void): void {
+    if (this.piChangeConfirmed) {
+      action();
+      return;
+    }
+    this.pendingPiAction = action;
+    this.showPiWarning.set(true);
+  }
+
+  confirmPiChange(): void {
+    this.piChangeConfirmed = true;
+    this.showPiWarning.set(false);
+    this.pendingPiAction?.();
+    this.pendingPiAction = null;
+  }
+
+  cancelPiChange(): void {
+    this.showPiWarning.set(false);
+    this.pendingPiAction = null;
+    // Reload to revert the field value that Angular already bound
+    this.userSettingsService.loadPreferences();
+  }
+
   onSexChange(value: string): void {
-    this.userSettingsService.setSex(value);
-    this.syncMacros();
+    this.guardedPiChange(() => {
+      this.userSettingsService.setSex(value);
+      this.syncMacros();
+    });
   }
 
   onDateOfBirthChange(value: string): void {
-    this.userSettingsService.setDateOfBirth(value);
-    this.syncMacros();
+    this.guardedPiChange(() => {
+      this.userSettingsService.setDateOfBirth(value);
+      this.syncMacros();
+    });
   }
 
   onHeightFtChange(ft: number): void {
-    const inches = this.heightIn() || 0;
-    this.userSettingsService.setHeightCm(PreferencesService.ftInToCm(ft, +inches));
-    this.syncMacros();
+    this.guardedPiChange(() => {
+      const inches = this.heightIn() || 0;
+      this.userSettingsService.setHeightCm(PreferencesService.ftInToCm(ft, +inches));
+      this.syncMacros();
+    });
   }
 
   onHeightInChange(inches: number): void {
-    const ft = this.heightFt() || 0;
-    this.userSettingsService.setHeightCm(PreferencesService.ftInToCm(+ft, inches));
-    this.syncMacros();
+    this.guardedPiChange(() => {
+      const ft = this.heightFt() || 0;
+      this.userSettingsService.setHeightCm(PreferencesService.ftInToCm(+ft, inches));
+      this.syncMacros();
+    });
   }
 
   onHeightCmChange(value: number): void {
-    this.userSettingsService.setHeightCm(value);
-    this.syncMacros();
+    this.guardedPiChange(() => {
+      this.userSettingsService.setHeightCm(value);
+      this.syncMacros();
+    });
   }
 
   onCurrentWeightChange(value: number): void {
-    const kg = this.userSettingsService.useImperial() ? PreferencesService.lbsToKg(value) : value;
-    this.userSettingsService.setCurrentWeightKg(kg);
-    this.syncMacros();
+    this.guardedPiChange(() => {
+      const kg = this.userSettingsService.useImperial() ? PreferencesService.lbsToKg(value) : value;
+      this.userSettingsService.setCurrentWeightKg(kg);
+      this.syncMacros();
+    });
   }
 
   onTargetWeightChange(value: number): void {
-    const kg = this.userSettingsService.useImperial() ? PreferencesService.lbsToKg(value) : value;
-    this.userSettingsService.setTargetWeightKg(kg);
-    this.syncMacros();
+    this.guardedPiChange(() => {
+      const kg = this.userSettingsService.useImperial() ? PreferencesService.lbsToKg(value) : value;
+      this.userSettingsService.setTargetWeightKg(kg);
+      this.syncMacros();
+    });
   }
 
   onActivityLevelChange(value: string): void {
-    this.userSettingsService.setActivityLevel(value);
-    this.syncMacros();
+    this.guardedPiChange(() => {
+      this.userSettingsService.setActivityLevel(value);
+      this.syncMacros();
+    });
   }
 
   /** User changed calories → reverse-compute deficit percent and rebalance fat */
