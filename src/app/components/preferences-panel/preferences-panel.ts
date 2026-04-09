@@ -270,8 +270,8 @@ import { MatIconModule } from '@angular/material/icon';
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     </div>
                     <div class="target-field">
-                      <label>16oz Water/day</label>
-                      <input type="number" [ngModel]="waterOz()" disabled />
+                      <label>Water (16oz)/day</label>
+                      <input type="number" [ngModel]="waterGlasses()" disabled />
                     </div>
                   </div>
                   <div class="water-glasses-row">
