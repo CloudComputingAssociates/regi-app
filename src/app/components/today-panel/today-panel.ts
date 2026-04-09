@@ -129,7 +129,7 @@ interface FoodPopup {
                 <div class="water-tracker">
                   <span class="water-label">Water</span>
                   @for (i of waterTargetArray(); track i) {
-                    <button class="water-icon-btn" (click)="onWaterClick(i)">
+                    <button class="water-icon-btn" [class.filled]="i < waterConsumedCount()" (click)="onWaterClick(i)">
                       @if (i < waterConsumedCount()) {
                         @if (waterMode() === 'bottle') {
                           <img src="/images/waterbottleiconblue.png" alt="full" class="water-icon" />

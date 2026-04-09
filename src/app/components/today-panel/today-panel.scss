@@ -236,13 +236,14 @@
 
 // Report header
 .report-header {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .report-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 2px;
 }
 
 .report-plan-name {
@@ -352,12 +353,6 @@
   gap: 8px;
 }
 
-.date-water-row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-}
-
 .water-tracker {
   display: flex;
   align-items: center;
@@ -373,22 +368,32 @@
 }
 
 .water-icon-btn {
-  background: none;
-  border: none;
-  padding: 0;
+  background: #111;
+  border: 1px solid #555;
+  border-bottom: 2px solid #222;
+  border-radius: 6px;
+  padding: 4px 6px 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
   &:hover {
-    transform: scale(1.15);
+    border-color: #888;
+  }
+
+  &.filled {
+    background: #0a0a0a;
+    border-top: 2px solid #111;
+    border-bottom: 1px solid #444;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.7);
   }
 }
 
 .water-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
 }
 
