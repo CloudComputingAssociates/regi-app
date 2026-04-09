@@ -403,6 +403,7 @@ import { MatIconModule } from '@angular/material/icon';
                     <option [ngValue]="3">3</option>
                     <option [ngValue]="4">4</option>
                   </select>
+                  <span class="setting-hint">per week</span>
                   <span class="info-icon"
                         #repeatTooltip="matTooltip"
                         matTooltip="By repeating day plans, you optimize grocery lists and reduce waste"
@@ -721,7 +722,7 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   }
 
   hasAnyChanges(): boolean {
-    return this.settingsChanged();
+    return this.settingsChanged() || this.userSettingsService.hasDirtyGroups();
   }
 
   // --- Personal Info handlers ---
