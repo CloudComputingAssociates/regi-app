@@ -24,6 +24,8 @@ export class TabService {
   private _beforeLeaveGuard: (() => boolean) | null = null;
   /** Fires when a guarded tab switch is blocked; listeners show confirmation UI */
   readonly blockedTabSwitch = signal<{ targetTabId: string; sourceIndex: number } | null>(null);
+  /** True while restoring tab after cancel — suppresses guard re-entry */
+  private _restoringTab = false;
 
   /** Register a guard that can block leaving the current tab */
   setBeforeLeaveGuard(guard: (() => boolean) | null): void {
@@ -32,6 +34,7 @@ export class TabService {
 
   /** Check guard and block if needed; returns true if blocked */
   private guardLeave(targetTabId: string): boolean {
+    if (this._restoringTab) return false;
     if (this._beforeLeaveGuard && this._beforeLeaveGuard()) {
       const sourceIndex = this.activeTabIndexSignal();
       this.blockedTabSwitch.set({ targetTabId, sourceIndex });
@@ -54,9 +57,9 @@ export class TabService {
     const blocked = this.blockedTabSwitch();
     this.blockedTabSwitch.set(null);
     if (blocked) {
-      // Force Material tab group back to the original tab
-      this.activeTabIndexSignal.set(-1);
-      setTimeout(() => this.activeTabIndexSignal.set(blocked.sourceIndex));
+      this._restoringTab = true;
+      this.activeTabIndexSignal.set(blocked.sourceIndex);
+      setTimeout(() => this._restoringTab = false);
     }
   }
 
