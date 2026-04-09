@@ -642,12 +642,7 @@ export class PreferencesService {
       }
     }
 
-    // 5. Fiber vs carbs feasibility
-    if (dg.fiber > dg.carbs * FIBER_TO_CARB_RATIO) {
-      warnings.push(
-        `Hitting ${dg.fiber}g fiber on ${dg.carbs}g carbs may be challenging. Consider adjusting.`
-      );
-    }
+    // 5. Fiber vs carbs feasibility — removed (not actionable enough)
 
     return warnings;
   }
