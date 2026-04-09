@@ -60,6 +60,8 @@ export interface UpdateMealRequest {
   status?: 'active' | 'archived';
   prepVideoLink?: string;
   recipeLink?: string;
+  mealImage?: string;
+  mealImageThumbnail?: string;
   shareCandidate?: boolean;
   items?: MealItem[];
 }

@@ -331,12 +331,23 @@
   }
 }
 
-// Meal image section (left-aligned)
+// Links + Image side-by-side layout
+.links-image-row {
+  display: flex;
+  align-items: flex-start;
+  background: #3a3a3a;
+  flex-shrink: 0;
+}
+
+.links-column {
+  flex: 1;
+  min-width: 0;
+}
+
+// Meal image section (right side)
 .meal-image-section {
   display: flex;
-  justify-content: flex-start;
-  padding: 8px 10px;
-  background: #3a3a3a;
+  padding: 4px 10px;
   flex-shrink: 0;
 }
 
@@ -502,10 +513,6 @@
   padding: 3px 10px;
   background: #3a3a3a;
   flex-shrink: 0;
-
-  &.compact {
-    width: 50%;
-  }
 }
 
 .link-label {
@@ -826,7 +833,7 @@
 // Plan item - swipeable
 .plan-item {
   position: relative;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   transition: transform 0.15s ease-out;
 
   &.swiping {
@@ -836,15 +843,15 @@
   .item-content {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
+    gap: 6px;
+    padding: 5px 10px;
     background: linear-gradient(180deg, #404040 0%, #383838 100%);
     border-radius: 6px;
     border-top: 1px solid #4a4a4a;
     border-left: 1px solid #3a3a3a;
     border-right: 1px solid #3a3a3a;
     border-bottom: 1px solid #2a2a2a;
-    min-height: 52px;
+    min-height: 40px;
     position: relative;
     z-index: 1;
   }

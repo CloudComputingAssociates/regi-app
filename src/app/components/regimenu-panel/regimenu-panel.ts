@@ -148,90 +148,120 @@ import { Subscription } from 'rxjs';
       <!-- Scrollable plan content area -->
       <div class="plan-content-scroll">
       @if (planningService.hasPlan()) {
-        <!-- Video link row -->
-        <div class="link-row compact">
-          <label class="link-label">Video</label>
-          <input
-            type="url"
-            class="link-input"
-            [ngModel]="prepVideoLink()"
-            (ngModelChange)="onPrepVideoChange($event)"
-            [disabled]="isShareApproved()"
-            placeholder="https://youtube.com/..." />
-          <button
-            class="link-save-btn"
-            [disabled]="!prepVideoDirty() || isShareApproved()"
-            (click)="savePrepVideo()"
-            matTooltip="Save video link"
-            matTooltipPosition="above">
-            <mat-icon>check</mat-icon>
-          </button>
-          @if (prepVideoLink()) {
-            <button class="video-btn" (click)="testPrepVideo()" matTooltip="Open in YouTube viewer" matTooltipPosition="above">
-              <svg class="yt-icon" viewBox="0 0 28 20"><rect rx="4" width="28" height="20" fill="#FF0000"/><polygon points="11,4 11,16 20,10" fill="#FFF"/></svg>
-            </button>
-          }
-        </div>
-
-        <!-- Recipe link row -->
-        <div class="link-row compact">
-          <label class="link-label">Recipe</label>
-          <input
-            type="url"
-            class="link-input"
-            [ngModel]="recipeLink()"
-            (ngModelChange)="onRecipeLinkChange($event)"
-            [disabled]="isShareApproved()"
-            placeholder="https://recipe-site.com/..." />
-          <button
-            class="link-save-btn"
-            [disabled]="!recipeLinkDirty() || isShareApproved()"
-            (click)="saveRecipeLink()"
-            matTooltip="Save recipe link"
-            matTooltipPosition="above">
-            <mat-icon>check</mat-icon>
-          </button>
-          @if (recipeLink()) {
-            <button class="browser-btn" (click)="openRecipeInBrowser()" matTooltip="Open in browser" matTooltipPosition="above">
-              <mat-icon class="browser-icon">language</mat-icon>
-            </button>
-          }
-        </div>
-
-        <!-- Meal Image (left-aligned) -->
-        <div class="meal-image-section">
-          @if (isShareApproved()) {
-            <div class="meal-image-box locked">
-              @if (planningService.currentPlan()?.mealImage) {
-                <img [src]="planningService.currentPlan()?.mealImage" alt="" class="meal-box-img"
-                  (click)="showImageZoom.set(true); $event.stopPropagation()" />
-              } @else {
-                <span class="drop-label">No image</span>
+        <!-- Links + Image side by side -->
+        <div class="links-image-row">
+          <div class="links-column">
+            <!-- Video link row -->
+            <div class="link-row">
+              <label class="link-label">Video</label>
+              <input
+                type="url"
+                class="link-input"
+                [ngModel]="prepVideoLink()"
+                (ngModelChange)="onPrepVideoChange($event)"
+                [disabled]="isShareApproved()"
+                placeholder="https://youtube.com/..." />
+              <button
+                class="link-save-btn"
+                [disabled]="!prepVideoDirty() || isShareApproved()"
+                (click)="savePrepVideo()"
+                matTooltip="Save video link"
+                matTooltipPosition="above">
+                <mat-icon>check</mat-icon>
+              </button>
+              @if (prepVideoLink()) {
+                <button class="video-btn" (click)="testPrepVideo()" matTooltip="Open in YouTube viewer" matTooltipPosition="above">
+                  <svg class="yt-icon" viewBox="0 0 28 20"><rect rx="4" width="28" height="20" fill="#FF0000"/><polygon points="11,4 11,16 20,10" fill="#FFF"/></svg>
+                </button>
               }
             </div>
-          } @else {
-            <div class="meal-image-box"
-              [class.compact]="!mealImagePreview() && !planningService.currentPlan()?.mealImage"
-              tabindex="0"
-              (dragover)="onMealImageDragOver($event)"
-              (drop)="onMealImageDrop($event)"
-              (paste)="onMealImagePaste($event)">
-              @if (mealImagePreview() || planningService.currentPlan()?.mealImage) {
-                <img [src]="mealImagePreview() || planningService.currentPlan()?.mealImage" alt="" class="meal-box-img"
-                  (click)="showImageZoom.set(true); $event.stopPropagation()" />
-                <button type="button" class="remove-img-btn" (click)="clearMealImage(); $event.stopPropagation()">✕</button>
-              } @else {
-                <div class="drop-placeholder">
-                  <button type="button" class="browse-btn desktop-only" (click)="mealImageInput.click(); $event.stopPropagation()">Browse</button>
-                  <button type="button" class="camera-btn mobile-only" (click)="mealImageInput.click(); $event.stopPropagation()">📷</button>
-                  <span class="drop-label desktop-only">Meal photo: drop or Ctrl+V</span>
-                  <span class="drop-label mobile-only">Tap 📷 for meal photo</span>
-                </div>
+
+            <!-- Recipe link row -->
+            <div class="link-row">
+              <label class="link-label">Recipe</label>
+              <input
+                type="url"
+                class="link-input"
+                [ngModel]="recipeLink()"
+                (ngModelChange)="onRecipeLinkChange($event)"
+                [disabled]="isShareApproved()"
+                placeholder="https://recipe-site.com/..." />
+              <button
+                class="link-save-btn"
+                [disabled]="!recipeLinkDirty() || isShareApproved()"
+                (click)="saveRecipeLink()"
+                matTooltip="Save recipe link"
+                matTooltipPosition="above">
+                <mat-icon>check</mat-icon>
+              </button>
+              @if (recipeLink()) {
+                <button class="browser-btn" (click)="openRecipeInBrowser()" matTooltip="Open in browser" matTooltipPosition="above">
+                  <mat-icon class="browser-icon">language</mat-icon>
+                </button>
               }
             </div>
-            <input #mealImageInput type="file" accept="image/*" capture="environment" hidden
-              (change)="onMealImageSelected($event)" />
-          }
+
+            <!-- Share with YEH Community -->
+            <div class="share-row">
+              @if (isShareApproved()) {
+                <span class="approved-badge">Community Approved</span>
+              } @else {
+                <label class="share-check" matTooltip="Share Meal Plan with YEH Community" matTooltipPosition="above">
+                  <input type="checkbox" [checked]="shareCandidate()" (change)="onShareCandidateChange($any($event.target).checked)" />
+                  <span>Share with YEH Community</span>
+                </label>
+              }
+            </div>
+
+            <!-- Totals + Add row -->
+            <div class="totals-row" [class.stippled]="foodPickerOpen()">
+              <span class="totals-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
+              <span class="totals-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
+              <span class="totals-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg salt</span>
+              <button
+                class="icon-btn add-food-btn"
+                (click)="openFoodPicker()"
+                [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()"
+                matTooltip="Add Food"
+                matTooltipPosition="above">
+                <mat-icon>add</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Meal Image (right side) -->
+          <div class="meal-image-section">
+            @if (isShareApproved()) {
+              <div class="meal-image-box locked">
+                @if (planningService.currentPlan()?.mealImage) {
+                  <img [src]="planningService.currentPlan()?.mealImage" alt="" class="meal-box-img"
+                    (click)="showImageZoom.set(true); $event.stopPropagation()" />
+                } @else {
+                  <span class="drop-label">No image</span>
+                }
+              </div>
+            } @else {
+              <div class="meal-image-box"
+                [class.compact]="!mealImagePreview() && !planningService.currentPlan()?.mealImage"
+                tabindex="0"
+                (dragover)="onMealImageDragOver($event)"
+                (drop)="onMealImageDrop($event)"
+                (paste)="onMealImagePaste($event)">
+                @if (mealImagePreview() || planningService.currentPlan()?.mealImage) {
+                  <img [src]="mealImagePreview() || planningService.currentPlan()?.mealImage" alt="" class="meal-box-img"
+                    (click)="showImageZoom.set(true); $event.stopPropagation()" />
+                  <button type="button" class="remove-img-btn" (click)="clearMealImage(); $event.stopPropagation()">✕</button>
+                } @else {
+                  <div class="drop-placeholder">
+                    <button type="button" class="browse-btn" (click)="mealImageInput.click(); $event.stopPropagation()">Browse</button>
+                    <span class="drop-label">Meal photo: drop or Ctrl+V</span>
+                  </div>
+                }
+              </div>
+              <input #mealImageInput type="file" accept="image/*" capture="environment" hidden
+                (change)="onMealImageSelected($event)" />
+            }
+          </div>
         </div>
 
         @if (showImageZoom() && (mealImagePreview() || planningService.currentPlan()?.mealImage)) {
@@ -239,33 +269,6 @@ import { Subscription } from 'rxjs';
             <img [src]="mealImagePreview() || planningService.currentPlan()?.mealImage" alt="" class="zoom-img" />
           </div>
         }
-
-        <!-- Share with YEH Community row -->
-        <div class="share-row">
-          @if (isShareApproved()) {
-            <span class="approved-badge">Community Approved</span>
-          } @else {
-            <label class="share-check" matTooltip="Share Meal Plan with YEH Community" matTooltipPosition="above">
-              <input type="checkbox" [checked]="shareCandidate()" (change)="onShareCandidateChange($any($event.target).checked)" />
-              <span>Share with YEH Community</span>
-            </label>
-          }
-        </div>
-
-        <!-- Totals + Add row -->
-        <div class="totals-row" [class.stippled]="foodPickerOpen()">
-          <span class="totals-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
-          <span class="totals-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
-          <span class="totals-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg salt</span>
-          <button
-            class="icon-btn add-food-btn"
-            (click)="openFoodPicker()"
-            [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()"
-            matTooltip="Add Food"
-            matTooltipPosition="above">
-            <mat-icon>add</mat-icon>
-          </button>
-        </div>
       }
 
       <!-- Plan items list -->
@@ -825,10 +828,16 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     this.uploadMealImage();
   }
 
-  clearMealImage(): void {
+  async clearMealImage(): Promise<void> {
     if (this.mealImagePreview()) URL.revokeObjectURL(this.mealImagePreview()!);
     this.mealImageFile.set(null);
     this.mealImagePreview.set(null);
+
+    // Clear from server
+    const plan = this.planningService.currentPlan();
+    if (plan) {
+      await this.planningService.updateMeal(plan.id, { mealImage: '', mealImageThumbnail: '' });
+    }
   }
 
   private async uploadMealImage(): Promise<void> {
