@@ -236,7 +236,7 @@
 
 // Report header
 .report-header {
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
 
 .report-title-row {
@@ -257,7 +257,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
 
 .nav-day-of-week {
@@ -265,7 +265,7 @@
   font-size: 18px;
   font-weight: 700;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .nav-arrow {
@@ -471,10 +471,11 @@
 .report-totals.target-totals {
   border-bottom: 2px solid #4a4a4a;
   justify-content: flex-start;
-  padding-bottom: 6px;
+  padding-bottom: 8px;
 
   .water-tracker {
     margin-left: auto;
+    margin-bottom: -2px;
   }
 }
 
