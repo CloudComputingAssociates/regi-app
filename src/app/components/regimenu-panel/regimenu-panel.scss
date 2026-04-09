@@ -82,6 +82,13 @@
   }
 }
 
+.filter-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  margin-left: 4px;
+}
+
 .header-filter {
   display: flex;
   align-items: center;
@@ -320,8 +327,8 @@
 }
 
 .meal-image-box {
-  width: 180px;
-  height: 180px;
+  width: 270px;
+  height: 270px;
   border: 2px dashed #555;
   border-radius: 6px;
   display: flex;
@@ -348,6 +355,32 @@
     cursor: default;
     opacity: 0.7;
     &:hover { border-color: #444; background: none; }
+  }
+
+  &.compact {
+    width: 200px;
+    height: 36px;
+    border-width: 1px;
+    border-style: dashed;
+
+    .drop-placeholder {
+      flex-direction: row;
+      gap: 8px;
+    }
+
+    .browse-btn {
+      font-size: 10px;
+      padding: 2px 8px;
+    }
+
+    .camera-btn {
+      font-size: 16px;
+      padding: 2px 6px;
+    }
+
+    .drop-label {
+      font-size: 9px;
+    }
   }
 
   .meal-box-img {
@@ -456,6 +489,10 @@
   background: #333;
   border-bottom: 1px solid #3a3a3a;
   flex-shrink: 0;
+
+  &.compact {
+    width: 50%;
+  }
 }
 
 .link-label {
@@ -664,7 +701,17 @@
   white-space: nowrap;
 }
 
-// Community share checkbox (right-justified in totals row)
+// Share with YEH Community row
+.share-row {
+  display: flex;
+  align-items: center;
+  padding: 3px 12px;
+  background: #333;
+  border-bottom: 1px solid #3a3a3a;
+  flex-shrink: 0;
+}
+
+// Community share checkbox
 .share-check {
   display: flex;
   align-items: center;
@@ -677,13 +724,12 @@
   input { accent-color: #4a8f4a; }
 }
 
-// Plan list container
-.plan-list-container {
+// Scrollable plan content area (links, image, share, totals, foods)
+.plan-content-scroll {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
   background-color: #3a3a3a;
 }
 
@@ -762,9 +808,6 @@
 
 // Plan list
 .plan-list {
-  overflow-y: auto;
-  overflow-x: hidden;
-  flex: 1;
   padding: 4px;
 }
 

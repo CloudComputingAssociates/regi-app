@@ -46,7 +46,6 @@ import { PlanningService } from './services/planning.service';
               <app-macros />
               @if (!tipDismissed() && tipService.tip(); as tip) {
                 <div class="nutrition-tip-bar">
-                  <img src="/images/News-YEH-Logo.png" alt="Tip" class="tip-bar-logo" />
                   @if (tip.imageUrl) {
                     <img [src]="tip.imageUrl" alt="" class="tip-bar-thumb" />
                   }
