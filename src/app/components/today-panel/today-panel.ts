@@ -106,13 +106,23 @@ interface FoodPopup {
                 </button>
               </div>
             </div>
+            <div class="date-water-row">
+            <div class="date-navigator">
+              <button class="nav-arrow icon-btn" (click)="goToPreviousDay()" matTooltip="Previous day" matTooltipPosition="above">
+                <mat-icon>chevron_left</mat-icon>
+              </button>
+              <span class="nav-date" (click)="datePicker.open()">{{ displayDate() }}</span>
+              <input class="hidden-date-input" [matDatepicker]="datePicker" [value]="currentDate()" (dateChange)="onDatePicked($event.value)" />
+              <mat-datepicker #datePicker />
+              <button class="nav-arrow icon-btn" (click)="goToNextDay()" matTooltip="Next day" matTooltipPosition="above">
+                <mat-icon>chevron_right</mat-icon>
+              </button>
+            </div>
             @if (waterTarget() > 0) {
               <div class="water-tracker">
                 <span class="water-label">Water</span>
                 @for (i of waterTargetArray(); track i) {
-                  <button class="water-icon-btn" (click)="onWaterClick(i)"
-                    [matTooltip]="waterMode() === 'bottle' ? 'Water bottle' : 'Water glass'"
-                    matTooltipPosition="above">
+                  <button class="water-icon-btn" (click)="onWaterClick(i)">
                     @if (i < waterConsumedCount()) {
                       @if (waterMode() === 'bottle') {
                         <img src="/images/waterbottleiconblue.png" alt="full" class="water-icon" />
@@ -130,16 +140,6 @@ interface FoodPopup {
                 }
               </div>
             }
-            <div class="date-navigator">
-              <button class="nav-arrow icon-btn" (click)="goToPreviousDay()" matTooltip="Previous day" matTooltipPosition="above">
-                <mat-icon>chevron_left</mat-icon>
-              </button>
-              <span class="nav-date" (click)="datePicker.open()">{{ displayDate() }}</span>
-              <input class="hidden-date-input" [matDatepicker]="datePicker" [value]="currentDate()" (dateChange)="onDatePicked($event.value)" />
-              <mat-datepicker #datePicker />
-              <button class="nav-arrow icon-btn" (click)="goToNextDay()" matTooltip="Next day" matTooltipPosition="above">
-                <mat-icon>chevron_right</mat-icon>
-              </button>
             </div>
             <div class="report-totals target-totals">
               <span class="totals-label">Target:</span>
