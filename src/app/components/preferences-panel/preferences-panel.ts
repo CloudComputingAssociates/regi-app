@@ -983,6 +983,9 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
 
   onWaterModeChange(mode: 'glasses' | 'bottle'): void {
     this.userSettingsService.updateDailyGoal('waterMode', mode);
+    if (mode === 'bottle') {
+      this.userSettingsService.updateDailyGoal('bottleSizeOz', this.bottleSizeOz());
+    }
     this.settingsChanged.set(true);
   }
 
@@ -1001,6 +1004,7 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     const glasses = Math.round(totalOz / this.glassSizeOz());
     this.userSettingsService.updateDailyGoal('waterGlasses', glasses);
     this.userSettingsService.updateDailyGoal('waterMode', 'bottle');
+    this.userSettingsService.updateDailyGoal('bottleSizeOz', bottleOz);
     this.settingsChanged.set(true);
   }
 

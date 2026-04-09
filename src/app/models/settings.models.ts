@@ -56,6 +56,7 @@ export interface PersonalInfo {
   calcFats?: number;        // calculated daily fat (remaining calories after protein and carbs)
   calcCarbs?: number;       // calculated daily carbs (from carbScaleGrams)
   lastUpdated?: string;     // ISO date (YYYY-MM-DD) when personal info was last updated
+  units?: 'us' | 'metric';  // Unit system preference
 }
 
 // Shopping staple item

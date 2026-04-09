@@ -89,8 +89,12 @@ export class PreferencesService {
     }
   });
 
-  // Unit preference for height/weight display
-  readonly useImperial = signal(localStorage.getItem('yeh_useImperial') !== 'false');
+  // Unit preference for height/weight display — derived from personalInfo.units, falls back to localStorage
+  readonly useImperial = computed(() => {
+    const units = this.personalInfo().units;
+    if (units) return units === 'us';
+    return localStorage.getItem('yeh_useImperial') !== 'false';
+  });
 
   // Display mode: true = show percentages, false = show grams/absolute values
   readonly showPercent = signal(false);
@@ -550,11 +554,15 @@ export class PreferencesService {
     this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
   }
 
-  // Unit toggle
+  // Unit toggle — persists to personalInfo (and localStorage as fallback)
   toggleUnits(): void {
-    const newValue = !this.useImperial();
-    this.useImperial.set(newValue);
-    localStorage.setItem('yeh_useImperial', String(newValue));
+    const newUnits = this.useImperial() ? 'metric' : 'us';
+    this.preferencesSignal.update(p => ({
+      ...p,
+      personalInfo: { ...p.personalInfo, units: newUnits as 'us' | 'metric' }
+    }));
+    this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
+    localStorage.setItem('yeh_useImperial', String(newUnits === 'us'));
   }
 
   // ========================================================
