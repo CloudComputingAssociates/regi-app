@@ -45,11 +45,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
-  border-bottom: 1px solid #2a2a2a;
+  padding: 2px 12px 4px;
+  background: #3a3a3a;
   flex-shrink: 0;
-  min-height: 48px;
+  min-height: 36px;
   transition: opacity 0.2s ease;
 
   &.stippled {
@@ -86,9 +85,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  padding: 4px 10px 2px;
+  background: #3a3a3a;
   flex-shrink: 0;
+}
+
+.filter-spacer {
+  flex: 1;
 }
 
 .filter-label {
@@ -97,7 +100,8 @@
   color: #4da6ff;
   text-transform: uppercase;
   white-space: nowrap;
-  margin-left: 4px;
+  margin-left: 0;
+  margin-right: 4px;
 }
 
 .header-filter {

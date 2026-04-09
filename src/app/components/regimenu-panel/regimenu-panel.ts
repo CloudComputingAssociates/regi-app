@@ -50,11 +50,19 @@ import { Subscription } from 'rxjs';
           <input type="checkbox" [checked]="showYeh()" (change)="toggleYeh()" />
           <span class="filter-text">YEH Approved</span>
         </label>
+        <span class="filter-spacer"></span>
+        <button
+          class="icon-btn close-btn"
+          (click)="closePanel()"
+          matTooltip="Close"
+          matTooltipPosition="below">
+          ✕
+        </button>
       </div>
 
       <div class="plan-header" [class.stippled]="foodPickerOpen()">
         <div class="header-left">
-          <span class="plan-label">Name</span>
+          <span class="plan-label">Meal</span>
 
           <!-- Combo-box dropdown for plan name -->
           <div class="plan-combo" (focusout)="onComboFocusOut($event)">
@@ -133,13 +141,6 @@ import { Subscription } from 'rxjs';
         </div>
 
         <div class="header-actions">
-          <button
-            class="icon-btn close-btn"
-            (click)="closePanel()"
-            matTooltip="Close"
-            matTooltipPosition="above">
-            ✕
-          </button>
         </div>
       </div>
       <!-- powered-by row removed -->
@@ -422,8 +423,9 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
     const typeAhead = this.typeAheadFilter().toLowerCase();
 
     // Filter by checked categories; if none checked, show nothing
+    // Candidates (shareCandidate but not shareApproved) are user meals until approved
     plans = plans.filter(p => {
-      const isCommunity = p.shareApproved || p.shareCandidate;
+      const isCommunity = p.shareApproved;
       const isYeh = p.isYeh;
       const isUserMeal = !isCommunity && !isYeh;
       if (userMeals && isUserMeal) return true;
