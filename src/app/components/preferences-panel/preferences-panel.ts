@@ -275,7 +275,7 @@ import { MatIconModule } from '@angular/material/icon';
                     <label class="water-heading">Daily Water
                       <span class="info-icon"
                         #waterTooltip="matTooltip"
-                        matTooltip="Calculated using the Holliday-Segar formula: 100ml/kg for first 10kg, 50ml/kg for next 10kg, 20ml/kg for remaining weight"
+                        matTooltip="Holliday-Segar Formula"
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
                         (click)="waterTooltip.toggle()">&#9432;</span>
@@ -918,13 +918,13 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
 
   onWaterModeChange(mode: 'glasses' | 'bottle'): void {
     this.userSettingsService.updateDailyGoal('waterMode', mode);
-    this.saveWaterSettings();
+    this.settingsChanged.set(true);
   }
 
   onWaterGlassesChange(value: number): void {
     if (!value || value <= 0) return;
     this.userSettingsService.updateDailyGoal('waterGlasses', value);
-    this.saveWaterSettings();
+    this.settingsChanged.set(true);
   }
 
   onWaterBottlesChange(value: number): void {
@@ -934,18 +934,14 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     const totalOz = value * bottleOz;
     const glasses = Math.round(totalOz / this.glassSizeOz());
     this.userSettingsService.updateDailyGoal('waterGlasses', glasses);
-    this.saveWaterSettings();
+    this.settingsChanged.set(true);
   }
 
   onBottleSizeChange(value: number): void {
     if (!value || value <= 0) return;
     const oz = this.userSettingsService.useImperial() ? value : Math.round(value * 33.814); // liters to oz
     this.userSettingsService.updateDailyGoal('bottleSizeOz', oz);
-    this.saveWaterSettings();
-  }
-
-  private saveWaterSettings(): void {
-    this.userSettingsService.savePreferences();
+    this.settingsChanged.set(true);
   }
 
   onMealsPerDayChange(value: MealsPerDay): void {
