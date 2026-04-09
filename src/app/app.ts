@@ -50,10 +50,12 @@ import { PlanningService } from './services/planning.service';
                 <div class="nutrition-tip-bar">
                   <img src="/images/bites-logo.png" alt="Bites" class="tip-bar-logo"
                     matTooltip="News, Insights, AI Chats ~ your daily 'bites'" matTooltipPosition="below" />
-                  @if (tip.imageUrl) {
-                    <img [src]="tip.imageUrl" alt="" class="tip-bar-thumb" />
-                  }
-                  <a [href]="tip.articleUrl" target="_blank" rel="noopener" class="tip-bar-title">{{ tip.title }}</a>
+                  <div class="tip-bar-inset">
+                    @if (tip.imageUrl) {
+                      <img [src]="tip.imageUrl" alt="" class="tip-bar-thumb" />
+                    }
+                    <a [href]="tip.articleUrl" target="_blank" rel="noopener" class="tip-bar-title">{{ tip.title }}</a>
+                  </div>
                   <button class="tip-bar-close" (click)="dismissTip()">✕</button>
                 </div>
               }
