@@ -298,7 +298,7 @@ import { MatIconModule } from '@angular/material/icon';
                                [checked]="waterMode() === 'bottle'"
                                [disabled]="!userSettingsService.dailyGoals().isOverridden"
                                (change)="onWaterModeChange('bottle')" />
-                        My Water Bottle
+                        My Bottle Count
                       </label>
                       <input type="number" class="water-input" [ngModel]="waterBottles()"
                              (ngModelChange)="onWaterBottlesChange($event)"
@@ -924,6 +924,7 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   onWaterGlassesChange(value: number): void {
     if (!value || value <= 0) return;
     this.userSettingsService.updateDailyGoal('waterGlasses', value);
+    this.userSettingsService.updateDailyGoal('waterMode', 'glasses');
     this.settingsChanged.set(true);
   }
 
@@ -934,6 +935,7 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     const totalOz = value * bottleOz;
     const glasses = Math.round(totalOz / this.glassSizeOz());
     this.userSettingsService.updateDailyGoal('waterGlasses', glasses);
+    this.userSettingsService.updateDailyGoal('waterMode', 'bottle');
     this.settingsChanged.set(true);
   }
 
@@ -941,6 +943,7 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     if (!value || value <= 0) return;
     const oz = this.userSettingsService.useImperial() ? value : Math.round(value * 33.814); // liters to oz
     this.userSettingsService.updateDailyGoal('bottleSizeOz', oz);
+    this.userSettingsService.updateDailyGoal('waterMode', 'bottle');
     this.settingsChanged.set(true);
   }
 

@@ -23,7 +23,7 @@ export class TabService {
   /** Optional guard: returns true if leaving the current tab should be blocked */
   private _beforeLeaveGuard: (() => boolean) | null = null;
   /** Fires when a guarded tab switch is blocked; listeners show confirmation UI */
-  readonly blockedTabSwitch = signal<{ targetTabId: string } | null>(null);
+  readonly blockedTabSwitch = signal<{ targetTabId: string; sourceIndex: number } | null>(null);
 
   /** Register a guard that can block leaving the current tab */
   setBeforeLeaveGuard(guard: (() => boolean) | null): void {
@@ -33,7 +33,8 @@ export class TabService {
   /** Check guard and block if needed; returns true if blocked */
   private guardLeave(targetTabId: string): boolean {
     if (this._beforeLeaveGuard && this._beforeLeaveGuard()) {
-      this.blockedTabSwitch.set({ targetTabId });
+      const sourceIndex = this.activeTabIndexSignal();
+      this.blockedTabSwitch.set({ targetTabId, sourceIndex });
       return true;
     }
     return false;
@@ -48,14 +49,14 @@ export class TabService {
     }
   }
 
-  /** Cancel a blocked tab switch — restore the original tab */
+  /** Cancel a blocked tab switch — snap back to the original tab */
   cancelBlockedSwitch(): void {
-    const currentId = this.activeTabId();
+    const blocked = this.blockedTabSwitch();
     this.blockedTabSwitch.set(null);
-    // Re-focus the original tab since Material may have visually switched
-    if (currentId) {
-      const idx = this.tabsSignal().findIndex(t => t.id === currentId);
-      if (idx !== -1) this.activeTabIndexSignal.set(idx);
+    if (blocked) {
+      // Force Material tab group back to the original tab
+      this.activeTabIndexSignal.set(-1);
+      setTimeout(() => this.activeTabIndexSignal.set(blocked.sourceIndex));
     }
   }
 
