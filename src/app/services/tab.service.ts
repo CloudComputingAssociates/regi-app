@@ -32,6 +32,12 @@ export class TabService {
     this._beforeLeaveGuard = guard;
   }
 
+  /** Block a tab switch (called from mousedown before Material processes) */
+  blockSwitch(targetTabId: string): void {
+    const sourceIndex = this.activeTabIndexSignal();
+    this.blockedTabSwitch.set({ targetTabId, sourceIndex });
+  }
+
   /** Check guard and block if needed; returns true if blocked */
   private guardLeave(targetTabId: string): boolean {
     if (this._restoringTab) return false;
@@ -52,25 +58,9 @@ export class TabService {
     }
   }
 
-  /** Cancel a blocked tab switch — snap back to the original tab */
+  /** Cancel a blocked tab switch — stays on current tab */
   cancelBlockedSwitch(): void {
-    const blocked = this.blockedTabSwitch();
     this.blockedTabSwitch.set(null);
-    if (blocked) {
-      this._restoringTab = true;
-      // Force Material to see a change by toggling through a different index
-      this._pendingActiveIndex = blocked.sourceIndex;
-      this.activeTabIndexSignal.set(-1);
-      requestAnimationFrame(() => {
-        if (this._pendingActiveIndex !== null) {
-          this.activeTabIndexSignal.set(this._pendingActiveIndex);
-          requestAnimationFrame(() => {
-            this._pendingActiveIndex = null;
-            this._restoringTab = false;
-          });
-        }
-      });
-    }
   }
 
   /** Focus a tab by index */

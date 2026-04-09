@@ -57,7 +57,7 @@ import { IssuePanelComponent } from '../issue-panel/issue-panel';
           @for (tab of tabService.tabs(); track tab.id; let i = $index) {
             <mat-tab>
               <ng-template mat-tab-label>
-                <span class="tab-label-content">
+                <span class="tab-label-content" (mousedown)="onTabLabelClick($event, tab.id)">
                   @if (tab.icon) {
                     <img [src]="tab.icon" alt="" class="tab-icon" />
                   } @else if (tab.emoji) {
@@ -150,8 +150,19 @@ export class MainBodyComponent {
     return label.replace('RegiMenu', 'RegiMenu<sup class="sm">SM</sup>');
   }
 
+  onTabLabelClick(event: MouseEvent, tabId: string): void {
+    const currentId = this.tabService.activeTabId();
+    if (currentId === tabId) return; // clicking the active tab, no guard needed
+    if (this.preferencesService.hasDirtyGroups() && currentId === 'preferences') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.tabService.blockSwitch(tabId);
+    }
+  }
+
   onTabIndexChange(index: number): void {
     if (this.tabService.hasPendingFocus()) return;
+    if (this.tabService.blockedTabSwitch()) return; // guard already intercepted
 
     const tabs = this.tabService.tabs();
     if (tabs[index]) {
