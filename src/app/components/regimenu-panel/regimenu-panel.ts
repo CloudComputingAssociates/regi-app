@@ -35,6 +35,23 @@ import { Subscription } from 'rxjs';
   template: `
     <div class="panel-container">
       <!-- Header with plan name and actions -->
+      <!-- Filter row -->
+      <div class="filter-row">
+        <span class="filter-label">Filter</span>
+        <label class="header-filter" matTooltip="Show your meal plans" matTooltipPosition="below">
+          <input type="checkbox" [checked]="showUserMeals()" (change)="toggleUserMeals()" />
+          <span class="filter-text">UserMeals</span>
+        </label>
+        <label class="header-filter" matTooltip="Show Community plans" matTooltipPosition="below">
+          <input type="checkbox" [checked]="showCommunity()" (change)="toggleCommunity()" />
+          <span class="filter-text">Community</span>
+        </label>
+        <label class="header-filter" matTooltip="Show YEH Approved plans" matTooltipPosition="below">
+          <input type="checkbox" [checked]="showYeh()" (change)="toggleYeh()" />
+          <span class="filter-text">YEH Approved</span>
+        </label>
+      </div>
+
       <div class="plan-header" [class.stippled]="foodPickerOpen()">
         <div class="header-left">
           <span class="plan-label">Name</span>
@@ -112,21 +129,6 @@ import { Subscription } from 'rxjs';
             matTooltipPosition="above">
             <mat-icon>delete</mat-icon>
           </button>
-
-          <!-- Plan list filters -->
-          <span class="filter-label">Filter</span>
-          <label class="header-filter" matTooltip="Show your meal plans" matTooltipPosition="above">
-            <input type="checkbox" [checked]="showUserMeals()" (change)="toggleUserMeals()" />
-            <span class="filter-text">UserMeals</span>
-          </label>
-          <label class="header-filter" matTooltip="Show Community plans" matTooltipPosition="above">
-            <input type="checkbox" [checked]="showCommunity()" (change)="toggleCommunity()" />
-            <span class="filter-text">Community</span>
-          </label>
-          <label class="header-filter" matTooltip="Show YEH Approved plans" matTooltipPosition="above">
-            <input type="checkbox" [checked]="showYeh()" (change)="toggleYeh()" />
-            <span class="filter-text">YEH Approved</span>
-          </label>
 
         </div>
 
@@ -280,7 +282,7 @@ import { Subscription } from 'rxjs';
             <p class="placeholder-text">Intelligent meal planning powered by <img src="/images/AI-star.png" class="powered-by-icon" alt="" /> RegiMenu<sup class="sm">SM</sup></p>
             <ol class="placeholder-steps">
               <li>NAME dropdown, select <strong>Create RegiMenu<sup class="sm">SM</sup> Plan...</strong></li>
-              <li>RegiMenu<sup class="sm">SM</sup> looks at your Foods preferences, your Settings and generates a plan to fit your goals</li>
+              <li>RegiMenu AI evaluates your settings, food preferences and auto-generates a plan</li>
               <li>Name the plan, if you like or delete it and start over, or</li>
               <li>Use the plan as a base, and make modifications to it</li>
             </ol>

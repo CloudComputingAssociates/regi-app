@@ -17,6 +17,7 @@ import { SettingsService } from './services/settings.service';
 import { TabService } from './services/tab.service';
 import { ChatService } from './services/chat.service';
 import { NotificationService } from './services/notification.service';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { NutritionTipService } from './services/nutrition-tip.service';
 import { PlanningService } from './services/planning.service';
 
@@ -30,7 +31,8 @@ import { PlanningService } from './services/planning.service';
     MainBodyComponent,
     ChatInputComponent,
     PaywallComponent,
-    LoadingOverlayComponent
+    LoadingOverlayComponent,
+    MatTooltipModule
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -46,7 +48,8 @@ import { PlanningService } from './services/planning.service';
               <app-macros />
               @if (!tipDismissed() && tipService.tip(); as tip) {
                 <div class="nutrition-tip-bar">
-                  <img src="/images/bites-logo.png" alt="Bites" class="tip-bar-logo" />
+                  <img src="/images/bites-logo.png" alt="Bites" class="tip-bar-logo"
+                    matTooltip="News, Insights, AI Chats ~ your daily 'bites'" matTooltipPosition="below" />
                   @if (tip.imageUrl) {
                     <img [src]="tip.imageUrl" alt="" class="tip-bar-thumb" />
                   }
