@@ -331,30 +331,16 @@
   }
 }
 
-// Links + Image side-by-side layout
-.links-image-row {
-  display: flex;
-  align-items: flex-start;
-  background: #3a3a3a;
-  flex-shrink: 0;
-}
-
-.links-column {
-  flex: 1;
-  min-width: 0;
-}
-
-// Meal image section (right side)
-.meal-image-section {
-  display: flex;
-  padding: 4px 10px;
-  flex-shrink: 0;
+// Meal image floated right
+.meal-image-float {
+  float: right;
+  margin: 4px 10px 10px 14px;
 }
 
 .meal-image-box {
-  width: 270px;
-  height: 270px;
-  border: 2px dashed #555;
+  width: 300px;
+  height: 300px;
+  border: 3px solid #555;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -513,6 +499,7 @@
   padding: 3px 10px;
   background: #3a3a3a;
   flex-shrink: 0;
+  max-width: 50%;
 }
 
 .link-label {
