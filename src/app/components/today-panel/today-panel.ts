@@ -89,6 +89,30 @@ interface FoodPopup {
             <div class="report-title-row">
               <div class="nav-day-of-week">{{ dayOfWeek() }}</div>
               <div class="report-actions">
+                @if (waterTarget() > 0) {
+                  <div class="water-tracker">
+                    <span class="water-label">Water</span>
+                    @for (i of waterTargetArray(); track i) {
+                      <button class="water-icon-btn" (click)="onWaterClick(i)"
+                        [matTooltip]="waterMode() === 'bottle' ? 'Water bottle' : 'Water glass'"
+                        matTooltipPosition="above">
+                        @if (i < waterConsumedCount()) {
+                          @if (waterMode() === 'bottle') {
+                            <img src="/images/waterbottleiconblue.png" alt="full" class="water-icon" />
+                          } @else {
+                            <img src="/images/WaterGlassFull.png" alt="full" class="water-icon" />
+                          }
+                        } @else {
+                          @if (waterMode() === 'bottle') {
+                            <img src="/images/waterbottleicon.png" alt="empty" class="water-icon" />
+                          } @else {
+                            <img src="/images/WaterGlassEmpty.png" alt="empty" class="water-icon" />
+                          }
+                        }
+                      </button>
+                    }
+                  </div>
+                }
                 <button class="icon-btn print-btn"
                   [disabled]="!weekPlanId()"
                   (click)="openPrintDialog()"
@@ -278,6 +302,47 @@ export class TodayPanelComponent implements OnInit {
   isFinalized = signal(false);
 
   weekPlanId = signal<number | undefined>(undefined);
+
+  // Water tracking
+  waterMode = computed(() => this.prefs.dailyGoals().waterMode ?? 'glasses');
+  private waterServingOz = computed(() => {
+    if (this.waterMode() === 'bottle') {
+      return this.prefs.dailyGoals().bottleSizeOz ?? 32;
+    }
+    return this.prefs.useImperial() ? 16 : 16.907; // 16oz or 500ml
+  });
+  waterTarget = computed(() => {
+    const glasses = this.prefs.dailyGoals().waterGlasses;
+    if (glasses && glasses > 0) return glasses;
+    // Holliday-Segar fallback
+    const kg = this.prefs.personalInfo().targetWeightKg;
+    if (!kg) return 0;
+    let ml = 0;
+    if (kg <= 10) ml = kg * 100;
+    else if (kg <= 20) ml = 1000 + (kg - 10) * 50;
+    else ml = 1500 + (kg - 20) * 20;
+    const totalOz = ml / 29.5735;
+    if (this.waterMode() === 'bottle') {
+      const bottleOz = this.prefs.dailyGoals().bottleSizeOz ?? 32;
+      const raw = totalOz / bottleOz;
+      return raw % 1 > 0.5 ? Math.ceil(raw) : Math.floor(raw);
+    }
+    return Math.round(totalOz / this.waterServingOz());
+  });
+  waterConsumedCount = computed(() => {
+    const oz = this.todayService.today()?.waterOzConsumed ?? 0;
+    if (!oz || !this.waterServingOz()) return 0;
+    return Math.round(oz / this.waterServingOz());
+  });
+  waterTargetArray = computed(() => Array.from({ length: this.waterTarget() }, (_, i) => i));
+
+  async onWaterClick(index: number): Promise<void> {
+    const currentCount = this.waterConsumedCount();
+    // Toggle: if clicking the last filled one, unfill it; otherwise fill up to clicked
+    const newCount = (index + 1 === currentCount) ? index : index + 1;
+    const newOz = newCount * this.waterServingOz();
+    await this.todayService.updateWater(newOz);
+  }
 
   // Popups
   foodPopup = signal<FoodPopup | null>(null);

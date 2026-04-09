@@ -52,6 +52,7 @@ export interface TodayResponse {
   weekPlanId?: number;
   mealNames?: Record<number, string>;
   mealVideoLinks?: Record<number, string>;
+  waterOzConsumed?: number;
 }
 
 @Injectable({
@@ -159,6 +160,22 @@ export class TodayService {
       await firstValueFrom(
         this.http.patch(`${this.baseUrl}/today/meals/${mealSlot}/check`, { isChecked })
       );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async updateWater(ozConsumed: number): Promise<boolean> {
+    try {
+      await firstValueFrom(
+        this.http.patch(`${this.baseUrl}/today/water`, { ozConsumed })
+      );
+      // Update the local signal
+      const current = this.todaySignal();
+      if (current) {
+        this.todaySignal.set({ ...current, waterOzConsumed: ozConsumed });
+      }
       return true;
     } catch {
       return false;

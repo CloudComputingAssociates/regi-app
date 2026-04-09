@@ -348,8 +348,43 @@
 
 .report-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
 
+.water-tracker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 8px;
+}
+
+.water-label {
+  color: #4da6ff;
+  font-size: 14px;
+  font-weight: 600;
+  margin-right: 6px;
+  white-space: nowrap;
+}
+
+.water-icon-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    transform: scale(1.15);
+  }
+}
+
+.water-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .report-subtitle {
