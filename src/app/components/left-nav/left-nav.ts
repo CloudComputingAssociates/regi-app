@@ -105,7 +105,7 @@ export class LeftNavComponent {
   menuItems: MenuItem[] = [
     { label: 'Today', icon: '📋', tabId: 'today' },
     { label: 'Week', icon: '📅', tabId: 'review' },
-    { label: 'RegiMenu', iconImage: 'images/AI-star.png', tabId: 'meal-planning' },
+    { label: 'Meal Plans', iconImage: 'images/AI-star.png', tabId: 'meal-planning' },
     { label: 'Shopping', icon: '🛒', tabId: 'shop' },
     { label: 'Foods', iconImage: 'favicon.ico', tabId: 'foods' },
     { label: 'Chat', iconImage: 'images/AI-star.png', tabId: 'chat' }
