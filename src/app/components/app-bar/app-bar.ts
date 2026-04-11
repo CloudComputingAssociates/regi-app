@@ -27,7 +27,7 @@ import { map } from 'rxjs/operators';
           <div class="menu-button-placeholder"></div>
         }
 
-        <span class="app-title">{{ title$ | async }}</span>
+        <span class="app-title" [innerHTML]="title$ | async"></span>
 
         <app-profile-menu />
       </div>
@@ -46,7 +46,7 @@ export class AppBarComponent {
       if (!user?.name) return 'YEH Nutrition Planner';
       const firstName = user.name.split(' ')[0];
       const name = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-      return name ? `${name}'s Plan` : 'YEH Nutrition Planner';
+      return 'RegiMenu<sup class="sm">SM</sup>';
     })
   );
 

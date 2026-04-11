@@ -20,6 +20,7 @@ interface MealGroup {
   time: string;
   name: string;
   videoLink?: string;
+  recipeLink?: string;
   items: DailyLogItem[];
   totalCalories: number;
   totalProtein: number;
@@ -161,8 +162,14 @@ interface FoodPopup {
                 <span class="meal-title-line">{{ meal.time }} Meal {{ meal.slot }}@if (meal.name) { -<span class="meal-plan-name"> {{ meal.name }}</span>}</span>
                 @if (meal.videoLink) {
                   <button class="video-btn" (click)="openMealVideo(meal.videoLink)"
-                    matTooltip="YouTube video" matTooltipPosition="above">
+                    matTooltip="Prep Video" matTooltipPosition="above">
                     <svg class="yt-icon" viewBox="0 0 28 20"><rect rx="4" width="28" height="20" fill="#FF0000"/><polygon points="11,4 11,16 20,10" fill="#FFF"/></svg>
+                  </button>
+                }
+                @if (meal.recipeLink) {
+                  <button class="recipe-btn" (click)="openRecipe(meal.recipeLink)"
+                    matTooltip="Recipe" matTooltipPosition="above">
+                    <mat-icon class="recipe-icon">description</mat-icon>
                   </button>
                 }
               </div>
@@ -483,13 +490,13 @@ export class TodayPanelComponent implements OnInit {
       this.todayService.preloadWeek(resp.planStartDate);
     }
 
-    this.buildMealGroups(resp.items, resp.mealNames ?? {}, resp.mealVideoLinks ?? {});
+    this.buildMealGroups(resp.items, resp.mealNames ?? {}, resp.mealVideoLinks ?? {}, resp.mealRecipeLinks ?? {});
 
     const checked = new Set(resp.items.filter(i => i.isChecked).map(i => i.id));
     this.checkedItems.set(checked);
   }
 
-  private buildMealGroups(items: DailyLogItem[], mealNames: Record<number, string>, mealVideoLinks: Record<number, string>): void {
+  private buildMealGroups(items: DailyLogItem[], mealNames: Record<number, string>, mealVideoLinks: Record<number, string>, mealRecipeLinks: Record<number, string>): void {
     const slotMap = new Map<number, DailyLogItem[]>();
     for (const item of items) {
       const list = slotMap.get(item.mealSlot) || [];
@@ -524,6 +531,7 @@ export class TodayPanelComponent implements OnInit {
         time,
         name: mealNames[slot] || '',
         videoLink: mealVideoLinks[slot] || undefined,
+        recipeLink: mealRecipeLinks[slot] || undefined,
         items: slotItems,
         totalCalories: totalCal,
         totalProtein: totalPro,
@@ -644,6 +652,10 @@ export class TodayPanelComponent implements OnInit {
 
   openMealVideo(url: string): void {
     this.tabService.openVideoViewer(url);
+  }
+
+  openRecipe(url: string): void {
+    this.tabService.openRecipeViewer(url);
   }
 
   closePanel(): void {

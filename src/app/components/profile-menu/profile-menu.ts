@@ -21,6 +21,9 @@ import { RoleService } from '../../services/role.service';
       <!-- While Auth0 is loading, show nothing to avoid flicker -->
       <div class="auth-loading"></div>
     } @else if (auth.isAuthenticated$ | async) {
+      @if (auth.user$ | async; as u) {
+        <span class="profile-greeting" [matMenuTriggerFor]="menu">Hi {{ (u.name ?? '').split(' ')[0] }}!</span>
+      }
       <button class="profile-btn" [matMenuTriggerFor]="menu">
         <img [src]="defaultImage" alt="Profile" class="profile-img" />
       </button>

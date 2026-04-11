@@ -52,6 +52,7 @@ export interface TodayResponse {
   weekPlanId?: number;
   mealNames?: Record<number, string>;
   mealVideoLinks?: Record<number, string>;
+  mealRecipeLinks?: Record<number, string>;
   waterOzConsumed?: number;
 }
 

@@ -1,5 +1,17 @@
 // src/app/components/profile-menu/profile-menu.scss
 
+.profile-greeting {
+  color: #4da6ff;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-right: 4px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .profile-btn {
   background: none;
   border: none;
