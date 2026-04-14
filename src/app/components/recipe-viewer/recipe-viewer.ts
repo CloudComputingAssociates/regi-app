@@ -57,10 +57,26 @@ export class RecipeViewerComponent {
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   });
 
-  print(): void {
-    // Open the PDF in a new tab for printing (cross-origin iframe can't print directly)
+  async print(): Promise<void> {
     const url = this.recipeUrl();
-    if (url) {
+    if (!url) return;
+    try {
+      // Fetch PDF as blob, create same-origin URL, print from hidden iframe
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const printFrame = document.createElement('iframe');
+      printFrame.style.display = 'none';
+      printFrame.src = blobUrl;
+      document.body.appendChild(printFrame);
+      printFrame.onload = () => {
+        printFrame.contentWindow?.print();
+        setTimeout(() => {
+          document.body.removeChild(printFrame);
+          URL.revokeObjectURL(blobUrl);
+        }, 1000);
+      };
+    } catch {
       window.open(url, '_blank');
     }
   }
