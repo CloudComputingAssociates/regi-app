@@ -254,11 +254,9 @@ import { Subscription } from 'rxjs';
                 (ngModelChange)="onServingsChange($event)" />
             </span>
             <button
-              class="icon-btn add-food-btn"
-              [class.stippled]="foodPickerOpen()"
-              (click)="openFoodPicker()"
+              class="add-food-btn"
               [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()"
-              matTooltip="Add Food" matTooltipPosition="above">
+              (click)="openFoodPicker()">
               Add Food
             </button>
             <span class="per-serving-label">Per serving</span>

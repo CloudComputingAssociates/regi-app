@@ -85,12 +85,12 @@
 // filter-label and filter styles are inline in plan-header now
 
 .filter-label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 400;
   color: #4da6ff;
   text-transform: uppercase;
   white-space: nowrap;
-  margin-left: 8px;
+  margin-left: 16px;
   margin-left: 0;
   margin-right: 4px;
 }
@@ -404,7 +404,7 @@
   font-size: 12px;
   font-weight: 400;
   white-space: nowrap;
-  padding-right: 40px;
+  padding-right: 10px;
 }
 
 .totals-value-light {
@@ -420,22 +420,35 @@
   font-family: inherit;
   color: #ffffff;
   white-space: nowrap;
-  width: auto;
-  height: auto;
   padding: 2px 10px;
+  background: linear-gradient(180deg, #555 0%, #3a3a3a 100%);
+  border: 1px solid #666;
+  border-bottom: 2px solid #222;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(180deg, #606060 0%, #454545 100%);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
 }
 
 .serves-group {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: 4px;
 }
 
 .serves-label {
   font-size: 13px;
   font-weight: 600;
   color: #4da6ff;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
