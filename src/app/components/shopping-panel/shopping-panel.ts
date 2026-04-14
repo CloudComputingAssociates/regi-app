@@ -522,9 +522,33 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
   private aggregatePlanFoods(wp: WeekPlan): void {
     const map = new Map<number, PlanFoodItem>();
 
+    // Track how many times each meal (by mealId) is slotted this week
+    const mealSlotCounts = new Map<number, number>();
+    for (const day of wp.days || []) {
+      for (const dpm of day.meals || []) {
+        if (!dpm.meal) continue;
+        mealSlotCounts.set(dpm.mealId, (mealSlotCounts.get(dpm.mealId) ?? 0) + 1);
+      }
+    }
+
+    // Track which meals we've already added ingredients for (batch-aware)
+    const mealBatchesAdded = new Map<number, number>(); // mealId → batches already accounted for
+
     for (const day of wp.days || []) {
       for (const dpm of day.meals || []) {
         if (!dpm.meal?.items) continue;
+        const mealId = dpm.mealId;
+        const servings = dpm.meal.servings || 1;
+
+        // Calculate total batches needed for this meal across the week
+        const totalSlots = mealSlotCounts.get(mealId) ?? 1;
+        const batchesNeeded = Math.ceil(totalSlots / servings);
+        const alreadyAdded = mealBatchesAdded.get(mealId) ?? 0;
+
+        if (alreadyAdded >= batchesNeeded) continue; // already have enough batches
+        mealBatchesAdded.set(mealId, alreadyAdded + 1);
+
+        // Add one batch worth of ingredients (full recipe quantities)
         for (const item of dpm.meal.items) {
           const existing = map.get(item.foodId);
           if (existing) {

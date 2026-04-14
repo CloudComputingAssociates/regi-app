@@ -53,6 +53,7 @@ export interface TodayResponse {
   mealNames?: Record<number, string>;
   mealVideoLinks?: Record<number, string>;
   mealRecipeLinks?: Record<number, string>;
+  mealServings?: Record<number, number>;
   waterOzConsumed?: number;
 }
 

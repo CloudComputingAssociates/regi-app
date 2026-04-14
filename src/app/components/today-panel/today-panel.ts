@@ -21,6 +21,7 @@ interface MealGroup {
   name: string;
   videoLink?: string;
   recipeLink?: string;
+  servings: number;
   items: DailyLogItem[];
   totalCalories: number;
   totalProtein: number;
@@ -490,13 +491,13 @@ export class TodayPanelComponent implements OnInit {
       this.todayService.preloadWeek(resp.planStartDate);
     }
 
-    this.buildMealGroups(resp.items, resp.mealNames ?? {}, resp.mealVideoLinks ?? {}, resp.mealRecipeLinks ?? {});
+    this.buildMealGroups(resp.items, resp.mealNames ?? {}, resp.mealVideoLinks ?? {}, resp.mealRecipeLinks ?? {}, resp.mealServings ?? {});
 
     const checked = new Set(resp.items.filter(i => i.isChecked).map(i => i.id));
     this.checkedItems.set(checked);
   }
 
-  private buildMealGroups(items: DailyLogItem[], mealNames: Record<number, string>, mealVideoLinks: Record<number, string>, mealRecipeLinks: Record<number, string>): void {
+  private buildMealGroups(items: DailyLogItem[], mealNames: Record<number, string>, mealVideoLinks: Record<number, string>, mealRecipeLinks: Record<number, string>, mealServings: Record<number, number>): void {
     const slotMap = new Map<number, DailyLogItem[]>();
     for (const item of items) {
       const list = slotMap.get(item.mealSlot) || [];
@@ -526,17 +527,19 @@ export class TodayPanelComponent implements OnInit {
         totalCarbs += Math.round(item.carbG ?? 0);
       }
 
+      const servings = mealServings[slot] || 1;
       groups.push({
         slot,
         time,
         name: mealNames[slot] || '',
         videoLink: mealVideoLinks[slot] || undefined,
         recipeLink: mealRecipeLinks[slot] || undefined,
+        servings,
         items: slotItems,
-        totalCalories: totalCal,
-        totalProtein: totalPro,
-        totalFat: totalFat,
-        totalCarbs: totalCarbs,
+        totalCalories: Math.round(totalCal / servings),
+        totalProtein: Math.round(totalPro / servings),
+        totalFat: Math.round(totalFat / servings),
+        totalCarbs: Math.round(totalCarbs / servings),
         affirmed: slotItems.every(i => i.isChecked)
       });
     }
