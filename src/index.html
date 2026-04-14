@@ -20,7 +20,7 @@
       // Set on load
       setAppHeight();
 
-      // Update only on orientation change (not on resize which includes keyboard)
+      // Update only on an orientation change (not on resize which includes keyboard)
       
       window.addEventListener('orientationchange', function() {
         setTimeout(setAppHeight, 100);
