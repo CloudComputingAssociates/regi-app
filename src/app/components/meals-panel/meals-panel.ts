@@ -1,4 +1,4 @@
-// src/app/components/regimenu-panel/regimenu-panel.ts
+// src/app/components/meals-panel/meals-panel.ts
 import {
   Component,
   ChangeDetectionStrategy,
@@ -29,7 +29,7 @@ import { NutritionFacts } from '../../models/food.model';
 import { Subscription } from 'rxjs';
 
 @Component({
-  selector: 'app-regimenu-panel',
+  selector: 'app-meals-panel',
   imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, ChatOutputComponent, FoodPickerComponent, FoodAmountEditorComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -388,9 +388,9 @@ import { Subscription } from 'rxjs';
         (closed)="closeAmountEditor()" />
     </div>
   `,
-  styleUrls: ['./regimenu-panel.scss']
+  styleUrls: ['./meals-panel.scss']
 })
-export class RegimenuPanelComponent implements OnInit, OnDestroy {
+export class MealsPanelComponent implements OnInit, OnDestroy {
   private tabService = inject(TabService);
   chatService = inject(ChatService);
   planningService = inject(PlanningService);

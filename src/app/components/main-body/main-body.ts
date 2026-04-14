@@ -7,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { TabService } from '../../services/tab.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { ChatComponent } from '../chat/chat';
-import { RegimenuPanelComponent } from '../regimenu-panel/regimenu-panel';
+import { MealsPanelComponent } from '../meals-panel/meals-panel';
 import { ShoppingPanelComponent } from '../shopping-panel/shopping-panel';
 import { WeekPlanPanelComponent } from '../week-plan-panel/week-plan-panel';
 import { FoodsPanelComponent } from '../foods-panel/foods-panel';
@@ -28,7 +28,7 @@ import { IssuePanelComponent } from '../issue-panel/issue-panel';
     MatIconModule,
     MatButtonModule,
     ChatComponent,
-    RegimenuPanelComponent,
+    MealsPanelComponent,
     ShoppingPanelComponent,
     WeekPlanPanelComponent,
     FoodsPanelComponent,
@@ -78,7 +78,7 @@ import { IssuePanelComponent } from '../issue-panel/issue-panel';
                   } @else if (tab.id === 'chat') {
                     <app-chat />
                   } @else if (tab.id === 'meal-planning') {
-                    <app-regimenu-panel />
+                    <app-meals-panel />
                   } @else if (tab.id === 'foods') {
                     <app-foods-panel />
                   } @else if (tab.id === 'shop') {
