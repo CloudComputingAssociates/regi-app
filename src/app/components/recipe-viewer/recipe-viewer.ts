@@ -1,5 +1,5 @@
 // src/app/components/recipe-viewer/recipe-viewer.ts
-import { Component, ChangeDetectionStrategy, inject, computed, ViewChild, ElementRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -26,7 +26,6 @@ import { TabService } from '../../services/tab.service';
       <div class="recipe-frame-wrapper">
         @if (safeUrl()) {
           <iframe
-            #recipeFrame
             class="recipe-frame"
             [src]="safeUrl()">
           </iframe>
@@ -45,25 +44,24 @@ export class RecipeViewerComponent {
   private sanitizer = inject(DomSanitizer);
   private tabService = inject(TabService);
 
-  @ViewChild('recipeFrame') recipeFrame?: ElementRef<HTMLIFrameElement>;
-
   readonly recipeUrl = this.tabService.recipeViewerUrl;
 
   readonly safeUrl = computed<SafeResourceUrl | null>(() => {
     const url = this.recipeUrl();
     if (!url) return null;
+    if (url.toLowerCase().endsWith('.pdf')) {
+      return this.sanitizer.bypassSecurityTrustResourceUrl(
+        `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`
+      );
+    }
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   });
 
   print(): void {
-    const iframe = this.recipeFrame?.nativeElement;
-    if (iframe?.contentWindow) {
-      try {
-        iframe.contentWindow.print();
-      } catch {
-        // Cross-origin PDF — open in new window for printing
-        window.open(this.recipeUrl() ?? '', '_blank');
-      }
+    // Open the PDF in a new tab for printing (cross-origin iframe can't print directly)
+    const url = this.recipeUrl();
+    if (url) {
+      window.open(url, '_blank');
     }
   }
 
