@@ -141,9 +141,10 @@ export class MacrosComponent implements OnInit {
     const targetF = goals?.fat ?? 78;
     const targetC = goals?.carbs ?? 175;
 
-    const actualP = meal?.totalProteinG ?? 0;
-    const actualF = meal?.totalFatG ?? 0;
-    const actualC = meal?.totalCarbG ?? 0;
+    const servings = meal?.servings ?? 1;
+    const actualP = (meal?.totalProteinG ?? 0) / servings;
+    const actualF = (meal?.totalFatG ?? 0) / servings;
+    const actualC = (meal?.totalCarbG ?? 0) / servings;
 
     return {
       macros: [

@@ -332,10 +332,10 @@ import { Subscription } from 'rxjs';
                     <span class="item-quantity">{{ formatQuantity(item.quantity, item.unit) }} {{ displayUnit(item.unit) }}</span>
                   </div>
 
-                  <!-- Macros summary -->
+                  <!-- Macros summary (per serving) -->
                   <div class="item-macros">
                     @if (item.calories) {
-                      <span class="macro">{{ item.calories }} cal</span>
+                      <span class="macro">{{ Math.round(item.calories / servings()) }} cal</span>
                     }
                   </div>
 
@@ -481,11 +481,13 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
   showImageZoom = signal(false);
   shareCandidate = signal(false);
 
+  protected Math = Math;
+
   // Community approval lockdown
   isShareApproved = computed(() => this.planningService.currentPlan()?.shareApproved === true);
 
   // Per-serving display values
-  private servings = computed(() => this.planningService.currentPlan()?.servings ?? 1);
+  servings = computed(() => this.planningService.currentPlan()?.servings ?? 1);
   displayCalories = computed(() => Math.round((this.planningService.currentPlan()?.totalCalories ?? 0) / this.servings()));
   displayFiber = computed(() => ((this.planningService.currentPlan()?.totalFiberG ?? 0) / this.servings()).toFixed(0));
   displaySodium = computed(() => Math.round((this.planningService.currentPlan()?.totalSodiumMg ?? 0) / this.servings()));
