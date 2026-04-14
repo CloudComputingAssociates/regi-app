@@ -45,7 +45,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 2px 12px 4px;
+  padding: 8px 12px 4px;
   background: #3a3a3a;
   flex-shrink: 0;
   min-height: 36px;
@@ -66,13 +66,12 @@
 
   .plan-label {
     color: #4da6ff;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    min-width: 50px;
+    min-width: 55px;
     flex-shrink: 0;
-    padding-left: 10px;
   }
 
   .header-actions {
@@ -86,12 +85,12 @@
 // filter-label and filter styles are inline in plan-header now
 
 .filter-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #4da6ff;
   text-transform: uppercase;
   white-space: nowrap;
-  padding-left: 10px;
+  margin-left: 8px;
   margin-left: 0;
   margin-right: 4px;
 }
@@ -112,7 +111,8 @@
   }
 
   .filter-text {
-    font-size: 13px;
+    font-size: 12px;
+    font-weight: 400;
     color: rgba(255, 255, 255, 0.85);
     white-space: nowrap;
   }
@@ -415,12 +415,14 @@
 }
 
 .add-food-btn {
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 400;
   font-family: inherit;
   color: #ffffff;
   white-space: nowrap;
   width: auto;
-  padding: 2px 12px;
+  height: auto;
+  padding: 2px 10px;
 }
 
 .serves-group {
@@ -431,7 +433,7 @@
 }
 
 .serves-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #4da6ff;
   white-space: nowrap;
@@ -614,18 +616,18 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 10px;
+  padding: 3px 12px;
   background: #3a3a3a;
   flex-shrink: 0;
 }
 
 .link-label {
   color: #4da6ff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
   white-space: nowrap;
-  min-width: 50px;
+  min-width: 55px;
 }
 
 .link-input {
@@ -834,7 +836,7 @@
 .share-row {
   display: flex;
   align-items: center;
-  padding: 3px 10px 3px 64px;
+  padding: 3px 12px 3px 71px;
   background: #3a3a3a;
   flex-shrink: 0;
 }

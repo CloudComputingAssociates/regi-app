@@ -288,7 +288,8 @@ export class TabService {
   /** Open the recipe viewer tab with the given URL */
   openRecipeViewer(url: string): void {
     this.recipeViewerUrl.set(url);
-    this.openTab('recipe-viewer', 'Recipe');
+    const label = url.toLowerCase().endsWith('.pdf') ? 'Recipe(PDF)' : 'Recipe(Web)';
+    this.openTab('recipe-viewer', label);
   }
 
   /** Update the badge count shown on a tab label */
