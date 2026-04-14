@@ -31,20 +31,17 @@
   white-space: nowrap;
 }
 
-.recipe-url {
+.recipe-url-display {
   flex: 1;
-  color: #4da6ff;
+  color: rgba(255, 255, 255, 0.5);
   font-size: 11px;
-  text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
-
-  &:hover { text-decoration: underline; }
 }
 
-.close-btn {
+.toolbar-btn {
   display: flex;
   align-items: center;
   justify-content: center;

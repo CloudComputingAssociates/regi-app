@@ -183,8 +183,8 @@ import { Subscription } from 'rxjs';
                   <mat-icon>check</mat-icon>
                 </button>
                 @if (recipeLink()) {
-                  <button class="browser-btn" (click)="openRecipeInBrowser()" matTooltip="Open in browser" matTooltipPosition="above">
-                    <mat-icon class="browser-icon">language</mat-icon>
+                  <button class="browser-btn" (click)="openRecipeViewer()" matTooltip="View Recipe" matTooltipPosition="above">
+                    <mat-icon class="browser-icon">description</mat-icon>
                   </button>
                 }
               </div>

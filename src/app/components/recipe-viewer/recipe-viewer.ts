@@ -1,29 +1,34 @@
 // src/app/components/recipe-viewer/recipe-viewer.ts
-import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, computed, ViewChild, ElementRef } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { TabService } from '../../services/tab.service';
 
 @Component({
   selector: 'app-recipe-viewer',
-  imports: [MatIconModule],
+  imports: [MatIconModule, MatTooltipModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="recipe-viewer-container">
       <div class="recipe-toolbar">
         <span class="recipe-title">Recipe</span>
-        <a class="recipe-url" [href]="recipeUrl()" target="_blank" rel="noopener">{{ recipeUrl() }}</a>
-        <button class="close-btn" (click)="close()">
+        <span class="recipe-url-display">{{ recipeUrl() }}</span>
+        <button class="toolbar-btn" (click)="print()"
+          matTooltip="Print recipe" matTooltipPosition="below">
+          <mat-icon>print</mat-icon>
+        </button>
+        <button class="toolbar-btn" (click)="close()"
+          matTooltip="Close" matTooltipPosition="below">
           <mat-icon>close</mat-icon>
         </button>
       </div>
       <div class="recipe-frame-wrapper">
         @if (safeUrl()) {
           <iframe
+            #recipeFrame
             class="recipe-frame"
-            [src]="safeUrl()"
-            sandbox="allow-scripts allow-same-origin allow-popups"
-            referrerpolicy="no-referrer">
+            [src]="safeUrl()">
           </iframe>
         } @else {
           <div class="no-recipe">
@@ -40,6 +45,8 @@ export class RecipeViewerComponent {
   private sanitizer = inject(DomSanitizer);
   private tabService = inject(TabService);
 
+  @ViewChild('recipeFrame') recipeFrame?: ElementRef<HTMLIFrameElement>;
+
   readonly recipeUrl = this.tabService.recipeViewerUrl;
 
   readonly safeUrl = computed<SafeResourceUrl | null>(() => {
@@ -47,6 +54,18 @@ export class RecipeViewerComponent {
     if (!url) return null;
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   });
+
+  print(): void {
+    const iframe = this.recipeFrame?.nativeElement;
+    if (iframe?.contentWindow) {
+      try {
+        iframe.contentWindow.print();
+      } catch {
+        // Cross-origin PDF — open in new window for printing
+        window.open(this.recipeUrl() ?? '', '_blank');
+      }
+    }
+  }
 
   close(): void {
     this.tabService.closeTab('recipe-viewer');
