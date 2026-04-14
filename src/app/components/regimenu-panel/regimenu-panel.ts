@@ -256,6 +256,7 @@ import { Subscription } from 'rxjs';
             <span class="totals-value">{{ displayCalories() }} cal</span>
             <span class="totals-value">{{ displayFiber() }}g fiber</span>
             <span class="totals-value">{{ displaySodium() }}mg salt</span>
+            <span class="per-serving-label">Per serving</span>
           </div>
           <div class="items-heading-row">
             <span class="serves-group">
