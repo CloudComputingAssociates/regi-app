@@ -378,16 +378,27 @@
 .items-heading {
   display: flex;
   flex-direction: column;
-  padding: 4px 12px;
+  padding: 4px 12px 6px;
   background: #2a4a6a;
   flex-shrink: 0;
-  gap: 2px;
 }
 
 .items-heading-row {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.heading-totals-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.totals-pipe {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 12px;
 }
 
 .items-heading-label {
@@ -398,12 +409,10 @@
 }
 
 .per-serving-label {
-  margin-left: auto;
   color: #6db8ff;
   font-size: 12px;
   font-weight: 400;
   white-space: nowrap;
-  padding-right: 65px;
 }
 
 .totals-value-light {
@@ -417,19 +426,17 @@
   font-size: 12px;
   font-weight: 400;
   font-family: inherit;
-  color: #ffffff;
+  color: #ffffff !important;
   white-space: nowrap;
   padding: 4px 12px;
-  height: 32px;
+  height: 28px;
   background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
-  border-top: 1px solid #6a6a6a;
-  border-left: 1px solid #555;
-  border-right: 1px solid #555;
-  border-bottom: 2px solid #1a1a1a;
+  border: 1px solid #555;
   border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 
   &:hover:not(:disabled) {
     background: linear-gradient(180deg, #606060 0%, #454545 100%);

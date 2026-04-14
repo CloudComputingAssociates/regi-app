@@ -259,12 +259,13 @@ import { Subscription } from 'rxjs';
               (click)="openFoodPicker()">
               Add Food
             </button>
-          </div>
-          <div class="items-heading-row">
-            <span class="totals-value-light">{{ displayCalories() }} cal</span>
-            <span class="totals-value-light">{{ displayFiber() }}g fiber</span>
-            <span class="totals-value-light">{{ displaySodium() }}mg salt</span>
-            <span class="per-serving-label">Per serving</span>
+            <span class="heading-totals-right">
+              <span class="totals-value-light">{{ displayCalories() }} cal</span>
+              <span class="totals-value-light">{{ displayFiber() }}g fiber</span>
+              <span class="totals-value-light">{{ displaySodium() }}mg salt</span>
+              <span class="totals-pipe">|</span>
+              <span class="per-serving-label">Per serving</span>
+            </span>
           </div>
         </div>
       }
