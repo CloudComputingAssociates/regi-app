@@ -403,7 +403,7 @@
   font-size: 12px;
   font-weight: 400;
   white-space: nowrap;
-  padding-right: 10px;
+  padding-right: 65px;
 }
 
 .totals-value-light {
@@ -420,6 +420,7 @@
   color: #ffffff;
   white-space: nowrap;
   padding: 4px 12px;
+  height: 32px;
   background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
   border-top: 1px solid #6a6a6a;
   border-left: 1px solid #555;
@@ -427,6 +428,8 @@
   border-bottom: 2px solid #1a1a1a;
   border-radius: 4px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
 
   &:hover:not(:disabled) {
     background: linear-gradient(180deg, #606060 0%, #454545 100%);
