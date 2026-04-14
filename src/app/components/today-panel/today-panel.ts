@@ -83,7 +83,7 @@ interface FoodPopup {
           </div>
           <div class="no-plan-state">
             <p>No Plan scheduled for this day.</p>
-            <p class="no-plan-hint">Use RegiMenu℠ MealPlans to create meals and assign to a Week Plan.</p>
+            <p class="no-plan-hint">Use 'Meals' to create or review, then assign to day(s) in a 'Week'.</p>
           </div>
         } @else {
           <!-- Header -->

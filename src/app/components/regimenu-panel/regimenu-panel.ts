@@ -35,31 +35,6 @@ import { Subscription } from 'rxjs';
   template: `
     <div class="panel-container">
       <!-- Header with plan name and actions -->
-      <!-- Filter row -->
-      <div class="filter-row">
-        <span class="filter-label">Filter</span>
-        <label class="header-filter" matTooltip="Show your meal plans" matTooltipPosition="below">
-          <input type="checkbox" [checked]="showUserMeals()" (change)="toggleUserMeals()" />
-          <span class="filter-text">My Meals</span>
-        </label>
-        <label class="header-filter" matTooltip="Show Community plans" matTooltipPosition="below">
-          <input type="checkbox" [checked]="showCommunity()" (change)="toggleCommunity()" />
-          <span class="filter-text">Community</span>
-        </label>
-        <label class="header-filter" matTooltip="Show YEH Approved plans" matTooltipPosition="below">
-          <input type="checkbox" [checked]="showYeh()" (change)="toggleYeh()" />
-          <span class="filter-text">YEH Approved</span>
-        </label>
-        <span class="filter-spacer"></span>
-        <button
-          class="icon-btn close-btn"
-          (click)="closePanel()"
-          matTooltip="Close"
-          matTooltipPosition="below">
-          ✕
-        </button>
-      </div>
-
       <div class="plan-header" [class.stippled]="foodPickerOpen()">
         <div class="header-left">
           <span class="plan-label">Meal</span>
@@ -138,9 +113,30 @@ import { Subscription } from 'rxjs';
             <mat-icon>delete</mat-icon>
           </button>
 
+          <span class="filter-label">Filter</span>
+          <label class="header-filter" matTooltip="Show your meal plans" matTooltipPosition="below">
+            <input type="checkbox" [checked]="showUserMeals()" (change)="toggleUserMeals()" />
+            <span class="filter-text">My Meals</span>
+          </label>
+          <label class="header-filter" matTooltip="Show Community plans" matTooltipPosition="below">
+            <input type="checkbox" [checked]="showCommunity()" (change)="toggleCommunity()" />
+            <span class="filter-text">Community</span>
+          </label>
+          <label class="header-filter" matTooltip="Show YEH Approved plans" matTooltipPosition="below">
+            <input type="checkbox" [checked]="showYeh()" (change)="toggleYeh()" />
+            <span class="filter-text">YEH Approved</span>
+          </label>
+
         </div>
 
         <div class="header-actions">
+          <button
+            class="icon-btn close-btn"
+            (click)="closePanel()"
+            matTooltip="Close"
+            matTooltipPosition="above">
+            ✕
+          </button>
         </div>
       </div>
       <!-- powered-by row removed -->
@@ -219,7 +215,6 @@ import { Subscription } from 'rxjs';
                   @if (mealImagePreview() || planningService.currentPlan()?.mealImage) {
                     <img [src]="mealImagePreview() || planningService.currentPlan()?.mealImage" alt="" class="meal-box-img"
                       (click)="showImageZoom.set(true); $event.stopPropagation()" />
-                    <button type="button" class="remove-img-btn" (click)="clearMealImage(); $event.stopPropagation()">✕</button>
                   } @else {
                     <div class="drop-placeholder">
                       <button type="button" class="browse-btn" (click)="mealImageInput.click(); $event.stopPropagation()">Browse</button>
@@ -252,13 +247,6 @@ import { Subscription } from 'rxjs';
       @if (planningService.hasPlan()) {
         <div class="items-heading">
           <div class="items-heading-row">
-            <span class="items-heading-label">Meal Items</span>
-            <span class="totals-value">{{ displayCalories() }} cal</span>
-            <span class="totals-value">{{ displayFiber() }}g fiber</span>
-            <span class="totals-value">{{ displaySodium() }}mg salt</span>
-            <span class="per-serving-label">Per serving</span>
-          </div>
-          <div class="items-heading-row">
             <span class="serves-group">
               <span class="serves-label">Serves</span>
               <input type="number" class="serves-input" min="1"
@@ -266,12 +254,19 @@ import { Subscription } from 'rxjs';
                 (ngModelChange)="onServingsChange($event)" />
             </span>
             <button
-              class="add-food-text-btn"
+              class="icon-btn add-food-btn"
               [class.stippled]="foodPickerOpen()"
               (click)="openFoodPicker()"
-              [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()">
+              [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()"
+              matTooltip="Add Food" matTooltipPosition="above">
               Add Food
             </button>
+            <span class="per-serving-label">Per serving</span>
+          </div>
+          <div class="items-heading-row">
+            <span class="totals-value-light">{{ displayCalories() }} cal</span>
+            <span class="totals-value-light">{{ displayFiber() }}g fiber</span>
+            <span class="totals-value-light">{{ displaySodium() }}mg salt</span>
           </div>
         </div>
       }
