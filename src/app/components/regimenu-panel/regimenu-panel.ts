@@ -252,9 +252,15 @@ import { Subscription } from 'rxjs';
       @if (planningService.hasPlan()) {
         <div class="items-heading">
           <span class="items-heading-label">Meal Items</span>
-          <span class="totals-value">{{ planningService.currentPlan()?.totalCalories ?? 0 }} cal</span>
-          <span class="totals-value">{{ planningService.currentPlan()?.totalFiberG?.toFixed(0) ?? 0 }}g fiber</span>
-          <span class="totals-value">{{ planningService.currentPlan()?.totalSodiumMg?.toFixed(0) ?? 0 }}mg salt</span>
+          <span class="totals-value">{{ displayCalories() }} cal</span>
+          <span class="totals-value">{{ displayFiber() }}g fiber</span>
+          <span class="totals-value">{{ displaySodium() }}mg salt</span>
+          <span class="serves-group">
+            <span class="serves-label">Serves</span>
+            <input type="number" class="serves-input" min="1"
+              [ngModel]="planningService.currentPlan()?.servings ?? 1"
+              (ngModelChange)="onServingsChange($event)" />
+          </span>
           <button
             class="icon-btn add-food-btn"
             [class.stippled]="foodPickerOpen()"
@@ -477,6 +483,12 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
 
   // Community approval lockdown
   isShareApproved = computed(() => this.planningService.currentPlan()?.shareApproved === true);
+
+  // Per-serving display values
+  private servings = computed(() => this.planningService.currentPlan()?.servings ?? 1);
+  displayCalories = computed(() => Math.round((this.planningService.currentPlan()?.totalCalories ?? 0) / this.servings()));
+  displayFiber = computed(() => ((this.planningService.currentPlan()?.totalFiberG ?? 0) / this.servings()).toFixed(0));
+  displaySodium = computed(() => Math.round((this.planningService.currentPlan()?.totalSodiumMg ?? 0) / this.servings()));
 
   // Splitter state
   topPaneHeight = signal(200);
@@ -893,6 +905,14 @@ export class RegimenuPanelComponent implements OnInit, OnDestroy {
       // Keep preview showing the uploaded image
     } catch {
       this.notificationService.show('Failed to upload meal image', 'error');
+    }
+  }
+
+  onServingsChange(value: number): void {
+    if (!value || value < 1) return;
+    const plan = this.planningService.currentPlan();
+    if (plan) {
+      this.planningService.updateMeal(plan.id, { servings: value });
     }
   }
 

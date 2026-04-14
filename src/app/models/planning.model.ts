@@ -42,6 +42,7 @@ export interface Meal {
   recipeLink?: string;
   mealImage?: string;
   mealImageThumbnail?: string;
+  servings: number;
   shareCandidate?: boolean;
   shareApproved?: boolean;
   items: MealItem[];
@@ -62,6 +63,7 @@ export interface UpdateMealRequest {
   recipeLink?: string;
   mealImage?: string;
   mealImageThumbnail?: string;
+  servings?: number;
   shareCandidate?: boolean;
   items?: MealItem[];
 }
@@ -83,6 +85,7 @@ export interface MealSummary {
   totalFiberG?: number;
   totalSodiumMg?: number;
   mealImageThumbnail?: string;
+  servings: number;
   shareCandidate?: boolean;
   shareApproved?: boolean;
   createdAt: string;

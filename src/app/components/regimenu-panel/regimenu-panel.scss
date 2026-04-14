@@ -397,6 +397,38 @@
   margin-right: 8px;
 }
 
+.serves-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.serves-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4da6ff;
+  white-space: nowrap;
+}
+
+.serves-input {
+  width: 36px;
+  padding: 2px 4px;
+  font-size: 12px;
+  font-family: inherit;
+  color: #ffffff;
+  background: #1a3a5a;
+  border: 1px solid #4da6ff;
+  border-radius: 3px;
+  text-align: center;
+  outline: none;
+
+  &:focus { border-color: #6dc0ff; }
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  -moz-appearance: textfield;
+}
+
 .meal-image-box {
   width: auto;
   height: 100%;
