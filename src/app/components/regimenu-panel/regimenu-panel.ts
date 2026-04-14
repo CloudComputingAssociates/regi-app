@@ -40,7 +40,7 @@ import { Subscription } from 'rxjs';
         <span class="filter-label">Filter</span>
         <label class="header-filter" matTooltip="Show your meal plans" matTooltipPosition="below">
           <input type="checkbox" [checked]="showUserMeals()" (change)="toggleUserMeals()" />
-          <span class="filter-text">UserMeals</span>
+          <span class="filter-text">My Meals</span>
         </label>
         <label class="header-filter" matTooltip="Show Community plans" matTooltipPosition="below">
           <input type="checkbox" [checked]="showCommunity()" (change)="toggleCommunity()" />
@@ -163,11 +163,11 @@ import { Subscription } from 'rxjs';
                   matTooltip="Save video link" matTooltipPosition="above">
                   <mat-icon>check</mat-icon>
                 </button>
-                @if (prepVideoLink()) {
-                  <button class="video-btn" (click)="testPrepVideo()" matTooltip="Open in YouTube viewer" matTooltipPosition="above">
-                    <svg class="yt-icon" viewBox="0 0 28 20"><rect rx="4" width="28" height="20" fill="#FF0000"/><polygon points="11,4 11,16 20,10" fill="#FFF"/></svg>
-                  </button>
-                }
+                <button class="video-btn" [class.stippled]="!prepVideoLink()"
+                  [disabled]="!prepVideoLink()"
+                  (click)="testPrepVideo()" matTooltip="Prep Video" matTooltipPosition="above">
+                  <svg class="yt-icon" viewBox="0 0 28 20"><rect rx="4" width="28" height="20" fill="#FF0000"/><polygon points="11,4 11,16 20,10" fill="#FFF"/></svg>
+                </button>
               </div>
               <div class="link-row">
                 <label class="link-label">Recipe</label>
@@ -182,11 +182,11 @@ import { Subscription } from 'rxjs';
                   matTooltip="Save recipe link" matTooltipPosition="above">
                   <mat-icon>check</mat-icon>
                 </button>
-                @if (recipeLink()) {
-                  <button class="browser-btn" (click)="openRecipeViewer()" matTooltip="View Recipe" matTooltipPosition="above">
-                    <mat-icon class="browser-icon">description</mat-icon>
-                  </button>
-                }
+                <button class="browser-btn" [class.stippled]="!recipeLink()"
+                  [disabled]="!recipeLink()"
+                  (click)="openRecipeViewer()" matTooltip="View Recipe" matTooltipPosition="above">
+                  <mat-icon class="browser-icon">visibility</mat-icon>
+                </button>
               </div>
               <div class="share-row">
                 @if (isShareApproved()) {
@@ -251,25 +251,27 @@ import { Subscription } from 'rxjs';
       <!-- Bottom pane: heading + totals + food list -->
       @if (planningService.hasPlan()) {
         <div class="items-heading">
-          <span class="items-heading-label">Meal Items</span>
-          <span class="totals-value">{{ displayCalories() }} cal</span>
-          <span class="totals-value">{{ displayFiber() }}g fiber</span>
-          <span class="totals-value">{{ displaySodium() }}mg salt</span>
-          <span class="serves-group">
-            <span class="serves-label">Serves</span>
-            <input type="number" class="serves-input" min="1"
-              [ngModel]="planningService.currentPlan()?.servings ?? 1"
-              (ngModelChange)="onServingsChange($event)" />
-          </span>
-          <button
-            class="icon-btn add-food-btn"
-            [class.stippled]="foodPickerOpen()"
-            (click)="openFoodPicker()"
-            [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()"
-            matTooltip="Add Food"
-            matTooltipPosition="above">
-            <mat-icon>add</mat-icon>
-          </button>
+          <div class="items-heading-row">
+            <span class="items-heading-label">Meal Items</span>
+            <span class="totals-value">{{ displayCalories() }} cal</span>
+            <span class="totals-value">{{ displayFiber() }}g fiber</span>
+            <span class="totals-value">{{ displaySodium() }}mg salt</span>
+          </div>
+          <div class="items-heading-row">
+            <span class="serves-group">
+              <span class="serves-label">Serves</span>
+              <input type="number" class="serves-input" min="1"
+                [ngModel]="planningService.currentPlan()?.servings ?? 1"
+                (ngModelChange)="onServingsChange($event)" />
+            </span>
+            <button
+              class="add-food-text-btn"
+              [class.stippled]="foodPickerOpen()"
+              (click)="openFoodPicker()"
+              [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()">
+              Add Food
+            </button>
+          </div>
         </div>
       }
 
