@@ -231,7 +231,7 @@ export interface FoodNotFoundEvent {
                   [style.transform-origin]="imageZoomOrigin()" />
                 @if (nfPopupFood()!.productPurchaseLink) {
                   <div class="nf-popup-link-badge">
-                    <mat-icon>open_in_new</mat-icon> click to view
+                    <mat-icon>open_in_new</mat-icon> purchase link below
                   </div>
                 }
               </div>
