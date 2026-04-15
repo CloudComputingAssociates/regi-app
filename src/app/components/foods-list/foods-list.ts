@@ -229,13 +229,16 @@ export interface FoodNotFoundEvent {
               <span class="nf-popup-title">{{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}</span>
             </div>
             @if (nfPopupFood()!.foodImage) {
-              <div class="nf-popup-image"
+              <div class="nf-popup-image" [style.height.px]="nfImageHeight()"
                 (mouseenter)="onImageZoomEnter()"
                 (mouseleave)="onImageZoomLeave()"
                 (mousemove)="onImageZoomMove($event)">
                 <img [src]="nfPopupFood()!.foodImage" [alt]="nfPopupFood()!.description"
                   [class.zoomed]="imageZoomed()"
                   [style.transform-origin]="imageZoomOrigin()" />
+              </div>
+              <div class="nf-popup-splitter" (mousedown)="onSplitterMouseDown($event)" (touchstart)="onSplitterTouchStart($event)">
+                <div class="splitter-grip"></div>
               </div>
             }
             <yeh-nutrition-label [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null" [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
@@ -318,6 +321,9 @@ export class FoodsListComponent implements OnInit {
   nfPopupFood = signal<Food | null>(null);
   imageZoomed = signal(false);
   imageZoomOrigin = signal('center center');
+  nfImageHeight = signal(200);
+  private splitterStartY = 0;
+  private splitterStartHeight = 0;
   private longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
   private linkClickTimer: ReturnType<typeof setTimeout> | null = null;
@@ -366,6 +372,7 @@ export class FoodsListComponent implements OnInit {
 
   showNfPopup(food: Food): void {
     this.imageZoomed.set(false);
+    this.nfImageHeight.set(200);
     this.nfPopupFood.set(food);
   }
 
@@ -386,6 +393,40 @@ export class FoodsListComponent implements OnInit {
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
     this.imageZoomOrigin.set(`${x}% ${y}%`);
+  }
+
+  onSplitterMouseDown(event: MouseEvent): void {
+    event.preventDefault();
+    this.splitterStartY = event.clientY;
+    this.splitterStartHeight = this.nfImageHeight();
+
+    const onMove = (e: MouseEvent) => {
+      const delta = e.clientY - this.splitterStartY;
+      this.nfImageHeight.set(Math.max(40, this.splitterStartHeight + delta));
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  onSplitterTouchStart(event: TouchEvent): void {
+    const touch = event.touches[0];
+    this.splitterStartY = touch.clientY;
+    this.splitterStartHeight = this.nfImageHeight();
+
+    const onMove = (e: TouchEvent) => {
+      const delta = e.touches[0].clientY - this.splitterStartY;
+      this.nfImageHeight.set(Math.max(40, this.splitterStartHeight + delta));
+    };
+    const onEnd = () => {
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+    };
+    document.addEventListener('touchmove', onMove);
+    document.addEventListener('touchend', onEnd);
   }
 
   onFoodLongPressStart(event: TouchEvent, food: Food): void {

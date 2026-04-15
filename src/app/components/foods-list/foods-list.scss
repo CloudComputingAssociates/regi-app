@@ -702,15 +702,14 @@
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
   position: relative;
-  max-height: 90vh;
+  max-height: 70vh;
 }
 
 .nf-popup-image {
   width: 280px;
-  height: 280px;
   overflow: hidden;
   border-radius: 4px;
-  margin-bottom: 8px;
+  margin-bottom: 0;
   cursor: zoom-in;
   background: #ffffff;
 
@@ -727,6 +726,28 @@
   }
 }
 
+.nf-popup-splitter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 12px;
+  cursor: ns-resize;
+  user-select: none;
+  flex-shrink: 0;
+
+  .splitter-grip {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: #555;
+    transition: background 0.15s ease;
+  }
+
+  &:hover .splitter-grip {
+    background: #999;
+  }
+}
+
 .nf-popup-header {
   display: flex;
   justify-content: space-between;
@@ -736,8 +757,8 @@
 
 .nf-popup-title {
   color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 400;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
