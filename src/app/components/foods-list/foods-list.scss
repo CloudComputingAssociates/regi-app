@@ -698,6 +698,8 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   overflow-y: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
   position: relative;
   max-height: 90vh;
 }
