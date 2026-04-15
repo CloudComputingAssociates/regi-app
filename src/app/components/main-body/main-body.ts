@@ -91,7 +91,7 @@ import { IssuePanelComponent } from '../issue-panel/issue-panel';
                     <app-account-panel />
                   } @else if (tab.id === 'video-viewer') {
                     <app-video-viewer />
-                  } @else if (tab.id === 'recipe-viewer') {
+                  } @else if (tab.id === 'web-viewer') {
                     <app-recipe-viewer />
                   } @else if (tab.id === 'issue') {
                     <app-issue-panel />

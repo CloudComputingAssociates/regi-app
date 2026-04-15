@@ -658,7 +658,7 @@ export class TodayPanelComponent implements OnInit {
   }
 
   openRecipe(url: string): void {
-    this.tabService.openRecipeViewer(url);
+    this.tabService.openWebViewer(url);
   }
 
   closePanel(): void {

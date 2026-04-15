@@ -706,6 +706,7 @@
 }
 
 .nf-popup-image {
+  position: relative;
   width: 280px;
   overflow: hidden;
   border-radius: 4px;
@@ -764,6 +765,37 @@
   white-space: nowrap;
   flex: 1;
   margin-right: 8px;
+}
+
+.nf-popup-title-link {
+  color: #4da6ff;
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.nf-popup-link-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #4da6ff;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
 }
 
 .nf-popup-close {

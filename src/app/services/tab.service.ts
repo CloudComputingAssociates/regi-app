@@ -95,13 +95,13 @@ export class TabService {
   // Define menu order - this determines tab insertion order
   // Left nav: today, review (Week Plans), meal-planning, shop (Shopping List), foods (Food Preferences), chat
   // Right nav (profile menu): account, preferences (Settings), help
-  private menuOrder = ['today', 'review', 'meal-planning', 'shop', 'foods', 'chat', 'video-viewer', 'recipe-viewer', 'issue', 'preferences', 'account', 'help'];
+  private menuOrder = ['today', 'review', 'meal-planning', 'shop', 'foods', 'chat', 'video-viewer', 'web-viewer', 'issue', 'preferences', 'account', 'help'];
 
   /** URL for the video-viewer tab (set before opening the tab) */
   videoViewerUrl: WritableSignal<string> = signal('');
 
-  /** URL for the recipe-viewer tab (set before opening the tab) */
-  recipeViewerUrl: WritableSignal<string> = signal('');
+  /** URL for the web-viewer tab (set before opening the tab) */
+  webViewerUrl: WritableSignal<string> = signal('');
 
   // Tabs that get an image icon
   private tabIcons: Record<string, string> = {
@@ -285,11 +285,11 @@ export class TabService {
     this.openTab('video-viewer', 'YouTube');
   }
 
-  /** Open the recipe viewer tab with the given URL */
-  openRecipeViewer(url: string): void {
-    this.recipeViewerUrl.set(url);
-    const label = url.toLowerCase().endsWith('.pdf') ? 'Recipe(PDF)' : 'Recipe(Web)';
-    this.openTab('recipe-viewer', label);
+  /** Open the web viewer tab with the given URL and optional label */
+  openWebViewer(url: string, label?: string): void {
+    this.webViewerUrl.set(url);
+    const tabLabel = label ?? (url.toLowerCase().endsWith('.pdf') ? 'Web(PDF)' : 'Web');
+    this.openTab('web-viewer', tabLabel);
   }
 
   /** Update the badge count shown on a tab label */

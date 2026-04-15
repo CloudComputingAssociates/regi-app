@@ -149,7 +149,7 @@ export interface FoodNotFoundEvent {
                       [class.selected]="selectedIndex() === item.flatIndex"
                       (click)="selectFood(item.flatIndex)"
                       (dblclick)="onFoodDblClick(item.food)"
-                      [matTooltip]="showPreferenceIcons() ? 'Double-click (Web) or press-and-hold (Mobile) on list item for Nutrition Facts. Click on underlined link to find food.' : ''"
+                      [matTooltip]="showPreferenceIcons() ? 'Double-click food for Nutrition Facts, Zoom image and product links.' : ''"
                       #foodTooltip="matTooltip"
                       [matTooltipShowDelay]="2000"
                       matTooltipPosition="above"
@@ -168,11 +168,7 @@ export interface FoodNotFoundEvent {
                           <div class="thumbnail-placeholder"></div>
                         }
                       </div>
-                      @if (item.food.productPurchaseLink) {
-                        <span class="food-description food-link" (click)="onFoodLinkClick($event, item.food)">{{ getDisplayDescription(item.food) }}</span>
-                      } @else {
-                        <span class="food-description">{{ getDisplayDescription(item.food) }}</span>
-                      }
+                      <span class="food-description">{{ getDisplayDescription(item.food) }}</span>
                       @if (!item.food.dataSource?.startsWith('USDA') && item.food.userId) {
                         <span class="food-badge my-food-badge">My Food</span>
                       }
@@ -225,9 +221,6 @@ export interface FoodNotFoundEvent {
         <div class="nf-popup-overlay" (click)="closeNfPopup()">
           <div class="nf-popup" (click)="$event.stopPropagation()">
             <button class="nf-popup-close" (click)="closeNfPopup()">✕</button>
-            <div class="nf-popup-header">
-              <span class="nf-popup-title">{{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}</span>
-            </div>
             @if (nfPopupFood()!.foodImage) {
               <div class="nf-popup-image" [style.height.px]="nfImageHeight()"
                 (mouseenter)="onImageZoomEnter()"
@@ -236,7 +229,21 @@ export interface FoodNotFoundEvent {
                 <img [src]="nfPopupFood()!.foodImage" [alt]="nfPopupFood()!.description"
                   [class.zoomed]="imageZoomed()"
                   [style.transform-origin]="imageZoomOrigin()" />
+                @if (nfPopupFood()!.productPurchaseLink) {
+                  <div class="nf-popup-link-badge">
+                    <mat-icon>open_in_new</mat-icon> click to view
+                  </div>
+                }
               </div>
+            }
+            <div class="nf-popup-header">
+              @if (nfPopupFood()!.productPurchaseLink) {
+                <a class="nf-popup-title nf-popup-title-link" (click)="openProductLink(nfPopupFood()!)">{{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}</a>
+              } @else {
+                <span class="nf-popup-title">{{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}</span>
+              }
+            </div>
+            @if (nfPopupFood()!.foodImage) {
               <div class="nf-popup-splitter" (mousedown)="onSplitterMouseDown($event)" (touchstart)="onSplitterTouchStart($event)">
                 <div class="splitter-grip"></div>
               </div>
@@ -378,6 +385,14 @@ export class FoodsListComponent implements OnInit {
 
   closeNfPopup(): void {
     this.nfPopupFood.set(null);
+  }
+
+  openProductLink(food: Food): void {
+    const url = food.productPurchaseLink;
+    if (url) {
+      this.closeNfPopup();
+      this.tabService.openWebViewer(url, food.shortDescription || 'Product');
+    }
   }
 
   onImageZoomEnter(): void {

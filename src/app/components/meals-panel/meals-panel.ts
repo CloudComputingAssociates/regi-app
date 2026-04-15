@@ -180,7 +180,7 @@ import { Subscription } from 'rxjs';
                 </button>
                 <button class="browser-btn" [class.stippled]="!recipeLink()"
                   [disabled]="!recipeLink()"
-                  (click)="openRecipeViewer()" matTooltip="View Recipe" matTooltipPosition="above">
+                  (click)="openWebViewer()" matTooltip="View Recipe" matTooltipPosition="above">
                   <mat-icon class="browser-icon">visibility</mat-icon>
                 </button>
               </div>
@@ -826,9 +826,9 @@ export class MealsPanelComponent implements OnInit, OnDestroy {
     });
   }
 
-  openRecipeViewer(): void {
+  openWebViewer(): void {
     const url = this.recipeLink();
-    if (url) this.tabService.openRecipeViewer(url);
+    if (url) this.tabService.openWebViewer(url);
   }
 
   openRecipeInBrowser(): void {

@@ -12,8 +12,12 @@ import { TabService } from '../../services/tab.service';
   template: `
     <div class="recipe-viewer-container">
       <div class="recipe-toolbar">
-        <span class="recipe-title">Recipe</span>
-        <span class="recipe-url-display">{{ recipeUrl() }}</span>
+        <span class="recipe-title">Web Viewer</span>
+        <input class="recipe-url-display" [value]="recipeUrl()" readonly />
+        <button class="toolbar-btn" (click)="copyUrl()"
+          matTooltip="Copy URL" matTooltipPosition="below">
+          <mat-icon>content_copy</mat-icon>
+        </button>
         <button class="toolbar-btn" (click)="print()"
           matTooltip="Print recipe" matTooltipPosition="below">
           <mat-icon>print</mat-icon>
@@ -44,7 +48,7 @@ export class RecipeViewerComponent {
   private sanitizer = inject(DomSanitizer);
   private tabService = inject(TabService);
 
-  readonly recipeUrl = this.tabService.recipeViewerUrl;
+  readonly recipeUrl = this.tabService.webViewerUrl;
 
   readonly safeUrl = computed<SafeResourceUrl | null>(() => {
     const url = this.recipeUrl();
@@ -81,7 +85,12 @@ export class RecipeViewerComponent {
     }
   }
 
+  copyUrl(): void {
+    const url = this.recipeUrl();
+    if (url) navigator.clipboard.writeText(url);
+  }
+
   close(): void {
-    this.tabService.closeTab('recipe-viewer');
+    this.tabService.closeTab('web-viewer');
   }
 }
