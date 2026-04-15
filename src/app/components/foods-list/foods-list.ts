@@ -131,7 +131,7 @@ export interface FoodNotFoundEvent {
           } @else {
             @if (showPreferenceIcons()) {
               <div class="preference-column-header">
-                <span matTooltip="Star adds to MyFoods, Block adds to Restricted" matTooltipPosition="below">{{ (activeFilter() === 'my-favorites' || activeFilter() === 'my-restricted') ? 'Remove' : 'Add MyFood / Restrict' }}</span>
+                <span matTooltip="Favorite to add to MyFoods. Restrict means you don't/can't consume" matTooltipPosition="below">{{ (activeFilter() === 'my-favorites' || activeFilter() === 'my-restricted') ? 'Remove' : 'Favorite / Restrict' }}</span>
               </div>
             }
             @for (group of groupedFoods(); track group.category) {
@@ -228,6 +228,11 @@ export interface FoodNotFoundEvent {
               <span class="nf-popup-title">{{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}</span>
               <button class="nf-popup-close" (click)="closeNfPopup()">✕</button>
             </div>
+            @if (nfPopupFood()!.foodImage) {
+              <div class="nf-popup-image">
+                <img [src]="nfPopupFood()!.foodImage" [alt]="nfPopupFood()!.description" />
+              </div>
+            }
             <yeh-nutrition-label [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null" />
           </div>
         </div>
