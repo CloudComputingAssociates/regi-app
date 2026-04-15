@@ -257,7 +257,7 @@ import { Subscription } from 'rxjs';
               class="add-food-btn"
               [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()"
               (click)="openFoodPicker()">
-              Add Food
+              <span class="add-food-plus">+</span> Add Food
             </button>
             <span class="heading-totals-right">
               <span class="totals-value-light">{{ displayCalories() }} cal</span>

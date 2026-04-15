@@ -16,6 +16,7 @@ import { PreferencesService } from '../../services/preferences.service';
 import { Food } from '../../models/food.model';
 import { UserFood } from '../../models/user-food.model';
 import { HttpErrorResponse } from '@angular/common/http';
+import { forkJoin } from 'rxjs';
 
 export type FoodFilterType = 'yeh-approved' | 'my-favorites' | 'my-restricted' | 'community' | 'clear';
 
@@ -401,6 +402,7 @@ export class FoodsListComponent implements OnInit {
   // Caches
   private yehApprovedCache = signal<Food[]>([]);
   private favoritesCache = signal<Food[]>([]);
+  private combinedCache = signal<Food[]>([]);
   private restrictedCache = signal<Food[]>([]);
   private communityCache = signal<Food[]>([]);
 
@@ -433,10 +435,12 @@ export class FoodsListComponent implements OnInit {
 
     this.activeFilters.set(new Set([filter]));
     this.activeFilter.set(filter as FoodFilterType);
-    this.isYehApproved.set(filter === 'yeh-approved');
+    this.isYehApproved.set(filter === 'yeh-approved' || source === 'yeh_plus_myfoods');
 
     if (this.mode() === 'search') {
-      if (filter === 'yeh-approved') {
+      if (source === 'yeh_plus_myfoods') {
+        this.loadYehPlusMyFoods();
+      } else if (filter === 'yeh-approved') {
         this.loadYehApprovedFoods();
       } else {
         this.loadFavorites();
@@ -451,18 +455,21 @@ export class FoodsListComponent implements OnInit {
       const initialFilter = source === 'myfoods' ? 'my-favorites' : 'yeh-approved';
       this.activeFilters.set(new Set([initialFilter]));
       this.activeFilter.set(initialFilter as FoodFilterType);
-      this.isYehApproved.set(initialFilter === 'yeh-approved');
+      this.isYehApproved.set(initialFilter === 'yeh-approved' || source === 'yeh_plus_myfoods');
     } else {
       // Plan tab — use preference setting, no checkbox
       const source = this.prefsService.foodListSource();
       const filter = source === 'myfoods' ? 'my-favorites' : 'yeh-approved';
       this.activeFilter.set(filter as FoodFilterType);
-      this.isYehApproved.set(filter === 'yeh-approved');
+      this.isYehApproved.set(filter === 'yeh-approved' || source === 'yeh_plus_myfoods');
     }
 
     if (this.mode() === 'search') {
+      const source = this.prefsService.foodListSource();
       // Always load the initial list based on active filter
-      if (this.isYehApproved()) {
+      if (source === 'yeh_plus_myfoods') {
+        this.loadYehPlusMyFoods();
+      } else if (this.isYehApproved()) {
         this.loadYehApprovedFoods();
       } else {
         this.loadFavorites();
@@ -539,6 +546,38 @@ export class FoodsListComponent implements OnInit {
         console.error('Failed to load favorites:', error);
         this.isLoading.set(false);
         this.notificationService.show('Failed to load favorites', 'error');
+      }
+    });
+  }
+
+  /** Load YEH approved + user's favorites merged, deduped by food ID */
+  private loadYehPlusMyFoods(): void {
+    this.isLoading.set(true);
+
+    forkJoin({
+      yeh: this.foodsService.searchYehApprovedFoods(this.maxCount),
+      favorites: this.preferencesService.getAllowedFoodsFull()
+    }).subscribe({
+      next: ({ yeh, favorites }) => {
+        const yehFoods = yeh?.foods ?? [];
+        const seenIds = new Set(yehFoods.map(f => f.id));
+        const uniqueFavorites = favorites.filter(f => !seenIds.has(f.id));
+        const merged = [...yehFoods, ...uniqueFavorites];
+
+        this.yehApprovedCache.set(yehFoods);
+        this.favoritesCache.set(favorites);
+        this.combinedCache.set(merged);
+        this.setFoods(merged);
+
+        if (merged.length > 0) {
+          this.selectFood(0, false);
+        }
+        this.isLoading.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Failed to load YEH + MyFoods:', error);
+        this.isLoading.set(false);
+        this.notificationService.show('Failed to load foods', 'error');
       }
     });
   }
@@ -701,21 +740,25 @@ export class FoodsListComponent implements OnInit {
     const trimmedQuery = query.trim().toLowerCase();
 
     let cache: Food[] = [];
-    switch (filter) {
-      case 'yeh-approved':
-        cache = this.yehApprovedCache();
-        break;
-      case 'my-favorites':
-        cache = this.favoritesCache();
-        break;
-      case 'my-restricted':
-        cache = this.restrictedCache();
-        break;
-      case 'community':
-        cache = this.communityCache();
-        break;
-      case 'clear':
-        return;
+    if (this.combinedCache().length > 0 && this.prefsService.foodListSource() === 'yeh_plus_myfoods') {
+      cache = this.combinedCache();
+    } else {
+      switch (filter) {
+        case 'yeh-approved':
+          cache = this.yehApprovedCache();
+          break;
+        case 'my-favorites':
+          cache = this.favoritesCache();
+          break;
+        case 'my-restricted':
+          cache = this.restrictedCache();
+          break;
+        case 'community':
+          cache = this.communityCache();
+          break;
+        case 'clear':
+          return;
+      }
     }
 
     if (cache.length > 0) {

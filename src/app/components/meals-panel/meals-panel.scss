@@ -729,6 +729,13 @@
 .add-food-btn {
   flex-shrink: 0;
 
+  .add-food-plus {
+    color: #4caf50;
+    font-weight: 700;
+    font-size: 15px;
+    margin-right: 2px;
+  }
+
   mat-icon {
     font-size: 20px;
     width: 20px;

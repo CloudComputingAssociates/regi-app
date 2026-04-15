@@ -12,7 +12,7 @@ import {
 export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6;
 export type FastingType = 'none' | '16_8' | '18_6' | '20_4' | 'omad';
 export type RepeatMeals = 1 | 2 | 3 | 4;
-export type FoodListSource = 'yeh' | 'myfoods';
+export type FoodListSource = 'yeh' | 'myfoods' | 'yeh_plus_myfoods';
 export type WeekStartDay = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
 
 export type { DailyGoals, PersonalInfo };
@@ -682,6 +682,7 @@ export class PreferencesService {
     switch (value) {
       case 'yeh_approved': return 'yeh';
       case 'myfoods': return 'myfoods';
+      case 'yeh_plus_myfoods': return 'yeh_plus_myfoods';
       default: return DEFAULT_PREFERENCES.foodListSource;
     }
   }
@@ -690,6 +691,7 @@ export class PreferencesService {
     switch (value) {
       case 'yeh': return 'yeh_approved';
       case 'myfoods': return 'myfoods';
+      case 'yeh_plus_myfoods': return 'yeh_plus_myfoods';
       default: return 'yeh_approved';
     }
   }

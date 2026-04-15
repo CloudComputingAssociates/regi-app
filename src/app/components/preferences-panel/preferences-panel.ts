@@ -431,6 +431,7 @@ import { MatIconModule } from '@angular/material/icon';
                     (ngModelChange)="onFoodListSourceChange($event)">
                     <option value="yeh">YEH</option>
                     <option value="myfoods">MyFoods</option>
+                    <option value="yeh_plus_myfoods">YEH + MyFoods</option>
                   </select>
                   <span class="info-icon"
                         #foodsTooltip="matTooltip"
