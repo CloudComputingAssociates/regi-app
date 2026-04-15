@@ -224,9 +224,9 @@ export interface FoodNotFoundEvent {
       @if (nfPopupFood()) {
         <div class="nf-popup-overlay" (click)="closeNfPopup()">
           <div class="nf-popup" (click)="$event.stopPropagation()">
+            <button class="nf-popup-close" (click)="closeNfPopup()">✕</button>
             <div class="nf-popup-header">
               <span class="nf-popup-title">{{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}</span>
-              <button class="nf-popup-close" (click)="closeNfPopup()">✕</button>
             </div>
             @if (nfPopupFood()!.foodImage) {
               <div class="nf-popup-image"
