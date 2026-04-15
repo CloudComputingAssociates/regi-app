@@ -1,0 +1,12 @@
+// src/environments/environment.dev.ts
+// Netlify DEV environment configuration
+export const environment = {
+  production: false,
+  apiUrl: 'https://yehapi.cloudcomputingassociates.net:443/api',
+  imageApiUrl: 'https://yehapi.cloudcomputingassociates.net:443',
+  auth0: {
+    domain: 'dev-sj1bmj8255bwte7r.us.auth0.com',
+    clientId: '9KHWGCfSSg9wUr1oREiUYIgP15EDIppJ',
+    audience: 'https://yehapi.cloudcomputingassociates.net'
+  }
+};
