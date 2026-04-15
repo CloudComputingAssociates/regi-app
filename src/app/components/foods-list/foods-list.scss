@@ -694,17 +694,17 @@
   background: #2a2a2a;
   border-radius: 8px;
   padding: 12px;
-  max-width: 90vw;
-  width: 320px;
+  width: 304px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  overflow: auto;
-  min-width: 280px;
+  overflow: hidden;
+  overflow-y: auto;
+  position: relative;
   max-height: 90vh;
 }
 
 .nf-popup-image {
-  width: 100%;
-  aspect-ratio: 1;
+  width: 280px;
+  height: 280px;
   overflow: hidden;
   border-radius: 4px;
   margin-bottom: 8px;
@@ -743,16 +743,22 @@
 }
 
 .nf-popup-close {
-  background: none;
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.5);
   border: none;
-  color: #aaa;
-  font-size: 18px;
+  color: #999;
+  font-size: 16px;
   cursor: pointer;
-  padding: 0 4px;
+  padding: 2px 6px;
   line-height: 1;
+  border-radius: 4px;
+  z-index: 1;
 
   &:hover {
     color: #fff;
+    background: rgba(0, 0, 0, 0.7);
   }
 }
 
