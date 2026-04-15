@@ -703,8 +703,8 @@
 }
 
 .nf-popup-image {
-  width: 280px;
-  height: 280px;
+  width: 100%;
+  aspect-ratio: 1;
   overflow: hidden;
   border-radius: 4px;
   margin-bottom: 8px;
@@ -718,7 +718,7 @@
     transition: transform 0.15s ease;
 
     &.zoomed {
-      transform: scale(5);
+      transform: scale(3);
       cursor: zoom-out;
     }
   }
