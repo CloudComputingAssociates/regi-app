@@ -238,7 +238,7 @@ export interface FoodNotFoundEvent {
                   [style.transform-origin]="imageZoomOrigin()" />
               </div>
             }
-            <yeh-nutrition-label [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null" />
+            <yeh-nutrition-label [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null" [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
           </div>
         </div>
       }
