@@ -12,15 +12,11 @@ import { TabService } from '../../services/tab.service';
   template: `
     <div class="recipe-viewer-container">
       <div class="recipe-toolbar">
-        <span class="recipe-title">Web Viewer</span>
+        <span class="recipe-title">URL</span>
         <input class="recipe-url-display" [value]="recipeUrl()" readonly />
         <button class="toolbar-btn" (click)="copyUrl()"
           matTooltip="Copy URL" matTooltipPosition="below">
           <mat-icon>content_copy</mat-icon>
-        </button>
-        <button class="toolbar-btn" (click)="print()"
-          matTooltip="Print recipe" matTooltipPosition="below">
-          <mat-icon>print</mat-icon>
         </button>
         <button class="toolbar-btn" (click)="close()"
           matTooltip="Close" matTooltipPosition="below">

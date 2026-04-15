@@ -391,7 +391,7 @@ export class FoodsListComponent implements OnInit {
     const url = food.productPurchaseLink;
     if (url) {
       this.closeNfPopup();
-      this.tabService.openWebViewer(url, food.shortDescription || 'Product');
+      window.open(url, '_blank', 'noopener');
     }
   }
 
