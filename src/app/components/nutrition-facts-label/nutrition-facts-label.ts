@@ -283,6 +283,9 @@ export class NutritionFactsLabelComponent {
       return `${dq} ${du} (${d.servingSizeG ?? 0}g)`;
     }
     const household = d.servingSizeHousehold;
+    if (household && /\(\d+g?\)/.test(household)) {
+      return household;
+    }
     return household
       ? `${household} (${d.servingSizeG ?? 0}g)`
       : `(${d.servingSizeG ?? 0}g)`;
