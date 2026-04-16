@@ -222,7 +222,7 @@ export interface FoodNotFoundEvent {
           <div class="nf-popup" (click)="$event.stopPropagation()">
             <button class="nf-popup-close" (click)="closeNfPopup()">✕</button>
             @if (nfPopupFood()!.foodImage) {
-              <div class="nf-popup-image" [style.height.px]="nfImageHeight()"
+              <div class="nf-popup-image"
                 (mouseenter)="onImageZoomEnter()"
                 (mouseleave)="onImageZoomLeave()"
                 (mousemove)="onImageZoomMove($event)">
