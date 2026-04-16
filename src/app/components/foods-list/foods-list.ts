@@ -249,7 +249,7 @@ export interface FoodNotFoundEvent {
                 <div class="splitter-grip"></div>
               </div>
             }
-            <yeh-nutrition-label [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null" [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
+            <yeh-nutrition-label (click)="onNutritionLabelClick()" [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null" [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
           </div>
         </div>
       }
@@ -394,6 +394,10 @@ export class FoodsListComponent implements OnInit {
       this.closeNfPopup();
       window.open(url, '_blank', 'noopener');
     }
+  }
+
+  onNutritionLabelClick(): void {
+    this.nfImageHeight.set(this.nfImageHeight() <= 40 ? 600 : 40);
   }
 
   onImageZoomEnter(): void {
