@@ -707,15 +707,18 @@
 
 .nf-popup-image {
   position: relative;
+  width: 280px;
   overflow: hidden;
   border-radius: 4px;
   margin-top: 16px;
   margin-bottom: 0;
   cursor: zoom-in;
+  background: #ffffff;
 
   img {
     width: 100%;
-    display: block;
+    height: 100%;
+    object-fit: cover;
     transition: transform 0.15s ease;
 
     &.zoomed {
