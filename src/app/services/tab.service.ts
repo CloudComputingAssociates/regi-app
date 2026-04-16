@@ -288,7 +288,7 @@ export class TabService {
   /** Open the web viewer tab with the given URL and optional label */
   openWebViewer(url: string, label?: string): void {
     this.webViewerUrl.set(url);
-    const tabLabel = label ?? (url.toLowerCase().endsWith('.pdf') ? 'WebView(PDF)' : 'WebView');
+    const tabLabel = label ?? (url.toLowerCase().endsWith('.pdf') ? 'Viewer(PDF)' : 'Viewer(Web)');
     this.openTab('web-viewer', tabLabel);
   }
 
