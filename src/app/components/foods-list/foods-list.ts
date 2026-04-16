@@ -328,7 +328,7 @@ export class FoodsListComponent implements OnInit {
   nfPopupFood = signal<Food | null>(null);
   imageZoomed = signal(false);
   imageZoomOrigin = signal('center center');
-  nfImageHeight = signal(400);
+  nfImageHeight = signal(600);
   private splitterStartY = 0;
   private splitterStartHeight = 0;
   private longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -379,7 +379,7 @@ export class FoodsListComponent implements OnInit {
 
   showNfPopup(food: Food): void {
     this.imageZoomed.set(false);
-    this.nfImageHeight.set(400);
+    this.nfImageHeight.set(600);
     this.nfPopupFood.set(food);
   }
 
