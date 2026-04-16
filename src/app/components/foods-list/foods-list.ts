@@ -223,7 +223,8 @@ export interface FoodNotFoundEvent {
             <button class="nf-popup-close" (click)="closeNfPopup()">✕</button>
             @if (nfPopupFood()!.foodImage) {
               <div class="nf-popup-image" [style.max-height.px]="nfImageHeight()"
-                (mouseenter)="onImageZoomEnter()"
+                (mousedown)="onImageZoomEnter()"
+                (mouseup)="onImageZoomLeave()"
                 (mouseleave)="onImageZoomLeave()"
                 (mousemove)="onImageZoomMove($event)">
                 <img [src]="nfPopupFood()!.foodImage" [alt]="nfPopupFood()!.description"
