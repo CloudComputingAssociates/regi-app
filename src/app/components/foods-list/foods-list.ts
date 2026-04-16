@@ -222,7 +222,7 @@ export interface FoodNotFoundEvent {
           <div class="nf-popup" (click)="$event.stopPropagation()">
             <button class="nf-popup-close" (click)="closeNfPopup()">✕</button>
             @if (nfPopupFood()!.foodImage) {
-              <div class="nf-popup-image" [style.height.px]="nfImageHeight()"
+              <div class="nf-popup-image" [style.max-height.px]="nfImageHeight()"
                 (mouseenter)="onImageZoomEnter()"
                 (mouseleave)="onImageZoomLeave()"
                 (mousemove)="onImageZoomMove($event)">
@@ -328,7 +328,7 @@ export class FoodsListComponent implements OnInit {
   nfPopupFood = signal<Food | null>(null);
   imageZoomed = signal(false);
   imageZoomOrigin = signal('center center');
-  nfImageHeight = signal(200);
+  nfImageHeight = signal(400);
   private splitterStartY = 0;
   private splitterStartHeight = 0;
   private longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -379,7 +379,7 @@ export class FoodsListComponent implements OnInit {
 
   showNfPopup(food: Food): void {
     this.imageZoomed.set(false);
-    this.nfImageHeight.set(200);
+    this.nfImageHeight.set(400);
     this.nfPopupFood.set(food);
   }
 
