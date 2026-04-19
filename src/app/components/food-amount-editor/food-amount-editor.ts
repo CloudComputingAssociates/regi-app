@@ -131,7 +131,7 @@ export interface FoodAmountUpdate {
 
         <!-- Nutrition Facts -->
         <div class="editor-body">
-          <yeh-nutrition-label
+          <regi-nutrition-label
             [nutritionFacts]="baseNutritionFacts()"
             [scale]="scale()"
             [displayUnit]="selectedUnit()"

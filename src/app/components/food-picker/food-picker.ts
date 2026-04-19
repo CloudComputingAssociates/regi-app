@@ -89,7 +89,7 @@ const FOOD_SPECIFIC_UNITS: EditorUnit[] = ['whole', 'cup', 'tsp', 'tbsp', 'ml'];
               </select>
             </div>
             <div class="nf-scroll">
-              <yeh-nutrition-label
+              <regi-nutrition-label
                 [nutritionFacts]="selectedFood()!.nutritionFacts ?? null"
                 [scale]="scale()"
                 [displayUnit]="selectedUnit()"

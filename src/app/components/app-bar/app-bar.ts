@@ -43,7 +43,7 @@ export class AppBarComponent {
 
   title$ = this.auth.user$.pipe(
     map(user => {
-      if (!user?.name) return 'YEH Nutrition Planner';
+      if (!user?.name) return 'RegiMenu Nutrition Planner';
       const firstName = user.name.split(' ')[0];
       const name = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
       return 'RegiMenu<sup class="sm">SM</sup>';

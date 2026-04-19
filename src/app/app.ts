@@ -100,7 +100,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const stored = localStorage.getItem('yeh_tipDismissed');
     return stored === new Date().toDateString();
   }
-  title = 'yeh-web-app';
+  title = 'regi-app';
 
   ngOnDestroy(): void {
     this.errorSub?.unsubscribe();

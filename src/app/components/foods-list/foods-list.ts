@@ -169,7 +169,7 @@ export interface FoodNotFoundEvent {
                         }
                       </div>
                       <span class="food-description">{{ getDisplayDescription(item.food) }}</span>
-                      @if (!item.food.dataSource?.startsWith('USDA') && item.food.userId) {
+                      @if (!item.food.dataSource.startsWith('USDA') && item.food.userId) {
                         <span class="food-badge my-food-badge">My Food</span>
                       }
 
@@ -249,7 +249,7 @@ export interface FoodNotFoundEvent {
                 <div class="splitter-grip"></div>
               </div>
             }
-            <yeh-nutrition-label (click)="onNutritionLabelClick()" [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null" [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
+            <regi-nutrition-label (click)="onNutritionLabelClick()" [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null" [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
           </div>
         </div>
       }
@@ -963,7 +963,7 @@ export class FoodsListComponent implements OnInit {
     const food = this.foods().find(f => f.id === foodId);
     if (!food) return undefined;
     // USDA foods have DataSource like 'USDA-FNDDS-...' — anything else is a user food
-    return food.dataSource?.startsWith('USDA') ? undefined : 'user';
+    return food.dataSource.startsWith('USDA') ? undefined : 'user';
   }
 
   toggleFavorite(event: Event, foodId: number): void {

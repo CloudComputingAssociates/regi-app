@@ -23,7 +23,7 @@ function dvPercent(actual: number | undefined | null, reference: number): number
 }
 
 @Component({
-  selector: 'yeh-nutrition-label',
+  selector: 'regi-nutrition-label',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="nf-label">
