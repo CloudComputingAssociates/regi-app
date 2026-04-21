@@ -6,8 +6,8 @@ import { filter, take } from 'rxjs/operators';
 
 // Auth0 roles are stored under a custom namespace claim in the ID token
 // You must set up an Auth0 Action/Rule to include roles in the token:
-// e.g., api.idToken.setCustomClaim('https://yeh.app/roles', event.authorization?.roles || [])
-const ROLES_CLAIM = 'https://yehapi.cloudcomputingassociates.net/roles';
+// e.g., api.idToken.setCustomClaim('https://api.regimenu.net/roles', event.authorization?.roles || [])
+const ROLES_CLAIM = 'https://api.regimenu.net/roles';
 
 export type AppRole = 'Admin' | 'Developer' | 'QA';
 
