@@ -11,34 +11,6 @@ import { ChatService } from '../../services/chat.service';
 import { SettingsService } from '../../services/settings.service';
 import { RoleService } from '../../services/role.service';
 
-const GREETINGS: string[] = [
-  "Bonjour",
-  "Ciao",
-  "Hola",
-  "Hoi",
-  "Namaste",
-  "Keep going",
-  "You're making great choices",
-  "Every bite counts",
-  "You've got this",
-  "Progress, not perfection",
-  "Consistency matters",
-  "Incremental progress wins",
-  "Don't give up",
-  "We got you",
-  "Welcome back",
-  "Look who's back! \u{1F389}",
-  "Ready to crush it? \u{1F525}",
-  "Your body will thank you \u{1F4AA}",
-  "The legend returns \u{1F981}",
-  "Let's get after it \u{1F680}",
-  'Remember, Hippocrates said "Let food be thy medicine"',
-  'Remember, Jim Rohn said "Take care of your body. It\'s the only place you have to live."',
-  'Remember, Socrates said "No man has the right to be an amateur in the matter of physical training."',
-  'Remember, Thomas Edison said "The doctor of the future will give no medicine."',
-  'Remember, Virgil said "The greatest wealth is health."',
-];
-
 @Component({
   selector: 'app-profile-menu',
   standalone: true,
@@ -115,13 +87,8 @@ export class ProfileMenuComponent {
   private chatService = inject(ChatService);
   private settingsService = inject(SettingsService);
 
-  private greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
-
   greetingText(firstName: string): string {
-    if (this.greeting.startsWith('Remember,')) {
-      return `${firstName}, ${this.greeting.charAt(0).toLowerCase()}${this.greeting.slice(1)}`;
-    }
-    return `${this.greeting}, ${firstName}!`;
+    return `Hi, ${firstName}!`;
   }
 
   login(): void {
