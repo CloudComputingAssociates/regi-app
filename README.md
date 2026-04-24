@@ -2,7 +2,7 @@
 Netlify Deploy (Dev)  https://dev--regimenu.netlify.app
                (Prod) https://app.regimenu.com
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.2
+This project is generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.2
 
 ## Development server
 
