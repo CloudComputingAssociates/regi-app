@@ -87,23 +87,24 @@
 
 .spin-controls {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 4px;
   padding: 8px 84px 8px 12px;
   background: #3a3a3a;
   border-bottom: 1px solid #2a2a2a;
   flex-shrink: 0;
 }
 
-.spin-source {
+.spin-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.spin-source-label {
+.spin-row-label {
+  flex-shrink: 0;
+  min-width: 48px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -178,61 +179,6 @@
       0 2px 3px rgba(0, 0, 0, 0.35),
       0 0 0 2px rgba(77, 166, 255, 0.6);
   }
-}
-
-.spin-launch-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  color: #ffffff;
-  background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%);
-  border-top: 1px solid #5aa55a;
-  border-left: 1px solid #4a954a;
-  border-right: 1px solid #4a954a;
-  border-bottom: 2px solid #1a3a1a;
-  border-radius: 4px;
-  padding: 4px 10px;
-  height: 28px;
-  cursor: pointer;
-  outline: none;
-  flex-shrink: 0;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
-
-  mat-icon {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-  }
-
-  &:hover:not(:disabled) {
-    background: linear-gradient(180deg, #5aa05a 0%, #408040 100%);
-  }
-
-  &:active:not(:disabled) {
-    transform: translateY(1px);
-    border-bottom-width: 1px;
-  }
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-}
-
-.spin-launch-spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 .foods-content {

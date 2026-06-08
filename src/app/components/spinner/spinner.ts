@@ -383,12 +383,16 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
     this.stopMomentum();
     this.velocity = v;
     this.spinning.set(true);
-    this.lastT = performance.now();
+    // Sentinel: capture lastT on the first RAF callback so frame 1 sits at the rest
+    // position (dt=0) and motion accumulates from frame 2 onward. Without this, the
+    // first frame jumps by velocity * (frame-1 - schedule-time) ≈ 16 ms of motion.
+    this.lastT = -1;
     this.lastBucket = Math.floor(this.offsetPx() / this.spacing());
     this.rafId = requestAnimationFrame((t) => this.step(t));
   }
 
   private step(now: number): void {
+    if (this.lastT < 0) this.lastT = now;
     const dt = Math.max(0, (now - this.lastT) / 1000);
     this.lastT = now;
     const next = this.offsetPx() + this.velocity * dt;
@@ -425,13 +429,17 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
     this.stopMomentum();
     this.spinning.set(true);
     const start = this.offsetPx();
-    const startT = performance.now();
     if (start === target || duration <= 0) {
       this.offsetPx.set(target);
       this.finishAnimation();
       return;
     }
+    // Capture startT inside the first RAF so frame 1 evaluates t=0 (no jump).
+    // Stamping it before scheduling produced a ~17% jump on the very first snap
+    // frame, visible when momentum decayed and we snapped to the nearest bucket.
+    let startT: number | null = null;
     const tick = (now: number) => {
+      if (startT === null) startT = now;
       const t = Math.min(1, (now - startT) / duration);
       const k = ease(t);
       const next = start + (target - start) * k;

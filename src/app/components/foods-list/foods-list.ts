@@ -134,85 +134,96 @@ export interface FoodNotFoundEvent {
                 <span matTooltip="Favorite to add to MyFoods. Restrict means you don't/can't consume" matTooltipPosition="below">{{ (activeFilter() === 'my-favorites' || activeFilter() === 'my-restricted') ? 'Remove' : 'Favorite / Restrict' }}</span>
               </div>
             }
-            @for (group of groupedFoods(); track group.category) {
-              @if (group.foods.length > 0) {
-                <div class="category-header"
-                     (click)="toggleCollapse(group.category)">
-                  <mat-icon class="collapse-icon"
-                            [class.collapsed]="group.collapsed">expand_more</mat-icon>
-                  <span class="category-name">{{ group.category }}</span>
-                </div>
-                @if (!group.collapsed) {
-                  @for (item of group.foods; track item.food.id) {
-                    <div
-                      class="food-item"
-                      [class.selected]="selectedIndex() === item.flatIndex"
-                      (click)="selectFood(item.flatIndex)"
-                      (dblclick)="onFoodDblClick(item.food)"
-                      [matTooltip]="showPreferenceIcons() ? 'Double-click food for Nutrition Facts, Zoom image and product links.' : ''"
-                      #foodTooltip="matTooltip"
-                      [matTooltipShowDelay]="2000"
-                      matTooltipPosition="above"
-                      (mouseenter)="scheduleTooltipHide(foodTooltip)"
-                      (mouseleave)="clearTooltipHide()"
-                      (touchstart)="onTouchStart($event, item.flatIndex); onFoodLongPressStart($event, item.food)"
-                      (touchmove)="onTouchMove($event, item.flatIndex); onFoodLongPressEnd()"
-                      (touchend)="onTouchEnd($event, item.flatIndex); onFoodLongPressEnd()"
-                      tabindex="0"
-                      role="button"
-                      [attr.aria-label]="item.food.description">
-                      <div class="food-thumbnail">
-                        @if (item.food.foodImageThumbnail) {
-                          <img [src]="item.food.foodImageThumbnail" alt="" class="thumbnail-img" />
-                        } @else {
-                          <div class="thumbnail-placeholder"></div>
-                        }
-                      </div>
-                      <span class="food-description">{{ getDisplayDescription(item.food) }}</span>
-                      @if (!item.food.dataSource.startsWith('USDA') && item.food.userId) {
-                        <span class="food-badge my-food-badge">My Food</span>
-                      }
-
-                      @if (showPreferenceIcons()) {
-                        <div class="preference-icons">
-                          @if (activeFilter() === 'my-favorites') {
-                            <mat-icon
-                              class="delete-icon"
-                              (click)="removePreference($event, item.food.id)"
-                              aria-label="Remove from favorites">
-                              delete
-                            </mat-icon>
-                          } @else if (activeFilter() === 'my-restricted') {
-                            <mat-icon
-                              class="restricted-icon active"
-                              (click)="removePreference($event, item.food.id)"
-                              aria-label="Remove restriction">
-                              block
-                            </mat-icon>
-                          } @else {
-                            <mat-icon
-                              class="favorite-icon"
-                              [class.active]="preferencesService.isAllowed(item.food.id)"
-                              (click)="toggleFavorite($event, item.food.id)"
-                              aria-label="Toggle favorite">
-                              {{ preferencesService.isAllowed(item.food.id) ? 'star' : 'star_border' }}
-                            </mat-icon>
-                            <mat-icon
-                              class="restricted-icon"
-                              [class.active]="preferencesService.isRestricted(item.food.id)"
-                              (click)="toggleRestricted($event, item.food.id)"
-                              aria-label="Toggle restricted">
-                              block
-                            </mat-icon>
-                          }
-                        </div>
-                      }
-                    </div>
+            @if (showAccordion()) {
+              @for (group of groupedFoods(); track group.category) {
+                @if (group.foods.length > 0) {
+                  <div class="category-header"
+                       (click)="toggleCollapse(group.category)">
+                    <mat-icon class="collapse-icon"
+                              [class.collapsed]="group.collapsed">expand_more</mat-icon>
+                    <span class="category-name">{{ group.category }}</span>
+                  </div>
+                  @if (!group.collapsed) {
+                    @for (item of group.foods; track item.food.id) {
+                      <ng-container
+                        *ngTemplateOutlet="foodRow; context: { $implicit: item.food, flatIndex: item.flatIndex }" />
+                    }
                   }
                 }
               }
+            } @else {
+              @for (food of foods(); track food.id; let i = $index) {
+                <ng-container
+                  *ngTemplateOutlet="foodRow; context: { $implicit: food, flatIndex: i }" />
+              }
             }
           }
+          <ng-template #foodRow let-food let-flatIndex="flatIndex">
+            <div
+              class="food-item"
+              [class.selected]="selectedIndex() === flatIndex"
+              (click)="selectFood(flatIndex)"
+              (dblclick)="onFoodDblClick(food)"
+              [matTooltip]="showPreferenceIcons() ? 'Double-click food for Nutrition Facts, Zoom image and product links.' : ''"
+              #foodTooltip="matTooltip"
+              [matTooltipShowDelay]="2000"
+              matTooltipPosition="above"
+              (mouseenter)="scheduleTooltipHide(foodTooltip)"
+              (mouseleave)="clearTooltipHide()"
+              (touchstart)="onTouchStart($event, flatIndex); onFoodLongPressStart($event, food)"
+              (touchmove)="onTouchMove($event, flatIndex); onFoodLongPressEnd()"
+              (touchend)="onTouchEnd($event, flatIndex); onFoodLongPressEnd()"
+              tabindex="0"
+              role="button"
+              [attr.aria-label]="food.description">
+              <div class="food-thumbnail">
+                @if (food.foodImageThumbnail) {
+                  <img [src]="food.foodImageThumbnail" alt="" class="thumbnail-img" />
+                } @else {
+                  <div class="thumbnail-placeholder"></div>
+                }
+              </div>
+              <span class="food-description">{{ getDisplayDescription(food) }}</span>
+              @if (!food.dataSource.startsWith('USDA') && food.userId) {
+                <span class="food-badge my-food-badge">My Food</span>
+              }
+
+              @if (showPreferenceIcons()) {
+                <div class="preference-icons">
+                  @if (activeFilter() === 'my-favorites') {
+                    <mat-icon
+                      class="delete-icon"
+                      (click)="removePreference($event, food.id)"
+                      aria-label="Remove from favorites">
+                      delete
+                    </mat-icon>
+                  } @else if (activeFilter() === 'my-restricted') {
+                    <mat-icon
+                      class="restricted-icon active"
+                      (click)="removePreference($event, food.id)"
+                      aria-label="Remove restriction">
+                      block
+                    </mat-icon>
+                  } @else {
+                    <mat-icon
+                      class="favorite-icon"
+                      [class.active]="preferencesService.isAllowed(food.id)"
+                      (click)="toggleFavorite($event, food.id)"
+                      aria-label="Toggle favorite">
+                      {{ preferencesService.isAllowed(food.id) ? 'star' : 'star_border' }}
+                    </mat-icon>
+                    <mat-icon
+                      class="restricted-icon"
+                      [class.active]="preferencesService.isRestricted(food.id)"
+                      (click)="toggleRestricted($event, food.id)"
+                      aria-label="Toggle restricted">
+                      block
+                    </mat-icon>
+                  }
+                </div>
+              }
+            </div>
+          </ng-template>
         </div>
       </div>
 
@@ -271,6 +282,7 @@ export class FoodsListComponent implements OnInit {
   showAiButton = input<boolean>(true);
   showPreferenceIcons = input<boolean>(false);
   showFilterRadios = input<boolean>(false);
+  showAccordion = input<boolean>(true);
 
   // Outputs
   selectedFood = output<SelectedFoodEvent>();

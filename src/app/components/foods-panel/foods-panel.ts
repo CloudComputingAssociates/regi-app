@@ -1,5 +1,5 @@
 // src/app/components/foods-panel/foods-panel.ts
-import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, inject, viewChild } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, inject, viewChild, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -51,8 +51,8 @@ const CAROUSEL_CATEGORIES = [
       </div>
 
       <div class="spin-controls">
-        <label class="spin-source">
-          <span class="spin-source-label">Type</span>
+        <div class="spin-row">
+          <span class="spin-row-label">Type</span>
           <select
             class="spin-source-select"
             [ngModel]="spinSource()"
@@ -61,42 +61,34 @@ const CAROUSEL_CATEGORIES = [
             <option value="restricted">Restricted</option>
             <option value="yeh-approved">YEH Approved</option>
           </select>
-        </label>
-
-        <div class="category-radio-panel" role="group" aria-label="Category filter">
-          @for (cat of carouselCategories; track cat) {
-            <button
-              type="button"
-              class="category-radio-btn"
-              [class.pressed]="isCategoryActive(cat)"
-              [attr.aria-pressed]="isCategoryActive(cat)"
-              (click)="toggleCategory(cat)">
-              {{ cat }}
-            </button>
-          }
         </div>
 
-        <button
-          class="spin-launch-btn"
-          (click)="openCarousel()"
-          [disabled]="selectedCategories().size === 0 || carouselLoading()"
-          matTooltip="Spin"
-          matTooltipPosition="above">
-          @if (carouselLoading()) {
-            <span class="spin-launch-spinner"></span>
-          } @else {
-            <mat-icon>casino</mat-icon>
-          }
-          <span class="spin-launch-label">Spin</span>
-        </button>
+        <div class="spin-row">
+          <span class="spin-row-label">Filter</span>
+          <div class="category-radio-panel" role="group" aria-label="Category filter">
+            @for (cat of carouselCategories; track cat) {
+              <button
+                type="button"
+                class="category-radio-btn"
+                [class.pressed]="isCategoryActive(cat)"
+                [attr.aria-pressed]="isCategoryActive(cat)"
+                (click)="toggleCategory(cat)">
+                {{ cat }}
+              </button>
+            }
+          </div>
+        </div>
       </div>
+
+      <app-food-carousel [foods]="carouselFoods()" />
 
       <div class="foods-content">
         <app-foods-list
           [mode]="'search'"
           [showAiButton]="false"
           [showPreferenceIcons]="true"
-          [showFilterRadios]="true"
+          [showFilterRadios]="false"
+          [showAccordion]="false"
           (selectedFood)="onFoodSelected($event)"
           (foodNotFound)="onFoodNotFound($event)" />
       </div>
@@ -268,11 +260,6 @@ const CAROUSEL_CATEGORIES = [
           </div>
         </div>
       }
-
-      <app-food-carousel
-        [foods]="carouselFoods()"
-        [isOpen]="carouselOpen()"
-        (closed)="carouselOpen.set(false)" />
     </div>
   `,
   styleUrls: ['./foods-panel.scss']
@@ -294,9 +281,14 @@ export class FoodsPanelComponent {
   readonly carouselCategories = CAROUSEL_CATEGORIES;
   spinSource = signal<SpinSource>('yeh-approved');
   selectedCategories = signal<Set<string>>(new Set(CAROUSEL_CATEGORIES));
-  carouselOpen = signal(false);
-  carouselLoading = signal(false);
   carouselFoods = signal<Food[]>([]);
+
+  // Auto-load whenever source or filter changes (no Spin button needed)
+  private autoLoadCarousel = effect(() => {
+    const source = this.spinSource();
+    const cats = this.selectedCategories();
+    this.loadCarouselFoods(source, cats);
+  });
 
   showAddDialog = signal(false);
   isSubmitting = signal(false);
@@ -499,13 +491,15 @@ export class FoodsPanelComponent {
     });
   }
 
-  async openCarousel(): Promise<void> {
-    const cats = this.selectedCategories();
-    if (cats.size === 0) return;
+  private loadRequestId = 0;
+  private async loadCarouselFoods(source: SpinSource, cats: Set<string>): Promise<void> {
+    if (cats.size === 0) {
+      this.carouselFoods.set([]);
+      return;
+    }
 
-    this.carouselLoading.set(true);
+    const reqId = ++this.loadRequestId;
     try {
-      const source = this.spinSource();
       let foods: Food[] = [];
       if (source === 'yeh-approved') {
         const resp = await firstValueFrom(this.foodsService.searchYehApprovedFoods(500));
@@ -516,21 +510,19 @@ export class FoodsPanelComponent {
         foods = await firstValueFrom(this.preferencesService.getRestrictedFoodsFull());
       }
 
+      // Stale-result guard: discard if a newer load has started
+      if (reqId !== this.loadRequestId) return;
+
       // Intersect with pressed categories (skip filter when all are pressed)
       if (cats.size < CAROUSEL_CATEGORIES.length) {
         foods = foods.filter(f => cats.has(f.categoryName ?? ''));
       }
 
       this.carouselFoods.set(foods);
-      this.carouselOpen.set(true);
-
-      if (foods.length === 0) {
-        this.notificationService.show('No foods match this filter', 'info');
-      }
     } catch {
+      if (reqId !== this.loadRequestId) return;
       this.notificationService.show('Failed to load foods for spin', 'error');
-    } finally {
-      this.carouselLoading.set(false);
+      this.carouselFoods.set([]);
     }
   }
 
