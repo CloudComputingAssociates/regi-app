@@ -40,8 +40,7 @@ import { Food } from '../../models/food.model';
             <div
               class="food-card"
               [class.is-center]="center"
-              (mousedown)="onCardHoldStart(center, item, $event)"
-              (touchstart)="onCardHoldStart(center, item, $event)"
+              (click)="onCardSingleClick(center, item)"
               (dblclick)="onCardDblClick(center, item)">
               <div class="food-card-image">
                 @if (item.thumbnailUrl) {
@@ -141,20 +140,15 @@ export class FoodCarouselComponent {
   // NF popup state
   nfPopupFood = signal<Food | null>(null);
 
-  // Press-and-hold state (single-click-and-hold on center card shows NF)
-  private holdTimer: ReturnType<typeof setTimeout> | null = null;
-  private holdActive = false;
-  private holdStartX = 0;
-  private holdStartY = 0;
-  private static readonly HOLD_DELAY_MS = 200;
-  private static readonly HOLD_MOVE_THRESHOLD_PX = 8;
+  // Single-click on a center card opens the NF popup and leaves it up. We delay
+  // briefly so a double-click (which fires AFTER both clicks) can suppress it.
+  private singleClickTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly DBLCLICK_WINDOW_MS = 250;
 
   // Spinner dblclick (activated) → ADD to the chosen destination.
   onActivated(item: SpinnerItem): void {
-    // If a hold is in flight, kill it so the NF popup doesn't flash on top of the add.
-    this.endHold(true);
     const food = item['food'] as Food | undefined;
-    if (food) this.add.emit({ food, destination: this.addTo() });
+    if (food) this.addCenteredFood(food);
   }
 
   // Direct dblclick on the projected food-card — a fallback in case the spinner's
@@ -164,81 +158,35 @@ export class FoodCarouselComponent {
     if (!isCenter) return;
     const food = item['food'] as Food | undefined;
     if (!food) return;
-    this.endHold(true);
-    this.add.emit({ food, destination: this.addTo() });
+    this.addCenteredFood(food);
   }
 
-  // mousedown / touchstart on a center card: schedule NF popup after HOLD_DELAY_MS.
-  // Any release or sufficient movement cancels the hold (and closes NF if it opened).
-  onCardHoldStart(isCenter: boolean, item: SpinnerItem, ev: MouseEvent | TouchEvent): void {
+  // Single click on a center card opens the NF popup. Side-card clicks fall
+  // through (the spinner's tap-to-center already handles those at pointerup).
+  // We defer the popup open by ~250ms so a double-click can cancel it cleanly.
+  onCardSingleClick(isCenter: boolean, item: SpinnerItem): void {
     if (!isCenter) return;
     const food = item['food'] as Food | undefined;
     if (!food) return;
 
-    const p = this.eventPoint(ev);
-    this.holdStartX = p.x;
-    this.holdStartY = p.y;
-
-    this.holdTimer = setTimeout(() => {
+    // Re-arm: a second click from a forming double-click resets the timer; the
+    // dblclick handler will then cancel before this fires.
+    if (this.singleClickTimer) clearTimeout(this.singleClickTimer);
+    this.singleClickTimer = setTimeout(() => {
+      this.singleClickTimer = null;
       this.showNfPopup(food);
-      this.holdActive = true;
-      this.holdTimer = null;
-    }, FoodCarouselComponent.HOLD_DELAY_MS);
-
-    const onEnd = () => this.endHold(true);
-    const onMove = (e: MouseEvent | TouchEvent) => {
-      const np = this.eventPoint(e);
-      const dx = np.x - this.holdStartX;
-      const dy = np.y - this.holdStartY;
-      if (Math.hypot(dx, dy) > FoodCarouselComponent.HOLD_MOVE_THRESHOLD_PX) {
-        this.endHold(true);
-      }
-    };
-    const cleanup = () => {
-      document.removeEventListener('mouseup', onEnd);
-      document.removeEventListener('touchend', onEnd);
-      document.removeEventListener('touchcancel', onEnd);
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('touchmove', onMove);
-    };
-    this.holdCleanup = cleanup;
-
-    document.addEventListener('mouseup', onEnd);
-    document.addEventListener('touchend', onEnd);
-    document.addEventListener('touchcancel', onEnd);
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('touchmove', onMove);
+    }, FoodCarouselComponent.DBLCLICK_WINDOW_MS);
   }
 
-  private holdCleanup: (() => void) | null = null;
-
-  private endHold(closePopup: boolean): void {
-    if (this.holdTimer) {
-      clearTimeout(this.holdTimer);
-      this.holdTimer = null;
+  // Centralized "add" path so both dblclick entry points cancel pending NF and
+  // tear down any open popup before emitting.
+  private addCenteredFood(food: Food): void {
+    if (this.singleClickTimer) {
+      clearTimeout(this.singleClickTimer);
+      this.singleClickTimer = null;
     }
-    if (this.holdActive && closePopup) {
-      this.closeNfPopup();
-    }
-    this.holdActive = false;
-    if (this.holdCleanup) {
-      this.holdCleanup();
-      this.holdCleanup = null;
-    }
-  }
-
-  private eventPoint(e: MouseEvent | TouchEvent): { x: number; y: number } {
-    if ('touches' in e && e.touches.length > 0) {
-      return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    }
-    if ('changedTouches' in e && (e as TouchEvent).changedTouches.length > 0) {
-      return {
-        x: (e as TouchEvent).changedTouches[0].clientX,
-        y: (e as TouchEvent).changedTouches[0].clientY,
-      };
-    }
-    const me = e as MouseEvent;
-    return { x: me.clientX, y: me.clientY };
+    if (this.nfPopupFood()) this.closeNfPopup();
+    this.add.emit({ food, destination: this.addTo() });
   }
 
   // Escape closes the NF popup if it's open.
