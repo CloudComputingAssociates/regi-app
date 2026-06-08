@@ -24,7 +24,7 @@ import { ImageUploadService } from '../../services/image-upload.service';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
 import { FoodPickerComponent, FoodPickerAddEvent } from '../food-picker/food-picker';
 import { FoodAmountEditorComponent, FoodAmountUpdate } from '../food-amount-editor/food-amount-editor';
-import { MealSummary, MealItem, UpdateMealRequest } from '../../models/planning.model';
+import { MealSummary, MealItem } from '../../models/planning.model';
 import { NutritionFacts } from '../../models/food.model';
 import { Subscription } from 'rxjs';
 
@@ -39,49 +39,82 @@ import { Subscription } from 'rxjs';
         <div class="header-left">
           <span class="plan-label">Meal</span>
 
-          <!-- Combo-box dropdown for plan name -->
-          <div class="plan-combo" (focusout)="onComboFocusOut($event)">
-            <input
-              #planNameInput
-              type="text"
-              class="plan-name-input"
-              [class.stippled-entry]="isNewPlanMode() && !newPlanNameCommitted()"
-              [value]="displayPlanName()"
-              (input)="onPlanNameInput($event)"
-              (focus)="onComboInputFocus()"
-              (keydown.enter)="onPlanNameCommit($event)"
-              (keydown.escape)="closeDropdown()"
-              (keydown.arrowDown)="onArrowDown($event)"
-              placeholder="MealPlan name..."
-              spellcheck="false" />
+          <!-- Title field: renames the currently-open meal only -->
+          <input
+            #mealTitleInput
+            class="meal-title-input"
+            [value]="titleDraft()"
+            [disabled]="!planningService.hasMeal()"
+            (input)="onTitleInput($event)"
+            (keydown.enter)="commitTitleRename()"
+            (blur)="commitTitleRename()"
+            placeholder="Untitled Meal"
+            spellcheck="false" />
+          <button
+            class="title-save-btn"
+            [disabled]="!titleDirty()"
+            (click)="commitTitleRename()"
+            matTooltip="Rename meal"
+            matTooltipPosition="above">
+            <mat-icon>check</mat-icon>
+          </button>
+
+          <!-- Launcher: create new or open an existing meal -->
+          <div class="meal-launcher" (focusout)="onLauncherFocusOut($event)">
             <button
-              class="combo-toggle"
-              (mousedown)="onDropdownToggleMousedown($event)"
-              tabindex="-1"
-              aria-label="Show saved plans">
+              class="launcher-btn"
+              (mousedown)="onLauncherToggleMousedown($event)"
+              aria-haspopup="listbox">
+              <mat-icon>add</mat-icon>
+              <span class="launcher-label">New / Open</span>
               <mat-icon class="combo-arrow">expand_more</mat-icon>
             </button>
 
             @if (dropdownOpen()) {
               <div class="combo-dropdown" role="listbox">
                 <button
-                  class="dropdown-item create-new ai-generate"
-                  [class.highlighted]="dropdownHighlight() === -2"
-                  (mousedown)="onAIGeneratePlan($event)"
+                  class="dropdown-item create-new"
+                  (mousedown)="onCreateEmpty($event)"
                   role="option">
-                  Create RegiMenu Plan...
+                  + New (empty)
                 </button>
                 <button
-                  class="dropdown-item create-new"
-                  [class.highlighted]="dropdownHighlight() === -1"
-                  (mousedown)="onCreateNewPlan($event)"
+                  class="dropdown-item create-new build"
+                  disabled
+                  matTooltip="Coming soon"
+                  matTooltipPosition="right"
                   role="option">
-                  + Create Empty MealPlan
+                  Build with RegiMenu…
                 </button>
-                @for (plan of filteredPlans(); track plan.id; let i = $index) {
+                <button
+                  class="dropdown-item create-new ai-generate"
+                  (mousedown)="onGenerateWithRegi($event)"
+                  role="option">
+                  Generate with RegiMenu
+                </button>
+                <div class="dropdown-divider"></div>
+                <input
+                  class="dropdown-search"
+                  type="text"
+                  [value]="typeAheadFilter()"
+                  (input)="onSearchInput($event)"
+                  placeholder="Search meals…"
+                  spellcheck="false" />
+                <label class="header-filter" matTooltip="Show your meal plans" matTooltipPosition="right">
+                  <input type="checkbox" [checked]="showUserMeals()" (change)="toggleUserMeals()" />
+                  <span class="filter-text">My Meals</span>
+                </label>
+                <label class="header-filter" matTooltip="Show Community plans" matTooltipPosition="right">
+                  <input type="checkbox" [checked]="showCommunity()" (change)="toggleCommunity()" />
+                  <span class="filter-text">Community</span>
+                </label>
+                <label class="header-filter" matTooltip="Show YEH Approved plans" matTooltipPosition="right">
+                  <input type="checkbox" [checked]="showYeh()" (change)="toggleYeh()" />
+                  <span class="filter-text">YEH Approved</span>
+                </label>
+                @for (plan of filteredPlans(); track plan.id) {
                   <button
                     class="dropdown-item"
-                    [class.highlighted]="dropdownHighlight() === i"
                     [class.active]="planningService.currentPlan()?.id === plan.id"
                     (mousedown)="onSelectPlan(plan, $event)"
                     role="option">
@@ -97,7 +130,7 @@ import { Subscription } from 'rxjs';
                   <div class="dropdown-empty">No saved MealPlans</div>
                 }
                 @if (savedPlansLoading()) {
-                  <div class="dropdown-empty">Loading...</div>
+                  <div class="dropdown-empty">Loading…</div>
                 }
               </div>
             }
@@ -112,20 +145,6 @@ import { Subscription } from 'rxjs';
             matTooltipPosition="above">
             <mat-icon>delete</mat-icon>
           </button>
-
-          <span class="filter-label">Filter</span>
-          <label class="header-filter" matTooltip="Show your meal plans" matTooltipPosition="below">
-            <input type="checkbox" [checked]="showUserMeals()" (change)="toggleUserMeals()" />
-            <span class="filter-text">My Meals</span>
-          </label>
-          <label class="header-filter" matTooltip="Show Community plans" matTooltipPosition="below">
-            <input type="checkbox" [checked]="showCommunity()" (change)="toggleCommunity()" />
-            <span class="filter-text">Community</span>
-          </label>
-          <label class="header-filter" matTooltip="Show YEH Approved plans" matTooltipPosition="below">
-            <input type="checkbox" [checked]="showYeh()" (change)="toggleYeh()" />
-            <span class="filter-text">YEH Approved</span>
-          </label>
 
         </div>
 
@@ -255,7 +274,7 @@ import { Subscription } from 'rxjs';
             </span>
             <button
               class="add-food-btn"
-              [disabled]="(!planningService.hasPlan() && !isNewPlanMode()) || foodPickerOpen()"
+              [disabled]="!planningService.hasPlan() || foodPickerOpen()"
               (click)="openFoodPicker()">
               <span class="add-food-plus">+</span> Add Food
             </button>
@@ -374,7 +393,6 @@ import { Subscription } from 'rxjs';
       <app-food-picker
         [mealPlanId]="planningService.currentPlan()?.id?.toString() ?? ''"
         [isOpen]="foodPickerOpen()"
-        [showNameField]="isNewPlanMode() && !newPlanNameCommitted()"
         (foodAdded)="onFoodPickerAdd($event)"
         (closed)="closeFoodPicker()" />
 
@@ -400,17 +418,19 @@ export class MealsPanelComponent implements OnInit, OnDestroy {
   private imageUploadService = inject(ImageUploadService);
 
   @ViewChild('planList') planListRef!: ElementRef<HTMLElement>;
-  @ViewChild('planNameInput') planNameInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChild('mealTitleInput') mealTitleInputRef?: ElementRef<HTMLInputElement>;
 
   isChatCollapsed = signal(false);
-  hasChanges = signal(false);
-  private pendingName: string | null = null;
+
+  // Meal title editor state
+  titleDraft = signal('');
+  titleDirty = signal(false);
+  private titleIsAuto = true;
 
   // Dropdown state
   savedPlans = signal<MealSummary[]>([]);
   savedPlansLoading = signal(false);
   dropdownOpen = signal(false);
-  dropdownHighlight = signal<number>(-2); // -2 = none, -1 = "create new", 0+ = plan index
 
   // Plan list filters (checkboxes next to trash can)
   showUserMeals = signal(true);
@@ -456,11 +476,6 @@ export class MealsPanelComponent implements OnInit, OnDestroy {
   toggleYeh(): void {
     this.showYeh.update(v => !v);
   }
-
-  // New plan mode
-  isNewPlanMode = signal(false);
-  newPlanNameCommitted = signal(false);
-  private newPlanName = '';
 
   // Food picker overlay state
   foodPickerOpen = signal(false);
@@ -545,17 +560,12 @@ export class MealsPanelComponent implements OnInit, OnDestroy {
 
   hasRegimenuMessages = computed(() => this.chatService.regimenuMessages().length > 0);
 
-  displayPlanName = computed(() => {
-    if (this.isNewPlanMode()) {
-      return this.newPlanName;
-    }
-    return this.planningService.planName();
+  private syncTitleDraft = effect(() => {
+    const meal = this.planningService.currentPlan();
+    const name = meal?.name ?? '';
+    this.titleDraft.set(name);
+    this.titleDirty.set(false);
   });
-
-  isNewPlanUnnamed = computed(() => {
-    return this.isNewPlanMode() && !this.newPlanNameCommitted();
-  });
-
 
   ngOnInit(): void {
     // Use preloaded cache if available, otherwise fetch
@@ -592,99 +602,93 @@ export class MealsPanelComponent implements OnInit, OnDestroy {
     this.subscriptions.push(sub);
   }
 
-  // Combo-box interactions
-  onComboInputFocus(): void {
-    this.openDropdown();
+  // Title field: renames the currently-open meal
+  onTitleInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.titleDraft.set(value);
+    this.titleDirty.set(value !== (this.planningService.currentPlan()?.name ?? ''));
+    this.titleIsAuto = false;
   }
 
-  onDropdownToggleMousedown(event: MouseEvent): void {
-    event.preventDefault(); // prevent input blur
+  async commitTitleRename(): Promise<void> {
+    if (!this.titleDirty()) return;
+    const plan = this.planningService.currentPlan();
+    if (!plan) return;
+    const name = this.titleDraft().trim() || 'Untitled Meal';
+    try {
+      await this.planningService.updateMeal(plan.id, { name });
+      this.titleDirty.set(false);
+      this.fetchSavedPlans();
+    } catch {
+      this.notificationService.show('Failed to rename meal', 'error');
+    }
+  }
+
+  // Launcher dropdown interactions
+  onLauncherToggleMousedown(event: MouseEvent): void {
+    event.preventDefault();
     if (this.dropdownOpen()) {
       this.closeDropdown();
     } else {
       this.openDropdown();
-      this.planNameInputRef?.nativeElement?.focus();
     }
+  }
+
+  onLauncherFocusOut(event: FocusEvent): void {
+    const related = event.relatedTarget as HTMLElement | null;
+    const launcher = (event.currentTarget as HTMLElement);
+    if (related && launcher.contains(related)) {
+      return; // focus moved within the launcher — don't close
+    }
+    this.closeDropdown();
   }
 
   openDropdown(): void {
     if (!this.dropdownOpen()) {
       this.fetchSavedPlans();
       this.dropdownOpen.set(true);
-      this.dropdownHighlight.set(-2);
     }
   }
 
   closeDropdown(): void {
     this.dropdownOpen.set(false);
-    this.dropdownHighlight.set(-2);
     this.typeAheadFilter.set('');
   }
 
-  onComboFocusOut(event: FocusEvent): void {
-    const related = event.relatedTarget as HTMLElement | null;
-    const combo = (event.currentTarget as HTMLElement);
-    if (related && combo.contains(related)) {
-      return; // focus moved within the combo — don't close
-    }
-    this.closeDropdown();
-
-    // If in new plan mode and user blurs out, commit the name if non-empty
-    if (this.isNewPlanMode() && !this.newPlanNameCommitted() && this.newPlanName.trim()) {
-      this.commitNewPlanName();
-    }
-
-    // Auto-save if plan name was changed on an existing plan
-    if (!this.isNewPlanMode() && this.pendingName !== null) {
-      this.autoSave();
-    }
+  onSearchInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.typeAheadFilter.set(value);
   }
 
-  onArrowDown(event: Event): void {
+  async onCreateEmpty(event: MouseEvent): Promise<void> {
     event.preventDefault();
-    if (!this.dropdownOpen()) {
-      this.openDropdown();
-      return;
-    }
-    const max = this.savedPlans().length - 1;
-    const current = this.dropdownHighlight();
-    if (current < max) {
-      this.dropdownHighlight.set(current + 1);
+    this.closeDropdown();
+    try {
+      await this.planningService.createMeal('Untitled Meal');
+      this.titleIsAuto = true;
+      this.fetchSavedPlans();
+      setTimeout(() => {
+        const input = this.mealTitleInputRef?.nativeElement;
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      });
+    } catch {
+      this.notificationService.show('Failed to create MealPlan', 'error');
     }
   }
 
-  onAIGeneratePlan(event: MouseEvent): void {
+  onGenerateWithRegi(event: MouseEvent): void {
     event.preventDefault();
     this.closeDropdown();
     this.generatePlan();
   }
 
-  onCreateNewPlan(event: MouseEvent): void {
-    event.preventDefault();
-    this.planningService.clearPlan();
-    this.isNewPlanMode.set(true);
-    this.newPlanNameCommitted.set(false);
-
-    this.newPlanName = '';
-    this.closeDropdown();
-
-    // Focus the input for naming
-    setTimeout(() => {
-      const input = this.planNameInputRef?.nativeElement;
-      if (input) {
-        input.value = '';
-        input.focus();
-      }
-    });
-  }
-
   onSelectPlan(plan: MealSummary, event: MouseEvent): void {
     event.preventDefault();
-    this.isNewPlanMode.set(false);
-    this.newPlanNameCommitted.set(false);
-
-    this.newPlanName = '';
     this.closeDropdown();
+    this.titleIsAuto = false;
     this.loadPlan(plan.id);
   }
 
@@ -693,44 +697,6 @@ export class MealsPanelComponent implements OnInit, OnDestroy {
       await this.planningService.getMeal(mealId);
     } catch {
       this.notificationService.show('Failed to load MealPlan', 'error');
-    }
-  }
-
-  onPlanNameInput(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    if (this.isNewPlanMode()) {
-      this.newPlanName = value;
-    } else {
-      this.pendingName = value;
-      this.hasChanges.set(true);
-    }
-    // Type-ahead filtering when dropdown is open
-    if (this.dropdownOpen()) {
-      this.typeAheadFilter.set(value);
-    }
-  }
-
-  onPlanNameCommit(event: Event): void {
-    (event.target as HTMLInputElement).blur();
-    if (this.isNewPlanMode() && this.newPlanName.trim()) {
-      this.commitNewPlanName();
-    }
-    this.closeDropdown();
-  }
-
-  private async commitNewPlanName(): Promise<void> {
-    const name = this.newPlanName.trim();
-    if (!name || this.newPlanNameCommitted()) return;
-
-    this.newPlanNameCommitted.set(true);
-
-    try {
-      await this.planningService.createMeal(name);
-      this.isNewPlanMode.set(false);
-      this.newPlanName = '';
-      this.fetchSavedPlans();
-    } catch {
-      this.notificationService.show('Failed to create MealPlan', 'error');
     }
   }
 
@@ -1109,14 +1075,7 @@ export class MealsPanelComponent implements OnInit, OnDestroy {
     if (!plan) return;
 
     try {
-      const updates: UpdateMealRequest = {};
-      if (this.pendingName !== null) {
-        updates.name = this.pendingName;
-        this.pendingName = null;
-      }
-      updates.items = plan.items;
-      await this.planningService.updatePlan(plan.id, updates);
-      this.hasChanges.set(false);
+      await this.planningService.updatePlan(plan.id, { items: plan.items });
     } catch {
       this.notificationService.show('Failed to save MealPlan', 'error');
     }
@@ -1128,19 +1087,11 @@ export class MealsPanelComponent implements OnInit, OnDestroy {
 
   async generatePlan(): Promise<void> {
     try {
-      let name: string | undefined;
-      if (this.isNewPlanMode() && this.newPlanNameCommitted() && this.newPlanName.trim()) {
-        name = this.newPlanName.trim();
-      } else {
-        // Auto-assign name: "Meal Plan [n]"
-        name = this.getNextPlanName();
-      }
+      const name = this.getNextPlanName();
       await this.planningService.generateMeal(name);
-      this.isNewPlanMode.set(false);
-      this.newPlanNameCommitted.set(false);
-      this.newPlanName = '';
+      this.titleIsAuto = true;
       this.notificationService.show('MealPlan generated', 'success');
-      this.fetchSavedPlans(); // refresh list
+      this.fetchSavedPlans();
     } catch {
       this.notificationService.show('Failed to generate MealPlan', 'error');
     }
