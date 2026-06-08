@@ -10,7 +10,6 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { viewChild } from '@angular/core';
 import { SpinnerComponent, SpinnerItem } from '../spinner/spinner';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { Food } from '../../models/food.model';
@@ -38,7 +37,11 @@ import { Food } from '../../models/food.model';
           [items]="spinnerItems()"
           (activated)="onActivated($event)">
           <ng-template #spinnerCard let-item let-center="isCenter">
-            <div class="food-card" [class.is-center]="center">
+            <div
+              class="food-card"
+              [class.is-center]="center"
+              (mousedown)="onCardHoldStart(center, item, $event)"
+              (touchstart)="onCardHoldStart(center, item, $event)">
               <div class="food-card-image">
                 @if (item.thumbnailUrl) {
                   <img [src]="item.thumbnailUrl" alt="" draggable="false" />
@@ -79,14 +82,6 @@ import { Food } from '../../models/food.model';
               This Week
             </button>
           </div>
-          <button
-            type="button"
-            class="add-to-trigger"
-            (click)="onAddCentered()"
-            [disabled]="!currentFood()"
-            aria-label="Add">
-            +
-          </button>
         </div>
       </div>
 
@@ -128,9 +123,6 @@ export class FoodCarouselComponent {
   // Outputs
   add = output<{ food: Food; destination: 'myfoods' | 'thisweek' }>();
 
-  // Spinner viewChild — used to grab the centered item on Add
-  private spinner = viewChild(SpinnerComponent);
-
   // foods -> SpinnerItem[]
   spinnerItems = computed<SpinnerItem[]>(() =>
     this.foods().map(
@@ -145,27 +137,96 @@ export class FoodCarouselComponent {
     ),
   );
 
-  // The currently-centered Food (or null) — drives the Add button's disabled state
-  currentFood = computed<Food | null>(() => {
-    const it = this.spinner()?.currentItem();
-    if (!it) return null;
-    return (it['food'] as Food | undefined) ?? null;
-  });
-
   // NF popup state
   nfPopupFood = signal<Food | null>(null);
 
-  // Activation: spinner double-click / Enter → open NF popup for the centered food.
+  // Press-and-hold state (single-click-and-hold on center card shows NF)
+  private holdTimer: ReturnType<typeof setTimeout> | null = null;
+  private holdActive = false;
+  private holdStartX = 0;
+  private holdStartY = 0;
+  private static readonly HOLD_DELAY_MS = 200;
+  private static readonly HOLD_MOVE_THRESHOLD_PX = 8;
+
+  // Spinner dblclick (activated) → ADD to the chosen destination.
   onActivated(item: SpinnerItem): void {
+    // If a hold is in flight, kill it so the NF popup doesn't flash on top of the add.
+    this.endHold(true);
     const food = item['food'] as Food | undefined;
-    if (food) this.showNfPopup(food);
+    if (food) this.add.emit({ food, destination: this.addTo() });
   }
 
-  // Add button → emit (add) with the centered food + current destination.
-  onAddCentered(): void {
-    const food = this.currentFood();
+  // mousedown / touchstart on a center card: schedule NF popup after HOLD_DELAY_MS.
+  // Any release or sufficient movement cancels the hold (and closes NF if it opened).
+  onCardHoldStart(isCenter: boolean, item: SpinnerItem, ev: MouseEvent | TouchEvent): void {
+    if (!isCenter) return;
+    const food = item['food'] as Food | undefined;
     if (!food) return;
-    this.add.emit({ food, destination: this.addTo() });
+
+    const p = this.eventPoint(ev);
+    this.holdStartX = p.x;
+    this.holdStartY = p.y;
+
+    this.holdTimer = setTimeout(() => {
+      this.showNfPopup(food);
+      this.holdActive = true;
+      this.holdTimer = null;
+    }, FoodCarouselComponent.HOLD_DELAY_MS);
+
+    const onEnd = () => this.endHold(true);
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      const np = this.eventPoint(e);
+      const dx = np.x - this.holdStartX;
+      const dy = np.y - this.holdStartY;
+      if (Math.hypot(dx, dy) > FoodCarouselComponent.HOLD_MOVE_THRESHOLD_PX) {
+        this.endHold(true);
+      }
+    };
+    const cleanup = () => {
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', onEnd);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('touchmove', onMove);
+    };
+    this.holdCleanup = cleanup;
+
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchend', onEnd);
+    document.addEventListener('touchcancel', onEnd);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove);
+  }
+
+  private holdCleanup: (() => void) | null = null;
+
+  private endHold(closePopup: boolean): void {
+    if (this.holdTimer) {
+      clearTimeout(this.holdTimer);
+      this.holdTimer = null;
+    }
+    if (this.holdActive && closePopup) {
+      this.closeNfPopup();
+    }
+    this.holdActive = false;
+    if (this.holdCleanup) {
+      this.holdCleanup();
+      this.holdCleanup = null;
+    }
+  }
+
+  private eventPoint(e: MouseEvent | TouchEvent): { x: number; y: number } {
+    if ('touches' in e && e.touches.length > 0) {
+      return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+    if ('changedTouches' in e && (e as TouchEvent).changedTouches.length > 0) {
+      return {
+        x: (e as TouchEvent).changedTouches[0].clientX,
+        y: (e as TouchEvent).changedTouches[0].clientY,
+      };
+    }
+    const me = e as MouseEvent;
+    return { x: me.clientX, y: me.clientY };
   }
 
   // Escape closes the NF popup if it's open.

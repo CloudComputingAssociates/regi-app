@@ -27,23 +27,25 @@
   overflow: hidden;
 }
 
-// Spin button floats at the top-right of the body, just above the right nav arrow.
+// Spin sits at the top-left of the body — square, above the left nav arrow.
 .floating-spin-btn {
   position: absolute;
   top: 4px;
-  right: 8px;
+  left: 8px;
   z-index: 310;
-  padding: 4px 12px;
+  width: 52px;
+  height: 52px;
+  padding: 0;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   color: #ffffff;
   background: #357035;
   border: 1px solid #4a954a;
   border-bottom: 2px solid #1a3a1a;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
 
@@ -104,39 +106,6 @@
   }
 }
 
-.add-to-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  font-family: inherit;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
-  color: #ffffff;
-  background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%);
-  border: 1px solid #4a954a;
-  border-bottom: 2px solid #1a3a1a;
-  border-radius: 6px;
-  cursor: pointer;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
-
-  &:hover:not(:disabled) {
-    background: linear-gradient(180deg, #5aa05a 0%, #408040 100%);
-  }
-
-  &:active:not(:disabled) {
-    transform: translateY(1px);
-    border-bottom-width: 1px;
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-}
 
 // ---- Food card content (projected into spinner) ----
 

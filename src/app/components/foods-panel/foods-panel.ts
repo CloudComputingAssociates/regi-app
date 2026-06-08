@@ -112,35 +112,22 @@ const CATEGORY_PLURALS: Record<string, string> = {
       </div>
 
       <div class="bottom-pane" [style.height.px]="bottomPaneHeight()">
-        <div class="bottom-tabs" role="tablist">
-          <button
-            type="button"
-            class="bottom-tab"
-            role="tab"
-            [class.active]="activeTab() === 'myfoods'"
-            [attr.aria-selected]="activeTab() === 'myfoods'"
-            (click)="activeTab.set('myfoods')">
+        <div class="bottom-header">
+          @if (addTo() === 'myfoods') {
             My Foods ({{ myFoodsLocal().length }})
-          </button>
-          <button
-            type="button"
-            class="bottom-tab"
-            role="tab"
-            [class.active]="activeTab() === 'thisweek'"
-            [attr.aria-selected]="activeTab() === 'thisweek'"
-            (click)="activeTab.set('thisweek')">
+          } @else {
             This Week ({{ thisWeekLocal().length }})
-          </button>
+          }
         </div>
 
         <div class="bottom-list">
-          @let list = activeTab() === 'myfoods' ? myFoodsLocal() : thisWeekLocal();
+          @let list = addTo() === 'myfoods' ? myFoodsLocal() : thisWeekLocal();
           @if (list.length === 0) {
             <div class="bottom-empty">
-              @if (activeTab() === 'myfoods') {
-                Spin and tap + to build your MyFoods list.
+              @if (addTo() === 'myfoods') {
+                Double-click a centered food to add to MyFoods.
               } @else {
-                Spin and tap + to add foods to this week.
+                Double-click a centered food to add to This Week.
               }
             </div>
           } @else {
@@ -157,7 +144,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                   {{ food.shortDescription || food.description }}
                 </span>
 
-                @if (activeTab() === 'myfoods') {
+                @if (addTo() === 'myfoods') {
                   <mat-icon
                     class="row-action favorite"
                     [class.active]="preferencesService.isAllowed(food.id)"
@@ -398,9 +385,9 @@ export class FoodsPanelComponent {
     );
   });
 
-  // Carousel destination + local lists (persisted to localStorage)
+  // Carousel destination + local lists (persisted to localStorage).
+  // The slider drives both the add target AND which list is visible at the bottom.
   addTo = signal<'myfoods' | 'thisweek'>('myfoods');
-  activeTab = signal<'myfoods' | 'thisweek'>('myfoods');
   myFoodsLocal = signal<Food[]>(this.loadLocal(LS_MYFOODS));
   thisWeekLocal = signal<Food[]>(this.loadLocal(LS_THISWEEK));
 
