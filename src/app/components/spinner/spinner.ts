@@ -84,7 +84,30 @@ interface RenderedCard {
         (pointerdown)="onPointerDown($event)"
         (pointermove)="onPointerMove($event)"
         (pointerup)="onPointerUp($event)"
-        (pointercancel)="onPointerUp($event)">
+        (pointercancel)="onPointerUp($event)"
+        (dblclick)="commit()">
+        <button
+          type="button"
+          class="spinner-nav spinner-nav--left"
+          (pointerdown)="$event.stopPropagation()"
+          (click)="stepLeft()"
+          aria-label="Previous">
+          <svg viewBox="0 0 24 24" class="spinner-nav-icon" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="spinner-nav spinner-nav--right"
+          (pointerdown)="$event.stopPropagation()"
+          (click)="stepRight()"
+          aria-label="Next">
+          <svg viewBox="0 0 24 24" class="spinner-nav-icon" aria-hidden="true">
+            <path d="M9 18l6-6-6-6" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
         @for (card of visibleCards(); track card.key) {
           <div
             class="spinner-card"
@@ -94,8 +117,7 @@ interface RenderedCard {
             [style.width.px]="card.width"
             [style.height.px]="card.height"
             [style.opacity]="card.opacity"
-            [style.z-index]="card.zIndex"
-            (dblclick)="onCardDblClick(card)">
+            [style.z-index]="card.zIndex">
             @if (cardTpl(); as tpl) {
               <ng-container
                 *ngTemplateOutlet="
@@ -350,23 +372,29 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
     return true;
   }
 
-  // ---- Card events ----
-
-  onCardDblClick(card: RenderedCard): void {
-    if (card.isCenter) this.commit();
-  }
-
   // ---- Keyboard ----
 
   onArrowLeft(e: Event): void {
     e.preventDefault();
-    const target = (Math.round(this.offsetPx() / this.spacing()) - 1) * this.spacing();
-    this.animateOffsetTo(target);
+    this.stepLeft();
   }
 
   onArrowRight(e: Event): void {
     e.preventDefault();
-    const target = (Math.round(this.offsetPx() / this.spacing()) + 1) * this.spacing();
+    this.stepRight();
+  }
+
+  /** Animate one card to the left. Public — bound to the on-screen arrow button. */
+  stepLeft(): void {
+    const sp = this.spacing();
+    const target = (Math.round(this.offsetPx() / sp) - 1) * sp;
+    this.animateOffsetTo(target);
+  }
+
+  /** Animate one card to the right. Public — bound to the on-screen arrow button. */
+  stepRight(): void {
+    const sp = this.spacing();
+    const target = (Math.round(this.offsetPx() / sp) + 1) * sp;
     this.animateOffsetTo(target);
   }
 

@@ -25,6 +25,17 @@ const CAROUSEL_CATEGORIES = [
   'Carbohydrate', 'Fruit', 'Processed', 'Condiment',
 ] as const;
 
+const CATEGORY_PLURALS: Record<string, string> = {
+  Protein: 'Proteins',
+  Fat: 'Fats',
+  Dairy: 'Dairy',
+  Vegetable: 'Vegetables',
+  Carbohydrate: 'Carbohydrates',
+  Fruit: 'Fruits',
+  Processed: 'Processed',
+  Condiment: 'Condiments',
+};
+
 @Component({
   selector: 'app-foods-panel',
   imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, FoodsListComponent, FoodCarouselComponent],
@@ -64,7 +75,7 @@ const CAROUSEL_CATEGORIES = [
         </div>
 
         <div class="spin-row">
-          <span class="spin-row-label">Filter</span>
+          <span class="spin-row-label">Filters</span>
           <div class="category-radio-panel" role="group" aria-label="Category filter">
             @for (cat of carouselCategories; track cat) {
               <button
@@ -73,10 +84,26 @@ const CAROUSEL_CATEGORIES = [
                 [class.pressed]="isCategoryActive(cat)"
                 [attr.aria-pressed]="isCategoryActive(cat)"
                 (click)="toggleCategory(cat)">
-                {{ cat }}
+                {{ categoryLabel(cat) }}
               </button>
             }
           </div>
+        </div>
+
+        <div class="spin-row search-row">
+          <input
+            type="text"
+            class="search-input"
+            [value]="searchQuery()"
+            (input)="onSearchInput($any($event.target).value)"
+            (keydown.enter)="onSearchSubmit()"
+            placeholder="Search food..." />
+          <button
+            class="search-btn"
+            (click)="onSearchSubmit()"
+            aria-label="Search">
+            <mat-icon>keyboard_return</mat-icon>
+          </button>
         </div>
       </div>
 
@@ -89,6 +116,7 @@ const CAROUSEL_CATEGORIES = [
           [showPreferenceIcons]="true"
           [showFilterRadios]="false"
           [showAccordion]="false"
+          [showSearchControls]="false"
           (selectedFood)="onFoodSelected($event)"
           (foodNotFound)="onFoodNotFound($event)" />
       </div>
@@ -280,8 +308,31 @@ export class FoodsPanelComponent {
   // Spin carousel state
   readonly carouselCategories = CAROUSEL_CATEGORIES;
   spinSource = signal<SpinSource>('yeh-approved');
-  selectedCategories = signal<Set<string>>(new Set(CAROUSEL_CATEGORIES));
+  selectedCategories = signal<Set<string>>(new Set(['Protein']));
   carouselFoods = signal<Food[]>([]);
+
+  // Search forwarded to embedded foods-list
+  searchQuery = signal('');
+
+  categoryLabel(cat: string): string {
+    return CATEGORY_PLURALS[cat] ?? cat;
+  }
+
+  onSearchInput(value: string): void {
+    this.searchQuery.set(value);
+    const fl = this.foodsList();
+    if (fl) {
+      fl.searchQuery = value;
+      fl.onSearchQueryChange(value);
+    }
+  }
+
+  onSearchSubmit(): void {
+    const fl = this.foodsList();
+    if (!fl) return;
+    fl.searchQuery = this.searchQuery();
+    fl.performSearch();
+  }
 
   // Auto-load whenever source or filter changes (no Spin button needed)
   private autoLoadCarousel = effect(() => {

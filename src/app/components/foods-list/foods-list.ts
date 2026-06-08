@@ -56,7 +56,7 @@ export interface FoodNotFoundEvent {
   template: `
     <div class="foods-container">
       <!-- Search Mode UI -->
-      @if (mode() === 'search') {
+      @if (mode() === 'search' && showSearchControls()) {
         <div class="search-controls">
           <input
             type="text"
@@ -283,6 +283,7 @@ export class FoodsListComponent implements OnInit {
   showPreferenceIcons = input<boolean>(false);
   showFilterRadios = input<boolean>(false);
   showAccordion = input<boolean>(true);
+  showSearchControls = input<boolean>(true);
 
   // Outputs
   selectedFood = output<SelectedFoodEvent>();
