@@ -43,8 +43,8 @@ import { Food } from '../../models/food.model';
               (click)="onCardSingleClick(center, item)"
               (dblclick)="onCardDblClick(center, item)">
               <div class="food-card-image">
-                @if (item.thumbnailUrl) {
-                  <img [src]="item.thumbnailUrl" alt="" draggable="false" />
+                @if (item.fullUrl || item.thumbnailUrl; as src) {
+                  <img [src]="src" alt="" draggable="false" />
                 } @else {
                   <svg viewBox="0 0 64 64" class="food-card-stub" aria-hidden="true">
                     <path
