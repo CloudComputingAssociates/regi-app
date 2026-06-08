@@ -85,7 +85,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
         </div>
 
         <div class="spin-row">
-          <span class="spin-row-label">Filters</span>
+          <span class="spin-row-label">Filter</span>
           <div class="category-radio-panel" role="group" aria-label="Category filter">
             @for (cat of carouselCategories; track cat) {
               <button
@@ -432,7 +432,8 @@ export class FoodsPanelComponent {
 
   // Carousel destination + local lists (persisted to localStorage).
   // The slider drives both the add target AND which list is visible at the bottom.
-  addTo = signal<'myfoods' | 'thisweek'>('myfoods');
+  // Default to "This Week" — that's the primary planning workflow.
+  addTo = signal<'myfoods' | 'thisweek'>('thisweek');
   myFoodsLocal = signal<Food[]>(this.loadLocal(LS_MYFOODS));
   thisWeekLocal = signal<Food[]>(this.loadLocal(LS_THISWEEK));
 
@@ -841,15 +842,13 @@ export class FoodsPanelComponent {
     return this.selectedCategories().has(cat);
   }
 
+  // True AM-radio behavior: pressing a button pops the previously-pressed one
+  // out (only one at a time). Pressing the currently-pressed one pops it out
+  // (none selected → show all foods, handled in loadCarouselFoods / filteredMyFoods).
   toggleCategory(cat: string): void {
     this.selectedCategories.update(set => {
-      const next = new Set(set);
-      if (next.has(cat)) {
-        next.delete(cat);
-      } else {
-        next.add(cat);
-      }
-      return next;
+      if (set.has(cat)) return new Set();
+      return new Set([cat]);
     });
   }
 

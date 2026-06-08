@@ -164,12 +164,12 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  color: #d0d0d0;
-  background: linear-gradient(180deg, #6a6a6a 0%, #4a4a4a 100%);
-  border-top: 1px solid #828282;
-  border-left: 1px solid #5a5a5a;
-  border-right: 1px solid #5a5a5a;
-  border-bottom: 2px solid #1a1a1a;
+  color: #e0e0e0;
+  background: linear-gradient(180deg, #808080 0%, #5a5a5a 100%);
+  border-top: 1px solid #969696;
+  border-left: 1px solid #6a6a6a;
+  border-right: 1px solid #6a6a6a;
+  border-bottom: 2px solid #2a2a2a;
   border-radius: 4px;
   padding: 4px 9px;
   height: 28px;
@@ -180,7 +180,7 @@
   transition: background 0.05s ease, color 0.05s ease;
 
   &:hover:not(.pressed) {
-    background: linear-gradient(180deg, #757575 0%, #555555 100%);
+    background: linear-gradient(180deg, #8a8a8a 0%, #666666 100%);
     color: #ffffff;
   }
 

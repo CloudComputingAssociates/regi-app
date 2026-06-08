@@ -70,16 +70,16 @@ import { Food } from '../../models/food.model';
             <button
               type="button"
               class="add-to-option"
-              [class.active]="addTo() === 'myfoods'"
-              (click)="addTo.set('myfoods')">
-              MyFoods
+              [class.active]="addTo() === 'thisweek'"
+              (click)="addTo.set('thisweek')">
+              This Week
             </button>
             <button
               type="button"
               class="add-to-option"
-              [class.active]="addTo() === 'thisweek'"
-              (click)="addTo.set('thisweek')">
-              This Week
+              [class.active]="addTo() === 'myfoods'"
+              (click)="addTo.set('myfoods')">
+              MyFoods
             </button>
           </div>
         </div>
@@ -118,7 +118,7 @@ export class FoodCarouselComponent {
   foods = input<Food[]>([]);
 
   // Two-way: which destination the slider currently points at
-  addTo = model<'myfoods' | 'thisweek'>('myfoods');
+  addTo = model<'myfoods' | 'thisweek'>('thisweek');
 
   // Outputs
   add = output<{ food: Food; destination: 'myfoods' | 'thisweek' }>();
