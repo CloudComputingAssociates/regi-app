@@ -123,54 +123,78 @@ const CATEGORY_PLURALS: Record<string, string> = {
         </div>
 
         <div class="bottom-list" #bottomList>
-          @let list = addTo() === 'myfoods' ? filteredMyFoods() : thisWeekLocal();
-          @if (list.length === 0) {
-            <div class="bottom-empty">
-              @if (addTo() === 'myfoods') {
+          @if (addTo() === 'myfoods') {
+            @if (allMyFoods().length === 0) {
+              <div class="bottom-empty">
                 Double-click the highlighted food to add to MyFoods.
-              } @else {
-                Double-click the highlighted food to add to This Week.
-              }
-            </div>
-          } @else {
-            @for (food of list; track food.id) {
-              <div class="selected-food-row">
-                <div class="selected-food-thumb">
-                  @if (food.foodImageThumbnail) {
-                    <img [src]="food.foodImageThumbnail" alt="" />
-                  } @else {
-                    <div class="selected-food-thumb-placeholder"></div>
-                  }
+              </div>
+            } @else {
+              @for (group of groupedMyFoods(); track group.category) {
+                <div class="category-header"
+                     (click)="toggleMyFoodsCategory(group.category)">
+                  <mat-icon class="collapse-icon" [class.collapsed]="group.collapsed">expand_more</mat-icon>
+                  <span class="category-name">{{ categoryLabel(group.category) }}</span>
+                  <span class="category-count">({{ group.foods.length }})</span>
                 </div>
-                <span class="selected-food-name">
-                  {{ food.shortDescription || food.description }}
-                </span>
-
-                @if (addTo() === 'myfoods') {
-                  <mat-icon
-                    class="row-action favorite"
-                    [class.active]="preferencesService.isAllowed(food.id)"
-                    (click)="toggleFavorite($event, food.id)"
-                    matTooltip="Favorite"
-                    matTooltipPosition="left">
-                    {{ preferencesService.isAllowed(food.id) ? 'star' : 'star_border' }}
-                  </mat-icon>
-                  <mat-icon
-                    class="row-action restrict"
-                    [class.active]="preferencesService.isRestricted(food.id)"
-                    (click)="toggleRestricted($event, food.id)"
-                    matTooltip="Restrict"
-                    matTooltipPosition="left">
-                    block
-                  </mat-icon>
-                  <mat-icon
-                    class="row-action remove"
-                    (click)="removeFromMyFoods($event, food.id)"
-                    matTooltip="Remove"
-                    matTooltipPosition="left">
-                    delete
-                  </mat-icon>
-                } @else {
+                @if (!group.collapsed) {
+                  @for (food of group.foods; track food.id) {
+                    <div class="selected-food-row">
+                      <div class="selected-food-thumb">
+                        @if (food.foodImageThumbnail) {
+                          <img [src]="food.foodImageThumbnail" alt="" />
+                        } @else {
+                          <div class="selected-food-thumb-placeholder"></div>
+                        }
+                      </div>
+                      <span class="selected-food-name">
+                        {{ food.shortDescription || food.description }}
+                      </span>
+                      <mat-icon
+                        class="row-action favorite"
+                        [class.active]="preferencesService.isAllowed(food.id)"
+                        (click)="toggleFavorite($event, food.id)"
+                        matTooltip="Favorite"
+                        matTooltipPosition="left">
+                        {{ preferencesService.isAllowed(food.id) ? 'star' : 'star_border' }}
+                      </mat-icon>
+                      <mat-icon
+                        class="row-action restrict"
+                        [class.active]="preferencesService.isRestricted(food.id)"
+                        (click)="toggleRestricted($event, food.id)"
+                        matTooltip="Restrict"
+                        matTooltipPosition="left">
+                        block
+                      </mat-icon>
+                      <mat-icon
+                        class="row-action remove"
+                        (click)="removeFromMyFoods($event, food.id)"
+                        matTooltip="Remove"
+                        matTooltipPosition="left">
+                        delete
+                      </mat-icon>
+                    </div>
+                  }
+                }
+              }
+            }
+          } @else {
+            @if (thisWeekLocal().length === 0) {
+              <div class="bottom-empty">
+                Double-click the highlighted food to add to This Week.
+              </div>
+            } @else {
+              @for (food of thisWeekLocal(); track food.id) {
+                <div class="selected-food-row">
+                  <div class="selected-food-thumb">
+                    @if (food.foodImageThumbnail) {
+                      <img [src]="food.foodImageThumbnail" alt="" />
+                    } @else {
+                      <div class="selected-food-thumb-placeholder"></div>
+                    }
+                  </div>
+                  <span class="selected-food-name">
+                    {{ food.shortDescription || food.description }}
+                  </span>
                   <mat-icon
                     class="row-action remove"
                     (click)="removeFromThisWeek($event, food.id)"
@@ -178,8 +202,8 @@ const CATEGORY_PLURALS: Record<string, string> = {
                     matTooltipPosition="left">
                     delete
                   </mat-icon>
-                }
-              </div>
+                </div>
+              }
             }
           }
         </div>
@@ -435,6 +459,43 @@ export class FoodsPanelComponent {
     if (cats.size === 0 || cats.size === CAROUSEL_CATEGORIES.length) return all;
     return all.filter(f => cats.has(f.categoryName ?? ''));
   });
+
+  // Group filteredMyFoods by category for accordion display. Order follows
+  // CAROUSEL_CATEGORIES; anything uncategorized is appended.
+  collapsedMyFoodsCategories = signal<Set<string>>(new Set());
+
+  groupedMyFoods = computed<Array<{ category: string; foods: Food[]; collapsed: boolean }>>(() => {
+    const all = this.filteredMyFoods();
+    const collapsed = this.collapsedMyFoodsCategories();
+    const map = new Map<string, Food[]>();
+    for (const food of all) {
+      const cat = food.categoryName || 'Uncategorized';
+      const arr = map.get(cat);
+      if (arr) arr.push(food);
+      else map.set(cat, [food]);
+    }
+    const result: Array<{ category: string; foods: Food[]; collapsed: boolean }> = [];
+    for (const cat of CAROUSEL_CATEGORIES) {
+      const foods = map.get(cat);
+      if (foods && foods.length > 0) {
+        result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+        map.delete(cat);
+      }
+    }
+    for (const [cat, foods] of map.entries()) {
+      result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+    }
+    return result;
+  });
+
+  toggleMyFoodsCategory(cat: string): void {
+    this.collapsedMyFoodsCategories.update(set => {
+      const next = new Set(set);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  }
 
   // Scroll target for the bottom list (used after add to bring new/moved row into view)
   private bottomListRef = viewChild<ElementRef<HTMLElement>>('bottomList');
@@ -794,11 +855,8 @@ export class FoodsPanelComponent {
 
   private loadRequestId = 0;
   private async loadCarouselFoods(source: SpinSource, cats: Set<string>): Promise<void> {
-    if (cats.size === 0) {
-      this.rawCarouselFoods.set([]);
-      return;
-    }
-
+    // No filters pressed = "show me everything" (matches the bottom-list semantics).
+    // Filter is only applied when at least one but not all categories are pressed.
     const reqId = ++this.loadRequestId;
     try {
       let foods: Food[] = [];
@@ -818,8 +876,9 @@ export class FoodsPanelComponent {
       // Stale-result guard: discard if a newer load has started
       if (reqId !== this.loadRequestId) return;
 
-      // Intersect with pressed categories (skip filter when all are pressed)
-      if (cats.size < CAROUSEL_CATEGORIES.length) {
+      // Intersect with pressed categories. Skip filter when ALL or NONE are
+      // pressed (both mean "show everything").
+      if (cats.size > 0 && cats.size < CAROUSEL_CATEGORIES.length) {
         foods = foods.filter(f => cats.has(f.categoryName ?? ''));
       }
 

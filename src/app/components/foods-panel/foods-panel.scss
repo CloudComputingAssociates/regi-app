@@ -261,6 +261,48 @@
   color: rgba(255, 213, 79, 0.65);
 }
 
+// Accordion section header inside the MyFoods bottom list.
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  margin: 3px 0 1px;
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  border-top: 1px solid #5a5a5a;
+  border-bottom: 1px solid #1a1a1a;
+  color: #4da6ff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  user-select: none;
+
+  &:first-child { margin-top: 0; }
+
+  .collapse-icon {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+    color: #4da6ff;
+    transition: transform 0.15s ease;
+
+    &.collapsed {
+      transform: rotate(-90deg);
+    }
+  }
+
+  .category-name {
+    flex: 1;
+  }
+
+  .category-count {
+    color: rgba(77, 166, 255, 0.7);
+    font-weight: 600;
+  }
+}
+
 .selected-food-row {
   display: flex;
   align-items: center;
