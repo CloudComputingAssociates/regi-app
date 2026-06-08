@@ -123,9 +123,9 @@ const CATEGORY_PLURALS: Record<string, string> = {
       <div class="bottom-pane" [style.height.px]="bottomPaneHeight()">
         <div class="bottom-header">
           @if (addTo() === 'myfoods') {
-            {{ typeLabel() }} ({{ bottomListLength() }})
+            {{ collectionHeading() }} ({{ bottomListLength() }})
           } @else {
-            This Week ({{ thisWeekLocal().length }})
+            This Week Collection ({{ thisWeekLocal().length }})
           }
         </div>
 
@@ -483,6 +483,15 @@ export class FoodsPanelComponent {
   bottomListLength = computed<number>(() => {
     if (this.spinSource() === 'myfoods') return this.filteredMyFoods().length;
     return this.carouselFoods().length;
+  });
+
+  // Heading shown in the bottom-pane title strip when the slider is on the
+  // right side. "Restricted Foods Collection" because just "Restricted
+  // Collection" reads like the collection itself is restricted.
+  collectionHeading = computed<string>(() => {
+    const src = this.spinSource();
+    if (src === 'restricted') return 'Restricted Foods Collection';
+    return `${this.typeLabel()} Collection`;
   });
 
   // Search: filters the carousel locally (no API round-trip per keystroke)

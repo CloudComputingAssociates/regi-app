@@ -32,9 +32,32 @@ import { Food } from '../../models/food.model';
           Spin
         </button>
 
+        <div class="add-to-bar">
+          <span class="add-to-label">Bottom Bucket</span>
+          <div class="add-to-toggle" role="group">
+            <button
+              type="button"
+              class="add-to-option"
+              [class.active]="addTo() === 'thisweek'"
+              (click)="addTo.set('thisweek')">
+              This Week
+            </button>
+            <button
+              type="button"
+              class="add-to-option"
+              [class.active]="addTo() === 'myfoods'"
+              (click)="addTo.set('myfoods')">
+              {{ typeLabel() }}
+            </button>
+          </div>
+        </div>
+
         <app-spinner
           #s="appSpinner"
           [items]="spinnerItems()"
+          [cardWidth]="192"
+          [cardHeight]="240"
+          [spacing]="228"
           (activated)="onActivated($event)">
           <ng-template #spinnerCard let-item let-center="isCenter">
             <div
@@ -63,26 +86,6 @@ import { Food } from '../../models/food.model';
             </div>
           </ng-template>
         </app-spinner>
-
-        <div class="add-to-bar">
-          <span class="add-to-label">Add to</span>
-          <div class="add-to-toggle" role="group">
-            <button
-              type="button"
-              class="add-to-option"
-              [class.active]="addTo() === 'thisweek'"
-              (click)="addTo.set('thisweek')">
-              This Week
-            </button>
-            <button
-              type="button"
-              class="add-to-option"
-              [class.active]="addTo() === 'myfoods'"
-              (click)="addTo.set('myfoods')">
-              {{ typeLabel() }}
-            </button>
-          </div>
-        </div>
       </div>
 
       <!-- Nutrition Facts popup -->

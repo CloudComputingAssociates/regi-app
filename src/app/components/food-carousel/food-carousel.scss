@@ -23,7 +23,9 @@
 
 .carousel-body {
   position: relative;
-  padding: 8px 8px 6px;
+  // Extra top padding so the Bottom Bucket bar feels like it belongs to the
+  // carousel region and isn't crammed against the TYPE/FILTER strip above.
+  padding: 14px 12px 6px;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -60,13 +62,15 @@
   }
 }
 
-// "Add to" slider + + button
+// Bottom Bucket slider — pinned to the top-left of the carousel area so the
+// user immediately knows this control belongs to the spinner, not the upper
+// TYPE/FILTER strip.
 .add-to-bar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 4px 0 0;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
   flex-shrink: 0;
 }
 
@@ -159,7 +163,7 @@
 
 .food-card-caption {
   flex-shrink: 0;
-  padding: 4px 8px 6px;
+  padding: 3px 8px 3px;
   font-size: 11px;
   font-weight: 500;
   color: #ffffff;
