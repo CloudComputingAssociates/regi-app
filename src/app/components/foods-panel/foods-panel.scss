@@ -257,7 +257,8 @@
   text-align: center;
   font-size: 12px;
   font-style: italic;
-  color: rgba(255, 255, 255, 0.4);
+  // Faint amber to match the spinner-card center glow (rgba(255, 213, 79, *))
+  color: rgba(255, 213, 79, 0.65);
 }
 
 .selected-food-row {

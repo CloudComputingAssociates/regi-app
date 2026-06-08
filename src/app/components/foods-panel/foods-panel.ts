@@ -127,9 +127,9 @@ const CATEGORY_PLURALS: Record<string, string> = {
           @if (list.length === 0) {
             <div class="bottom-empty">
               @if (addTo() === 'myfoods') {
-                Double-click a centered food to add to MyFoods.
+                Double-click the highlighted food to add to MyFoods.
               } @else {
-                Double-click a centered food to add to This Week.
+                Double-click the highlighted food to add to This Week.
               }
             </div>
           } @else {
