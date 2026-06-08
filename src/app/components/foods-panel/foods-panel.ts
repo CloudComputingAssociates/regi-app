@@ -29,6 +29,12 @@ const CAROUSEL_CATEGORIES = [
 const LS_MYFOODS = 'regi.foods.myfoods';
 const LS_THISWEEK = 'regi.foods.thisweek';
 
+const TYPE_LABELS: Record<SpinSource, string> = {
+  'yeh-approved': 'YEH Approved',
+  'myfoods': 'MyFoods',
+  'restricted': 'Restricted',
+};
+
 const CATEGORY_PLURALS: Record<string, string> = {
   Protein: 'Proteins',
   Fat: 'Fats',
@@ -103,6 +109,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
 
       <app-food-carousel
         [foods]="carouselFoods()"
+        [typeLabel]="typeLabel()"
         [(addTo)]="addTo"
         (add)="onAddFood($event)" />
 
@@ -116,17 +123,47 @@ const CATEGORY_PLURALS: Record<string, string> = {
       <div class="bottom-pane" [style.height.px]="bottomPaneHeight()">
         <div class="bottom-header">
           @if (addTo() === 'myfoods') {
-            My Foods ({{ filteredMyFoods().length }})
+            {{ typeLabel() }} ({{ bottomListLength() }})
           } @else {
             This Week ({{ thisWeekLocal().length }})
           }
         </div>
 
         <div class="bottom-list" #bottomList>
-          @if (addTo() === 'myfoods') {
+          @if (addTo() === 'thisweek') {
+            <!-- This Week view: flat list, trash to remove from local basket -->
+            @if (thisWeekLocal().length === 0) {
+              <div class="bottom-empty">
+                Double-click the highlighted food to add to This Week.
+              </div>
+            } @else {
+              @for (food of thisWeekLocal(); track food.id) {
+                <div class="selected-food-row">
+                  <div class="selected-food-thumb">
+                    @if (food.foodImageThumbnail) {
+                      <img [src]="food.foodImageThumbnail" alt="" />
+                    } @else {
+                      <div class="selected-food-thumb-placeholder"></div>
+                    }
+                  </div>
+                  <span class="selected-food-name">
+                    {{ food.shortDescription || food.description }}
+                  </span>
+                  <mat-icon
+                    class="row-action remove"
+                    (click)="removeFromThisWeek($event, food.id)"
+                    matTooltip="Remove"
+                    matTooltipPosition="left">
+                    delete
+                  </mat-icon>
+                </div>
+              }
+            }
+          } @else if (spinSource() === 'myfoods') {
+            <!-- TYPE=MyFoods on right side: accordion view of curated MyFoods -->
             @if (allMyFoods().length === 0) {
               <div class="bottom-empty">
-                Double-click the highlighted food to add to MyFoods.
+                Favorite a YEH Approved food (or double-click it) to add it to MyFoods.
               </div>
             } @else {
               @for (group of groupedMyFoods(); track group.category) {
@@ -168,7 +205,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                       <mat-icon
                         class="row-action remove"
                         (click)="removeFromMyFoods($event, food.id)"
-                        matTooltip="Remove"
+                        matTooltip="Remove from local"
                         matTooltipPosition="left">
                         delete
                       </mat-icon>
@@ -178,12 +215,17 @@ const CATEGORY_PLURALS: Record<string, string> = {
               }
             }
           } @else {
-            @if (thisWeekLocal().length === 0) {
+            <!-- TYPE=YEH Approved or Restricted on right side: flat list of carousel foods -->
+            @if (carouselFoods().length === 0) {
               <div class="bottom-empty">
-                Double-click the highlighted food to add to This Week.
+                @if (spinSource() === 'yeh-approved') {
+                  No YEH Approved foods match this filter.
+                } @else {
+                  No restricted foods match this filter.
+                }
               </div>
             } @else {
-              @for (food of thisWeekLocal(); track food.id) {
+              @for (food of carouselFoods(); track food.id) {
                 <div class="selected-food-row">
                   <div class="selected-food-thumb">
                     @if (food.foodImageThumbnail) {
@@ -196,11 +238,20 @@ const CATEGORY_PLURALS: Record<string, string> = {
                     {{ food.shortDescription || food.description }}
                   </span>
                   <mat-icon
-                    class="row-action remove"
-                    (click)="removeFromThisWeek($event, food.id)"
-                    matTooltip="Remove"
+                    class="row-action favorite"
+                    [class.active]="preferencesService.isAllowed(food.id)"
+                    (click)="toggleFavorite($event, food.id)"
+                    matTooltip="Favorite (adds to MyFoods)"
                     matTooltipPosition="left">
-                    delete
+                    {{ preferencesService.isAllowed(food.id) ? 'star' : 'star_border' }}
+                  </mat-icon>
+                  <mat-icon
+                    class="row-action restrict"
+                    [class.active]="preferencesService.isRestricted(food.id)"
+                    (click)="toggleRestricted($event, food.id)"
+                    matTooltip="Restrict"
+                    matTooltipPosition="left">
+                    block
                   </mat-icon>
                 </div>
               }
@@ -416,6 +467,18 @@ export class FoodsPanelComponent {
   selectedCategories = signal<Set<string>>(new Set(['Protein']));
   private rawCarouselFoods = signal<Food[]>([]);
 
+  // Display label for the current TYPE — drives the slider's right-side label,
+  // the bottom-pane header when the slider is on the right, etc.
+  typeLabel = computed<string>(() => TYPE_LABELS[this.spinSource()]);
+
+  // Count shown in the bottom header when the slider is on the right side.
+  // For TYPE=MyFoods we use the filtered MyFoods count (accordion view total);
+  // for YEH/Restricted we use carouselFoods (the visible list).
+  bottomListLength = computed<number>(() => {
+    if (this.spinSource() === 'myfoods') return this.filteredMyFoods().length;
+    return this.carouselFoods().length;
+  });
+
   // Search: filters the carousel locally (no API round-trip per keystroke)
   searchQuery = signal('');
 
@@ -552,18 +615,45 @@ export class FoodsPanelComponent {
 
   onAddFood(event: { food: Food; destination: 'myfoods' | 'thisweek' }): void {
     const { food, destination } = event;
-    const target = destination === 'myfoods' ? this.myFoodsLocal : this.thisWeekLocal;
-    const exists = target().some(f => f.id === food.id);
 
-    if (exists) {
-      // Already there → no-op for the data, but float it to the top so the user can see it.
-      target.update(list => [food, ...list.filter(f => f.id !== food.id)]);
+    if (destination === 'thisweek') {
+      // Slider on left: drop into the local This Week basket.
+      const exists = this.thisWeekLocal().some(f => f.id === food.id);
+      if (exists) {
+        this.thisWeekLocal.update(list => [food, ...list.filter(f => f.id !== food.id)]);
+      } else {
+        this.thisWeekLocal.update(list => [food, ...list]);
+        this.notificationService.show('Added to This Week', 'success');
+      }
     } else {
-      target.update(list => [food, ...list]);
-      this.notificationService.show(
-        `Added to ${destination === 'myfoods' ? 'My Foods' : 'This Week'}`,
-        'success',
-      );
+      // Slider on right: behavior follows TYPE.
+      const source = this.spinSource();
+      if (source === 'yeh-approved') {
+        // Promote a YEH food to MyFoods (server-side favorite).
+        if (!this.preferencesService.isAllowed(food.id)) {
+          this.preferencesService.toggleFavoriteLocal(food.id);
+          this.refreshServerMyFoods();
+          this.notificationService.show(`${food.shortDescription || food.description} → MyFoods`, 'success');
+        } else {
+          this.notificationService.show('Already a MyFood', 'info');
+        }
+      } else if (source === 'restricted') {
+        // Unrestrict + favorite (move from Restricted into MyFoods).
+        if (this.preferencesService.isRestricted(food.id)) {
+          this.preferencesService.toggleRestrictedLocal(food.id);
+        }
+        if (!this.preferencesService.isAllowed(food.id)) {
+          this.preferencesService.toggleFavoriteLocal(food.id);
+        }
+        this.refreshServerMyFoods();
+        this.notificationService.show(`${food.shortDescription || food.description} → MyFoods`, 'success');
+      } else {
+        // TYPE=MyFoods on right: the food is already a MyFood; surface it visually.
+        this.myFoodsLocal.update(list => {
+          const filtered = list.filter(f => f.id !== food.id);
+          return [food, ...filtered];
+        });
+      }
     }
 
     // Surface the row: bring it into view at the top of the list.
@@ -577,11 +667,14 @@ export class FoodsPanelComponent {
   toggleFavorite(event: Event, foodId: number): void {
     event.stopPropagation();
     this.preferencesService.toggleFavoriteLocal(foodId);
+    // Cache may be stale — refresh so TYPE=MyFoods carousel reflects the change.
+    this.refreshServerMyFoods();
   }
 
   toggleRestricted(event: Event, foodId: number): void {
     event.stopPropagation();
     this.preferencesService.toggleRestrictedLocal(foodId);
+    this.refreshServerMyFoods();
   }
 
   removeFromMyFoods(event: Event, foodId: number): void {
@@ -863,10 +956,11 @@ export class FoodsPanelComponent {
         const resp = await firstValueFrom(this.foodsService.searchYehApprovedFoods(500));
         foods = resp?.foods ?? [];
       } else if (source === 'myfoods') {
-        // Refresh the server cache; the merged list (local + server) is then
-        // read from allMyFoods so the bottom MY FOODS list shows exactly the
-        // same set as the carousel.
-        await this.refreshServerMyFoods();
+        // Read from the in-memory cache (populated eagerly on construction and
+        // refreshed explicitly after favorite/restrict toggles). Don't call
+        // refreshServerMyFoods() here — writing to serverMyFoods inside this
+        // effect-driven path would re-trigger autoLoadCarousel (it tracks
+        // allMyFoods) and spin into an infinite loop that locks up the UI.
         foods = this.allMyFoods();
       } else {
         foods = await firstValueFrom(this.preferencesService.getRestrictedFoodsFull());

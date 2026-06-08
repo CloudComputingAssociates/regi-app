@@ -79,7 +79,7 @@ import { Food } from '../../models/food.model';
               class="add-to-option"
               [class.active]="addTo() === 'myfoods'"
               (click)="addTo.set('myfoods')">
-              MyFoods
+              {{ typeLabel() }}
             </button>
           </div>
         </div>
@@ -116,6 +116,10 @@ import { Food } from '../../models/food.model';
 export class FoodCarouselComponent {
   // Inputs
   foods = input<Food[]>([]);
+
+  // Label for the right side of the slider — mirrors the parent's TYPE selection
+  // (e.g. "YEH Approved" when TYPE=YEH Approved, "MyFoods" when TYPE=MyFoods, etc.).
+  typeLabel = input<string>('MyFoods');
 
   // Two-way: which destination the slider currently points at
   addTo = model<'myfoods' | 'thisweek'>('thisweek');
