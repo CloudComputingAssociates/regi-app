@@ -116,7 +116,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
       <div class="bottom-pane" [style.height.px]="bottomPaneHeight()">
         <div class="bottom-header">
           @if (addTo() === 'myfoods') {
-            My Foods ({{ myFoodsLocal().length }})
+            My Foods ({{ allMyFoods().length }})
           } @else {
             This Week ({{ thisWeekLocal().length }})
           }
@@ -360,6 +360,18 @@ export class FoodsPanelComponent {
   constructor() {
     // The Foods tab is the "fill the buckets" view — show macro bars in % by default.
     queueMicrotask(() => this.userPrefs.showPercent.set(true));
+    // Eager-load server-side allowed foods so the MY FOODS bottom list is populated
+    // immediately, even before the user flips TYPE to MyFoods.
+    this.refreshServerMyFoods();
+  }
+
+  private async refreshServerMyFoods(): Promise<void> {
+    try {
+      const server = await firstValueFrom(this.preferencesService.getAllowedFoodsFull());
+      this.serverMyFoods.set(server);
+    } catch {
+      // Service unavailable — leave the cache as-is so local-only still works.
+    }
   }
 
   private tabService = inject(TabService);
@@ -400,10 +412,25 @@ export class FoodsPanelComponent {
   myFoodsLocal = signal<Food[]>(this.loadLocal(LS_MYFOODS));
   thisWeekLocal = signal<Food[]>(this.loadLocal(LS_THISWEEK));
 
+  // Server-side MyFoods cache (the user's existing allowed foods from
+  // FoodPreferencesService). Loaded eagerly on construction and refreshed
+  // whenever the carousel pulls them, so the bottom MyFoods list reflects the
+  // same set the carousel does when TYPE=MyFoods.
+  private serverMyFoods = signal<Food[]>([]);
+
+  // All MyFoods = local picks + unique server favorites. Local takes precedence
+  // on dedupe so any edits on the local copy aren't overwritten by a server entry.
+  allMyFoods = computed<Food[]>(() => {
+    const local = this.myFoodsLocal();
+    const server = this.serverMyFoods();
+    const seenIds = new Set(local.map(f => f.id));
+    return [...local, ...server.filter(f => !seenIds.has(f.id))];
+  });
+
   // MyFoods display follows the same category Filters as the carousel.
-  // The header count still reflects the unfiltered MyFoods total.
+  // (Header count uses allMyFoods().length — the unfiltered total.)
   filteredMyFoods = computed<Food[]>(() => {
-    const all = this.myFoodsLocal();
+    const all = this.allMyFoods();
     const cats = this.selectedCategories();
     if (cats.size === 0 || cats.size === CAROUSEL_CATEGORIES.length) return all;
     return all.filter(f => cats.has(f.categoryName ?? ''));
@@ -425,13 +452,13 @@ export class FoodsPanelComponent {
     this.searchQuery.set(value);
   }
 
-  // Auto-load whenever source, filter, OR the local MyFoods list changes (the
-  // last one matters when TYPE=MyFoods, since loadCarouselFoods merges in
-  // myFoodsLocal — and reads it past an await that wouldn't otherwise be tracked).
+  // Auto-load whenever source, filter, OR the merged MyFoods set changes (so
+  // adding/removing local picks or refreshing the server cache reloads the
+  // carousel when TYPE=MyFoods).
   private autoLoadCarousel = effect(() => {
     const source = this.spinSource();
     const cats = this.selectedCategories();
-    this.myFoodsLocal(); // ensure local-picks edits trigger a reload
+    this.allMyFoods(); // ensure local + server changes trigger a reload
     this.loadCarouselFoods(source, cats);
   });
 
@@ -779,19 +806,11 @@ export class FoodsPanelComponent {
         const resp = await firstValueFrom(this.foodsService.searchYehApprovedFoods(500));
         foods = resp?.foods ?? [];
       } else if (source === 'myfoods') {
-        // Merge server-side favorites with foods the user has picked into
-        // myFoodsLocal via the carousel (which doesn't write to the server yet).
-        // Local picks take precedence on dedupe to preserve the local copy.
-        let server: Food[] = [];
-        try {
-          server = await firstValueFrom(this.preferencesService.getAllowedFoodsFull());
-        } catch {
-          // server may be unreachable; fall back to local-only
-        }
-        const local = this.myFoodsLocal();
-        const seenIds = new Set(local.map(f => f.id));
-        const uniqueServer = server.filter(f => !seenIds.has(f.id));
-        foods = [...local, ...uniqueServer];
+        // Refresh the server cache; the merged list (local + server) is then
+        // read from allMyFoods so the bottom MY FOODS list shows exactly the
+        // same set as the carousel.
+        await this.refreshServerMyFoods();
+        foods = this.allMyFoods();
       } else {
         foods = await firstValueFrom(this.preferencesService.getRestrictedFoodsFull());
       }

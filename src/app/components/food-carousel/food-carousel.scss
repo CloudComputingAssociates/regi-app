@@ -27,11 +27,11 @@
   overflow: hidden;
 }
 
-// Spin sits at the top-left of the body — square, above the left nav arrow.
+// Spin sits at the top-right of the body — square, above the right nav arrow.
 .floating-spin-btn {
   position: absolute;
   top: 4px;
-  left: 8px;
+  right: 8px;
   z-index: 310;
   width: 52px;
   height: 52px;
