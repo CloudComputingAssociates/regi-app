@@ -4,10 +4,13 @@ import {
   Component,
   computed,
   input,
+  model,
+  output,
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
+import { viewChild } from '@angular/core';
 import { SpinnerComponent, SpinnerItem } from '../spinner/spinner';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { Food } from '../../models/food.model';
@@ -21,19 +24,15 @@ import { Food } from '../../models/food.model';
   },
   template: `
     <div class="carousel-panel">
-      <div class="carousel-header">
-        <span class="carousel-title">Foods</span>
-        <div class="carousel-header-actions">
-          <button
-            class="header-btn spin-btn"
-            (click)="s.spin()"
-            aria-label="Spin">
-            <mat-icon>casino</mat-icon>
-          </button>
-        </div>
-      </div>
-
       <div class="carousel-body">
+        <button
+          type="button"
+          class="floating-spin-btn"
+          (click)="s.spin()"
+          aria-label="Spin">
+          Spin
+        </button>
+
         <app-spinner
           #s="appSpinner"
           [items]="spinnerItems()"
@@ -60,18 +59,35 @@ import { Food } from '../../models/food.model';
               }
             </div>
           </ng-template>
-
-          <ng-template #spinnerDetails let-item>
-            @if (item) {
-              <div class="food-details">
-                <div class="food-details-name">{{ item.label }}</div>
-                @if (macroHint(item); as hint) {
-                  <div class="food-details-macros">{{ hint }}</div>
-                }
-              </div>
-            }
-          </ng-template>
         </app-spinner>
+
+        <div class="add-to-bar">
+          <span class="add-to-label">Add to</span>
+          <div class="add-to-toggle" role="group">
+            <button
+              type="button"
+              class="add-to-option"
+              [class.active]="addTo() === 'myfoods'"
+              (click)="addTo.set('myfoods')">
+              MyFoods
+            </button>
+            <button
+              type="button"
+              class="add-to-option"
+              [class.active]="addTo() === 'thisweek'"
+              (click)="addTo.set('thisweek')">
+              This Week
+            </button>
+          </div>
+          <button
+            type="button"
+            class="add-to-trigger"
+            (click)="onAddCentered()"
+            [disabled]="!currentFood()"
+            aria-label="Add">
+            +
+          </button>
+        </div>
       </div>
 
       <!-- Nutrition Facts popup -->
@@ -106,6 +122,15 @@ export class FoodCarouselComponent {
   // Inputs
   foods = input<Food[]>([]);
 
+  // Two-way: which destination the slider currently points at
+  addTo = model<'myfoods' | 'thisweek'>('myfoods');
+
+  // Outputs
+  add = output<{ food: Food; destination: 'myfoods' | 'thisweek' }>();
+
+  // Spinner viewChild — used to grab the centered item on Add
+  private spinner = viewChild(SpinnerComponent);
+
   // foods -> SpinnerItem[]
   spinnerItems = computed<SpinnerItem[]>(() =>
     this.foods().map(
@@ -120,6 +145,13 @@ export class FoodCarouselComponent {
     ),
   );
 
+  // The currently-centered Food (or null) — drives the Add button's disabled state
+  currentFood = computed<Food | null>(() => {
+    const it = this.spinner()?.currentItem();
+    if (!it) return null;
+    return (it['food'] as Food | undefined) ?? null;
+  });
+
   // NF popup state
   nfPopupFood = signal<Food | null>(null);
 
@@ -127,6 +159,13 @@ export class FoodCarouselComponent {
   onActivated(item: SpinnerItem): void {
     const food = item['food'] as Food | undefined;
     if (food) this.showNfPopup(food);
+  }
+
+  // Add button → emit (add) with the centered food + current destination.
+  onAddCentered(): void {
+    const food = this.currentFood();
+    if (!food) return;
+    this.add.emit({ food, destination: this.addTo() });
   }
 
   // Escape closes the NF popup if it's open.
@@ -153,23 +192,5 @@ export class FoodCarouselComponent {
       this.closeNfPopup();
       window.open(url, '_blank', 'noopener');
     }
-  }
-
-  // -------- Helpers for the spinnerDetails template --------
-
-  macroHint(item: SpinnerItem | null): string {
-    if (!item) return '';
-    const food = item['food'] as Food | undefined;
-    const nf = food?.nutritionFacts;
-    if (!nf) return '';
-    const p = nf.proteinG ?? 0;
-    const c = nf.totalCarbohydrateG ?? 0;
-    const fat = nf.totalFatG ?? 0;
-    if (!p && !c && !fat) return '';
-    return `${this.fmt(p)}g protein · ${this.fmt(c)}g carbs · ${this.fmt(fat)}g fat`;
-  }
-
-  private fmt(n: number): string {
-    return (Math.round(n * 10) / 10).toString();
   }
 }

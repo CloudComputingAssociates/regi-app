@@ -1,11 +1,10 @@
 // src/app/components/foods-panel/foods-panel.ts
-import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, inject, viewChild, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
-import { FoodsListComponent, SelectedFoodEvent, FoodNotFoundEvent } from '../foods-list/foods-list';
 import { FoodCarouselComponent } from '../food-carousel/food-carousel';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
@@ -25,6 +24,9 @@ const CAROUSEL_CATEGORIES = [
   'Carbohydrate', 'Fruit', 'Processed', 'Condiment',
 ] as const;
 
+const LS_MYFOODS = 'regi.foods.myfoods';
+const LS_THISWEEK = 'regi.foods.thisweek';
+
 const CATEGORY_PLURALS: Record<string, string> = {
   Protein: 'Proteins',
   Fat: 'Fats',
@@ -38,7 +40,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
 
 @Component({
   selector: 'app-foods-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, FoodsListComponent, FoodCarouselComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, FoodCarouselComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="foods-panel-container">
@@ -72,6 +74,12 @@ const CATEGORY_PLURALS: Record<string, string> = {
             <option value="restricted">Restricted</option>
             <option value="yeh-approved">YEH Approved</option>
           </select>
+          <input
+            type="text"
+            class="search-input compact"
+            [value]="searchQuery()"
+            (input)="onSearchInput($any($event.target).value)"
+            placeholder="Search…" />
         </div>
 
         <div class="spin-row">
@@ -89,36 +97,103 @@ const CATEGORY_PLURALS: Record<string, string> = {
             }
           </div>
         </div>
-
-        <div class="spin-row search-row">
-          <input
-            type="text"
-            class="search-input"
-            [value]="searchQuery()"
-            (input)="onSearchInput($any($event.target).value)"
-            (keydown.enter)="onSearchSubmit()"
-            placeholder="Search food..." />
-          <button
-            class="search-btn"
-            (click)="onSearchSubmit()"
-            aria-label="Search">
-            <mat-icon>keyboard_return</mat-icon>
-          </button>
-        </div>
       </div>
 
-      <app-food-carousel [foods]="carouselFoods()" />
+      <app-food-carousel
+        [foods]="carouselFoods()"
+        [(addTo)]="addTo"
+        (add)="onAddFood($event)" />
 
-      <div class="foods-content">
-        <app-foods-list
-          [mode]="'search'"
-          [showAiButton]="false"
-          [showPreferenceIcons]="true"
-          [showFilterRadios]="false"
-          [showAccordion]="false"
-          [showSearchControls]="false"
-          (selectedFood)="onFoodSelected($event)"
-          (foodNotFound)="onFoodNotFound($event)" />
+      <div
+        class="pane-splitter"
+        (mousedown)="onSplitterMouseDown($event)"
+        (touchstart)="onSplitterTouchStart($event)">
+        <div class="splitter-grip"></div>
+      </div>
+
+      <div class="bottom-pane" [style.height.px]="bottomPaneHeight()">
+        <div class="bottom-tabs" role="tablist">
+          <button
+            type="button"
+            class="bottom-tab"
+            role="tab"
+            [class.active]="activeTab() === 'myfoods'"
+            [attr.aria-selected]="activeTab() === 'myfoods'"
+            (click)="activeTab.set('myfoods')">
+            My Foods ({{ myFoodsLocal().length }})
+          </button>
+          <button
+            type="button"
+            class="bottom-tab"
+            role="tab"
+            [class.active]="activeTab() === 'thisweek'"
+            [attr.aria-selected]="activeTab() === 'thisweek'"
+            (click)="activeTab.set('thisweek')">
+            This Week ({{ thisWeekLocal().length }})
+          </button>
+        </div>
+
+        <div class="bottom-list">
+          @let list = activeTab() === 'myfoods' ? myFoodsLocal() : thisWeekLocal();
+          @if (list.length === 0) {
+            <div class="bottom-empty">
+              @if (activeTab() === 'myfoods') {
+                Spin and tap + to build your MyFoods list.
+              } @else {
+                Spin and tap + to add foods to this week.
+              }
+            </div>
+          } @else {
+            @for (food of list; track food.id) {
+              <div class="selected-food-row">
+                <div class="selected-food-thumb">
+                  @if (food.foodImageThumbnail) {
+                    <img [src]="food.foodImageThumbnail" alt="" />
+                  } @else {
+                    <div class="selected-food-thumb-placeholder"></div>
+                  }
+                </div>
+                <span class="selected-food-name">
+                  {{ food.shortDescription || food.description }}
+                </span>
+
+                @if (activeTab() === 'myfoods') {
+                  <mat-icon
+                    class="row-action favorite"
+                    [class.active]="preferencesService.isAllowed(food.id)"
+                    (click)="toggleFavorite($event, food.id)"
+                    matTooltip="Favorite"
+                    matTooltipPosition="left">
+                    {{ preferencesService.isAllowed(food.id) ? 'star' : 'star_border' }}
+                  </mat-icon>
+                  <mat-icon
+                    class="row-action restrict"
+                    [class.active]="preferencesService.isRestricted(food.id)"
+                    (click)="toggleRestricted($event, food.id)"
+                    matTooltip="Restrict"
+                    matTooltipPosition="left">
+                    block
+                  </mat-icon>
+                  <mat-icon
+                    class="row-action remove"
+                    (click)="removeFromMyFoods($event, food.id)"
+                    matTooltip="Remove"
+                    matTooltipPosition="left">
+                    delete
+                  </mat-icon>
+                } @else {
+                  <mat-icon
+                    class="row-action remove"
+                    (click)="removeFromThisWeek($event, food.id)"
+                    matTooltip="Remove"
+                    matTooltipPosition="left">
+                    delete
+                  </mat-icon>
+                }
+              </div>
+            }
+          }
+        </div>
       </div>
 
       <!-- Add Food Dialog -->
@@ -301,18 +376,38 @@ export class FoodsPanelComponent {
   private foodsService = inject(FoodsService);
   private cdr = inject(ChangeDetectorRef);
 
-  private foodsList = viewChild(FoodsListComponent);
-
   categories = signal<Category[]>([]);
 
   // Spin carousel state
   readonly carouselCategories = CAROUSEL_CATEGORIES;
   spinSource = signal<SpinSource>('yeh-approved');
   selectedCategories = signal<Set<string>>(new Set(['Protein']));
-  carouselFoods = signal<Food[]>([]);
+  private rawCarouselFoods = signal<Food[]>([]);
 
-  // Search forwarded to embedded foods-list
+  // Search: filters the carousel locally (no API round-trip per keystroke)
   searchQuery = signal('');
+
+  // Carousel feed = raw foods narrowed by the search box.
+  carouselFoods = computed<Food[]>(() => {
+    const raw = this.rawCarouselFoods();
+    const q = this.searchQuery().trim().toLowerCase();
+    if (!q) return raw;
+    return raw.filter(f =>
+      f.description.toLowerCase().includes(q) ||
+      (f.shortDescription?.toLowerCase().includes(q) ?? false),
+    );
+  });
+
+  // Carousel destination + local lists (persisted to localStorage)
+  addTo = signal<'myfoods' | 'thisweek'>('myfoods');
+  activeTab = signal<'myfoods' | 'thisweek'>('myfoods');
+  myFoodsLocal = signal<Food[]>(this.loadLocal(LS_MYFOODS));
+  thisWeekLocal = signal<Food[]>(this.loadLocal(LS_THISWEEK));
+
+  // Splitter — bottom-pane height in px (clamped on drag)
+  bottomPaneHeight = signal(220);
+  private splitterStartY = 0;
+  private splitterStartHeight = 0;
 
   categoryLabel(cat: string): string {
     return CATEGORY_PLURALS[cat] ?? cat;
@@ -320,26 +415,119 @@ export class FoodsPanelComponent {
 
   onSearchInput(value: string): void {
     this.searchQuery.set(value);
-    const fl = this.foodsList();
-    if (fl) {
-      fl.searchQuery = value;
-      fl.onSearchQueryChange(value);
-    }
   }
 
-  onSearchSubmit(): void {
-    const fl = this.foodsList();
-    if (!fl) return;
-    fl.searchQuery = this.searchQuery();
-    fl.performSearch();
-  }
-
-  // Auto-load whenever source or filter changes (no Spin button needed)
+  // Auto-load whenever source or filter changes (search is applied client-side)
   private autoLoadCarousel = effect(() => {
     const source = this.spinSource();
     const cats = this.selectedCategories();
     this.loadCarouselFoods(source, cats);
   });
+
+  // Persist lists whenever they change
+  private persistMyFoods = effect(() => {
+    this.saveLocal(LS_MYFOODS, this.myFoodsLocal());
+  });
+  private persistThisWeek = effect(() => {
+    this.saveLocal(LS_THISWEEK, this.thisWeekLocal());
+  });
+
+  // ----- Carousel add target handling -----
+
+  onAddFood(event: { food: Food; destination: 'myfoods' | 'thisweek' }): void {
+    const { food, destination } = event;
+    const target = destination === 'myfoods' ? this.myFoodsLocal : this.thisWeekLocal;
+    if (target().some(f => f.id === food.id)) {
+      this.notificationService.show('Already in list', 'info');
+      return;
+    }
+    target.update(list => [...list, food]);
+    this.notificationService.show(
+      `Added to ${destination === 'myfoods' ? 'My Foods' : 'This Week'}`,
+      'success',
+    );
+  }
+
+  // ----- Per-row actions -----
+
+  toggleFavorite(event: Event, foodId: number): void {
+    event.stopPropagation();
+    this.preferencesService.toggleFavoriteLocal(foodId);
+  }
+
+  toggleRestricted(event: Event, foodId: number): void {
+    event.stopPropagation();
+    this.preferencesService.toggleRestrictedLocal(foodId);
+  }
+
+  removeFromMyFoods(event: Event, foodId: number): void {
+    event.stopPropagation();
+    this.myFoodsLocal.update(list => list.filter(f => f.id !== foodId));
+  }
+
+  removeFromThisWeek(event: Event, foodId: number): void {
+    event.stopPropagation();
+    this.thisWeekLocal.update(list => list.filter(f => f.id !== foodId));
+  }
+
+  // ----- Draggable splitter -----
+
+  onSplitterMouseDown(event: MouseEvent): void {
+    event.preventDefault();
+    this.splitterStartY = event.clientY;
+    this.splitterStartHeight = this.bottomPaneHeight();
+    const onMove = (e: MouseEvent) => {
+      const delta = this.splitterStartY - e.clientY;
+      this.bottomPaneHeight.set(this.clampPaneHeight(this.splitterStartHeight + delta));
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  onSplitterTouchStart(event: TouchEvent): void {
+    const touch = event.touches[0];
+    this.splitterStartY = touch.clientY;
+    this.splitterStartHeight = this.bottomPaneHeight();
+    const onMove = (e: TouchEvent) => {
+      const delta = this.splitterStartY - e.touches[0].clientY;
+      this.bottomPaneHeight.set(this.clampPaneHeight(this.splitterStartHeight + delta));
+    };
+    const onEnd = () => {
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+    };
+    document.addEventListener('touchmove', onMove);
+    document.addEventListener('touchend', onEnd);
+  }
+
+  private clampPaneHeight(px: number): number {
+    return Math.max(80, Math.min(px, 600));
+  }
+
+  // ----- localStorage helpers -----
+
+  private loadLocal(key: string): Food[] {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? (parsed as Food[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveLocal(key: string, foods: Food[]): void {
+    try {
+      localStorage.setItem(key, JSON.stringify(foods));
+    } catch {
+      // quota or disabled storage — silently swallow
+    }
+  }
 
   showAddDialog = signal(false);
   isSubmitting = signal(false);
@@ -506,8 +694,8 @@ export class FoodsPanelComponent {
       this.notificationService.show('Food added', 'success');
       this.closeAddDialog();
 
-      // Switch to MyFoods to show the newly added (auto-favorited) food
-      this.foodsList()?.onFilterChange('my-favorites');
+      // Surface the newly-added food in the spinner immediately by switching to MyFoods
+      this.spinSource.set('myfoods');
     } finally {
       this.isSubmitting.set(false);
     }
@@ -545,7 +733,7 @@ export class FoodsPanelComponent {
   private loadRequestId = 0;
   private async loadCarouselFoods(source: SpinSource, cats: Set<string>): Promise<void> {
     if (cats.size === 0) {
-      this.carouselFoods.set([]);
+      this.rawCarouselFoods.set([]);
       return;
     }
 
@@ -569,66 +757,11 @@ export class FoodsPanelComponent {
         foods = foods.filter(f => cats.has(f.categoryName ?? ''));
       }
 
-      this.carouselFoods.set(foods);
+      this.rawCarouselFoods.set(foods);
     } catch {
       if (reqId !== this.loadRequestId) return;
       this.notificationService.show('Failed to load foods for spin', 'error');
-      this.carouselFoods.set([]);
+      this.rawCarouselFoods.set([]);
     }
-  }
-
-  onFoodSelected(event: SelectedFoodEvent): void {
-    console.log('Food selected in Foods tab:', event.description);
-  }
-
-  onFoodNotFound(event: FoodNotFoundEvent): void {
-    this.newFood = this.emptyFood();
-    this.clearImage('product');
-    this.clearImage('nutrition');
-
-    if (event.suggestedFood) {
-      const f = event.suggestedFood;
-      this.sourceFoodId.set(f.id);
-      const nf = f.nutritionFacts;
-      this.newFood.description = f.description;
-      this.newFood.shortDescription = f.shortDescription || '';
-      this.newFood.calories = nf?.calories ?? 0;
-      this.newFood.proteinG = nf?.proteinG ?? 0;
-      this.newFood.totalFatG = nf?.totalFatG ?? 0;
-      this.newFood.totalCarbohydrateG = nf?.totalCarbohydrateG ?? 0;
-      this.newFood.dietaryFiberG = nf?.dietaryFiberG ?? 0;
-      this.newFood.sodiumMG = nf?.sodiumMG ?? 0;
-      this.newFood.servingUnit = 'g';
-      this.newFood.servingGramsPerUnit = nf?.servingSizeG ?? 0;
-    } else {
-      this.newFood.description = event.searchQuery;
-    }
-
-    // Load categories, then AI-categorize (DB category is fallback only)
-    this.foodsService.loadCategories().then(async cats => {
-      this.categories.set(cats);
-
-      // DB category as fallback
-      let dbCategoryId = 0;
-      if (event.suggestedFood?.categoryName) {
-        const match = cats.find(c => c.name === event.suggestedFood!.categoryName);
-        if (match) dbCategoryId = match.id;
-      }
-
-      // Always use AI to categorize
-      const foodName = event.suggestedFood?.description ?? event.searchQuery;
-      const aiCat = await this.foodsService.categorizeFood(foodName, cats);
-      if (aiCat) {
-        this.newFood.categoryId = aiCat.id;
-      } else if (dbCategoryId) {
-        this.newFood.categoryId = dbCategoryId;
-      } else if (cats.length > 0) {
-        this.newFood.categoryId = cats[0].id;
-      }
-
-      this.cdr.markForCheck();
-    });
-
-    this.showAddDialog.set(true);
   }
 }

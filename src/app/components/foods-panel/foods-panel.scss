@@ -88,8 +88,8 @@
 .spin-controls {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 84px 8px 12px;
+  gap: 3px;
+  padding: 4px 84px 4px 12px;
   background: #3a3a3a;
   border-bottom: 1px solid #2a2a2a;
   flex-shrink: 0;
@@ -112,17 +112,12 @@
   color: #4da6ff;
 }
 
-.search-row {
-  margin-top: 4px;
-  gap: 6px;
-}
-
-.search-input {
-  flex: 1;
-  min-width: 0;
-  padding: 6px 8px;
+.search-input.compact {
+  flex: 0 1 180px;
+  min-width: 100px;
+  padding: 3px 8px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12px;
   color: #ffffff;
   background: #1a1a1a;
   border: 1px solid #555;
@@ -135,38 +130,6 @@
   &::placeholder {
     color: rgba(255, 255, 255, 0.35);
     font-style: italic;
-  }
-}
-
-.search-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
-  border: 1px solid #555;
-  border-top-color: #6a6a6a;
-  border-bottom: 2px solid #1a1a1a;
-  border-radius: 4px;
-  color: #ffffff;
-  cursor: pointer;
-  flex-shrink: 0;
-
-  mat-icon {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-  }
-
-  &:hover {
-    background: linear-gradient(180deg, #606060 0%, #454545 100%);
-  }
-
-  &:active {
-    transform: translateY(1px);
-    border-bottom-width: 1px;
   }
 }
 
@@ -239,12 +202,149 @@
   }
 }
 
-.foods-content {
-  flex: 1;
-  min-height: 0;
+// ---- Splitter between carousel and bottom pane ----
+.pane-splitter {
+  height: 8px;
+  background: #2a2a2a;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+
+  &:hover { background: #4da6ff33; }
+
+  .splitter-grip {
+    width: 40px;
+    height: 3px;
+    background: #666;
+    border-radius: 2px;
+  }
+}
+
+// ---- Bottom pane: tabs + selected-food list ----
+.bottom-pane {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  background: #2f2f2f;
   overflow: hidden;
+}
+
+.bottom-tabs {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid #1a1a1a;
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+}
+
+.bottom-tab {
+  flex: 1;
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: none;
+  border-right: 1px solid #1a1a1a;
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
+
+  &:last-child { border-right: none; }
+
+  &:hover:not(.active) {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  &.active {
+    color: #4da6ff;
+    background: #2f2f2f;
+    box-shadow: inset 0 -2px 0 #4da6ff;
+  }
+}
+
+.bottom-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 6px;
+}
+
+.bottom-empty {
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 12px;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.selected-food-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  margin-bottom: 2px;
+  background: linear-gradient(180deg, #404040 0%, #383838 100%);
+  border-radius: 4px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.selected-food-thumb {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #555;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.selected-food-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #555;
+}
+
+.selected-food-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-action {
+  flex-shrink: 0;
+  cursor: pointer;
+  font-size: 18px !important;
+  width: 22px !important;
+  height: 22px !important;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 0.15s ease;
+
+  &.favorite {
+    &:hover, &.active { color: #ffcc00; }
+  }
+
+  &.restrict {
+    &:hover, &.active { color: #ff7676; }
+  }
+
+  &.remove {
+    &:hover { color: #ff6666; }
+  }
 }
 
 // Add food button

@@ -84,12 +84,12 @@ interface RenderedCard {
         (pointerdown)="onPointerDown($event)"
         (pointermove)="onPointerMove($event)"
         (pointerup)="onPointerUp($event)"
-        (pointercancel)="onPointerUp($event)"
-        (dblclick)="commit()">
+        (pointercancel)="onPointerUp($event)">
         <button
           type="button"
           class="spinner-nav spinner-nav--left"
           (pointerdown)="$event.stopPropagation()"
+          (dblclick)="$event.stopPropagation()"
           (click)="stepLeft()"
           aria-label="Previous">
           <svg viewBox="0 0 24 24" class="spinner-nav-icon" aria-hidden="true">
@@ -101,6 +101,7 @@ interface RenderedCard {
           type="button"
           class="spinner-nav spinner-nav--right"
           (pointerdown)="$event.stopPropagation()"
+          (dblclick)="$event.stopPropagation()"
           (click)="stepRight()"
           aria-label="Next">
           <svg viewBox="0 0 24 24" class="spinner-nav-icon" aria-hidden="true">
@@ -117,7 +118,8 @@ interface RenderedCard {
             [style.width.px]="card.width"
             [style.height.px]="card.height"
             [style.opacity]="card.opacity"
-            [style.z-index]="card.zIndex">
+            [style.z-index]="card.zIndex"
+            (dblclick)="onCardDblClick(card)">
             @if (cardTpl(); as tpl) {
               <ng-container
                 *ngTemplateOutlet="
@@ -370,6 +372,13 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
     if (tappedBucket === centerBucket) return false;
     this.animateOffsetTo(tappedBucket * sp);
     return true;
+  }
+
+  // ---- Card events ----
+
+  /** Double-click on a card only commits when that card is the highlighted (center) one. */
+  onCardDblClick(card: RenderedCard): void {
+    if (card.isCenter) this.commit();
   }
 
   // ---- Keyboard ----
