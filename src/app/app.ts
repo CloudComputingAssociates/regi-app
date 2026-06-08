@@ -45,7 +45,9 @@ import { PlanningService } from './services/planning.service';
 
           <main class="main-content">
             @if (isAuthenticated()) {
-              <app-macros />
+              @if (tabService.activeTabId() !== 'foods') {
+                <app-macros />
+              }
               @if (!tipDismissed() && tipService.tip(); as tip) {
                 <div class="nutrition-tip-bar">
                   <img src="/images/bites-logo.png" alt="Bites" class="tip-bar-logo"
@@ -83,7 +85,7 @@ export class AppComponent implements OnInit, OnDestroy {
   subscriptionService = inject(SubscriptionService);
   tipService = inject(NutritionTipService);
   private settingsService = inject(SettingsService);
-  private tabService = inject(TabService);
+  tabService = inject(TabService);
   private chatService = inject(ChatService);
   private notification = inject(NotificationService);
   private planningService = inject(PlanningService);

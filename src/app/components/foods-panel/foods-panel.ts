@@ -12,8 +12,6 @@ import { UserFoodService } from '../../services/user-food.service';
 import { ImageUploadService } from '../../services/image-upload.service';
 import { FoodsService, Category } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
-import { ThisWeekMacrosService } from '../../services/this-week-macros.service';
-import { PreferencesService } from '../../services/preferences.service';
 import { CreateUserFoodRequest } from '../../models/user-food.model';
 import { Food } from '../../models/food.model';
 
@@ -122,11 +120,14 @@ const CATEGORY_PLURALS: Record<string, string> = {
 
       <div class="bottom-pane" [style.height.px]="bottomPaneHeight()">
         <div class="bottom-header">
-          @if (addTo() === 'myfoods') {
-            {{ collectionHeading() }} ({{ bottomListLength() }})
-          } @else {
-            This Week Collection ({{ thisWeekLocal().length }})
-          }
+          <span class="bottom-header-title">
+            @if (addTo() === 'myfoods') {
+              {{ collectionHeading() }} ({{ bottomListLength() }})
+            } @else {
+              This Week Collection ({{ thisWeekLocal().length }})
+            }
+          </span>
+          <span class="column-hint">{{ columnHeaderText() }}</span>
         </div>
 
         <div class="bottom-list" #bottomList>
@@ -433,8 +434,6 @@ const CATEGORY_PLURALS: Record<string, string> = {
 })
 export class FoodsPanelComponent {
   constructor() {
-    // The Foods tab is the "fill the buckets" view — show macro bars in % by default.
-    queueMicrotask(() => this.userPrefs.showPercent.set(true));
     // Eager-load server-side allowed foods so the MY FOODS bottom list is populated
     // immediately, even before the user flips TYPE to MyFoods.
     this.refreshServerMyFoods();
@@ -462,8 +461,6 @@ export class FoodsPanelComponent {
   private imageUploadService = inject(ImageUploadService);
   private foodsService = inject(FoodsService);
   private cdr = inject(ChangeDetectorRef);
-  private thisWeekMacros = inject(ThisWeekMacrosService);
-  private userPrefs = inject(PreferencesService);
 
   categories = signal<Category[]>([]);
 
@@ -492,6 +489,13 @@ export class FoodsPanelComponent {
     const src = this.spinSource();
     if (src === 'restricted') return 'Restricted Foods Collection';
     return `${this.typeLabel()} Collection`;
+  });
+
+  // Hint label shown above the action-icon column at the right edge of each row,
+  // matching the old foods-list "Favorite / Restrict" / "Remove" header.
+  columnHeaderText = computed<string>(() => {
+    if (this.addTo() === 'thisweek') return 'Remove';
+    return 'Favorite / Restrict';
   });
 
   // Search: filters the carousel locally (no API round-trip per keystroke)
@@ -610,21 +614,10 @@ export class FoodsPanelComponent {
     this.saveLocal(LS_THISWEEK, this.thisWeekLocal());
   });
 
-  // Push This Week macro totals into the shared service so the top-bar Macros
-  // component reflects what's currently in the "This Week" basket. Sums
-  // nutritionFacts at one serving per added food.
-  private pushThisWeekMacros = effect(() => {
-    const foods = this.thisWeekLocal();
-    let p = 0, f = 0, c = 0;
-    for (const food of foods) {
-      const nf = food.nutritionFacts;
-      if (!nf) continue;
-      p += nf.proteinG ?? 0;
-      f += nf.totalFatG ?? 0;
-      c += nf.totalCarbohydrateG ?? 0;
-    }
-    this.thisWeekMacros.setTotals({ proteinG: p, fatG: f, carbG: c });
-  });
+  // (Removed pushThisWeekMacros: the macros strip is intentionally hidden on
+  // the Foods tab. Macros belong with composition on the Meals tab where the
+  // AI surfaces balance as a *signal* of progress, not as ambient noise
+  // during food curation.)
 
   // ----- Carousel add target handling -----
 

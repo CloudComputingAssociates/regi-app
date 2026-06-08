@@ -234,6 +234,10 @@
 
 .bottom-header {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 6px 12px;
   font-family: inherit;
   font-size: 12px;
@@ -243,6 +247,22 @@
   color: #4da6ff;
   background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
   border-bottom: 1px solid #1a1a1a;
+
+  .bottom-header-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // Subtler column hint floats to the right edge, above the action-icon column.
+  .column-hint {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    color: rgba(77, 166, 255, 0.55);
+  }
 }
 
 .bottom-list {
