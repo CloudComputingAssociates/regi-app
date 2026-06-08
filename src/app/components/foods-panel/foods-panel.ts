@@ -116,7 +116,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
       <div class="bottom-pane" [style.height.px]="bottomPaneHeight()">
         <div class="bottom-header">
           @if (addTo() === 'myfoods') {
-            My Foods ({{ allMyFoods().length }})
+            My Foods ({{ filteredMyFoods().length }})
           } @else {
             This Week ({{ thisWeekLocal().length }})
           }
