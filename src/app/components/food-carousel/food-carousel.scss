@@ -219,65 +219,22 @@
   max-height: 70vh;
 }
 
-.nf-popup-image {
-  position: relative;
-  overflow: hidden;
-  border-radius: 4px;
-  margin-top: 16px;
-  margin-bottom: 0;
-  cursor: zoom-in;
-
-  img {
-    width: 100%;
-    display: block;
-    object-fit: contain;
-    transition: transform 0.15s ease;
-
-    &.zoomed {
-      transform: scale(2);
-      cursor: zoom-out;
-    }
-  }
-}
-
-.nf-popup-splitter {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 12px;
-  cursor: ns-resize;
-  user-select: none;
-  flex-shrink: 0;
-
-  .splitter-grip {
-    width: 40px;
-    height: 4px;
-    border-radius: 2px;
-    background: #555;
-    transition: background 0.15s ease;
-  }
-
-  &:hover .splitter-grip {
-    background: #999;
-  }
-}
-
 .nf-popup-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin: 4px 0 12px;
+  padding-right: 24px;
 }
 
 .nf-popup-title {
   color: #ffffff;
-  font-size: 13px;
-  font-weight: 400;
+  font-size: 20px;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
-  margin-right: 8px;
 }
 
 .nf-popup-title-link {
@@ -287,27 +244,6 @@
 
   &:hover {
     text-decoration: underline;
-  }
-}
-
-.nf-popup-link-badge {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(0, 0, 0, 0.7);
-  color: #4da6ff;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  pointer-events: none;
-
-  mat-icon {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
   }
 }
 

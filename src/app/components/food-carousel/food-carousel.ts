@@ -84,31 +84,11 @@ import { Food } from '../../models/food.model';
             </app-spinner>
           </div>
 
-          <!-- Nutrition Facts popup (ported from foods-list) -->
+          <!-- Nutrition Facts popup -->
           @if (nfPopupFood()) {
             <div class="nf-popup-overlay" (click)="closeNfPopup()">
               <div class="nf-popup" (click)="$event.stopPropagation()">
                 <button class="nf-popup-close" (click)="closeNfPopup()">✕</button>
-                @if (nfPopupFood()!.foodImage) {
-                  <div
-                    class="nf-popup-image"
-                    [style.max-height.px]="nfImageHeight()"
-                    (mousedown)="onImageZoomEnter()"
-                    (mouseup)="onImageZoomLeave()"
-                    (mouseleave)="onImageZoomLeave()"
-                    (mousemove)="onImageZoomMove($event)">
-                    <img
-                      [src]="nfPopupFood()!.foodImage"
-                      [alt]="nfPopupFood()!.description"
-                      [class.zoomed]="imageZoomed()"
-                      [style.transform-origin]="imageZoomOrigin()" />
-                    @if (nfPopupFood()!.productPurchaseLink) {
-                      <div class="nf-popup-link-badge">
-                        <mat-icon>open_in_new</mat-icon> purchase link below
-                      </div>
-                    }
-                  </div>
-                }
                 <div class="nf-popup-header">
                   @if (nfPopupFood()!.productPurchaseLink) {
                     <a
@@ -122,16 +102,7 @@ import { Food } from '../../models/food.model';
                     </span>
                   }
                 </div>
-                @if (nfPopupFood()!.foodImage) {
-                  <div
-                    class="nf-popup-splitter"
-                    (mousedown)="onSplitterMouseDown($event)"
-                    (touchstart)="onSplitterTouchStart($event)">
-                    <div class="splitter-grip"></div>
-                  </div>
-                }
                 <regi-nutrition-label
-                  (click)="onNutritionLabelClick()"
                   [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
                   [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
               </div>
@@ -165,19 +136,13 @@ export class FoodCarouselComponent {
     ),
   );
 
-  // NF popup state (ported from foods-list)
+  // NF popup state
   nfPopupFood = signal<Food | null>(null);
-  imageZoomed = signal(false);
-  imageZoomOrigin = signal('center center');
-  nfImageHeight = signal(600);
-  private splitterStartY = 0;
-  private splitterStartHeight = 0;
 
   // Tear NF popup down when the carousel closes so it doesn't reappear on next open.
   private syncIsOpen = effect(() => {
     if (!this.isOpen()) {
       this.nfPopupFood.set(null);
-      this.imageZoomed.set(false);
     }
   });
 
@@ -199,11 +164,9 @@ export class FoodCarouselComponent {
     this.closed.emit();
   }
 
-  // -------- NF popup methods (ported verbatim from foods-list) --------
+  // -------- NF popup methods --------
 
   showNfPopup(food: Food): void {
-    this.imageZoomed.set(false);
-    this.nfImageHeight.set(600);
     this.nfPopupFood.set(food);
   }
 
@@ -217,59 +180,6 @@ export class FoodCarouselComponent {
       this.closeNfPopup();
       window.open(url, '_blank', 'noopener');
     }
-  }
-
-  onNutritionLabelClick(): void {
-    this.nfImageHeight.set(this.nfImageHeight() <= 40 ? 600 : 40);
-  }
-
-  onImageZoomEnter(): void {
-    this.imageZoomed.set(true);
-  }
-
-  onImageZoomLeave(): void {
-    this.imageZoomed.set(false);
-  }
-
-  onImageZoomMove(event: MouseEvent): void {
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
-    this.imageZoomOrigin.set(`${x}% ${y}%`);
-  }
-
-  onSplitterMouseDown(event: MouseEvent): void {
-    event.preventDefault();
-    this.splitterStartY = event.clientY;
-    this.splitterStartHeight = this.nfImageHeight();
-
-    const onMove = (e: MouseEvent) => {
-      const delta = e.clientY - this.splitterStartY;
-      this.nfImageHeight.set(Math.max(40, this.splitterStartHeight + delta));
-    };
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  }
-
-  onSplitterTouchStart(event: TouchEvent): void {
-    const touch = event.touches[0];
-    this.splitterStartY = touch.clientY;
-    this.splitterStartHeight = this.nfImageHeight();
-
-    const onMove = (e: TouchEvent) => {
-      const delta = e.touches[0].clientY - this.splitterStartY;
-      this.nfImageHeight.set(Math.max(40, this.splitterStartHeight + delta));
-    };
-    const onEnd = () => {
-      document.removeEventListener('touchmove', onMove);
-      document.removeEventListener('touchend', onEnd);
-    };
-    document.addEventListener('touchmove', onMove);
-    document.addEventListener('touchend', onEnd);
   }
 
   // -------- Helpers for the spinnerDetails template --------
