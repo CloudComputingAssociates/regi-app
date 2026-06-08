@@ -1,5 +1,5 @@
 // src/app/components/foods-panel/foods-panel.ts
-import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, inject, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, inject, viewChild, effect, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -12,6 +12,8 @@ import { UserFoodService } from '../../services/user-food.service';
 import { ImageUploadService } from '../../services/image-upload.service';
 import { FoodsService, Category } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
+import { ThisWeekMacrosService } from '../../services/this-week-macros.service';
+import { PreferencesService } from '../../services/preferences.service';
 import { CreateUserFoodRequest } from '../../models/user-food.model';
 import { Food } from '../../models/food.model';
 
@@ -120,8 +122,8 @@ const CATEGORY_PLURALS: Record<string, string> = {
           }
         </div>
 
-        <div class="bottom-list">
-          @let list = addTo() === 'myfoods' ? myFoodsLocal() : thisWeekLocal();
+        <div class="bottom-list" #bottomList>
+          @let list = addTo() === 'myfoods' ? filteredMyFoods() : thisWeekLocal();
           @if (list.length === 0) {
             <div class="bottom-empty">
               @if (addTo() === 'myfoods') {
@@ -355,6 +357,11 @@ const CATEGORY_PLURALS: Record<string, string> = {
   styleUrls: ['./foods-panel.scss']
 })
 export class FoodsPanelComponent {
+  constructor() {
+    // The Foods tab is the "fill the buckets" view — show macro bars in % by default.
+    queueMicrotask(() => this.userPrefs.showPercent.set(true));
+  }
+
   private tabService = inject(TabService);
   protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
@@ -362,6 +369,8 @@ export class FoodsPanelComponent {
   private imageUploadService = inject(ImageUploadService);
   private foodsService = inject(FoodsService);
   private cdr = inject(ChangeDetectorRef);
+  private thisWeekMacros = inject(ThisWeekMacrosService);
+  private userPrefs = inject(PreferencesService);
 
   categories = signal<Category[]>([]);
 
@@ -391,6 +400,18 @@ export class FoodsPanelComponent {
   myFoodsLocal = signal<Food[]>(this.loadLocal(LS_MYFOODS));
   thisWeekLocal = signal<Food[]>(this.loadLocal(LS_THISWEEK));
 
+  // MyFoods display follows the same category Filters as the carousel.
+  // The header count still reflects the unfiltered MyFoods total.
+  filteredMyFoods = computed<Food[]>(() => {
+    const all = this.myFoodsLocal();
+    const cats = this.selectedCategories();
+    if (cats.size === 0 || cats.size === CAROUSEL_CATEGORIES.length) return all;
+    return all.filter(f => cats.has(f.categoryName ?? ''));
+  });
+
+  // Scroll target for the bottom list (used after add to bring new/moved row into view)
+  private bottomListRef = viewChild<ElementRef<HTMLElement>>('bottomList');
+
   // Splitter — bottom-pane height in px (clamped on drag)
   bottomPaneHeight = signal(220);
   private splitterStartY = 0;
@@ -419,20 +440,44 @@ export class FoodsPanelComponent {
     this.saveLocal(LS_THISWEEK, this.thisWeekLocal());
   });
 
+  // Push This Week macro totals into the shared service so the top-bar Macros
+  // component reflects what's currently in the "This Week" basket. Sums
+  // nutritionFacts at one serving per added food.
+  private pushThisWeekMacros = effect(() => {
+    const foods = this.thisWeekLocal();
+    let p = 0, f = 0, c = 0;
+    for (const food of foods) {
+      const nf = food.nutritionFacts;
+      if (!nf) continue;
+      p += nf.proteinG ?? 0;
+      f += nf.totalFatG ?? 0;
+      c += nf.totalCarbohydrateG ?? 0;
+    }
+    this.thisWeekMacros.setTotals({ proteinG: p, fatG: f, carbG: c });
+  });
+
   // ----- Carousel add target handling -----
 
   onAddFood(event: { food: Food; destination: 'myfoods' | 'thisweek' }): void {
     const { food, destination } = event;
     const target = destination === 'myfoods' ? this.myFoodsLocal : this.thisWeekLocal;
-    if (target().some(f => f.id === food.id)) {
-      this.notificationService.show('Already in list', 'info');
-      return;
+    const exists = target().some(f => f.id === food.id);
+
+    if (exists) {
+      // Already there → no-op for the data, but float it to the top so the user can see it.
+      target.update(list => [food, ...list.filter(f => f.id !== food.id)]);
+    } else {
+      target.update(list => [food, ...list]);
+      this.notificationService.show(
+        `Added to ${destination === 'myfoods' ? 'My Foods' : 'This Week'}`,
+        'success',
+      );
     }
-    target.update(list => [...list, food]);
-    this.notificationService.show(
-      `Added to ${destination === 'myfoods' ? 'My Foods' : 'This Week'}`,
-      'success',
-    );
+
+    // Surface the row: bring it into view at the top of the list.
+    queueMicrotask(() => {
+      this.bottomListRef()?.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
 
   // ----- Per-row actions -----

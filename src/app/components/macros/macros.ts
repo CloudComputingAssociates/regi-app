@@ -9,6 +9,7 @@ import { PreferencesService } from '../../services/preferences.service';
 import { PlanningService } from '../../services/planning.service';
 import { TabService } from '../../services/tab.service';
 import { WeekPlanMacrosService } from '../../services/week-plan-macros.service';
+import { ThisWeekMacrosService } from '../../services/this-week-macros.service';
 import { TodayService } from '../../services/today.service';
 import { TimePeriod, NutritionResponse } from '../../models/nutrition.model';
 
@@ -105,6 +106,7 @@ export class MacrosComponent implements OnInit {
   private planningService = inject(PlanningService);
   private tabService = inject(TabService);
   private weekPlanMacros = inject(WeekPlanMacrosService);
+  private thisWeekMacros = inject(ThisWeekMacrosService);
   private todayService = inject(TodayService);
 
   // Derive context from active tab
@@ -174,6 +176,25 @@ export class MacrosComponent implements OnInit {
     };
   });
 
+  // Signal-based display data for This Week context (foods tab — sums of the local
+  // "This Week" food list, pushed by foods-panel into ThisWeekMacrosService)
+  readonly thisWeekDisplayData = computed<MacroDisplayData>(() => {
+    const totals = this.thisWeekMacros.totals();
+    const goals = this.preferencesService.dailyGoals();
+    const targetP = goals?.protein ?? 150;
+    const targetF = goals?.fat ?? 78;
+    const targetC = goals?.carbs ?? 175;
+
+    return {
+      macros: [
+        { name: 'proteins', actual: Math.round(totals.proteinG), target: targetP, percentage: this.calculatePercentage(totals.proteinG, targetP) },
+        { name: 'fats', actual: Math.round(totals.fatG), target: targetF, percentage: this.calculatePercentage(totals.fatG, targetF) },
+        { name: 'carbs', actual: Math.round(totals.carbG), target: targetC, percentage: this.calculatePercentage(totals.carbG, targetC) },
+      ],
+      timePeriod: 'day'
+    };
+  });
+
   // Signal-based display data for today context (live from checked items)
   readonly todayDisplayData = computed<MacroDisplayData>(() => {
     const checked = this.todayService.checkedMacros();
@@ -212,6 +233,7 @@ export class MacrosComponent implements OnInit {
     if (ctx === 'regimenu') return this.regimenuDisplayData();
     if (ctx === 'weekplan') return this.weekPlanDisplayData();
     if (ctx === 'today') return this.todayDisplayData();
+    if (ctx === 'foods') return this.thisWeekDisplayData();
     if (ctx === 'shopping') return MacrosComponent.ZERO_MACROS;
     return this.subscriptionData();
   });
@@ -287,7 +309,7 @@ export class MacrosComponent implements OnInit {
       }
       return `${macro.target}g`;
     }
-    if (ctx === 'regimenu' || ctx === 'weekplan') {
+    if (ctx === 'regimenu' || ctx === 'weekplan' || ctx === 'foods') {
       return this.showPercent ? `${macro.percentage}%` : `${macro.actual}g`;
     }
     return this.showPercent ? `${macro.percentage}%` : `${macro.actual}g`;

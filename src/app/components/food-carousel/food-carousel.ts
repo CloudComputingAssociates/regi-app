@@ -41,7 +41,8 @@ import { Food } from '../../models/food.model';
               class="food-card"
               [class.is-center]="center"
               (mousedown)="onCardHoldStart(center, item, $event)"
-              (touchstart)="onCardHoldStart(center, item, $event)">
+              (touchstart)="onCardHoldStart(center, item, $event)"
+              (dblclick)="onCardDblClick(center, item)">
               <div class="food-card-image">
                 @if (item.thumbnailUrl) {
                   <img [src]="item.thumbnailUrl" alt="" draggable="false" />
@@ -154,6 +155,17 @@ export class FoodCarouselComponent {
     this.endHold(true);
     const food = item['food'] as Food | undefined;
     if (food) this.add.emit({ food, destination: this.addTo() });
+  }
+
+  // Direct dblclick on the projected food-card — a fallback in case the spinner's
+  // own per-card dblclick gate didn't fire (e.g. timing/edge cases on isCenter).
+  // The parent's onAddFood dedupes by food.id, so a double-emit is harmless.
+  onCardDblClick(isCenter: boolean, item: SpinnerItem): void {
+    if (!isCenter) return;
+    const food = item['food'] as Food | undefined;
+    if (!food) return;
+    this.endHold(true);
+    this.add.emit({ food, destination: this.addTo() });
   }
 
   // mousedown / touchstart on a center card: schedule NF popup after HOLD_DELAY_MS.
