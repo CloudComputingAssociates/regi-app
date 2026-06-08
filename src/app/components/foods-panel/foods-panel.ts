@@ -438,6 +438,12 @@ export class FoodsPanelComponent {
     // Eager-load server-side allowed foods so the MY FOODS bottom list is populated
     // immediately, even before the user flips TYPE to MyFoods.
     this.refreshServerMyFoods();
+    // Populate the local Allowed/Restricted ID sets so the row icons (star /
+    // block) reflect each YEH food's actual state as the user scrolls. Without
+    // this call those signals stay empty and every row reads as "not favorited".
+    this.preferencesService.getAllPreferences().subscribe({
+      error: (err) => console.error('Failed to load food preferences:', err),
+    });
   }
 
   private async refreshServerMyFoods(): Promise<void> {
