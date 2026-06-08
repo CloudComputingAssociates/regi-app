@@ -197,6 +197,8 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
   // Private physics state
   private hostRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private dragging = false;
+  private pointerCaptured = false;
+  private capturedPointerId: number | null = null;
   private dragStartOffset = 0;
   private dragStartX = 0;
   private lastBucket = 0;
@@ -207,6 +209,9 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
   private audioCtx: AudioContext | null = null;
   private ro: ResizeObserver | null = null;
   private rouletteEl: HTMLElement | null = null;
+  // Threshold below which we treat a pointerdown..up as a tap (no pointer capture,
+  // so compatibility click/dblclick reach the underlying card normally).
+  private static readonly CAPTURE_THRESHOLD_PX = 5;
 
   // Derived
   centeredIndex = computed(() => {
@@ -307,14 +312,14 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
   // ---- Pointer ----
 
   onPointerDown(e: PointerEvent): void {
-    const target = e.currentTarget as Element;
-    try {
-      target.setPointerCapture?.(e.pointerId);
-    } catch {
-      // swallow
-    }
+    // IMPORTANT: do NOT capture the pointer here. Pointer capture redirects
+    // compatibility mouse events (click, dblclick) to the captured element, which
+    // would swallow card-level click/dblclick handlers. We capture lazily in
+    // onPointerMove once the user has actually started dragging.
     this.stopMomentum();
     this.dragging = true;
+    this.pointerCaptured = false;
+    this.capturedPointerId = e.pointerId;
     this.dragStartOffset = this.offsetPx();
     this.dragStartX = e.clientX;
     this.lastBucket = Math.floor(this.offsetPx() / this.spacing());
@@ -324,7 +329,19 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
 
   onPointerMove(e: PointerEvent): void {
     if (!this.dragging) return;
-    const newOffset = this.dragStartOffset - (e.clientX - this.dragStartX);
+    const dx = e.clientX - this.dragStartX;
+    if (!this.pointerCaptured && Math.abs(dx) > SpinnerComponent.CAPTURE_THRESHOLD_PX) {
+      // The user has moved enough that this is clearly a drag, not a tap.
+      // Capture now so we keep receiving pointermove even if the cursor leaves
+      // the roulette element.
+      try {
+        (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+        this.pointerCaptured = true;
+      } catch {
+        // swallow
+      }
+    }
+    const newOffset = this.dragStartOffset - dx;
     this.bucketTick(newOffset);
     this.offsetPx.set(newOffset);
     this.samples.push({ x: e.clientX, t: performance.now() });
@@ -334,11 +351,15 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
   onPointerUp(e: PointerEvent): void {
     if (!this.dragging) return;
     this.dragging = false;
-    try {
-      (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
-    } catch {
-      // swallow
+    if (this.pointerCaptured) {
+      try {
+        (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+      } catch {
+        // swallow
+      }
+      this.pointerCaptured = false;
     }
+    this.capturedPointerId = null;
     const vx = this.velocityFromSamples();
     const moved = Math.abs(this.offsetPx() - this.dragStartOffset);
     if (Math.abs(vx) < 200 && moved < 8) {

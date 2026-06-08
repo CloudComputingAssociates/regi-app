@@ -425,10 +425,13 @@ export class FoodsPanelComponent {
     this.searchQuery.set(value);
   }
 
-  // Auto-load whenever source or filter changes (search is applied client-side)
+  // Auto-load whenever source, filter, OR the local MyFoods list changes (the
+  // last one matters when TYPE=MyFoods, since loadCarouselFoods merges in
+  // myFoodsLocal — and reads it past an await that wouldn't otherwise be tracked).
   private autoLoadCarousel = effect(() => {
     const source = this.spinSource();
     const cats = this.selectedCategories();
+    this.myFoodsLocal(); // ensure local-picks edits trigger a reload
     this.loadCarouselFoods(source, cats);
   });
 
@@ -776,7 +779,19 @@ export class FoodsPanelComponent {
         const resp = await firstValueFrom(this.foodsService.searchYehApprovedFoods(500));
         foods = resp?.foods ?? [];
       } else if (source === 'myfoods') {
-        foods = await firstValueFrom(this.preferencesService.getAllowedFoodsFull());
+        // Merge server-side favorites with foods the user has picked into
+        // myFoodsLocal via the carousel (which doesn't write to the server yet).
+        // Local picks take precedence on dedupe to preserve the local copy.
+        let server: Food[] = [];
+        try {
+          server = await firstValueFrom(this.preferencesService.getAllowedFoodsFull());
+        } catch {
+          // server may be unreachable; fall back to local-only
+        }
+        const local = this.myFoodsLocal();
+        const seenIds = new Set(local.map(f => f.id));
+        const uniqueServer = server.filter(f => !seenIds.has(f.id));
+        foods = [...local, ...uniqueServer];
       } else {
         foods = await firstValueFrom(this.preferencesService.getRestrictedFoodsFull());
       }
