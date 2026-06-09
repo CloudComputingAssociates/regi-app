@@ -1,0 +1,185 @@
+// src/app/components/image-carousel/image-carousel.scss
+
+:host {
+  display: block;
+  width: 100%;
+  flex: 1;
+  min-height: 200px;
+}
+
+.carousel-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #404040 0%, #3a3a3a 100%);
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.carousel-body {
+  position: relative;
+  padding: 10px 12px 4px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  // Spinner sits near the top of the area — the user wanted less wasted space
+  // below the cards so the bottom-pane gets more room.
+  justify-content: flex-start;
+}
+
+// ---- Bottom Bucket slider (top-left) ----
+.bucket-bar {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  z-index: 305;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bucket-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #4da6ff;
+}
+
+.bucket-toggle {
+  display: inline-flex;
+  background: #1a1a1a;
+  border: 1px solid #555;
+  border-radius: 999px;
+  padding: 2px;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.bucket-option {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 3px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover:not(.active) {
+    color: #ffffff;
+  }
+
+  &.active {
+    color: #ffffff;
+    background: linear-gradient(180deg, #4a8fc7 0%, #357095 100%);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+}
+
+// ---- Floating Spin button (top-right) ----
+.floating-spin-btn {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  z-index: 310;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: #357035;
+  border: 1px solid #4a954a;
+  border-bottom: 2px solid #1a3a1a;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+
+  &:hover { background: #408040; }
+  &:active {
+    transform: translateY(1px);
+    border-bottom-width: 1px;
+  }
+}
+
+// ---- Image card (projected into spinner) ----
+.image-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #3a3a3a;
+  border-radius: 10px;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  transition: border-color 0.15s ease;
+
+  &.is-center {
+    border-color: rgba(77, 166, 255, 0.85);
+  }
+}
+
+.image-card-image {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2f2f2f;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+}
+
+.image-card-stub {
+  width: 50%;
+  height: 50%;
+}
+
+.image-card-caption {
+  flex-shrink: 0;
+  padding: 3px 8px 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #ffffff;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+// ---- Center-card overlay slot ----
+// Anchored to the upper-left of where the centered card sits visually.
+// Uses CSS custom props (--card-width / --card-height) set inline from the
+// component's inputs so it auto-tracks any size change.
+.center-overlay {
+  position: absolute;
+  z-index: 320;
+  // Center of carousel-body minus half the card dimensions = card's top-left.
+  // 6 px inset so the projected content tucks just inside the card border.
+  top: calc(50% - var(--card-height, 192px) / 2 + 6px);
+  left: calc(50% - var(--card-width, 154px) / 2 + 6px);
+  pointer-events: none; // projected content opts back in
+
+  ::ng-deep > * {
+    pointer-events: auto;
+  }
+}

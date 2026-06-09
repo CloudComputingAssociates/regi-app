@@ -5,7 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
-import { FoodCarouselComponent } from '../food-carousel/food-carousel';
+import { ImageCarouselComponent } from '../image-carousel/image-carousel';
+import { SpinnerItem } from '../spinner/spinner';
+import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { UserFoodService } from '../../services/user-food.service';
@@ -25,7 +27,28 @@ const CAROUSEL_CATEGORIES = [
 ] as const;
 
 const LS_MYFOODS = 'regi.foods.myfoods';
-const LS_THISWEEK = 'regi.foods.thisweek';
+const LS_THISWEEK_BUCKETS = 'regi.foods.thisweek.buckets';
+
+type BucketKey = 'Proteins' | 'Fats' | 'Carbs' | 'Misc';
+const BUCKET_KEYS: readonly BucketKey[] = ['Proteins', 'Fats', 'Carbs', 'Misc'];
+
+// Food.categoryName → bucket. Per the spec: Dairy → Fats, Vegetables/Carbs/Fruits
+// → Carbs, Processed/Condiments → Misc.
+const CATEGORY_TO_BUCKET: Record<string, BucketKey> = {
+  Protein: 'Proteins',
+  Fat: 'Fats',
+  Dairy: 'Fats',
+  Vegetable: 'Carbs',
+  Carbohydrate: 'Carbs',
+  Fruit: 'Carbs',
+  Processed: 'Misc',
+  Condiment: 'Misc',
+};
+
+type ThisWeekBuckets = Record<BucketKey, Food[]>;
+function emptyBuckets(): ThisWeekBuckets {
+  return { Proteins: [], Fats: [], Carbs: [], Misc: [] };
+}
 
 const TYPE_LABELS: Record<SpinSource, string> = {
   'yeh-approved': 'YEH Approved',
@@ -46,7 +69,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
 
 @Component({
   selector: 'app-foods-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, FoodCarouselComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, ImageCarouselComponent, NutritionFactsLabelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="foods-panel-container">
@@ -105,24 +128,24 @@ const CATEGORY_PLURALS: Record<string, string> = {
         </div>
       </div>
 
-      <app-food-carousel
-        [foods]="carouselFoods()"
-        [typeLabel]="typeLabel()"
-        [(addTo)]="addTo"
-        (add)="onAddFood($event)" />
-
-      <!-- Borderless action button anchored under the centered carousel card.
-           Lives in foods-panel (not food-carousel) so the carousel stays a
-           pure spinning surface. -->
-      <div class="health-benefits-bar">
+      <app-image-carousel
+        [items]="spinnerItems()"
+        leftLabel="This Week"
+        [rightLabel]="typeLabel()"
+        [(bucketSide)]="addTo"
+        (activated)="onActivated($event)"
+        (inspect)="onInspect($event)"
+        (cardDragStart)="onCardDragStart($event)">
+        <!-- Health Benefits button overlays upper-left of the centered card. -->
         <button
+          centerOverlay
           type="button"
           class="health-benefits-btn"
           (click)="showHealthBenefits.set(true)"
           aria-label="Health benefits">
           <img src="/images/Health%20Benefits.png" alt="Health Benefits" />
         </button>
-      </div>
+      </app-image-carousel>
 
       <div
         class="pane-splitter"
@@ -134,45 +157,47 @@ const CATEGORY_PLURALS: Record<string, string> = {
       <div class="bottom-pane" [style.height.px]="bottomPaneHeight()">
         <div class="bottom-header">
           <span class="bottom-header-title">
-            @if (addTo() === 'myfoods') {
-              {{ collectionHeading() }} ({{ bottomListLength() }})
+            @if (addTo() === 'left') {
+              This Weeks Foods
             } @else {
-              This Week Collection ({{ thisWeekLocal().length }})
+              {{ collectionHeading() }} ({{ bottomListLength() }})
             }
           </span>
-          <span class="column-hint">{{ columnHeaderText() }}</span>
+          @if (addTo() !== 'left') {
+            <span class="column-hint">{{ columnHeaderText() }}</span>
+          }
         </div>
 
         <div class="bottom-list" #bottomList>
-          @if (addTo() === 'thisweek') {
-            <!-- This Week view: flat list, trash to remove from local basket -->
-            @if (thisWeekLocal().length === 0) {
-              <div class="bottom-empty">
-                Double-click the highlighted food to add to This Week.
-              </div>
-            } @else {
-              @for (food of thisWeekLocal(); track food.id) {
-                <div class="selected-food-row">
-                  <div class="selected-food-thumb">
-                    @if (food.foodImageThumbnail) {
-                      <img [src]="food.foodImageThumbnail" alt="" />
-                    } @else {
-                      <div class="selected-food-thumb-placeholder"></div>
-                    }
+          @if (addTo() === 'left') {
+            <!-- THIS WEEK: 4 buckets grid. Each is a drop target; the count on
+                 the face is the number of foods in that bucket. -->
+            <div class="bucket-grid">
+              @for (key of bucketKeys; track key) {
+                <div
+                  class="bucket"
+                  [class.drag-over]="dragOverBucket() === key"
+                  (dragenter)="onBucketDragEnter($event, key)"
+                  (dragover)="onBucketDragOver($event)"
+                  (dragleave)="onBucketDragLeave($event, key)"
+                  (drop)="onBucketDrop($event, key)">
+                  <div class="bucket-face">
+                    <div class="bucket-count">{{ thisWeekBuckets()[key].length }}</div>
+                    <div class="bucket-name">{{ key }}</div>
                   </div>
-                  <span class="selected-food-name">
-                    {{ food.shortDescription || food.description }}
-                  </span>
-                  <mat-icon
-                    class="row-action remove"
-                    (click)="removeFromThisWeek($event, food.id)"
-                    matTooltip="Remove"
-                    matTooltipPosition="left">
-                    delete
-                  </mat-icon>
+                  @if (thisWeekBuckets()[key].length > 0) {
+                    <button
+                      type="button"
+                      class="bucket-clear"
+                      (click)="clearBucket(key)"
+                      matTooltip="Empty bucket"
+                      matTooltipPosition="above">
+                      ✕
+                    </button>
+                  }
                 </div>
               }
-            }
+            </div>
           } @else if (spinSource() === 'myfoods') {
             <!-- TYPE=MyFoods on right side: accordion view of curated MyFoods -->
             @if (allMyFoods().length === 0) {
@@ -273,6 +298,30 @@ const CATEGORY_PLURALS: Record<string, string> = {
           }
         </div>
       </div>
+
+      <!-- Nutrition Facts popup (single-click on highlighted card) -->
+      @if (nfPopupFood()) {
+        <div class="nf-popup-overlay" (click)="nfPopupFood.set(null)">
+          <div class="nf-popup" (click)="$event.stopPropagation()">
+            <button class="nf-popup-close" (click)="nfPopupFood.set(null)">✕</button>
+            <div class="nf-popup-header">
+              @if (nfPopupFood()!.productPurchaseLink) {
+                <a class="nf-popup-title nf-popup-title-link"
+                   (click)="openProductLink(nfPopupFood()!)">
+                  {{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}
+                </a>
+              } @else {
+                <span class="nf-popup-title">
+                  {{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}
+                </span>
+              }
+            </div>
+            <regi-nutrition-label
+              [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
+              [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
+          </div>
+        </div>
+      }
 
       <!-- Health Benefits placeholder popup -->
       @if (showHealthBenefits()) {
@@ -514,20 +563,18 @@ export class FoodsPanelComponent {
   });
 
   // Heading shown in the bottom-pane title strip when the slider is on the
-  // right side. "Restricted Foods Collection" because just "Restricted
-  // Collection" reads like the collection itself is restricted.
+  // right side. Adds "Foods" unless the label already ends in "Foods" (avoids
+  // the double "MyFoods Foods" trap).
   collectionHeading = computed<string>(() => {
     const src = this.spinSource();
-    if (src === 'restricted') return 'Restricted Foods Collection';
-    return `${this.typeLabel()} Collection`;
+    if (src === 'restricted') return 'Restricted Foods';
+    const label = this.typeLabel();
+    return label.toLowerCase().endsWith('foods') ? label : `${label} Foods`;
   });
 
-  // Hint label shown above the action-icon column at the right edge of each row,
-  // matching the old foods-list "Favorite / Restrict" / "Remove" header.
-  columnHeaderText = computed<string>(() => {
-    if (this.addTo() === 'thisweek') return 'Remove';
-    return 'Favorite / Restrict';
-  });
+  // Hint label shown above the action-icon column at the right edge of each
+  // row (right-side views only — left side now shows the bucket grid).
+  columnHeaderText = computed<string>(() => 'Favorite / Restrict');
 
   // Search: filters the carousel locally (no API round-trip per keystroke)
   searchQuery = signal('');
@@ -544,11 +591,24 @@ export class FoodsPanelComponent {
   });
 
   // Carousel destination + local lists (persisted to localStorage).
-  // The slider drives both the add target AND which list is visible at the bottom.
-  // Default to "This Week" — that's the primary planning workflow.
-  addTo = signal<'myfoods' | 'thisweek'>('thisweek');
+  // 'left' = This Week buckets, 'right' = the TYPE-driven view (YEH/MyFoods/Restricted).
+  // Default to 'left' (This Week) — that's the primary planning workflow.
+  addTo = signal<'left' | 'right'>('left');
   myFoodsLocal = signal<Food[]>(this.loadLocal(LS_MYFOODS));
-  thisWeekLocal = signal<Food[]>(this.loadLocal(LS_THISWEEK));
+
+  // Four-bucket This Week store (Proteins/Fats/Carbs/Misc). Replaces the old
+  // flat thisWeekLocal Food[] — each bucket is its own array.
+  readonly bucketKeys = BUCKET_KEYS;
+  thisWeekBuckets = signal<ThisWeekBuckets>(this.loadBuckets());
+
+  // Convenience: total foods across all four buckets.
+  thisWeekTotal = computed<number>(() => {
+    const b = this.thisWeekBuckets();
+    return b.Proteins.length + b.Fats.length + b.Carbs.length + b.Misc.length;
+  });
+
+  // Drag-over bucket key (for visual highlight on the drop target)
+  dragOverBucket = signal<BucketKey | null>(null);
 
   // Server-side MyFoods cache (the user's existing allowed foods from
   // FoodPreferencesService). Loaded eagerly on construction and refreshed
@@ -642,63 +702,133 @@ export class FoodsPanelComponent {
     this.saveLocal(LS_MYFOODS, this.myFoodsLocal());
   });
   private persistThisWeek = effect(() => {
-    this.saveLocal(LS_THISWEEK, this.thisWeekLocal());
+    this.saveBuckets(this.thisWeekBuckets());
   });
 
-  // (Removed pushThisWeekMacros: the macros strip is intentionally hidden on
-  // the Foods tab. Macros belong with composition on the Meals tab where the
-  // AI surfaces balance as a *signal* of progress, not as ambient noise
-  // during food curation.)
+  // ----- image-carousel: SpinnerItem mapping + outputs -----
 
-  // ----- Carousel add target handling -----
+  spinnerItems = computed<SpinnerItem[]>(() =>
+    this.carouselFoods().map((f) => ({
+      id: f.id,
+      thumbnailUrl: f.foodImageThumbnail ?? undefined,
+      fullUrl: f.foodImage ?? undefined,
+      label: f.shortDescription || f.description,
+      food: f,
+    } as SpinnerItem)),
+  );
 
-  onAddFood(event: { food: Food; destination: 'myfoods' | 'thisweek' }): void {
-    const { food, destination } = event;
+  // Double-click on the centered card.
+  onActivated(item: SpinnerItem): void {
+    const food = item['food'] as Food | undefined;
+    if (!food) return;
 
-    if (destination === 'thisweek') {
-      // Slider on left: drop into the local This Week basket.
-      const exists = this.thisWeekLocal().some(f => f.id === food.id);
-      if (exists) {
-        this.thisWeekLocal.update(list => [food, ...list.filter(f => f.id !== food.id)]);
-      } else {
-        this.thisWeekLocal.update(list => [food, ...list]);
-        this.notificationService.show('Added to This Week', 'success');
-      }
+    if (this.addTo() === 'left') {
+      // Route to the correct This Week bucket based on the food's category.
+      const bucket = this.bucketForFood(food);
+      this.addFoodToBucket(food, bucket);
     } else {
-      // Slider on right: behavior follows TYPE.
-      const source = this.spinSource();
-      if (source === 'yeh-approved') {
-        // Promote a YEH food to MyFoods (server-side favorite).
-        if (!this.preferencesService.isAllowed(food.id)) {
-          this.preferencesService.toggleFavoriteLocal(food.id);
-          this.refreshServerMyFoods();
-          this.notificationService.show(`${food.shortDescription || food.description} → MyFoods`, 'success');
-        } else {
-          this.notificationService.show('Already a MyFood', 'info');
-        }
-      } else if (source === 'restricted') {
-        // Unrestrict + favorite (move from Restricted into MyFoods).
-        if (this.preferencesService.isRestricted(food.id)) {
-          this.preferencesService.toggleRestrictedLocal(food.id);
-        }
-        if (!this.preferencesService.isAllowed(food.id)) {
-          this.preferencesService.toggleFavoriteLocal(food.id);
-        }
+      // Slider on right: behavior follows TYPE (matches the old onAddFood right-side logic).
+      this.onRightSideAdd(food);
+    }
+  }
+
+  // Single click on the centered card → open NF popup.
+  onInspect(item: SpinnerItem): void {
+    const food = item['food'] as Food | undefined;
+    if (food) this.nfPopupFood.set(food);
+  }
+
+  // The image-carousel emits the dragstart event so we can set dataTransfer
+  // with the SpinnerItem's food. Foods-panel is the only level that knows
+  // what "food.id" means; image-carousel stays domain-blind.
+  onCardDragStart({ item, event }: { item: SpinnerItem; event: DragEvent }): void {
+    const food = item['food'] as Food | undefined;
+    if (!food) return;
+    event.dataTransfer?.setData('application/json', JSON.stringify(food));
+    event.dataTransfer!.effectAllowed = 'copy';
+  }
+
+  // ----- Bucket helpers -----
+
+  private bucketForFood(food: Food): BucketKey {
+    return CATEGORY_TO_BUCKET[food.categoryName ?? ''] ?? 'Misc';
+  }
+
+  private addFoodToBucket(food: Food, key: BucketKey): void {
+    const buckets = this.thisWeekBuckets();
+    const exists = buckets[key].some(f => f.id === food.id);
+    if (exists) {
+      // No-op (silent); user already picked this one for that bucket.
+      return;
+    }
+    this.thisWeekBuckets.update(b => ({
+      ...b,
+      [key]: [food, ...b[key]],
+    }));
+    this.notificationService.show(`${food.shortDescription || food.description} → ${key}`, 'success');
+  }
+
+  private onRightSideAdd(food: Food): void {
+    const source = this.spinSource();
+    if (source === 'yeh-approved') {
+      if (!this.preferencesService.isAllowed(food.id)) {
+        this.preferencesService.toggleFavoriteLocal(food.id);
         this.refreshServerMyFoods();
         this.notificationService.show(`${food.shortDescription || food.description} → MyFoods`, 'success');
       } else {
-        // TYPE=MyFoods on right: the food is already a MyFood; surface it visually.
-        this.myFoodsLocal.update(list => {
-          const filtered = list.filter(f => f.id !== food.id);
-          return [food, ...filtered];
-        });
+        this.notificationService.show('Already a MyFood', 'info');
       }
+    } else if (source === 'restricted') {
+      if (this.preferencesService.isRestricted(food.id)) {
+        this.preferencesService.toggleRestrictedLocal(food.id);
+      }
+      if (!this.preferencesService.isAllowed(food.id)) {
+        this.preferencesService.toggleFavoriteLocal(food.id);
+      }
+      this.refreshServerMyFoods();
+      this.notificationService.show(`${food.shortDescription || food.description} → MyFoods`, 'success');
+    } else {
+      this.myFoodsLocal.update(list => {
+        const filtered = list.filter(f => f.id !== food.id);
+        return [food, ...filtered];
+      });
     }
-
-    // Surface the row: bring it into view at the top of the list.
     queueMicrotask(() => {
       this.bottomListRef()?.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
     });
+  }
+
+  clearBucket(key: BucketKey): void {
+    this.thisWeekBuckets.update(b => ({ ...b, [key]: [] }));
+  }
+
+  // ----- Bucket drop-zone handlers -----
+
+  onBucketDragEnter(ev: DragEvent, key: BucketKey): void {
+    ev.preventDefault();
+    this.dragOverBucket.set(key);
+  }
+
+  onBucketDragOver(ev: DragEvent): void {
+    ev.preventDefault();
+    if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy';
+  }
+
+  onBucketDragLeave(_ev: DragEvent, key: BucketKey): void {
+    if (this.dragOverBucket() === key) this.dragOverBucket.set(null);
+  }
+
+  onBucketDrop(ev: DragEvent, key: BucketKey): void {
+    ev.preventDefault();
+    this.dragOverBucket.set(null);
+    const json = ev.dataTransfer?.getData('application/json');
+    if (!json) return;
+    try {
+      const food = JSON.parse(json) as Food;
+      this.addFoodToBucket(food, key);
+    } catch {
+      // ignore malformed payload
+    }
   }
 
   // ----- Per-row actions -----
@@ -719,11 +849,6 @@ export class FoodsPanelComponent {
   removeFromMyFoods(event: Event, foodId: number): void {
     event.stopPropagation();
     this.myFoodsLocal.update(list => list.filter(f => f.id !== foodId));
-  }
-
-  removeFromThisWeek(event: Event, foodId: number): void {
-    event.stopPropagation();
-    this.thisWeekLocal.update(list => list.filter(f => f.id !== foodId));
   }
 
   // ----- Draggable splitter -----
@@ -785,10 +910,43 @@ export class FoodsPanelComponent {
     }
   }
 
+  private loadBuckets(): ThisWeekBuckets {
+    try {
+      const raw = localStorage.getItem(LS_THISWEEK_BUCKETS);
+      if (!raw) return emptyBuckets();
+      const parsed = JSON.parse(raw);
+      // Defensive: only accept the expected shape
+      const out: ThisWeekBuckets = emptyBuckets();
+      for (const k of BUCKET_KEYS) {
+        if (Array.isArray(parsed?.[k])) out[k] = parsed[k] as Food[];
+      }
+      return out;
+    } catch {
+      return emptyBuckets();
+    }
+  }
+
+  private saveBuckets(buckets: ThisWeekBuckets): void {
+    try {
+      localStorage.setItem(LS_THISWEEK_BUCKETS, JSON.stringify(buckets));
+    } catch {
+      // ignore
+    }
+  }
+
   showAddDialog = signal(false);
   showHealthBenefits = signal(false);
+  nfPopupFood = signal<Food | null>(null);
   isSubmitting = signal(false);
   sourceFoodId = signal<number | null>(null);
+
+  openProductLink(food: Food): void {
+    const url = food.productPurchaseLink;
+    if (url) {
+      this.nfPopupFood.set(null);
+      window.open(url, '_blank', 'noopener');
+    }
+  }
 
   // File objects for upload to yeh-image
   productImageFile = signal<File | null>(null);
