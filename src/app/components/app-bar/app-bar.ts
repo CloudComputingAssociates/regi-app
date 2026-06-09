@@ -27,7 +27,12 @@ import { map } from 'rxjs/operators';
           <div class="menu-button-placeholder"></div>
         }
 
-        <span class="app-title" [innerHTML]="title$ | async"></span>
+        <div class="title-area">
+          <span class="app-title" [innerHTML]="title$ | async"></span>
+          @if (greeting$ | async; as greeting) {
+            <span class="app-greeting">{{ greeting }}</span>
+          }
+        </div>
 
         <app-profile-menu />
       </div>
@@ -47,6 +52,17 @@ export class AppBarComponent {
       const firstName = user.name.split(' ')[0];
       const name = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
       return 'RegiMenu<sup class="sm">SM</sup>';
+    })
+  );
+
+  // Subtitle greeting under the centered logo so the trailing "Hi, X" doesn't
+  // pull the visual center off to the left.
+  greeting$ = this.auth.user$.pipe(
+    map(user => {
+      if (!user?.name) return null;
+      const firstName = user.name.split(' ')[0];
+      const cap = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+      return `Hi, ${cap}!`;
     })
   );
 

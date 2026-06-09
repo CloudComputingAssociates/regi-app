@@ -111,6 +111,19 @@ const CATEGORY_PLURALS: Record<string, string> = {
         [(addTo)]="addTo"
         (add)="onAddFood($event)" />
 
+      <!-- Borderless action button anchored under the centered carousel card.
+           Lives in foods-panel (not food-carousel) so the carousel stays a
+           pure spinning surface. -->
+      <div class="health-benefits-bar">
+        <button
+          type="button"
+          class="health-benefits-btn"
+          (click)="showHealthBenefits.set(true)"
+          aria-label="Health benefits">
+          <img src="/images/Health%20Benefits.png" alt="Health Benefits" />
+        </button>
+      </div>
+
       <div
         class="pane-splitter"
         (mousedown)="onSplitterMouseDown($event)"
@@ -260,6 +273,24 @@ const CATEGORY_PLURALS: Record<string, string> = {
           }
         </div>
       </div>
+
+      <!-- Health Benefits placeholder popup -->
+      @if (showHealthBenefits()) {
+        <div class="hb-overlay" (click)="showHealthBenefits.set(false)">
+          <div class="hb-popup" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="hb-close"
+              (click)="showHealthBenefits.set(false)"
+              aria-label="Close">
+              ✕
+            </button>
+            <div class="hb-content">
+              Placeholder for AI generated health benefits
+            </div>
+          </div>
+        </div>
+      }
 
       <!-- Add Food Dialog -->
       @if (showAddDialog()) {
@@ -755,6 +786,7 @@ export class FoodsPanelComponent {
   }
 
   showAddDialog = signal(false);
+  showHealthBenefits = signal(false);
   isSubmitting = signal(false);
   sourceFoodId = signal<number | null>(null);
 

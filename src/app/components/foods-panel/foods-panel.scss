@@ -202,6 +202,88 @@
   }
 }
 
+// ---- Health Benefits button (borderless, centered under the highlighted card) ----
+.health-benefits-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2px 0 4px;
+  flex-shrink: 0;
+}
+
+.health-benefits-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+
+  img {
+    display: block;
+    height: 28px;
+    width: auto;
+    pointer-events: none;
+  }
+
+  &:hover {
+    opacity: 0.85;
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+// ---- Health Benefits placeholder popup ----
+.hb-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hb-popup {
+  position: relative;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 32px 28px 24px;
+  min-width: 280px;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.hb-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+
+  &:hover {
+    color: #ffffff;
+  }
+}
+
+.hb-content {
+  text-align: center;
+  font-size: 13px;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.7);
+}
+
 // ---- Splitter between carousel and bottom pane ----
 .pane-splitter {
   height: 8px;

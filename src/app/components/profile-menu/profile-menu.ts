@@ -21,9 +21,8 @@ import { RoleService } from '../../services/role.service';
       <!-- While Auth0 is loading, show nothing to avoid flicker -->
       <div class="auth-loading"></div>
     } @else if (auth.isAuthenticated$ | async) {
-      @if (auth.user$ | async; as u) {
-        <span class="profile-greeting" [matMenuTriggerFor]="menu">{{ greetingText((u.name ?? '').split(' ')[0]) }}</span>
-      }
+      <!-- Greeting moved out to app-bar so the centered title isn't pushed off
+           center by the trailing text. Avatar button still opens the menu. -->
       <button class="profile-btn" [matMenuTriggerFor]="menu">
         <img [src]="defaultImage" alt="Profile" class="profile-img" />
       </button>
