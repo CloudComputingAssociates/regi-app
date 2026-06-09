@@ -176,7 +176,8 @@ const CATEGORY_PLURALS: Record<string, string> = {
         <div class="bottom-list" #bottomList>
           @if (addTo() === 'left') {
             <!-- THIS WEEK: 4 buckets grid. Each is a drop target; the count on
-                 the face is the number of foods in that bucket. -->
+                 the face is the number of foods in that bucket; mini cards
+                 stack inside as foods are added. -->
             <div class="bucket-grid">
               @for (key of bucketKeys; track key) {
                 <div
@@ -199,6 +200,25 @@ const CATEGORY_PLURALS: Record<string, string> = {
                       matTooltipPosition="above">
                       ✕
                     </button>
+                    <div class="bucket-stack">
+                      @for (food of thisWeekBuckets()[key]; track food.id; let i = $index) {
+                        <div
+                          class="bucket-mini-card"
+                          [style.--idx]="i"
+                          [style.z-index]="thisWeekBuckets()[key].length - i"
+                          [matTooltip]="food.shortDescription || food.description"
+                          matTooltipPosition="above">
+                          <div class="bucket-mini-card-image">
+                            @if (food.foodImageThumbnail) {
+                              <img [src]="food.foodImageThumbnail" alt="" />
+                            }
+                          </div>
+                          <div class="bucket-mini-card-label">
+                            {{ food.shortDescription || food.description }}
+                          </div>
+                        </div>
+                      }
+                    </div>
                   }
                 </div>
               }
@@ -857,6 +877,17 @@ export class FoodsPanelComponent {
     if (!json) return;
     try {
       const food = JSON.parse(json) as Food;
+      // Category validation: a food can only land in the bucket that matches
+      // its food category. Reject mismatches with a toast explaining the right
+      // home so the user learns the mapping.
+      const expectedBucket = this.bucketForFood(food);
+      if (expectedBucket !== key) {
+        this.notificationService.show(
+          `${food.shortDescription || food.description} belongs in ${expectedBucket}, not ${key}`,
+          'error',
+        );
+        return;
+      }
       this.addFoodToBucket(food, key);
     } catch {
       // ignore malformed payload

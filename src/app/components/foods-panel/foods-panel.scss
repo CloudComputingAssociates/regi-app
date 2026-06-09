@@ -373,8 +373,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  padding: 10px 10px 8px;
   background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
   border: 1px solid #555;
   border-bottom: 2px solid #1a1a1a;
@@ -382,7 +382,8 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 4px rgba(0, 0, 0, 0.4);
   transition: border-color 0.12s ease, background 0.12s ease, transform 0.05s ease;
   cursor: copy;
-  min-height: 110px;
+  min-height: 140px;
+  overflow: hidden;
 
   &.drag-over {
     border-color: #4caf50;
@@ -395,10 +396,11 @@
   text-align: center;
   color: #ffffff;
   user-select: none;
+  flex-shrink: 0;
 }
 
 .bucket-count {
-  font-size: 36px;
+  font-size: 30px;
   font-weight: 700;
   line-height: 1;
   color: #4da6ff;
@@ -406,7 +408,7 @@
 }
 
 .bucket-name {
-  margin-top: 6px;
+  margin-top: 4px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.6px;
@@ -428,11 +430,81 @@
   font-size: 11px;
   line-height: 1;
   cursor: pointer;
+  z-index: 20;
 
   &:hover {
     color: #ff7676;
     border-color: rgba(255, 118, 118, 0.5);
   }
+}
+
+// Mini-cards "stack up" visually as foods are dropped/double-clicked into a
+// bucket. Each card is ~25% of the carousel-card size (38 x 48), positioned
+// absolutely with a small per-index offset so they form a fanned pile.
+.bucket-stack {
+  position: relative;
+  flex: 1;
+  min-height: 60px;
+  margin-top: 8px;
+}
+
+.bucket-mini-card {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 38px;
+  height: 56px;
+  background: #2a2a2a;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  // Each card translated diagonally by its index (clamped at 8 so a tall pile
+  // doesn't run off the bucket).
+  transform: translate(
+    calc(-50% + min(var(--idx, 0), 8) * 4px),
+    calc(min(var(--idx, 0), 8) * 3px)
+  );
+  transition: transform 0.12s ease;
+
+  &:hover {
+    z-index: 100 !important;
+    transform: translate(
+      calc(-50% + min(var(--idx, 0), 8) * 4px),
+      calc(min(var(--idx, 0), 8) * 3px - 4px)
+    ) scale(1.1);
+  }
+}
+
+.bucket-mini-card-image {
+  flex: 1;
+  min-height: 0;
+  background: #1f1f1f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.bucket-mini-card-label {
+  font-size: 7px;
+  line-height: 1.1;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(0, 0, 0, 0.45);
+  padding: 2px 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
 }
 
 // ---- NF popup (lifted from food-carousel since we now own it) ----

@@ -180,18 +180,17 @@
 }
 
 // ---- Center-card overlay slot ----
-// Anchored to the upper-left of the centered card. Since the spinner sits at
-// the TOP of the carousel-body (justify-content: flex-start), the centered
-// card's top edge is at: padding-top (10) + spinner internal card top offset
-// (12) = 22 px. We add a 6 px inset so the projected content tucks just
-// inside the card's top-left corner.
+// Anchored to the upper-RIGHT corner of the centered card, intentionally
+// hanging off the edges a little (mostly on the image but spilling onto the
+// corner). The card's top is at padding-top (10) + spinner card-top-offset
+// (12) = 22 px in carousel-body coords; pulling the overlay up to 14 px lets
+// it overhang the top by ~8 px. Horizontally we anchor 56 px to the LEFT of
+// the card's right edge so an ~84-px-wide badge sits ~28 px off the right.
 .center-overlay {
   position: absolute;
   z-index: 320;
-  top: 28px;
-  // The card is horizontally centered in the carousel-body. The left+right
-  // padding cancels because the spinner roulette spans `100% - padding`.
-  left: calc(50% - var(--card-width, 154px) / 2 + 6px);
+  top: 14px;
+  left: calc(50% + var(--card-width, 154px) / 2 - 56px);
   pointer-events: none; // projected content opts back in
 
   ::ng-deep > * {
