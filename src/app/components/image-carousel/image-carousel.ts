@@ -58,6 +58,12 @@ import { SpinnerComponent, SpinnerItem } from '../spinner/spinner';
           Spin
         </button>
 
+        @if (items().length === 0) {
+          <div class="carousel-empty">
+            <span>{{ emptyMessage() }}</span>
+          </div>
+        }
+
         <app-spinner
           #s="appSpinner"
           [items]="items()"
@@ -118,6 +124,10 @@ export class ImageCarouselComponent {
   bucketBarLabel = input('Bottom Bucket');
   leftLabel = input('Left');
   rightLabel = input('Right');
+
+  // Message shown when items is empty (e.g., load failed, filter has no
+  // matches, auth token expired).
+  emptyMessage = input('Nothing to show here yet.');
 
   // Two-way: which side of the slider is selected
   bucketSide = model<'left' | 'right'>('left');

@@ -132,19 +132,24 @@ const CATEGORY_PLURALS: Record<string, string> = {
         [items]="spinnerItems()"
         leftLabel="This Week"
         [rightLabel]="typeLabel()"
+        [emptyMessage]="carouselEmptyMessage()"
         [(bucketSide)]="addTo"
         (activated)="onActivated($event)"
         (inspect)="onInspect($event)"
         (cardDragStart)="onCardDragStart($event)">
-        <!-- Health Benefits button overlays upper-left of the centered card. -->
-        <button
-          centerOverlay
-          type="button"
-          class="health-benefits-btn"
-          (click)="showHealthBenefits.set(true)"
-          aria-label="Health benefits">
-          <img src="/images/Health%20Benefits.png" alt="Health Benefits" />
-        </button>
+        @if (showHealthBenefitsForFilter()) {
+          <!-- Health Benefits button overlays upper-left of the centered card.
+               Only renders for categories where health claims are meaningful
+               (skips Processed/Condiments and the "all off" state). -->
+          <button
+            centerOverlay
+            type="button"
+            class="health-benefits-btn"
+            (click)="showHealthBenefits.set(true)"
+            aria-label="Health benefits">
+            <img src="/images/Health%20Benefits.png" alt="Health Benefits" />
+          </button>
+        }
       </app-image-carousel>
 
       <div
@@ -610,6 +615,33 @@ export class FoodsPanelComponent {
   // Drag-over bucket key (for visual highlight on the drop target)
   dragOverBucket = signal<BucketKey | null>(null);
 
+  // Health Benefits overlay is shown only when the active filter is a category
+  // where macro-grade health claims are meaningful: Proteins, Fats, Dairy,
+  // Vegetables, Carbohydrates, Fruits. Hidden when nothing is pressed (the
+  // "all" view doesn't have a single category to make claims about) and
+  // hidden when Processed or Condiment is pressed (those are accent foods, no
+  // health-benefit pitch).
+  showHealthBenefitsForFilter = computed<boolean>(() => {
+    const cats = this.selectedCategories();
+    if (cats.size === 0) return false;
+    if (cats.has('Processed') || cats.has('Condiment')) return false;
+    return true;
+  });
+
+  // Tracks whether the most recent load failed (e.g., expired token / 401)
+  // so we can surface a more useful empty-state than "no items".
+  private loadFailed = signal(false);
+
+  carouselEmptyMessage = computed<string>(() => {
+    if (this.loadFailed()) return 'Couldn\'t load foods — your session may have expired. Try refreshing.';
+    const cats = this.selectedCategories();
+    if (cats.size === 0 || cats.size === CAROUSEL_CATEGORIES.length) {
+      return 'No foods to spin yet.';
+    }
+    const cat = [...cats][0];
+    return `No ${this.categoryLabel(cat)} in this list.`;
+  });
+
   // Server-side MyFoods cache (the user's existing allowed foods from
   // FoodPreferencesService). Loaded eagerly on construction and refreshed
   // whenever the carousel pulls them, so the bottom MyFoods list reflects the
@@ -675,7 +707,7 @@ export class FoodsPanelComponent {
   private bottomListRef = viewChild<ElementRef<HTMLElement>>('bottomList');
 
   // Splitter — bottom-pane height in px (clamped on drag)
-  bottomPaneHeight = signal(220);
+  bottomPaneHeight = signal(380);
   private splitterStartY = 0;
   private splitterStartHeight = 0;
 
@@ -1174,9 +1206,14 @@ export class FoodsPanelComponent {
       }
 
       this.rawCarouselFoods.set(foods);
+      this.loadFailed.set(false);
     } catch {
       if (reqId !== this.loadRequestId) return;
-      this.notificationService.show('Failed to load foods for spin', 'error');
+      this.loadFailed.set(true);
+      this.notificationService.show(
+        'Couldn\'t load foods — your session may have expired',
+        'error',
+      );
       this.rawCarouselFoods.set([]);
     }
   }

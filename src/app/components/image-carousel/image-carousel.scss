@@ -166,16 +166,31 @@
   background: rgba(0, 0, 0, 0.35);
 }
 
+// ---- Empty state (when items.length === 0) ----
+.carousel-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-style: italic;
+  color: rgba(255, 213, 79, 0.6);
+  padding: 24px;
+  text-align: center;
+}
+
 // ---- Center-card overlay slot ----
-// Anchored to the upper-left of where the centered card sits visually.
-// Uses CSS custom props (--card-width / --card-height) set inline from the
-// component's inputs so it auto-tracks any size change.
+// Anchored to the upper-left of the centered card. Since the spinner sits at
+// the TOP of the carousel-body (justify-content: flex-start), the centered
+// card's top edge is at: padding-top (10) + spinner internal card top offset
+// (12) = 22 px. We add a 6 px inset so the projected content tucks just
+// inside the card's top-left corner.
 .center-overlay {
   position: absolute;
   z-index: 320;
-  // Center of carousel-body minus half the card dimensions = card's top-left.
-  // 6 px inset so the projected content tucks just inside the card border.
-  top: calc(50% - var(--card-height, 192px) / 2 + 6px);
+  top: 28px;
+  // The card is horizontally centered in the carousel-body. The left+right
+  // padding cancels because the spinner roulette spans `100% - padding`.
   left: calc(50% - var(--card-width, 154px) / 2 + 6px);
   pointer-events: none; // projected content opts back in
 
