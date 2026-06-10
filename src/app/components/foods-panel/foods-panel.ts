@@ -200,12 +200,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
                       matTooltipPosition="above">
                       ✕
                     </button>
-                    <div class="bucket-stack">
-                      @for (food of thisWeekBuckets()[key]; track food.id; let i = $index) {
+                    <div class="bucket-tiles">
+                      @for (food of thisWeekBuckets()[key]; track food.id) {
                         <div
                           class="bucket-mini-card"
-                          [style.--idx]="i"
-                          [style.z-index]="thisWeekBuckets()[key].length - i"
                           [matTooltip]="food.shortDescription || food.description"
                           matTooltipPosition="above">
                           <div class="bucket-mini-card-image">
@@ -813,11 +811,13 @@ export class FoodsPanelComponent {
       // No-op (silent); user already picked this one for that bucket.
       return;
     }
+    // Append (oldest first, newest last) — the bucket-tiles flex layout uses
+    // `wrap-reverse` so the first item lands bottom-left and the stack grows
+    // upward as foods are added.
     this.thisWeekBuckets.update(b => ({
       ...b,
-      [key]: [food, ...b[key]],
+      [key]: [...b[key], food],
     }));
-    this.notificationService.show(`${food.shortDescription || food.description} → ${key}`, 'success');
   }
 
   private onRightSideAdd(food: Food): void {
@@ -877,18 +877,11 @@ export class FoodsPanelComponent {
     if (!json) return;
     try {
       const food = JSON.parse(json) as Food;
-      // Category validation: a food can only land in the bucket that matches
-      // its food category. Reject mismatches with a toast explaining the right
-      // home so the user learns the mapping.
-      const expectedBucket = this.bucketForFood(food);
-      if (expectedBucket !== key) {
-        this.notificationService.show(
-          `${food.shortDescription || food.description} belongs in ${expectedBucket}, not ${key}`,
-          'error',
-        );
-        return;
-      }
-      this.addFoodToBucket(food, key);
+      // Always route to the food's correct bucket — even if the user dropped
+      // it on the "wrong" one. The food floats to where it belongs; no
+      // scolding, no rejected drop. The dropped-on bucket is just a hint.
+      const targetBucket = this.bucketForFood(food);
+      this.addFoodToBucket(food, targetBucket);
     } catch {
       // ignore malformed payload
     }

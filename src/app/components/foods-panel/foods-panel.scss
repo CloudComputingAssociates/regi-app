@@ -438,22 +438,32 @@
   }
 }
 
-// Mini-cards "stack up" visually as foods are dropped/double-clicked into a
-// bucket. Each card is ~25% of the carousel-card size (38 x 48), positioned
-// absolutely with a small per-index offset so they form a fanned pile.
-.bucket-stack {
-  position: relative;
+// Mini-cards tile in a flex-wrap grid as foods land in the bucket. Each card
+// is ~25% of the carousel-card size (38 x 56). Newest in the top-left;
+// overflow scrolls vertically so a bucket with many entries still works.
+.bucket-tiles {
   flex: 1;
-  min-height: 60px;
   margin-top: 8px;
+  display: flex;
+  // Bottom-up stack: first item lands at bottom-left, fills rightward, then
+  // wraps to a new row ABOVE. Older foods stay anchored at the bottom; newer
+  // foods grow the pile toward the top of the bucket.
+  flex-wrap: wrap-reverse;
+  align-content: flex-start;
+  justify-content: flex-start;
+  gap: 4px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 2px; }
 }
 
 .bucket-mini-card {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 38px;
-  height: 56px;
+  // 25% larger than the previous 38x56 → 48x70.
+  width: 48px;
+  height: 70px;
   background: #2a2a2a;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 4px;
@@ -461,21 +471,11 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  pointer-events: auto;
-  // Each card translated diagonally by its index (clamped at 8 so a tall pile
-  // doesn't run off the bucket).
-  transform: translate(
-    calc(-50% + min(var(--idx, 0), 8) * 4px),
-    calc(min(var(--idx, 0), 8) * 3px)
-  );
+  flex-shrink: 0;
   transition: transform 0.12s ease;
 
   &:hover {
-    z-index: 100 !important;
-    transform: translate(
-      calc(-50% + min(var(--idx, 0), 8) * 4px),
-      calc(min(var(--idx, 0), 8) * 3px - 4px)
-    ) scale(1.1);
+    transform: scale(1.1);
   }
 }
 
