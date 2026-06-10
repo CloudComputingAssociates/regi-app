@@ -485,11 +485,15 @@
   }
 }
 
-// Red X delete badge — lives INSIDE the black label banner at the top of the
-// card so it stays fully contained, never clipped by the card border. Hidden
-// until the mini-card is hovered.
+// Red X delete badge — absolutely positioned over the left edge of the black
+// label banner so the centered text doesn't shift right when the X appears.
+// Lives INSIDE the banner (overflow:hidden on the card) so it can't be clipped
+// by the rounded card border. Occluding text is fine — the image identifies
+// the food.
 .bucket-mini-remove {
-  flex-shrink: 0;
+  position: absolute;
+  top: 1px;
+  left: 1px;
   width: 14px;
   height: 14px;
   padding: 0;
@@ -506,6 +510,7 @@
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
+  z-index: 2;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   transition: opacity 0.12s ease, background 0.12s ease;
 
@@ -531,23 +536,17 @@
 }
 
 .bucket-mini-card-label {
-  display: flex;
-  align-items: center;
-  gap: 3px;
+  position: relative;
   font-size: 7px;
   line-height: 1.1;
   color: rgba(255, 255, 255, 0.92);
   background: rgba(0, 0, 0, 0.65);
   padding: 2px 3px;
-  // The label is the host for the absolutely-anchored .bucket-mini-remove on
-  // hover; positioning is relative so the X stays inside the black banner.
-  position: relative;
   min-height: 16px;
 }
 
 .bucket-mini-card-label-text {
-  flex: 1;
-  min-width: 0;
+  display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
