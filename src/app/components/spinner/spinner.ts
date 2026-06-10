@@ -13,6 +13,7 @@ import {
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -275,16 +276,24 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
   // Reset when items() identity changes. Also emits `centered` for the new
   // landing card so listeners (e.g. Health Benefits AI lookup) know which item
   // is in the spotlight without waiting for a user-triggered spin.
+  //
+  // The emit reads currentItem() inside untracked() — otherwise the effect
+  // subscribes to offsetPx (via centeredIndex), and every animation frame's
+  // offsetPx update re-fires this effect, snapping offset back to 0 and
+  // killing the spin. items() stays tracked so the legitimate trigger still
+  // works.
   private resetOnItemsChange = effect(() => {
     const items = this.items();
-    this.stopMomentum();
-    this.offsetPx.set(0);
-    this.spinning.set(false);
-    this.lastBucket = 0;
-    if (items.length > 0) {
-      const c = this.currentItem();
-      if (c) this.centered.emit(c);
-    }
+    untracked(() => {
+      this.stopMomentum();
+      this.offsetPx.set(0);
+      this.spinning.set(false);
+      this.lastBucket = 0;
+      if (items.length > 0) {
+        const c = this.currentItem();
+        if (c) this.centered.emit(c);
+      }
+    });
   });
 
   ngAfterViewInit(): void {
