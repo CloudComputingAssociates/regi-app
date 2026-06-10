@@ -206,21 +206,23 @@ const CATEGORY_PLURALS: Record<string, string> = {
                           class="bucket-mini-card"
                           [matTooltip]="food.shortDescription || food.description"
                           matTooltipPosition="above">
-                          <button
-                            type="button"
-                            class="bucket-mini-remove"
-                            (click)="removeFoodFromBucket(key, food.id); $event.stopPropagation()"
-                            matTooltip="Remove from bucket"
-                            matTooltipPosition="above">
-                            ✕
-                          </button>
+                          <div class="bucket-mini-card-label">
+                            <button
+                              type="button"
+                              class="bucket-mini-remove"
+                              (click)="removeFoodFromBucket(key, food.id); $event.stopPropagation()"
+                              matTooltip="Remove from bucket"
+                              matTooltipPosition="above">
+                              ✕
+                            </button>
+                            <span class="bucket-mini-card-label-text">
+                              {{ food.shortDescription || food.description }}
+                            </span>
+                          </div>
                           <div class="bucket-mini-card-image">
                             @if (food.foodImageThumbnail) {
                               <img [src]="food.foodImageThumbnail" alt="" />
                             }
-                          </div>
-                          <div class="bucket-mini-card-label">
-                            {{ food.shortDescription || food.description }}
                           </div>
                         </div>
                       }

@@ -469,7 +469,7 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 4px;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.45);
-  overflow: visible;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -485,20 +485,19 @@
   }
 }
 
-// Red X delete badge — hidden until the mini-card is hovered. Sized generously
-// so the user can hit it without precision aiming on the small card.
+// Red X delete badge — lives INSIDE the black label banner at the top of the
+// card so it stays fully contained, never clipped by the card border. Hidden
+// until the mini-card is hovered.
 .bucket-mini-remove {
-  position: absolute;
-  top: -6px;
-  left: -6px;
-  width: 20px;
-  height: 20px;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
   padding: 0;
   background: #e53935;
-  border: 1.5px solid #ffffff;
+  border: 1px solid #ffffff;
   border-radius: 50%;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 700;
   line-height: 1;
   display: flex;
@@ -507,8 +506,7 @@
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
-  z-index: 30;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   transition: opacity 0.12s ease, background 0.12s ease;
 
   &:hover {
@@ -533,11 +531,23 @@
 }
 
 .bucket-mini-card-label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
   font-size: 7px;
   line-height: 1.1;
   color: rgba(255, 255, 255, 0.92);
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.65);
   padding: 2px 3px;
+  // The label is the host for the absolutely-anchored .bucket-mini-remove on
+  // hover; positioning is relative so the X stays inside the black banner.
+  position: relative;
+  min-height: 16px;
+}
+
+.bucket-mini-card-label-text {
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
