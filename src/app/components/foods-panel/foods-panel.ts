@@ -14,6 +14,7 @@ import { UserFoodService } from '../../services/user-food.service';
 import { ImageUploadService } from '../../services/image-upload.service';
 import { FoodsService, Category } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
+import { LangfusePromptService, LangfusePromptError } from '../../services/langfuse-prompt.service';
 import { CreateUserFoodRequest } from '../../models/user-food.model';
 import { Food } from '../../models/food.model';
 
@@ -136,6 +137,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
         [(bucketSide)]="addTo"
         (activated)="onActivated($event)"
         (inspect)="onInspect($event)"
+        (centered)="onCarouselCentered($event)"
         (cardDragStart)="onCardDragStart($event)">
         @if (showHealthBenefitsForFilter()) {
           <!-- Health Benefits button overlays upper-left of the centered card.
@@ -145,7 +147,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
             centerOverlay
             type="button"
             class="health-benefits-btn"
-            (click)="showHealthBenefits.set(true)"
+            (click)="openHealthBenefits()"
             aria-label="Health benefits">
             <img src="/images/Health%20Benefits.png" alt="Health Benefits" />
           </button>
@@ -390,7 +392,8 @@ const CATEGORY_PLURALS: Record<string, string> = {
         </div>
       }
 
-      <!-- Health Benefits placeholder popup -->
+      <!-- Health Benefits popup. Content comes from the Langfuse "health-
+           benefits" prompt by way of POST /api/ai/langfuse/{promptName}. -->
       @if (showHealthBenefits()) {
         <div class="hb-overlay" (click)="showHealthBenefits.set(false)">
           <div class="hb-popup" (click)="$event.stopPropagation()">
@@ -401,8 +404,17 @@ const CATEGORY_PLURALS: Record<string, string> = {
               aria-label="Close">
               ✕
             </button>
+            @if (healthBenefitsFood(); as food) {
+              <div class="hb-title">{{ food.shortDescription || food.description }}</div>
+            }
             <div class="hb-content">
-              Placeholder for AI generated health benefits
+              @if (healthBenefitsLoading()) {
+                <div class="hb-loading">Loading health benefits…</div>
+              } @else if (healthBenefitsError(); as err) {
+                <div class="hb-error">{{ err }}</div>
+              } @else if (healthBenefitsText(); as text) {
+                <div class="hb-text">{{ text }}</div>
+              }
             </div>
           </div>
         </div>
@@ -607,6 +619,7 @@ export class FoodsPanelComponent {
   private userFoodService = inject(UserFoodService);
   private imageUploadService = inject(ImageUploadService);
   private foodsService = inject(FoodsService);
+  private langfusePromptService = inject(LangfusePromptService);
   private cdr = inject(ChangeDetectorRef);
 
   categories = signal<Category[]>([]);
@@ -1073,6 +1086,68 @@ export class FoodsPanelComponent {
   showHealthBenefits = signal(false);
   nfPopupFood = signal<Food | null>(null);
   isSubmitting = signal(false);
+
+  // ---- Health Benefits popup state (Langfuse-driven) ----
+  // centeredFood tracks whichever spinner card is currently in the spotlight
+  // — fed by the carousel's (centered) output. healthBenefitsFood freezes the
+  // food the user clicked the button on, so the popup doesn't mutate if the
+  // user spins behind it.
+  centeredFood = signal<Food | null>(null);
+  healthBenefitsFood = signal<Food | null>(null);
+  healthBenefitsLoading = signal(false);
+  healthBenefitsText = signal<string | null>(null);
+  healthBenefitsError = signal<string | null>(null);
+  private healthBenefitsRequestId = 0;
+
+  onCarouselCentered(item: SpinnerItem): void {
+    const food = item['food'] as Food | undefined;
+    this.centeredFood.set(food ?? null);
+  }
+
+  async openHealthBenefits(): Promise<void> {
+    const food = this.centeredFood();
+    if (!food) return;
+    this.healthBenefitsFood.set(food);
+    this.healthBenefitsText.set(null);
+    this.healthBenefitsError.set(null);
+    this.healthBenefitsLoading.set(true);
+    this.showHealthBenefits.set(true);
+
+    // Stale-response guard: if the user closes & reopens for another food
+    // before the first request resolves, only the latest one wins.
+    const reqId = ++this.healthBenefitsRequestId;
+    const foodName = food.shortDescription || food.description || '';
+    try {
+      const result = await this.langfusePromptService.run('health-benefits', { FoodName: foodName });
+      if (reqId !== this.healthBenefitsRequestId) return;
+      this.healthBenefitsText.set(result.text);
+    } catch (e) {
+      if (reqId !== this.healthBenefitsRequestId) return;
+      const err = e as LangfusePromptError;
+      this.healthBenefitsError.set(this.formatHealthBenefitsError(err));
+    } finally {
+      if (reqId === this.healthBenefitsRequestId) {
+        this.healthBenefitsLoading.set(false);
+      }
+    }
+  }
+
+  private formatHealthBenefitsError(err: LangfusePromptError): string {
+    switch (err?.kind) {
+      case 'prompt_not_found':
+        return 'Health benefits prompt is not configured yet.';
+      case 'missing_variables':
+        return `Prompt is missing required input: ${(err.missingVariables ?? []).join(', ')}.`;
+      case 'llm_failed':
+        return 'Couldn\'t reach the AI service — try again in a moment.';
+      case 'unauthorized':
+        return 'Your session expired — please sign in again.';
+      case 'network':
+        return 'Network error — check your connection and retry.';
+      default:
+        return err?.message || 'Something went wrong loading health benefits.';
+    }
+  }
   sourceFoodId = signal<number | null>(null);
 
   openProductLink(food: Food): void {

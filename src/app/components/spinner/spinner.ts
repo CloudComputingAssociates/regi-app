@@ -272,13 +272,19 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
     return out;
   });
 
-  // Reset when items() identity changes
+  // Reset when items() identity changes. Also emits `centered` for the new
+  // landing card so listeners (e.g. Health Benefits AI lookup) know which item
+  // is in the spotlight without waiting for a user-triggered spin.
   private resetOnItemsChange = effect(() => {
-    this.items(); // track
+    const items = this.items();
     this.stopMomentum();
     this.offsetPx.set(0);
     this.spinning.set(false);
     this.lastBucket = 0;
+    if (items.length > 0) {
+      const c = this.currentItem();
+      if (c) this.centered.emit(c);
+    }
   });
 
   ngAfterViewInit(): void {

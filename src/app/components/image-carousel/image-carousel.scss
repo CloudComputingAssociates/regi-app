@@ -190,8 +190,20 @@
   top: 2px;
   left: calc(50% - var(--card-width, 154px) / 2 - 28px);
   pointer-events: none; // projected content opts back in
+  opacity: 1;
+  transition: opacity 200ms ease;
 
   ::ng-deep > * {
     pointer-events: auto;
+  }
+
+  // Mirrors .spinner-details — dissolve while spinning, reverse-dissolve on
+  // settle so it lands together with the centered card's yellow highlight.
+  &.is-spinning {
+    opacity: 0;
+
+    ::ng-deep > * {
+      pointer-events: none;
+    }
   }
 }

@@ -70,7 +70,8 @@ import { SpinnerComponent, SpinnerItem } from '../spinner/spinner';
           [cardWidth]="cardWidth()"
           [cardHeight]="cardHeight()"
           [spacing]="spacing()"
-          (activated)="onActivated($event)">
+          (activated)="onActivated($event)"
+          (centered)="centered.emit($event)">
           <ng-template #spinnerCard let-item let-center="isCenter">
             <div
               class="image-card"
@@ -103,8 +104,11 @@ import { SpinnerComponent, SpinnerItem } from '../spinner/spinner';
 
         <!-- Slot for a small overlay (e.g. Health Benefits button) anchored to
              the upper-left of the centered card. Caller projects content via
-             [centerOverlay] attribute. -->
-        <div class="center-overlay">
+             [centerOverlay] attribute. Dissolves while the spinner is moving
+             and resolves when it settles, in unison with the yellow highlight
+             on the centered card — a "call to action" only when there's
+             something to act on. -->
+        <div class="center-overlay" [class.is-spinning]="s.spinning()">
           <ng-content select="[centerOverlay]" />
         </div>
       </div>
@@ -139,6 +143,8 @@ export class ImageCarouselComponent {
   inspect = output<SpinnerItem>();
   /** Dragstart on the centered card. Caller is responsible for setting dataTransfer (the SpinnerItem is provided synchronously). */
   cardDragStart = output<{ item: SpinnerItem; event: DragEvent }>();
+  /** Whichever item is currently in the spotlight — emitted on items-load and after a spin settles. Use this when you need to react to whatever the user is "looking at" without requiring a click. */
+  centered = output<SpinnerItem>();
 
   // ---- single-click vs double-click discrimination ----
   private singleClickTimer: ReturnType<typeof setTimeout> | null = null;

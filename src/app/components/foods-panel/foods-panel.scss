@@ -250,9 +250,15 @@
   background: #2a2a2a;
   border: 1px solid #555;
   border-radius: 8px;
-  padding: 32px 28px 24px;
-  min-width: 280px;
-  max-width: 400px;
+  // Half the viewport height; width unchanged from the prior placeholder.
+  // The header (close button) is fixed inside the box; the content area
+  // takes the remaining height and scrolls.
+  width: 400px;
+  max-width: calc(100vw - 32px);
+  height: 50vh;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 24px 20px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
@@ -267,17 +273,57 @@
   cursor: pointer;
   padding: 4px 8px;
   line-height: 1;
+  z-index: 1;
 
   &:hover {
     color: #ffffff;
   }
 }
 
+.hb-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #4da6ff;
+  letter-spacing: 0.2px;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(77, 166, 255, 0.25);
+  flex-shrink: 0;
+}
+
 .hb-content {
-  text-align: center;
+  flex: 1;
+  min-height: 0;
   font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.88);
+  // Touch / pointer drag-to-scroll. The scrollbar itself is hidden — finger
+  // swipe up is the expected interaction on touch, and on desktop the wheel
+  // / trackpad scroll still works through the hidden track.
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+
+  // Hide the scrollbar across engines while keeping the area scrollable.
+  scrollbar-width: none; // Firefox
+  &::-webkit-scrollbar { width: 0; height: 0; display: none; } // WebKit / Blink
+}
+
+.hb-loading {
+  color: rgba(255, 255, 255, 0.55);
   font-style: italic;
-  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  padding: 16px 0;
+}
+
+.hb-error {
+  color: #ff7676;
+  text-align: center;
+  padding: 16px 0;
+}
+
+.hb-text {
+  white-space: pre-wrap; // preserve any paragraph breaks the model returns
 }
 
 // ---- Splitter between carousel and bottom pane ----
