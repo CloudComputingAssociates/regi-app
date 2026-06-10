@@ -322,8 +322,18 @@
   padding: 16px 0;
 }
 
+// The prompt is authored to return blank-line-separated blocks (lead-stat,
+// bullet block, prep tip). pre-wrap preserves the structure; the explicit
+// padding-left lets a leading "• " sit visually flush without a hanging indent.
 .hb-text {
-  white-space: pre-wrap; // preserve any paragraph breaks the model returns
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.55;
+  letter-spacing: 0.1px;
+
+  // Stat lead — first paragraph styled by the prompt author with a leading
+  // marker so we can detect it. Optional; ignored if the model omits it.
+  strong { color: #ffd66b; font-weight: 700; }
 }
 
 // ---- Splitter between carousel and bottom pane ----
