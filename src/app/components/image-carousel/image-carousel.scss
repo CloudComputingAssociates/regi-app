@@ -180,14 +180,16 @@
 }
 
 // ---- Center-card overlay slot ----
-// Anchored to cover the upper-LEFT corner of the centered card. The card's
-// top is at padding-top (10) + spinner card-top-offset (12) = 22 px in
-// carousel-body coords; pulling the overlay up to 2 px lets it overhang the
-// top by ~20 px (~1/8 inch above the card edge).
+// Anchored to ride the upper-LEFT corner of the centered card. The card's top
+// is at padding-top (10) + spinner card-top-offset (12) = 22 px in carousel-
+// body coords. With the badge now ~113 px tall, top: -65 px puts the badge
+// bottom at ~48 px — only the lower ~25 px sits on the card corner (covering
+// the yellow glow's leftmost arc), the rest hangs above the card so the food
+// image stays unobstructed.
 .center-overlay {
   position: absolute;
   z-index: 320;
-  top: 2px;
+  top: -65px;
   left: calc(50% - var(--card-width, 154px) / 2 - 28px);
   pointer-events: none; // projected content opts back in
   opacity: 1;
