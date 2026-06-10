@@ -462,13 +462,14 @@
 
 .bucket-mini-card {
   // 25% larger than the previous 38x56 → 48x70.
+  position: relative;
   width: 48px;
   height: 70px;
   background: #2a2a2a;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 4px;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.45);
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -476,6 +477,42 @@
 
   &:hover {
     transform: scale(1.1);
+
+    .bucket-mini-remove {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+}
+
+// Red X delete badge — hidden until the mini-card is hovered. Sized generously
+// so the user can hit it without precision aiming on the small card.
+.bucket-mini-remove {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: #e53935;
+  border: 1.5px solid #ffffff;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 30;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  transition: opacity 0.12s ease, background 0.12s ease;
+
+  &:hover {
+    background: #ff5252;
   }
 }
 
@@ -617,6 +654,36 @@
   }
 
   .category-count {
+    color: rgba(77, 166, 255, 0.7);
+    font-weight: 600;
+  }
+}
+
+// Lightweight non-collapsible category separator used in the YEH-Approved /
+// Restricted flat list when no filter is active. (MyFoods uses the
+// collapsible .category-header above.)
+.category-separator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 4px;
+  margin-top: 6px;
+  border-bottom: 1px solid rgba(77, 166, 255, 0.35);
+  color: #4da6ff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+
+  &:first-child {
+    margin-top: 0;
+  }
+
+  .category-separator-name {
+    flex: 1;
+  }
+
+  .category-separator-count {
     color: rgba(77, 166, 255, 0.7);
     font-weight: 600;
   }

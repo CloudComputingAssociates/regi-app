@@ -62,16 +62,6 @@
     letter-spacing: 0.5px;
   }
 
-  // Greeting line directly under the logo
-  .app-greeting {
-    margin-top: 1px;
-    color: rgba(77, 166, 255, 0.75);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.3px;
-    line-height: 1.1;
-  }
-
   // Profile menu wrapper
   app-profile-menu {
     flex-shrink: 0;

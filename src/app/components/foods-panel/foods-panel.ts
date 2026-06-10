@@ -131,7 +131,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
       <app-image-carousel
         [items]="spinnerItems()"
         leftLabel="This Week"
-        [rightLabel]="typeLabel()"
+        rightLabel="Curate MyFoods"
         [emptyMessage]="carouselEmptyMessage()"
         [(bucketSide)]="addTo"
         (activated)="onActivated($event)"
@@ -206,6 +206,14 @@ const CATEGORY_PLURALS: Record<string, string> = {
                           class="bucket-mini-card"
                           [matTooltip]="food.shortDescription || food.description"
                           matTooltipPosition="above">
+                          <button
+                            type="button"
+                            class="bucket-mini-remove"
+                            (click)="removeFoodFromBucket(key, food.id); $event.stopPropagation()"
+                            matTooltip="Remove from bucket"
+                            matTooltipPosition="above">
+                            ✕
+                          </button>
                           <div class="bucket-mini-card-image">
                             @if (food.foodImageThumbnail) {
                               <img [src]="food.foodImageThumbnail" alt="" />
@@ -277,7 +285,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
               }
             }
           } @else {
-            <!-- TYPE=YEH Approved or Restricted on right side: flat list of carousel foods -->
+            <!-- TYPE=YEH Approved or Restricted on right side. With no filter
+                 active ("All" state), foods are rendered grouped by category
+                 with separator headers. With a filter, only one category is
+                 visible so we fall back to a flat list. -->
             @if (carouselFoods().length === 0) {
               <div class="bottom-empty">
                 @if (spinSource() === 'yeh-approved') {
@@ -286,6 +297,43 @@ const CATEGORY_PLURALS: Record<string, string> = {
                   No restricted foods match this filter.
                 }
               </div>
+            } @else if (isNoFilterActive()) {
+              @for (group of groupedCarouselFoods(); track group.category) {
+                <div class="category-separator">
+                  <span class="category-separator-name">{{ categoryLabel(group.category) }}</span>
+                  <span class="category-separator-count">({{ group.foods.length }})</span>
+                </div>
+                @for (food of group.foods; track food.id) {
+                  <div class="selected-food-row">
+                    <div class="selected-food-thumb">
+                      @if (food.foodImageThumbnail) {
+                        <img [src]="food.foodImageThumbnail" alt="" />
+                      } @else {
+                        <div class="selected-food-thumb-placeholder"></div>
+                      }
+                    </div>
+                    <span class="selected-food-name">
+                      {{ food.shortDescription || food.description }}
+                    </span>
+                    <mat-icon
+                      class="row-action favorite"
+                      [class.active]="preferencesService.isAllowed(food.id)"
+                      (click)="toggleFavorite($event, food.id)"
+                      matTooltip="Favorite (adds to MyFoods)"
+                      matTooltipPosition="left">
+                      {{ preferencesService.isAllowed(food.id) ? 'star' : 'star_border' }}
+                    </mat-icon>
+                    <mat-icon
+                      class="row-action restrict"
+                      [class.active]="preferencesService.isRestricted(food.id)"
+                      (click)="toggleRestricted($event, food.id)"
+                      matTooltip="Restrict"
+                      matTooltipPosition="left">
+                      block
+                    </mat-icon>
+                  </div>
+                }
+              }
             } @else {
               @for (food of carouselFoods(); track food.id) {
                 <div class="selected-food-row">
@@ -721,6 +769,34 @@ export class FoodsPanelComponent {
     });
   }
 
+  // Group carouselFoods by category — only rendered when no filter is active
+  // (the "All" state). With a filter the user sees a single category so
+  // separators are noise. Order follows CAROUSEL_CATEGORIES.
+  groupedCarouselFoods = computed<Array<{ category: string; foods: Food[] }>>(() => {
+    const all = this.carouselFoods();
+    const map = new Map<string, Food[]>();
+    for (const food of all) {
+      const cat = food.categoryName || 'Uncategorized';
+      const arr = map.get(cat);
+      if (arr) arr.push(food);
+      else map.set(cat, [food]);
+    }
+    const result: Array<{ category: string; foods: Food[] }> = [];
+    for (const cat of CAROUSEL_CATEGORIES) {
+      const foods = map.get(cat);
+      if (foods && foods.length > 0) {
+        result.push({ category: cat, foods });
+        map.delete(cat);
+      }
+    }
+    for (const [cat, foods] of map.entries()) {
+      result.push({ category: cat, foods });
+    }
+    return result;
+  });
+
+  isNoFilterActive = computed<boolean>(() => this.selectedCategories().size === 0);
+
   // Scroll target for the bottom list (used after add to bring new/moved row into view)
   private bottomListRef = viewChild<ElementRef<HTMLElement>>('bottomList');
 
@@ -852,6 +928,13 @@ export class FoodsPanelComponent {
 
   clearBucket(key: BucketKey): void {
     this.thisWeekBuckets.update(b => ({ ...b, [key]: [] }));
+  }
+
+  removeFoodFromBucket(key: BucketKey, foodId: number): void {
+    this.thisWeekBuckets.update(b => ({
+      ...b,
+      [key]: b[key].filter(f => f.id !== foodId),
+    }));
   }
 
   // ----- Bucket drop-zone handlers -----

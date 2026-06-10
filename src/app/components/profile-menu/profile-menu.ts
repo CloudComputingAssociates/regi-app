@@ -86,10 +86,6 @@ export class ProfileMenuComponent {
   private chatService = inject(ChatService);
   private settingsService = inject(SettingsService);
 
-  greetingText(firstName: string): string {
-    return `Hi, ${firstName}!`;
-  }
-
   login(): void {
     // Just redirect to Auth0 - settings will be loaded after auth completes in app.ts
     this.auth.loginWithRedirect();

@@ -121,7 +121,7 @@ export class ImageCarouselComponent {
 
   // Slider label config
   showBucketBar = input(true);
-  bucketBarLabel = input('Bottom Bucket');
+  bucketBarLabel = input('DISPLAY');
   leftLabel = input('Left');
   rightLabel = input('Right');
 
