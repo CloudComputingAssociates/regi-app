@@ -473,30 +473,29 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  cursor: pointer;
   transition: transform 0.12s ease;
 
+  // Clicking anywhere on the card removes the food from the bucket; the red X
+  // is purely a hover affordance signalling that intent.
   &:hover {
     transform: scale(1.1);
 
     .bucket-mini-remove {
       opacity: 1;
-      pointer-events: auto;
     }
   }
 }
 
-// Red X delete badge — absolutely positioned over the left edge of the black
-// label banner so the centered text doesn't shift right when the X appears.
-// Lives INSIDE the banner (overflow:hidden on the card) so it can't be clipped
-// by the rounded card border. Occluding text is fine — the image identifies
-// the food.
+// Red X delete indicator — purely a hover affordance (the whole card is the
+// click target). Absolutely positioned over the left edge of the black label
+// banner so the centered text doesn't shift right when the X appears.
 .bucket-mini-remove {
   position: absolute;
   top: 1px;
   left: 1px;
   width: 14px;
   height: 14px;
-  padding: 0;
   background: #e53935;
   border: 1px solid #ffffff;
   border-radius: 50%;
@@ -507,16 +506,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  opacity: 0;
   pointer-events: none;
+  opacity: 0;
   z-index: 2;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-  transition: opacity 0.12s ease, background 0.12s ease;
-
-  &:hover {
-    background: #ff5252;
-  }
+  transition: opacity 0.12s ease;
 }
 
 .bucket-mini-card-image {

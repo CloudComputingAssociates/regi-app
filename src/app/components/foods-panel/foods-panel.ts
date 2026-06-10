@@ -205,16 +205,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
                         <div
                           class="bucket-mini-card"
                           [matTooltip]="food.shortDescription || food.description"
-                          matTooltipPosition="above">
+                          matTooltipPosition="above"
+                          (click)="removeFoodFromBucket(key, food.id)">
                           <div class="bucket-mini-card-label">
-                            <button
-                              type="button"
-                              class="bucket-mini-remove"
-                              (click)="removeFoodFromBucket(key, food.id); $event.stopPropagation()"
-                              matTooltip="Remove from bucket"
-                              matTooltipPosition="above">
-                              ✕
-                            </button>
+                            <span class="bucket-mini-remove" aria-hidden="true">✕</span>
                             <span class="bucket-mini-card-label-text">
                               {{ food.shortDescription || food.description }}
                             </span>
