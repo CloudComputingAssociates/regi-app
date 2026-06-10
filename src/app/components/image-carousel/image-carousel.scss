@@ -180,16 +180,14 @@
 }
 
 // ---- Center-card overlay slot ----
-// Anchored to the upper-LEFT corner of the centered card, intentionally
-// hanging off the edges a little (mostly on the image but spilling onto the
-// corner). The card's top is at padding-top (10) + spinner card-top-offset
-// (12) = 22 px in carousel-body coords; pulling the overlay up to 14 px lets
-// it overhang the top by ~8 px. Horizontally we anchor 28 px to the LEFT of
-// the card's left edge so an ~84-px-wide badge sits ~28 px off the left.
+// Anchored to cover the upper-LEFT corner of the centered card. The card's
+// top is at padding-top (10) + spinner card-top-offset (12) = 22 px in
+// carousel-body coords; pulling the overlay up to 2 px lets it overhang the
+// top by ~20 px (~1/8 inch above the card edge).
 .center-overlay {
   position: absolute;
   z-index: 320;
-  top: 14px;
+  top: 2px;
   left: calc(50% - var(--card-width, 154px) / 2 - 28px);
   pointer-events: none; // projected content opts back in
 
