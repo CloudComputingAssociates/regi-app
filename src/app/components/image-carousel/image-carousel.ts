@@ -11,12 +11,14 @@ import {
   input,
   model,
   output,
+  viewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SpinnerComponent, SpinnerItem } from '../spinner/spinner';
 
 @Component({
   selector: 'app-image-carousel',
+  exportAs: 'appImageCarousel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, SpinnerComponent],
   host: {
@@ -48,15 +50,6 @@ import { SpinnerComponent, SpinnerItem } from '../spinner/spinner';
             </div>
           </div>
         }
-
-        <!-- Floating Spin button — top-right. -->
-        <button
-          type="button"
-          class="floating-spin-btn"
-          (click)="s.spin()"
-          aria-label="Spin">
-          Spin
-        </button>
 
         @if (items().length === 0) {
           <div class="carousel-empty">
@@ -147,6 +140,15 @@ export class ImageCarouselComponent {
   cardDragStart = output<{ item: SpinnerItem; event: DragEvent }>();
   /** Whichever item is currently in the spotlight — emitted on items-load and after a spin settles. Use this when you need to react to whatever the user is "looking at" without requiring a click. */
   centered = output<SpinnerItem>();
+
+  // Spinner reference — exposes spin() to external callers so the Spin button
+  // can live outside this component (e.g., in the parent panel's chrome).
+  private spinnerRef = viewChild<SpinnerComponent>(SpinnerComponent);
+
+  /** Programmatically kick off a roulette spin — delegates to the inner spinner. */
+  spin(): void {
+    this.spinnerRef()?.spin();
+  }
 
   // ---- single-click vs double-click discrimination ----
   private singleClickTimer: ReturnType<typeof setTimeout> | null = null;

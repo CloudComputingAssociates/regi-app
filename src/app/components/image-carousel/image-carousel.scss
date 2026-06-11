@@ -87,39 +87,8 @@
   }
 }
 
-// ---- Floating Spin button — pinned to the right edge, vertically centered
-// against the carousel cards so it reads as the "throw" button alongside the
-// spinning row.
-.floating-spin-btn {
-  position: absolute;
-  top: 50%;
-  right: 8px;
-  transform: translateY(-50%);
-  z-index: 310;
-  width: 52px;
-  height: 52px;
-  padding: 0;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  color: #ffffff;
-  background: #357035;
-  border: 1px solid #4a954a;
-  border-bottom: 2px solid #1a3a1a;
-  border-radius: 8px;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
-
-  &:hover { background: #408040; }
-  &:active {
-    // Combine the press-down nudge with the centering offset so the button
-    // stays vertically aligned during press.
-    transform: translateY(calc(-50% + 1px));
-    border-bottom-width: 1px;
-  }
-}
+// (The Spin button used to live here as .floating-spin-btn. It now lives in
+// foods-panel's left-pane top bar — see .spin-btn in foods-panel.scss.)
 
 // ---- Image card (projected into spinner) ----
 .image-card {

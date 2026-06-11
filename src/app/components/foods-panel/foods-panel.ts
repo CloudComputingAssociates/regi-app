@@ -93,19 +93,9 @@ const CATEGORY_PLURALS: Record<string, string> = {
         </button>
       </div>
 
+      <!-- Top control strip — TYPE moved to the right pane (see below); only
+           the category Filter row lives up here now. -->
       <div class="spin-controls">
-        <div class="spin-row">
-          <span class="spin-row-label">Type</span>
-          <select
-            class="spin-source-select"
-            [ngModel]="spinSource()"
-            (ngModelChange)="spinSource.set($event)">
-            <option value="myfoods">My Foods</option>
-            <option value="restricted">Restricted</option>
-            <option value="yeh-approved">YEH Approved</option>
-          </select>
-        </div>
-
         <div class="spin-row">
           <span class="spin-row-label">Filter</span>
           <div class="category-radio-panel" role="group" aria-label="Category filter">
@@ -128,18 +118,43 @@ const CATEGORY_PLURALS: Record<string, string> = {
            50/50, persists nothing — the user can drag mid-session. -->
       <div class="main-area">
 
-        <!-- LEFT PANE: search above the cards, carousel below. The Spin
-             button rides the right edge of the carousel (its inner styling). -->
+        <!-- LEFT PANE: top bar holds the SEARCH label + input + execute
+             button on the left, and the SPIN button on the right edge.
+             Below is the carousel itself. -->
         <div class="left-pane" [style.flex]="leftPaneWidthFraction()">
-          <div class="carousel-search-bar">
+          <div class="carousel-top-bar">
+            <span class="search-label">SEARCH</span>
             <input
               type="text"
               class="carousel-search-input"
               [value]="searchQuery()"
               (input)="onSearchInput($any($event.target).value)"
+              (keyup.enter)="onSearchExecute()"
               placeholder="Search foods…" />
+            <button
+              type="button"
+              class="search-execute-btn"
+              (click)="onSearchExecute()"
+              matTooltip="Search (Enter)"
+              matTooltipPosition="below"
+              aria-label="Execute search">
+              <svg viewBox="0 0 24 24" class="search-execute-icon" aria-hidden="true">
+                <path d="M5 12h12M13 6l6 6-6 6"
+                  fill="none" stroke="currentColor"
+                  stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+            <span class="top-bar-spacer"></span>
+            <button
+              type="button"
+              class="spin-btn"
+              (click)="carousel.spin()"
+              aria-label="Spin">
+              Spin
+            </button>
           </div>
           <app-image-carousel
+            #carousel="appImageCarousel"
             class="left-pane-carousel"
             [items]="spinnerItems()"
             [emptyMessage]="carouselEmptyMessage()"
@@ -161,9 +176,18 @@ const CATEGORY_PLURALS: Record<string, string> = {
           <div class="splitter-grip-v"></div>
         </div>
 
-        <!-- RIGHT PANE: DISPLAY toggle on top, then either the 4 stacked
-             buckets (This Week) or the MyFoods/YEH-approved scroll list. -->
+        <!-- RIGHT PANE: blue section title at top ("Buckets" in This Week
+             mode, the collection name in Curate mode), DISPLAY toggle, then
+             (in Curate mode only) the TYPE dropdown, then the content. -->
         <div class="right-pane" [style.flex]="rightPaneFlex()">
+          <div class="right-section-title">
+            @if (addTo() === 'left') {
+              Buckets
+            } @else {
+              {{ collectionHeading() }} ({{ bottomListLength() }})
+            }
+          </div>
+
           <div class="display-toggle">
             <span class="display-toggle-label">DISPLAY</span>
             <div class="display-toggle-buttons" role="group" aria-label="Display target">
@@ -184,33 +208,51 @@ const CATEGORY_PLURALS: Record<string, string> = {
             </div>
           </div>
 
+          @if (addTo() === 'right') {
+            <!-- TYPE dropdown sits directly above the curated list — it
+                 predicates WHICH collection the user is curating. Only
+                 visible in Curate mode since This Week shows buckets and
+                 doesn't consult a TYPE. -->
+            <div class="type-row">
+              <span class="type-row-label">TYPE</span>
+              <select
+                class="spin-source-select"
+                [ngModel]="spinSource()"
+                (ngModelChange)="spinSource.set($event)">
+                <option value="myfoods">My Foods</option>
+                <option value="restricted">Restricted</option>
+                <option value="yeh-approved">YEH Approved</option>
+              </select>
+              <span class="column-hint">{{ columnHeaderText() }}</span>
+            </div>
+          }
+
           @if (addTo() === 'left') {
-            <!-- 4 buckets stacked vertically, each flexing to ¼ of the right-
-                 pane height. Scrollbars only appear when content overflows. -->
-            <div class="bucket-stack">
+            <!-- 4 buckets in a 2×2 grid. Each is tall enough to show the big
+                 count in the middle and tiles below. Scrollbars only appear
+                 inside an individual bucket when its tiles overflow. -->
+            <div class="bucket-grid">
               @for (key of bucketKeys; track key) {
                 <div
-                  class="bucket-row"
+                  class="bucket"
                   [class.drag-over]="dragOverBucket() === key"
                   (dragenter)="onBucketDragEnter($event, key)"
                   (dragover)="onBucketDragOver($event)"
                   (dragleave)="onBucketDragLeave($event, key)"
                   (drop)="onBucketDrop($event, key)">
-                  <div class="bucket-row-header">
-                    <span class="bucket-row-name">{{ key }}</span>
-                    <span class="bucket-row-count">{{ thisWeekBuckets()[key].length }}</span>
-                    @if (thisWeekBuckets()[key].length > 0) {
-                      <button
-                        type="button"
-                        class="bucket-clear"
-                        (click)="clearBucket(key)"
-                        matTooltip="Empty bucket"
-                        matTooltipPosition="above">
-                        ✕
-                      </button>
-                    }
+                  <div class="bucket-face">
+                    <div class="bucket-count">{{ thisWeekBuckets()[key].length }}</div>
+                    <div class="bucket-name">{{ key }}</div>
                   </div>
                   @if (thisWeekBuckets()[key].length > 0) {
+                    <button
+                      type="button"
+                      class="bucket-clear"
+                      (click)="clearBucket(key)"
+                      matTooltip="Empty bucket"
+                      matTooltipPosition="above">
+                      ✕
+                    </button>
                     <div class="bucket-tiles">
                       @for (food of thisWeekBuckets()[key]; track food.id) {
                         <div
@@ -237,12 +279,6 @@ const CATEGORY_PLURALS: Record<string, string> = {
               }
             </div>
           } @else {
-            <div class="right-pane-header">
-              <span class="right-pane-title">
-                {{ collectionHeading() }} ({{ bottomListLength() }})
-              </span>
-              <span class="column-hint">{{ columnHeaderText() }}</span>
-            </div>
             <div class="right-pane-list" #bottomList>
               @if (spinSource() === 'myfoods') {
             <!-- TYPE=MyFoods on right side: accordion view of curated MyFoods -->
@@ -859,6 +895,14 @@ export class FoodsPanelComponent {
     this.searchQuery.set(value);
   }
 
+  // The execute button (and Enter key) doesn't need to do anything special —
+  // search is already live on every keystroke. Kept as an explicit affordance
+  // so users feel they can "commit" the query; a future enhancement might
+  // dismiss the soft keyboard on mobile or trigger a server-side fuzzy search.
+  onSearchExecute(): void {
+    // no-op for now
+  }
+
   // Auto-load whenever source, filter, OR the merged MyFoods set changes (so
   // adding/removing local picks or refreshing the server cache reloads the
   // carousel when TYPE=MyFoods).
@@ -879,8 +923,21 @@ export class FoodsPanelComponent {
 
   // ----- image-carousel: SpinnerItem mapping + outputs -----
 
+  // The carousel ALWAYS spins MyFoods (regardless of TYPE). TYPE only drives
+  // which collection the right-hand Curate view is editing. This is filtered
+  // by the active category radio + search box, same as before.
+  private carouselSpinnerFoods = computed<Food[]>(() => {
+    const filtered = this.filteredMyFoods();
+    const q = this.searchQuery().trim().toLowerCase();
+    if (!q) return filtered;
+    return filtered.filter(f =>
+      f.description.toLowerCase().includes(q) ||
+      (f.shortDescription?.toLowerCase().includes(q) ?? false),
+    );
+  });
+
   spinnerItems = computed<SpinnerItem[]>(() =>
-    this.carouselFoods().map((f) => ({
+    this.carouselSpinnerFoods().map((f) => ({
       id: f.id,
       thumbnailUrl: f.foodImageThumbnail ?? undefined,
       fullUrl: f.foodImage ?? undefined,
