@@ -8,25 +8,6 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&family=Fredoka:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <script>
-    // Lock  viewport height on initial load to prevent keyboard resize issues
-    // This runs before Angular boots to set the CSS custom property immediately
-    (function() {
-      function setAppHeight() {
-        const vh = window.innerHeight;
-        document.documentElement.style.setProperty('--app-height', vh + 'px');
-      }
-
-      // Set on load
-      setAppHeight();
-
-      // Update only on an orientation change (not on resize which includes keyboard)
-      
-      window.addEventListener('orientationchange', function() {
-        setTimeout(setAppHeight, 100);
-      });
-    })();
-  </script>
 </head>
 <body>
   <app-root></app-root>

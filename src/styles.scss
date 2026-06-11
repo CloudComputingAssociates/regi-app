@@ -35,15 +35,21 @@ body {
 }
 /* You can add global styles to this file, and also import other style files */
 
-// Use locked viewport height to prevent keyboard resize issues
+// Track the live viewport with the dynamic-viewport unit so entering / leaving
+// browser fullscreen (and mobile URL-bar shifts) grow and shrink the shell in
+// lockstep with the actual visible area. 100vh would stay frozen at the static
+// large-viewport value; 100dvh updates on resize/fullscreenchange for free, no
+// JS measurement required.
 html, body {
-  height: 100%;
-  height: var(--app-height, 100vh); // Fallback to 100vh if custom property not set
+  height: 100dvh;
 }
 body {
   margin: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
   overflow: hidden; // Prevent body scroll, only scroll within components
+  // Dark fallback so that if the shell math is ever off by a frame the page
+  // background never flashes light through the gap.
+  background-color: #000000;
 }
 
 // Add this to the END of src/styles.scss

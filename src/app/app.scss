@@ -4,8 +4,9 @@
 .app-wrapper {
   position: relative;
   width: 100%;
+  // Inherit the live 100dvh from html/body via percentage — this keeps the
+  // wrapper in sync with fullscreen toggles without its own JS measurement.
   height: 100%;
-  height: var(--app-height, 100vh); // Use locked viewport height
   overflow: hidden; // Prevent wrapper from scrolling
 }
 

@@ -24,7 +24,13 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  // Clip horizontally — cards animating off the sides should never leak out.
+  // Vertically, allow overflow so a short carousel-body doesn't guillotine
+  // the bottom of the fixed-height spinner-roulette (and its card captions).
+  // The wrapping foods-panel-container has its own overflow:hidden, so any
+  // visual spill is still contained at the page level.
+  overflow-x: hidden;
+  overflow-y: visible;
   // Spinner sits near the top of the area — the user wanted less wasted space
   // below the cards so the bottom-pane gets more room.
   justify-content: flex-start;
