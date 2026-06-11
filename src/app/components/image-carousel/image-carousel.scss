@@ -193,7 +193,7 @@
 .center-overlay {
   position: absolute;
   z-index: 320;
-  top: -10px;
+  top: -14px;
   left: calc(50% - var(--card-width, 154px) / 2 - 30px);
   pointer-events: none; // projected content opts back in
   opacity: 1;
