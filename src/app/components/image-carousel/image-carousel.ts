@@ -115,7 +115,11 @@ export class ImageCarouselComponent {
   items = input<SpinnerItem[]>([]);
   cardWidth = input(154);
   cardHeight = input(192);
-  spacing = input(182);
+  // Tighter card-to-card spacing so the fanned-out cards don't leave wide
+  // visual gaps once they scale down. Was 182 — the centered card is 154 wide,
+  // so 158 leaves only a thin sliver between adjacent cards at full scale and
+  // overlaps slightly as they shrink.
+  spacing = input(158);
   visibleCount = input(5);
 
   // Slider label config

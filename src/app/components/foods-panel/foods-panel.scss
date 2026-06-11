@@ -336,7 +336,7 @@
   strong { color: #ffd66b; font-weight: 700; }
 }
 
-// ---- Main side-by-side area (carousel | splitter | buckets) ----
+// ---- Main side-by-side area (carousel | splitter | baskets) ----
 // Replaces the previous top-pane/bottom-pane horizontal split. Left and right
 // panes share width via flex grow values driven by leftPaneWidthFraction.
 .main-area {
@@ -456,7 +456,7 @@
 // inside the rounded card, so the carousel still grows to fill its parent.)
 
 // Big blue section title at the very top of each pane. Sized to match the
-// RegiMenu app-title — left pane shows "MyFoods", right pane shows "Buckets"
+// RegiMenu app-title — left pane shows "MyFoods", right pane shows "Baskets"
 // or "Curation", so the two panes feel balanced. Optional count rides on the
 // right edge of the title bar.
 .section-title {
@@ -486,7 +486,7 @@
 }
 
 // TYPE row sits between DISPLAY and the curated list. Only visible in Curate
-// MyFoods mode (since This Week buckets don't consult a TYPE).
+// MyFoods mode (since This Week baskets don't consult a TYPE).
 .type-row {
   flex-shrink: 0;
   display: flex;
@@ -543,7 +543,7 @@
 
 .filter-bar-label { @extend %control-bar-label; }
 
-// DISPLAY toggle (Fill Buckets / Curate MyFoods) — top of the right pane.
+// DISPLAY toggle (Fill Baskets / Curate MyFoods) — top of the right pane.
 .display-toggle {
   @extend %control-bar;
 }
@@ -636,7 +636,7 @@
 }
 
 // ---- Rounded "pane card" — the visible surface the carousel sits in on the
-// left, and the buckets / curate list sits in on the right. Same chrome on
+// left, and the baskets / curate list sits in on the right. Same chrome on
 // both sides for visual balance. -----------------------------------------------
 .pane-card {
   flex: 1;
@@ -659,12 +659,12 @@
   min-height: 0;
 }
 
-// ---- 2 × 2 bucket grid (This Week view) ----
+// ---- 2 × 2 basket grid (This Week view) ----
 // Proteins | Fats          (top row)
 // Carbs    | Misc          (bottom row)
-// Each bucket fills its grid cell; the count rides in the middle of the face,
+// Each basket fills its grid cell; the count rides in the middle of the face,
 // the tiles flow below.
-.bucket-grid {
+.basket-grid {
   flex: 1;
   min-height: 0;
   display: grid;
@@ -676,7 +676,7 @@
   overflow-y: auto; // safety net for very short windows
 }
 
-.bucket {
+.basket {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -699,65 +699,86 @@
   }
 }
 
-// The face holds the big count + bucket name, centered both axes within the
-// upper portion of the bucket. Tiles flow below the face.
-.bucket-face {
+// Compact horizontal header — basket name on the LEFT, count on the RIGHT,
+// both at FILTER-pill size (11 px uppercase). Reclaims the vertical space the
+// big centered count used to eat so the food tiles below don't get clipped.
+.basket-face {
   flex-shrink: 0;
-  padding: 10px 10px 4px;
-  text-align: center;
-  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  // Leave room on the right for the absolute-positioned .basket-clear (✕).
+  padding-right: 32px;
   user-select: none;
 }
 
-.bucket-count {
-  font-size: 32px;
+.basket-name {
+  font-size: 11px;
   font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+}
+
+.basket-count {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
   line-height: 1;
   color: #4da6ff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.bucket-name {
-  margin-top: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.8);
-}
+// (Stale .basket-name rule removed — current rule lives above in the
+// compact .basket-face header.)
 
-// Sits in the top-right corner of each .bucket — the cell has position:
+// Sits in the top-right corner of each .basket — the cell has position:
 // relative so this anchors there. Hover reveals red so it's clearly the
-// "empty this bucket" action.
-.bucket-clear {
+// "empty this basket" action.
+// Top-right circular trash-can affordance. Hover turns red so the "empty"
+// intent is unmistakable; the matTooltip says "Empty Basket".
+.basket-clear {
   position: absolute;
   top: 4px;
   right: 4px;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 50%;
   color: rgba(255, 255, 255, 0.7);
-  font-size: 11px;
   line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 20;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
 
   &:hover {
     color: #ff7676;
-    border-color: rgba(255, 118, 118, 0.5);
+    border-color: rgba(255, 118, 118, 0.55);
+    background: rgba(80, 0, 0, 0.55);
   }
 }
 
-// Mini-cards tile in a flex-wrap grid as foods land in the bucket. Each card
+.basket-clear-icon {
+  // mat-icon defaults to 24×24 / font-size 24 — shrink so it sits cleanly
+  // inside the 24 px circle.
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  line-height: 16px;
+}
+
+// Mini-cards tile in a flex-wrap grid as foods land in the basket. Each card
 // is ~25% of the carousel-card size (38 x 56). Newest in the top-left;
-// overflow scrolls vertically so a bucket with many entries still works.
-.bucket-tiles {
+// overflow scrolls vertically so a basket with many entries still works.
+.basket-tiles {
   flex: 1;
   min-height: 0;
   margin: 0;
@@ -765,7 +786,7 @@
   display: flex;
   // Bottom-up stack: first item lands at bottom-left, fills rightward, then
   // wraps to a new row ABOVE. Older foods stay anchored at the bottom; newer
-  // foods grow the pile toward the top of the bucket.
+  // foods grow the pile toward the top of the basket.
   flex-wrap: wrap-reverse;
   align-content: flex-start;
   justify-content: flex-start;
@@ -778,7 +799,7 @@
   &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 2px; }
 }
 
-.bucket-mini-card {
+.basket-mini-card {
   // Bumped another 25%: 60 → 75 × 88 → 110. The label band, image area and X
   // badge all scale via their own rules, so this just affects the outer box.
   position: relative;
@@ -795,12 +816,12 @@
   cursor: pointer;
   transition: transform 0.12s ease;
 
-  // Clicking anywhere on the card removes the food from the bucket; the red X
+  // Clicking anywhere on the card removes the food from the basket; the red X
   // is purely a hover affordance signalling that intent.
   &:hover {
     transform: scale(1.1);
 
-    .bucket-mini-remove {
+    .basket-mini-remove {
       opacity: 1;
     }
   }
@@ -809,7 +830,7 @@
 // Red X delete indicator — purely a hover affordance (the whole card is the
 // click target). Absolutely positioned over the left edge of the black label
 // banner so the centered text doesn't shift right when the X appears.
-.bucket-mini-remove {
+.basket-mini-remove {
   position: absolute;
   top: 1px;
   left: 1px;
@@ -832,7 +853,7 @@
   transition: opacity 0.12s ease;
 }
 
-.bucket-mini-card-image {
+.basket-mini-card-image {
   flex: 1;
   min-height: 0;
   background: #1f1f1f;
@@ -848,17 +869,17 @@
   }
 }
 
-.bucket-mini-card-label {
+.basket-mini-card-label {
   position: relative;
-  font-size: 7px;
+  font-size: 9px;
   line-height: 1.1;
   color: rgba(255, 255, 255, 0.92);
   background: rgba(0, 0, 0, 0.65);
   padding: 2px 3px;
-  min-height: 16px;
+  min-height: 18px;
 }
 
-.bucket-mini-card-label-text {
+.basket-mini-card-label-text {
   display: block;
   white-space: nowrap;
   overflow: hidden;
@@ -896,16 +917,21 @@
   scrollbar-width: none;
 }
 
-// Health Info button — now rides the upper-RIGHT of the NF popup at 80 px
-// (25% bigger than the previous 64). Sits to the LEFT of the close button.
+// Health Info button — rides the upper-RIGHT of the NF popup IN the black
+// banner area, to the LEFT of the close button with ~18 px breathing room
+// so the click targets can't overlap. Image height bumped 80 → 100 (another
+// 25% bigger).
 .nf-popup-health-info {
   position: absolute;
-  top: 4px;
-  // Leave room for the close button at right:0; the badge sits just inside it.
-  right: 28px;
+  // Sit higher so the badge centers on the title banner rather than poking
+  // down into the white nutrition label.
+  top: -6px;
+  // Close button is at right:0, ~22 px wide. Anchoring the badge at right:
+  // 40px puts an 18 px gap between the two hit areas.
+  right: 40px;
   z-index: 2;
 
-  img { height: 80px; }
+  img { height: 100px; }
 }
 
 .nf-popup-header {
@@ -913,9 +939,9 @@
   justify-content: space-between;
   align-items: center;
   margin: 4px 0 12px;
-  // Leave room on the right for the badge AND the close button so the food
-  // name doesn't get clipped.
-  padding-right: 96px;
+  // Leave enough room on the right for the now ~100-px-wide badge plus the
+  // close button so the food name doesn't get clipped.
+  padding-right: 160px;
 }
 
 .nf-popup-title {

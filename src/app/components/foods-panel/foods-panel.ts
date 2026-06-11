@@ -28,14 +28,16 @@ const CAROUSEL_CATEGORIES = [
 ] as const;
 
 const LS_MYFOODS = 'regi.foods.myfoods';
-const LS_THISWEEK_BUCKETS = 'regi.foods.thisweek.buckets';
+// Storage key intentionally keeps the legacy "buckets" string so users who
+// already have data saved don't lose it through the rename.
+const LS_THISWEEK_BASKETS = 'regi.foods.thisweek.buckets';
 
-type BucketKey = 'Proteins' | 'Fats' | 'Carbs' | 'Misc';
-const BUCKET_KEYS: readonly BucketKey[] = ['Proteins', 'Fats', 'Carbs', 'Misc'];
+type BasketKey = 'Proteins' | 'Fats' | 'Carbs' | 'Misc';
+const BASKET_KEYS: readonly BasketKey[] = ['Proteins', 'Fats', 'Carbs', 'Misc'];
 
-// Food.categoryName → bucket. Per the spec: Dairy → Fats, Vegetables/Carbs/Fruits
+// Food.categoryName → basket. Per the spec: Dairy → Fats, Vegetables/Carbs/Fruits
 // → Carbs, Processed/Condiments → Misc.
-const CATEGORY_TO_BUCKET: Record<string, BucketKey> = {
+const CATEGORY_TO_BASKET: Record<string, BasketKey> = {
   Protein: 'Proteins',
   Fat: 'Fats',
   Dairy: 'Fats',
@@ -46,8 +48,8 @@ const CATEGORY_TO_BUCKET: Record<string, BucketKey> = {
   Condiment: 'Misc',
 };
 
-type ThisWeekBuckets = Record<BucketKey, Food[]>;
-function emptyBuckets(): ThisWeekBuckets {
+type ThisWeekBaskets = Record<BasketKey, Food[]>;
+function emptyBaskets(): ThisWeekBaskets {
   return { Proteins: [], Fats: [], Carbs: [], Misc: [] };
 }
 
@@ -97,7 +99,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
            below. The top control strip is gone, so the panes start right
            below the action-buttons row. -->
 
-      <!-- Side-by-side main area: carousel on the LEFT, bucket/list stack on
+      <!-- Side-by-side main area: carousel on the LEFT, basket/list stack on
            the RIGHT, with a draggable vertical splitter between them. Starts
            50/50, persists nothing — the user can drag mid-session. -->
       <div class="main-area">
@@ -107,7 +109,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
              2. FILTER gray-gradient bar (rounded), matching the DISPLAY bar
                 on the right pane.
              3. Rounded carousel "card" that holds the search row + the
-                carousel cards as a single visual unit, mirroring the bucket-
+                carousel cards as a single visual unit, mirroring the basket-
                 card on the right pane. -->
         <div class="left-pane" [style.flex]="leftPaneWidthFraction()">
           <div class="section-title">
@@ -172,7 +174,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
           <div class="splitter-grip-v"></div>
         </div>
 
-        <!-- RIGHT PANE: blue section title at top ("Buckets" in This Week
+        <!-- RIGHT PANE: blue section title at top ("Baskets" in This Week
              mode, the collection name in Curate mode), DISPLAY toggle, then
              (in Curate mode only) the TYPE dropdown, then the content. -->
         <div class="right-pane" [style.flex]="rightPaneFlex()">
@@ -208,7 +210,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
           @if (addTo() === 'right') {
             <!-- TYPE dropdown sits directly above the curated list — it
                  predicates WHICH collection the user is curating. Only
-                 visible in Curate mode since This Week shows buckets and
+                 visible in Curate mode since This Week shows baskets and
                  doesn't consult a TYPE. -->
             <div class="type-row">
               <span class="type-row-label">TYPE</span>
@@ -225,45 +227,45 @@ const CATEGORY_PLURALS: Record<string, string> = {
           }
 
           @if (addTo() === 'left') {
-            <!-- 4 buckets in a 2×2 grid wrapped in the same rounded card
+            <!-- 4 baskets in a 2×2 grid wrapped in the same rounded card
                  chrome as the carousel side, so the two panes feel balanced. -->
-            <div class="pane-card bucket-card">
-            <div class="bucket-grid">
-              @for (key of bucketKeys; track key) {
+            <div class="pane-card basket-card">
+            <div class="basket-grid">
+              @for (key of basketKeys; track key) {
                 <div
-                  class="bucket"
-                  [class.drag-over]="dragOverBucket() === key"
-                  (dragenter)="onBucketDragEnter($event, key)"
-                  (dragover)="onBucketDragOver($event)"
-                  (dragleave)="onBucketDragLeave($event, key)"
-                  (drop)="onBucketDrop($event, key)">
-                  <div class="bucket-face">
-                    <div class="bucket-count">{{ thisWeekBuckets()[key].length }}</div>
-                    <div class="bucket-name">{{ key }}</div>
+                  class="basket"
+                  [class.drag-over]="dragOverBasket() === key"
+                  (dragenter)="onBasketDragEnter($event, key)"
+                  (dragover)="onBasketDragOver($event)"
+                  (dragleave)="onBasketDragLeave($event, key)"
+                  (drop)="onBasketDrop($event, key)">
+                  <div class="basket-face">
+                    <div class="basket-name">{{ key }}</div>
+                    <div class="basket-count">{{ thisWeekBaskets()[key].length }}</div>
                   </div>
-                  @if (thisWeekBuckets()[key].length > 0) {
+                  @if (thisWeekBaskets()[key].length > 0) {
                     <button
                       type="button"
-                      class="bucket-clear"
-                      (click)="clearBucket(key)"
-                      matTooltip="Empty bucket"
+                      class="basket-clear"
+                      (click)="clearBasket(key)"
+                      matTooltip="Empty Basket"
                       matTooltipPosition="above">
-                      ✕
+                      <mat-icon class="basket-clear-icon">delete_outline</mat-icon>
                     </button>
-                    <div class="bucket-tiles">
-                      @for (food of thisWeekBuckets()[key]; track food.id) {
+                    <div class="basket-tiles">
+                      @for (food of thisWeekBaskets()[key]; track food.id) {
                         <div
-                          class="bucket-mini-card"
+                          class="basket-mini-card"
                           [matTooltip]="food.shortDescription || food.description"
                           matTooltipPosition="above"
-                          (click)="removeFoodFromBucket(key, food.id)">
-                          <div class="bucket-mini-card-label">
-                            <span class="bucket-mini-remove" aria-hidden="true">✕</span>
-                            <span class="bucket-mini-card-label-text">
+                          (click)="removeFoodFromBasket(key, food.id)">
+                          <div class="basket-mini-card-label">
+                            <span class="basket-mini-remove" aria-hidden="true">✕</span>
+                            <span class="basket-mini-card-label-text">
                               {{ food.shortDescription || food.description }}
                             </span>
                           </div>
-                          <div class="bucket-mini-card-image">
+                          <div class="basket-mini-card-image">
                             @if (food.foodImageThumbnail) {
                               <img [src]="food.foodImageThumbnail" alt="" />
                             }
@@ -722,7 +724,7 @@ export class FoodsPanelComponent {
   });
 
   // Hint label shown above the action-icon column at the right edge of each
-  // row (right-side views only — left side now shows the bucket grid).
+  // row (right-side views only — left side now shows the basket grid).
   columnHeaderText = computed<string>(() => 'Favorite / Restrict');
 
   // Search: filters the carousel locally (no API round-trip per keystroke)
@@ -740,24 +742,24 @@ export class FoodsPanelComponent {
   });
 
   // Carousel destination + local lists (persisted to localStorage).
-  // 'left' = This Week buckets, 'right' = the TYPE-driven view (YEH/MyFoods/Restricted).
+  // 'left' = This Week baskets, 'right' = the TYPE-driven view (YEH/MyFoods/Restricted).
   // Default to 'left' (This Week) — that's the primary planning workflow.
   addTo = signal<'left' | 'right'>('left');
   myFoodsLocal = signal<Food[]>(this.loadLocal(LS_MYFOODS));
 
-  // Four-bucket This Week store (Proteins/Fats/Carbs/Misc). Replaces the old
-  // flat thisWeekLocal Food[] — each bucket is its own array.
-  readonly bucketKeys = BUCKET_KEYS;
-  thisWeekBuckets = signal<ThisWeekBuckets>(this.loadBuckets());
+  // Four-basket This Week store (Proteins/Fats/Carbs/Misc). Replaces the old
+  // flat thisWeekLocal Food[] — each basket is its own array.
+  readonly basketKeys = BASKET_KEYS;
+  thisWeekBaskets = signal<ThisWeekBaskets>(this.loadBaskets());
 
-  // Convenience: total foods across all four buckets.
+  // Convenience: total foods across all four baskets.
   thisWeekTotal = computed<number>(() => {
-    const b = this.thisWeekBuckets();
+    const b = this.thisWeekBaskets();
     return b.Proteins.length + b.Fats.length + b.Carbs.length + b.Misc.length;
   });
 
-  // Drag-over bucket key (for visual highlight on the drop target)
-  dragOverBucket = signal<BucketKey | null>(null);
+  // Drag-over basket key (for visual highlight on the drop target)
+  dragOverBasket = signal<BasketKey | null>(null);
 
   // Health Benefits overlay is shown only when the active filter is a category
   // where macro-grade health claims are meaningful: Proteins, Fats, Dairy,
@@ -914,7 +916,7 @@ export class FoodsPanelComponent {
     this.saveLocal(LS_MYFOODS, this.myFoodsLocal());
   });
   private persistThisWeek = effect(() => {
-    this.saveBuckets(this.thisWeekBuckets());
+    this.saveBaskets(this.thisWeekBaskets());
   });
 
   // ----- image-carousel: SpinnerItem mapping + outputs -----
@@ -948,9 +950,9 @@ export class FoodsPanelComponent {
     if (!food) return;
 
     if (this.addTo() === 'left') {
-      // Route to the correct This Week bucket based on the food's category.
-      const bucket = this.bucketForFood(food);
-      this.addFoodToBucket(food, bucket);
+      // Route to the correct This Week basket based on the food's category.
+      const basket = this.basketForFood(food);
+      this.addFoodToBasket(food, basket);
     } else {
       // Slider on right: behavior follows TYPE (matches the old onAddFood right-side logic).
       this.onRightSideAdd(food);
@@ -973,23 +975,23 @@ export class FoodsPanelComponent {
     event.dataTransfer!.effectAllowed = 'copy';
   }
 
-  // ----- Bucket helpers -----
+  // ----- Basket helpers -----
 
-  private bucketForFood(food: Food): BucketKey {
-    return CATEGORY_TO_BUCKET[food.categoryName ?? ''] ?? 'Misc';
+  private basketForFood(food: Food): BasketKey {
+    return CATEGORY_TO_BASKET[food.categoryName ?? ''] ?? 'Misc';
   }
 
-  private addFoodToBucket(food: Food, key: BucketKey): void {
-    const buckets = this.thisWeekBuckets();
-    const exists = buckets[key].some(f => f.id === food.id);
+  private addFoodToBasket(food: Food, key: BasketKey): void {
+    const baskets = this.thisWeekBaskets();
+    const exists = baskets[key].some(f => f.id === food.id);
     if (exists) {
-      // No-op (silent); user already picked this one for that bucket.
+      // No-op (silent); user already picked this one for that basket.
       return;
     }
-    // Append (oldest first, newest last) — the bucket-tiles flex layout uses
+    // Append (oldest first, newest last) — the basket-tiles flex layout uses
     // `wrap-reverse` so the first item lands bottom-left and the stack grows
     // upward as foods are added.
-    this.thisWeekBuckets.update(b => ({
+    this.thisWeekBaskets.update(b => ({
       ...b,
       [key]: [...b[key], food],
     }));
@@ -1025,45 +1027,45 @@ export class FoodsPanelComponent {
     });
   }
 
-  clearBucket(key: BucketKey): void {
-    this.thisWeekBuckets.update(b => ({ ...b, [key]: [] }));
+  clearBasket(key: BasketKey): void {
+    this.thisWeekBaskets.update(b => ({ ...b, [key]: [] }));
   }
 
-  removeFoodFromBucket(key: BucketKey, foodId: number): void {
-    this.thisWeekBuckets.update(b => ({
+  removeFoodFromBasket(key: BasketKey, foodId: number): void {
+    this.thisWeekBaskets.update(b => ({
       ...b,
       [key]: b[key].filter(f => f.id !== foodId),
     }));
   }
 
-  // ----- Bucket drop-zone handlers -----
+  // ----- Basket drop-zone handlers -----
 
-  onBucketDragEnter(ev: DragEvent, key: BucketKey): void {
+  onBasketDragEnter(ev: DragEvent, key: BasketKey): void {
     ev.preventDefault();
-    this.dragOverBucket.set(key);
+    this.dragOverBasket.set(key);
   }
 
-  onBucketDragOver(ev: DragEvent): void {
+  onBasketDragOver(ev: DragEvent): void {
     ev.preventDefault();
     if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy';
   }
 
-  onBucketDragLeave(_ev: DragEvent, key: BucketKey): void {
-    if (this.dragOverBucket() === key) this.dragOverBucket.set(null);
+  onBasketDragLeave(_ev: DragEvent, key: BasketKey): void {
+    if (this.dragOverBasket() === key) this.dragOverBasket.set(null);
   }
 
-  onBucketDrop(ev: DragEvent, key: BucketKey): void {
+  onBasketDrop(ev: DragEvent, key: BasketKey): void {
     ev.preventDefault();
-    this.dragOverBucket.set(null);
+    this.dragOverBasket.set(null);
     const json = ev.dataTransfer?.getData('application/json');
     if (!json) return;
     try {
       const food = JSON.parse(json) as Food;
-      // Always route to the food's correct bucket — even if the user dropped
+      // Always route to the food's correct basket — even if the user dropped
       // it on the "wrong" one. The food floats to where it belongs; no
-      // scolding, no rejected drop. The dropped-on bucket is just a hint.
-      const targetBucket = this.bucketForFood(food);
-      this.addFoodToBucket(food, targetBucket);
+      // scolding, no rejected drop. The dropped-on basket is just a hint.
+      const targetBasket = this.basketForFood(food);
+      this.addFoodToBasket(food, targetBasket);
     } catch {
       // ignore malformed payload
     }
@@ -1158,25 +1160,25 @@ export class FoodsPanelComponent {
     }
   }
 
-  private loadBuckets(): ThisWeekBuckets {
+  private loadBaskets(): ThisWeekBaskets {
     try {
-      const raw = localStorage.getItem(LS_THISWEEK_BUCKETS);
-      if (!raw) return emptyBuckets();
+      const raw = localStorage.getItem(LS_THISWEEK_BASKETS);
+      if (!raw) return emptyBaskets();
       const parsed = JSON.parse(raw);
       // Defensive: only accept the expected shape
-      const out: ThisWeekBuckets = emptyBuckets();
-      for (const k of BUCKET_KEYS) {
+      const out: ThisWeekBaskets = emptyBaskets();
+      for (const k of BASKET_KEYS) {
         if (Array.isArray(parsed?.[k])) out[k] = parsed[k] as Food[];
       }
       return out;
     } catch {
-      return emptyBuckets();
+      return emptyBaskets();
     }
   }
 
-  private saveBuckets(buckets: ThisWeekBuckets): void {
+  private saveBaskets(baskets: ThisWeekBaskets): void {
     try {
-      localStorage.setItem(LS_THISWEEK_BUCKETS, JSON.stringify(buckets));
+      localStorage.setItem(LS_THISWEEK_BASKETS, JSON.stringify(baskets));
     } catch {
       // ignore
     }
