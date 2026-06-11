@@ -70,6 +70,7 @@ import { SpinnerComponent, SpinnerItem } from '../spinner/spinner';
           [cardWidth]="cardWidth()"
           [cardHeight]="cardHeight()"
           [spacing]="spacing()"
+          [visibleCount]="visibleCount()"
           (activated)="onActivated($event)"
           (centered)="centered.emit($event)">
           <ng-template #spinnerCard let-item let-center="isCenter">
@@ -122,6 +123,7 @@ export class ImageCarouselComponent {
   cardWidth = input(154);
   cardHeight = input(192);
   spacing = input(182);
+  visibleCount = input(5);
 
   // Slider label config
   showBucketBar = input(true);

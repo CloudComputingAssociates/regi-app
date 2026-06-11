@@ -87,11 +87,14 @@
   }
 }
 
-// ---- Floating Spin button (top-right) ----
+// ---- Floating Spin button — pinned to the right edge, vertically centered
+// against the carousel cards so it reads as the "throw" button alongside the
+// spinning row.
 .floating-spin-btn {
   position: absolute;
-  top: 4px;
+  top: 50%;
   right: 8px;
+  transform: translateY(-50%);
   z-index: 310;
   width: 52px;
   height: 52px;
@@ -111,7 +114,9 @@
 
   &:hover { background: #408040; }
   &:active {
-    transform: translateY(1px);
+    // Combine the press-down nudge with the centering offset so the button
+    // stays vertically aligned during press.
+    transform: translateY(calc(-50% + 1px));
     border-bottom-width: 1px;
   }
 }

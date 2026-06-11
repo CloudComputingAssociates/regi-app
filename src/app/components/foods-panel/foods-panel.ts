@@ -104,12 +104,6 @@ const CATEGORY_PLURALS: Record<string, string> = {
             <option value="restricted">Restricted</option>
             <option value="yeh-approved">YEH Approved</option>
           </select>
-          <input
-            type="text"
-            class="search-input compact"
-            [value]="searchQuery()"
-            (input)="onSearchInput($any($event.target).value)"
-            placeholder="Search…" />
         </div>
 
         <div class="spin-row">
@@ -129,79 +123,94 @@ const CATEGORY_PLURALS: Record<string, string> = {
         </div>
       </div>
 
-      <app-image-carousel
-        [items]="spinnerItems()"
-        leftLabel="This Week"
-        rightLabel="Curate MyFoods"
-        [emptyMessage]="carouselEmptyMessage()"
-        [(bucketSide)]="addTo"
-        (activated)="onActivated($event)"
-        (inspect)="onInspect($event)"
-        (centered)="onCarouselCentered($event)"
-        (cardDragStart)="onCardDragStart($event)">
-        @if (showHealthBenefitsForFilter()) {
-          <!-- Health Benefits button overlays upper-left of the centered card.
-               Only renders for categories where health claims are meaningful
-               (skips Processed/Condiments and the "all off" state). -->
-          <button
-            centerOverlay
-            type="button"
-            class="health-benefits-btn"
-            (click)="openHealthBenefits()"
-            aria-label="Health benefits">
-            <img src="/images/Health%20Benefits.png" alt="Health Benefits" />
-          </button>
-        }
-      </app-image-carousel>
+      <!-- Side-by-side main area: carousel on the LEFT, bucket/list stack on
+           the RIGHT, with a draggable vertical splitter between them. Starts
+           50/50, persists nothing — the user can drag mid-session. -->
+      <div class="main-area">
 
-      <div
-        class="pane-splitter"
-        (mousedown)="onSplitterMouseDown($event)"
-        (touchstart)="onSplitterTouchStart($event)">
-        <div class="splitter-grip"></div>
-      </div>
-
-      <div class="bottom-pane" [style.height.px]="bottomPaneHeight()">
-        <div class="bottom-header">
-          <span class="bottom-header-title">
-            @if (addTo() === 'left') {
-              This Weeks Foods
-            } @else {
-              {{ collectionHeading() }} ({{ bottomListLength() }})
-            }
-          </span>
-          @if (addTo() !== 'left') {
-            <span class="column-hint">{{ columnHeaderText() }}</span>
-          }
+        <!-- LEFT PANE: search above the cards, carousel below. The Spin
+             button rides the right edge of the carousel (its inner styling). -->
+        <div class="left-pane" [style.flex]="leftPaneWidthFraction()">
+          <div class="carousel-search-bar">
+            <input
+              type="text"
+              class="carousel-search-input"
+              [value]="searchQuery()"
+              (input)="onSearchInput($any($event.target).value)"
+              placeholder="Search foods…" />
+          </div>
+          <app-image-carousel
+            class="left-pane-carousel"
+            [items]="spinnerItems()"
+            [emptyMessage]="carouselEmptyMessage()"
+            [visibleCount]="3"
+            [showBucketBar]="false"
+            (activated)="onActivated($event)"
+            (inspect)="onInspect($event)"
+            (centered)="onCarouselCentered($event)"
+            (cardDragStart)="onCardDragStart($event)">
+          </app-image-carousel>
         </div>
 
-        <div class="bottom-list" #bottomList>
+        <!-- VERTICAL SPLITTER — drag horizontally to resize the panes. -->
+        <div
+          #vSplitter
+          class="pane-splitter-v"
+          (mousedown)="onVSplitterMouseDown($event)"
+          (touchstart)="onVSplitterTouchStart($event)">
+          <div class="splitter-grip-v"></div>
+        </div>
+
+        <!-- RIGHT PANE: DISPLAY toggle on top, then either the 4 stacked
+             buckets (This Week) or the MyFoods/YEH-approved scroll list. -->
+        <div class="right-pane" [style.flex]="rightPaneFlex()">
+          <div class="display-toggle">
+            <span class="display-toggle-label">DISPLAY</span>
+            <div class="display-toggle-buttons" role="group" aria-label="Display target">
+              <button
+                type="button"
+                class="display-toggle-btn"
+                [class.active]="addTo() === 'left'"
+                (click)="addTo.set('left')">
+                This Week
+              </button>
+              <button
+                type="button"
+                class="display-toggle-btn"
+                [class.active]="addTo() === 'right'"
+                (click)="addTo.set('right')">
+                Curate MyFoods
+              </button>
+            </div>
+          </div>
+
           @if (addTo() === 'left') {
-            <!-- THIS WEEK: 4 buckets grid. Each is a drop target; the count on
-                 the face is the number of foods in that bucket; mini cards
-                 stack inside as foods are added. -->
-            <div class="bucket-grid">
+            <!-- 4 buckets stacked vertically, each flexing to ¼ of the right-
+                 pane height. Scrollbars only appear when content overflows. -->
+            <div class="bucket-stack">
               @for (key of bucketKeys; track key) {
                 <div
-                  class="bucket"
+                  class="bucket-row"
                   [class.drag-over]="dragOverBucket() === key"
                   (dragenter)="onBucketDragEnter($event, key)"
                   (dragover)="onBucketDragOver($event)"
                   (dragleave)="onBucketDragLeave($event, key)"
                   (drop)="onBucketDrop($event, key)">
-                  <div class="bucket-face">
-                    <div class="bucket-count">{{ thisWeekBuckets()[key].length }}</div>
-                    <div class="bucket-name">{{ key }}</div>
+                  <div class="bucket-row-header">
+                    <span class="bucket-row-name">{{ key }}</span>
+                    <span class="bucket-row-count">{{ thisWeekBuckets()[key].length }}</span>
+                    @if (thisWeekBuckets()[key].length > 0) {
+                      <button
+                        type="button"
+                        class="bucket-clear"
+                        (click)="clearBucket(key)"
+                        matTooltip="Empty bucket"
+                        matTooltipPosition="above">
+                        ✕
+                      </button>
+                    }
                   </div>
                   @if (thisWeekBuckets()[key].length > 0) {
-                    <button
-                      type="button"
-                      class="bucket-clear"
-                      (click)="clearBucket(key)"
-                      matTooltip="Empty bucket"
-                      matTooltipPosition="above">
-                      ✕
-                    </button>
                     <div class="bucket-tiles">
                       @for (food of thisWeekBuckets()[key]; track food.id) {
                         <div
@@ -227,7 +236,15 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 </div>
               }
             </div>
-          } @else if (spinSource() === 'myfoods') {
+          } @else {
+            <div class="right-pane-header">
+              <span class="right-pane-title">
+                {{ collectionHeading() }} ({{ bottomListLength() }})
+              </span>
+              <span class="column-hint">{{ columnHeaderText() }}</span>
+            </div>
+            <div class="right-pane-list" #bottomList>
+              @if (spinSource() === 'myfoods') {
             <!-- TYPE=MyFoods on right side: accordion view of curated MyFoods -->
             @if (allMyFoods().length === 0) {
               <div class="bottom-empty">
@@ -363,7 +380,9 @@ const CATEGORY_PLURALS: Record<string, string> = {
                   </mat-icon>
                 </div>
               }
-            }
+              }
+              }
+            </div>
           }
         </div>
       </div>
@@ -373,6 +392,19 @@ const CATEGORY_PLURALS: Record<string, string> = {
         <div class="nf-popup-overlay" (click)="nfPopupFood.set(null)">
           <div class="nf-popup" (click)="$event.stopPropagation()">
             <button class="nf-popup-close" (click)="nfPopupFood.set(null)">✕</button>
+            @if (showHealthBenefitsForFilter()) {
+              <!-- Health Info button — upper-left corner of the NF popup, the
+                   same affordance that previously rode the centered card.
+                   Opens the AI Health Benefits popup for whichever food is
+                   currently in the NF view. -->
+              <button
+                type="button"
+                class="health-benefits-btn nf-popup-health-info"
+                (click)="openHealthBenefits()"
+                aria-label="Health info">
+                <img src="/images/Health%20Benefits.png" alt="Health Info" />
+              </button>
+            }
             <div class="nf-popup-header">
               @if (nfPopupFood()!.productPurchaseLink) {
                 <a class="nf-popup-title nf-popup-title-link"
@@ -808,11 +840,16 @@ export class FoodsPanelComponent {
 
   // Scroll target for the bottom list (used after add to bring new/moved row into view)
   private bottomListRef = viewChild<ElementRef<HTMLElement>>('bottomList');
+  // Used during vertical-splitter drag to measure the main-area width so
+  // pixel deltas can be converted to fraction-of-pane.
+  private vSplitterRef = viewChild<ElementRef<HTMLElement>>('vSplitter');
 
-  // Splitter — bottom-pane height in px (clamped on drag)
-  bottomPaneHeight = signal(380);
-  private splitterStartY = 0;
-  private splitterStartHeight = 0;
+  // Vertical splitter — left pane width as a fraction of the main-area width
+  // (0.1 … 0.9). Defaults to 0.5 so the panes start equally sized.
+  leftPaneWidthFraction = signal(0.5);
+  rightPaneFlex = computed(() => 1 - this.leftPaneWidthFraction());
+  private splitterStartX = 0;
+  private splitterStartFraction = 0;
 
   categoryLabel(cat: string): string {
     return CATEGORY_PLURALS[cat] ?? cat;
@@ -999,16 +1036,30 @@ export class FoodsPanelComponent {
     this.myFoodsLocal.update(list => list.filter(f => f.id !== foodId));
   }
 
-  // ----- Draggable splitter -----
+  // ----- Vertical splitter — drag the left-pane width fraction -----
 
-  onSplitterMouseDown(event: MouseEvent): void {
+  private vSplitterDragStart(startX: number): void {
+    this.splitterStartX = startX;
+    this.splitterStartFraction = this.leftPaneWidthFraction();
+  }
+
+  private vSplitterUpdate(currentX: number): void {
+    // Convert pixel delta to a fraction of the main-area width using the
+    // splitter's own offsetParent — that's .main-area, which is exactly the
+    // width the two panes share. clientWidth is read once per move event
+    // (cheap, and avoids needing a ResizeObserver here).
+    const grip = this.vSplitterRef()?.nativeElement;
+    const parentWidth = grip?.parentElement?.clientWidth ?? 1;
+    const deltaFraction = (currentX - this.splitterStartX) / parentWidth;
+    this.leftPaneWidthFraction.set(
+      this.clampPaneFraction(this.splitterStartFraction + deltaFraction),
+    );
+  }
+
+  onVSplitterMouseDown(event: MouseEvent): void {
     event.preventDefault();
-    this.splitterStartY = event.clientY;
-    this.splitterStartHeight = this.bottomPaneHeight();
-    const onMove = (e: MouseEvent) => {
-      const delta = this.splitterStartY - e.clientY;
-      this.bottomPaneHeight.set(this.clampPaneHeight(this.splitterStartHeight + delta));
-    };
+    this.vSplitterDragStart(event.clientX);
+    const onMove = (e: MouseEvent) => this.vSplitterUpdate(e.clientX);
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
@@ -1017,14 +1068,10 @@ export class FoodsPanelComponent {
     document.addEventListener('mouseup', onUp);
   }
 
-  onSplitterTouchStart(event: TouchEvent): void {
+  onVSplitterTouchStart(event: TouchEvent): void {
     const touch = event.touches[0];
-    this.splitterStartY = touch.clientY;
-    this.splitterStartHeight = this.bottomPaneHeight();
-    const onMove = (e: TouchEvent) => {
-      const delta = this.splitterStartY - e.touches[0].clientY;
-      this.bottomPaneHeight.set(this.clampPaneHeight(this.splitterStartHeight + delta));
-    };
+    this.vSplitterDragStart(touch.clientX);
+    const onMove = (e: TouchEvent) => this.vSplitterUpdate(e.touches[0].clientX);
     const onEnd = () => {
       document.removeEventListener('touchmove', onMove);
       document.removeEventListener('touchend', onEnd);
@@ -1033,8 +1080,8 @@ export class FoodsPanelComponent {
     document.addEventListener('touchend', onEnd);
   }
 
-  private clampPaneHeight(px: number): number {
-    return Math.max(80, Math.min(px, 600));
+  private clampPaneFraction(f: number): number {
+    return Math.max(0.15, Math.min(f, 0.85));
   }
 
   // ----- localStorage helpers -----
@@ -1105,7 +1152,11 @@ export class FoodsPanelComponent {
   }
 
   async openHealthBenefits(): Promise<void> {
-    const food = this.centeredFood();
+    // Prefer the food the NF popup is showing — that's the one the user is
+    // looking at when they click Health Info. Falls back to whichever card
+    // the carousel happens to be centered on (for any future call sites
+    // outside the popup).
+    const food = this.nfPopupFood() ?? this.centeredFood();
     if (!food) return;
     this.healthBenefitsFood.set(food);
     this.healthBenefitsText.set(null);

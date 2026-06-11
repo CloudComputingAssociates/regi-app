@@ -336,11 +336,40 @@
   strong { color: #ffd66b; font-weight: 700; }
 }
 
-// ---- Splitter between carousel and bottom pane ----
-.pane-splitter {
-  height: 8px;
+// ---- Main side-by-side area (carousel | splitter | buckets) ----
+// Replaces the previous top-pane/bottom-pane horizontal split. Left and right
+// panes share width via flex grow values driven by leftPaneWidthFraction.
+.main-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.left-pane {
+  // flex set inline from leftPaneWidthFraction() — starts at 0.5
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #404040 0%, #3a3a3a 100%);
+  overflow: hidden;
+}
+
+.right-pane {
+  // flex set inline from (1 - leftPaneWidthFraction()) — starts at 0.5
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #2f2f2f;
+  overflow: hidden;
+}
+
+// Vertical drag-handle between the two panes — 8 px wide, ew-resize cursor.
+.pane-splitter-v {
+  width: 8px;
   background: #2a2a2a;
-  cursor: ns-resize;
+  cursor: ew-resize;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -349,24 +378,103 @@
 
   &:hover { background: #4da6ff33; }
 
-  .splitter-grip {
-    width: 40px;
-    height: 3px;
+  .splitter-grip-v {
+    width: 3px;
+    height: 40px;
     background: #666;
     border-radius: 2px;
   }
 }
 
-// ---- Bottom pane: tabs + selected-food list ----
-.bottom-pane {
+// Search bar pinned to the top of the carousel pane, styled to read as part
+// of the carousel chrome rather than a separate control above it.
+.carousel-search-bar {
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  background: #2f2f2f;
-  overflow: hidden;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, #383838 0%, #303030 100%);
+  border-bottom: 1px solid #2a2a2a;
 }
 
-.bottom-header {
+.carousel-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  color: #ffffff;
+  background: #1a1a1a;
+  border: 1px solid #555;
+  border-radius: 4px;
+  outline: none;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
+
+  &:focus { border-color: #4da6ff; }
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+    font-style: italic;
+  }
+}
+
+// Carousel fills the rest of the left pane.
+.left-pane-carousel {
+  flex: 1;
+  min-height: 0;
+}
+
+// DISPLAY toggle (This Week / Curate MyFoods) — top of the right pane.
+.display-toggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.display-toggle-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #4da6ff;
+}
+
+.display-toggle-buttons {
+  display: inline-flex;
+  background: #1a1a1a;
+  border: 1px solid #555;
+  border-radius: 999px;
+  padding: 2px;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.display-toggle-btn {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 3px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover:not(.active) {
+    color: #ffffff;
+  }
+
+  &.active {
+    color: #ffffff;
+    background: linear-gradient(180deg, #4a8fc7 0%, #357095 100%);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+}
+
+// Right-pane list (MyFoods accordion / YEH-approved rows).
+.right-pane-header {
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -379,17 +487,16 @@
   letter-spacing: 0.4px;
   text-transform: uppercase;
   color: #4da6ff;
-  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  background: linear-gradient(180deg, #3a3a3a 0%, #303030 100%);
   border-bottom: 1px solid #1a1a1a;
 
-  .bottom-header-title {
+  .right-pane-title {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  // Subtler column hint floats to the right edge, above the action-icon column.
   .column-hint {
     flex-shrink: 0;
     font-size: 10px;
@@ -399,7 +506,7 @@
   }
 }
 
-.bottom-list {
+.right-pane-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -411,43 +518,68 @@
   text-align: center;
   font-size: 12px;
   font-style: italic;
-  // Faint amber to match the spinner-card center glow (rgba(255, 213, 79, *))
   color: rgba(255, 213, 79, 0.65);
 }
 
-// ---- This Week bucket grid (left-slider view) ----
-.bucket-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  padding: 12px;
-  height: 100%;
-  box-sizing: border-box;
-}
-
-.bucket {
-  position: relative;
+// ---- Vertical bucket stack (This Week view) ----
+// Four buckets share the right-pane height equally (flex: 1 each). Scrollbars
+// appear only when a bucket's tile list overflows its own row.
+.bucket-stack {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  padding: 10px 10px 8px;
+  gap: 8px;
+  padding: 8px;
+  overflow-y: auto; // safety net if even the headers overflow on a tiny window
+}
+
+.bucket-row {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
   border: 1px solid #555;
   border-bottom: 2px solid #1a1a1a;
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 4px rgba(0, 0, 0, 0.4);
-  transition: border-color 0.12s ease, background 0.12s ease, transform 0.05s ease;
+  transition: border-color 0.12s ease, background 0.12s ease;
   cursor: copy;
-  min-height: 140px;
   overflow: hidden;
 
   &.drag-over {
     border-color: #4caf50;
     background: linear-gradient(180deg, #4a6a4a 0%, #385838 100%);
-    transform: translateY(-1px);
   }
 }
 
+.bucket-row-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  user-select: none;
+}
+
+.bucket-row-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.bucket-row-count {
+  font-size: 14px;
+  font-weight: 700;
+  color: #4da6ff;
+  margin-left: auto;
+}
+
+// Legacy class names kept so the existing bucket-mini-card styles keep working
+// inside .bucket-row without re-stating them.
 .bucket-face {
   text-align: center;
   color: #ffffff;
@@ -472,12 +604,12 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
+// Inline pill button at the right edge of .bucket-row-header. Hover reveals
+// red so it's clearly the "empty this bucket" action.
 .bucket-clear {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 20px;
-  height: 20px;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
   padding: 0;
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -486,7 +618,9 @@
   font-size: 11px;
   line-height: 1;
   cursor: pointer;
-  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     color: #ff7676;
@@ -499,7 +633,9 @@
 // overflow scrolls vertically so a bucket with many entries still works.
 .bucket-tiles {
   flex: 1;
-  margin-top: 8px;
+  min-height: 0;
+  margin: 0;
+  padding: 6px 8px 8px;
   display: flex;
   // Bottom-up stack: first item lands at bottom-left, fills rightward, then
   // wraps to a new row ABOVE. Older foods stay anchored at the bottom; newer
@@ -633,12 +769,30 @@
   scrollbar-width: none;
 }
 
+// Health Info button — rides the upper-LEFT of the NF popup, anchored inside
+// the popup's border-radius so it never gets clipped by the popup's overflow.
+// Same image as the old carousel overlay; the affordance now shows up when
+// the user lands on a food's details rather than on every spin.
+.nf-popup-health-info {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 2;
+
+  // Shrink the image specifically for the popup — the carousel version
+  // is 113 px which would dominate this small dialog.
+  img { height: 64px; }
+}
+
 .nf-popup-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin: 4px 0 12px;
   padding-right: 24px;
+  // Pad the title rightward of the health-info badge so the food name doesn't
+  // get clipped on small popups.
+  padding-left: 56px;
 }
 
 .nf-popup-title {

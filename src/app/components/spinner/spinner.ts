@@ -177,6 +177,10 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
   friction = input(0.35);
   loop = input(true);
   enableTick = input(true);
+  // How many cards are rendered around the centered one. Must be an ODD
+  // integer so the spotlight stays symmetric. 5 → centerIdx − 2 … centerIdx + 2;
+  // 3 → centerIdx − 1 … centerIdx + 1; etc.
+  visibleCount = input(5);
 
   // Outputs
   activated = output<SpinnerItem>();
@@ -240,7 +244,8 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
     const cy = (ch + 24) / 2;
     const loop = this.loop();
     const out: RenderedCard[] = [];
-    for (let i = centerIdx - 2; i <= centerIdx + 2; i++) {
+    const half = Math.floor(this.visibleCount() / 2);
+    for (let i = centerIdx - half; i <= centerIdx + half; i++) {
       const dist = Math.abs(i - continuous);
       const dx = (i - continuous) * sp;
       const scale = this.clamp(1 - dist * 0.18, 0.55, 1);
