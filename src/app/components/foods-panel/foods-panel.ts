@@ -10,6 +10,7 @@ import { SpinnerItem } from '../spinner/spinner';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
+import { UserFoodService } from '../../services/user-food.service';
 import { FoodsService } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
 import { LangfusePromptService, LangfusePromptError } from '../../services/langfuse-prompt.service';
@@ -117,16 +118,6 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 </button>
               }
             </div>
-            <button
-              type="button"
-              class="add-food-btn"
-              (click)="openAddDialog()"
-              matTooltip="Add My Food"
-              matTooltipPosition="above"
-              [matTooltipShowDelay]="300"
-              aria-label="Add My Food">
-              +
-            </button>
           </div>
 
           <div class="pane-card carousel-card">
@@ -191,14 +182,20 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 type="button"
                 class="display-toggle-btn"
                 [class.active]="addTo() === 'right'"
-                (click)="addTo.set('right')">
+                (click)="addTo.set('right')"
+                matTooltip="Favorite YEH Approved foods or remove Mobile Added foods or designate Restricted Foods"
+                matTooltipPosition="below"
+                [matTooltipShowDelay]="350">
                 Curate MyFoods
               </button>
               <button
                 type="button"
                 class="display-toggle-btn"
                 [class.active]="addTo() === 'left'"
-                (click)="addTo.set('left')">
+                (click)="addTo.set('left')"
+                matTooltip="Drop a few foods in your baskets, then go to PLANNING to create meals"
+                matTooltipPosition="below"
+                [matTooltipShowDelay]="350">
                 Fill Baskets
               </button>
             </div>
@@ -206,9 +203,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
 
           @if (addTo() === 'right') {
             <!-- TYPE dropdown sits directly above the curated list — it
-                 predicates WHICH collection the user is curating. Only
-                 visible in Curate mode since This Week shows baskets and
-                 doesn't consult a TYPE. -->
+                 predicates WHICH collection the user is curating. The Add
+                 Food (+) button on the right is gated by TYPE=MyFoods (only
+                 MyFoods can be added to). It's stubbed gray because the
+                 real Add flow lives in the phone app. -->
             <div class="type-row">
               <span class="type-row-label">TYPE</span>
               <select
@@ -220,6 +218,18 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 <option value="yeh-approved">YEH Approved</option>
               </select>
               <span class="column-hint">{{ columnHeaderText() }}</span>
+              @if (spinSource() === 'myfoods') {
+                <button
+                  type="button"
+                  class="add-food-btn add-food-btn-stub"
+                  (click)="openAddDialog()"
+                  matTooltip="Add a food (requires phone app)"
+                  matTooltipPosition="above"
+                  [matTooltipShowDelay]="300"
+                  aria-label="Add My Food">
+                  +
+                </button>
+              }
             </div>
           }
 
@@ -346,10 +356,18 @@ const CATEGORY_PLURALS: Record<string, string> = {
                         matTooltipPosition="left">
                         block
                       </mat-icon>
+                      <!-- DELETE is only meaningful for foods the USER added
+                           (food.userId != null). YEH-base foods can be
+                           un-favorited via the star but never deleted from the
+                           database. Disabled state styles as muted gray; the
+                           tooltip explains why. -->
                       <mat-icon
-                        class="row-action remove"
-                        (click)="removeFromMyFoods($event, food.id)"
-                        matTooltip="Remove from local"
+                        class="row-action trash"
+                        [class.disabled]="!isUserAddedFood(food)"
+                        (click)="deleteUserFood($event, food)"
+                        [matTooltip]="isUserAddedFood(food)
+                          ? 'Delete this food'
+                          : 'Only foods you added can be deleted'"
                         matTooltipPosition="left">
                         delete
                       </mat-icon>
@@ -359,86 +377,58 @@ const CATEGORY_PLURALS: Record<string, string> = {
               }
             }
           } @else {
-            <!-- TYPE=YEH Approved or Restricted on right side. With no filter
-                 active ("All" state), foods are rendered grouped by category
-                 with separator headers. With a filter, only one category is
-                 visible so we fall back to a flat list. -->
+            <!-- TYPE=YEH Approved or Restricted: always rendered as a
+                 collapsible accordion grouped by category, same shape as the
+                 MyFoods view above so the curate experience feels consistent
+                 regardless of which TYPE is selected. -->
             @if (carouselFoods().length === 0) {
               <div class="bottom-empty">
                 @if (spinSource() === 'yeh-approved') {
-                  No YEH Approved foods match this filter.
+                  No YEH Approved foods match.
                 } @else {
-                  No restricted foods match this filter.
+                  No restricted foods match.
                 }
               </div>
-            } @else if (isNoFilterActive()) {
-              @for (group of groupedCarouselFoods(); track group.category) {
-                <div class="category-separator">
-                  <span class="category-separator-name">{{ categoryLabel(group.category) }}</span>
-                  <span class="category-separator-count">({{ group.foods.length }})</span>
-                </div>
-                @for (food of group.foods; track food.id) {
-                  <div class="selected-food-row">
-                    <div class="selected-food-thumb">
-                      @if (food.foodImageThumbnail) {
-                        <img [src]="food.foodImageThumbnail" alt="" />
-                      } @else {
-                        <div class="selected-food-thumb-placeholder"></div>
-                      }
-                    </div>
-                    <span class="selected-food-name">
-                      {{ food.shortDescription || food.description }}
-                    </span>
-                    <mat-icon
-                      class="row-action favorite"
-                      [class.active]="preferencesService.isAllowed(food.id)"
-                      (click)="toggleFavorite($event, food.id)"
-                      matTooltip="Favorite (adds to MyFoods)"
-                      matTooltipPosition="left">
-                      {{ preferencesService.isAllowed(food.id) ? 'star' : 'star_border' }}
-                    </mat-icon>
-                    <mat-icon
-                      class="row-action restrict"
-                      [class.active]="preferencesService.isRestricted(food.id)"
-                      (click)="toggleRestricted($event, food.id)"
-                      matTooltip="Restrict"
-                      matTooltipPosition="left">
-                      block
-                    </mat-icon>
-                  </div>
-                }
-              }
             } @else {
-              @for (food of carouselFoods(); track food.id) {
-                <div class="selected-food-row">
-                  <div class="selected-food-thumb">
-                    @if (food.foodImageThumbnail) {
-                      <img [src]="food.foodImageThumbnail" alt="" />
-                    } @else {
-                      <div class="selected-food-thumb-placeholder"></div>
-                    }
-                  </div>
-                  <span class="selected-food-name">
-                    {{ food.shortDescription || food.description }}
-                  </span>
-                  <mat-icon
-                    class="row-action favorite"
-                    [class.active]="preferencesService.isAllowed(food.id)"
-                    (click)="toggleFavorite($event, food.id)"
-                    matTooltip="Favorite (adds to MyFoods)"
-                    matTooltipPosition="left">
-                    {{ preferencesService.isAllowed(food.id) ? 'star' : 'star_border' }}
-                  </mat-icon>
-                  <mat-icon
-                    class="row-action restrict"
-                    [class.active]="preferencesService.isRestricted(food.id)"
-                    (click)="toggleRestricted($event, food.id)"
-                    matTooltip="Restrict"
-                    matTooltipPosition="left">
-                    block
-                  </mat-icon>
+              @for (group of groupedCarouselFoods(); track group.category) {
+                <div class="category-header"
+                     (click)="toggleCarouselCategory(group.category)">
+                  <mat-icon class="collapse-icon" [class.collapsed]="group.collapsed">expand_more</mat-icon>
+                  <span class="category-name">{{ categoryLabel(group.category) }}</span>
+                  <span class="category-count">({{ group.foods.length }})</span>
                 </div>
-              }
+                @if (!group.collapsed) {
+                  @for (food of group.foods; track food.id) {
+                    <div class="selected-food-row">
+                      <div class="selected-food-thumb">
+                        @if (food.foodImageThumbnail) {
+                          <img [src]="food.foodImageThumbnail" alt="" />
+                        } @else {
+                          <div class="selected-food-thumb-placeholder"></div>
+                        }
+                      </div>
+                      <span class="selected-food-name">
+                        {{ food.shortDescription || food.description }}
+                      </span>
+                      <mat-icon
+                        class="row-action favorite"
+                        [class.active]="preferencesService.isAllowed(food.id)"
+                        (click)="toggleFavorite($event, food.id)"
+                        matTooltip="Favorite (adds to MyFoods)"
+                        matTooltipPosition="left">
+                        {{ preferencesService.isAllowed(food.id) ? 'star' : 'star_border' }}
+                      </mat-icon>
+                      <mat-icon
+                        class="row-action restrict"
+                        [class.active]="preferencesService.isRestricted(food.id)"
+                        (click)="toggleRestricted($event, food.id)"
+                        matTooltip="Restrict"
+                        matTooltipPosition="left">
+                        block
+                      </mat-icon>
+                    </div>
+                  }
+                }
               }
               }
             </div>
@@ -461,25 +451,32 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 type="button"
                 class="health-benefits-btn nf-popup-health-info"
                 (click)="openHealthBenefits()"
+                matTooltip="Click for Info"
+                matTooltipPosition="above"
                 aria-label="Health info">
                 <img src="/images/Health%20Benefits.png" alt="Health Info" />
               </button>
             }
-            <div class="nf-popup-header">
-              @if (nfPopupFood()!.productPurchaseLink) {
-                <a class="nf-popup-title nf-popup-title-link"
-                   (click)="openProductLink(nfPopupFood()!)">
-                  {{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}
-                </a>
-              } @else {
-                <span class="nf-popup-title">
-                  {{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}
-                </span>
-              }
+            <!-- Scroll lives on this inner wrapper so the outer .nf-popup can
+                 be overflow:visible and let the Health Info badge overhang
+                 above without being clipped. -->
+            <div class="nf-popup-inner">
+              <div class="nf-popup-header">
+                @if (nfPopupFood()!.productPurchaseLink) {
+                  <a class="nf-popup-title nf-popup-title-link"
+                     (click)="openProductLink(nfPopupFood()!)">
+                    {{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}
+                  </a>
+                } @else {
+                  <span class="nf-popup-title">
+                    {{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}
+                  </span>
+                }
+              </div>
+              <regi-nutrition-label
+                [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
+                [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
             </div>
-            <regi-nutrition-label
-              [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
-              [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
           </div>
         </div>
       }
@@ -566,6 +563,7 @@ export class FoodsPanelComponent {
   private tabService = inject(TabService);
   protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
+  private userFoodService = inject(UserFoodService);
   private foodsService = inject(FoodsService);
   private langfusePromptService = inject(LangfusePromptService);
 
@@ -733,11 +731,15 @@ export class FoodsPanelComponent {
     });
   }
 
-  // Group carouselFoods by category — only rendered when no filter is active
-  // (the "All" state). With a filter the user sees a single category so
-  // separators are noise. Order follows CAROUSEL_CATEGORIES.
-  groupedCarouselFoods = computed<Array<{ category: string; foods: Food[] }>>(() => {
+  // Group carouselFoods by category for the YEH-Approved / Restricted
+  // accordion view. Includes per-category collapse state, mirroring the
+  // MyFoods accordion. Order follows CAROUSEL_CATEGORIES; anything
+  // uncategorized is appended at the end.
+  collapsedCarouselCategories = signal<Set<string>>(new Set());
+
+  groupedCarouselFoods = computed<Array<{ category: string; foods: Food[]; collapsed: boolean }>>(() => {
     const all = this.carouselFoods();
+    const collapsed = this.collapsedCarouselCategories();
     const map = new Map<string, Food[]>();
     for (const food of all) {
       const cat = food.categoryName || 'Uncategorized';
@@ -745,21 +747,28 @@ export class FoodsPanelComponent {
       if (arr) arr.push(food);
       else map.set(cat, [food]);
     }
-    const result: Array<{ category: string; foods: Food[] }> = [];
+    const result: Array<{ category: string; foods: Food[]; collapsed: boolean }> = [];
     for (const cat of CAROUSEL_CATEGORIES) {
       const foods = map.get(cat);
       if (foods && foods.length > 0) {
-        result.push({ category: cat, foods });
+        result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
         map.delete(cat);
       }
     }
     for (const [cat, foods] of map.entries()) {
-      result.push({ category: cat, foods });
+      result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
     }
     return result;
   });
 
-  isNoFilterActive = computed<boolean>(() => this.selectedCategories().size === 0);
+  toggleCarouselCategory(cat: string): void {
+    this.collapsedCarouselCategories.update(set => {
+      const next = new Set(set);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  }
 
   // Scroll target for the bottom list (used after add to bring new/moved row into view)
   private bottomListRef = viewChild<ElementRef<HTMLElement>>('bottomList');
@@ -967,9 +976,26 @@ export class FoodsPanelComponent {
     this.refreshServerMyFoods();
   }
 
-  removeFromMyFoods(event: Event, foodId: number): void {
+  // A food belongs to the user (and is deletable from the database) only when
+  // it has a userId — that flag is set when the food was created via the
+  // phone-app Add-Food flow. YEH base foods have no userId.
+  isUserAddedFood(food: Food): boolean {
+    return food.userId != null;
+  }
+
+  async deleteUserFood(event: Event, food: Food): Promise<void> {
     event.stopPropagation();
-    this.myFoodsLocal.update(list => list.filter(f => f.id !== foodId));
+    if (!this.isUserAddedFood(food)) return; // hard guard for keyboard activation
+    const ok = await this.userFoodService.deleteUserFood(food.id);
+    if (ok) {
+      this.notificationService.show('Food deleted', 'success');
+      // Drop it from the local cache immediately so the row goes away even
+      // before the server refetch lands.
+      this.myFoodsLocal.update(list => list.filter(f => f.id !== food.id));
+      this.refreshServerMyFoods();
+    } else {
+      this.notificationService.show('Could not delete food', 'error');
+    }
   }
 
   // ----- Vertical splitter — drag the left-pane width fraction -----

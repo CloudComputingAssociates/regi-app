@@ -23,11 +23,13 @@
 
 .action-buttons {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 10;
+  // Pinned hard to the upper-right corner so it stops crowding the filter /
+  // display bars that line up below it.
+  top: 2px;
+  right: 2px;
+  z-index: 20;
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 
   .icon-btn {
@@ -571,8 +573,9 @@
   background: transparent;
   border: none;
   border-radius: 999px;
-  // Pads to ~28 px tall (the FILTER pill height) inside the 2 px pill container.
-  padding: 6px 14px;
+  // Vertical padding tuned so the pill (+ 2px container pad) equals 28 px —
+  // the explicit FILTER-pill height — keeping both bars top/bottom aligned.
+  padding: 5px 14px;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 
@@ -954,11 +957,17 @@
   width: 310px;
   box-sizing: border-box;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-  overflow-y: auto;
+  // overflow:visible so the Health Info badge can overhang above the popup
+  // without being clipped. The inner wrapper handles the scroll instead.
+  overflow: visible;
   position: relative;
-  max-height: 70vh;
+}
 
+// Inner scroll wrapper — keeps long nutrition labels scrollable while letting
+// the outer .nf-popup be overflow:visible for the overhanging badge.
+.nf-popup-inner {
+  max-height: 70vh;
+  overflow-y: auto;
   &::-webkit-scrollbar { display: none; }
   scrollbar-width: none;
 }
@@ -969,9 +978,10 @@
 // 25% bigger).
 .nf-popup-health-info {
   position: absolute;
-  // Sit higher so the badge centers on the title banner rather than poking
-  // down into the white nutrition label.
-  top: -6px;
+  // Lifted so the badge bottom rides the black/white border instead of dipping
+  // into the white nutrition label. The badge overhangs the popup's top edge
+  // by ~50 px — overflow:visible on .nf-popup lets it show through.
+  top: -52px;
   // Close button is at right:0, ~22 px wide. Anchoring the badge at right:
   // 40px puts an 18 px gap between the two hit areas.
   right: 40px;
@@ -1160,11 +1170,25 @@
   &.remove {
     &:hover { color: #ff6666; }
   }
+
+  // Trash for the per-row Delete on MyFoods. Active state (user-added food)
+  // hovers to Apple red; disabled state (YEH base food) stays muted and the
+  // tooltip explains why nothing happens on click.
+  &.trash {
+    color: #ff5f57;
+
+    &:hover { color: #ff8a83; }
+
+    &.disabled {
+      color: rgba(255, 255, 255, 0.18);
+      cursor: not-allowed;
+      &:hover { color: rgba(255, 255, 255, 0.18); }
+    }
+  }
 }
 
-// "+" button right-justified inside the .filter-bar — sits to the right of
-// the category radios via margin-left: auto. The web button is just a stub;
-// clicking it opens the phone-app placeholder dialog.
+// "+" button right-justified inside the .type-row, only when TYPE=MyFoods.
+// Sits at the right edge via margin-left: auto.
 .add-food-btn {
   flex-shrink: 0;
   margin-left: auto;
@@ -1185,6 +1209,21 @@
 
   &:hover { background: linear-gradient(180deg, #5aa05a 0%, #408040 100%); }
   &:active { transform: translateY(1px); border-bottom-width: 1px; }
+}
+
+// Gray stub variant — the web Add Food button isn't actionable yet (the
+// real flow is in the phone app via QR), so we render it muted gray to
+// telegraph "this is a placeholder, not a fully-wired button."
+.add-food-btn-stub {
+  background: linear-gradient(180deg, #6a6a6a 0%, #4a4a4a 100%);
+  border: 1px solid #7a7a7a;
+  border-bottom: 2px solid #1a1a1a;
+  color: rgba(255, 255, 255, 0.7);
+
+  &:hover {
+    background: linear-gradient(180deg, #7a7a7a 0%, #5a5a5a 100%);
+    color: #ffffff;
+  }
 }
 
 .dialog-overlay {

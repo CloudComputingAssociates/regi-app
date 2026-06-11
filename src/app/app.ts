@@ -63,7 +63,11 @@ import { PlanningService } from './services/planning.service';
               }
             }
             <app-main-body />
-            @if (isAuthenticated()) {
+            <!-- Hide chat-input when the Foods tab is active so the foods
+                 panel can reclaim the full vertical real estate. Same
+                 condition that hides app-macros + the nutrition-tip-bar
+                 above. -->
+            @if (isAuthenticated() && tabService.activeTabId() !== 'foods') {
               <app-chat-input />
             }
           </main>

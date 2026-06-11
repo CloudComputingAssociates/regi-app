@@ -115,11 +115,11 @@ export class ImageCarouselComponent {
   items = input<SpinnerItem[]>([]);
   cardWidth = input(154);
   cardHeight = input(192);
-  // Tighter card-to-card spacing so the fanned-out cards don't leave wide
-  // visual gaps once they scale down. Was 182 — the centered card is 154 wide,
-  // so 158 leaves only a thin sliver between adjacent cards at full scale and
-  // overlaps slightly as they shrink.
-  spacing = input(158);
+  // Logical center-to-center spacing used by the drag/spin physics to map
+  // offsetPx → "which card is centered." Set to roughly the actual inner-slot
+  // distance under variable spacing (cw * (1 + 0.82)/2 + 8 ≈ 148) so a drag
+  // through one card visually matches a drag through one card physically.
+  spacing = input(148);
   visibleCount = input(5);
 
   // Slider label config

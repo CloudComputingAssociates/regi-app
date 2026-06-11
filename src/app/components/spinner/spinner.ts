@@ -245,10 +245,33 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
     const loop = this.loop();
     const out: RenderedCard[] = [];
     const half = Math.floor(this.visibleCount() / 2);
+
+    // Edge-aware horizontal position. With constant center-to-center spacing,
+    // the edge-to-edge gap GREW as side cards scaled down (cw fixed, scaled
+    // width shrinks, so cw_centers − scaledW1/2 − scaledW2/2 keeps climbing).
+    // Now we walk outward from slot 0 summing the average of two adjacent
+    // scaled widths plus a constant SLOT_GAP, so the gap between any two
+    // adjacent cards stays the same regardless of how far out the fan goes.
+    const SCALE_PER_STEP = 0.18;
+    const SCALE_FLOOR = 0.55;
+    const SLOT_GAP = 8;
+    const scaleAt = (k: number) =>
+      Math.max(SCALE_FLOOR, Math.min(1, 1 - Math.abs(k) * SCALE_PER_STEP));
+    const slotPosAt = (slotIdx: number): number => {
+      if (slotIdx === 0) return 0;
+      const sign = Math.sign(slotIdx);
+      const abs = Math.abs(slotIdx);
+      let pos = 0;
+      for (let k = 1; k <= abs; k++) {
+        pos += cw * (scaleAt(k - 1) + scaleAt(k)) / 2 + SLOT_GAP;
+      }
+      return sign * pos;
+    };
+
     for (let i = centerIdx - half; i <= centerIdx + half; i++) {
-      const dist = Math.abs(i - continuous);
-      const dx = (i - continuous) * sp;
-      const scale = this.clamp(1 - dist * 0.18, 0.55, 1);
+      const delta = i - continuous;
+      const dist = Math.abs(delta);
+      const scale = this.clamp(1 - dist * SCALE_PER_STEP, SCALE_FLOOR, 1);
       const opacity = this.clamp(1 - dist * 0.35, 0.15, 1);
       let idx: number;
       if (loop) {
@@ -260,6 +283,12 @@ export class SpinnerComponent implements AfterViewInit, OnDestroy {
       const isCenter = dist < 0.5;
       const width = cw * scale;
       const height = ch * scale;
+      // Linearly interpolate between the two integer slot positions so the
+      // animation stays smooth as the user drags / spins through a fraction
+      // of a slot.
+      const slotFloor = Math.floor(delta);
+      const frac = delta - slotFloor;
+      const dx = slotPosAt(slotFloor) * (1 - frac) + slotPosAt(slotFloor + 1) * frac;
       out.push({
         key: i,
         idx,
