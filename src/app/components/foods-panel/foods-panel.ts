@@ -118,10 +118,11 @@ const CATEGORY_PLURALS: Record<string, string> = {
            50/50, persists nothing — the user can drag mid-session. -->
       <div class="main-area">
 
-        <!-- LEFT PANE: top bar holds the SEARCH label + input + execute
-             button on the left, and the SPIN button on the right edge.
-             Below is the carousel itself. -->
+        <!-- LEFT PANE: blue section title (mirrors "Buckets" on the right),
+             top bar with SEARCH label + input + execute button + SPIN button,
+             then the carousel itself. -->
         <div class="left-pane" [style.flex]="leftPaneWidthFraction()">
+          <div class="section-title">MyFoods</div>
           <div class="carousel-top-bar">
             <span class="search-label">SEARCH</span>
             <input
@@ -180,12 +181,14 @@ const CATEGORY_PLURALS: Record<string, string> = {
              mode, the collection name in Curate mode), DISPLAY toggle, then
              (in Curate mode only) the TYPE dropdown, then the content. -->
         <div class="right-pane" [style.flex]="rightPaneFlex()">
-          <div class="right-section-title">
-            @if (addTo() === 'left') {
-              Buckets
-            } @else {
-              {{ collectionHeading() }} ({{ bottomListLength() }})
-            }
+          <div class="section-title">
+            <span class="section-title-text">
+              @if (addTo() === 'left') { Buckets } @else { Curation }
+            </span>
+            <span class="section-title-count">
+              @if (addTo() === 'left') { {{ thisWeekTotal() }} }
+              @else { {{ bottomListLength() }} }
+            </span>
           </div>
 
           <div class="display-toggle">
@@ -702,11 +705,12 @@ export class FoodsPanelComponent {
   // the bottom-pane header when the slider is on the right, etc.
   typeLabel = computed<string>(() => TYPE_LABELS[this.spinSource()]);
 
-  // Count shown in the bottom header when the slider is on the right side.
-  // For TYPE=MyFoods we use the filtered MyFoods count (accordion view total);
-  // for YEH/Restricted we use carouselFoods (the visible list).
+  // Count shown next to the right-pane section title. The RHS list is no
+  // longer category-filtered, so the count is the total in the active
+  // collection — MyFoods uses allMyFoods(); YEH/Restricted use the loaded
+  // rawCarouselFoods (still filtered by search if the user typed one).
   bottomListLength = computed<number>(() => {
-    if (this.spinSource() === 'myfoods') return this.filteredMyFoods().length;
+    if (this.spinSource() === 'myfoods') return this.allMyFoods().length;
     return this.carouselFoods().length;
   });
 
@@ -809,12 +813,15 @@ export class FoodsPanelComponent {
     return all.filter(f => cats.has(f.categoryName ?? ''));
   });
 
-  // Group filteredMyFoods by category for accordion display. Order follows
-  // CAROUSEL_CATEGORIES; anything uncategorized is appended.
+  // Group ALL MyFoods (not filteredMyFoods) by category for the accordion
+  // view on the right pane. The category radio filter at the top only applies
+  // to the carousel — the right-hand list keeps every food visible behind
+  // collapsible category dividers, which already give the user navigation by
+  // category without needing the filter to gate the list.
   collapsedMyFoodsCategories = signal<Set<string>>(new Set());
 
   groupedMyFoods = computed<Array<{ category: string; foods: Food[]; collapsed: boolean }>>(() => {
-    const all = this.filteredMyFoods();
+    const all = this.allMyFoods();
     const collapsed = this.collapsedMyFoodsCategories();
     const map = new Map<string, Food[]>();
     for (const food of all) {
@@ -1485,11 +1492,11 @@ export class FoodsPanelComponent {
       // Stale-result guard: discard if a newer load has started
       if (reqId !== this.loadRequestId) return;
 
-      // Intersect with pressed categories. Skip filter when ALL or NONE are
-      // pressed (both mean "show everything").
-      if (cats.size > 0 && cats.size < CAROUSEL_CATEGORIES.length) {
-        foods = foods.filter(f => cats.has(f.categoryName ?? ''));
-      }
+      // The category filter is intentionally NOT applied here anymore — it
+      // belongs to the carousel only (see carouselSpinnerFoods). The right-
+      // hand Curate list always shows the full collection, organized by
+      // collapsible category headers, regardless of the radio's state.
+      void cats;
 
       this.rawCarouselFoods.set(foods);
       this.loadFailed.set(false);

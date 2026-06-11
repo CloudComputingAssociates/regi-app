@@ -490,21 +490,34 @@
   min-height: 0;
 }
 
-// Big blue section title at the very top of the right pane. Sized to match
-// the RegiMenu app-title — this anchors the whole right side as the
-// "Buckets" zone (in Curate mode it shows the collection name + count).
-.right-section-title {
+// Big blue section title at the very top of each pane. Sized to match the
+// RegiMenu app-title — left pane shows "MyFoods", right pane shows "Buckets"
+// or "Curation", so the two panes feel balanced. Optional count rides on the
+// right edge of the title bar.
+.section-title {
   flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
   padding: 8px 14px 6px;
   color: #4da6ff;
   font-family: 'Fredoka', Roboto, sans-serif;
   font-size: 24px;
   font-weight: 600;
   letter-spacing: 0.5px;
-  text-align: left;
   background: linear-gradient(180deg, #3a3a3a 0%, #2f2f2f 100%);
   border-bottom: 1px solid #1a1a1a;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.section-title-text { flex: 1; min-width: 0; }
+
+.section-title-count {
+  flex-shrink: 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(77, 166, 255, 0.75);
 }
 
 // TYPE row sits between DISPLAY and the curated list. Only visible in Curate
