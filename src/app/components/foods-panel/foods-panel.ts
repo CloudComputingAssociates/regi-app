@@ -93,79 +93,88 @@ const CATEGORY_PLURALS: Record<string, string> = {
         </button>
       </div>
 
-      <!-- Top control strip — TYPE moved to the right pane (see below); only
-           the category Filter row lives up here now. -->
-      <div class="spin-controls">
-        <div class="spin-row">
-          <span class="spin-row-label">Filter</span>
-          <div class="category-radio-panel" role="group" aria-label="Category filter">
-            @for (cat of carouselCategories; track cat) {
-              <button
-                type="button"
-                class="category-radio-btn"
-                [class.pressed]="isCategoryActive(cat)"
-                [attr.aria-pressed]="isCategoryActive(cat)"
-                (click)="toggleCategory(cat)">
-                {{ categoryLabel(cat) }}
-              </button>
-            }
-          </div>
-        </div>
-      </div>
+      <!-- Filter row moved into the left pane (under "MyFoods" title) — see
+           below. The top control strip is gone, so the panes start right
+           below the action-buttons row. -->
 
       <!-- Side-by-side main area: carousel on the LEFT, bucket/list stack on
            the RIGHT, with a draggable vertical splitter between them. Starts
            50/50, persists nothing — the user can drag mid-session. -->
       <div class="main-area">
 
-        <!-- LEFT PANE: blue section title (mirrors "Buckets" on the right),
-             top bar with SEARCH label + input + execute button + SPIN button,
-             then the carousel itself. -->
+        <!-- LEFT PANE
+             1. Blue "MyFoods" section title.
+             2. FILTER gray-gradient bar (rounded), matching the DISPLAY bar
+                on the right pane.
+             3. Rounded carousel "card" that holds the search row + the
+                carousel cards as a single visual unit, mirroring the bucket-
+                card on the right pane. -->
         <div class="left-pane" [style.flex]="leftPaneWidthFraction()">
-          <div class="section-title">MyFoods</div>
-          <div class="carousel-top-bar">
-            <span class="search-label">SEARCH</span>
-            <input
-              type="text"
-              class="carousel-search-input"
-              [value]="searchQuery()"
-              (input)="onSearchInput($any($event.target).value)"
-              (keyup.enter)="onSearchExecute()"
-              placeholder="Search foods…" />
-            <button
-              type="button"
-              class="search-execute-btn"
-              (click)="onSearchExecute()"
-              matTooltip="Search (Enter)"
-              matTooltipPosition="below"
-              aria-label="Execute search">
-              <svg viewBox="0 0 24 24" class="search-execute-icon" aria-hidden="true">
-                <path d="M5 12h12M13 6l6 6-6 6"
-                  fill="none" stroke="currentColor"
-                  stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </button>
-            <span class="top-bar-spacer"></span>
-            <button
-              type="button"
-              class="spin-btn"
-              (click)="carousel.spin()"
-              aria-label="Spin">
-              Spin
-            </button>
+          <div class="section-title">
+            <span class="section-title-text">MyFoods</span>
           </div>
-          <app-image-carousel
-            #carousel="appImageCarousel"
-            class="left-pane-carousel"
-            [items]="spinnerItems()"
-            [emptyMessage]="carouselEmptyMessage()"
-            [visibleCount]="3"
-            [showBucketBar]="false"
-            (activated)="onActivated($event)"
-            (inspect)="onInspect($event)"
-            (centered)="onCarouselCentered($event)"
-            (cardDragStart)="onCardDragStart($event)">
-          </app-image-carousel>
+
+          <div class="filter-bar">
+            <span class="filter-bar-label">FILTER</span>
+            <div class="category-radio-panel" role="group" aria-label="Category filter">
+              @for (cat of carouselCategories; track cat) {
+                <button
+                  type="button"
+                  class="category-radio-btn"
+                  [class.pressed]="isCategoryActive(cat)"
+                  [attr.aria-pressed]="isCategoryActive(cat)"
+                  (click)="toggleCategory(cat)">
+                  {{ categoryLabel(cat) }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="pane-card carousel-card">
+            <div class="carousel-top-bar">
+              <span class="search-label">SEARCH</span>
+              <input
+                type="text"
+                class="carousel-search-input"
+                [value]="searchQuery()"
+                (input)="onSearchInput($any($event.target).value)"
+                (keyup.enter)="onSearchExecute()"
+                placeholder="Search foods…" />
+              <button
+                type="button"
+                class="search-execute-btn"
+                (click)="onSearchExecute()"
+                matTooltip="Search (Enter)"
+                matTooltipPosition="below"
+                aria-label="Execute search">
+                <svg viewBox="0 0 24 24" class="search-execute-icon" aria-hidden="true">
+                  <path d="M5 12h12M13 6l6 6-6 6"
+                    fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+              <span class="top-bar-spacer"></span>
+              <button
+                type="button"
+                class="spin-btn"
+                (click)="carousel.spin()"
+                aria-label="Spin">
+                Spin
+              </button>
+            </div>
+            <app-image-carousel
+              #carousel="appImageCarousel"
+              class="left-pane-carousel"
+              [items]="spinnerItems()"
+              [emptyMessage]="carouselEmptyMessage()"
+              [visibleCount]="3"
+              [showBucketBar]="false"
+              (activated)="onActivated($event)"
+              (inspect)="onInspect($event)"
+              (centered)="onCarouselCentered($event)"
+              (cardDragStart)="onCardDragStart($event)">
+            </app-image-carousel>
+          </div>
         </div>
 
         <!-- VERTICAL SPLITTER — drag horizontally to resize the panes. -->
@@ -199,7 +208,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 class="display-toggle-btn"
                 [class.active]="addTo() === 'left'"
                 (click)="addTo.set('left')">
-                This Week
+                Fill Buckets
               </button>
               <button
                 type="button"
@@ -231,9 +240,9 @@ const CATEGORY_PLURALS: Record<string, string> = {
           }
 
           @if (addTo() === 'left') {
-            <!-- 4 buckets in a 2×2 grid. Each is tall enough to show the big
-                 count in the middle and tiles below. Scrollbars only appear
-                 inside an individual bucket when its tiles overflow. -->
+            <!-- 4 buckets in a 2×2 grid wrapped in the same rounded card
+                 chrome as the carousel side, so the two panes feel balanced. -->
+            <div class="pane-card bucket-card">
             <div class="bucket-grid">
               @for (key of bucketKeys; track key) {
                 <div
@@ -281,7 +290,9 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 </div>
               }
             </div>
+            </div>
           } @else {
+            <div class="pane-card list-card">
             <div class="right-pane-list" #bottomList>
               @if (spinSource() === 'myfoods') {
             <!-- TYPE=MyFoods on right side: accordion view of curated MyFoods -->
@@ -421,6 +432,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
               }
               }
               }
+            </div>
             </div>
           }
         </div>
