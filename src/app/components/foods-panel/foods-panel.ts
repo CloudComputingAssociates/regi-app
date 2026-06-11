@@ -431,6 +431,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 }
               }
               }
+              }
             </div>
             </div>
           }
