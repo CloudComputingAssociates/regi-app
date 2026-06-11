@@ -1,5 +1,5 @@
 // src/app/components/foods-panel/foods-panel.ts
-import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, inject, viewChild, effect, ElementRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, inject, viewChild, effect, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -10,15 +10,10 @@ import { SpinnerItem } from '../spinner/spinner';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
-import { UserFoodService } from '../../services/user-food.service';
-import { ImageUploadService } from '../../services/image-upload.service';
-import { FoodsService, Category } from '../../services/foods.service';
+import { FoodsService } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
 import { LangfusePromptService, LangfusePromptError } from '../../services/langfuse-prompt.service';
-import { CreateUserFoodRequest } from '../../models/user-food.model';
 import { Food } from '../../models/food.model';
-
-const SERVING_UNITS = ['whole', 'cup', 'tbsp', 'tsp', 'oz', 'lbs', 'g'];
 
 type SpinSource = 'myfoods' | 'restricted' | 'yeh-approved';
 
@@ -78,14 +73,6 @@ const CATEGORY_PLURALS: Record<string, string> = {
     <div class="foods-panel-container">
       <div class="action-buttons">
         <button
-          class="icon-btn add-food-btn"
-          (click)="openAddDialog()"
-          matTooltip="Add My Food"
-          matTooltipPosition="above"
-          [matTooltipShowDelay]="300">
-          +
-        </button>
-        <button
           class="icon-btn close-btn"
           (click)="closePanel()"
           matTooltip="Close"
@@ -130,6 +117,16 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 </button>
               }
             </div>
+            <button
+              type="button"
+              class="add-food-btn"
+              (click)="openAddDialog()"
+              matTooltip="Add My Food"
+              matTooltipPosition="above"
+              [matTooltipShowDelay]="300"
+              aria-label="Add My Food">
+              +
+            </button>
           </div>
 
           <div class="pane-card carousel-card">
@@ -193,16 +190,16 @@ const CATEGORY_PLURALS: Record<string, string> = {
               <button
                 type="button"
                 class="display-toggle-btn"
-                [class.active]="addTo() === 'left'"
-                (click)="addTo.set('left')">
-                Fill Baskets
+                [class.active]="addTo() === 'right'"
+                (click)="addTo.set('right')">
+                Curate MyFoods
               </button>
               <button
                 type="button"
                 class="display-toggle-btn"
-                [class.active]="addTo() === 'right'"
-                (click)="addTo.set('right')">
-                Curate MyFoods
+                [class.active]="addTo() === 'left'"
+                (click)="addTo.set('left')">
+                Fill Baskets
               </button>
             </div>
           </div>
@@ -235,23 +232,48 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 <div
                   class="basket"
                   [class.drag-over]="dragOverBasket() === key"
+                  [class.focused]="focusedBasket() === key"
                   (dragenter)="onBasketDragEnter($event, key)"
                   (dragover)="onBasketDragOver($event)"
                   (dragleave)="onBasketDragLeave($event, key)"
                   (drop)="onBasketDrop($event, key)">
+                  <!-- Header row: blue title "PROTEINS (6)" + inline trash on
+                       the LEFT, traffic-light pair (yellow restore, green
+                       expand) anchored to the top-RIGHT. -->
                   <div class="basket-face">
-                    <div class="basket-name">{{ key }}</div>
-                    <div class="basket-count">{{ thisWeekBaskets()[key].length }}</div>
+                    <span class="basket-title">
+                      {{ key }} ({{ thisWeekBaskets()[key].length }})
+                    </span>
+                    @if (thisWeekBaskets()[key].length > 0) {
+                      <button
+                        type="button"
+                        class="basket-trash"
+                        (click)="clearBasket(key)"
+                        matTooltip="Empty Basket"
+                        matTooltipPosition="above">
+                        <mat-icon class="basket-trash-icon">delete_outline</mat-icon>
+                      </button>
+                    }
                   </div>
-                  @if (thisWeekBaskets()[key].length > 0) {
+                  <div class="basket-lights-right">
                     <button
                       type="button"
-                      class="basket-clear"
-                      (click)="clearBasket(key)"
-                      matTooltip="Empty Basket"
+                      class="basket-light basket-light-min"
+                      [disabled]="focusedBasket() !== key"
+                      (click)="focusedBasket.set(null)"
+                      matTooltip="Restore"
                       matTooltipPosition="above">
-                      <mat-icon class="basket-clear-icon">delete_outline</mat-icon>
                     </button>
+                    <button
+                      type="button"
+                      class="basket-light basket-light-max"
+                      [disabled]="focusedBasket() === key"
+                      (click)="focusedBasket.set(key)"
+                      matTooltip="Expand"
+                      matTooltipPosition="above">
+                    </button>
+                  </div>
+                  @if (thisWeekBaskets()[key].length > 0) {
                     <div class="basket-tiles">
                       @for (food of thisWeekBaskets()[key]; track food.id) {
                         <div
@@ -490,170 +512,28 @@ const CATEGORY_PLURALS: Record<string, string> = {
         </div>
       }
 
-      <!-- Add Food Dialog -->
+      <!-- Add Food → phone-app handoff placeholder. The actual flow runs in
+           the phone app; this just nudges the user toward the QR / download. -->
       @if (showAddDialog()) {
         <div class="dialog-overlay" (click)="closeAddDialog()">
-          <div class="add-food-dialog" (click)="$event.stopPropagation()">
-            <div class="dialog-header">
-              <span class="dialog-title">Add My Food</span>
-              <div class="dialog-header-right">
-                <button class="dialog-ok-btn"
-                  [disabled]="!canSubmit() || isSubmitting()"
-                  (click)="submitFood()">
-                  @if (isSubmitting()) {
-                    <span class="save-spinner"></span>
-                  } @else {
-                    ✓
-                  }
-                </button>
-                <button class="dialog-close" (click)="closeAddDialog()">✕</button>
-              </div>
-            </div>
-
-            @if (isSubmitting()) {
-              <div class="submit-overlay">
-                <span class="submit-spinner"></span>
-                <span class="submit-text">Adding food...</span>
-              </div>
-            }
-
-            <div class="dialog-body">
-              <div class="form-row">
-                <label>Description <span class="required">*</span>
-                  @if (sourceFoodId()) {
-                    <span class="source-food-id">({{ sourceFoodId() }})</span>
-                  }
-                </label>
-                <input type="text" class="form-input" [(ngModel)]="newFood.description" placeholder="e.g., Organic Greek Yogurt" />
-              </div>
-
-              <div class="form-row">
-                <label>Short Description</label>
-                <input type="text" class="form-input" [(ngModel)]="newFood.shortDescription" placeholder="e.g., Greek Yogurt" />
-              </div>
-
-              <div class="form-row">
-                <label>Product Link <span class="optional-hint">(optional)</span></label>
-                <div class="link-input-row">
-                  <input type="url" class="form-input" [(ngModel)]="newFood.productPurchaseLink" placeholder="https://amazon.com/..." />
-                  @if (newFood.productPurchaseLink) {
-                    <button type="button" class="test-link-btn" (click)="testProductLink()">Test</button>
-                  }
-                </div>
-              </div>
-
-              <div class="form-row">
-                <label>Category</label>
-                <select class="form-select" [(ngModel)]="newFood.categoryId">
-                  @for (cat of categories(); track cat.id) {
-                    <option [ngValue]="cat.id">{{ cat.name }}</option>
-                  }
-                </select>
-              </div>
-
-              <div class="form-row-inline">
-                <div class="form-col">
-                  <label>Serving Unit</label>
-                  <select class="form-select" [(ngModel)]="newFood.servingUnit">
-                    @for (unit of servingUnits; track unit) {
-                      <option [value]="unit">{{ unit }}</option>
-                    }
-                  </select>
-                </div>
-                <div class="form-col">
-                  <label>Grams/Unit</label>
-                  <input type="number" class="form-input" [(ngModel)]="newFood.servingGramsPerUnit" placeholder="0" />
-                </div>
-              </div>
-
-              <div class="macros-section">
-                <span class="section-label">Nutrition (per serving)</span>
-                <div class="macro-grid">
-                  <div class="macro-field">
-                    <label>Calories <span class="required">*</span></label>
-                    <input type="number" class="form-input" [(ngModel)]="newFood.calories" />
-                  </div>
-                  <div class="macro-field">
-                    <label>Protein (g) <span class="required">*</span></label>
-                    <input type="number" class="form-input" [(ngModel)]="newFood.proteinG" />
-                  </div>
-                  <div class="macro-field">
-                    <label>Fat (g) <span class="required">*</span></label>
-                    <input type="number" class="form-input" [(ngModel)]="newFood.totalFatG" />
-                  </div>
-                  <div class="macro-field">
-                    <label>Carbs (g) <span class="required">*</span></label>
-                    <input type="number" class="form-input" [(ngModel)]="newFood.totalCarbohydrateG" />
-                  </div>
-                  <div class="macro-field">
-                    <label>Fiber (g) <span class="required">*</span></label>
-                    <input type="number" class="form-input" [(ngModel)]="newFood.dietaryFiberG" />
-                  </div>
-                  <div class="macro-field">
-                    <label>Sodium (mg) <span class="required">*</span></label>
-                    <input type="number" class="form-input" [(ngModel)]="newFood.sodiumMG" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="image-section">
-                <div class="image-upload">
-                  <label>Product Image</label>
-                  <div class="drop-zone"
-                    [class.has-image]="productImagePreview()"
-                    tabindex="0"
-                    (dragover)="onDragOver($event)"
-                    (drop)="onDrop($event, 'product')"
-                    (paste)="onPaste($event, 'product')">
-                    @if (productImagePreview()) {
-                      <img [src]="productImagePreview()" alt="" class="preview-img" />
-                      <button type="button" class="remove-img-btn" (click)="clearImage('product'); $event.stopPropagation()">✕</button>
-                    } @else {
-                      <div class="drop-placeholder">
-                        <button type="button" class="browse-btn desktop-only" (click)="productImageInput.click(); $event.stopPropagation()">Browse</button>
-                        <button type="button" class="camera-btn mobile-only" (click)="productImageInput.click(); $event.stopPropagation()">📷</button>
-                        <span class="drop-label desktop-only">Drop or Ctrl+V to paste</span>
-                        <span class="drop-label mobile-only">Tap 📷 or paste</span>
-                      </div>
-                    }
-                  </div>
-                  <input #productImageInput type="file" accept="image/*" capture="environment" hidden
-                    (change)="onImageSelected($event, 'product')" />
-                </div>
-
-                <div class="image-upload">
-                  <label>Nutrition Label <span class="label-hint">(auto-reads values)</span></label>
-                  <div class="drop-zone"
-                    [class.has-image]="nutritionImagePreview()"
-                    tabindex="0"
-                    (dragover)="onDragOver($event)"
-                    (drop)="onDrop($event, 'nutrition')"
-                    (paste)="onPaste($event, 'nutrition')">
-                    @if (nutritionImagePreview()) {
-                      <img [src]="nutritionImagePreview()" alt="" class="preview-img" />
-                      <button type="button" class="remove-img-btn" (click)="clearImage('nutrition'); $event.stopPropagation()">✕</button>
-                    } @else {
-                      <div class="drop-placeholder">
-                        <button type="button" class="browse-btn desktop-only" (click)="nutritionImageInput.click(); $event.stopPropagation()">Browse</button>
-                        <button type="button" class="camera-btn mobile-only" (click)="nutritionImageInput.click(); $event.stopPropagation()">📷</button>
-                        <span class="drop-label desktop-only">Drop or Ctrl+V to paste</span>
-                        <span class="drop-label mobile-only">Tap 📷 or paste</span>
-                      </div>
-                    }
-                  </div>
-                  <input #nutritionImageInput type="file" accept="image/*" capture="environment" hidden
-                    (change)="onImageSelected($event, 'nutrition')" />
-                </div>
-              </div>
-
-              <div class="share-row">
-                <label class="share-check">
-                  <input type="checkbox" [(ngModel)]="newFood.shareCandidate" />
-                  <span>Share w/ YEH Community</span>
-                </label>
-              </div>
-            </div>
-
+          <div class="phone-app-dialog" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="dialog-close"
+              (click)="closeAddDialog()"
+              aria-label="Close">✕</button>
+            <div class="phone-app-icon">📱</div>
+            <h2 class="phone-app-title">Adding food requires the phone app</h2>
+            <p class="phone-app-body">
+              Scan the QR code or download the RegiMenu app to add your own foods.
+            </p>
+            <div class="phone-app-qr-placeholder" aria-hidden="true">QR</div>
+            <button
+              type="button"
+              class="phone-app-cta"
+              (click)="closeAddDialog()">
+              Got it
+            </button>
           </div>
         </div>
       }
@@ -686,13 +566,8 @@ export class FoodsPanelComponent {
   private tabService = inject(TabService);
   protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
-  private userFoodService = inject(UserFoodService);
-  private imageUploadService = inject(ImageUploadService);
   private foodsService = inject(FoodsService);
   private langfusePromptService = inject(LangfusePromptService);
-  private cdr = inject(ChangeDetectorRef);
-
-  categories = signal<Category[]>([]);
 
   // Spin carousel state
   readonly carouselCategories = CAROUSEL_CATEGORIES;
@@ -742,9 +617,10 @@ export class FoodsPanelComponent {
   });
 
   // Carousel destination + local lists (persisted to localStorage).
-  // 'left' = This Week baskets, 'right' = the TYPE-driven view (YEH/MyFoods/Restricted).
-  // Default to 'left' (This Week) — that's the primary planning workflow.
-  addTo = signal<'left' | 'right'>('left');
+  // 'left' = This Week baskets (Fill Baskets), 'right' = the TYPE-driven
+  // Curate view. Defaults to 'right' so the landing experience is curation —
+  // the user sees what they're working with before planning the week.
+  addTo = signal<'left' | 'right'>('right');
   myFoodsLocal = signal<Food[]>(this.loadLocal(LS_MYFOODS));
 
   // Four-basket This Week store (Proteins/Fats/Carbs/Misc). Replaces the old
@@ -760,6 +636,11 @@ export class FoodsPanelComponent {
 
   // Drag-over basket key (for visual highlight on the drop target)
   dragOverBasket = signal<BasketKey | null>(null);
+
+  // Which basket (if any) is in "expanded" focus mode. When set, that basket
+  // takes the full basket-grid area; the others collapse out of view. Green
+  // traffic-light sets it; yellow restores to null (all four visible 2 × 2).
+  focusedBasket = signal<BasketKey | null>(null);
 
   // Health Benefits overlay is shown only when the active filter is a category
   // where macro-grade health claims are meaningful: Proteins, Fats, Dairy,
@@ -1187,7 +1068,6 @@ export class FoodsPanelComponent {
   showAddDialog = signal(false);
   showHealthBenefits = signal(false);
   nfPopupFood = signal<Food | null>(null);
-  isSubmitting = signal(false);
 
   // ---- Health Benefits popup state (Langfuse-driven) ----
   // centeredFood tracks whichever spinner card is currently in the spotlight
@@ -1254,8 +1134,6 @@ export class FoodsPanelComponent {
         return err?.message || 'Something went wrong loading health benefits.';
     }
   }
-  sourceFoodId = signal<number | null>(null);
-
   openProductLink(food: Food): void {
     const url = food.productPurchaseLink;
     if (url) {
@@ -1264,179 +1142,14 @@ export class FoodsPanelComponent {
     }
   }
 
-  // File objects for upload to yeh-image
-  productImageFile = signal<File | null>(null);
-  nutritionImageFile = signal<File | null>(null);
-
-  // Local previews (object URLs)
-  productImagePreview = signal<string | null>(null);
-  nutritionImagePreview = signal<string | null>(null);
-
-  servingUnits = SERVING_UNITS;
-
-  newFood: Partial<CreateUserFoodRequest> = this.emptyFood();
-
-  private emptyFood(): Partial<CreateUserFoodRequest> {
-    return {
-      description: '',
-      shortDescription: '',
-      servingUnit: 'whole',
-      servingGramsPerUnit: 0,
-      productPurchaseLink: '',
-      shareCandidate: false,
-      calories: 0,
-      proteinG: 0,
-      totalFatG: 0,
-      sodiumMG: 0,
-      totalCarbohydrateG: 0,
-      dietaryFiberG: 0
-    };
-  }
-
-  canSubmit(): boolean {
-    return !!(this.newFood.description && this.newFood.calories !== undefined);
-  }
-
+  // The "Add My Food" flow runs in the phone app. The web "+" button just
+  // surfaces a placeholder that points users at the QR / download.
   openAddDialog(): void {
-    this.newFood = this.emptyFood();
-    this.sourceFoodId.set(null);
-    this.clearImage('product');
-    this.clearImage('nutrition');
-    this.foodsService.loadCategories().then(cats => {
-      this.categories.set(cats);
-      this.cdr.markForCheck();
-    });
     this.showAddDialog.set(true);
   }
 
   closeAddDialog(): void {
-    this.revokePreviewUrls();
     this.showAddDialog.set(false);
-  }
-
-  onImageSelected(event: Event, type: 'product' | 'nutrition'): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (file) this.setImageFile(file, type);
-    input.value = '';
-  }
-
-  onPaste(event: ClipboardEvent, type: 'product' | 'nutrition'): void {
-    const items = event.clipboardData?.items;
-    if (!items) return;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.startsWith('image/')) {
-        event.preventDefault();
-        const file = items[i].getAsFile();
-        if (file) this.setImageFile(file, type);
-        return;
-      }
-    }
-  }
-
-  onDragOver(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
-  onDrop(event: DragEvent, type: 'product' | 'nutrition'): void {
-    event.preventDefault();
-    event.stopPropagation();
-    const file = event.dataTransfer?.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      this.setImageFile(file, type);
-    }
-  }
-
-  clearImage(type: 'product' | 'nutrition'): void {
-    if (type === 'product') {
-      if (this.productImagePreview()) URL.revokeObjectURL(this.productImagePreview()!);
-      this.productImageFile.set(null);
-      this.productImagePreview.set(null);
-    } else {
-      if (this.nutritionImagePreview()) URL.revokeObjectURL(this.nutritionImagePreview()!);
-      this.nutritionImageFile.set(null);
-      this.nutritionImagePreview.set(null);
-    }
-  }
-
-  private setImageFile(file: File, type: 'product' | 'nutrition'): void {
-    const previewUrl = URL.createObjectURL(file);
-    if (type === 'product') {
-      if (this.productImagePreview()) URL.revokeObjectURL(this.productImagePreview()!);
-      this.productImageFile.set(file);
-      this.productImagePreview.set(previewUrl);
-    } else {
-      if (this.nutritionImagePreview()) URL.revokeObjectURL(this.nutritionImagePreview()!);
-      this.nutritionImageFile.set(file);
-      this.nutritionImagePreview.set(previewUrl);
-    }
-    this.cdr.markForCheck();
-  }
-
-  private revokePreviewUrls(): void {
-    if (this.productImagePreview()) URL.revokeObjectURL(this.productImagePreview()!);
-    if (this.nutritionImagePreview()) URL.revokeObjectURL(this.nutritionImagePreview()!);
-    this.productImageFile.set(null);
-    this.nutritionImageFile.set(null);
-    this.productImagePreview.set(null);
-    this.nutritionImagePreview.set(null);
-  }
-
-  async submitFood(): Promise<void> {
-    if (!this.canSubmit()) return;
-    this.isSubmitting.set(true);
-
-    try {
-      // 1. Create the UserFood record (no image data — just metadata + nutrition)
-      const req = { ...this.newFood } as CreateUserFoodRequest;
-      delete (req as any).foodImage;
-      delete (req as any).nutritionFactsImage;
-
-      const result = await this.userFoodService.createUserFood(req);
-      if (!result) {
-        this.notificationService.show('Failed to add food', 'error');
-        return;
-      }
-
-      const foodId = result.id;
-
-      // 2. Upload images to yeh-image service (source=user)
-      const uploads: Promise<unknown>[] = [];
-
-      if (this.productImageFile()) {
-        uploads.push(
-          this.imageUploadService.uploadProductImage(foodId, this.productImageFile()!).catch(() => {
-            this.notificationService.show('Food added, but product image upload failed', 'warning');
-          })
-        );
-      }
-
-      if (this.nutritionImageFile()) {
-        uploads.push(
-          this.imageUploadService.uploadNutritionImage(foodId, this.nutritionImageFile()!).catch(() => {
-            this.notificationService.show('Food added, but nutrition label upload failed', 'warning');
-          })
-        );
-      }
-
-      await Promise.all(uploads);
-
-      this.notificationService.show('Food added', 'success');
-      this.closeAddDialog();
-
-      // Surface the newly-added food in the spinner immediately by switching to MyFoods
-      this.spinSource.set('myfoods');
-    } finally {
-      this.isSubmitting.set(false);
-    }
-  }
-
-  testProductLink(): void {
-    const url = this.newFood.productPurchaseLink;
-    if (url) {
-      window.open(url, '_blank', 'noopener');
-    }
   }
 
   closePanel(): void {

@@ -699,37 +699,56 @@
   }
 }
 
-// Compact horizontal header — basket name on the LEFT, count on the RIGHT,
-// both at FILTER-pill size (11 px uppercase). Reclaims the vertical space the
-// big centered count used to eat so the food tiles below don't get clipped.
+// Compact horizontal header — blue "PROTEINS (6)" title on the LEFT, inline
+// trash button right after it, the right side reserved for the yellow/green
+// traffic-light pair (.basket-lights-right).
 .basket-face {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   padding: 6px 10px;
-  // Leave room on the right for the absolute-positioned .basket-clear (✕).
-  padding-right: 32px;
+  padding-right: 48px; // leaves room for yellow + green on the right
   user-select: none;
 }
 
-.basket-name {
+// Non-actionable: pure visual styling, no hover, no cursor change.
+.basket-title {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.4px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.85);
-  margin: 0;
-}
-
-.basket-count {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  line-height: 1;
   color: #4da6ff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+// Inline trash button — small, transparent background, hover turns red.
+.basket-trash {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s ease, background 0.12s ease;
+
+  &:hover {
+    color: #ff5f57;
+    background: rgba(80, 0, 0, 0.35);
+  }
+}
+
+.basket-trash-icon {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  line-height: 14px;
 }
 
 // (Stale .basket-name rule removed — current rule lives above in the
@@ -738,41 +757,68 @@
 // Sits in the top-right corner of each .basket — the cell has position:
 // relative so this anchors there. Hover reveals red so it's clearly the
 // "empty this basket" action.
-// Top-right circular trash-can affordance. Hover turns red so the "empty"
-// intent is unmistakable; the matTooltip says "Empty Basket".
-.basket-clear {
+// macOS-style traffic-light triplet on each basket:
+//   • Trash (red, top-LEFT)  — empties this basket
+//   • Minimize (yellow, top-RIGHT) — restores from focus mode
+//   • Maximize (green, top-RIGHT) — focuses this basket
+// All three buttons share the .basket-light base; per-color rules add the
+// Apple palette. Disabled buttons fade to ~35 % opacity.
+.basket-light {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 24px;
-  height: 24px;
+  top: 6px;
+  width: 14px;
+  height: 14px;
   padding: 0;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.7);
-  line-height: 1;
+  border: 1px solid rgba(0, 0, 0, 0.4);
   cursor: pointer;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 20;
-  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25), 0 1px 1px rgba(0, 0, 0, 0.35);
+  transition: transform 0.1s ease, filter 0.1s ease, opacity 0.1s ease;
 
-  &:hover {
-    color: #ff7676;
-    border-color: rgba(255, 118, 118, 0.55);
-    background: rgba(80, 0, 0, 0.55);
+  &:hover:not(:disabled) {
+    transform: scale(1.12);
+    filter: brightness(1.15);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.95);
+    filter: brightness(0.9);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.35;
   }
 }
 
-.basket-clear-icon {
-  // mat-icon defaults to 24×24 / font-size 24 — shrink so it sits cleanly
-  // inside the 24 px circle.
-  width: 16px;
-  height: 16px;
-  font-size: 16px;
-  line-height: 16px;
+// Yellow + green ride the right corner side-by-side.
+.basket-lights-right {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 6px;
+  z-index: 20;
+}
+
+.basket-lights-right .basket-light { position: static; }
+
+.basket-light-min { background: #febc2e; }
+.basket-light-max { background: #28c941; }
+
+// ---- Focus mode ----
+// When any basket is .focused, the grid collapses to a single cell — the
+// focused basket fills it, the rest are hidden. Returns to 2 × 2 the moment
+// focusedBasket is set back to null.
+.basket-grid:has(.basket.focused) {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+
+  .basket:not(.focused) { display: none; }
 }
 
 // Mini-cards tile in a flex-wrap grid as foods land in the basket. Each card
@@ -1116,16 +1162,31 @@
   }
 }
 
-// Add food button
+// "+" button right-justified inside the .filter-bar — sits to the right of
+// the category radios via margin-left: auto. The web button is just a stub;
+// clicking it opens the phone-app placeholder dialog.
 .add-food-btn {
-  background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%) !important;
-  border-top-color: #5aa55a !important;
-  font-size: 20px !important;
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  color: #ffffff;
+  background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%);
+  border: 1px solid #5aa55a;
+  border-bottom: 2px solid #1a3a1a;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.45);
+
+  &:hover { background: linear-gradient(180deg, #5aa05a 0%, #408040 100%); }
+  &:active { transform: translateY(1px); border-bottom-width: 1px; }
 }
 
-// ============================================
-// Add Food Dialog
-// ============================================
 .dialog-overlay {
   position: fixed;
   top: 0;
@@ -1140,433 +1201,96 @@
   padding: 16px;
 }
 
-.add-food-dialog {
-  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
-  border-radius: 10px;
-  max-width: 480px;
+// ---- Phone-app placeholder dialog ----
+// Replaces the old in-web Add Food form. Adding foods now happens in the
+// phone app; the web button just nudges the user toward the QR / download.
+.phone-app-dialog {
+  position: relative;
   width: 100%;
-  max-height: 85vh;
-  overflow-y: auto;
+  max-width: 360px;
+  padding: 28px 28px 24px;
+  background: linear-gradient(180deg, #404040 0%, #2f2f2f 100%);
+  border: 1px solid #555;
+  border-bottom: 2px solid #1a1a1a;
+  border-radius: 14px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-}
-
-.dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid #555;
-
-  .dialog-title {
-    color: #4da6ff;
-    font-size: 16px;
-    font-weight: 600;
-  }
-
-  .dialog-header-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .dialog-ok-btn {
-    font-size: 16px;
-    font-weight: 700;
-    color: #ffffff;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: inherit;
-    outline: none;
-    transition: all 0.15s ease;
-    background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%);
-    border-top: 1px solid #5aa55a;
-    border-left: 1px solid #4a954a;
-    border-right: 1px solid #4a954a;
-    border-bottom: 2px solid #1a3a1a;
-    box-shadow:
-      0 3px 6px rgba(0, 0, 0, 0.4),
-      0 -1px 0 rgba(255, 255, 255, 0.2) inset;
-
-    &:hover:not(:disabled) {
-      background: linear-gradient(180deg, #5aa05a 0%, #408040 100%);
-      border-top-color: #6ab56a;
-    }
-
-    &:active:not(:disabled) {
-      background: linear-gradient(180deg, #357035 0%, #2a5a2a 100%);
-      border-bottom-width: 1px;
-      transform: translateY(1px);
-    }
-
-    &:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-  }
-
-  .source-food-id {
-    color: #4da6ff;
-    font-size: 10px;
-    font-weight: 400;
-  }
+  text-align: center;
+  color: #ffffff;
 
   .dialog-close {
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 18px;
-    cursor: pointer;
-    padding: 2px 6px;
-
-    &:hover { color: #fff; }
-  }
-}
-
-.submit-overlay {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.5);
-  margin: 0 16px;
-  border-radius: 6px;
-}
-
-.submit-spinner {
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #4da6ff;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-
-.submit-text {
-  color: #4da6ff;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.dialog-body {
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.form-row {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-
-  label {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 11px;
-    font-weight: 500;
-  }
-
-  .required { color: #dc3545; }
-}
-
-.form-row-inline {
-  display: flex;
-  gap: 12px;
-
-  .form-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-
-    label {
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 11px;
-      font-weight: 500;
-    }
-  }
-}
-
-.form-input, .form-select {
-  background: #2a2a2a;
-  border: 1px solid #555;
-  border-radius: 4px;
-  color: #fff;
-  font-size: 13px;
-  padding: 6px 8px;
-  outline: none;
-  font-family: inherit;
-
-  &:focus { border-color: #4da6ff; }
-  &::placeholder { color: rgba(255, 255, 255, 0.3); }
-}
-
-.form-select {
-  cursor: pointer;
-  option { background: #2a2a2a; }
-}
-
-.link-input-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-
-  .form-input {
-    flex: 1;
-  }
-}
-
-.test-link-btn {
-  padding: 4px 10px;
-  font-size: 11px;
-  background: #3a3a3a;
-  color: #4da6ff;
-  border: 1px solid #555;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:hover {
-    background: #4a4a4a;
-  }
-}
-
-.optional-hint {
-  color: #888;
-  font-size: 10px;
-  font-weight: normal;
-}
-
-// Macros grid
-.macros-section {
-  .section-label {
-    color: #4da6ff;
-    font-size: 12px;
-    font-weight: 500;
-    display: block;
-    margin-bottom: 6px;
-  }
-}
-
-.macro-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
-
-  .macro-field {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-
-    label {
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 10px;
-
-      .required { color: #dc3545; }
-    }
-
-    .form-input {
-      padding: 4px 6px;
-      font-size: 12px;
-    }
-  }
-}
-
-// Image uploads
-.image-section {
-  display: flex;
-  gap: 12px;
-}
-
-.image-upload {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-
-  label {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 11px;
-    font-weight: 500;
-  }
-}
-
-.drop-zone {
-  border: 2px dashed #555;
-  border-radius: 6px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 80px;
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
-  position: relative;
-
-  &:hover {
-    border-color: #4da6ff;
-    background: rgba(77, 166, 255, 0.05);
-  }
-
-  &.has-image {
-    border-style: solid;
-    border-color: #555;
-  }
-
-  .preview-img {
-    max-width: 100%;
-    max-height: 70px;
-    object-fit: contain;
-    border-radius: 4px;
-  }
-
-  .remove-img-btn {
     position: absolute;
-    top: 2px;
-    right: 2px;
-    background: rgba(0, 0, 0, 0.6);
-    border: none;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 12px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-
-    &:hover { color: #fff; background: rgba(220, 53, 69, 0.8); }
-  }
-
-  .drop-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .browse-btn {
-    background: linear-gradient(180deg, #555 0%, #3a3a3a 100%);
-    border: 1px solid #6a6a6a;
-    border-bottom: 2px solid #1a1a1a;
-    border-radius: 4px;
-    color: #fff;
-    font-size: 11px;
-    font-family: inherit;
-    padding: 4px 12px;
-    cursor: pointer;
-    outline: none;
-
-    &:hover {
-      background: linear-gradient(180deg, #606060 0%, #454545 100%);
-    }
-  }
-
-  .camera-btn {
+    top: 6px;
+    right: 8px;
     background: none;
-    border: 1px solid #555;
-    border-radius: 6px;
-    font-size: 24px;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 16px;
     cursor: pointer;
-    padding: 4px 10px;
+    padding: 4px 6px;
     line-height: 1;
 
-    &:hover {
-      border-color: #4da6ff;
-      background: rgba(77, 166, 255, 0.1);
-    }
-  }
-
-  .drop-label {
-    color: rgba(255, 255, 255, 0.35);
-    font-size: 10px;
-    text-align: center;
-  }
-
-  // Desktop: has a fine pointer (mouse) — show browse button, hide camera
-  // Mobile: no fine pointer (touch) — show camera button, hide browse
-  .desktop-only { display: none; }
-  .mobile-only { display: inline-flex; }
-
-  @media (hover: hover) and (pointer: fine) {
-    .desktop-only { display: inline-flex; }
-    .mobile-only { display: none; }
-  }
-
-  &:focus {
-    border-color: #4da6ff;
-    outline: 1px solid rgba(77, 166, 255, 0.3);
+    &:hover { color: #ffffff; }
   }
 }
 
-.label-hint {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 9px;
-  font-weight: 400;
+.phone-app-icon {
+  font-size: 44px;
+  line-height: 1;
+  margin-bottom: 8px;
 }
 
-// Share checkbox
-.share-row {
-  .share-check {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 12px;
-    cursor: pointer;
-
-    input { accent-color: #4a8f4a; }
-  }
+.phone-app-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #4da6ff;
+  letter-spacing: 0.3px;
 }
 
-// Footer
-.dialog-footer {
+.phone-app-body {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.phone-app-qr-placeholder {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid #555;
-}
-
-.cancel-btn, .submit-btn {
+  align-items: center;
+  justify-content: center;
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 18px;
+  background: repeating-linear-gradient(
+    45deg,
+    #1a1a1a 0 6px,
+    #2a2a2a 6px 12px
+  );
+  border: 1px solid #555;
+  border-radius: 8px;
+  font-family: monospace;
   font-size: 12px;
-  font-weight: 500;
-  color: #fff;
-  border-radius: 4px;
-  padding: 6px 16px;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.phone-app-cta {
+  padding: 8px 22px;
   font-family: inherit;
-  outline: none;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: linear-gradient(180deg, #4a8fc7 0%, #357095 100%);
+  border: 1px solid #2a5a85;
+  border-bottom: 2px solid #1a3a55;
+  border-radius: 6px;
   cursor: pointer;
-}
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.45);
 
-.cancel-btn {
-  background: linear-gradient(180deg, #555 0%, #3a3a3a 100%);
-  border: 1px solid #6a6a6a;
-  border-bottom: 2px solid #1a1a1a;
-
-  &:hover { background: linear-gradient(180deg, #606060 0%, #454545 100%); }
-}
-
-.submit-btn {
-  background: linear-gradient(180deg, #4a8f4a 0%, #357035 100%);
-  border: 1px solid #5aa55a;
-  border-bottom: 2px solid #1a3a1a;
-
-  &:hover:not(:disabled) { background: linear-gradient(180deg, #5aa05a 0%, #408040 100%); }
-  &:disabled { opacity: 0.4; cursor: not-allowed; }
+  &:hover { background: linear-gradient(180deg, #5aa0d4 0%, #4080ac 100%); }
+  &:active { transform: translateY(1px); border-bottom-width: 1px; }
 }
 
 // Mobile responsive
