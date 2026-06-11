@@ -424,32 +424,6 @@
   }
 }
 
-.search-execute-btn {
-  flex-shrink: 0;
-  width: 30px;
-  height: 28px;
-  padding: 0;
-  background: linear-gradient(180deg, #4a8fc7 0%, #357095 100%);
-  border: 1px solid #2a5070;
-  border-bottom: 2px solid #1a3a55;
-  border-radius: 4px;
-  color: #ffffff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
-  transition: background 0.1s ease;
-
-  &:hover { background: linear-gradient(180deg, #5aa0dc 0%, #4080ac 100%); }
-  &:active { transform: translateY(1px); border-bottom-width: 1px; }
-
-  .search-execute-icon {
-    width: 18px;
-    height: 18px;
-  }
-}
-
 // Flex spacer that pushes the Spin button to the right edge.
 .top-bar-spacer { flex: 1; }
 
@@ -585,15 +559,20 @@
   box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
 }
 
+// Same typographic feel as the FILTER pills (.category-radio-btn) so the
+// DISPLAY toggle reads as a sibling control of the same weight.
 .display-toggle-btn {
   font-family: inherit;
   font-size: 11px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
   color: rgba(255, 255, 255, 0.55);
   background: transparent;
   border: none;
   border-radius: 999px;
-  padding: 3px 12px;
+  // Pads to ~28 px tall (the FILTER pill height) inside the 2 px pill container.
+  padding: 6px 14px;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 
@@ -800,11 +779,11 @@
 }
 
 .bucket-mini-card {
-  // Bumped another 25%: 48 → 60 × 70 → 88. The label band, image area and X
+  // Bumped another 25%: 60 → 75 × 88 → 110. The label band, image area and X
   // badge all scale via their own rules, so this just affects the outer box.
   position: relative;
-  width: 60px;
-  height: 88px;
+  width: 75px;
+  height: 110px;
   background: #2a2a2a;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 4px;

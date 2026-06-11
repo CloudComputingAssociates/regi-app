@@ -138,21 +138,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 class="carousel-search-input"
                 [value]="searchQuery()"
                 (input)="onSearchInput($any($event.target).value)"
-                (keyup.enter)="onSearchExecute()"
                 placeholder="Search foods…" />
-              <button
-                type="button"
-                class="search-execute-btn"
-                (click)="onSearchExecute()"
-                matTooltip="Search (Enter)"
-                matTooltipPosition="below"
-                aria-label="Execute search">
-                <svg viewBox="0 0 24 24" class="search-execute-icon" aria-hidden="true">
-                  <path d="M5 12h12M13 6l6 6-6 6"
-                    fill="none" stroke="currentColor"
-                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </button>
               <span class="top-bar-spacer"></span>
               <button
                 type="button"
@@ -167,7 +153,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
               class="left-pane-carousel"
               [items]="spinnerItems()"
               [emptyMessage]="carouselEmptyMessage()"
-              [visibleCount]="3"
+              [visibleCount]="5"
               [showBucketBar]="false"
               (activated)="onActivated($event)"
               (inspect)="onInspect($event)"
@@ -192,7 +178,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
         <div class="right-pane" [style.flex]="rightPaneFlex()">
           <div class="section-title">
             <span class="section-title-text">
-              @if (addTo() === 'left') { Buckets } @else { Curation }
+              @if (addTo() === 'left') { Baskets } @else { Curation }
             </span>
             <span class="section-title-count">
               @if (addTo() === 'left') { {{ thisWeekTotal() }} }
@@ -201,14 +187,13 @@ const CATEGORY_PLURALS: Record<string, string> = {
           </div>
 
           <div class="display-toggle">
-            <span class="display-toggle-label">DISPLAY</span>
             <div class="display-toggle-buttons" role="group" aria-label="Display target">
               <button
                 type="button"
                 class="display-toggle-btn"
                 [class.active]="addTo() === 'left'"
                 (click)="addTo.set('left')">
-                Fill Buckets
+                Fill Baskets
               </button>
               <button
                 type="button"
@@ -912,14 +897,6 @@ export class FoodsPanelComponent {
 
   onSearchInput(value: string): void {
     this.searchQuery.set(value);
-  }
-
-  // The execute button (and Enter key) doesn't need to do anything special —
-  // search is already live on every keystroke. Kept as an explicit affordance
-  // so users feel they can "commit" the query; a future enhancement might
-  // dismiss the soft keyboard on mobile or trigger a server-side fuzzy search.
-  onSearchExecute(): void {
-    // no-op for now
   }
 
   // Auto-load whenever source, filter, OR the merged MyFoods set changes (so
