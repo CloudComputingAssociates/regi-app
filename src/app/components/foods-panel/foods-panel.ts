@@ -72,20 +72,9 @@ const CATEGORY_PLURALS: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="foods-panel-container">
-      <div class="action-buttons">
-        <button
-          class="icon-btn close-btn"
-          (click)="closePanel()"
-          matTooltip="Close"
-          matTooltipPosition="above"
-          [matTooltipShowDelay]="300">
-          ✕
-        </button>
-      </div>
-
-      <!-- Filter row moved into the left pane (under "MyFoods" title) — see
-           below. The top control strip is gone, so the panes start right
-           below the action-buttons row. -->
+      <!-- No close X on this panel — the left-nav is now the navigator.
+           Select another nav item to switch, or toggle the active nav
+           item to close back to splash. -->
 
       <!-- Side-by-side main area: carousel on the LEFT, basket/list stack on
            the RIGHT, with a draggable vertical splitter between them. Starts
@@ -102,6 +91,20 @@ const CATEGORY_PLURALS: Record<string, string> = {
         <div class="left-pane" [style.flex]="leftPaneWidthFraction()">
           <div class="section-title">
             <span class="section-title-text">MyFoods</span>
+            <!-- Curate MyFoods pill — blue text on the LHS. Toggles the RHS
+                 between its default Baskets view and the Curate overlay.
+                 Active state inverts to a filled blue chip so the user can
+                 tell at a glance which view is on the right. -->
+            <button
+              type="button"
+              class="curate-toggle"
+              [class.active]="addTo() === 'right'"
+              (click)="addTo.set(addTo() === 'right' ? 'left' : 'right')"
+              matTooltip="Favorite YEH Approved foods or remove Mobile Added foods or designate Restricted Foods"
+              matTooltipPosition="below"
+              [matTooltipShowDelay]="350">
+              Curate MyFoods
+            </button>
           </div>
 
           <div class="filter-bar">
@@ -166,39 +169,41 @@ const CATEGORY_PLURALS: Record<string, string> = {
              mode, the collection name in Curate mode), DISPLAY toggle, then
              (in Curate mode only) the TYPE dropdown, then the content. -->
         <div class="right-pane" [style.flex]="rightPaneFlex()">
+          <!-- RHS title:
+               - Baskets mode (default): just "Baskets (n)" — no close.
+                 Baskets is the home state and can't be dismissed; the user
+                 closes the entire Foods panel via the left-nav.
+               - Curate mode: "Curation (n)" with an X close on the right
+                 that flips back to Baskets. The Curate LHS pill stays in
+                 sync as the same toggle. -->
           <div class="section-title">
             <span class="section-title-text">
-              @if (addTo() === 'left') { Baskets } @else { Curation }
+              @if (addTo() === 'left') {
+                Baskets
+              } @else {
+                <span
+                  matTooltip="Curate you MyFoods by starring those YEH Approved foods you like, to add foods hit the + for dowloading the mobile App"
+                  matTooltipPosition="below"
+                  [matTooltipShowDelay]="350">
+                  Curation
+                </span>
+              }
             </span>
             <span class="section-title-count">
               @if (addTo() === 'left') { {{ thisWeekTotal() }} }
               @else { {{ bottomListLength() }} }
             </span>
-          </div>
-
-          <div class="display-toggle">
-            <div class="display-toggle-buttons" role="group" aria-label="Display target">
+            @if (addTo() === 'right') {
               <button
                 type="button"
-                class="display-toggle-btn"
-                [class.active]="addTo() === 'right'"
-                (click)="addTo.set('right')"
-                matTooltip="Favorite YEH Approved foods or remove Mobile Added foods or designate Restricted Foods"
-                matTooltipPosition="below"
-                [matTooltipShowDelay]="350">
-                Curate MyFoods
-              </button>
-              <button
-                type="button"
-                class="display-toggle-btn"
-                [class.active]="addTo() === 'left'"
+                class="section-title-close"
                 (click)="addTo.set('left')"
-                matTooltip="Drop a few foods in your baskets, then go to PLANNING to create meals"
+                matTooltip="Close Curate, back to Baskets"
                 matTooltipPosition="below"
-                [matTooltipShowDelay]="350">
-                Fill Baskets
+                aria-label="Close Curate">
+                ✕
               </button>
-            </div>
+            }
           </div>
 
           @if (addTo() === 'right') {

@@ -548,28 +548,29 @@
 .filter-bar-label { @extend %control-bar-label; }
 
 // "Curate MyFoods" pill sits across from the "MyFoods" title on the LHS
-// section-title row. Toggles the RHS between Baskets (default) and
-// Curate. Active state mirrors the blue gradient the old DISPLAY toggle
-// used so users recognise it as the same control.
+// section-title row. Blue text by default (matches the section heading
+// color so it reads as an extension of the title row); fills with a blue
+// gradient when active so it's clearly "on".
 .curate-toggle {
   flex-shrink: 0;
   font-family: inherit;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  color: rgba(255, 255, 255, 0.7);
+  color: #4da6ff;
   background: #1a1a1a;
-  border: 1px solid #555;
+  border: 1px solid #2a5070;
   border-radius: 999px;
   padding: 5px 14px;
   cursor: pointer;
   box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 
   &:hover:not(.active) {
-    color: #ffffff;
-    background: #222;
+    color: #7fc1ff;
+    background: #1f2a38;
+    border-color: #4da6ff;
   }
 
   &.active {
