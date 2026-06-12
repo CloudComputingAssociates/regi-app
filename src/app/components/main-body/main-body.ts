@@ -1,9 +1,11 @@
 // src/app/components/main-body/main-body.ts
+//
+// Single-active panel host. There is no longer a tab strip — the left-nav
+// is the navigator. Once a panel is visited (open from the left-nav at
+// least once), its component stays mounted but hidden so its internal state
+// (filters, scroll, signals) is preserved across hide/show.
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
 import { TabService } from '../../services/tab.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { ChatComponent } from '../chat/chat';
@@ -12,7 +14,6 @@ import { ShoppingPanelComponent } from '../shopping-panel/shopping-panel';
 import { WeekPlanPanelComponent } from '../week-plan-panel/week-plan-panel';
 import { FoodsPanelComponent } from '../foods-panel/foods-panel';
 import { AccountPanelComponent } from '../account-panel/account-panel';
-import { PreferencesPanelComponent } from '../preferences-panel/preferences-panel';
 import { TodayPanelComponent } from '../today-panel/today-panel';
 import { NotificationComponent } from '../notification/notification';
 import { VideoViewerComponent } from '../video-viewer/video-viewer';
@@ -24,16 +25,12 @@ import { IssuePanelComponent } from '../issue-panel/issue-panel';
   standalone: true,
   imports: [
     CommonModule,
-    MatTabsModule,
-    MatIconModule,
-    MatButtonModule,
     ChatComponent,
     MealsPanelComponent,
     ShoppingPanelComponent,
     WeekPlanPanelComponent,
     FoodsPanelComponent,
     AccountPanelComponent,
-    PreferencesPanelComponent,
     TodayPanelComponent,
     NotificationComponent,
     VideoViewerComponent,
@@ -43,77 +40,67 @@ import { IssuePanelComponent } from '../issue-panel/issue-panel';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="main-body-container">
-      @if (tabService.tabs().length === 0) {
-        <!-- Empty state with background image -->
+      <!-- Splash background — shown whenever no panel is the active one
+           (no left-nav item highlighted). The user toggles back here by
+           clicking the active nav item again. -->
+      @if (tabService.activeTabId() === null) {
         <div class="empty-state">
           <img src="/images/YEH3.png" alt="You Eating Healthy" class="empty-state-image" />
         </div>
-      } @else {
-        <mat-tab-group
-          [selectedIndex]="tabService.activeTabIndex()"
-          (selectedIndexChange)="onTabIndexChange($event)"
-          class="main-body-tabs">
+      }
 
-          @for (tab of tabService.tabs(); track tab.id; let i = $index) {
-            <mat-tab>
-              <ng-template mat-tab-label>
-                <span class="tab-label-content" (mousedown)="onTabLabelClick($event, tab.id)">
-                  @if (tab.icon) {
-                    <img [src]="tab.icon" alt="" class="tab-icon" />
-                  } @else if (tab.emoji) {
-                    <span class="tab-emoji">{{ tab.emoji }}</span>
-                  }
-                  <span class="tab-label-text" [innerHTML]="formatTabLabel(tab.label)"></span>
-                  @if (tab.badgeCount) {
-                    <span class="tab-badge">({{ tab.badgeCount }})</span>
-                  }
-                </span>
-              </ng-template>
-
-              <!-- Lazy: component only created when tab is first selected -->
-              <ng-template matTabContent>
-                <div class="tab-content">
-                  @if (tab.id === 'today') {
-                    <app-today-panel />
-                  } @else if (tab.id === 'chat') {
-                    <app-chat />
-                  } @else if (tab.id === 'meal-planning') {
-                    <app-meals-panel />
-                  } @else if (tab.id === 'foods') {
-                    <app-foods-panel />
-                  } @else if (tab.id === 'shop') {
-                    <app-shopping-panel />
-                  } @else if (tab.id === 'review') {
-                    <app-week-plan-panel />
-                  } @else if (tab.id === 'preferences') {
-                    <app-preferences-panel />
-                  } @else if (tab.id === 'account') {
-                    <app-account-panel />
-                  } @else if (tab.id === 'video-viewer') {
-                    <app-video-viewer />
-                  } @else if (tab.id === 'web-viewer') {
-                    <app-recipe-viewer />
-                  } @else if (tab.id === 'issue') {
-                    <app-issue-panel />
-                  } @else if (tab.id === 'help') {
-                    <div class="placeholder-content">
-                      <div class="action-buttons">
-                        <button
-                          class="icon-btn close-btn"
-                          (click)="closeTab('help')"
-                          title="Close">
-                          ✕
-                        </button>
-                      </div>
-                      <p class="placeholder-text">Help - Coming soon</p>
-                    </div>
-                  }
-                </div>
-              </ng-template>
-            </mat-tab>
-          }
-
-        </mat-tab-group>
+      <!-- Each panel is mounted once (the first time it's visited) and stays
+           in the DOM thereafter, hidden via [hidden] when not active. This
+           is the "keepalive" — state preservation without a router. -->
+      @if (tabService.hasVisited('today')) {
+        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'today'">
+          <app-today-panel />
+        </div>
+      }
+      @if (tabService.hasVisited('chat')) {
+        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'chat'">
+          <app-chat />
+        </div>
+      }
+      @if (tabService.hasVisited('meal-planning')) {
+        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'meal-planning'">
+          <app-meals-panel />
+        </div>
+      }
+      @if (tabService.hasVisited('foods')) {
+        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'foods'">
+          <app-foods-panel />
+        </div>
+      }
+      @if (tabService.hasVisited('shop')) {
+        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'shop'">
+          <app-shopping-panel />
+        </div>
+      }
+      @if (tabService.hasVisited('review')) {
+        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'review'">
+          <app-week-plan-panel />
+        </div>
+      }
+      @if (tabService.hasVisited('account')) {
+        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'account'">
+          <app-account-panel />
+        </div>
+      }
+      @if (tabService.hasVisited('video-viewer')) {
+        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'video-viewer'">
+          <app-video-viewer />
+        </div>
+      }
+      @if (tabService.hasVisited('web-viewer')) {
+        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'web-viewer'">
+          <app-recipe-viewer />
+        </div>
+      }
+      @if (tabService.hasVisited('issue')) {
+        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'issue'">
+          <app-issue-panel />
+        </div>
       }
 
       <!-- Notification component (always present) -->
@@ -139,35 +126,14 @@ export class MainBodyComponent {
   private preferencesService = inject(PreferencesService);
 
   constructor() {
-    // Register guard: block leaving preferences tab when there are unsaved changes
+    // Register guard: block leaving Settings when there are unsaved changes.
+    // Settings now lives in an overlay (see SettingsOverlayComponent), but
+    // the guard is still useful if any caller invokes switchToTab/closePanel
+    // while preferences are dirty.
     this.tabService.setBeforeLeaveGuard(() => {
       const currentTabId = this.tabService.activeTabId();
       return currentTabId === 'preferences' && this.preferencesService.hasDirtyGroups();
     });
-  }
-
-  formatTabLabel(label: string): string {
-    return label.replace('RegiMenu', 'RegiMenu<sup class="sm">SM</sup>');
-  }
-
-  onTabLabelClick(event: MouseEvent, tabId: string): void {
-    const currentId = this.tabService.activeTabId();
-    if (currentId === tabId) return; // clicking the active tab, no guard needed
-    if (this.preferencesService.hasDirtyGroups() && currentId === 'preferences') {
-      event.preventDefault();
-      event.stopPropagation();
-      this.tabService.blockSwitch(tabId);
-    }
-  }
-
-  onTabIndexChange(index: number): void {
-    if (this.tabService.hasPendingFocus()) return;
-    if (this.tabService.blockedTabSwitch()) return; // guard already intercepted
-
-    const tabs = this.tabService.tabs();
-    if (tabs[index]) {
-      this.tabService.switchToTab(tabs[index].id);
-    }
   }
 
   confirmTabSwitch(): void {
@@ -177,9 +143,5 @@ export class MainBodyComponent {
 
   cancelTabSwitch(): void {
     this.tabService.cancelBlockedSwitch();
-  }
-
-  closeTab(tabId: string): void {
-    this.tabService.closeTab(tabId);
   }
 }

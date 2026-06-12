@@ -41,13 +41,18 @@
     }
   }
 
-  // Title + greeting column. flex: 1 makes it occupy the middle, the inner
-  // text-align: center keeps the logo visually centered over the spinner.
+  // Title block — RegiMenu logo + active panel name, aligned left and
+  // pushed away from the hamburger by .title-area's padding-left for
+  // breathing room. Active panel name renders in the same font and size
+  // as the logo (per spec) so it reads as a sibling, not a subtitle.
   .title-area {
     flex: 1;
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 18px;
+    padding-left: 24px;
     line-height: 1;
     min-width: 0;
   }
@@ -58,8 +63,22 @@
     font-family: 'Fredoka', sans-serif;
     font-size: 24px;
     font-weight: 600;
-    text-align: center;
     letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+
+  // Active-panel name — same font/size as the logo so it reads as part of
+  // the same heading row. Slightly less saturated so the logo still leads.
+  .app-active-panel {
+    color: rgba(77, 166, 255, 0.78);
+    font-family: 'Fredoka', sans-serif;
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
   }
 
   // Profile menu wrapper

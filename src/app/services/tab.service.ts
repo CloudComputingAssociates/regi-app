@@ -255,6 +255,79 @@ export class TabService {
     }
   }
 
+  // ============================================================
+  // Settings overlay — separate from the single-active panel stack.
+  // ============================================================
+  // Settings doesn't live in the panel keepalive set; it's a modal that
+  // floats over whichever panel is active. UI components (LeftNav,
+  // ProfileMenu) call openSettings() to show it; the overlay's own Save /
+  // Close buttons call closeSettings().
+  readonly settingsOpen = signal(false);
+  openSettings(): void { this.settingsOpen.set(true); }
+  closeSettings(): void { this.settingsOpen.set(false); }
+
+  // ============================================================
+  // Single-active panel APIs (replaces the mat-tab strip model)
+  // ============================================================
+  // These methods preserve the "visited" panel set in `tabsSignal` so that
+  // hidden panels stay mounted (and keep their internal state) when the user
+  // toggles them off. The left-nav uses togglePanel for its open/close
+  // semantics: clicking the currently active item closes back to splash.
+
+  /** Open a panel. Adds it to the visited set if it's not there yet. Always
+   *  sets it as the active panel. State is preserved across hide/show. */
+  openPanel(tabId: string, label: string): void {
+    const currentTabs = this.tabsSignal();
+    const existingIndex = currentTabs.findIndex(t => t.id === tabId);
+    if (existingIndex !== -1) {
+      // Already visited — just activate.
+      this._switchToTabInternal(tabId);
+      return;
+    }
+    // First visit — append (or insert per menuOrder).
+    let insertIndex = currentTabs.length;
+    const menuIndex = this.menuOrder.indexOf(tabId);
+    if (menuIndex !== -1) {
+      for (let i = 0; i < currentTabs.length; i++) {
+        const currentMenuIndex = this.menuOrder.indexOf(currentTabs[i].id);
+        if (currentMenuIndex > menuIndex) { insertIndex = i; break; }
+      }
+    }
+    const newTabs = [...currentTabs];
+    newTabs.splice(insertIndex, 0, {
+      id: tabId,
+      label,
+      closeable: true,
+      icon: this.tabIcons[tabId],
+      emoji: this.tabEmojis[tabId],
+    });
+    this.tabsSignal.set(newTabs);
+    this.activeTabIndexSignal.set(insertIndex);
+  }
+
+  /** Close the active panel back to the splash (no panel visible). The
+   *  closed panel stays in the visited set so its state is preserved when
+   *  the user reopens it. */
+  closePanel(): void {
+    this.activeTabIndexSignal.set(-1);
+  }
+
+  /** Toggle a panel: if it's currently active, close it (back to splash);
+   *  otherwise, open it. Used by the left-nav single-active model. */
+  togglePanel(tabId: string, label: string): void {
+    if (this.activeTabId() === tabId) {
+      this.closePanel();
+    } else {
+      this.openPanel(tabId, label);
+    }
+  }
+
+  /** True if the panel has been visited (mounted) at least once this session.
+   *  Used by the main-body to decide which panel components to materialize. */
+  hasVisited(tabId: string): boolean {
+    return this.tabsSignal().some(t => t.id === tabId);
+  }
+
   switchToChat(): void {
     this.activeTabIndexSignal.set(0);
   }

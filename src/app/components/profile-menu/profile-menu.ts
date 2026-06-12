@@ -113,22 +113,30 @@ export class ProfileMenuComponent {
   }
 
   isTabOpen(tabId: string): boolean {
-    return this.tabService.tabs().some(tab => tab.id === tabId);
+    // For panels in the single-active model, "open" means active.
+    if (tabId === 'preferences') return this.tabService.settingsOpen();
+    return this.tabService.activeTabId() === tabId;
   }
 
   toggleAccount(): void {
-    this.tabService.toggleTab('account', 'Account');
+    this.tabService.togglePanel('account', 'Account');
   }
 
   toggleSettings(): void {
-    this.tabService.toggleTab('preferences', 'Settings');
+    // Settings is the overlay — flip the service-level signal instead of
+    // pushing a panel onto the active-panel stack.
+    if (this.tabService.settingsOpen()) {
+      this.tabService.closeSettings();
+    } else {
+      this.tabService.openSettings();
+    }
   }
 
   toggleHelp(): void {
-    this.tabService.toggleTab('help', 'Help');
+    this.tabService.togglePanel('help', 'Help');
   }
 
   toggleIssue(): void {
-    this.tabService.toggleTab('issue', 'Bug');
+    this.tabService.togglePanel('issue', 'Bug');
   }
 }

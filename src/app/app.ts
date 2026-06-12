@@ -12,6 +12,7 @@ import { MainBodyComponent } from './components/main-body/main-body';
 import { ChatInputComponent } from './components/chat/chat-input/chat-input';
 import { PaywallComponent } from './components/paywall/paywall';
 import { LoadingOverlayComponent } from './components/loading-overlay/loading-overlay';
+import { SettingsOverlayComponent } from './components/settings-overlay/settings-overlay';
 import { SubscriptionService } from './services/subscription.service';
 import { SettingsService } from './services/settings.service';
 import { TabService } from './services/tab.service';
@@ -32,6 +33,7 @@ import { PlanningService } from './services/planning.service';
     ChatInputComponent,
     PaywallComponent,
     LoadingOverlayComponent,
+    SettingsOverlayComponent,
     MatTooltipModule
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -79,6 +81,10 @@ import { PlanningService } from './services/planning.service';
       } @else if (subscriptionService.isLoading()) {
         <app-loading-overlay />
       }
+
+      <!-- Settings overlay floats above everything when triggered. Its
+           open state lives on TabService so any UI element can flip it. -->
+      <app-settings-overlay />
     </div>
   `,
   styleUrls: ['./app.scss']
