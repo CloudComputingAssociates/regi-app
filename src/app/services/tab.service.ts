@@ -322,11 +322,6 @@ export class TabService {
     }
   }
 
-  /** True if the panel has been visited (mounted) at least once this session.
-   *  Used by the main-body to decide which panel components to materialize. */
-  hasVisited(tabId: string): boolean {
-    return this.tabsSignal().some(t => t.id === tabId);
-  }
 
   switchToChat(): void {
     this.activeTabIndexSignal.set(0);

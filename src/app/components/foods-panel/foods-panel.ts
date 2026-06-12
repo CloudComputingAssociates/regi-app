@@ -1184,10 +1184,6 @@ export class FoodsPanelComponent {
     this.showAddDialog.set(false);
   }
 
-  closePanel(): void {
-    this.tabService.closeTab('foods');
-  }
-
   // ---- Spin carousel ----
 
   isCategoryActive(cat: string): boolean {

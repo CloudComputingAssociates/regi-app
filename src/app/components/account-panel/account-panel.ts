@@ -12,16 +12,6 @@ import { SubscriptionService, SubscriptionStatus } from '../../services/subscrip
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Action buttons - top right -->
-      <div class="action-buttons">
-        <button
-          class="icon-btn close-btn"
-          (click)="close()"
-          title="Close">
-          ✕
-        </button>
-      </div>
-
       <div class="panel-content">
         <!-- Danger Zone Section -->
         <div class="danger-zone">
@@ -112,10 +102,6 @@ export class AccountPanelComponent implements OnInit {
     this.subscriptionService.checkSubscriptionStatus().subscribe(status => {
       this.subscriptionStatus.set(status);
     });
-  }
-
-  close(): void {
-    this.tabService.closeTab('account');
   }
 
   showDeleteConfirmation(): void {

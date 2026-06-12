@@ -40,67 +40,26 @@ import { IssuePanelComponent } from '../issue-panel/issue-panel';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="main-body-container">
-      <!-- Splash background — shown whenever no panel is the active one
-           (no left-nav item highlighted). The user toggles back here by
-           clicking the active nav item again. -->
-      @if (tabService.activeTabId() === null) {
-        <div class="empty-state">
-          <img src="/images/YEH3.png" alt="You Eating Healthy" class="empty-state-image" />
-        </div>
-      }
-
-      <!-- Each panel is mounted once (the first time it's visited) and stays
-           in the DOM thereafter, hidden via [hidden] when not active. This
-           is the "keepalive" — state preservation without a router. -->
-      @if (tabService.hasVisited('today')) {
-        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'today'">
-          <app-today-panel />
-        </div>
-      }
-      @if (tabService.hasVisited('chat')) {
-        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'chat'">
-          <app-chat />
-        </div>
-      }
-      @if (tabService.hasVisited('meal-planning')) {
-        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'meal-planning'">
-          <app-meals-panel />
-        </div>
-      }
-      @if (tabService.hasVisited('foods')) {
-        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'foods'">
-          <app-foods-panel />
-        </div>
-      }
-      @if (tabService.hasVisited('shop')) {
-        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'shop'">
-          <app-shopping-panel />
-        </div>
-      }
-      @if (tabService.hasVisited('review')) {
-        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'review'">
-          <app-week-plan-panel />
-        </div>
-      }
-      @if (tabService.hasVisited('account')) {
-        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'account'">
-          <app-account-panel />
-        </div>
-      }
-      @if (tabService.hasVisited('video-viewer')) {
-        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'video-viewer'">
-          <app-video-viewer />
-        </div>
-      }
-      @if (tabService.hasVisited('web-viewer')) {
-        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'web-viewer'">
-          <app-recipe-viewer />
-        </div>
-      }
-      @if (tabService.hasVisited('issue')) {
-        <div class="panel-host" [hidden]="tabService.activeTabId() !== 'issue'">
-          <app-issue-panel />
-        </div>
+      <!-- One panel at a time — fresh mount every open. No keepalive: when
+           you switch panels (or toggle the active one off via the left-nav)
+           the previous component is destroyed, so reopening always lands in
+           its default state. Splash renders when nothing is active. -->
+      @switch (tabService.activeTabId()) {
+        @case ('today') { <app-today-panel /> }
+        @case ('chat') { <app-chat /> }
+        @case ('meal-planning') { <app-meals-panel /> }
+        @case ('foods') { <app-foods-panel /> }
+        @case ('shop') { <app-shopping-panel /> }
+        @case ('review') { <app-week-plan-panel /> }
+        @case ('account') { <app-account-panel /> }
+        @case ('video-viewer') { <app-video-viewer /> }
+        @case ('web-viewer') { <app-recipe-viewer /> }
+        @case ('issue') { <app-issue-panel /> }
+        @default {
+          <div class="empty-state">
+            <img src="/images/YEH3.png" alt="You Eating Healthy" class="empty-state-image" />
+          </div>
+        }
       }
 
       <!-- Notification component (always present) -->

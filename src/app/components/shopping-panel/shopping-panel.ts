@@ -78,14 +78,6 @@ const PLAN_CATEGORIES: PlanCategory[] = [
           [matTooltipShowDelay]="300">
           <mat-icon>print</mat-icon>
         </button>
-        <button
-          class="icon-btn close-btn"
-          (click)="close()"
-          matTooltip="Close"
-          matTooltipPosition="above"
-          [matTooltipShowDelay]="300">
-          ✕
-        </button>
       </div>
 
       <!-- Top pane: Plan Foods -->
@@ -730,10 +722,6 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
   deleteItem(staple: ShoppingStaple): void {
     this.staples.update(list => list.filter(s => s.id !== staple.id));
     this.autoSave();
-  }
-
-  close(): void {
-    this.tabService.closeTab('shop');
   }
 
   openPrintDialog(): void {

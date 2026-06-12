@@ -148,15 +148,7 @@ import { Subscription } from 'rxjs';
 
         </div>
 
-        <div class="header-actions">
-          <button
-            class="icon-btn close-btn"
-            (click)="closePanel()"
-            matTooltip="Close"
-            matTooltipPosition="above">
-            ✕
-          </button>
-        </div>
+        <div class="header-actions"></div>
       </div>
       <!-- powered-by row removed -->
 
@@ -1079,10 +1071,6 @@ export class MealsPanelComponent implements OnInit, OnDestroy {
     } catch {
       this.notificationService.show('Failed to save MealPlan', 'error');
     }
-  }
-
-  closePanel(): void {
-    this.tabService.closeTab('meal-planning');
   }
 
   async generatePlan(): Promise<void> {

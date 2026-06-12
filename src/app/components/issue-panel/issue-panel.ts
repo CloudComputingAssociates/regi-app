@@ -32,9 +32,6 @@ const APP_AREAS = [
     <div class="panel-container">
       <div class="panel-header">
         <span class="panel-title">Submit Bug</span>
-        <button class="icon-btn close-btn" (click)="close()" matTooltip="Close" matTooltipPosition="above">
-          ✕
-        </button>
       </div>
 
       <div class="form-area">
@@ -149,7 +146,4 @@ export class IssuePanelComponent {
     this.ticketId.set(0);
   }
 
-  close(): void {
-    this.tabService.closeTab('issue');
-  }
 }

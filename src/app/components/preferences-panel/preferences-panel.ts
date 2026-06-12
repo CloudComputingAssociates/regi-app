@@ -1080,14 +1080,16 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     if (this.hasAnyChanges()) {
       this.showConfirmDialog.set(true);
     } else {
-      this.tabService.closeTab('preferences');
+      // Settings now lives in an overlay; closing the panel = closing the
+      // overlay. closeTab() would no-op since 'preferences' isn't in tabs.
+      this.tabService.closeSettings();
     }
   }
 
   confirmClose(): void {
     this.settingsChanged.set(false);
     this.showConfirmDialog.set(false);
-    this.tabService.closeTab('preferences');
+    this.tabService.closeSettings();
   }
 
   cancelClose(): void {

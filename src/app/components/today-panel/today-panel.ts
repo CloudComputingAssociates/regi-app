@@ -71,13 +71,6 @@ interface FoodPopup {
                   [matTooltipShowDelay]="300">
                   <mat-icon>print</mat-icon>
                 </button>
-                <button class="icon-btn close-btn"
-                  (click)="closePanel()"
-                  matTooltip="Close"
-                  matTooltipPosition="above"
-                  [matTooltipShowDelay]="300">
-                  ✕
-                </button>
               </div>
             </div>
           </div>
@@ -98,13 +91,6 @@ interface FoodPopup {
                   matTooltipPosition="above"
                   [matTooltipShowDelay]="300">
                   <mat-icon>print</mat-icon>
-                </button>
-                <button class="icon-btn close-btn"
-                  (click)="closePanel()"
-                  matTooltip="Close"
-                  matTooltipPosition="above"
-                  [matTooltipShowDelay]="300">
-                  ✕
                 </button>
               </div>
             </div>
@@ -661,9 +647,7 @@ export class TodayPanelComponent implements OnInit {
     this.tabService.openWebViewer(url);
   }
 
-  closePanel(): void {
-    this.tabService.closeTab('today');
-  }
+  // (closePanel() removed — Foods panel close is now driven by the left-nav.)
 
   // Print
   openPrintDialog(defaults?: { today?: boolean; week?: boolean; shopping?: boolean }): void {

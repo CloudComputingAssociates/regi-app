@@ -52,11 +52,6 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                 title="Print Plan Details">
           <mat-icon>print</mat-icon>
         </button>
-        <button class="panel-close-btn"
-                (click)="close()"
-                title="Close">
-          ✕
-        </button>
       </div>
 
       <!-- Row 1: START DATE -->
@@ -813,10 +808,6 @@ export class WeekPlanPanelComponent {
     if (this.planNameInput?.nativeElement) {
       this.planNameInput.nativeElement.value = defaultName;
     }
-  }
-
-  close(): void {
-    this.tabService.closeTab('review');
   }
 
   openPrintDialog(): void {
