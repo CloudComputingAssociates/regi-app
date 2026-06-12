@@ -344,12 +344,13 @@ export class TabService {
     this.activeTabIndexSignal.set(-1);
   }
 
-  /** Reset to initial state with Today tab open - used on login */
+  /** Reset to initial state — used on login. No panels visited, no active
+   *  panel: the user lands on the splash screen and chooses what to open
+   *  from the left-nav. (A future "default-landing panel" preference will
+   *  override this; for now splash is the deterministic post-login state.) */
   resetToChat(): void {
-    this.tabsSignal.set([
-      { id: 'today', label: 'Today', closeable: true, emoji: this.tabEmojis['today'] }
-    ]);
-    this.activeTabIndexSignal.set(0);
+    this.tabsSignal.set([]);
+    this.activeTabIndexSignal.set(-1);
   }
 
   /** Open the video viewer tab with the given URL */
@@ -416,11 +417,6 @@ export class TabService {
       return aIndex - bIndex;
     });
 
-    // Ensure 'today' is always included
-    if (!sortedTabIds.includes('today')) {
-      sortedTabIds.unshift('today');
-    }
-
     for (const tabId of sortedTabIds) {
       const label = tabLabels[tabId];
       if (label) {
@@ -435,22 +431,21 @@ export class TabService {
     }
 
     if (tabs.length === 0) {
-      // No valid tabs, fall back to default
       this.resetToChat();
       return;
     }
 
     this.tabsSignal.set(tabs);
 
-    // Restore the previously active tab, or default to first tab
-    let activeIndex = 0;
+    // Restore the previously-active panel if it's still in the visited set.
+    // Otherwise fall back to splash (-1) — we no longer auto-activate Today
+    // just because it happens to be in the saved tab list.
+    let activeIndex = -1;
     if (activeTabId) {
       const idx = tabs.findIndex(t => t.id === activeTabId);
-      if (idx !== -1) {
-        activeIndex = idx;
-      }
+      if (idx !== -1) activeIndex = idx;
     }
     this.activeTabIndexSignal.set(activeIndex);
-    console.log('[TabService] Restored tabs from settings:', tabIds, 'active:', activeTabId ?? tabs[0].id);
+    console.log('[TabService] Restored tabs from settings:', tabIds, 'active:', activeTabId ?? '(splash)');
   }
 }
