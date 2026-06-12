@@ -650,16 +650,11 @@ export class FoodsPanelComponent {
   // Search: filters the carousel locally (no API round-trip per keystroke)
   searchQuery = signal('');
 
-  // Carousel feed = raw foods narrowed by the search box.
-  carouselFoods = computed<Food[]>(() => {
-    const raw = this.rawCarouselFoods();
-    const q = this.searchQuery().trim().toLowerCase();
-    if (!q) return raw;
-    return raw.filter(f =>
-      f.description.toLowerCase().includes(q) ||
-      (f.shortDescription?.toLowerCase().includes(q) ?? false),
-    );
-  });
+  // RHS Food Picker list. NOT filtered by the SEARCH box — search is a
+  // carousel-only affordance (see carouselSpinnerFoods). The right-hand
+  // collection always shows every food in the active TYPE, organized into
+  // collapsible category groups.
+  carouselFoods = computed<Food[]>(() => this.rawCarouselFoods());
 
   // Carousel destination + local lists (persisted to localStorage).
   // 'left' = Baskets (the home view, always default), 'right' = Curate
