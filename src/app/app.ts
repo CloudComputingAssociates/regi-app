@@ -1,6 +1,6 @@
 // src/app/app.ts
 // Main App Component - Modern Angular with Material Design
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '@auth0/auth0-angular';
 import { Subscription } from 'rxjs';
@@ -46,10 +46,13 @@ import { PlanningService } from './services/planning.service';
           </app-app-bar>
 
           <main class="main-content">
-            @if (isAuthenticated()) {
-              @if (tabService.activeTabId() !== 'foods') {
-                <app-macros />
-              }
+            <!-- app-macros, nutrition-tip-bar, and app-chat-input only render
+                 when there is an active panel that wants them. They are
+                 hidden on the Foods panel (it reclaims the vertical space)
+                 and on the splash screen (no panel active — the YEH logo
+                 stands alone without chrome above or below it). -->
+            @if (isAuthenticated() && hasChromePanel()) {
+              <app-macros />
               @if (!tipDismissed() && tipService.tip(); as tip) {
                 <div class="nutrition-tip-bar">
                   <img src="/images/bites-logo.png" alt="Bites" class="tip-bar-logo"
@@ -65,11 +68,7 @@ import { PlanningService } from './services/planning.service';
               }
             }
             <app-main-body />
-            <!-- Hide chat-input when the Foods tab is active so the foods
-                 panel can reclaim the full vertical real estate. Same
-                 condition that hides app-macros + the nutrition-tip-bar
-                 above. -->
-            @if (isAuthenticated() && tabService.activeTabId() !== 'foods') {
+            @if (isAuthenticated() && hasChromePanel()) {
               <app-chat-input />
             }
           </main>
@@ -102,6 +101,14 @@ export class AppComponent implements OnInit, OnDestroy {
   private errorSub?: Subscription;
 
   tipDismissed = signal(this.isTipDismissedToday());
+
+  /** True when the active panel should have macros + chat-input rendered
+   *  around it. False on the splash (no panel) and on the Foods panel
+   *  (it reclaims the vertical space). */
+  hasChromePanel = computed(() => {
+    const id = this.tabService.activeTabId();
+    return id !== null && id !== 'foods';
+  });
 
   dismissTip(): void {
     this.tipDismissed.set(true);
