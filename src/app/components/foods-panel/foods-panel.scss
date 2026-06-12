@@ -599,6 +599,49 @@
   }
 }
 
+// Mobile-app launcher — sits to the right of the Curate pill on the LHS
+// section-title row. Same raised "physical button" treatment as the Curate
+// pill so the two LHS chrome controls read as a pair.
+.mobile-app-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: linear-gradient(180deg, #5fa3d8 0%, #357095 100%);
+  border-top: 1px solid #7fbdec;
+  border-left: 1px solid #4080ac;
+  border-right: 1px solid #4080ac;
+  border-bottom: 2px solid #1a3a55;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
+  transition: background 0.05s ease;
+
+  &:hover {
+    background: linear-gradient(180deg, #6fb0e2 0%, #408bb0 100%);
+  }
+
+  &:active {
+    background: linear-gradient(180deg, #1f3a55 0%, #2a5070 100%);
+    border-top: 2px solid #15293d;
+    border-bottom: 1px solid #4080ac;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+    transform: translateY(1px);
+  }
+}
+
+.mobile-app-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+}
+
 // X close on the RHS section-title — only renders when Curate is active.
 // Returns the RHS to its default Baskets view (same effect as clicking the
 // active Curate button on the LHS).

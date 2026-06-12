@@ -100,10 +100,23 @@ const CATEGORY_PLURALS: Record<string, string> = {
               class="curate-toggle"
               [class.pressed]="addTo() === 'right'"
               (click)="addTo.set(addTo() === 'right' ? 'left' : 'right')"
-              matTooltip="Favorite YEH Approved foods or remove Mobile Added foods or designate Restricted Foods"
+              matTooltip="'Like' YEH Approved foods or add your own MyFoods with mobile app download (Android)"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350">
               Curate
+            </button>
+            <!-- Mobile-app QR launcher — opens the same phone-app-dialog as
+                 the + Add Food button. Sits to the right of the Curate pill
+                 so the two LHS chrome actions live as a pair. -->
+            <button
+              type="button"
+              class="mobile-app-btn"
+              (click)="openAddDialog()"
+              matTooltip="Add foods with the mobile app (QR download)"
+              matTooltipPosition="below"
+              [matTooltipShowDelay]="350"
+              aria-label="Mobile app">
+              <mat-icon class="mobile-app-icon">phone_android</mat-icon>
             </button>
           </div>
 
@@ -149,9 +162,39 @@ const CATEGORY_PLURALS: Record<string, string> = {
               [visibleCount]="5"
               [showBucketBar]="false"
               (activated)="onActivated($event)"
-              (inspect)="onInspect($event)"
               (centered)="onCarouselCentered($event)"
               (cardDragStart)="onCardDragStart($event)">
+              <!-- Two buttons above the highlighted card, centered as a pair.
+                   The .center-overlay container fades to opacity 0 with
+                   pointer-events:none while the spinner is moving, so the
+                   buttons are only active after the wheel settles on a
+                   yellow-haloed card. The NF Label is always offered;
+                   Health Info is gated by the filter to skip categories
+                   where it doesn't make sense (Processed/Condiment/All). -->
+              <div centerOverlay class="carousel-action-pair">
+                @if (centeredFood()) {
+                  <button
+                    type="button"
+                    class="carousel-action-btn nf-label-btn"
+                    (click)="openNutritionLabel()"
+                    matTooltip="Nutrition Facts"
+                    matTooltipPosition="above"
+                    aria-label="Nutrition Facts">
+                    <img src="/images/NutritionFactsLabel.jpg" alt="Nutrition Facts" />
+                  </button>
+                }
+                @if (centeredFood() && showHealthBenefitsForFilter()) {
+                  <button
+                    type="button"
+                    class="carousel-action-btn health-info-btn"
+                    (click)="openHealthBenefits()"
+                    matTooltip="Click for Info"
+                    matTooltipPosition="above"
+                    aria-label="Health info">
+                    <img src="/images/Health%20Benefits.png" alt="Health Info" />
+                  </button>
+                }
+              </div>
             </app-image-carousel>
           </div>
         </div>
@@ -182,10 +225,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 Baskets
               } @else {
                 <span
-                  matTooltip="Curate you MyFoods by starring those YEH Approved foods you like, to add foods hit the + for dowloading the mobile App"
+                  matTooltip="Click 'star' to Favorite, or 'circle-line' for your Restricted Foods. With MyFoods selected you can delete or un-favorite to remove from MyFoods."
                   matTooltipPosition="below"
                   [matTooltipShowDelay]="350">
-                  Curation
+                  Curate
                 </span>
               }
             </span>
@@ -855,9 +898,20 @@ export class FoodsPanelComponent {
     }
   }
 
-  // Single click on the centered card → open NF popup.
-  onInspect(item: SpinnerItem): void {
-    const food = item['food'] as Food | undefined;
+  // Single click on the centered card is now a NO-OP. The Nutrition Facts
+  // popup is opened explicitly via the new .nf-label-btn floating above the
+  // card; double-click still activates (add to MyFoods), drag still works.
+  // (onInspect handler kept since the carousel emits the event regardless,
+  // but it intentionally does nothing.)
+  onInspect(_item: SpinnerItem): void {
+    // intentionally empty
+  }
+
+  /** Opens the Nutrition Facts popup for whichever food is currently
+   *  centered in the carousel. Triggered by the floating .nf-label-btn
+   *  above the highlighted card. */
+  openNutritionLabel(): void {
+    const food = this.centeredFood();
     if (food) this.nfPopupFood.set(food);
   }
 
