@@ -57,11 +57,11 @@ export class AppBarComponent {
 
   isAuthenticated = toSignal(this.auth.isAuthenticated$, { initialValue: false });
 
+  // Always render the branded "RegiMenu^SM" mark — logged-in and logged-out
+  // states share the same logo treatment so the title strip doesn't shift
+  // between sessions.
   title$ = this.auth.user$.pipe(
-    map(user => {
-      if (!user?.name) return 'RegiMenu Nutrition Planner';
-      return 'RegiMenu<sup class="sm">SM</sup>';
-    })
+    map(() => 'RegiMenu<sup class="sm">SM</sup>')
   );
 
   /** The label of the currently active panel, or null when nothing is open
