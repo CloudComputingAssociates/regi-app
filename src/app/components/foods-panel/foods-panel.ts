@@ -95,31 +95,15 @@ const CATEGORY_PLURALS: Record<string, string> = {
                  between its default Baskets view and the Curate overlay.
                  Active state inverts to a filled blue chip so the user can
                  tell at a glance which view is on the right. -->
-            <!-- Mobile-app QR launcher sits BEFORE the Food Picker pill so
-                 the right-pointing Food Picker arrow stays adjacent to the
-                 vertical splitter / the RHS panel it opens onto. -->
-            <button
-              type="button"
-              class="mobile-app-btn"
-              (click)="openAddDialog()"
-              matTooltip="Add foods with the mobile app (QR download)"
-              matTooltipPosition="below"
-              [matTooltipShowDelay]="350"
-              aria-label="Mobile app">
-              <mat-icon class="mobile-app-icon">phone_android</mat-icon>
-            </button>
-            <!-- Trailing → arrow telegraphs that the button opens / focuses
-                 the right pane. Same direction as the layout: this pill is
-                 on the LHS and points at where its content will appear. -->
             <button
               type="button"
               class="curate-toggle"
               [class.pressed]="addTo() === 'right'"
               (click)="addTo.set(addTo() === 'right' ? 'left' : 'right')"
-              matTooltip="Open Food Picker — 'Like' YEH Approved foods or add your own MyFoods with mobile app download (Android)"
+              matTooltip="Refine MyFoods — 'Like' YEH Approved foods or add your own MyFoods with mobile app download (Android)"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350">
-              Food Picker →
+              Refine
             </button>
           </div>
 
@@ -223,10 +207,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 Baskets
               } @else {
                 <span
-                  matTooltip="Food Picker — click 'star' to Favorite, or 'circle-line' for your Restricted Foods. With MyFoods selected you can delete or un-favorite to remove from MyFoods."
+                  matTooltip="Refine MyFoods — click 'star' to Favorite, or 'circle-line' for your Restricted Foods. With MyFoods selected you can delete or un-favorite to remove from MyFoods."
                   matTooltipPosition="below"
                   [matTooltipShowDelay]="350">
-                  Food Picker
+                  Refine Foods
                 </span>
               }
             </span>
@@ -263,17 +247,67 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 <option value="restricted">Restricted</option>
                 <option value="yeh-approved">YEH Approved</option>
               </select>
+              <!-- Collapse/expand controls for the accordion below. Minus
+                   collapses every category (the default state), plus
+                   expands them all. They're a pair so users can flip the
+                   whole list in one click. -->
+              <button
+                type="button"
+                class="picker-fold-btn"
+                [class.pressed]="allCategoriesCollapsed()"
+                (click)="collapseAllCategories()"
+                matTooltip="Collapse all categories"
+                matTooltipPosition="above"
+                aria-label="Collapse all">
+                −
+              </button>
+              <button
+                type="button"
+                class="picker-fold-btn"
+                [class.pressed]="!allCategoriesCollapsed()"
+                (click)="expandAllCategories()"
+                matTooltip="Expand all categories"
+                matTooltipPosition="above"
+                aria-label="Expand all">
+                +
+              </button>
               <span class="column-hint">{{ columnHeaderText() }}</span>
               @if (spinSource() === 'myfoods') {
+                <!-- Phone button lives here in the MyFoods context — the
+                     same slot the Add-Food + button used to occupy. It
+                     opens the phone-app placeholder dialog (download QR). -->
                 <button
                   type="button"
-                  class="add-food-btn add-food-btn-stub"
+                  class="mobile-app-btn"
                   (click)="openAddDialog()"
-                  matTooltip="Add a food (requires phone app)"
+                  matTooltip="Add foods with the mobile app (QR download)"
                   matTooltipPosition="above"
-                  [matTooltipShowDelay]="300"
-                  aria-label="Add My Food">
-                  +
+                  [matTooltipShowDelay]="350"
+                  aria-label="Mobile app">
+                  <mat-icon class="mobile-app-icon">phone_android</mat-icon>
+                </button>
+              }
+            </div>
+            <!-- Picker-side type-ahead. Independent from the carousel SEARCH;
+                 filters the accordion rows below as the user types so they
+                 can find a specific food without scrolling. -->
+            <div class="picker-search-row">
+              <span class="picker-search-label">SEARCH</span>
+              <input
+                type="text"
+                class="picker-search-input"
+                [value]="pickerSearchQuery()"
+                (input)="onPickerSearchInput($any($event.target).value)"
+                placeholder="Type to find a food…" />
+              @if (pickerSearchQuery()) {
+                <button
+                  type="button"
+                  class="picker-search-clear"
+                  (click)="pickerSearchQuery.set('')"
+                  matTooltip="Clear search"
+                  matTooltipPosition="below"
+                  aria-label="Clear search">
+                  ✕
                 </button>
               }
             </div>
@@ -624,12 +658,16 @@ export class FoodsPanelComponent {
   // the bottom-pane header when the slider is on the right, etc.
   typeLabel = computed<string>(() => TYPE_LABELS[this.spinSource()]);
 
-  // Count shown next to the right-pane section title. The RHS list is no
-  // longer category-filtered, so the count is the total in the active
-  // collection — MyFoods uses allMyFoods(); YEH/Restricted use the loaded
-  // rawCarouselFoods (still filtered by search if the user typed one).
+  // Count shown next to the right-pane section title. Honors the picker
+  // search box so the number matches what's actually rendered — for MyFoods
+  // we count the type-ahead-filtered subset of allMyFoods, and for
+  // YEH/Restricted we use carouselFoods (which is already filtered).
   bottomListLength = computed<number>(() => {
-    if (this.spinSource() === 'myfoods') return this.allMyFoods().length;
+    if (this.spinSource() === 'myfoods') {
+      const q = this.pickerSearchQuery().trim();
+      if (!q) return this.allMyFoods().length;
+      return this.allMyFoods().filter(f => this.matchesPickerSearch(f)).length;
+    }
     return this.carouselFoods().length;
   });
 
@@ -650,11 +688,36 @@ export class FoodsPanelComponent {
   // Search: filters the carousel locally (no API round-trip per keystroke)
   searchQuery = signal('');
 
-  // RHS Food Picker list. NOT filtered by the SEARCH box — search is a
-  // carousel-only affordance (see carouselSpinnerFoods). The right-hand
-  // collection always shows every food in the active TYPE, organized into
-  // collapsible category groups.
-  carouselFoods = computed<Food[]>(() => this.rawCarouselFoods());
+  // Independent type-ahead for the Food Picker (RHS). Driven by the SEARCH
+  // input that lives in the right pane above the accordion. Stays in its
+  // own signal so toggling Curate on/off doesn't entangle with the LHS
+  // carousel search.
+  pickerSearchQuery = signal('');
+
+  onPickerSearchInput(value: string): void {
+    this.pickerSearchQuery.set(value);
+  }
+
+  /** Substring match against description + shortDescription, case-insensitive.
+   *  Used by both grouped accordions on the RHS. */
+  private matchesPickerSearch(food: Food): boolean {
+    const q = this.pickerSearchQuery().trim().toLowerCase();
+    if (!q) return true;
+    return food.description.toLowerCase().includes(q)
+      || (food.shortDescription?.toLowerCase().includes(q) ?? false);
+  }
+
+  // RHS Food Picker list. NOT filtered by the LHS carousel SEARCH box. It IS
+  // filtered by the picker's own search (above the accordion) when typed.
+  carouselFoods = computed<Food[]>(() => {
+    const raw = this.rawCarouselFoods();
+    const q = this.pickerSearchQuery().trim().toLowerCase();
+    if (!q) return raw;
+    return raw.filter(f =>
+      f.description.toLowerCase().includes(q)
+      || (f.shortDescription?.toLowerCase().includes(q) ?? false),
+    );
+  });
 
   // Carousel destination + local lists (persisted to localStorage).
   // 'left' = Baskets (the home view, always default), 'right' = Curate
@@ -738,13 +801,17 @@ export class FoodsPanelComponent {
   // to the carousel — the right-hand list keeps every food visible behind
   // collapsible category dividers, which already give the user navigation by
   // category without needing the filter to gate the list.
-  collapsedMyFoodsCategories = signal<Set<string>>(new Set());
+  // Default: every category collapsed. The user expands what they want via
+  // the per-row header arrow or the "+" all-expand control in the type-row.
+  collapsedMyFoodsCategories = signal<Set<string>>(new Set(CAROUSEL_CATEGORIES));
 
   groupedMyFoods = computed<Array<{ category: string; foods: Food[]; collapsed: boolean }>>(() => {
     const all = this.allMyFoods();
     const collapsed = this.collapsedMyFoodsCategories();
     const map = new Map<string, Food[]>();
     for (const food of all) {
+      // Pre-filter by the picker's type-ahead so the accordion narrows live.
+      if (!this.matchesPickerSearch(food)) continue;
       const cat = food.categoryName || 'Uncategorized';
       const arr = map.get(cat);
       if (arr) arr.push(food);
@@ -777,7 +844,8 @@ export class FoodsPanelComponent {
   // accordion view. Includes per-category collapse state, mirroring the
   // MyFoods accordion. Order follows CAROUSEL_CATEGORIES; anything
   // uncategorized is appended at the end.
-  collapsedCarouselCategories = signal<Set<string>>(new Set());
+  // Default: every category collapsed. Mirrors the MyFoods accordion default.
+  collapsedCarouselCategories = signal<Set<string>>(new Set(CAROUSEL_CATEGORIES));
 
   groupedCarouselFoods = computed<Array<{ category: string; foods: Food[]; collapsed: boolean }>>(() => {
     const all = this.carouselFoods();
@@ -810,6 +878,36 @@ export class FoodsPanelComponent {
       else next.add(cat);
       return next;
     });
+  }
+
+  /** True when every CAROUSEL_CATEGORY is in the collapsed set for the
+   *  currently-active TYPE — drives the pressed-look on the "−" button so
+   *  the user can see at a glance which fold-state they're in. */
+  allCategoriesCollapsed = computed<boolean>(() => {
+    const set = this.spinSource() === 'myfoods'
+      ? this.collapsedMyFoodsCategories()
+      : this.collapsedCarouselCategories();
+    return CAROUSEL_CATEGORIES.every(c => set.has(c));
+  });
+
+  /** Collapse every category in the currently-active TYPE accordion. */
+  collapseAllCategories(): void {
+    const allCollapsed = new Set<string>(CAROUSEL_CATEGORIES);
+    if (this.spinSource() === 'myfoods') {
+      this.collapsedMyFoodsCategories.set(allCollapsed);
+    } else {
+      this.collapsedCarouselCategories.set(allCollapsed);
+    }
+  }
+
+  /** Expand every category in the currently-active TYPE accordion. */
+  expandAllCategories(): void {
+    const empty = new Set<string>();
+    if (this.spinSource() === 'myfoods') {
+      this.collapsedMyFoodsCategories.set(empty);
+    } else {
+      this.collapsedCarouselCategories.set(empty);
+    }
   }
 
   // Scroll target for the bottom list (used after add to bring new/moved row into view)
