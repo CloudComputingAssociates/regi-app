@@ -100,10 +100,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
               class="curate-toggle"
               [class.pressed]="addTo() === 'right'"
               (click)="addTo.set(addTo() === 'right' ? 'left' : 'right')"
-              matTooltip="'Like' YEH Approved foods or add your own MyFoods with mobile app download (Android)"
+              matTooltip="Open Food Picker — 'Like' YEH Approved foods or add your own MyFoods with mobile app download (Android)"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350">
-              Curate
+              Food Picker
             </button>
             <!-- Mobile-app QR launcher — opens the same phone-app-dialog as
                  the + Add Food button. Sits to the right of the Curate pill
@@ -220,10 +220,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 Baskets
               } @else {
                 <span
-                  matTooltip="Click 'star' to Favorite, or 'circle-line' for your Restricted Foods. With MyFoods selected you can delete or un-favorite to remove from MyFoods."
+                  matTooltip="Food Picker — click 'star' to Favorite, or 'circle-line' for your Restricted Foods. With MyFoods selected you can delete or un-favorite to remove from MyFoods."
                   matTooltipPosition="below"
                   [matTooltipShowDelay]="350">
-                  Curate
+                  Food Picker
                 </span>
               }
             </span>

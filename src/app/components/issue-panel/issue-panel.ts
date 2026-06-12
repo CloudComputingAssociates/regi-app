@@ -131,8 +131,21 @@ export class IssuePanelComponent {
       this.ticketId.set(resp.ticketId);
       this.submitted.set(true);
       this.notificationService.show('Issue submitted', 'success');
-    } catch {
-      this.notificationService.show('Failed to submit issue', 'error');
+    } catch (err: unknown) {
+      // Surface the real error so a 500 isn't silently swallowed. The user
+      // still sees a friendly toast; the console gets the server's actual
+      // response body for triage.
+      console.error('[IssuePanel] submit failed:', err);
+      const e = err as { status?: number; error?: unknown; message?: string };
+      const detail = typeof e?.error === 'string'
+        ? e.error
+        : (e?.error as { message?: string })?.message
+          ?? e?.message
+          ?? 'unknown error';
+      this.notificationService.show(
+        `Failed to submit issue${e?.status ? ' (' + e.status + ')' : ''}: ${detail}`,
+        'error',
+      );
     } finally {
       this.submitting.set(false);
     }
