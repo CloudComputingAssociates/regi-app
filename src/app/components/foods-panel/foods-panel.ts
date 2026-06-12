@@ -28,11 +28,11 @@ const LS_MYFOODS = 'regi.foods.myfoods';
 // already have data saved don't lose it through the rename.
 const LS_THISWEEK_BASKETS = 'regi.foods.thisweek.buckets';
 
-type BasketKey = 'Proteins' | 'Fats' | 'Carbs' | 'Misc';
-const BASKET_KEYS: readonly BasketKey[] = ['Proteins', 'Fats', 'Carbs', 'Misc'];
+type BasketKey = 'Proteins' | 'Fats' | 'Carbs' | 'Other';
+const BASKET_KEYS: readonly BasketKey[] = ['Proteins', 'Fats', 'Carbs', 'Other'];
 
 // Food.categoryName → basket. Per the spec: Dairy → Fats, Vegetables/Carbs/Fruits
-// → Carbs, Processed/Condiments → Misc.
+// → Carbs, Processed/Condiments → Other.
 const CATEGORY_TO_BASKET: Record<string, BasketKey> = {
   Protein: 'Proteins',
   Fat: 'Fats',
@@ -40,13 +40,13 @@ const CATEGORY_TO_BASKET: Record<string, BasketKey> = {
   Vegetable: 'Carbs',
   Carbohydrate: 'Carbs',
   Fruit: 'Carbs',
-  Processed: 'Misc',
-  Condiment: 'Misc',
+  Processed: 'Other',
+  Condiment: 'Other',
 };
 
 type ThisWeekBaskets = Record<BasketKey, Food[]>;
 function emptyBaskets(): ThisWeekBaskets {
-  return { Proteins: [], Fats: [], Carbs: [], Misc: [] };
+  return { Proteins: [], Fats: [], Carbs: [], Other: [] };
 }
 
 const TYPE_LABELS: Record<SpinSource, string> = {
@@ -98,12 +98,12 @@ const CATEGORY_PLURALS: Record<string, string> = {
             <button
               type="button"
               class="curate-toggle"
-              [class.active]="addTo() === 'right'"
+              [class.pressed]="addTo() === 'right'"
               (click)="addTo.set(addTo() === 'right' ? 'left' : 'right')"
               matTooltip="Favorite YEH Approved foods or remove Mobile Added foods or designate Restricted Foods"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350">
-              Curate MyFoods
+              Curate
             </button>
           </div>
 
@@ -621,13 +621,13 @@ export class FoodsPanelComponent {
   });
 
   // Carousel destination + local lists (persisted to localStorage).
-  // 'left' = This Week baskets (Fill Baskets), 'right' = the TYPE-driven
-  // Curate view. Defaults to 'right' so the landing experience is curation —
-  // the user sees what they're working with before planning the week.
-  addTo = signal<'left' | 'right'>('right');
+  // 'left' = Baskets (the home view, always default), 'right' = Curate
+  // overlay. The user lands on Baskets and toggles Curate when they want
+  // to curate their MyFoods.
+  addTo = signal<'left' | 'right'>('left');
   myFoodsLocal = signal<Food[]>(this.loadLocal(LS_MYFOODS));
 
-  // Four-basket This Week store (Proteins/Fats/Carbs/Misc). Replaces the old
+  // Four-basket This Week store (Proteins/Fats/Carbs/Other). Replaces the old
   // flat thisWeekLocal Food[] — each basket is its own array.
   readonly basketKeys = BASKET_KEYS;
   thisWeekBaskets = signal<ThisWeekBaskets>(this.loadBaskets());
@@ -635,7 +635,7 @@ export class FoodsPanelComponent {
   // Convenience: total foods across all four baskets.
   thisWeekTotal = computed<number>(() => {
     const b = this.thisWeekBaskets();
-    return b.Proteins.length + b.Fats.length + b.Carbs.length + b.Misc.length;
+    return b.Proteins.length + b.Fats.length + b.Carbs.length + b.Other.length;
   });
 
   // Drag-over basket key (for visual highlight on the drop target)
@@ -874,7 +874,7 @@ export class FoodsPanelComponent {
   // ----- Basket helpers -----
 
   private basketForFood(food: Food): BasketKey {
-    return CATEGORY_TO_BASKET[food.categoryName ?? ''] ?? 'Misc';
+    return CATEGORY_TO_BASKET[food.categoryName ?? ''] ?? 'Other';
   }
 
   private addFoodToBasket(food: Food, key: BasketKey): void {
@@ -1082,6 +1082,11 @@ export class FoodsPanelComponent {
       const out: ThisWeekBaskets = emptyBaskets();
       for (const k of BASKET_KEYS) {
         if (Array.isArray(parsed?.[k])) out[k] = parsed[k] as Food[];
+      }
+      // Migrate legacy "Misc" key (renamed to "Other") so users with saved
+      // baskets from the old naming don't silently lose their food list.
+      if (Array.isArray(parsed?.Misc) && out.Other.length === 0) {
+        out.Other = parsed.Misc as Food[];
       }
       return out;
     } catch {

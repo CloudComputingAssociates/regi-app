@@ -471,13 +471,17 @@
   gap: 12px;
   padding: 8px 14px 6px;
   color: #4da6ff;
-  font-family: 'Fredoka', Roboto, sans-serif;
+  // Inter for the section titles too — same family as the app-bar so the
+  // hierarchy reads as "same font, one weight heavier." 700 is bold enough
+  // to feel like a header without the rounded fattening that made Fredoka's
+  // capitals look blurry at this size.
+  font-family: 'Inter', 'Roboto', sans-serif;
   font-size: 24px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  letter-spacing: -0.1px;
   background: linear-gradient(180deg, #3a3a3a 0%, #2f2f2f 100%);
   border-bottom: 1px solid #1a1a1a;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .section-title-text { flex: 1; min-width: 0; }
@@ -547,10 +551,10 @@
 
 .filter-bar-label { @extend %control-bar-label; }
 
-// "Curate MyFoods" pill sits across from the "MyFoods" title on the LHS
-// section-title row. Blue text by default (matches the section heading
-// color so it reads as an extension of the title row); fills with a blue
-// gradient when active so it's clearly "on".
+// "Curate" pill on the LHS section-title — mirrors the FILTER pill's
+// physical raised/inset behavior so the user can tell at a glance whether
+// it's "out" (Baskets visible) or "pressed in" (Curate active). Only the
+// hue differs: this one is a blue-tinted variant of the gray FILTER pills.
 .curate-toggle {
   flex-shrink: 0;
   font-family: inherit;
@@ -558,26 +562,40 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  color: #4da6ff;
-  background: #1a1a1a;
-  border: 1px solid #2a5070;
-  border-radius: 999px;
-  padding: 5px 14px;
+  color: #ffffff;
+  background: linear-gradient(180deg, #5fa3d8 0%, #357095 100%);
+  border-top: 1px solid #7fbdec;
+  border-left: 1px solid #4080ac;
+  border-right: 1px solid #4080ac;
+  border-bottom: 2px solid #1a3a55;
+  border-radius: 4px;
+  padding: 4px 12px;
+  height: 28px;
   cursor: pointer;
-  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+  outline: none;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
+  transition: background 0.05s ease, color 0.05s ease;
 
-  &:hover:not(.active) {
-    color: #7fc1ff;
-    background: #1f2a38;
-    border-color: #4da6ff;
+  &:hover:not(.pressed) {
+    background: linear-gradient(180deg, #6fb0e2 0%, #408bb0 100%);
   }
 
-  &.active {
+  &.pressed {
     color: #ffffff;
-    background: linear-gradient(180deg, #4a8fc7 0%, #357095 100%);
-    border-color: #2a5070;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(180deg, #1f3a55 0%, #2a5070 100%);
+    border-top: 2px solid #15293d;
+    border-bottom: 1px solid #4080ac;
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.65),
+      0 0 0 1px rgba(77, 166, 255, 0.35);
+    transform: translateY(1px);
+  }
+
+  &:focus-visible {
+    box-shadow:
+      0 2px 3px rgba(0, 0, 0, 0.35),
+      0 0 0 2px rgba(77, 166, 255, 0.6);
   }
 }
 
@@ -682,7 +700,7 @@
 
 // ---- 2 × 2 basket grid (This Week view) ----
 // Proteins | Fats          (top row)
-// Carbs    | Misc          (bottom row)
+// Carbs    | Other          (bottom row)
 // Each basket fills its grid cell; the count rides in the middle of the face,
 // the tiles flow below.
 .basket-grid {
@@ -746,8 +764,8 @@
 // Inline trash button — small, transparent background, hover turns red.
 .basket-trash {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   background: transparent;
   border: none;
@@ -766,10 +784,10 @@
 }
 
 .basket-trash-icon {
-  width: 14px;
-  height: 14px;
-  font-size: 14px;
-  line-height: 14px;
+  width: 28px;
+  height: 28px;
+  font-size: 28px;
+  line-height: 28px;
 }
 
 // (Stale .basket-name rule removed — current rule lives above in the
