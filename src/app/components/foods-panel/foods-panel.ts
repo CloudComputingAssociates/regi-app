@@ -95,19 +95,9 @@ const CATEGORY_PLURALS: Record<string, string> = {
                  between its default Baskets view and the Curate overlay.
                  Active state inverts to a filled blue chip so the user can
                  tell at a glance which view is on the right. -->
-            <button
-              type="button"
-              class="curate-toggle"
-              [class.pressed]="addTo() === 'right'"
-              (click)="addTo.set(addTo() === 'right' ? 'left' : 'right')"
-              matTooltip="Open Food Picker — 'Like' YEH Approved foods or add your own MyFoods with mobile app download (Android)"
-              matTooltipPosition="below"
-              [matTooltipShowDelay]="350">
-              Food Picker
-            </button>
-            <!-- Mobile-app QR launcher — opens the same phone-app-dialog as
-                 the + Add Food button. Sits to the right of the Curate pill
-                 so the two LHS chrome actions live as a pair. -->
+            <!-- Mobile-app QR launcher sits BEFORE the Food Picker pill so
+                 the right-pointing Food Picker arrow stays adjacent to the
+                 vertical splitter / the RHS panel it opens onto. -->
             <button
               type="button"
               class="mobile-app-btn"
@@ -117,6 +107,19 @@ const CATEGORY_PLURALS: Record<string, string> = {
               [matTooltipShowDelay]="350"
               aria-label="Mobile app">
               <mat-icon class="mobile-app-icon">phone_android</mat-icon>
+            </button>
+            <!-- Trailing → arrow telegraphs that the button opens / focuses
+                 the right pane. Same direction as the layout: this pill is
+                 on the LHS and points at where its content will appear. -->
+            <button
+              type="button"
+              class="curate-toggle"
+              [class.pressed]="addTo() === 'right'"
+              (click)="addTo.set(addTo() === 'right' ? 'left' : 'right')"
+              matTooltip="Open Food Picker — 'Like' YEH Approved foods or add your own MyFoods with mobile app download (Android)"
+              matTooltipPosition="below"
+              [matTooltipShowDelay]="350">
+              Food Picker →
             </button>
           </div>
 
