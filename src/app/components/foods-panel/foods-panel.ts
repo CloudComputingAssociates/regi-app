@@ -145,6 +145,32 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 [value]="searchQuery()"
                 (input)="onSearchInput($any($event.target).value)"
                 placeholder="Search foods…" />
+              <!-- Two action buttons sit in the same row between SEARCH and
+                   SPIN. They reference the currently-highlighted card via
+                   centeredFood(); disabled while the wheel is spinning so
+                   they only fire on a settled, yellow-haloed food. -->
+              <button
+                type="button"
+                class="top-bar-action-btn nf-label-btn"
+                [disabled]="!centeredFood() || carousel.spinning()"
+                (click)="openNutritionLabel()"
+                matTooltip="Nutrition Facts"
+                matTooltipPosition="below"
+                aria-label="Nutrition Facts">
+                <img src="/images/NutritionFactsLabel.jpg" alt="Nutrition Facts" />
+              </button>
+              @if (showHealthBenefitsForFilter()) {
+                <button
+                  type="button"
+                  class="top-bar-action-btn health-info-btn"
+                  [disabled]="!centeredFood() || carousel.spinning()"
+                  (click)="openHealthBenefits()"
+                  matTooltip="Click for Info"
+                  matTooltipPosition="below"
+                  aria-label="Health info">
+                  <img src="/images/Health%20Benefits.png" alt="Health Info" />
+                </button>
+              }
               <span class="top-bar-spacer"></span>
               <button
                 type="button"
@@ -164,37 +190,6 @@ const CATEGORY_PLURALS: Record<string, string> = {
               (activated)="onActivated($event)"
               (centered)="onCarouselCentered($event)"
               (cardDragStart)="onCardDragStart($event)">
-              <!-- Two buttons above the highlighted card, centered as a pair.
-                   The .center-overlay container fades to opacity 0 with
-                   pointer-events:none while the spinner is moving, so the
-                   buttons are only active after the wheel settles on a
-                   yellow-haloed card. The NF Label is always offered;
-                   Health Info is gated by the filter to skip categories
-                   where it doesn't make sense (Processed/Condiment/All). -->
-              <div centerOverlay class="carousel-action-pair">
-                @if (centeredFood()) {
-                  <button
-                    type="button"
-                    class="carousel-action-btn nf-label-btn"
-                    (click)="openNutritionLabel()"
-                    matTooltip="Nutrition Facts"
-                    matTooltipPosition="above"
-                    aria-label="Nutrition Facts">
-                    <img src="/images/NutritionFactsLabel.jpg" alt="Nutrition Facts" />
-                  </button>
-                }
-                @if (centeredFood() && showHealthBenefitsForFilter()) {
-                  <button
-                    type="button"
-                    class="carousel-action-btn health-info-btn"
-                    (click)="openHealthBenefits()"
-                    matTooltip="Click for Info"
-                    matTooltipPosition="above"
-                    aria-label="Health info">
-                    <img src="/images/Health%20Benefits.png" alt="Health Info" />
-                  </button>
-                }
-              </div>
             </app-image-carousel>
           </div>
         </div>

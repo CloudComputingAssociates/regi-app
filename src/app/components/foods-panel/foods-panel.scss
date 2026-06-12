@@ -429,6 +429,51 @@
 // Flex spacer that pushes the Spin button to the right edge.
 .top-bar-spacer { flex: 1; }
 
+// Nutrition Facts + Health Info action buttons that live between SEARCH
+// and SPIN in the carousel top bar. Constrained to 36 px tall — same as
+// the Spin button — so they don't grow the row. The inner image
+// shrink-to-fits to the button frame. Disabled state (no centered food,
+// or wheel still spinning) fades them and blocks pointer events.
+.top-bar-action-btn {
+  flex-shrink: 0;
+  width: 30px;
+  height: 36px;
+  padding: 0;
+  background: #1a1a1a;
+  border: 1px solid #4a4a4a;
+  border-bottom: 2px solid #0a0a0a;
+  border-radius: 5px;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.4);
+  transition: background 0.1s ease, opacity 0.15s ease;
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  &:hover:not(:disabled) {
+    background: #2a2a2a;
+    border-color: #6a6a6a;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+    border-bottom-width: 1px;
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
 // Spin button — upper-right corner of the left pane, in the top bar.
 .spin-btn {
   flex-shrink: 0;
