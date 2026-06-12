@@ -59,11 +59,11 @@ const CATEGORY_PLURALS: Record<string, string> = {
   Protein: 'Proteins',
   Fat: 'Fats',
   Dairy: 'Dairy',
-  Vegetable: 'Vegetables',
-  Carbohydrate: 'Carbohydrates',
+  Vegetable: 'Veggies',
+  Carbohydrate: 'Carbs',
   Fruit: 'Fruits',
   Processed: 'Processed',
-  Condiment: 'Condiments',
+  Condiment: 'Seasonings',
 };
 
 @Component({
