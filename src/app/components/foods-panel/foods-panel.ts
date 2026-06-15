@@ -363,6 +363,18 @@ const CATEGORY_PLURALS: Record<string, string> = {
                           matTooltipPosition="above"
                           (click)="onBasketFoodClick(food)"
                           (dblclick)="removeFoodFromBasket(key, food.id)">
+                          <!-- Hover-revealed red X — explicit remove affordance.
+                               stopPropagation so clicking it doesn't fire the
+                               card's (click) select handler. -->
+                          <button
+                            type="button"
+                            class="basket-mini-remove"
+                            (click)="removeFoodFromBasket(key, food.id); $event.stopPropagation()"
+                            matTooltip="Remove from basket"
+                            matTooltipPosition="above"
+                            aria-label="Remove">
+                            ✕
+                          </button>
                           <div class="basket-mini-card-label">
                             <span class="basket-mini-card-label-text">
                               {{ food.shortDescription || food.description }}
