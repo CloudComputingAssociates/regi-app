@@ -98,10 +98,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
               class="curate-toggle"
               [class.pressed]="addTo() === 'right'"
               (click)="addTo.set(addTo() === 'right' ? 'left' : 'right')"
-              matTooltip="Refine MyFoods — 'Like' YEH Approved foods or add your own MyFoods with mobile app download (Android)"
+              matTooltip="Curate MyFoods — 'Like' YEH Approved foods or add your own MyFoods with mobile app download (Android)"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350">
-              Refine
+              Curate MyFoods
             </button>
           </div>
 
@@ -130,21 +130,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 [value]="searchQuery()"
                 (input)="onSearchInput($any($event.target).value)"
                 placeholder="Search foods…" />
-              <!-- Both action buttons act on the currently-SELECTED tile (the
-                   one with the yellow halo). Disabled when nothing is
-                   selected. NF Label shows the canonical label image;
-                   Health Info uses the lime callout image as its visual
-                   chrome (no background, no border — see SCSS). -->
-              <button
-                type="button"
-                class="top-bar-action-btn nf-label-btn"
-                [disabled]="!selectedFood()"
-                (click)="openNutritionLabel()"
-                matTooltip="Nutrition Facts"
-                matTooltipPosition="below"
-                aria-label="Nutrition Facts">
-                <img src="/images/NutritionFactsLabel.jpg" alt="Nutrition Facts" />
-              </button>
+              <!-- Spacer pushes the two action buttons hard right. Health
+                   Info sits left of Nutrition Facts; both glow yellow when
+                   armed (a tile is selected) to mirror the tile's halo. -->
+              <span class="top-bar-spacer"></span>
               @if (showHealthBenefitsForFilter()) {
                 <button
                   type="button"
@@ -157,7 +146,16 @@ const CATEGORY_PLURALS: Record<string, string> = {
                   <img src="/images/Health%20Benefits.png" alt="Health Info" />
                 </button>
               }
-              <span class="top-bar-spacer"></span>
+              <button
+                type="button"
+                class="top-bar-action-btn nf-label-btn"
+                [disabled]="!selectedFood()"
+                (click)="openNutritionLabel()"
+                matTooltip="Nutrition Facts"
+                matTooltipPosition="below"
+                aria-label="Nutrition Facts">
+                <img src="/images/NutritionFactsLabel.jpg" alt="Nutrition Facts" />
+              </button>
             </div>
             <!-- Tile grid replaces the old spinning carousel. Tiles fill
                  left-to-right and wrap to the next row; the grid scrolls
@@ -220,10 +218,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 Baskets
               } @else {
                 <span
-                  matTooltip="Refine MyFoods — click 'star' to Favorite, or 'circle-line' for your Restricted Foods. With MyFoods selected you can delete or un-favorite to remove from MyFoods."
+                  matTooltip="Curate MyFoods — click 'star' to Favorite, or 'circle-line' for your Restricted Foods. With MyFoods selected you can delete or un-favorite to remove from MyFoods."
                   matTooltipPosition="below"
                   [matTooltipShowDelay]="350">
-                  Refine Foods
+                  Curate MyFoods
                 </span>
               }
             </span>

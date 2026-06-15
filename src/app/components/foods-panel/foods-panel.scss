@@ -429,25 +429,27 @@
 // Flex spacer that pushes the Spin button to the right edge.
 .top-bar-spacer { flex: 1; }
 
-// Nutrition Facts + Health Info action buttons in the top bar above the
-// tile grid. 2× the original size now — 60 × 72 — so the Nutrition Facts
-// label image is legible and the lime callout reads at a glance.
+// Nutrition Facts + Health Info action buttons — right-justified in the
+// top bar above the tile grid. Doubled from the previous size (60 × 72 →
+// 120 × 144) so the NF label is readable and the lime callout reads
+// clearly. When armed (a tile is selected), they pick up the same yellow
+// halo the selected tile wears — visually telling the user "these are
+// hot, click to act on what you picked."
 .top-bar-action-btn {
   flex-shrink: 0;
-  width: 60px;
-  height: 72px;
+  width: 120px;
+  height: 144px;
   padding: 0;
   background: #1a1a1a;
-  border: 1px solid #4a4a4a;
-  border-bottom: 2px solid #0a0a0a;
-  border-radius: 5px;
+  border: 2px solid transparent;
+  border-radius: 6px;
   cursor: pointer;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.4);
-  transition: background 0.1s ease, opacity 0.15s ease;
+  transition: filter 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
 
   img {
     max-width: 100%;
@@ -456,14 +458,21 @@
     pointer-events: none;
   }
 
+  // Armed (a tile is selected): yellow halo, matching .food-tile.selected.
+  &:not(:disabled) {
+    border-color: rgba(255, 213, 79, 0.95);
+    box-shadow:
+      0 0 14px 1px rgba(255, 213, 79, 0.85),
+      0 0 24px 2px rgba(255, 193, 7, 0.45),
+      0 2px 4px rgba(0, 0, 0, 0.4);
+  }
+
   &:hover:not(:disabled) {
-    background: #2a2a2a;
-    border-color: #6a6a6a;
+    filter: brightness(1.08);
   }
 
   &:active:not(:disabled) {
     transform: translateY(1px);
-    border-bottom-width: 1px;
   }
 
   &:disabled {
@@ -473,24 +482,26 @@
 }
 
 // Health Info button is borderless — the lime callout image IS the chrome,
-// so no black background or frame around it. Overrides the base
-// .top-bar-action-btn styles.
+// so no black background or frame around it. The yellow halo still applies
+// via the inherited :not(:disabled) rule above, but rendered as a
+// drop-shadow filter so it follows the oval shape of the image.
 .health-info-btn {
   background: transparent;
-  border: none;
-  border-bottom: none;
-  box-shadow: none;
   overflow: visible;
 
-  &:hover:not(:disabled) {
-    background: transparent;
+  &:not(:disabled) {
     border-color: transparent;
-    filter: brightness(1.1);
+    box-shadow: none;
+    filter:
+      drop-shadow(0 0 8px rgba(255, 213, 79, 0.95))
+      drop-shadow(0 0 16px rgba(255, 193, 7, 0.55));
   }
 
-  &:active:not(:disabled) {
-    transform: translateY(1px);
-    border-bottom-width: 0;
+  &:hover:not(:disabled) {
+    filter:
+      drop-shadow(0 0 10px rgba(255, 213, 79, 1))
+      drop-shadow(0 0 20px rgba(255, 193, 7, 0.7))
+      brightness(1.08);
   }
 
   img {
