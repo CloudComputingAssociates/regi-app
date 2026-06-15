@@ -1154,13 +1154,11 @@
 }
 
 .basket-mini-card {
-  // Bumped another 25%: 60 → 75 × 88 → 110. The label band, image area and X
-  // badge all scale via their own rules, so this just affects the outer box.
   position: relative;
   width: 75px;
   height: 110px;
   background: #2a2a2a;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 2px solid transparent;
   border-radius: 4px;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.45);
   overflow: hidden;
@@ -1168,16 +1166,91 @@
   flex-direction: column;
   flex-shrink: 0;
   cursor: pointer;
-  transition: transform 0.12s ease;
+  transition: transform 0.12s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 
-  // Clicking anywhere on the card removes the food from the basket; the red X
-  // is purely a hover affordance signalling that intent.
   &:hover {
-    transform: scale(1.1);
+    transform: scale(1.08);
+  }
 
-    .basket-mini-remove {
-      opacity: 1;
-    }
+  // Selected state — yellow halo matches the LHS tile selection. Single
+  // click selects, double-click removes, click bloom for Nutrition Facts.
+  &.selected {
+    border-color: rgba(255, 213, 79, 0.95);
+    box-shadow:
+      0 0 12px 1px rgba(255, 213, 79, 0.85),
+      0 0 22px 2px rgba(255, 193, 7, 0.45),
+      0 2px 4px rgba(0, 0, 0, 0.4);
+    z-index: 2;
+  }
+}
+
+// "Click for Facts" bloom — pinned to the bottom-right of the basket cell
+// (parent .basket is position: relative). Visible after the 3-second delay
+// and fades after 5 seconds. The NF Label image is the background; yellow
+// rotated text is overlaid as the call-to-action.
+.nf-bloom {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 84px;
+  height: 100px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 30;
+  display: block;
+  overflow: visible;
+  animation: nfBloomIn 220ms ease-out both;
+  filter:
+    drop-shadow(0 0 8px rgba(255, 213, 79, 0.85))
+    drop-shadow(0 0 16px rgba(255, 193, 7, 0.45));
+
+  &:hover { filter:
+    drop-shadow(0 0 10px rgba(255, 213, 79, 1))
+    drop-shadow(0 0 20px rgba(255, 193, 7, 0.7))
+    brightness(1.08);
+  }
+}
+
+.nf-bloom-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+// Diagonal yellow stamp overlaid on the NF Label background. Slight black
+// outline so it reads against the label's white background.
+.nf-bloom-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-22deg);
+  font-family: 'Inter', 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #ffd54f;
+  text-shadow:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     0 0 6px rgba(255, 193, 7, 0.85);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@keyframes nfBloomIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

@@ -130,21 +130,11 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 [value]="searchQuery()"
                 (input)="onSearchInput($any($event.target).value)"
                 placeholder="Search foods…" />
-              <!-- Spacer pushes the NF Label button hard right. Health Info
-                   was removed from the top bar — that affordance still
-                   exists inside the NF popup, where it's contextual to
-                   the food the user just opened. -->
+              <!-- LHS top bar is intentionally lean now — no NF Label or
+                   Health Info button. Nutrition Facts is offered via a
+                   delayed "Click for Facts" bloom on RHS basket tiles
+                   (see .nf-bloom in foods-panel.scss). -->
               <span class="top-bar-spacer"></span>
-              <button
-                type="button"
-                class="top-bar-action-btn nf-label-btn"
-                [disabled]="!selectedFood()"
-                (click)="openNutritionLabel()"
-                matTooltip="Nutrition Facts"
-                matTooltipPosition="below"
-                aria-label="Nutrition Facts">
-                <img src="/images/NutritionFactsLabel.jpg" alt="Nutrition Facts" />
-              </button>
             </div>
             <!-- Tile grid replaces the old spinning carousel. Tiles fill
                  left-to-right and wrap to the next row; the grid scrolls
@@ -368,11 +358,12 @@ const CATEGORY_PLURALS: Record<string, string> = {
                       @for (food of thisWeekBaskets()[key]; track food.id) {
                         <div
                           class="basket-mini-card"
+                          [class.selected]="selectedBasketFood()?.id === food.id"
                           [matTooltip]="food.shortDescription || food.description"
                           matTooltipPosition="above"
-                          (click)="removeFoodFromBasket(key, food.id)">
+                          (click)="onBasketFoodClick(food)"
+                          (dblclick)="removeFoodFromBasket(key, food.id)">
                           <div class="basket-mini-card-label">
-                            <span class="basket-mini-remove" aria-hidden="true">✕</span>
                             <span class="basket-mini-card-label-text">
                               {{ food.shortDescription || food.description }}
                             </span>
@@ -385,6 +376,20 @@ const CATEGORY_PLURALS: Record<string, string> = {
                         </div>
                       }
                     </div>
+                    <!-- "Click for Facts" bloom — appears 3 s after select,
+                         lingers 5 s. Pinned to the bottom-right of the
+                         basket cell (NOT the mini-card) so it's visible in
+                         the viewport without occluding the selected tile. -->
+                    @if (showNfBloom() && basketContainingSelected() === key) {
+                      <button
+                        type="button"
+                        class="nf-bloom"
+                        (click)="onNfBloomClick($event)"
+                        aria-label="Open Nutrition Facts">
+                        <img src="/images/NutritionFactsLabel.jpg" alt="" class="nf-bloom-bg" />
+                        <span class="nf-bloom-text">Click for Facts</span>
+                      </button>
+                    }
                   }
                 </div>
               }
@@ -1000,7 +1005,83 @@ export class FoodsPanelComponent {
     event.dataTransfer!.effectAllowed = 'copy';
   }
 
-  /** Opens the Nutrition Facts popup for the currently-selected tile. */
+  // ----- RHS basket-tile selection + "Click for Facts" bloom -----
+
+  /** The currently-selected food in a basket on the right pane. Drives the
+   *  yellow halo and the delayed bloom timer. */
+  selectedBasketFood = signal<Food | null>(null);
+
+  /** Visibility flag for the bloom overlay. Goes true 3 s after a basket
+   *  food is single-clicked (if nothing intervenes), and false 5 s after
+   *  that. */
+  showNfBloom = signal(false);
+
+  /** Which basket cell currently owns the selected food. Used so the bloom
+   *  renders inside the right basket (bottom-right of that cell) instead of
+   *  trying to anchor to the mini-card directly. */
+  basketContainingSelected = computed<BasketKey | null>(() => {
+    const food = this.selectedBasketFood();
+    if (!food) return null;
+    const baskets = this.thisWeekBaskets();
+    for (const k of this.basketKeys) {
+      if (baskets[k].some(f => f.id === food.id)) return k;
+    }
+    return null;
+  });
+
+  private bloomShowTimer: ReturnType<typeof setTimeout> | null = null;
+  private bloomHideTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly BLOOM_SHOW_DELAY_MS = 3000;
+  private static readonly BLOOM_VISIBLE_MS = 5000;
+
+  /** Cancel any pending bloom timers and hide the bloom immediately. */
+  private cancelBloom(): void {
+    if (this.bloomShowTimer) { clearTimeout(this.bloomShowTimer); this.bloomShowTimer = null; }
+    if (this.bloomHideTimer) { clearTimeout(this.bloomHideTimer); this.bloomHideTimer = null; }
+    this.showNfBloom.set(false);
+  }
+
+  /** Schedule the bloom: 3 s show delay, then 5 s visible window. */
+  private scheduleBloom(): void {
+    this.cancelBloom();
+    this.bloomShowTimer = setTimeout(() => {
+      this.showNfBloom.set(true);
+      this.bloomShowTimer = null;
+      this.bloomHideTimer = setTimeout(() => {
+        this.showNfBloom.set(false);
+        this.bloomHideTimer = null;
+      }, FoodsPanelComponent.BLOOM_VISIBLE_MS);
+    }, FoodsPanelComponent.BLOOM_SHOW_DELAY_MS);
+  }
+
+  /** Single click on a basket food: select it (toggle off if it was already
+   *  selected) and schedule the "Click for Facts" bloom. A double-click on
+   *  the same card still fires (after two single-clicks) and will then
+   *  trigger removeFoodFromBasket via (dblclick); the toggle means the
+   *  selection self-cancels in that path so the bloom never appears. */
+  onBasketFoodClick(food: Food): void {
+    const current = this.selectedBasketFood();
+    if (current?.id === food.id) {
+      this.selectedBasketFood.set(null);
+      this.cancelBloom();
+    } else {
+      this.selectedBasketFood.set(food);
+      this.scheduleBloom();
+    }
+  }
+
+  /** Click on the bloom button itself: open the NF popup for the selected
+   *  food and stop propagation so the underlying basket-mini-card's (click)
+   *  handler doesn't run and toggle the selection off. */
+  onNfBloomClick(event: Event): void {
+    event.stopPropagation();
+    const food = this.selectedBasketFood();
+    if (food) this.nfPopupFood.set(food);
+    this.cancelBloom();
+  }
+
+  /** Opens the Nutrition Facts popup for the currently-selected tile.
+   *  Kept around for any external caller (e.g. the future LHS bloom). */
   openNutritionLabel(): void {
     const food = this.selectedFood();
     if (food) this.nfPopupFood.set(food);
@@ -1059,10 +1140,23 @@ export class FoodsPanelComponent {
   }
 
   clearBasket(key: BasketKey): void {
+    // Cancel any pending bloom if the selected food is about to disappear
+    // along with the rest of this basket's contents.
+    const selected = this.selectedBasketFood();
+    if (selected && this.thisWeekBaskets()[key].some(f => f.id === selected.id)) {
+      this.selectedBasketFood.set(null);
+      this.cancelBloom();
+    }
     this.thisWeekBaskets.update(b => ({ ...b, [key]: [] }));
   }
 
   removeFoodFromBasket(key: BasketKey, foodId: number): void {
+    // If the food being removed is the bloom-selected one, drop the
+    // selection and any pending bloom so we don't reference a phantom row.
+    if (this.selectedBasketFood()?.id === foodId) {
+      this.selectedBasketFood.set(null);
+      this.cancelBloom();
+    }
     this.thisWeekBaskets.update(b => ({
       ...b,
       [key]: b[key].filter(f => f.id !== foodId),
