@@ -5,8 +5,6 @@ import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
-import { ImageCarouselComponent } from '../image-carousel/image-carousel';
-import { SpinnerItem } from '../spinner/spinner';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
@@ -68,7 +66,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
 
 @Component({
   selector: 'app-foods-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, ImageCarouselComponent, NutritionFactsLabelComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, NutritionFactsLabelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="foods-panel-container">
@@ -132,14 +130,15 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 [value]="searchQuery()"
                 (input)="onSearchInput($any($event.target).value)"
                 placeholder="Search foods…" />
-              <!-- Two action buttons sit in the same row between SEARCH and
-                   SPIN. They reference the currently-highlighted card via
-                   centeredFood(); disabled while the wheel is spinning so
-                   they only fire on a settled, yellow-haloed food. -->
+              <!-- Both action buttons act on the currently-SELECTED tile (the
+                   one with the yellow halo). Disabled when nothing is
+                   selected. NF Label shows the canonical label image;
+                   Health Info uses the lime callout image as its visual
+                   chrome (no background, no border — see SCSS). -->
               <button
                 type="button"
                 class="top-bar-action-btn nf-label-btn"
-                [disabled]="!centeredFood() || carousel.spinning()"
+                [disabled]="!selectedFood()"
                 (click)="openNutritionLabel()"
                 matTooltip="Nutrition Facts"
                 matTooltipPosition="below"
@@ -150,7 +149,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 <button
                   type="button"
                   class="top-bar-action-btn health-info-btn"
-                  [disabled]="!centeredFood() || carousel.spinning()"
+                  [disabled]="!selectedFood()"
                   (click)="openHealthBenefits()"
                   matTooltip="Click for Info"
                   matTooltipPosition="below"
@@ -159,25 +158,39 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 </button>
               }
               <span class="top-bar-spacer"></span>
-              <button
-                type="button"
-                class="spin-btn"
-                (click)="carousel.spin()"
-                aria-label="Spin">
-                Spin
-              </button>
             </div>
-            <app-image-carousel
-              #carousel="appImageCarousel"
-              class="left-pane-carousel"
-              [items]="spinnerItems()"
-              [emptyMessage]="carouselEmptyMessage()"
-              [visibleCount]="5"
-              [showBucketBar]="false"
-              (activated)="onActivated($event)"
-              (centered)="onCarouselCentered($event)"
-              (cardDragStart)="onCardDragStart($event)">
-            </app-image-carousel>
+            <!-- Tile grid replaces the old spinning carousel. Tiles fill
+                 left-to-right and wrap to the next row; the grid scrolls
+                 vertically when the food set exceeds the visible area.
+                 Single-click selects (yellow halo), single-click on the
+                 selected tile unselects, double-click activates (adds to
+                 the active picker — Refine is closed first if open),
+                 drag works exactly like the old carousel cards. -->
+            <div class="tile-grid">
+              @for (food of carouselSpinnerFoods(); track food.id) {
+                <div
+                  class="food-tile"
+                  [class.selected]="selectedFood()?.id === food.id"
+                  [draggable]="true"
+                  (click)="onTileClick(food)"
+                  (dblclick)="onTileDblClick(food)"
+                  (dragstart)="onTileDragStart(food, $event)"
+                  [matTooltip]="food.shortDescription || food.description"
+                  matTooltipPosition="above"
+                  [matTooltipShowDelay]="500">
+                  <div class="food-tile-image">
+                    @if (food.foodImageThumbnail) {
+                      <img [src]="food.foodImageThumbnail" alt="" draggable="false" />
+                    }
+                  </div>
+                  <div class="food-tile-label">
+                    {{ food.shortDescription || food.description }}
+                  </div>
+                </div>
+              } @empty {
+                <div class="tile-grid-empty">{{ carouselEmptyMessage() }}</div>
+              }
+            </div>
           </div>
         </div>
 
@@ -650,7 +663,9 @@ export class FoodsPanelComponent {
 
   // Spin carousel state
   readonly carouselCategories = CAROUSEL_CATEGORIES;
-  spinSource = signal<SpinSource>('yeh-approved');
+  // Default TYPE for the Refine Foods pane = MyFoods, since that's the
+  // primary list users come here to curate.
+  spinSource = signal<SpinSource>('myfoods');
   selectedCategories = signal<Set<string>>(new Set(['Protein']));
   private rawCarouselFoods = signal<Food[]>([]);
 
@@ -954,7 +969,7 @@ export class FoodsPanelComponent {
   // The carousel ALWAYS spins MyFoods (regardless of TYPE). TYPE only drives
   // which collection the right-hand Curate view is editing. This is filtered
   // by the active category radio + search box, same as before.
-  private carouselSpinnerFoods = computed<Food[]>(() => {
+  carouselSpinnerFoods = computed<Food[]>(() => {
     const filtered = this.filteredMyFoods();
     const q = this.searchQuery().trim().toLowerCase();
     if (!q) return filtered;
@@ -964,56 +979,44 @@ export class FoodsPanelComponent {
     );
   });
 
-  spinnerItems = computed<SpinnerItem[]>(() =>
-    this.carouselSpinnerFoods().map((f) => ({
-      id: f.id,
-      thumbnailUrl: f.foodImageThumbnail ?? undefined,
-      fullUrl: f.foodImage ?? undefined,
-      label: f.shortDescription || f.description,
-      food: f,
-    } as SpinnerItem)),
-  );
+  // ----- Tile-grid selection / interaction -----
 
-  // Double-click on the centered card.
-  onActivated(item: SpinnerItem): void {
-    const food = item['food'] as Food | undefined;
-    if (!food) return;
+  /** The currently-selected tile in the left-pane tile grid. Yellow halo
+   *  on the tile in the template; the Nutrition Facts and Health Info
+   *  buttons in the top bar act on this food. */
+  selectedFood = signal<Food | null>(null);
 
-    if (this.addTo() === 'left') {
-      // Route to the correct This Week basket based on the food's category.
-      const basket = this.basketForFood(food);
-      this.addFoodToBasket(food, basket);
-    } else {
-      // Slider on right: behavior follows TYPE (matches the old onAddFood right-side logic).
-      this.onRightSideAdd(food);
+  /** Single-click toggles selection: clicking an unselected tile selects
+   *  it, clicking the already-selected tile unselects it. */
+  onTileClick(food: Food): void {
+    const current = this.selectedFood();
+    this.selectedFood.set(current?.id === food.id ? null : food);
+  }
+
+  /** Double-click activates: adds to the active picker. If Refine is open
+   *  on the right pane, we close it first so Baskets becomes visible — the
+   *  user just chose a food to add, so the destination they're filling
+   *  should be on screen. */
+  onTileDblClick(food: Food): void {
+    if (this.addTo() === 'right') {
+      this.addTo.set('left');
     }
+    const basket = this.basketForFood(food);
+    this.addFoodToBasket(food, basket);
   }
 
-  // Single click on the centered card is now a NO-OP. The Nutrition Facts
-  // popup is opened explicitly via the new .nf-label-btn floating above the
-  // card; double-click still activates (add to MyFoods), drag still works.
-  // (onInspect handler kept since the carousel emits the event regardless,
-  // but it intentionally does nothing.)
-  onInspect(_item: SpinnerItem): void {
-    // intentionally empty
-  }
-
-  /** Opens the Nutrition Facts popup for whichever food is currently
-   *  centered in the carousel. Triggered by the floating .nf-label-btn
-   *  above the highlighted card. */
-  openNutritionLabel(): void {
-    const food = this.centeredFood();
-    if (food) this.nfPopupFood.set(food);
-  }
-
-  // The image-carousel emits the dragstart event so we can set dataTransfer
-  // with the SpinnerItem's food. Foods-panel is the only level that knows
-  // what "food.id" means; image-carousel stays domain-blind.
-  onCardDragStart({ item, event }: { item: SpinnerItem; event: DragEvent }): void {
-    const food = item['food'] as Food | undefined;
-    if (!food) return;
+  /** Drag-and-drop preserves the existing transfer shape — a JSON-encoded
+   *  Food blob on application/json — so the basket drop handlers don't
+   *  need to change. */
+  onTileDragStart(food: Food, event: DragEvent): void {
     event.dataTransfer?.setData('application/json', JSON.stringify(food));
     event.dataTransfer!.effectAllowed = 'copy';
+  }
+
+  /** Opens the Nutrition Facts popup for the currently-selected tile. */
+  openNutritionLabel(): void {
+    const food = this.selectedFood();
+    if (food) this.nfPopupFood.set(food);
   }
 
   // ----- Basket helpers -----
@@ -1252,28 +1255,20 @@ export class FoodsPanelComponent {
   nfPopupFood = signal<Food | null>(null);
 
   // ---- Health Benefits popup state (Langfuse-driven) ----
-  // centeredFood tracks whichever spinner card is currently in the spotlight
-  // — fed by the carousel's (centered) output. healthBenefitsFood freezes the
-  // food the user clicked the button on, so the popup doesn't mutate if the
-  // user spins behind it.
-  centeredFood = signal<Food | null>(null);
+  // healthBenefitsFood freezes the food the user clicked the button on so
+  // the popup doesn't mutate if the user selects a different tile while
+  // the AI lookup is in flight.
   healthBenefitsFood = signal<Food | null>(null);
   healthBenefitsLoading = signal(false);
   healthBenefitsText = signal<string | null>(null);
   healthBenefitsError = signal<string | null>(null);
   private healthBenefitsRequestId = 0;
 
-  onCarouselCentered(item: SpinnerItem): void {
-    const food = item['food'] as Food | undefined;
-    this.centeredFood.set(food ?? null);
-  }
-
   async openHealthBenefits(): Promise<void> {
-    // Prefer the food the NF popup is showing — that's the one the user is
-    // looking at when they click Health Info. Falls back to whichever card
-    // the carousel happens to be centered on (for any future call sites
-    // outside the popup).
-    const food = this.nfPopupFood() ?? this.centeredFood();
+    // Prefer the NF popup's food (if it's open) so the Health Info button
+    // inside that dialog stays consistent; otherwise act on whichever tile
+    // is currently selected in the grid.
+    const food = this.nfPopupFood() ?? this.selectedFood();
     if (!food) return;
     this.healthBenefitsFood.set(food);
     this.healthBenefitsText.set(null);

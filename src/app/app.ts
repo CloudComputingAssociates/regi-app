@@ -22,6 +22,18 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { NutritionTipService } from './services/nutrition-tip.service';
 import { PlanningService } from './services/planning.service';
 
+// Panel IDs that are part of the left-nav navigator. Only these are
+// remembered across page refresh — profile-menu overlays (Settings, Account,
+// Help, Bug) are deliberately excluded so a stale overlay never re-opens.
+const LEFT_NAV_PANEL_IDS = new Set([
+  'today',
+  'review',
+  'meal-planning',
+  'shop',
+  'foods',
+  'chat',
+]);
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -149,28 +161,38 @@ export class AppComponent implements OnInit, OnDestroy {
         this.tipService.fetchTip();
         this.planningService.preloadSavedMeals();
 
-        // Restore tabs: check localStorage first (page refresh), then API (login)
+        // Restore the previously-active panel. Only left-nav panels are
+        // remembered across refresh — Settings / Account / Help / Bug live
+        // in the profile-menu overlay model and are not auto-reopened.
         const localState = localStorage.getItem('yeh_tabState');
         if (localState) {
           try {
             const parsed = JSON.parse(localState);
-            this.tabService.restoreFromSettings(parsed.defaultTabs, 'today');
+            const filtered = (parsed.defaultTabs ?? []).filter(
+              (id: string) => LEFT_NAV_PANEL_IDS.has(id),
+            );
+            const activeId = LEFT_NAV_PANEL_IDS.has(parsed.activeTabId)
+              ? parsed.activeTabId
+              : undefined;
+            this.tabService.restoreFromSettings(filtered, activeId);
           } catch {
             this.tabService.resetToChat();
           }
           localStorage.removeItem('yeh_tabState');
-          // Still load all settings from API so preferences/other data is cached
           this.settingsService.loadSettings().catch(err =>
-            console.error('[App] Failed to load settings on refresh:', err)
+            console.error('[App] Failed to load settings on refresh:', err),
           );
         } else {
           try {
             const allSettings = await this.settingsService.loadSettings();
             const tabs = allSettings.tabs;
-            this.tabService.restoreFromSettings(
-              tabs?.defaultTabs ?? ['chat'],
-              tabs?.activeTabId
+            const filtered = (tabs?.defaultTabs ?? []).filter(
+              id => LEFT_NAV_PANEL_IDS.has(id),
             );
+            const activeId = tabs?.activeTabId && LEFT_NAV_PANEL_IDS.has(tabs.activeTabId)
+              ? tabs.activeTabId
+              : undefined;
+            this.tabService.restoreFromSettings(filtered, activeId);
           } catch (error) {
             console.error('[App] Failed to load settings:', error);
             this.tabService.resetToChat();
@@ -180,12 +202,21 @@ export class AppComponent implements OnInit, OnDestroy {
       // If not authenticated, do nothing - user will see login button
     });
 
-    // Save tab state to localStorage on page refresh/close
+    // Save tab state to localStorage on page refresh/close. Filtered to
+    // left-nav panels only so a stale Settings / Account overlay can't
+    // re-open after a refresh.
     window.addEventListener('beforeunload', () => {
-      const openTabs = this.tabService.getOpenTabIds();
-      const activeId = this.tabService.activeTabId();
-      if (openTabs.length > 0) {
-        localStorage.setItem('yeh_tabState', JSON.stringify({ defaultTabs: openTabs, activeTabId: activeId }));
+      const openTabs = this.tabService.getOpenTabIds()
+        .filter(id => LEFT_NAV_PANEL_IDS.has(id));
+      const rawActive = this.tabService.activeTabId();
+      const activeId = rawActive && LEFT_NAV_PANEL_IDS.has(rawActive)
+        ? rawActive
+        : undefined;
+      if (openTabs.length > 0 || activeId) {
+        localStorage.setItem(
+          'yeh_tabState',
+          JSON.stringify({ defaultTabs: openTabs, activeTabId: activeId }),
+        );
       }
     });
 
