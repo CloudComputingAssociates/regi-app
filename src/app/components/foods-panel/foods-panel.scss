@@ -481,36 +481,6 @@
   }
 }
 
-// Health Info button is borderless — the lime callout image IS the chrome,
-// so no black background or frame around it. The yellow halo still applies
-// via the inherited :not(:disabled) rule above, but rendered as a
-// drop-shadow filter so it follows the oval shape of the image.
-.health-info-btn {
-  background: transparent;
-  overflow: visible;
-
-  &:not(:disabled) {
-    border-color: transparent;
-    box-shadow: none;
-    filter:
-      drop-shadow(0 0 8px rgba(255, 213, 79, 0.95))
-      drop-shadow(0 0 16px rgba(255, 193, 7, 0.55));
-  }
-
-  &:hover:not(:disabled) {
-    filter:
-      drop-shadow(0 0 10px rgba(255, 213, 79, 1))
-      drop-shadow(0 0 20px rgba(255, 193, 7, 0.7))
-      brightness(1.08);
-  }
-
-  img {
-    // Bleed slightly past the frame so the oval lime shape can be a touch
-    // larger than the NF Label rectangle next to it.
-    max-width: 110%;
-    max-height: 110%;
-  }
-}
 
 // (.left-pane-carousel rule lives below in the pane-card section — both
 // inside the rounded card, so the carousel still grows to fill its parent.)

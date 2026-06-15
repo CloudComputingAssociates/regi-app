@@ -130,22 +130,11 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 [value]="searchQuery()"
                 (input)="onSearchInput($any($event.target).value)"
                 placeholder="Search foods…" />
-              <!-- Spacer pushes the two action buttons hard right. Health
-                   Info sits left of Nutrition Facts; both glow yellow when
-                   armed (a tile is selected) to mirror the tile's halo. -->
+              <!-- Spacer pushes the NF Label button hard right. Health Info
+                   was removed from the top bar — that affordance still
+                   exists inside the NF popup, where it's contextual to
+                   the food the user just opened. -->
               <span class="top-bar-spacer"></span>
-              @if (showHealthBenefitsForFilter()) {
-                <button
-                  type="button"
-                  class="top-bar-action-btn health-info-btn"
-                  [disabled]="!selectedFood()"
-                  (click)="openHealthBenefits()"
-                  matTooltip="Click for Info"
-                  matTooltipPosition="below"
-                  aria-label="Health info">
-                  <img src="/images/Health%20Benefits.png" alt="Health Info" />
-                </button>
-              }
               <button
                 type="button"
                 class="top-bar-action-btn nf-label-btn"
