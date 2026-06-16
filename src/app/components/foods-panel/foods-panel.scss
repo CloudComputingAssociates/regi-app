@@ -1572,7 +1572,10 @@
   padding: 2px 0 3px;
   font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
   font-size: 9px;
-  font-weight: 600;
+  // Regular weight — the prior 600 looked smudgy at 9 px against the dark
+  // band. Bright color carries readability without needing the extra
+  // stroke weight.
+  font-weight: 400;
   letter-spacing: 0.3px;
   line-height: 1;
   color: rgba(255, 255, 255, 0.95);
@@ -1619,10 +1622,14 @@
 // Cycle: starts YELLOW + tilted, undulates to WHITE + upright, then back.
 .nf-popup-health-info-ai {
   position: absolute;
-  top: -14px;
-  left: -16px;
-  width: 10px;
-  height: 10px;
+  // Anchored just above-and-left of the pill so "Health Info" stays readable
+  // but the star is still clearly attached to the badge. 18 × 18 is sized to
+  // the mask's actual visible footprint (the source PNG has transparent
+  // padding that eats most of the box at 10 px).
+  top: -4px;
+  left: -6px;
+  width: 18px;
+  height: 18px;
   pointer-events: none;
   -webkit-mask: url(/images/AI-star-white.png) center / contain no-repeat;
           mask: url(/images/AI-star-white.png) center / contain no-repeat;
