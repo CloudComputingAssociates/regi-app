@@ -420,6 +420,8 @@ const CATEGORY_PLURALS: Record<string, string> = {
                       <button
                         type="button"
                         class="nf-bloom"
+                        [style.top.px]="bloomPosition()?.top"
+                        [style.left.px]="bloomPosition()?.left"
                         (click)="onNfBloomClick($event)"
                         aria-label="Open Nutrition Facts">
                         <img src="/images/NutritionFactsLabel.jpg" alt="" class="nf-bloom-bg" />
@@ -1103,6 +1105,12 @@ export class FoodsPanelComponent {
    *  that. */
   showNfBloom = signal(false);
 
+  /** Inline {top, left} the bloom is positioned at — pixel offsets relative
+   *  to the basket cell. Recomputed every time the bloom appears so it
+   *  floats just off the upper-right corner of the selected card (or upper-
+   *  left, if the card is too close to the basket's right edge). */
+  bloomPosition = signal<{ top: number; left: number } | null>(null);
+
   /** Which basket cell currently owns the selected food. Used so the bloom
    *  renders inside the right basket (bottom-right of that cell) instead of
    *  trying to anchor to the mini-card directly. */
@@ -1132,6 +1140,9 @@ export class FoodsPanelComponent {
   private scheduleBloom(): void {
     this.cancelBloom();
     this.bloomShowTimer = setTimeout(() => {
+      // Compute the position FIRST so the bloom's entry animation starts at
+      // the right anchor — no visible jump on first paint.
+      this.computeBloomPosition();
       this.showNfBloom.set(true);
       this.bloomShowTimer = null;
       this.bloomHideTimer = setTimeout(() => {
@@ -1139,6 +1150,43 @@ export class FoodsPanelComponent {
         this.bloomHideTimer = null;
       }, FoodsPanelComponent.BLOOM_VISIBLE_MS);
     }, FoodsPanelComponent.BLOOM_SHOW_DELAY_MS);
+  }
+
+  /** Measure the currently-selected basket card and pick a top/left so the
+   *  bloom floats just off the card's upper-right corner. If the bloom
+   *  wouldn't fit on the right (card sits near the basket's right edge),
+   *  flip it to the upper-LEFT side. Both axes are clamped so the bloom
+   *  stays fully inside the basket cell. */
+  private computeBloomPosition(): void {
+    if (!this.selectedBasketFood()) return;
+    const cardEl = document.querySelector<HTMLElement>('.basket-mini-card.selected');
+    if (!cardEl) return;
+    const basketEl = cardEl.closest('.basket') as HTMLElement | null;
+    if (!basketEl) return;
+
+    const card = cardEl.getBoundingClientRect();
+    const basket = basketEl.getBoundingClientRect();
+    const bloomW = 84;
+    const bloomH = 100;
+    const gap = 4;
+
+    const cardRelLeft = card.left - basket.left;
+    const cardRelTop = card.top - basket.top;
+
+    // Default: right of the card.
+    let left = cardRelLeft + card.width + gap;
+    // If that overflows the basket on the right, flip to the left of the card.
+    if (left + bloomW > basket.width - 4) {
+      left = cardRelLeft - bloomW - gap;
+    }
+    // Clamp so the bloom always sits fully inside the basket cell.
+    left = Math.max(2, Math.min(left, basket.width - bloomW - 2));
+
+    // A tiny bit above the card's top edge.
+    let top = cardRelTop - 8;
+    top = Math.max(2, Math.min(top, basket.height - bloomH - 2));
+
+    this.bloomPosition.set({ top, left });
   }
 
   /** Single click on a basket food: select it (toggle off if it was already

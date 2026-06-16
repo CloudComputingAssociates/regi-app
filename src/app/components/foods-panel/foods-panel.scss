@@ -1300,8 +1300,10 @@
 // rotated text is overlaid as the call-to-action.
 .nf-bloom {
   position: absolute;
-  right: 6px;
-  bottom: 6px;
+  // top/left are set inline by foods-panel.ts so the bloom floats just off
+  // the selected basket-mini-card. If the card sits near the basket's right
+  // edge, the script flips the bloom to the card's left side instead so it
+  // never overflows the basket cell.
   width: 84px;
   height: 100px;
   padding: 0;
@@ -1461,7 +1463,14 @@
   padding: 12px;
   width: 310px;
   box-sizing: border-box;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  // Same warm yellow glow we use on the "Click for Facts" bloom — the bloom
+  // visually "lands" on this popup, so the halo carries through and the
+  // transition reads as one continuous element.
+  border: 2px solid #ffd54f;
+  box-shadow:
+    0 0 16px rgba(255, 213, 79, 0.85),
+    0 0 32px rgba(255, 193, 7, 0.45),
+    0 8px 24px rgba(0, 0, 0, 0.5);
   // overflow:visible so the Health Info badge can overhang above the popup
   // without being clipped. The inner wrapper handles the scroll instead.
   overflow: visible;
