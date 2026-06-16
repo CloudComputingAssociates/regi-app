@@ -625,7 +625,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                  the white nutrition label. Food ID + source ("USDA" for
                  canonical rows, "User" for phone-app-created ones). -->
             <div class="nf-popup-trace">
-              {{ nfPopupFood()!.id }} ({{ nfPopupFood()!.userId == null ? 'USDA' : 'User' }})
+              {{ traceLabel(nfPopupFood()!) }}
             </div>
           </div>
         </div>
@@ -1584,6 +1584,17 @@ export class FoodsPanelComponent {
         return err?.message || 'Something went wrong loading health benefits.';
     }
   }
+  /** NF popup trace footer ("{id} ({source})"). The client surfaces user-
+   *  added foods with a negative ID as a marker (the actual UserFoodID in
+   *  the DB is positive — we just sign-flip on the wire so the client can
+   *  tell UserFoods rows from USDA rows). For display we strip the sign so
+   *  the number matches what the user sees in the admin tool. */
+  traceLabel(food: Food): string {
+    const id = Math.abs(food.id);
+    const source = food.id < 0 ? 'UserAdded' : 'USDA';
+    return `${id} (${source})`;
+  }
+
   openProductLink(food: Food): void {
     const url = food.productPurchaseLink;
     if (url) {
