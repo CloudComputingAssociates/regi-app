@@ -381,12 +381,6 @@ export class TabService {
 
   /** Restore tabs from saved settings - used on login */
   restoreFromSettings(tabIds: string[], activeTabId?: string): void {
-    if (!tabIds || tabIds.length === 0) {
-      // Fall back to default (just Chat)
-      this.resetToChat();
-      return;
-    }
-
     // Map of tab ID to label
     const tabLabels: Record<string, string> = {
       'today': 'Today',
@@ -402,16 +396,14 @@ export class TabService {
       'issue': 'Bug'
     };
 
-    // Create tabs in the order they were saved, but sorted by menuOrder
+    // Build the visited set from tabIds, sorted by menuOrder so the underlying
+    // list stays in menu order regardless of save order.
     const tabs: Tab[] = [];
-
-    // Sort tab IDs by menu order
-    const sortedTabIds = [...tabIds].sort((a, b) => {
+    const sortedTabIds = [...(tabIds ?? [])].sort((a, b) => {
       const aIndex = this.menuOrder.indexOf(a);
       const bIndex = this.menuOrder.indexOf(b);
       return aIndex - bIndex;
     });
-
     for (const tabId of sortedTabIds) {
       const label = tabLabels[tabId];
       if (label) {
@@ -425,16 +417,32 @@ export class TabService {
       }
     }
 
+    // Ensure the previously-active panel is in the visited set even if it
+    // wasn't sent in defaultTabs. saveOpenTabs strips 'today' from defaultTabs
+    // (server enum doesn't allow it there), but the user's active panel might
+    // STILL have been Today — in which case the server stores it under
+    // activeTabId only. Without this graft, restore would land on splash and
+    // the "last open panel" feature would silently fail for Today.
+    if (activeTabId && tabLabels[activeTabId] && !tabs.find(t => t.id === activeTabId)) {
+      tabs.push({
+        id: activeTabId,
+        label: tabLabels[activeTabId],
+        closeable: true,
+        icon: this.tabIcons[activeTabId],
+        emoji: this.tabEmojis[activeTabId],
+      });
+    }
+
     if (tabs.length === 0) {
+      // Nothing saved and no active id — fall back to the post-login default.
       this.resetToChat();
       return;
     }
 
     this.tabsSignal.set(tabs);
 
-    // Restore the previously-active panel if it's still in the visited set.
-    // Otherwise fall back to splash (-1) — we no longer auto-activate Today
-    // just because it happens to be in the saved tab list.
+    // Activate the saved panel. After the graft above, the activeTabId is
+    // guaranteed to be in `tabs` when one was provided.
     let activeIndex = -1;
     if (activeTabId) {
       const idx = tabs.findIndex(t => t.id === activeTabId);

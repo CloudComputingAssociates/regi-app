@@ -106,7 +106,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
               matTooltip="Curate MyFoods — 'Like' YEH Approved foods or add your own MyFoods with mobile app download (Android)"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350">
-              @if (addTo() === 'right') { (Close) Curate } @else { Curate }
+              Curate
             </button>
           </div>
 

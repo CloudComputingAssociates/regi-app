@@ -1,6 +1,6 @@
 // src/app/app.ts
 // Main App Component - Modern Angular with Material Design
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '@auth0/auth0-angular';
 import { Subscription } from 'rxjs';
@@ -122,6 +122,44 @@ export class AppComponent implements OnInit, OnDestroy {
     return id !== null && id !== 'foods';
   });
 
+  // ------------------------------------------------------------------
+  // Auto-save the active left-nav panel to UserSettings.TabSettings on
+  // every change. The old model only saved at explicit logout, which
+  // meant browser-close / crash / session-expiry lost the user's last
+  // panel selection. With this effect the server is always-current, so
+  // login always lands on whatever panel the user last had open.
+  //
+  // Debounced 800 ms so a click-through (foods → review → meals) collapses
+  // into one PUT instead of three. Empty-state writes are suppressed so the
+  // closeAllTabs() inside logout / handleSessionExpired can't clobber the
+  // genuine state that profile-menu just persisted.
+  // ------------------------------------------------------------------
+  private autoSavePanelTimer: ReturnType<typeof setTimeout> | null = null;
+  private autoSavePanelEffect = effect(() => {
+    // Track the signals so any panel change re-runs the effect.
+    const activeId = this.tabService.activeTabId();
+    const tabIds = this.tabService.tabs().map(t => t.id);
+
+    if (!this.isAuthenticated()) return;
+
+    const filteredTabs = tabIds.filter(id => LEFT_NAV_PANEL_IDS.has(id));
+    const filteredActive = activeId && LEFT_NAV_PANEL_IDS.has(activeId) ? activeId : undefined;
+
+    // Guard against the closeAllTabs() race during logout / session-expiry.
+    // profile-menu.logout() awaits its own saveOpenTabs first, then clears
+    // the in-memory tabs — we don't want a deferred auto-save to write
+    // {defaultTabs:[]} on top of the state that was just persisted.
+    if (filteredTabs.length === 0 && !filteredActive) return;
+
+    if (this.autoSavePanelTimer) clearTimeout(this.autoSavePanelTimer);
+    this.autoSavePanelTimer = setTimeout(() => {
+      this.autoSavePanelTimer = null;
+      this.settingsService.saveOpenTabs(filteredTabs, filteredActive).catch(err => {
+        console.warn('[App] Auto-save panel state failed:', err);
+      });
+    }, 800);
+  });
+
   dismissTip(): void {
     this.tipDismissed.set(true);
     localStorage.setItem('yeh_tipDismissed', new Date().toDateString());
@@ -135,6 +173,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.errorSub?.unsubscribe();
+    if (this.autoSavePanelTimer) clearTimeout(this.autoSavePanelTimer);
   }
 
   ngOnInit(): void {

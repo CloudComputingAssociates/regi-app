@@ -584,6 +584,14 @@
 
 .section-title-text { flex: 1; min-width: 0; }
 
+// LHS-only override: the MyFoods heading should size to content so the
+// Curate pill sits immediately after it (with the 12 px .section-title gap
+// for breathing room) instead of being pushed to the far right by the
+// space-between justification. justify-content flips to flex-start so the
+// pair hugs the left edge.
+.left-pane .section-title { justify-content: flex-start; }
+.left-pane .section-title-text { flex: 0 0 auto; }
+
 .section-title-count {
   flex-shrink: 0;
   // Match the .category-count in the accordion dividers so the visual
@@ -1433,13 +1441,16 @@
   min-height: 18px;
 }
 
-// RHS rule: allow wrapping for readability. Long food names take a hit on
-// the basket-tile height but stay fully readable, which is the explicit
-// trade-off the user asked for here vs. the LHS clip-only behavior.
+// RHS rule (reversed): clip-and-ellipsis, same as the LHS. The earlier
+// wrap-for-readability bet looked too cramped in practice — long names like
+// "Chicken sausage, Isernios" would explode the tile height. Clipping to a
+// single line keeps every mini-card the same size; users can still see the
+// full name via tooltip / NF popup.
 .basket-mini-card-label-text {
   display: block;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-align: center;
 }
 
