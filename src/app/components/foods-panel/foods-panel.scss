@@ -1623,12 +1623,11 @@
 .nf-popup-health-info-ai {
   position: absolute;
   // Dropped INSIDE the popup's black banner so the star reads as part of
-  // the dialog chrome, not as something floating in the app background.
-  // Anchored just left of the pill (left:-8 sits in the dark to the side
-  // of the green oval) at top:28 — relative to the badge top (-22) that
-  // lands the star at popup_y ≈ 6, inside the black title strip.
+  // the dialog chrome. The PNG's transparent padding shifts the visible
+  // mask leftward inside the 22 px box, so left:12 is what's needed for
+  // the star to actually kiss the green pill's left edge.
   top: 28px;
-  left: -8px;
+  left: 17px;
   width: 22px;
   height: 22px;
   pointer-events: none;
