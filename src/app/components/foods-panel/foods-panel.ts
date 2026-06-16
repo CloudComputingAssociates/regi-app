@@ -467,7 +467,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                       <mat-icon
                         class="row-action favorite"
                         [class.active]="preferencesService.isAllowed(food.id)"
-                        (click)="toggleFavorite($event, food.id)"
+                        (click)="toggleFavorite($event, food)"
                         matTooltip="Favorite"
                         matTooltipPosition="left">
                         {{ preferencesService.isAllowed(food.id) ? 'star' : 'star_border' }}
@@ -538,7 +538,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                       <mat-icon
                         class="row-action favorite"
                         [class.active]="preferencesService.isAllowed(food.id)"
-                        (click)="toggleFavorite($event, food.id)"
+                        (click)="toggleFavorite($event, food)"
                         matTooltip="Favorite (adds to MyFoods)"
                         matTooltipPosition="left">
                         {{ preferencesService.isAllowed(food.id) ? 'star' : 'star_border' }}
@@ -567,22 +567,23 @@ const CATEGORY_PLURALS: Record<string, string> = {
       @if (nfPopupFood()) {
         <div class="nf-popup-overlay" (click)="nfPopupFood.set(null)">
           <div class="nf-popup" (click)="$event.stopPropagation()">
-            <button class="nf-popup-close" (click)="nfPopupFood.set(null)">✕</button>
-            @if (showHealthBenefitsForFilter()) {
-              <!-- Health Info button — upper-left corner of the NF popup, the
-                   same affordance that previously rode the centered card.
-                   Opens the AI Health Benefits popup for whichever food is
-                   currently in the NF view. -->
-              <button
-                type="button"
-                class="health-benefits-btn nf-popup-health-info"
-                (click)="openHealthBenefits()"
-                matTooltip="Click for Info"
-                matTooltipPosition="above"
-                aria-label="Health info">
-                <img src="/images/Health%20Benefits.png" alt="Health Info" />
-              </button>
-            }
+            <button class="nf-popup-close" (click)="nfPopupFood.set(null)" aria-label="Close">✕</button>
+            <!-- Health Info button — overhangs the popup's upper edge so it
+                 advertises the AI explainer affordance on every NF popup.
+                 Always rendered (the previous filter-gate would silently
+                 hide it whenever no LHS category was pressed). The AI
+                 star sits on top of the green badge to make the AI
+                 provenance unmistakable. -->
+            <button
+              type="button"
+              class="health-benefits-btn nf-popup-health-info"
+              (click)="openHealthBenefits()"
+              matTooltip="Click for AI Health Info"
+              matTooltipPosition="above"
+              aria-label="Health info">
+              <img src="/images/Health%20Benefits.png" alt="Health Info" class="nf-popup-health-info-bg" />
+              <img src="/images/AI-star-white.png" alt="" class="nf-popup-health-info-ai" />
+            </button>
             <!-- Scroll lives on this inner wrapper so the outer .nf-popup can
                  be overflow:visible and let the Health Info badge overhang
                  above without being clipped. -->
@@ -1335,10 +1336,27 @@ export class FoodsPanelComponent {
 
   // ----- Per-row actions -----
 
-  toggleFavorite(event: Event, foodId: number): void {
+  toggleFavorite(event: Event, food: Food): void {
     event.stopPropagation();
-    this.preferencesService.toggleFavoriteLocal(foodId);
-    // Cache may be stale — refresh so TYPE=MyFoods carousel reflects the change.
+    const wasAllowed = this.preferencesService.isAllowed(food.id);
+    this.preferencesService.toggleFavoriteLocal(food.id);
+
+    // Optimistic LHS update. The server cache (serverMyFoods) only refreshes
+    // after the 500 ms autosave + refetch round-trip, so without this nudge
+    // the newly-favorited food wouldn't appear on the LHS tile grid for ~1 s
+    // (allMyFoods filters through allowedFoods but also requires the Food
+    // object to be present in myFoodsLocal or serverMyFoods).
+    if (!wasAllowed) {
+      this.myFoodsLocal.update(list => {
+        if (list.some(f => f.id === food.id)) return list;
+        return [food, ...list];
+      });
+    } else {
+      // Trim from the local cache too on unfavorite, so we don't keep a
+      // ghost Food object around in localStorage forever.
+      this.myFoodsLocal.update(list => list.filter(f => f.id !== food.id));
+    }
+    // Server-side refresh in the background to reconcile preferenceIds.
     this.refreshServerMyFoods();
   }
 

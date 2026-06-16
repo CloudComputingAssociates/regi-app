@@ -585,12 +585,12 @@
 .section-title-text { flex: 1; min-width: 0; }
 
 // LHS-only override: the MyFoods heading should size to content so the
-// Curate pill sits immediately after it (with the 12 px .section-title gap
-// for breathing room) instead of being pushed to the far right by the
-// space-between justification. justify-content flips to flex-start so the
-// pair hugs the left edge.
+// Curate pill sits to its right (with a generous ~1/2" of breathing room)
+// instead of being pushed to the far edge by the space-between justification.
+// justify-content flips to flex-start so the pair hugs the left edge.
 .left-pane .section-title { justify-content: flex-start; }
 .left-pane .section-title-text { flex: 0 0 auto; }
+.left-pane .curate-toggle { margin-left: 48px; }
 
 .section-title-count {
   flex-shrink: 0;
@@ -1522,12 +1522,34 @@
   // into the white nutrition label. The badge overhangs the popup's top edge
   // by ~50 px — overflow:visible on .nf-popup lets it show through.
   top: -52px;
-  // Close button is at right:0, ~22 px wide. Anchoring the badge at right:
-  // 40px puts an 18 px gap between the two hit areas.
-  right: 40px;
-  z-index: 2;
+  // Close button is now 32 px wide at right:6px, so anchoring the badge at
+  // right:48px leaves a comfortable gap between the two hit areas.
+  right: 48px;
+  // Above the title text so it cleanly overlays a long food name instead of
+  // forcing an ellipsis. Below .nf-popup-close so the X always wins.
+  z-index: 3;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
 
-  img { height: 100px; }
+// Green "Health Info" image rides as the badge background.
+.nf-popup-health-info-bg {
+  height: 100px;
+  display: block;
+}
+
+// AI star pinned to the badge — small, top-right, with a soft halo so it
+// reads clearly against any color in the green pill artwork.
+.nf-popup-health-info-ai {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  filter: drop-shadow(0 0 4px rgba(255, 213, 79, 0.9));
+  pointer-events: none;
 }
 
 .nf-popup-header {
@@ -1535,17 +1557,22 @@
   justify-content: space-between;
   align-items: center;
   margin: 4px 0 12px;
-  // Leave enough room on the right for the now ~100-px-wide badge plus the
-  // close button so the food name doesn't get clipped.
-  padding-right: 160px;
+  // Just enough right-padding to clear the close button. The Health Info
+  // badge intentionally rides ABOVE this header (z-index: 3) so a long food
+  // name can extend under it — clean clip, no awkward ellipsis.
+  padding-right: 38px;
+  // Hide whatever extends past the popup edge so the title clip is sharp.
+  overflow: hidden;
 }
 
 .nf-popup-title {
   color: #ffffff;
   font-size: 20px;
   font-weight: 600;
+  // Clean clip — no ellipsis. The badge overlays the right portion of the
+  // name (intentional per the spec), so the truncated visible portion just
+  // ends mid-character at the badge edge instead of showing "Chicken sa…".
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
 }
@@ -1559,19 +1586,27 @@
 
 .nf-popup-close {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 6px;
+  right: 6px;
   background: none;
   border: none;
   color: #ffffff;
-  font-size: 14px;
-  cursor: pointer;
-  padding: 0 4px;
+  font-size: 22px;
   line-height: 1;
-  z-index: 1;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  // Highest z-index so the X is always on top of the badge / title overlap.
+  z-index: 5;
+  transition: background 0.12s ease, color 0.12s ease;
 
   &:hover {
-    color: #ccc;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
   }
 }
 
