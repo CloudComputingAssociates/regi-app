@@ -1622,14 +1622,15 @@
 // Cycle: starts YELLOW + tilted, undulates to WHITE + upright, then back.
 .nf-popup-health-info-ai {
   position: absolute;
-  // Anchored just above-and-left of the pill so "Health Info" stays readable
-  // but the star is still clearly attached to the badge. 18 × 18 is sized to
-  // the mask's actual visible footprint (the source PNG has transparent
-  // padding that eats most of the box at 10 px).
-  top: -4px;
-  left: -6px;
-  width: 18px;
-  height: 18px;
+  // Dropped INSIDE the popup's black banner so the star reads as part of
+  // the dialog chrome, not as something floating in the app background.
+  // Anchored just left of the pill (left:-8 sits in the dark to the side
+  // of the green oval) at top:28 — relative to the badge top (-22) that
+  // lands the star at popup_y ≈ 6, inside the black title strip.
+  top: 28px;
+  left: -8px;
+  width: 22px;
+  height: 22px;
   pointer-events: none;
   -webkit-mask: url(/images/AI-star-white.png) center / contain no-repeat;
           mask: url(/images/AI-star-white.png) center / contain no-repeat;
@@ -1642,7 +1643,7 @@
     // Tilted, yellow body, yellow halo — the "active / AI" pose.
     background-color: #ffd54f;
     filter: drop-shadow(0 0 3px rgba(255, 213, 79, 0.95));
-    transform: rotate(14deg);
+    transform: rotate(28deg);
   }
   50% {
     // Upright, white body, white halo — the "rest" pose.

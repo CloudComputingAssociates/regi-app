@@ -1164,7 +1164,7 @@ export class FoodsPanelComponent {
 
   private bloomShowTimer: ReturnType<typeof setTimeout> | null = null;
   private bloomHideTimer: ReturnType<typeof setTimeout> | null = null;
-  private static readonly BLOOM_SHOW_DELAY_MS = 3000;
+  private static readonly BLOOM_SHOW_DELAY_MS = 1500;
   private static readonly BLOOM_VISIBLE_MS = 5000;
 
   /** Cancel any pending bloom timers and hide the bloom immediately. */
