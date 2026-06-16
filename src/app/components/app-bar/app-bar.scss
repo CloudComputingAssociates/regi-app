@@ -51,8 +51,11 @@
     flex-direction: row;
     align-items: baseline;
     justify-content: flex-start;
+    // Gap between RegiMenu and the active panel name stays at 18 px (looks
+    // right per spec). The hamburger-to-RegiMenu padding was halved (24 → 12)
+    // to pull the brand closer to the menu button.
     gap: 18px;
-    padding-left: 24px;
+    padding-left: 12px;
     line-height: 1;
     min-width: 0;
   }

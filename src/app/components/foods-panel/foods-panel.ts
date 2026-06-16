@@ -327,7 +327,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 class="picker-search-input"
                 [value]="pickerSearchQuery()"
                 (input)="onPickerSearchInput($any($event.target).value)"
-                placeholder="Type to find a food…" />
+                placeholder="Search foods…" />
               @if (pickerSearchQuery()) {
                 <button
                   type="button"
@@ -339,6 +339,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                   ✕
                 </button>
               }
+              <span class="top-bar-total picker-search-total">Total ({{ bottomListLength() }})</span>
             </div>
           }
 

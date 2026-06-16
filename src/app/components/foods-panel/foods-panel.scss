@@ -530,6 +530,13 @@
   color: rgba(77, 166, 255, 0.7);
 }
 
+// RHS variant of .top-bar-total. Same look, but margin-left:auto floats it
+// to the right edge of the picker-search-row so it mirrors the LHS total
+// badge now that the picker SEARCH input is the same shorter width.
+.picker-search-total {
+  margin-left: auto;
+}
+
 // Nutrition Facts + Health Info action buttons — right-justified in the
 // top bar above the tile grid. Doubled from the previous size (60 × 72 →
 // 120 × 144) so the NF label is readable and the lime callout reads
@@ -668,13 +675,19 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  // Tight bottom edge so the SEARCH row sits 1 px below the dropdown row.
+  // The 1 px border-bottom IS the visible separator now — no padding gap.
+  padding: 4px 14px 1px;
   background: linear-gradient(180deg, #353535 0%, #2a2a2a 100%);
   border-bottom: 1px solid #1a1a1a;
 }
 
 .type-row-label {
   flex-shrink: 0;
+  // Reserve a fixed slot wide enough for the longest label ("FOOD LIST") so
+  // the dropdown's left edge stays put — and the SEARCH label below uses
+  // the same min-width so its input left-aligns with the dropdown.
+  min-width: 64px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -730,13 +743,17 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  // Top-tight so the SEARCH input sits 1 px under the FOOD LIST dropdown.
+  padding: 0 14px 4px;
   background: linear-gradient(180deg, #303030 0%, #262626 100%);
   border-bottom: 1px solid #1a1a1a;
 }
 
 .picker-search-label {
   flex-shrink: 0;
+  // Match the FOOD LIST label width so the SEARCH input's left edge aligns
+  // with the dropdown's left edge in the row above.
+  min-width: 64px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -745,8 +762,10 @@
 }
 
 .picker-search-input {
-  flex: 1;
-  min-width: 0;
+  // Match the LHS carousel-search-input width so the two SEARCH boxes look
+  // like siblings (~17 % of the pane width, 80 px min).
+  flex: 0 0 17%;
+  min-width: 80px;
   padding: 5px 10px;
   font-family: inherit;
   font-size: 12px;
@@ -833,6 +852,11 @@
 .curate-toggle,
 .autofill-toggle {
   flex-shrink: 0;
+  // Nudge 1 px down so the visual center of the pill sits inside the title
+  // band — the cap-height of "MyFoods" / "Fill Baskets" pulls the perceived
+  // center slightly above the geometric midline, so the pill needs to drop
+  // a touch to look balanced top/bottom.
+  margin-top: 1px;
   font-family: inherit;
   font-size: 15px;
   font-weight: 700;
