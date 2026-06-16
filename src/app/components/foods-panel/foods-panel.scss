@@ -282,6 +282,32 @@
   }
 }
 
+// Header row above the food title — AI star icon + "Health Info" label.
+// Sits flush with the top of the popup so the user knows what this dialog
+// is at a glance. The icon is decorative (alt=""), the label provides the
+// semantic meaning.
+.hb-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.hb-ai-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.hb-header-text {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: rgba(77, 166, 255, 0.85);
+}
+
 .hb-title {
   font-size: 15px;
   font-weight: 700;
@@ -1562,12 +1588,27 @@
   }
 
   .category-name {
-    flex: 1;
+    flex-shrink: 0;
   }
 
   .category-count {
+    flex-shrink: 0;
     color: rgba(77, 166, 255, 0.7);
     font-weight: 600;
+  }
+
+  // Right-side action-column hint. margin-left: auto floats it to the right
+  // edge of the divider, where it sits roughly above the star/restrict/delete
+  // icons in the food rows beneath. Smaller and dimmer than the title so the
+  // category name stays the dominant element.
+  .category-action-hint {
+    flex-shrink: 0;
+    margin-left: auto;
+    padding-right: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    color: rgba(77, 166, 255, 0.55);
   }
 }
 

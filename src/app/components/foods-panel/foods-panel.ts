@@ -9,12 +9,16 @@ import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { UserFoodService } from '../../services/user-food.service';
-import { FoodsService } from '../../services/foods.service';
+import { FoodsService, FoodList } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
 import { LangfusePromptService, LangfusePromptError } from '../../services/langfuse-prompt.service';
 import { Food } from '../../models/food.model';
 
-type SpinSource = 'myfoods' | 'restricted' | 'yeh-approved';
+// 'myfoods' and 'restricted' are special: they pull from the user-preferences
+// service. Any other value is treated as the handle of a curated list and
+// loaded via FoodsService.getListItems(). Lists are discovered at runtime via
+// FoodsService.getLists() and appear in the dropdown below a separator.
+type SpinSource = 'myfoods' | 'restricted' | string;
 
 const CAROUSEL_CATEGORIES = [
   'Protein', 'Fat', 'Dairy', 'Vegetable',
@@ -47,10 +51,11 @@ function emptyBaskets(): ThisWeekBaskets {
   return { Proteins: [], Fats: [], Carbs: [], Other: [] };
 }
 
-const TYPE_LABELS: Record<SpinSource, string> = {
-  'yeh-approved': 'YEH Approved',
+// Labels for the two preference-driven sources. Curated lists are labelled
+// dynamically from their .description (see typeLabel computed below).
+const TYPE_LABELS: Record<string, string> = {
   'myfoods': 'MyFoods',
-  'restricted': 'Restricted',
+  'restricted': 'My Restricted Foods',
 };
 
 const CATEGORY_PLURALS: Record<string, string> = {
@@ -243,8 +248,14 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 [ngModel]="spinSource()"
                 (ngModelChange)="onSpinSourceChange($event)">
                 <option value="myfoods">My Foods</option>
-                <option value="restricted">Restricted</option>
-                <option value="yeh-approved">Regi Approved</option>
+                <option value="restricted">My Restricted Foods</option>
+                <!-- Visual separator between the two user-preference sources
+                     above and the curated lists pulled from /api/lists
+                     below. Disabled so it can't be picked. -->
+                <option disabled>──────────────</option>
+                @for (list of availableLists(); track list.name) {
+                  <option [value]="list.name">{{ list.description }}</option>
+                }
               </select>
               <!-- Collapse/expand controls for the accordion below. Minus
                    collapses every category (the default state), plus
@@ -436,6 +447,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                   <mat-icon class="collapse-icon" [class.collapsed]="group.collapsed">expand_more</mat-icon>
                   <span class="category-name">{{ categoryLabel(group.category) }}</span>
                   <span class="category-count">({{ group.foods.length }})</span>
+                  <span class="category-action-hint">{{ columnHeaderText() }}</span>
                 </div>
                 @if (!group.collapsed) {
                   @for (food of group.foods; track food.id) {
@@ -493,10 +505,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
                  regardless of which TYPE is selected. -->
             @if (carouselFoods().length === 0) {
               <div class="bottom-empty">
-                @if (spinSource() === 'yeh-approved') {
-                  No YEH Approved foods match.
-                } @else {
+                @if (spinSource() === 'restricted') {
                   No restricted foods match.
+                } @else {
+                  No foods in {{ typeLabel() }} match.
                 }
               </div>
             } @else {
@@ -506,6 +518,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                   <mat-icon class="collapse-icon" [class.collapsed]="group.collapsed">expand_more</mat-icon>
                   <span class="category-name">{{ categoryLabel(group.category) }}</span>
                   <span class="category-count">({{ group.foods.length }})</span>
+                  <span class="category-action-hint">{{ columnHeaderText() }}</span>
                 </div>
                 @if (!group.collapsed) {
                   @for (food of group.foods; track food.id) {
@@ -611,12 +624,16 @@ const CATEGORY_PLURALS: Record<string, string> = {
               aria-label="Close">
               ✕
             </button>
+            <div class="hb-header">
+              <img src="/images/AI-star-white.png" alt="" class="hb-ai-icon" />
+              <span class="hb-header-text">Health Info</span>
+            </div>
             @if (healthBenefitsFood(); as food) {
               <div class="hb-title">{{ food.shortDescription || food.description }}</div>
             }
             <div class="hb-content">
               @if (healthBenefitsLoading()) {
-                <div class="hb-loading">Loading health benefits…</div>
+                <div class="hb-loading">Prompting AI for health benefits…</div>
               } @else if (healthBenefitsError(); as err) {
                 <div class="hb-error">{{ err }}</div>
               } @else if (healthBenefitsText(); as text) {
@@ -667,6 +684,12 @@ export class FoodsPanelComponent {
     this.preferencesService.getAllPreferences().subscribe({
       error: (err) => console.error('Failed to load food preferences:', err),
     });
+    // Pull the curated-list catalog so the Food List dropdown can show
+    // every list the API publishes (regi-approved, glp-1-friendly, …).
+    this.foodsService.getLists().subscribe({
+      next: (resp) => this.availableLists.set(resp?.lists ?? []),
+      error: () => this.availableLists.set([]),
+    });
   }
 
   private async refreshServerMyFoods(): Promise<void> {
@@ -690,12 +713,22 @@ export class FoodsPanelComponent {
   // Default TYPE for the Refine Foods pane = MyFoods, since that's the
   // primary list users come here to curate.
   spinSource = signal<SpinSource>('myfoods');
+  // Curated lists fetched from GET /api/lists. Populated once on construction
+  // and rendered below the MyFoods / Restricted entries in the Food List
+  // dropdown. Empty array if the endpoint fails — the special sources still
+  // work, you just won't see the curated catalog.
+  availableLists = signal<FoodList[]>([]);
   selectedCategories = signal<Set<string>>(new Set());
   private rawCarouselFoods = signal<Food[]>([]);
 
-  // Display label for the current TYPE — drives the slider's right-side label,
-  // the bottom-pane header when the slider is on the right, etc.
-  typeLabel = computed<string>(() => TYPE_LABELS[this.spinSource()]);
+  // Display label for the current TYPE. For the two preference-driven sources
+  // we use the TYPE_LABELS map; for everything else (curated lists) we look
+  // the handle up in availableLists() and return its description.
+  typeLabel = computed<string>(() => {
+    const src = this.spinSource();
+    if (TYPE_LABELS[src]) return TYPE_LABELS[src];
+    return this.availableLists().find(l => l.name === src)?.description ?? src;
+  });
 
   // Count shown next to the right-pane section title. Honors the picker
   // search box so the number matches what's actually rendered — for MyFoods
@@ -721,8 +754,11 @@ export class FoodsPanelComponent {
   });
 
   // Hint label shown above the action-icon column at the right edge of each
-  // row (right-side views only — left side now shows the basket grid).
-  columnHeaderText = computed<string>(() => 'Favorite / Restrict');
+  // row. MyFoods rows also have a delete column; curated lists do not, so
+  // the heading shrinks to "Fave / Restrict" when delete isn't applicable.
+  columnHeaderText = computed<string>(() =>
+    this.spinSource() === 'myfoods' ? 'Fave / Restrict / Delete' : 'Fave / Restrict'
+  );
 
   // Search: filters the carousel locally (no API round-trip per keystroke)
   searchQuery = signal('');
@@ -817,13 +853,21 @@ export class FoodsPanelComponent {
   // same set the carousel does when TYPE=MyFoods.
   private serverMyFoods = signal<Food[]>([]);
 
-  // All MyFoods = local picks + unique server favorites. Local takes precedence
-  // on dedupe so any edits on the local copy aren't overwritten by a server entry.
+  // All MyFoods = local picks + unique server favorites, then filtered against
+  // the user's CURRENT allowed/favorited set. Reading
+  // preferencesService.allowedFoods() registers a reactive dependency on the
+  // service's localAllowedFoods signal, so unfavoriting a food on the RHS
+  // (which mutates that signal synchronously) immediately drops it from the
+  // LHS tile grid — no need to wait for the 500 ms autosave + server refresh
+  // round-trip to complete. Local takes precedence on dedupe so any edits on
+  // the local copy aren't overwritten by a server entry.
   allMyFoods = computed<Food[]>(() => {
     const local = this.myFoodsLocal();
     const server = this.serverMyFoods();
+    const allowed = this.preferencesService.allowedFoods();
     const seenIds = new Set(local.map(f => f.id));
-    return [...local, ...server.filter(f => !seenIds.has(f.id))];
+    return [...local, ...server.filter(f => !seenIds.has(f.id))]
+      .filter(f => allowed.has(f.id));
   });
 
   // MyFoods display follows the same category Filters as the carousel.
@@ -1154,14 +1198,11 @@ export class FoodsPanelComponent {
 
   private onRightSideAdd(food: Food): void {
     const source = this.spinSource();
-    if (source === 'yeh-approved') {
-      if (!this.preferencesService.isAllowed(food.id)) {
-        this.preferencesService.toggleFavoriteLocal(food.id);
-        this.refreshServerMyFoods();
-        this.notificationService.show(`${food.shortDescription || food.description} → MyFoods`, 'success');
-      } else {
-        this.notificationService.show('Already a MyFood', 'info');
-      }
+    if (source === 'myfoods') {
+      this.myFoodsLocal.update(list => {
+        const filtered = list.filter(f => f.id !== food.id);
+        return [food, ...filtered];
+      });
     } else if (source === 'restricted') {
       if (this.preferencesService.isRestricted(food.id)) {
         this.preferencesService.toggleRestrictedLocal(food.id);
@@ -1172,10 +1213,15 @@ export class FoodsPanelComponent {
       this.refreshServerMyFoods();
       this.notificationService.show(`${food.shortDescription || food.description} → MyFoods`, 'success');
     } else {
-      this.myFoodsLocal.update(list => {
-        const filtered = list.filter(f => f.id !== food.id);
-        return [food, ...filtered];
-      });
+      // Curated list (regi-approved, glp-1-friendly, …) — favorite the food
+      // into MyFoods, matching the previous YEH-approved behavior.
+      if (!this.preferencesService.isAllowed(food.id)) {
+        this.preferencesService.toggleFavoriteLocal(food.id);
+        this.refreshServerMyFoods();
+        this.notificationService.show(`${food.shortDescription || food.description} → MyFoods`, 'success');
+      } else {
+        this.notificationService.show('Already a MyFood', 'info');
+      }
     }
     queueMicrotask(() => {
       this.bottomListRef()?.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1476,18 +1522,20 @@ export class FoodsPanelComponent {
     const reqId = ++this.loadRequestId;
     try {
       let foods: Food[] = [];
-      if (source === 'yeh-approved') {
-        const resp = await firstValueFrom(this.foodsService.searchYehApprovedFoods(500));
-        foods = resp?.foods ?? [];
-      } else if (source === 'myfoods') {
+      if (source === 'myfoods') {
         // Read from the in-memory cache (populated eagerly on construction and
         // refreshed explicitly after favorite/restrict toggles). Don't call
         // refreshServerMyFoods() here — writing to serverMyFoods inside this
         // effect-driven path would re-trigger autoLoadCarousel (it tracks
         // allMyFoods) and spin into an infinite loop that locks up the UI.
         foods = this.allMyFoods();
-      } else {
+      } else if (source === 'restricted') {
         foods = await firstValueFrom(this.preferencesService.getRestrictedFoodsFull());
+      } else {
+        // Curated list — load by name. Same response shape as the YEH-approved
+        // endpoint, so `foods` lands in the existing render path unchanged.
+        const resp = await firstValueFrom(this.foodsService.getListItems(source));
+        foods = resp?.foods ?? [];
       }
 
       // Stale-result guard: discard if a newer load has started
