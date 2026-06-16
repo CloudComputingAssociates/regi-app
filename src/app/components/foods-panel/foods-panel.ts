@@ -205,8 +205,8 @@ const CATEGORY_PLURALS: Record<string, string> = {
               }
             </span>
             <span class="section-title-count">
-              @if (addTo() === 'left') { {{ thisWeekTotal() }} }
-              @else { {{ bottomListLength() }} }
+              @if (addTo() === 'left') { Total ({{ thisWeekTotal() }}) }
+              @else { Total ({{ bottomListLength() }}) }
             </span>
             @if (addTo() === 'right') {
               <button
@@ -235,7 +235,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 (ngModelChange)="spinSource.set($event)">
                 <option value="myfoods">My Foods</option>
                 <option value="restricted">Restricted</option>
-                <option value="yeh-approved">YEH Approved</option>
+                <option value="yeh-approved">Regi Approved</option>
               </select>
               <!-- Collapse/expand controls for the accordion below. Minus
                    collapses every category (the default state), plus
@@ -574,6 +574,14 @@ const CATEGORY_PLURALS: Record<string, string> = {
               <regi-nutrition-label
                 [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
                 [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
+              <!-- Tiny dev-side data-trace indicator. Tucked at the very
+                   bottom of the popup so it doesn't distract users; the
+                   food ID + source ("USDA" for canonical rows, "User" for
+                   phone-app-created ones) is invaluable when triaging DB
+                   data without opening DevTools. -->
+              <div class="nf-popup-trace">
+                #{{ nfPopupFood()!.id }} ({{ nfPopupFood()!.userId == null ? 'USDA' : 'User' }})
+              </div>
             </div>
           </div>
         </div>

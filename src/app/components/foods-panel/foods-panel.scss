@@ -516,9 +516,13 @@
 
 .section-title-count {
   flex-shrink: 0;
-  font-size: 18px;
-  font-weight: 500;
-  color: rgba(77, 166, 255, 0.75);
+  // Match the .category-count in the accordion dividers so the visual
+  // hierarchy reads as: big section title | small "Total (n)" badge | ...
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: rgba(77, 166, 255, 0.7);
 }
 
 // TYPE row sits between DISPLAY and the curated list. Only visible in Curate
@@ -695,7 +699,8 @@
   font-family: inherit;
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
+  // No text-transform so the literal "Curate MyFoods" string renders with
+  // its natural capitalization (initial cap on Curate, camel-cap on MyFoods).
   letter-spacing: 0.3px;
   color: #ffffff;
   background: linear-gradient(180deg, #5fa3d8 0%, #357095 100%);
@@ -1363,6 +1368,22 @@
   overflow-y: auto;
   &::-webkit-scrollbar { display: none; }
   scrollbar-width: none;
+}
+
+// Tiny data-trace line at the very bottom of the NF popup — food ID +
+// source ("USDA" or "User"). Intentionally faint and small so users don't
+// fixate on it, but readable enough to grep the DB when triaging data.
+.nf-popup-trace {
+  margin-top: 12px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.4px;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: center;
+  user-select: text; // let the user copy the ID
 }
 
 // Health Info button — rides the upper-RIGHT of the NF popup IN the black
