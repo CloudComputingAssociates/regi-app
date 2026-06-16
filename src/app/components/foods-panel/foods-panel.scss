@@ -404,8 +404,9 @@
 }
 
 .carousel-search-input {
-  // ~33% of the left-pane width; clamps so it never gets absurdly small.
-  flex: 0 0 33%;
+  // ~17% of the left-pane width (half the previous 33%) per the user's
+  // "50% of the size" request. Still clamps so it never gets absurdly small.
+  flex: 0 0 17%;
   min-width: 80px;
   box-sizing: border-box;
   padding: 5px 10px;
@@ -426,8 +427,51 @@
   }
 }
 
+// Clear button for the LHS SEARCH input — Material `cancel` icon, only
+// rendered when the search text is non-empty. Mirrors the RHS
+// .picker-search-clear pattern so the two SEARCH rows feel consistent.
+.carousel-search-clear {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s ease, background 0.12s ease;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    line-height: 1;
+  }
+
+  &:hover {
+    color: #ff6b6b;
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
 // Flex spacer that pushes the Spin button to the right edge.
 .top-bar-spacer { flex: 1; }
+
+// LHS total badge — sits at the right edge of the SEARCH row, mirrors the
+// RHS .section-title-count style. Reflects carouselSpinnerFoods().length,
+// so it tracks the active category filter + SEARCH text live.
+.top-bar-total {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: rgba(77, 166, 255, 0.7);
+}
 
 // Nutrition Facts + Health Info action buttons — right-justified in the
 // top bar above the tile grid. Doubled from the previous size (60 × 72 →
@@ -742,6 +786,20 @@
 // Mobile-app launcher — sits to the right of the Curate pill on the LHS
 // section-title row. Same raised "physical button" treatment as the Curate
 // pill so the two LHS chrome controls read as a pair.
+// Blue label that sits in front of the mobile phone button. margin-left:
+// auto pushes both the label and the phone button to the right edge of the
+// .type-row, so the phone shifts right a bit and the label rides with it.
+.mobile-app-label {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-right: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #4da6ff;
+}
+
 .mobile-app-btn {
   flex-shrink: 0;
   width: 32px;
@@ -1021,7 +1079,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  padding-right: 48px; // leaves room for yellow + green on the right
+  padding-right: 56px; // leaves room for yellow + green on the right
   user-select: none;
 }
 
@@ -1079,8 +1137,8 @@
 .basket-light {
   position: absolute;
   top: 6px;
-  width: 14px;
-  height: 14px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.4);
@@ -1091,6 +1149,14 @@
   justify-content: center;
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25), 0 1px 1px rgba(0, 0, 0, 0.35);
   transition: transform 0.1s ease, filter 0.1s ease, opacity 0.1s ease;
+
+  &::before {
+    color: #000;
+    font-weight: 900;
+    font-size: 16px;
+    line-height: 1;
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.6);
+  }
 
   &:hover:not(:disabled) {
     transform: scale(1.12);
@@ -1120,8 +1186,14 @@
 
 .basket-lights-right .basket-light { position: static; }
 
-.basket-light-min { background: #febc2e; }
-.basket-light-max { background: #28c941; }
+.basket-light-min {
+  background: #febc2e;
+  &::before { content: '\2212'; } // minus sign
+}
+.basket-light-max {
+  background: #28c941;
+  &::before { content: '+'; }
+}
 
 // ---- Focus mode ----
 // When any basket is .focused, the grid collapses to a single cell — the

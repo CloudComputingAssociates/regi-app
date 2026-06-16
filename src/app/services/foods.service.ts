@@ -12,6 +12,13 @@ export interface Category {
   sortOrder: number;
 }
 
+export interface FoodList {
+  name: string;
+  description: string;
+  toolTip?: string;
+  assigned?: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -38,6 +45,22 @@ export class FoodsService {
   searchYehApprovedFoods(limit: number = 50): Observable<FoodSearchResponse> {
     const url = `${this.baseUrl}/foods/search/all/yehapproved?limit=${limit}`;
     return this.http.get<FoodSearchResponse>(url);
+  }
+
+  // All curated lists (for the dropdown). Optional foodId adds an `assigned`
+  // flag per list — not needed here, used by the detail-panel work.
+  getLists(foodId?: number, foodSource: string = 'usda'): Observable<{ lists: FoodList[]; count: number }> {
+    let url = `${this.baseUrl}/lists`;
+    if (foodId != null) {
+      url += `?foodId=${foodId}&foodSource=${foodSource}`;
+    }
+    return this.http.get<{ lists: FoodList[]; count: number }>(url);
+  }
+
+  // Hydrated foods in a list — same response shape as searchYehApprovedFoods
+  // ({ foods, count }), so the existing render path is unchanged.
+  getListItems(name: string): Observable<FoodSearchResponse> {
+    return this.http.get<FoodSearchResponse>(`${this.baseUrl}/lists/${encodeURIComponent(name)}/items`);
   }
 
   // Categories cache

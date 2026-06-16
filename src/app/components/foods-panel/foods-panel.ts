@@ -101,7 +101,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
               matTooltip="Curate MyFoods — 'Like' YEH Approved foods or add your own MyFoods with mobile app download (Android)"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350">
-              Curate MyFoods
+              @if (addTo() === 'right') { (Close) Curate } @else { Curate }
             </button>
           </div>
 
@@ -130,11 +130,23 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 [value]="searchQuery()"
                 (input)="onSearchInput($any($event.target).value)"
                 placeholder="Search foods…" />
+              @if (searchQuery()) {
+                <button
+                  type="button"
+                  class="carousel-search-clear"
+                  (click)="searchQuery.set('')"
+                  matTooltip="Clear search"
+                  matTooltipPosition="below"
+                  aria-label="Clear search">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              }
               <!-- LHS top bar is intentionally lean now — no NF Label or
                    Health Info button. Nutrition Facts is offered via a
                    delayed "Click for Facts" bloom on RHS basket tiles
                    (see .nf-bloom in foods-panel.scss). -->
               <span class="top-bar-spacer"></span>
+              <span class="top-bar-total">Total ({{ carouselSpinnerFoods().length }})</span>
             </div>
             <!-- Tile grid replaces the old spinning carousel. Tiles fill
                  left-to-right and wrap to the next row; the grid scrolls
@@ -228,11 +240,11 @@ const CATEGORY_PLURALS: Record<string, string> = {
                  MyFoods can be added to). It's stubbed gray because the
                  real Add flow lives in the phone app. -->
             <div class="type-row">
-              <span class="type-row-label">TYPE</span>
+              <span class="type-row-label">Food List</span>
               <select
                 class="spin-source-select"
                 [ngModel]="spinSource()"
-                (ngModelChange)="spinSource.set($event)">
+                (ngModelChange)="onSpinSourceChange($event)">
                 <option value="myfoods">My Foods</option>
                 <option value="restricted">Restricted</option>
                 <option value="yeh-approved">Regi Approved</option>
@@ -265,7 +277,11 @@ const CATEGORY_PLURALS: Record<string, string> = {
               @if (spinSource() === 'myfoods') {
                 <!-- Phone button lives here in the MyFoods context — the
                      same slot the Add-Food + button used to occupy. It
-                     opens the phone-app placeholder dialog (download QR). -->
+                     opens the phone-app placeholder dialog (download QR).
+                     The blue "Add foods w/ mobile" label sits in front of
+                     the icon and the pair is right-justified via
+                     margin-left: auto on the label. -->
+                <span class="mobile-app-label">Add foods w/ mobile</span>
                 <button
                   type="button"
                   class="mobile-app-btn"
@@ -677,7 +693,7 @@ export class FoodsPanelComponent {
   // Default TYPE for the Refine Foods pane = MyFoods, since that's the
   // primary list users come here to curate.
   spinSource = signal<SpinSource>('myfoods');
-  selectedCategories = signal<Set<string>>(new Set(['Protein']));
+  selectedCategories = signal<Set<string>>(new Set());
   private rawCarouselFoods = signal<Food[]>([]);
 
   // Display label for the current TYPE — drives the slider's right-side label,
@@ -934,6 +950,17 @@ export class FoodsPanelComponent {
     } else {
       this.collapsedCarouselCategories.set(empty);
     }
+  }
+
+  /** Food List dropdown change handler. Picking a new list opens that list's
+   *  accordion fully expanded so the user sees every category right away. */
+  onSpinSourceChange(value: SpinSource): void {
+    this.spinSource.set(value);
+    // Expand against the NEW value, not the prior one — clear both sets so
+    // whichever accordion renders is wide open.
+    const empty = new Set<string>();
+    this.collapsedMyFoodsCategories.set(empty);
+    this.collapsedCarouselCategories.set(empty);
   }
 
   // Scroll target for the bottom list (used after add to bring new/moved row into view)
