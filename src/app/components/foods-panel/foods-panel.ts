@@ -208,7 +208,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
           <div class="section-title">
             <span class="section-title-text">
               @if (addTo() === 'left') {
-                Baskets
+                Fill Baskets
               } @else {
                 <span
                   matTooltip="Curate MyFoods — click 'star' to Favorite, or 'circle-line' for your Restricted Foods. With MyFoods selected you can delete or un-favorite to remove from MyFoods."
@@ -787,14 +787,24 @@ export class FoodsPanelComponent {
 
   // RHS Food Picker list. NOT filtered by the LHS carousel SEARCH box. It IS
   // filtered by the picker's own search (above the accordion) when typed.
+  // Sorted alphabetically by the same label the UI shows, matching the
+  // MyFoods source — so curated lists (Regi Approved, GLP-1, …) and the
+  // Restricted list both read in alpha order regardless of API insertion
+  // order, and the order is stable across favorite/restrict toggles.
   carouselFoods = computed<Food[]>(() => {
     const raw = this.rawCarouselFoods();
     const q = this.pickerSearchQuery().trim().toLowerCase();
-    if (!q) return raw;
-    return raw.filter(f =>
-      f.description.toLowerCase().includes(q)
-      || (f.shortDescription?.toLowerCase().includes(q) ?? false),
-    );
+    const filtered = q
+      ? raw.filter(f =>
+          f.description.toLowerCase().includes(q)
+          || (f.shortDescription?.toLowerCase().includes(q) ?? false),
+        )
+      : raw;
+    return [...filtered].sort((a, b) => {
+      const aName = (a.shortDescription || a.description || '').toLowerCase();
+      const bName = (b.shortDescription || b.description || '').toLowerCase();
+      return aName.localeCompare(bName);
+    });
   });
 
   // Carousel destination + local lists (persisted to localStorage).
@@ -870,7 +880,18 @@ export class FoodsPanelComponent {
     const allowed = this.preferencesService.allowedFoods();
     const seenIds = new Set(local.map(f => f.id));
     return [...local, ...server.filter(f => !seenIds.has(f.id))]
-      .filter(f => allowed.has(f.id));
+      .filter(f => allowed.has(f.id))
+      // Alphabetical by the same label the UI shows (shortDescription, falling
+      // back to description). Case-insensitive, locale-aware. Sorted at the
+      // source so every downstream view — the LHS tile grid, the RHS
+      // groupedMyFoods accordion, every category filter — is alphabetical
+      // without each consumer re-sorting. Add/remove still land in their
+      // alphabetical slot instead of "wherever the user toggled them."
+      .sort((a, b) => {
+        const aName = (a.shortDescription || a.description || '').toLowerCase();
+        const bName = (b.shortDescription || b.description || '').toLowerCase();
+        return aName.localeCompare(bName);
+      });
   });
 
   // MyFoods display follows the same category Filters as the carousel.

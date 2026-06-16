@@ -1,4 +1,45 @@
 // src/app/components/foods-panel/foods-panel.scss
+
+// ---- Standardized close button ---------------------------------------------
+// Shared placeholder for every panel/dialog close X across the Foods panel
+// (NF popup, Health Benefits popup, Curate section title). Same 20 × 20 form
+// factor as the basket traffic-lights so the chrome reads as one family.
+// macOS-style red disc, raised look via inset highlight + drop shadow, dark
+// × glyph that pops against the red. Per the user's preference these always
+// ride the RIGHT side of their host (Apple puts them on the left).
+%app-close-circle {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: #ff5f57;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  color: rgba(0, 0, 0, 0.7);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.25),
+    0 1px 1px rgba(0, 0, 0, 0.35);
+  transition: transform 0.1s ease, filter 0.1s ease;
+
+  &:hover {
+    transform: scale(1.12);
+    filter: brightness(1.15);
+  }
+  &:active {
+    transform: scale(0.95);
+    filter: brightness(0.9);
+  }
+}
+
 :host {
   display: flex;
   height: 100%;
@@ -265,21 +306,11 @@
 }
 
 .hb-close {
+  @extend %app-close-circle;
   position: absolute;
-  top: 4px;
-  right: 4px;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 16px;
-  cursor: pointer;
-  padding: 4px 8px;
-  line-height: 1;
-  z-index: 1;
-
-  &:hover {
-    color: #ffffff;
-  }
+  top: 6px;
+  right: 6px;
+  z-index: 2;
 }
 
 // Header row above the food title — AI star icon + "Health Info" label.
@@ -882,27 +913,8 @@
 // Returns the RHS to its default Baskets view (same effect as clicking the
 // active Curate button on the LHS).
 .section-title-close {
-  flex-shrink: 0;
+  @extend %app-close-circle;
   margin-left: 4px;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.12s ease, background 0.12s ease;
-
-  &:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.08);
-  }
 }
 
 // Right-pane list (MyFoods accordion / YEH-approved rows).
@@ -1228,7 +1240,10 @@
 .basket-lights-right .basket-light { position: static; }
 
 .basket-light-min {
-  background: #febc2e;
+  // True yellow — the prior #febc2e read as tan/amber next to the vivid
+  // green. #fcd200 reads as a clean sunny yellow at the same saturation as
+  // the green so the pair looks like a matched set.
+  background: #fcd200;
   &::before { content: '\2212'; } // minus sign
 }
 .basket-light-max {
@@ -1377,36 +1392,21 @@
 // Red X delete indicator — purely a hover affordance (the whole card is the
 // click target). Absolutely positioned over the left edge of the black label
 // banner so the centered text doesn't shift right when the X appears.
-// Red X remove badge. Hidden by default; revealed on mini-card hover. A
-// real <button> now (not just a visual hint), so clicking it removes the
-// food directly without going through the select / dbl-click path.
+// Hover-revealed remove badge. Borrows the standard %app-close-circle look
+// (same red disc, raised treatment, dark × glyph) so every X in the panel
+// reads as one family. Pinned to the BOTTOM-RIGHT of the card so it rides
+// the picture area instead of the label — the food name then gets the full
+// width of the label strip without the X eating into it.
 .basket-mini-remove {
+  @extend %app-close-circle;
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  background: #e53935;
-  border: 1px solid #ffffff;
-  border-radius: 50%;
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  bottom: 2px;
+  right: 2px;
   opacity: 0;
   z-index: 3;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-  transition: opacity 0.12s ease, background 0.12s ease, transform 0.08s ease;
-
-  &:hover {
-    background: #ff5252;
-    transform: scale(1.1);
-  }
+  // Augment the placeholder's transform/filter transitions with opacity so
+  // the hover-reveal still fades in smoothly.
+  transition: transform 0.1s ease, filter 0.1s ease, opacity 0.12s ease;
 }
 
 // Reveal the X whenever the mini-card (or the X itself) is hovered.
@@ -1471,7 +1471,11 @@
 .nf-popup {
   background: #2a2a2a;
   border-radius: 8px;
-  padding: 12px;
+  // Sides 12, top 12, bottom 0 — the data-trace line below the white label
+  // sits flush at the bottom and provides its own ~3 px of breathing room so
+  // the dark bottom band matches the left/right margins instead of dwarfing
+  // them. The trace is a developer indicator, not user content.
+  padding: 12px 12px 0;
   width: 310px;
   box-sizing: border-box;
   // Same warm yellow glow we use on the "Click for Facts" bloom — the bloom
@@ -1497,18 +1501,21 @@
   scrollbar-width: none;
 }
 
-// Data-trace line riding on the dark bottom chrome of the NF popup,
-// OUTSIDE the white nutrition label. Left-aligned with the label's left
-// edge, brighter white so it's actually readable, monospace so the ID
-// kerns cleanly.
+// Data-trace line riding on the dark bottom chrome of the NF popup. It's a
+// developer indicator (food ID + source) — not user-facing content — so it
+// sits as a slim centered strip whose total height roughly matches the 12 px
+// side margins. Muted color and small font keep it from competing with the
+// nutrition label above.
 .nf-popup-trace {
-  margin-top: 8px;
+  margin-top: 2px;
+  padding: 2px 0 3px;
   font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 500;
-  letter-spacing: 0.4px;
-  color: rgba(255, 255, 255, 0.85);
-  text-align: left;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: center;
   user-select: text; // let the user copy the ID
 }
 
@@ -1518,36 +1525,46 @@
 // 25% bigger).
 .nf-popup-health-info {
   position: absolute;
-  // Raised a few pixels (was -52) so more of the heading is visible above the
-  // badge — the food name is the primary read, the badge a secondary callout.
-  top: -58px;
-  // X close occupies right:6 → right:38 (it's 32 px wide). Anchoring the
-  // badge at right:42 leaves a ~4 px gap between the badge's right edge and
-  // the X's left edge — the user asked to split the previous 10 px gap.
-  right: 42px;
-  // Above the title text so it cleanly overlays a long food name instead of
+  // The Health Info source image has the green pill in the UPPER-LEFT quadrant
+  // with a lot of transparent space around it. Anchoring the button at top:-22
+  // brings the pill itself down to sit ON the title row instead of floating
+  // above the popup like a UFO.
+  top: -22px;
+  // X close occupies right:6 → right:38 (32 px wide). Anchoring the badge at
+  // right:38 puts its right edge flush with the X's left edge — closest the
+  // two can sit without the badge hit area overlapping the X hit area.
+  right: 38px;
+  // Above the title so it cleanly overlays a long food name instead of
   // forcing an ellipsis. Below .nf-popup-close so the X always wins.
   z-index: 3;
+  // Force a known box so the AI star positioning is predictable across the
+  // image's transparent padding. 90 × 80 matches the visible pill nicely.
+  width: 90px;
+  height: 80px;
   background: transparent;
   border: none;
   padding: 0;
   cursor: pointer;
 }
 
-// Green "Health Info" image rides as the badge background.
+// Green "Health Info" image rides as the badge background. object-fit keeps
+// the natural aspect ratio inside the fixed button box.
 .nf-popup-health-info-bg {
-  height: 100px;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   display: block;
 }
 
-// AI star pinned to the LEFT of the "Health Info" text on the green badge —
-// small (smaller than the 32 px X), vertically centered, with a soft halo so
-// it reads against the green artwork.
+// AI star pinned to the LEFT of the "Health Info" text on the green pill.
+// Coordinates are tied to where the pill actually sits inside the source
+// image (upper-left), not the button's full bounding box, so the star lands
+// on the green pill and just left of the text rather than floating in the
+// transparent area. Smaller than the 32 px X per the spec.
 .nf-popup-health-info-ai {
   position: absolute;
-  top: 50%;
-  left: 8px;
-  transform: translateY(-50%);
+  top: 14px;
+  left: 6px;
   width: 18px;
   height: 18px;
   filter: drop-shadow(0 0 4px rgba(255, 213, 79, 0.95));
@@ -1587,29 +1604,12 @@
 }
 
 .nf-popup-close {
+  @extend %app-close-circle;
   position: absolute;
   top: 6px;
   right: 6px;
-  background: none;
-  border: none;
-  color: #ffffff;
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
   // Highest z-index so the X is always on top of the badge / title overlap.
   z-index: 5;
-  transition: background 0.12s ease, color 0.12s ease;
-
-  &:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.12);
-  }
 }
 
 // Accordion section header inside the MyFoods bottom list.
