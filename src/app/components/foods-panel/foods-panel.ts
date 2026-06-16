@@ -227,7 +227,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 type="button"
                 class="section-title-close"
                 (click)="addTo.set('left')"
-                matTooltip="Close Curate, back to Baskets"
+                matTooltip="Back to Fill Baskets"
                 matTooltipPosition="below"
                 aria-label="Close Curate">
                 ✕

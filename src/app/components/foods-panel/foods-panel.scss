@@ -1394,14 +1394,20 @@
 // banner so the centered text doesn't shift right when the X appears.
 // Hover-revealed remove badge. Borrows the standard %app-close-circle look
 // (same red disc, raised treatment, dark × glyph) so every X in the panel
-// reads as one family. Pinned to the BOTTOM-RIGHT of the card so it rides
-// the picture area instead of the label — the food name then gets the full
-// width of the label strip without the X eating into it.
+// reads as one family — but 25 % smaller (15 × 15 vs 20 × 20) because this
+// is an INNER delete on a tile, not a panel-level close. Pinned to the
+// UPPER-RIGHT of the picture area (just below the label strip) so the food
+// name keeps the full width of the label without the X eating into it.
 .basket-mini-remove {
   @extend %app-close-circle;
   position: absolute;
-  bottom: 2px;
+  // 22 px clears the label (min-height 18 + 2 + 2 padding) — anchored just
+  // inside the upper-right of the image area.
+  top: 22px;
   right: 2px;
+  width: 15px;
+  height: 15px;
+  font-size: 10px;
   opacity: 0;
   z-index: 3;
   // Augment the placeholder's transform/filter transitions with opacity so
