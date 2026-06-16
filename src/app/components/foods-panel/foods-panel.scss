@@ -598,7 +598,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 14px 6px;
+  // Balanced top/bottom so the LHS and RHS section-title banners line up
+  // when stacked side-by-side. Tighter than the prior 8/6 so the banner
+  // doesn't dwarf the filter row directly beneath it.
+  padding: 4px 14px;
   color: #4da6ff;
   // Inter for the section titles too — same family as the app-bar so the
   // hierarchy reads as "same font, one weight heavier." 700 is bold enough
@@ -622,6 +625,30 @@
 .left-pane .section-title { justify-content: flex-start; }
 .left-pane .section-title-text { flex: 0 0 auto; }
 .left-pane .curate-toggle { margin-left: 48px; }
+
+// RHS gets the same hug-left treatment so "Fill Baskets" + AutoFill mirror
+// the "MyFoods" + Curate layout on the left. The count + close X are pushed
+// to the right edge via margin-left:auto on the count (the close trails the
+// count via its normal flow).
+.right-pane .section-title { justify-content: flex-start; }
+.right-pane .section-title-text { flex: 0 0 auto; }
+.right-pane .autofill-toggle { margin-left: 48px; }
+.right-pane .section-title-count { margin-left: auto; }
+
+// AI star sits to the LEFT of "AutoFill" inside the pill, with a tiny gap
+// before the text. Same icon family as the Health Info badge so the AI
+// affordance is recognizable across the panel.
+.autofill-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.autofill-ai-icon {
+  width: 16px;
+  height: 16px;
+  filter: drop-shadow(0 0 3px rgba(255, 213, 79, 0.85));
+}
 
 .section-title-count {
   flex-shrink: 0;
@@ -803,7 +830,8 @@
 // physical raised/inset behavior so the user can tell at a glance whether
 // it's "out" (Baskets visible) or "pressed in" (Curate active). Only the
 // hue differs: this one is a blue-tinted variant of the gray FILTER pills.
-.curate-toggle {
+.curate-toggle,
+.autofill-toggle {
   flex-shrink: 0;
   font-family: inherit;
   font-size: 15px;
@@ -820,8 +848,11 @@
   border: 1px solid #4080ac;
   border-top-color: #7fbdec;
   border-radius: 6px;
-  padding: 7px 18px;
-  height: 34px;
+  // Tight balanced vertical padding (a few px each side) + tighter horizontal
+  // padding so the pill sits inside the slimmer section-title band without
+  // forcing the whole banner to grow around it.
+  padding: 3px 12px;
+  height: 26px;
   cursor: pointer;
   user-select: none;
   outline: none;
@@ -1401,10 +1432,11 @@
 .basket-mini-remove {
   @extend %app-close-circle;
   position: absolute;
-  // 22 px clears the label (min-height 18 + 2 + 2 padding) — anchored just
-  // inside the upper-right of the image area.
-  top: 22px;
-  right: 2px;
+  // 23 px clears the label strip (min-height 18 + 2/2 padding = 22) plus a
+  // 1 px top margin so the X isn't flush against the image's top edge.
+  // 1 px right margin keeps it tucked into the corner.
+  top: 23px;
+  right: 1px;
   width: 15px;
   height: 15px;
   font-size: 10px;

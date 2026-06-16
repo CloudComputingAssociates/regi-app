@@ -218,6 +218,21 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 </span>
               }
             </span>
+            @if (addTo() === 'left') {
+              <!-- AutoFill — AI-driven basket-filler. Wiring lands later;
+                   the button is here so the layout settles now. Visually
+                   matches the Curate pill on the LHS so the two banners
+                   read as a balanced pair. -->
+              <button
+                type="button"
+                class="autofill-toggle"
+                matTooltip="AI auto-fills your baskets from MyFoods"
+                matTooltipPosition="below"
+                [matTooltipShowDelay]="350">
+                <img src="/images/AI-star-white.png" alt="" class="autofill-ai-icon" />
+                AutoFill
+              </button>
+            }
             <span class="section-title-count">
               @if (addTo() === 'left') { Total ({{ thisWeekTotal() }}) }
               @else { Total ({{ bottomListLength() }}) }
