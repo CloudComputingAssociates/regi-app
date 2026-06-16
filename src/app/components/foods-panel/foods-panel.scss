@@ -1518,13 +1518,13 @@
 // 25% bigger).
 .nf-popup-health-info {
   position: absolute;
-  // Lifted so the badge bottom rides the black/white border instead of dipping
-  // into the white nutrition label. The badge overhangs the popup's top edge
-  // by ~50 px — overflow:visible on .nf-popup lets it show through.
-  top: -52px;
-  // Close button is now 32 px wide at right:6px, so anchoring the badge at
-  // right:48px leaves a comfortable gap between the two hit areas.
-  right: 48px;
+  // Raised a few pixels (was -52) so more of the heading is visible above the
+  // badge — the food name is the primary read, the badge a secondary callout.
+  top: -58px;
+  // X close occupies right:6 → right:38 (it's 32 px wide). Anchoring the
+  // badge at right:42 leaves a ~4 px gap between the badge's right edge and
+  // the X's left edge — the user asked to split the previous 10 px gap.
+  right: 42px;
   // Above the title text so it cleanly overlays a long food name instead of
   // forcing an ellipsis. Below .nf-popup-close so the X always wins.
   z-index: 3;
@@ -1540,15 +1540,17 @@
   display: block;
 }
 
-// AI star pinned to the badge — small, top-right, with a soft halo so it
-// reads clearly against any color in the green pill artwork.
+// AI star pinned to the LEFT of the "Health Info" text on the green badge —
+// small (smaller than the 32 px X), vertically centered, with a soft halo so
+// it reads against the green artwork.
 .nf-popup-health-info-ai {
   position: absolute;
-  top: 4px;
-  right: 6px;
-  width: 26px;
-  height: 26px;
-  filter: drop-shadow(0 0 4px rgba(255, 213, 79, 0.9));
+  top: 50%;
+  left: 8px;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  filter: drop-shadow(0 0 4px rgba(255, 213, 79, 0.95));
   pointer-events: none;
 }
 
