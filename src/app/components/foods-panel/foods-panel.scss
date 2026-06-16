@@ -1370,19 +1370,18 @@
   scrollbar-width: none;
 }
 
-// Tiny data-trace line at the very bottom of the NF popup — food ID +
-// source ("USDA" or "User"). Intentionally faint and small so users don't
-// fixate on it, but readable enough to grep the DB when triaging data.
+// Data-trace line riding on the dark bottom chrome of the NF popup,
+// OUTSIDE the white nutrition label. Left-aligned with the label's left
+// edge, brighter white so it's actually readable, monospace so the ID
+// kerns cleanly.
 .nf-popup-trace {
-  margin-top: 12px;
-  padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 8px;
   font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
-  font-size: 9px;
-  font-weight: 400;
+  font-size: 10px;
+  font-weight: 500;
   letter-spacing: 0.4px;
-  color: rgba(255, 255, 255, 0.35);
-  text-align: center;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: left;
   user-select: text; // let the user copy the ID
 }
 

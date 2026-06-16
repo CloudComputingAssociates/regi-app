@@ -574,14 +574,13 @@ const CATEGORY_PLURALS: Record<string, string> = {
               <regi-nutrition-label
                 [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
                 [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
-              <!-- Tiny dev-side data-trace indicator. Tucked at the very
-                   bottom of the popup so it doesn't distract users; the
-                   food ID + source ("USDA" for canonical rows, "User" for
-                   phone-app-created ones) is invaluable when triaging DB
-                   data without opening DevTools. -->
-              <div class="nf-popup-trace">
-                #{{ nfPopupFood()!.id }} ({{ nfPopupFood()!.userId == null ? 'USDA' : 'User' }})
-              </div>
+            </div>
+            <!-- Dev-side data-trace, OUTSIDE the inner scroll area so it
+                 rides on the popup's dark bottom chrome instead of inside
+                 the white nutrition label. Food ID + source ("USDA" for
+                 canonical rows, "User" for phone-app-created ones). -->
+            <div class="nf-popup-trace">
+              {{ nfPopupFood()!.id }} ({{ nfPopupFood()!.userId == null ? 'USDA' : 'User' }})
             </div>
           </div>
         </div>
