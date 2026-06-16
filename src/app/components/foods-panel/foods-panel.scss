@@ -1024,11 +1024,14 @@
 .food-tile-label {
   flex-shrink: 0;
   padding: 4px 6px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   color: #ffffff;
   background: rgba(0, 0, 0, 0.5);
   text-align: center;
+  // LHS rule: clip on overflow, never wrap. Tiles stay grid-aligned even
+  // when the food name runs long — readability is bought via the bigger
+  // font on the names that fit, not via taller rows.
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1394,19 +1397,21 @@
 
 .basket-mini-card-label {
   position: relative;
-  font-size: 9px;
-  line-height: 1.1;
+  font-size: 11px;
+  line-height: 1.15;
   color: rgba(255, 255, 255, 0.92);
   background: rgba(0, 0, 0, 0.65);
   padding: 2px 3px;
   min-height: 18px;
 }
 
+// RHS rule: allow wrapping for readability. Long food names take a hit on
+// the basket-tile height but stay fully readable, which is the explicit
+// trade-off the user asked for here vs. the LHS clip-only behavior.
 .basket-mini-card-label-text {
   display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
   text-align: center;
 }
 

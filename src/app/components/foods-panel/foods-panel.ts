@@ -163,10 +163,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                   [draggable]="true"
                   (click)="onTileClick(food)"
                   (dblclick)="onTileDblClick(food)"
-                  (dragstart)="onTileDragStart(food, $event)"
-                  [matTooltip]="food.shortDescription || food.description"
-                  matTooltipPosition="above"
-                  [matTooltipShowDelay]="500">
+                  (dragstart)="onTileDragStart(food, $event)">
                   <div class="food-tile-image">
                     @if (food.foodImageThumbnail) {
                       <img [src]="food.foodImageThumbnail" alt="" draggable="false" />
