@@ -1563,21 +1563,20 @@
   scrollbar-width: none;
 }
 
-// Data-trace line riding on the dark bottom chrome of the NF popup. It's a
-// developer indicator (food ID + source) — not user-facing content — so it
-// sits as a slim centered strip whose total height roughly matches the 12 px
-// side margins. Muted color and small font keep it from competing with the
-// nutrition label above.
+// Data-trace line riding on the dark bottom chrome of the NF popup. Slim
+// strip whose total height matches the 12 px side margins. Left-aligned so
+// the ID lines up with the left edge of the white nutrition label above,
+// and bright enough to actually be readable against the dark background.
 .nf-popup-trace {
   margin-top: 2px;
   padding: 2px 0 3px;
   font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
   font-size: 9px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.3px;
   line-height: 1;
-  color: rgba(255, 255, 255, 0.55);
-  text-align: center;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: left;
   user-select: text; // let the user copy the ID
 }
 
@@ -1587,26 +1586,20 @@
 // 25% bigger).
 .nf-popup-health-info {
   position: absolute;
-  // The Health Info source image has the green pill in the UPPER-LEFT quadrant
-  // with a lot of transparent space around it. Anchoring the button at top:-22
-  // brings the pill itself down to sit ON the title row instead of floating
-  // above the popup like a UFO.
   top: -22px;
-  // X close occupies right:6 → right:38 (32 px wide). Anchoring the badge at
-  // right:38 puts its right edge flush with the X's left edge — closest the
-  // two can sit without the badge hit area overlapping the X hit area.
+  // X close occupies right:6 → right:38. Badge at right:38 sits flush with
+  // the X's left edge.
   right: 38px;
-  // Above the title so it cleanly overlays a long food name instead of
-  // forcing an ellipsis. Below .nf-popup-close so the X always wins.
   z-index: 3;
-  // Force a known box so the AI star positioning is predictable across the
-  // image's transparent padding. 90 × 80 matches the visible pill nicely.
   width: 90px;
   height: 80px;
   background: transparent;
   border: none;
   padding: 0;
   cursor: pointer;
+  // overflow:visible so the AI star can ride OUTSIDE the button's bounding
+  // box (above and to the left of the green pill) without being clipped.
+  overflow: visible;
 }
 
 // Green "Health Info" image rides as the badge background. object-fit keeps
@@ -1618,19 +1611,29 @@
   display: block;
 }
 
-// AI star pinned to the LEFT of the "Health Info" text on the green pill.
-// Coordinates are tied to where the pill actually sits inside the source
-// image (upper-left), not the button's full bounding box, so the star lands
-// on the green pill and just left of the text rather than floating in the
-// transparent area. Smaller than the 32 px X per the spec.
+// AI star floats ABOVE and to the LEFT of the green pill — not on it. Small
+// (14 px, well under the 20 px close X) and animated with a slow shimmer
+// that cycles the halo between yellow and white plus a gentle rotate, so the
+// AI provenance reads as a live, glowing tag rather than a static decal.
 .nf-popup-health-info-ai {
   position: absolute;
-  top: 14px;
-  left: 6px;
-  width: 18px;
-  height: 18px;
-  filter: drop-shadow(0 0 4px rgba(255, 213, 79, 0.95));
+  top: -6px;
+  left: -8px;
+  width: 14px;
+  height: 14px;
   pointer-events: none;
+  animation: nf-ai-shimmer 2.4s ease-in-out infinite;
+}
+
+@keyframes nf-ai-shimmer {
+  0%, 100% {
+    filter: drop-shadow(0 0 3px rgba(255, 213, 79, 0.95));
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.95));
+    transform: rotate(14deg) scale(1.1);
+  }
 }
 
 .nf-popup-header {

@@ -103,7 +103,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
               class="curate-toggle"
               [class.pressed]="addTo() === 'right'"
               (click)="addTo.set(addTo() === 'right' ? 'left' : 'right')"
-              matTooltip="Curate MyFoods — 'Like' YEH Approved foods or add your own MyFoods with mobile app download (Android)"
+              matTooltip="Curate MyFoods — 'Like' Regi Approved foods or add your own MyFoods with mobile app download (Android)"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350">
               Curate
@@ -456,7 +456,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
             <!-- TYPE=MyFoods on right side: accordion view of curated MyFoods -->
             @if (allMyFoods().length === 0) {
               <div class="bottom-empty">
-                Favorite a YEH Approved food (or double-click it) to add it to MyFoods.
+                Favorite a Regi Approved food (or double-click it) to add it to MyFoods.
               </div>
             } @else {
               @for (group of groupedMyFoods(); track group.category) {
