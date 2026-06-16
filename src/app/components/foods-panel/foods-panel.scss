@@ -1611,28 +1611,37 @@
   display: block;
 }
 
-// AI star floats ABOVE and to the LEFT of the green pill — not on it. Small
-// (14 px, well under the 20 px close X) and animated with a slow shimmer
-// that cycles the halo between yellow and white plus a gentle rotate, so the
-// AI provenance reads as a live, glowing tag rather than a static decal.
+// AI star floats CLEARLY above-and-left of the green pill so "Health Info"
+// reads unobstructed. The star.png is used as a CSS mask, so the star's own
+// pixels take whatever color we paint underneath — that lets us actually
+// animate the star between yellow and white instead of just the halo.
+//
+// Cycle: starts YELLOW + tilted, undulates to WHITE + upright, then back.
 .nf-popup-health-info-ai {
   position: absolute;
-  top: -6px;
-  left: -8px;
-  width: 14px;
-  height: 14px;
+  top: -14px;
+  left: -16px;
+  width: 10px;
+  height: 10px;
   pointer-events: none;
+  -webkit-mask: url(/images/AI-star-white.png) center / contain no-repeat;
+          mask: url(/images/AI-star-white.png) center / contain no-repeat;
+  background-color: #ffd54f; // initial yellow
   animation: nf-ai-shimmer 2.4s ease-in-out infinite;
 }
 
 @keyframes nf-ai-shimmer {
   0%, 100% {
+    // Tilted, yellow body, yellow halo — the "active / AI" pose.
+    background-color: #ffd54f;
     filter: drop-shadow(0 0 3px rgba(255, 213, 79, 0.95));
-    transform: rotate(0deg) scale(1);
+    transform: rotate(14deg);
   }
   50% {
-    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.95));
-    transform: rotate(14deg) scale(1.1);
+    // Upright, white body, white halo — the "rest" pose.
+    background-color: #ffffff;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.95));
+    transform: rotate(0deg);
   }
 }
 

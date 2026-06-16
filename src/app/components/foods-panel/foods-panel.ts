@@ -598,7 +598,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
               matTooltipPosition="above"
               aria-label="Health info">
               <img src="/images/Health%20Benefits.png" alt="Health Info" class="nf-popup-health-info-bg" />
-              <img src="/images/AI-star-white.png" alt="" class="nf-popup-health-info-ai" />
+              <span class="nf-popup-health-info-ai" aria-hidden="true"></span>
             </button>
             <!-- Scroll lives on this inner wrapper so the outer .nf-popup can
                  be overflow:visible and let the Health Info badge overhang
