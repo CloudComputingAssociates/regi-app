@@ -385,7 +385,12 @@ export class NutritionFactsLabelComponent {
     return {
       foodName: nf.foodName,
       servingSizeHousehold: nf.servingSizeHousehold,
-      servingSizeG: nf.servingSizeG ? Math.round(nf.servingSizeG * s) : undefined,
+      // Macros are stored per-100g (per the SQL fixup script that sets
+      // servingSizeMultiplicand = servingSizeG / 100). So the effective
+      // grams of the displayed serving = scale × 100. Don't multiply
+      // nf.servingSizeG by scale — that double-scales and gives nonsense
+      // values like 8g instead of 28g for a 1 oz beef serving.
+      servingSizeG: Math.round(s * 100),
       servingsPerContainer: nf.servingsPerContainer,
       calories: nf.calories ? Math.round(nf.calories * s) : 0,
       totalFatG: nf.totalFatG ? Math.round(nf.totalFatG * s * 10) / 10 : 0,

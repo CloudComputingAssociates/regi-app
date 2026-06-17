@@ -226,7 +226,8 @@ const CATEGORY_PLURALS: Record<string, string> = {
               <button
                 type="button"
                 class="autofill-toggle"
-                matTooltip="AI auto-fills your baskets from MyFoods"
+                disabled
+                matTooltip="AI auto-fill (coming soon)"
                 matTooltipPosition="below"
                 [matTooltipShowDelay]="350">
                 <img src="/images/AI-star-white.png" alt="" class="autofill-ai-icon" />
@@ -620,7 +621,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
                 [scale]="nfPopupServingMultiplier()"
                 [displayUnit]="nfPopupFood()!.servingUnit || 'g'"
-                [displayQuantity]="nfPopupServingMultiplier()"
+                [displayQuantity]="nfPopupDisplayUnits()"
                 [editable]="true"
                 (adjust)="onNfAdjust($event)" />
             </div>
@@ -1205,86 +1206,84 @@ export class FoodsPanelComponent {
     this.nfPopupFood.set(food);
   }
 
-  /** Adjust handler emitted by the NF label's ▲ / ▼ steppers. The stepping
-   *  semantics depend on the food's `servingUnit`:
-   *   - oz / g / lb     → ±1 unit
-   *   - mg              → ±50
-   *   - ml              → ±50
-   *   - l               → ±0.25
-   *   - cup / tbsp / tsp → ±0.5 unit
-   *   - whole / piece / slice → +1 up, halve down (floor at 0.25)
-   *   - anything else / null → ±0.25
-   *  Math is done in "user units" (multiplier × servingSizeMultiplicand) so
-   *  the floor and step semantics are intuitive regardless of the food's
-   *  curated default. The result is converted back to multiplier-space and
-   *  pushed through the signal — Angular re-renders the NF label with the
-   *  new scale automatically. */
+  /** Adjust handler emitted by the NF label's ▲ / ▼ steppers. Stepping is
+   *  done in FOOD-UNIT space (the user's mental model: "+1 oz", "+0.5 cup",
+   *  "+1 whole"), then converted to the multiplicand the DB actually stores
+   *  (= grams / 100, per the SQL fixup convention) via the food's
+   *  servingGramsPerUnit.
+   *
+   *  Per-unit step sizes:
+   *    oz / lb           → ±1
+   *    g                 → ±5
+   *    mg                → ±50
+   *    ml                → ±50
+   *    l                 → ±0.25
+   *    cup / tbsp / tsp  → ±0.5
+   *    whole / piece /
+   *      slice / egg     → +1 up, halve down (floor 0.25)
+   *    other / null      → ±0.25
+   *
+   *  Floor enforced on the downward step so the user can't slip below a
+   *  sensible minimum portion. */
   onNfAdjust(direction: 'up' | 'down'): void {
     const food = this.nfPopupFood();
     if (!food) return;
-    const base = food.servingSizeMultiplicand || 1;
-    const current = this.nfPopupServingMultiplier();
-    const currentUnits = current * base;
+    const gpu = food.servingGramsPerUnit || 1;
+    const currentGrams = this.nfPopupServingMultiplier() * 100;
+    const currentUnits = currentGrams / gpu;
     const unit = (food.servingUnit ?? '').toLowerCase();
-
-    let newUnits = currentUnits;
-    let floorUnits = 1;
     const dir = direction === 'up' ? 1 : -1;
+
+    let unitStep = 0.25;
+    let floorUnits = 0.25;
+    let halveDown = false;
 
     switch (unit) {
       case 'oz':
-      case 'g':
       case 'lb':
-        newUnits = currentUnits + dir;
-        floorUnits = 1;
-        break;
+        unitStep = 1; floorUnits = 1; break;
+      case 'g':
+        unitStep = 5; floorUnits = 5; break;
       case 'mg':
-        newUnits = currentUnits + dir * 50;
-        floorUnits = 50;
-        break;
+        unitStep = 50; floorUnits = 50; break;
       case 'ml':
-        newUnits = currentUnits + dir * 50;
-        floorUnits = 50;
-        break;
+        unitStep = 50; floorUnits = 50; break;
       case 'l':
-        newUnits = currentUnits + dir * 0.25;
-        floorUnits = 0.25;
-        break;
+        unitStep = 0.25; floorUnits = 0.25; break;
       case 'cup':
       case 'tbsp':
       case 'tsp':
-        newUnits = currentUnits + dir * 0.5;
-        floorUnits = 0.5;
-        break;
+        unitStep = 0.5; floorUnits = 0.5; break;
       case 'whole':
       case 'piece':
       case 'slice':
       case 'egg':
-        if (direction === 'up') {
-          newUnits = currentUnits + 1;
-        } else {
-          newUnits = currentUnits / 2;
-        }
-        floorUnits = 0.25;
-        break;
-      default:
-        newUnits = currentUnits + dir * 0.25;
-        floorUnits = 0.25;
+        unitStep = 1; floorUnits = 0.25; halveDown = true; break;
     }
 
+    let newUnits = currentUnits;
+    if (direction === 'up') {
+      newUnits = currentUnits + unitStep;
+    } else {
+      newUnits = halveDown ? currentUnits / 2 : currentUnits - unitStep;
+    }
     if (newUnits < floorUnits) newUnits = floorUnits;
-    const newEffective = Number(newUnits.toFixed(4));
+
+    // Convert back to per-100g multiplicand: grams = units × gpu, then
+    // multiplicand = grams / 100.
+    const newMultiplicand = (newUnits * gpu) / 100;
+    const newEffective = Number(newMultiplicand.toFixed(4));
     this.nfPopupServingMultiplier.set(newEffective);
 
     // Auto-persist. LHS / MyFoods context → update the user's default for
     // this food (sent as a RATIO on top of the food's curated base, matching
     // the API contract: effectiveServing = food.multiplicand × user.ratio).
     // RHS basket context → snapshot the effective multiplicand into the
-    // basket entry locally; no server hit. The preferences service handles
-    // its own debouncing, so a rapid burst of clicks collapses into one PUT.
+    // basket entry locally; no server hit.
     if (this.isFoodFromBasketContext(food)) {
       this.persistBasketServingOverride(food.id, newEffective);
     } else {
+      const base = food.servingSizeMultiplicand || 1;
       const ratio = base > 0 ? newEffective / base : 1;
       this.preferencesService.setServingSizeMultiplier(food.id, Number(ratio.toFixed(4)));
     }
@@ -1712,10 +1711,22 @@ export class FoodsPanelComponent {
   nfPopupFood = signal<Food | null>(null);
   // Current serving-size multiplier displayed inside the NF popup. Starts at
   // the food's base `servingSizeMultiplicand` when the popup opens; the ▲ / ▼
-  // steppers mutate it in place. Used as the `scale` input on the embedded
-  // nutrition label so the macros recompute live, and also fed to the
-  // persistence path (LHS = MyFoods default; RHS = basket entry override).
+  // steppers mutate it in place. Macros in the DB are per-100g, so this
+  // value × 100 = effective grams of the displayed serving (matches the
+  // SQL fixup convention).
   nfPopupServingMultiplier = signal<number>(1);
+
+  /** Number of food units (e.g. 1 for "1 oz", 4 for "4 oz") implied by the
+   *  current multiplier. Derived as multiplier × 100 / servingGramsPerUnit
+   *  so the popup reads in the food's curated unit instead of the raw
+   *  decimal multiplier. */
+  nfPopupDisplayUnits = computed<number>(() => {
+    const food = this.nfPopupFood();
+    if (!food) return 0;
+    const gpu = food.servingGramsPerUnit || 1;
+    const units = (this.nfPopupServingMultiplier() * 100) / gpu;
+    return Number(units.toFixed(2));
+  });
 
   // ---- Health Benefits popup state (Langfuse-driven) ----
   // healthBenefitsFood freezes the food the user clicked the button on so
