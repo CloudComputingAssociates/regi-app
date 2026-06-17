@@ -1,5 +1,5 @@
 // src/app/components/nutrition-facts-label/nutrition-facts-label.ts
-import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, computed } from '@angular/core';
 import { NutritionFacts } from '../../models/food.model';
 
 // FDA 2020 Daily Reference Values
@@ -36,6 +36,28 @@ function dvPercent(actual: number | undefined | null, reference: number): number
         </div>
         <div class="nf-serving-size">
           <span class="nf-serving-label">Serving size</span>
+          @if (editable()) {
+            <div class="nf-serving-steppers" aria-label="Adjust serving size">
+              <button
+                type="button"
+                class="nf-serving-step nf-serving-step-up"
+                (click)="onStepUp($event)"
+                aria-label="Increase serving">
+                <svg viewBox="0 0 10 6" aria-hidden="true">
+                  <path d="M0 6 L5 0 L10 6 Z" fill="currentColor" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="nf-serving-step nf-serving-step-down"
+                (click)="onStepDown($event)"
+                aria-label="Decrease serving">
+                <svg viewBox="0 0 10 6" aria-hidden="true">
+                  <path d="M0 0 L5 6 L10 0 Z" fill="currentColor" />
+                </svg>
+              </button>
+            </div>
+          }
           <span class="nf-serving-value">{{ servingSizeDisplay() }}</span>
         </div>
       </div>
@@ -195,9 +217,58 @@ function dvPercent(actual: number | undefined | null, reference: number): number
     .nf-servings-line { font-size: 11px; }
     .nf-serving-size {
       display: flex;
+      align-items: center;
       justify-content: space-between;
+      gap: 6px;
       font-weight: 700;
       font-size: 13px;
+    }
+
+    // Up / down arrow pair, vertically stacked, sized small so they sit
+    // between "Serving size" and the displayed quantity without inflating
+    // the row height significantly. Pure CSS — no Material dep — so the
+    // label stays self-contained.
+    .nf-serving-steppers {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      margin-left: auto;
+    }
+
+    .nf-serving-step {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 11px;
+      padding: 0;
+      background: transparent;
+      border: 1px solid #777;
+      border-radius: 2px;
+      color: #000;
+      cursor: pointer;
+      transition: background 0.1s ease, border-color 0.1s ease;
+
+      svg {
+        width: 9px;
+        height: 5px;
+        display: block;
+      }
+
+      &:hover {
+        background: #e8e8e8;
+        border-color: #000;
+      }
+      &:active {
+        background: #d0d0d0;
+      }
+    }
+
+    // Value column sits to the right of the steppers. flex-shrink:0 keeps
+    // the "(81g)" portion intact even on a narrower popup.
+    .nf-serving-value {
+      flex-shrink: 0;
     }
 
     .nf-divider-thick {
@@ -274,6 +345,22 @@ export class NutritionFactsLabelComponent {
   // Display unit and quantity (shown on serving size line)
   displayUnit = input<string>('g');
   displayQuantity = input<number | null>(null);
+
+  // Editable mode renders ▲ / ▼ stepper buttons next to the serving-size
+  // line. The label itself is intentionally dumb about unit semantics — it
+  // just emits direction; the parent computes the new multiplier from the
+  // food's servingUnit and applies it via the `scale` input.
+  editable = input<boolean>(false);
+  adjust = output<'up' | 'down'>();
+
+  onStepUp(ev: Event): void {
+    ev.stopPropagation();
+    this.adjust.emit('up');
+  }
+  onStepDown(ev: Event): void {
+    ev.stopPropagation();
+    this.adjust.emit('down');
+  }
 
   servingSizeDisplay = computed(() => {
     const dq = this.displayQuantity();

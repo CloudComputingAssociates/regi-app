@@ -124,6 +124,7 @@ export class FoodsService {
       shortDescription: row.shortDescription,
       categoryName: row.categoryName,
       foodRequestType: 'unknown',
+      foodSource: row.foodSource === 'user' ? 'user' : 'usda',
       dataSource: row.dataSource ?? (row.foodSource === 'user' ? 'user' : 'USDA-FNDDS'),
       yehApproved: row.yehApproved ?? false,
       glycemicIndex: row.glycemicIndex ?? 0,

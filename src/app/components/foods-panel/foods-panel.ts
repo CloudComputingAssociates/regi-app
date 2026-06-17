@@ -618,7 +618,11 @@ const CATEGORY_PLURALS: Record<string, string> = {
               </div>
               <regi-nutrition-label
                 [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
-                [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
+                [scale]="nfPopupServingMultiplier()"
+                [displayUnit]="nfPopupFood()!.servingUnit || 'g'"
+                [displayQuantity]="nfPopupServingMultiplier()"
+                [editable]="true"
+                (adjust)="onNfAdjust($event)" />
             </div>
             <!-- Dev-side data-trace, OUTSIDE the inner scroll area so it
                  rides on the popup's dark bottom chrome instead of inside
@@ -1106,17 +1110,27 @@ export class FoodsPanelComponent {
   selectedFood = signal<Food | null>(null);
 
   /** Single-click toggles selection: clicking an unselected tile selects
-   *  it, clicking the already-selected tile unselects it. */
+   *  it, clicking the already-selected tile unselects it. Selecting also
+   *  schedules a 1.5 s timer to open the NF popup (same wait window as
+   *  the RHS basket bloom). */
   onTileClick(food: Food): void {
     const current = this.selectedFood();
-    this.selectedFood.set(current?.id === food.id ? null : food);
+    const isSameTile = current?.id === food.id;
+    this.selectedFood.set(isSameTile ? null : food);
+    if (isSameTile) {
+      this.cancelLhsTilePopup();
+    } else {
+      this.scheduleLhsTilePopup(food);
+    }
   }
 
   /** Double-click activates: adds to the active picker. If Refine is open
    *  on the right pane, we close it first so Baskets becomes visible — the
    *  user just chose a food to add, so the destination they're filling
-   *  should be on screen. */
+   *  should be on screen. The double-click also pre-empts the pending NF
+   *  popup so the popup doesn't pop right after the food lands in a basket. */
   onTileDblClick(food: Food): void {
+    this.cancelLhsTilePopup();
     if (this.addTo() === 'right') {
       this.addTo.set('left');
     }
@@ -1126,10 +1140,180 @@ export class FoodsPanelComponent {
 
   /** Drag-and-drop preserves the existing transfer shape — a JSON-encoded
    *  Food blob on application/json — so the basket drop handlers don't
-   *  need to change. */
+   *  need to change. Drag also cancels the pending NF popup; the user has
+   *  shifted intent. */
   onTileDragStart(food: Food, event: DragEvent): void {
+    this.cancelLhsTilePopup();
     event.dataTransfer?.setData('application/json', JSON.stringify(food));
     event.dataTransfer!.effectAllowed = 'copy';
+  }
+
+  // ----- LHS tile NF popup timer ------------------------------------------
+  // Mirrors the RHS basket bloom timing (1.5 s wait, then open) so the two
+  // panes feel like one product. Unlike the basket bloom, the LHS goes
+  // straight to the popup — no intermediate "Click for Facts" affordance —
+  // because the LHS tile grid is single-select with a clear yellow halo
+  // already; the user knows what they picked.
+  private lhsTileTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly LHS_TILE_POPUP_DELAY_MS = 1500;
+
+  private scheduleLhsTilePopup(food: Food): void {
+    this.cancelLhsTilePopup();
+    this.lhsTileTimer = setTimeout(() => {
+      this.lhsTileTimer = null;
+      // Only fire if the user hasn't changed their selection in the meantime.
+      if (this.selectedFood()?.id === food.id) {
+        this.openNfPopupForFood(food);
+      }
+    }, FoodsPanelComponent.LHS_TILE_POPUP_DELAY_MS);
+  }
+
+  private cancelLhsTilePopup(): void {
+    if (this.lhsTileTimer) {
+      clearTimeout(this.lhsTileTimer);
+      this.lhsTileTimer = null;
+    }
+  }
+
+  /** Open the NF popup for a food and prime the adjustable-serving state.
+   *  Priority order for the initial multiplicand shown in the popup:
+   *   1. Basket-entry override (RHS only) — the food sitting in the basket
+   *      may have been re-portioned for this week.
+   *   2. User's MyFoods override (servingMultiplier × base) — their persisted
+   *      per-food default from a prior session.
+   *   3. The food's curated base servingSizeMultiplicand.
+   *  All three are expressed as the EFFECTIVE multiplicand (number of units
+   *  displayed), not as a ratio — the NF label's `scale` input multiplies
+   *  macros by exactly this value. */
+  private openNfPopupForFood(food: Food): void {
+    const base = food.servingSizeMultiplicand || 1;
+    let initial = base;
+
+    // Basket-entry override: when the popup is opened from the RHS bloom on
+    // a basket tile, persistBasketServingOverride stamps the food's
+    // servingSizeMultiplicand to the basket-local value. So `base` above
+    // already IS the override if it came from a basket.
+    // (No extra branch needed; the basket food object carries it.)
+
+    // MyFoods default override: stored as a ratio in the preferences cache.
+    const ratio = this.preferencesService.servingMultiplier(food.id);
+    if (ratio != null && !this.isFoodFromBasketContext(food)) {
+      initial = base * ratio;
+    }
+
+    this.nfPopupServingMultiplier.set(initial);
+    this.nfPopupFood.set(food);
+  }
+
+  /** Adjust handler emitted by the NF label's ▲ / ▼ steppers. The stepping
+   *  semantics depend on the food's `servingUnit`:
+   *   - oz / g / lb     → ±1 unit
+   *   - mg              → ±50
+   *   - ml              → ±50
+   *   - l               → ±0.25
+   *   - cup / tbsp / tsp → ±0.5 unit
+   *   - whole / piece / slice → +1 up, halve down (floor at 0.25)
+   *   - anything else / null → ±0.25
+   *  Math is done in "user units" (multiplier × servingSizeMultiplicand) so
+   *  the floor and step semantics are intuitive regardless of the food's
+   *  curated default. The result is converted back to multiplier-space and
+   *  pushed through the signal — Angular re-renders the NF label with the
+   *  new scale automatically. */
+  onNfAdjust(direction: 'up' | 'down'): void {
+    const food = this.nfPopupFood();
+    if (!food) return;
+    const base = food.servingSizeMultiplicand || 1;
+    const current = this.nfPopupServingMultiplier();
+    const currentUnits = current * base;
+    const unit = (food.servingUnit ?? '').toLowerCase();
+
+    let newUnits = currentUnits;
+    let floorUnits = 1;
+    const dir = direction === 'up' ? 1 : -1;
+
+    switch (unit) {
+      case 'oz':
+      case 'g':
+      case 'lb':
+        newUnits = currentUnits + dir;
+        floorUnits = 1;
+        break;
+      case 'mg':
+        newUnits = currentUnits + dir * 50;
+        floorUnits = 50;
+        break;
+      case 'ml':
+        newUnits = currentUnits + dir * 50;
+        floorUnits = 50;
+        break;
+      case 'l':
+        newUnits = currentUnits + dir * 0.25;
+        floorUnits = 0.25;
+        break;
+      case 'cup':
+      case 'tbsp':
+      case 'tsp':
+        newUnits = currentUnits + dir * 0.5;
+        floorUnits = 0.5;
+        break;
+      case 'whole':
+      case 'piece':
+      case 'slice':
+      case 'egg':
+        if (direction === 'up') {
+          newUnits = currentUnits + 1;
+        } else {
+          newUnits = currentUnits / 2;
+        }
+        floorUnits = 0.25;
+        break;
+      default:
+        newUnits = currentUnits + dir * 0.25;
+        floorUnits = 0.25;
+    }
+
+    if (newUnits < floorUnits) newUnits = floorUnits;
+    const newEffective = Number(newUnits.toFixed(4));
+    this.nfPopupServingMultiplier.set(newEffective);
+
+    // Auto-persist. LHS / MyFoods context → update the user's default for
+    // this food (sent as a RATIO on top of the food's curated base, matching
+    // the API contract: effectiveServing = food.multiplicand × user.ratio).
+    // RHS basket context → snapshot the effective multiplicand into the
+    // basket entry locally; no server hit. The preferences service handles
+    // its own debouncing, so a rapid burst of clicks collapses into one PUT.
+    if (this.isFoodFromBasketContext(food)) {
+      this.persistBasketServingOverride(food.id, newEffective);
+    } else {
+      const ratio = base > 0 ? newEffective / base : 1;
+      this.preferencesService.setServingSizeMultiplier(food.id, Number(ratio.toFixed(4)));
+    }
+  }
+
+  /** Returns true when the NF popup was opened from the RHS basket bloom
+   *  (i.e., the food is in one of the four baskets). Drives the
+   *  basket-override vs. MyFoods-default branch in onNfAdjust. */
+  private isFoodFromBasketContext(food: Food): boolean {
+    const baskets = this.thisWeekBaskets();
+    for (const key of this.basketKeys) {
+      if (baskets[key].some(f => f.id === food.id)) return true;
+    }
+    return false;
+  }
+
+  /** Store a per-basket serving-size override locally on the matching
+   *  basket entry. Survives reload via the same persistThisWeek effect.
+   *  No server hop — the basket itself is client-side state. */
+  private persistBasketServingOverride(foodId: number, multiplier: number): void {
+    this.thisWeekBaskets.update(b => {
+      const next = { ...b } as ThisWeekBaskets;
+      for (const key of this.basketKeys) {
+        next[key] = b[key].map(f =>
+          f.id === foodId ? { ...f, servingSizeMultiplicand: multiplier } : f,
+        );
+      }
+      return next;
+    });
   }
 
   // ----- RHS basket-tile selection + "Click for Facts" bloom -----
@@ -1249,7 +1433,7 @@ export class FoodsPanelComponent {
   onNfBloomClick(event: Event): void {
     event.stopPropagation();
     const food = this.selectedBasketFood();
-    if (food) this.nfPopupFood.set(food);
+    if (food) this.openNfPopupForFood(food);
     this.cancelBloom();
   }
 
@@ -1526,6 +1710,12 @@ export class FoodsPanelComponent {
   showAddDialog = signal(false);
   showHealthBenefits = signal(false);
   nfPopupFood = signal<Food | null>(null);
+  // Current serving-size multiplier displayed inside the NF popup. Starts at
+  // the food's base `servingSizeMultiplicand` when the popup opens; the ▲ / ▼
+  // steppers mutate it in place. Used as the `scale` input on the embedded
+  // nutrition label so the macros recompute live, and also fed to the
+  // persistence path (LHS = MyFoods default; RHS = basket entry override).
+  nfPopupServingMultiplier = signal<number>(1);
 
   // ---- Health Benefits popup state (Langfuse-driven) ----
   // healthBenefitsFood freezes the food the user clicked the button on so
@@ -1584,15 +1774,35 @@ export class FoodsPanelComponent {
         return err?.message || 'Something went wrong loading health benefits.';
     }
   }
-  /** NF popup trace footer ("{id} ({source})"). The client surfaces user-
-   *  added foods with a negative ID as a marker (the actual UserFoodID in
-   *  the DB is positive — we just sign-flip on the wire so the client can
-   *  tell UserFoods rows from USDA rows). For display we strip the sign so
-   *  the number matches what the user sees in the admin tool. */
+  /** NF popup trace footer ("{id} ({source})"). Branches on the canonical
+   *  `foodSource` discriminator first, then falls back to inspecting
+   *  `dataSource`'s prefix — we NEVER hardcode 'USDA' as a default, because
+   *  user-entered foods (UserFoods.DataSource = 'Nutrition Facts Label',
+   *  'FatSecret', 'user', 'OpenAI-*', …) would otherwise be mislabeled.
+   *
+   *  Rules:
+   *    foodSource === 'usda'  → 'USDA'
+   *    foodSource === 'user'  → dataSource verbatim (provenance)
+   *    foodSource missing     → infer from dataSource prefix (legacy path
+   *                             for any Food object minted before the
+   *                             foodSource plumbing landed).
+   *
+   *  ID is shown as-is (whatever the API returned). The historic sign-flip
+   *  convention for user foods is no longer used; the discriminator is the
+   *  foodSource field instead.
+   */
   traceLabel(food: Food): string {
-    const id = Math.abs(food.id);
-    const source = food.id < 0 ? 'UserAdded' : 'USDA';
+    const id = food.id;
+    const source = this.sourceLabel(food);
     return `${id} (${source})`;
+  }
+
+  private sourceLabel(food: Food): string {
+    if (food.foodSource === 'usda') return 'USDA';
+    if (food.foodSource === 'user') return food.dataSource || 'user';
+    // foodSource absent — infer from dataSource as a last resort.
+    if (food.dataSource?.startsWith('USDA')) return 'USDA';
+    return food.dataSource || 'unknown';
   }
 
   openProductLink(food: Food): void {

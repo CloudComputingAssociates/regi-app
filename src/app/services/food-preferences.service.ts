@@ -52,6 +52,11 @@ interface AllFoodRow {
   servingSizeG?: number;
   servingSizeHousehold?: string;
   productPurchaseLink?: string;
+  // Per-user serving-size multiplier (added in the same wave as the column
+  // in UserFoodPreferences). Null means "no override". Optional so the
+  // client gracefully tolerates the server response shipping before this
+  // field lands.
+  servingSizeMultiplier?: number | null;
 }
 
 interface AllFoodsResponse {
@@ -78,13 +83,17 @@ export type CreateFoodPreferenceItem = CreateFoodPreferenceRequest;
 export type CreateFoodPreferenceResponse = CreateFoodPreferencesResponse;
 
 // Pending change types
-export type PendingChangeType = 'add-allowed' | 'add-restricted' | 'remove';
+export type PendingChangeType = 'add-allowed' | 'add-restricted' | 'remove' | 'update-serving';
 
 export interface PendingChange {
   foodId: number;
   type: PendingChangeType;
   foodSource?: string; // 'usda' or 'user'
   originalPreferenceId?: number; // For removals, we need to know what to delete
+  // Per-user serving-size multiplier (ratio applied on top of the food's base
+  // servingSizeMultiplicand). Carried on the pending change so the upsert can
+  // include it. null means "clear my override, use the food's curated base."
+  servingSizeMultiplier?: number | null;
 }
 
 @Injectable({
@@ -101,6 +110,13 @@ export class FoodPreferencesService {
   // Local state - reflects UI including unsaved changes (just foodId sets)
   private localAllowedFoods = signal<Set<number>>(new Set());
   private localRestrictedFoods = signal<Set<number>>(new Set());
+
+  // Per-user serving-size multiplier overrides, keyed by foodId. Value is
+  // the ratio applied to the food's base servingSizeMultiplicand
+  // (e.g. 0.75 = "I eat 75 % of Regi's curated default serving").
+  // Sourced from the server on /allowed/foods responses, mutated locally on
+  // ▲ / ▼ clicks in the NF popup.
+  private localServingMultipliers = signal<Map<number, number>>(new Map());
 
   // Pending changes to be saved
   private pendingChanges = signal<Map<number, PendingChange>>(new Map());
@@ -143,6 +159,46 @@ export class FoodPreferencesService {
 
   restrictedFoods(): Set<number> {
     return this.localRestrictedFoods();
+  }
+
+  /** The user's per-food serving-size multiplier override (ratio applied on
+   *  top of the food's curated `servingSizeMultiplicand`). Returns undefined
+   *  when the user hasn't set an override — in that case callers should use
+   *  the food's base multiplicand as-is. */
+  servingMultiplier(foodId: number): number | undefined {
+    return this.localServingMultipliers().get(foodId);
+  }
+
+  /** Push a serving-size multiplier override for a food. The value is queued
+   *  through the standard auto-save path, so a flurry of ▲ / ▼ clicks
+   *  collapses into a single PUT after the 500 ms quiet window. The food
+   *  must be favorited for this to make sense; callers in foods-panel.ts
+   *  only invoke this for foods the user has already curated. */
+  setServingSizeMultiplier(foodId: number, multiplier: number, foodSource?: string): void {
+    const map = new Map(this.localServingMultipliers());
+    map.set(foodId, multiplier);
+    this.localServingMultipliers.set(map);
+
+    const changes = new Map(this.pendingChanges());
+    const existing = changes.get(foodId);
+    if (existing && existing.type === 'remove') {
+      // Pending remove takes precedence — don't shadow it with a serving
+      // adjustment. (The user can re-favorite + re-adjust afterwards.)
+      return;
+    }
+    if (existing) {
+      // Add-allowed / add-restricted / update-serving — augment in place.
+      changes.set(foodId, { ...existing, servingSizeMultiplier: multiplier });
+    } else {
+      changes.set(foodId, {
+        foodId,
+        type: 'update-serving',
+        foodSource,
+        servingSizeMultiplier: multiplier,
+      });
+    }
+    this.pendingChanges.set(changes);
+    this.scheduleAutoSave();
   }
 
   /**
@@ -328,9 +384,14 @@ export class FoodPreferencesService {
 
     // Separate into deletes and upserts
     // DELETE: only for 'remove' type (user wants to completely remove the preference)
-    // UPSERT (POST): for add-allowed and add-restricted (API handles insert or update)
+    // UPSERT (POST): for add-allowed / add-restricted / update-serving
+    //   — API handles insert vs update; update-serving piggybacks on the
+    //   upsert path with allowed:true since the food is already favorited.
     const toDelete: number[] = [];
-    const toUpsert: CreateFoodPreferenceItem[] = [];
+    // CreateFoodPreferenceItem is generated; cast through Record so the new
+    // optional servingSizeMultiplier field flows over the wire even before
+    // the schema regen lands. Server ignores unknown fields until then.
+    const toUpsert: Array<CreateFoodPreferenceItem & { servingSizeMultiplier?: number | null }> = [];
 
     for (const change of changes) {
       if (change.type === 'remove') {
@@ -339,9 +400,29 @@ export class FoodPreferencesService {
           toDelete.push(change.originalPreferenceId);
         }
       } else if (change.type === 'add-allowed') {
-        toUpsert.push({ foodId: change.foodId, allowed: true, foodSource: change.foodSource });
+        toUpsert.push({
+          foodId: change.foodId,
+          allowed: true,
+          foodSource: change.foodSource,
+          ...(change.servingSizeMultiplier !== undefined && { servingSizeMultiplier: change.servingSizeMultiplier }),
+        });
       } else if (change.type === 'add-restricted') {
-        toUpsert.push({ foodId: change.foodId, allowed: false, foodSource: change.foodSource });
+        toUpsert.push({
+          foodId: change.foodId,
+          allowed: false,
+          foodSource: change.foodSource,
+          ...(change.servingSizeMultiplier !== undefined && { servingSizeMultiplier: change.servingSizeMultiplier }),
+        });
+      } else if (change.type === 'update-serving') {
+        // Upsert with allowed:true — the food must already be a favorite for
+        // a serving override to make sense (caller in foods-panel guarantees
+        // this; openNfPopupForFood is only reachable for MyFoods entries).
+        toUpsert.push({
+          foodId: change.foodId,
+          allowed: true,
+          foodSource: change.foodSource,
+          servingSizeMultiplier: change.servingSizeMultiplier,
+        });
       }
     }
 
@@ -415,7 +496,20 @@ export class FoodPreferencesService {
    */
   getAllowedFoodsFull(): Observable<Food[]> {
     return this.http.get<AllFoodsResponse>(`${this.baseUrl}/user/preferences/food/allowed/foods`).pipe(
-      map(response => (response.foods || []).map(row => this.allFoodRowToFood(row)))
+      tap(response => {
+        // Sync the multiplier map alongside the food list so callers can
+        // ask servingMultiplier(foodId) right after a refresh and get the
+        // server-side override (if any). Server responses without the field
+        // simply leave the map empty for that row — falls back to base.
+        const next = new Map<number, number>();
+        for (const row of response.foods ?? []) {
+          if (row.servingSizeMultiplier != null) {
+            next.set(row.foodId, row.servingSizeMultiplier);
+          }
+        }
+        this.localServingMultipliers.set(next);
+      }),
+      map(response => (response.foods || []).map(row => this.allFoodRowToFood(row))),
     );
   }
 
@@ -436,6 +530,7 @@ export class FoodPreferencesService {
       shortDescription: row.shortDescription,
       categoryName: row.categoryName,
       foodRequestType: 'unknown',
+      foodSource: row.foodSource === 'user' ? 'user' : 'usda',
       dataSource: row.dataSource ?? (row.foodSource === 'user' ? 'user' : 'USDA-FNDDS'),
       yehApproved: row.yehApproved,
       glycemicIndex: row.glycemicIndex ?? 0,
