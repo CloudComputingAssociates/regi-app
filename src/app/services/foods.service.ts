@@ -44,6 +44,10 @@ interface AllFoodRow {
   servingSizeG?: number;
   servingSizeHousehold?: string;
   productPurchaseLink?: string;
+  // Food's curated baseline (number of servingUnit per serving). Comes from
+  // the AllFoods view. /lists/{name}/items returns this but no per-user
+  // override (curated lists don't carry user-specific data).
+  servingSize?: number | null;
 }
 
 export interface Category {
@@ -130,6 +134,9 @@ export class FoodsService {
       // discriminators. They must stay verbatim even though the
       // foodSource comparison key flipped.
       dataSource: row.dataSource ?? (row.foodSource === 'userfood' ? 'user' : 'USDA-FNDDS'),
+      servingSize: row.servingSize ?? null,
+      // Curated lists carry no per-user override; userServingSize stays null.
+      userServingSize: null,
       yehApproved: row.yehApproved ?? false,
       glycemicIndex: row.glycemicIndex ?? 0,
       glycemicLoad: row.glycemicLoad,

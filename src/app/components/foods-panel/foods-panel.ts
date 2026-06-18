@@ -619,9 +619,9 @@ const CATEGORY_PLURALS: Record<string, string> = {
               </div>
               <regi-nutrition-label
                 [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
-                [scale]="nfPopupServingMultiplier()"
+                [scale]="nfPopupScale()"
                 [displayUnit]="nfPopupFood()!.servingUnit || 'g'"
-                [displayQuantity]="nfPopupDisplayUnits()"
+                [displayQuantity]="nfPopupServingSize()"
                 [editable]="true"
                 (adjust)="onNfAdjust($event)" />
             </div>
@@ -1177,62 +1177,46 @@ export class FoodsPanelComponent {
   }
 
   /** Open the NF popup for a food and prime the adjustable-serving state.
-   *  Priority order for the initial multiplicand shown in the popup:
-   *   1. Basket-entry override (RHS only) — the food sitting in the basket
-   *      may have been re-portioned for this week.
-   *   2. User's MyFoods override (servingMultiplier × base) — their persisted
-   *      per-food default from a prior session.
-   *   3. The food's curated base servingSizeMultiplicand.
-   *  All three are expressed as the EFFECTIVE multiplicand (number of units
-   *  displayed), not as a ratio — the NF label's `scale` input multiplies
-   *  macros by exactly this value. */
+   *  Priority order for the initial serving size shown:
+   *   1. Basket-entry override (RHS only) — basket entries stamp their own
+   *      `servingSize` on the food object via persistBasketServingOverride.
+   *   2. User's MyFoods override (`userServingSize` in the preferences cache).
+   *   3. Food's curated baseline (`food.servingSize`).
+   *   4. Fallback 1. */
   private openNfPopupForFood(food: Food): void {
-    const base = food.servingSizeMultiplicand || 1;
-    let initial = base;
-
-    // Basket-entry override: when the popup is opened from the RHS bloom on
-    // a basket tile, persistBasketServingOverride stamps the food's
-    // servingSizeMultiplicand to the basket-local value. So `base` above
-    // already IS the override if it came from a basket.
-    // (No extra branch needed; the basket food object carries it.)
-
-    // MyFoods default override: stored as a ratio in the preferences cache.
-    const ratio = this.preferencesService.servingMultiplier(food.id);
-    if (ratio != null && !this.isFoodFromBasketContext(food)) {
-      initial = base * ratio;
+    let initial: number;
+    if (this.isFoodFromBasketContext(food)) {
+      // Basket entries carry their override directly on food.servingSize.
+      initial = food.servingSize ?? 1;
+    } else {
+      // MyFoods context: user's override beats the food's baseline.
+      initial = this.preferencesService.userServingSize(food.id)
+        ?? food.servingSize
+        ?? 1;
     }
-
-    this.nfPopupServingMultiplier.set(initial);
+    this.nfPopupServingSize.set(initial);
     this.nfPopupFood.set(food);
   }
 
-  /** Adjust handler emitted by the NF label's ▲ / ▼ steppers. Stepping is
-   *  done in FOOD-UNIT space (the user's mental model: "+1 oz", "+0.5 cup",
-   *  "+1 whole"), then converted to the multiplicand the DB actually stores
-   *  (= grams / 100, per the SQL fixup convention) via the food's
-   *  servingGramsPerUnit.
-   *
-   *  Per-unit step sizes:
-   *    oz / lb           → ±1
-   *    g                 → ±5
-   *    mg                → ±50
-   *    ml                → ±50
-   *    l                 → ±0.25
-   *    cup / tbsp / tsp  → ±0.5
+  /** Adjust handler emitted by the NF label's ▲ / ▼ steppers. Steps directly
+   *  in food-unit space (the user's mental model: "+1 oz", "+0.5 cup", "+1
+   *  whole"). Per-unit step sizes:
+   *    oz / lb            → ±1
+   *    g                  → ±5
+   *    mg                 → ±50
+   *    ml                 → ±50
+   *    l                  → ±0.25
+   *    cup / tbsp / tsp   → ±0.5
    *    whole / piece /
-   *      slice / egg     → +1 up, halve down (floor 0.25)
-   *    other / null      → ±0.25
-   *
+   *      slice / egg      → +1 up, halve down
+   *    other / null       → ±0.25
    *  Floor enforced on the downward step so the user can't slip below a
    *  sensible minimum portion. */
   onNfAdjust(direction: 'up' | 'down'): void {
     const food = this.nfPopupFood();
     if (!food) return;
-    const gpu = food.servingGramsPerUnit || 1;
-    const currentGrams = this.nfPopupServingMultiplier() * 100;
-    const currentUnits = currentGrams / gpu;
+    const currentUnits = this.nfPopupServingSize();
     const unit = (food.servingUnit ?? '').toLowerCase();
-    const dir = direction === 'up' ? 1 : -1;
 
     let unitStep = 0.25;
     let floorUnits = 0.25;
@@ -1269,23 +1253,16 @@ export class FoodsPanelComponent {
     }
     if (newUnits < floorUnits) newUnits = floorUnits;
 
-    // Convert back to per-100g multiplicand: grams = units × gpu, then
-    // multiplicand = grams / 100.
-    const newMultiplicand = (newUnits * gpu) / 100;
-    const newEffective = Number(newMultiplicand.toFixed(4));
-    this.nfPopupServingMultiplier.set(newEffective);
+    const newServingSize = Number(newUnits.toFixed(4));
+    this.nfPopupServingSize.set(newServingSize);
 
-    // Auto-persist. LHS / MyFoods context → update the user's default for
-    // this food (sent as a RATIO on top of the food's curated base, matching
-    // the API contract: effectiveServing = food.multiplicand × user.ratio).
-    // RHS basket context → snapshot the effective multiplicand into the
-    // basket entry locally; no server hit.
+    // Auto-persist. RHS basket context → stamp food.servingSize on the basket
+    // entry locally (no server hit). LHS / MyFoods context → send the user's
+    // override to the API via the preferences upsert (debounced 500 ms).
     if (this.isFoodFromBasketContext(food)) {
-      this.persistBasketServingOverride(food.id, newEffective);
+      this.persistBasketServingOverride(food.id, newServingSize);
     } else {
-      const base = food.servingSizeMultiplicand || 1;
-      const ratio = base > 0 ? newEffective / base : 1;
-      this.preferencesService.setServingSizeMultiplier(food.id, Number(ratio.toFixed(4)));
+      this.preferencesService.setUserServingSize(food.id, newServingSize);
     }
   }
 
@@ -1303,12 +1280,12 @@ export class FoodsPanelComponent {
   /** Store a per-basket serving-size override locally on the matching
    *  basket entry. Survives reload via the same persistThisWeek effect.
    *  No server hop — the basket itself is client-side state. */
-  private persistBasketServingOverride(foodId: number, multiplier: number): void {
+  private persistBasketServingOverride(foodId: number, servingSize: number): void {
     this.thisWeekBaskets.update(b => {
       const next = { ...b } as ThisWeekBaskets;
       for (const key of this.basketKeys) {
         next[key] = b[key].map(f =>
-          f.id === foodId ? { ...f, servingSizeMultiplicand: multiplier } : f,
+          f.id === foodId ? { ...f, servingSize } : f,
         );
       }
       return next;
@@ -1709,23 +1686,22 @@ export class FoodsPanelComponent {
   showAddDialog = signal(false);
   showHealthBenefits = signal(false);
   nfPopupFood = signal<Food | null>(null);
-  // Current serving-size multiplier displayed inside the NF popup. Starts at
-  // the food's base `servingSizeMultiplicand` when the popup opens; the ▲ / ▼
-  // steppers mutate it in place. Macros in the DB are per-100g, so this
-  // value × 100 = effective grams of the displayed serving (matches the
-  // SQL fixup convention).
-  nfPopupServingMultiplier = signal<number>(1);
 
-  /** Number of food units (e.g. 1 for "1 oz", 4 for "4 oz") implied by the
-   *  current multiplier. Derived as multiplier × 100 / servingGramsPerUnit
-   *  so the popup reads in the food's curated unit instead of the raw
-   *  decimal multiplier. */
-  nfPopupDisplayUnits = computed<number>(() => {
+  /** Current effective serving size displayed inside the NF popup, in food
+   *  units (e.g. 4 = "4 oz" of beef). Starts at the user's saved override
+   *  (servingMultiplier in old terms; now `userServingSize`) when present,
+   *  otherwise the food's curated `servingSize` baseline, otherwise 1.
+   *  The ▲ / ▼ steppers mutate it in place. */
+  nfPopupServingSize = signal<number>(1);
+
+  /** Scale factor handed to the NF label so it can recompute macros. Per the
+   *  per-100g convention: macros = nf × servingSizeMultiplicand × servingSize.
+   *  The label expects a single scale input, so we multiply here. */
+  nfPopupScale = computed<number>(() => {
     const food = this.nfPopupFood();
-    if (!food) return 0;
-    const gpu = food.servingGramsPerUnit || 1;
-    const units = (this.nfPopupServingMultiplier() * 100) / gpu;
-    return Number(units.toFixed(2));
+    if (!food) return 1;
+    const multiplicand = food.servingSizeMultiplicand || 1;
+    return multiplicand * this.nfPopupServingSize();
   });
 
   // ---- Health Benefits popup state (Langfuse-driven) ----

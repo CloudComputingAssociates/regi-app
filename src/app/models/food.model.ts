@@ -16,6 +16,15 @@ export type { FoodSchema, FoodSearchBatchResponse };
 // dataSource is provenance, foodSource is the table the row lives in.
 export type Food = FoodSchema & {
   foodSource?: 'food' | 'userfood';
+  // Food's curated baseline — number of `servingUnit` per serving
+  // (e.g. 4 for "4 oz" of beef). Populated from Foods.ServingSize /
+  // UserFoods.ServingSize via the AllFoods view. Optional on the alias
+  // because FoodSchema (generated) doesn't have it natively yet.
+  servingSize?: number | null;
+  // This user's per-favorite override. null/undefined → no override; the
+  // popup should fall through to `servingSize` (the baseline) for display
+  // and macro math.
+  userServingSize?: number | null;
 };
 export type FoodSearchResponse = GeneratedFoodSearchResponse;
 
