@@ -15,7 +15,7 @@ export type { FoodSchema, FoodSearchBatchResponse };
 // FoodSchema. It's the canonical source-of-truth for "USDA vs UserFood" —
 // dataSource is provenance, foodSource is the table the row lives in.
 export type Food = FoodSchema & {
-  foodSource?: 'usda' | 'user';
+  foodSource?: 'food' | 'userfood';
 };
 export type FoodSearchResponse = GeneratedFoodSearchResponse;
 

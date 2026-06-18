@@ -90,7 +90,7 @@ export class FoodsService {
 
   // All curated lists (for the dropdown). Optional foodId adds an `assigned`
   // flag per list — not needed here, used by the detail-panel work.
-  getLists(foodId?: number, foodSource: string = 'usda'): Observable<{ lists: FoodList[]; count: number }> {
+  getLists(foodId?: number, foodSource: string = 'food'): Observable<{ lists: FoodList[]; count: number }> {
     let url = `${this.baseUrl}/lists`;
     if (foodId != null) {
       url += `?foodId=${foodId}&foodSource=${foodSource}`;
@@ -124,8 +124,12 @@ export class FoodsService {
       shortDescription: row.shortDescription,
       categoryName: row.categoryName,
       foodRequestType: 'unknown',
-      foodSource: row.foodSource === 'user' ? 'user' : 'usda',
-      dataSource: row.dataSource ?? (row.foodSource === 'user' ? 'user' : 'USDA-FNDDS'),
+      foodSource: row.foodSource === 'userfood' ? 'userfood' : 'food',
+      // The dataSource fallback values ('user' and 'USDA-FNDDS') are
+      // dataSource literals — provenance strings, NOT foodSource
+      // discriminators. They must stay verbatim even though the
+      // foodSource comparison key flipped.
+      dataSource: row.dataSource ?? (row.foodSource === 'userfood' ? 'user' : 'USDA-FNDDS'),
       yehApproved: row.yehApproved ?? false,
       glycemicIndex: row.glycemicIndex ?? 0,
       glycemicLoad: row.glycemicLoad,

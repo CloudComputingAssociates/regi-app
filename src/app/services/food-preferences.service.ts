@@ -88,7 +88,7 @@ export type PendingChangeType = 'add-allowed' | 'add-restricted' | 'remove' | 'u
 export interface PendingChange {
   foodId: number;
   type: PendingChangeType;
-  foodSource?: string; // 'usda' or 'user'
+  foodSource?: string; // 'food' or 'userfood'
   originalPreferenceId?: number; // For removals, we need to know what to delete
   // Per-user serving-size multiplier (ratio applied on top of the food's base
   // servingSizeMultiplicand). Carried on the pending change so the upsert can
@@ -530,8 +530,10 @@ export class FoodPreferencesService {
       shortDescription: row.shortDescription,
       categoryName: row.categoryName,
       foodRequestType: 'unknown',
-      foodSource: row.foodSource === 'user' ? 'user' : 'usda',
-      dataSource: row.dataSource ?? (row.foodSource === 'user' ? 'user' : 'USDA-FNDDS'),
+      foodSource: row.foodSource === 'userfood' ? 'userfood' : 'food',
+      // dataSource fallback stays as the provenance string literals; only
+      // the foodSource COMPARISON KEY flipped to 'userfood'.
+      dataSource: row.dataSource ?? (row.foodSource === 'userfood' ? 'user' : 'USDA-FNDDS'),
       yehApproved: row.yehApproved,
       glycemicIndex: row.glycemicIndex ?? 0,
       glycemicLoad: row.glycemicLoad,

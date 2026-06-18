@@ -975,8 +975,11 @@ export class FoodsListComponent implements OnInit {
   private getFoodSource(foodId: number): string | undefined {
     const food = this.foods().find(f => f.id === foodId);
     if (!food) return undefined;
-    // USDA foods have DataSource like 'USDA-FNDDS-...' — anything else is a user food
-    return food.dataSource.startsWith('USDA') ? undefined : 'user';
+    // USDA foods have DataSource like 'USDA-FNDDS-...' — anything else is a user food.
+    // Return value is the foodSource discriminator: 'userfood' for user-entered
+    // rows; undefined for USDA-prefixed rows so the caller falls through to its
+    // default (the API treats absence as 'food').
+    return food.dataSource.startsWith('USDA') ? undefined : 'userfood';
   }
 
   toggleFavorite(event: Event, foodId: number): void {

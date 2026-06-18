@@ -1792,11 +1792,11 @@ export class FoodsPanelComponent {
    *  'FatSecret', 'user', 'OpenAI-*', …) would otherwise be mislabeled.
    *
    *  Rules:
-   *    foodSource === 'usda'  → 'USDA'
-   *    foodSource === 'user'  → dataSource verbatim (provenance)
-   *    foodSource missing     → infer from dataSource prefix (legacy path
-   *                             for any Food object minted before the
-   *                             foodSource plumbing landed).
+   *    foodSource === 'food'      → 'USDA' (canonical Foods-table row)
+   *    foodSource === 'userfood'  → dataSource verbatim (provenance)
+   *    foodSource missing         → infer from dataSource prefix (legacy
+   *                                 path for any Food object minted before
+   *                                 the foodSource plumbing landed).
    *
    *  ID is shown as-is (whatever the API returned). The historic sign-flip
    *  convention for user foods is no longer used; the discriminator is the
@@ -1809,8 +1809,8 @@ export class FoodsPanelComponent {
   }
 
   private sourceLabel(food: Food): string {
-    if (food.foodSource === 'usda') return 'USDA';
-    if (food.foodSource === 'user') return food.dataSource || 'user';
+    if (food.foodSource === 'food') return 'USDA';
+    if (food.foodSource === 'userfood') return food.dataSource || 'user';
     // foodSource absent — infer from dataSource as a last resort.
     if (food.dataSource?.startsWith('USDA')) return 'USDA';
     return food.dataSource || 'unknown';
