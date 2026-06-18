@@ -623,7 +623,8 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 [displayUnit]="nfPopupFood()!.servingUnit || 'g'"
                 [displayQuantity]="nfPopupServingSize()"
                 [editable]="true"
-                (adjust)="onNfAdjust($event)" />
+                (adjust)="onNfAdjust($event)"
+                (commit)="onNfCommit($event)" />
             </div>
             <!-- Dev-side data-trace, OUTSIDE the inner scroll area so it
                  rides on the popup's dark bottom chrome instead of inside
@@ -1198,67 +1199,63 @@ export class FoodsPanelComponent {
     this.nfPopupFood.set(food);
   }
 
-  /** Adjust handler emitted by the NF label's ▲ / ▼ steppers. Steps directly
-   *  in food-unit space (the user's mental model: "+1 oz", "+0.5 cup", "+1
-   *  whole"). Per-unit step sizes:
-   *    oz / lb            → ±1
-   *    g                  → ±5
-   *    mg                 → ±50
-   *    ml                 → ±50
-   *    l                  → ±0.25
-   *    cup / tbsp / tsp   → ±0.5
-   *    whole / piece /
-   *      slice / egg      → +1 up, halve down
-   *    other / null       → ±0.25
-   *  Floor enforced on the downward step so the user can't slip below a
-   *  sensible minimum portion. */
+  /** Curated ladder of "sensible" serving sizes, used by the ▲ / ▼ buttons.
+   *  Off-ladder values (e.g. a curator-saved 0.625 whole) snap to the next
+   *  ladder rung in the direction the user pressed — they're NOT force-
+   *  snapped on display, only on click. The ladder is unit-agnostic by
+   *  design: stepping math is the same whether the unit is "oz", "whole",
+   *  "cup", or "g". This is intentional — users think "next bigger /
+   *  smaller portion", not "delta of N grams". */
+  private static readonly SERVING_SIZE_LADDER: readonly number[] = [
+    0.25, 0.5, 0.75,
+    1, 1.25, 1.5, 1.75,
+    2, 2.5, 3, 3.5,
+    4, 5, 6, 8, 10, 12, 15, 20,
+  ];
+
+  /** Adjust handler emitted by the NF label's ▲ / ▼ steppers. Ladder-snap:
+   *  up = smallest ladder entry strictly > current; down = largest entry
+   *  strictly < current. No-op if already at the bound. */
   onNfAdjust(direction: 'up' | 'down'): void {
     const food = this.nfPopupFood();
     if (!food) return;
-    const currentUnits = this.nfPopupServingSize();
-    const unit = (food.servingUnit ?? '').toLowerCase();
+    const current = this.nfPopupServingSize();
+    const ladder = FoodsPanelComponent.SERVING_SIZE_LADDER;
 
-    let unitStep = 0.25;
-    let floorUnits = 0.25;
-    let halveDown = false;
-
-    switch (unit) {
-      case 'oz':
-      case 'lb':
-        unitStep = 1; floorUnits = 1; break;
-      case 'g':
-        unitStep = 5; floorUnits = 5; break;
-      case 'mg':
-        unitStep = 50; floorUnits = 50; break;
-      case 'ml':
-        unitStep = 50; floorUnits = 50; break;
-      case 'l':
-        unitStep = 0.25; floorUnits = 0.25; break;
-      case 'cup':
-      case 'tbsp':
-      case 'tsp':
-        unitStep = 0.5; floorUnits = 0.5; break;
-      case 'whole':
-      case 'piece':
-      case 'slice':
-      case 'egg':
-        unitStep = 1; floorUnits = 0.25; halveDown = true; break;
-    }
-
-    let newUnits = currentUnits;
+    let next: number | undefined;
     if (direction === 'up') {
-      newUnits = currentUnits + unitStep;
+      next = ladder.find(v => v > current);
     } else {
-      newUnits = halveDown ? currentUnits / 2 : currentUnits - unitStep;
+      // Largest value strictly less than current. Walk the ladder right-to-left.
+      for (let i = ladder.length - 1; i >= 0; i--) {
+        if (ladder[i] < current) { next = ladder[i]; break; }
+      }
     }
-    if (newUnits < floorUnits) newUnits = floorUnits;
+    if (next === undefined) return; // already at the top or bottom of the ladder
 
-    const newServingSize = Number(newUnits.toFixed(4));
+    const newServingSize = Number(next.toFixed(4));
     this.nfPopupServingSize.set(newServingSize);
+    this.persistNfPopupServingSize(food, newServingSize);
+  }
 
-    // Auto-persist. RHS basket context → stamp food.servingSize on the basket
-    // entry locally (no server hit). LHS / MyFoods context → send the user's
-    // override to the API via the preferences upsert (debounced 500 ms).
+  /** Commit handler emitted by the NF label's typed-input mode. The label
+   *  has already validated the value is a positive number; we trust it and
+   *  persist directly, allowing off-ladder values (e.g. 0.4, 1.3) since the
+   *  ladder is for the steppers only, not a validation rule. */
+  onNfCommit(value: number): void {
+    const food = this.nfPopupFood();
+    if (!food) return;
+    const newServingSize = Number(value.toFixed(4));
+    this.nfPopupServingSize.set(newServingSize);
+    this.persistNfPopupServingSize(food, newServingSize);
+  }
+
+  /** Shared persistence path used by both ▲ / ▼ ladder steps and typed-
+   *  input commits. RHS basket context → stamp food.servingSize on the
+   *  basket entry locally (no server hit). LHS / MyFoods context → send the
+   *  user's override to the API via the preferences upsert (debounced 500
+   *  ms). */
+  private persistNfPopupServingSize(food: Food, newServingSize: number): void {
     if (this.isFoodFromBasketContext(food)) {
       this.persistBasketServingOverride(food.id, newServingSize);
     } else {

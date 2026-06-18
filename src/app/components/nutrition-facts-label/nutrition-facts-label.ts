@@ -1,5 +1,5 @@
 // src/app/components/nutrition-facts-label/nutrition-facts-label.ts
-import { Component, ChangeDetectionStrategy, input, output, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, computed, signal, ElementRef, viewChild, effect } from '@angular/core';
 import { NutritionFacts } from '../../models/food.model';
 
 // FDA 2020 Daily Reference Values
@@ -58,7 +58,38 @@ function dvPercent(actual: number | undefined | null, reference: number): number
               </button>
             </div>
           }
-          <span class="nf-serving-value">{{ servingSizeDisplay() }}</span>
+          @if (editable() && editing()) {
+            <input
+              #editInput
+              type="number"
+              inputmode="decimal"
+              class="nf-serving-edit-input"
+              [value]="editValue()"
+              (input)="onEditInput($any($event.target).value)"
+              (blur)="onEditBlur()"
+              (keydown.enter)="commitIfValid()"
+              (keydown.escape)="cancelEdit()"
+              aria-label="Serving size value" />
+            <button
+              type="button"
+              class="nf-serving-commit"
+              [class.enabled]="isCommitValid()"
+              [disabled]="!isCommitValid()"
+              (mousedown)="onCommitMouseDown($event)"
+              (click)="commitIfValid()"
+              aria-label="Confirm serving size">
+              <svg viewBox="0 0 14 14" aria-hidden="true">
+                <path d="M3 7 L6 10 L11 4" fill="none" stroke="currentColor"
+                      stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+            <span class="nf-serving-unit-suffix">{{ displayUnit() }} ({{ data().servingSizeG ?? 0 }}g)</span>
+          } @else {
+            <span
+              class="nf-serving-value"
+              [class.nf-serving-clickable]="editable()"
+              (click)="onValueClick()">{{ servingSizeDisplay() }}</span>
+          }
         </div>
       </div>
 
@@ -271,6 +302,89 @@ function dvPercent(actual: number | undefined | null, reference: number): number
       flex-shrink: 0;
     }
 
+    // In editable mode the displayed value reads as tap-to-edit. Subtle
+    // dotted underline + pointer cursor signals it without dominating.
+    .nf-serving-clickable {
+      cursor: pointer;
+      border-bottom: 1px dotted rgba(0, 0, 0, 0.45);
+      padding-bottom: 1px;
+    }
+
+    // Edit-mode input. Sized to match the displayed value's footprint so
+    // the row doesn't reflow as the user toggles in and out of edit. Strip
+    // the spinner Chrome injects on number inputs — we own the steppers.
+    .nf-serving-edit-input {
+      flex-shrink: 0;
+      width: 56px;
+      padding: 1px 4px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      color: #000;
+      background: #fff;
+      border: 1px solid #777;
+      border-radius: 2px;
+      outline: none;
+
+      &:focus {
+        border-color: #000;
+      }
+
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      &[type='number'] {
+        -moz-appearance: textfield;
+      }
+    }
+
+    // Green check button. Disabled state desaturates to grey + drops opacity
+    // so it reads as "you need to type something different first."
+    .nf-serving-commit {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      background: #bdbdbd;
+      border: 1px solid #999;
+      border-radius: 50%;
+      color: #fff;
+      cursor: not-allowed;
+      transition: background 0.1s ease, border-color 0.1s ease, opacity 0.1s ease;
+      opacity: 0.6;
+
+      svg {
+        width: 14px;
+        height: 14px;
+        display: block;
+      }
+
+      &.enabled {
+        background: #2e7d32;
+        border-color: #1b5e20;
+        cursor: pointer;
+        opacity: 1;
+
+        &:hover  { background: #388e3c; }
+        &:active { background: #1b5e20; }
+      }
+    }
+
+    // Unit suffix shown alongside the input in edit mode (e.g. "whole (78g)").
+    // Mirrors the trailing portion of .nf-serving-value when not editing so
+    // the user still sees the unit context while typing.
+    .nf-serving-unit-suffix {
+      flex-shrink: 0;
+      font-weight: 700;
+      font-size: 13px;
+      color: #000;
+    }
+
     .nf-divider-thick {
       height: 8px;
       background: #000000;
@@ -347,18 +461,105 @@ export class NutritionFactsLabelComponent {
   displayQuantity = input<number | null>(null);
 
   // Editable mode renders ▲ / ▼ stepper buttons next to the serving-size
-  // line. The label itself is intentionally dumb about unit semantics — it
-  // just emits direction; the parent computes the new multiplier from the
-  // food's servingUnit and applies it via the `scale` input.
+  // line AND makes the value tap-to-edit. The label is intentionally dumb
+  // about unit semantics — it emits direction (`adjust`) or a typed value
+  // (`commit`); the parent owns the ladder-snap step + persistence.
   editable = input<boolean>(false);
   adjust = output<'up' | 'down'>();
+  commit = output<number>();
+
+  // ----- Edit-mode state ---------------------------------------------------
+  // `editing` flips true on tap of the displayed value. `editValue` carries
+  // the in-flight typed text (kept as a string so partial input like "0."
+  // doesn't get parsed prematurely; we coerce on commit).
+  editing = signal(false);
+  editValue = signal('');
+  // Suppresses the upcoming blur-revert when the user is clicking the green
+  // commit button — mousedown fires first, sets the flag, the input's blur
+  // then sees it and skips the revert. Flag cleared on the next tick.
+  private commitInFlight = false;
+
+  private editInputRef = viewChild<ElementRef<HTMLInputElement>>('editInput');
+
+  // Auto-focus the input the moment editing flips true.
+  private focusEditInputEffect = effect(() => {
+    if (this.editing()) {
+      queueMicrotask(() => this.editInputRef()?.nativeElement.focus());
+    }
+  });
+
+  /** Tap the displayed value → enter edit mode, prime the input with the
+   *  current committed quantity. */
+  onValueClick(): void {
+    if (!this.editable()) return;
+    const dq = this.displayQuantity();
+    this.editValue.set(dq != null ? String(dq) : '');
+    this.editing.set(true);
+  }
+
+  onEditInput(value: string): void {
+    this.editValue.set(value);
+  }
+
+  /** Parse the in-flight value. Returns null on NaN / non-numeric. */
+  private parsedEditValue(): number | null {
+    const raw = this.editValue().trim();
+    if (raw === '') return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  /** Commit is enabled only when the typed value is a positive number AND
+   *  differs from what's currently committed. */
+  isCommitValid = computed(() => {
+    if (!this.editing()) return false;
+    const parsed = this.parsedEditValue();
+    if (parsed === null || parsed <= 0) return false;
+    return parsed !== this.displayQuantity();
+  });
+
+  /** Capture mousedown so the input's blur handler can tell this commit
+   *  click apart from a click-elsewhere blur (which should revert). */
+  onCommitMouseDown(ev: Event): void {
+    ev.preventDefault(); // keep focus on the input through the click
+    this.commitInFlight = true;
+  }
+
+  commitIfValid(): void {
+    if (!this.isCommitValid()) return;
+    const parsed = this.parsedEditValue();
+    if (parsed === null) return;
+    this.commit.emit(parsed);
+    this.editing.set(false);
+    this.commitInFlight = false;
+  }
+
+  cancelEdit(): void {
+    this.editing.set(false);
+    this.commitInFlight = false;
+  }
+
+  /** Blur without commit reverts. The commitInFlight flag (set by the green
+   *  check's mousedown) means "blur is firing because we're committing —
+   *  don't revert." */
+  onEditBlur(): void {
+    if (this.commitInFlight) {
+      this.commitInFlight = false;
+      return;
+    }
+    this.editing.set(false);
+  }
 
   onStepUp(ev: Event): void {
     ev.stopPropagation();
+    // Stepping while typing cancels the edit; the next step works from the
+    // committed value, not from whatever was being typed.
+    if (this.editing()) this.cancelEdit();
     this.adjust.emit('up');
   }
   onStepDown(ev: Event): void {
     ev.stopPropagation();
+    if (this.editing()) this.cancelEdit();
     this.adjust.emit('down');
   }
 
