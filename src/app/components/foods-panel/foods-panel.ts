@@ -103,10 +103,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
               class="curate-toggle"
               [class.pressed]="addTo() === 'right'"
               (click)="addTo.set(addTo() === 'right' ? 'left' : 'right')"
-              matTooltip="Curate MyFoods — 'Like' Regi Approved foods or add your own MyFoods with mobile app download (Android)"
+              matTooltip="Edit MyFoods — 'Like' Regi Approved foods, set per-food serving size, or add your own MyFoods with mobile app download (Android)"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350">
-              Curate
+              Edit...
             </button>
           </div>
 
@@ -208,32 +208,16 @@ const CATEGORY_PLURALS: Record<string, string> = {
           <div class="section-title">
             <span class="section-title-text">
               @if (addTo() === 'left') {
-                Fill Baskets
+                Picks
               } @else {
                 <span
-                  matTooltip="Curate MyFoods — click 'star' to Favorite, or 'circle-line' for your Restricted Foods. With MyFoods selected you can delete or un-favorite to remove from MyFoods."
+                  matTooltip="Edit MyFoods — click 'star' to Favorite, 'circle-line' to Restrict. Double-click a row to edit its Serving Size, single-press-and-hold the picture to zoom."
                   matTooltipPosition="below"
                   [matTooltipShowDelay]="350">
-                  Curate MyFoods
+                  Edit MyFoods
                 </span>
               }
             </span>
-            @if (addTo() === 'left') {
-              <!-- AutoFill — AI-driven basket-filler. Wiring lands later;
-                   the button is here so the layout settles now. Visually
-                   matches the Curate pill on the LHS so the two banners
-                   read as a balanced pair. -->
-              <button
-                type="button"
-                class="autofill-toggle"
-                disabled
-                matTooltip="AI auto-fill (coming soon)"
-                matTooltipPosition="below"
-                [matTooltipShowDelay]="350">
-                <img src="/images/AI-star-white.png" alt="" class="autofill-ai-icon" />
-                AutoFill
-              </button>
-            }
             <span class="section-title-count">
               @if (addTo() === 'left') { Total ({{ thisWeekTotal() }}) }
               @else { Total ({{ bottomListLength() }}) }
@@ -243,9 +227,9 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 type="button"
                 class="section-title-close"
                 (click)="addTo.set('left')"
-                matTooltip="Back to Fill Baskets"
+                matTooltip="Back to Picks"
                 matTooltipPosition="below"
-                aria-label="Close Curate">
+                aria-label="Close Edit">
                 ✕
               </button>
             }
@@ -403,7 +387,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                           [matTooltip]="food.shortDescription || food.description"
                           matTooltipPosition="above"
                           (click)="onBasketFoodClick(food)"
-                          (dblclick)="removeFoodFromBasket(key, food.id)">
+                          (dblclick)="onBasketFoodDblClick(food)">
                           <!-- Hover-revealed red X — explicit remove affordance.
                                stopPropagation so clicking it doesn't fire the
                                card's (click) select handler. -->
@@ -429,22 +413,6 @@ const CATEGORY_PLURALS: Record<string, string> = {
                         </div>
                       }
                     </div>
-                    <!-- "Click for Facts" bloom — appears 3 s after select,
-                         lingers 5 s. Pinned to the bottom-right of the
-                         basket cell (NOT the mini-card) so it's visible in
-                         the viewport without occluding the selected tile. -->
-                    @if (showNfBloom() && basketContainingSelected() === key) {
-                      <button
-                        type="button"
-                        class="nf-bloom"
-                        [style.top.px]="bloomPosition()?.top"
-                        [style.left.px]="bloomPosition()?.left"
-                        (click)="onNfBloomClick($event)"
-                        aria-label="Open Nutrition Facts">
-                        <img src="/images/NutritionFactsLabel.jpg" alt="" class="nf-bloom-bg" />
-                        <span class="nf-bloom-text">Click for Facts</span>
-                      </button>
-                    }
                   }
                 </div>
               }
@@ -470,10 +438,17 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 </div>
                 @if (!group.collapsed) {
                   @for (food of group.foods; track food.id) {
-                    <div class="selected-food-row">
-                      <div class="selected-food-thumb">
+                    <div class="selected-food-row"
+                         (dblclick)="onEditMyFoodsRowDblClick(food)">
+                      <div class="selected-food-thumb"
+                           (mousedown)="onThumbHoldStart($event, food)"
+                           (mouseup)="onThumbHoldEnd()"
+                           (mouseleave)="onThumbHoldEnd()"
+                           (touchstart)="onThumbHoldStart($event, food)"
+                           (touchend)="onThumbHoldEnd()"
+                           (touchcancel)="onThumbHoldEnd()">
                         @if (food.foodImageThumbnail) {
-                          <img [src]="food.foodImageThumbnail" alt="" />
+                          <img [src]="food.foodImageThumbnail" alt="" draggable="false" />
                         } @else {
                           <div class="selected-food-thumb-placeholder"></div>
                         }
@@ -580,11 +555,13 @@ const CATEGORY_PLURALS: Record<string, string> = {
         </div>
       </div>
 
-      <!-- Nutrition Facts popup (single-click on highlighted card) -->
+      <!-- Nutrition Facts popup. Opens in view mode by default (read-only).
+           Opens in edit mode only from the RHS Edit MyFoods row, where a
+           Green Save button persists changes to UserFoodPreferences.ServingSize. -->
       @if (nfPopupFood()) {
-        <div class="nf-popup-overlay" (click)="nfPopupFood.set(null)">
+        <div class="nf-popup-overlay" (click)="onNfPopupClose()">
           <div class="nf-popup" (click)="$event.stopPropagation()">
-            <button class="nf-popup-close" (click)="nfPopupFood.set(null)" aria-label="Close">✕</button>
+            <button class="nf-popup-close" (click)="onNfPopupClose()" aria-label="Close">✕</button>
             <!-- Health Info button — overhangs the popup's upper edge so it
                  advertises the AI explainer affordance on every NF popup.
                  Always rendered (the previous filter-gate would silently
@@ -622,7 +599,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 [scale]="nfPopupScale()"
                 [displayUnit]="nfPopupFood()!.servingUnit || 'g'"
                 [displayQuantity]="nfPopupServingSize()"
-                [editable]="true"
+                [editable]="nfPopupMode() === 'edit'"
                 (adjust)="onNfAdjust($event)"
                 (commit)="onNfCommit($event)" />
             </div>
@@ -633,7 +610,36 @@ const CATEGORY_PLURALS: Record<string, string> = {
             <div class="nf-popup-trace">
               {{ traceLabel(nfPopupFood()!) }}
             </div>
+            <!-- Green Save button — only visible in edit mode. Disabled
+                 until the draft differs from the value the popup opened at,
+                 so clicking Save with no changes is impossible. -->
+            @if (nfPopupMode() === 'edit') {
+              <button
+                type="button"
+                class="nf-popup-save"
+                [class.enabled]="nfPopupCanSave()"
+                [disabled]="!nfPopupCanSave()"
+                (click)="onNfSave()"
+                matTooltip="Save serving size to MyFoods"
+                matTooltipPosition="above"
+                aria-label="Save">
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="M3 8 L7 12 L13 5" fill="none" stroke="currentColor"
+                        stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="nf-popup-save-label">Save</span>
+              </button>
+            }
           </div>
+        </div>
+      }
+
+      <!-- Press-and-hold zoom overlay. Activated by single-press + hold on
+           a food thumbnail in the Edit MyFoods accordion. Released the
+           moment the user lets go (mouseup / mouseleave / touchend). -->
+      @if (zoomImageUrl(); as url) {
+        <div class="thumb-zoom-overlay" (click)="onThumbHoldEnd()">
+          <img [src]="url" alt="" class="thumb-zoom-image" draggable="false" />
         </div>
       }
 
@@ -1111,28 +1117,14 @@ export class FoodsPanelComponent {
    *  buttons in the top bar act on this food. */
   selectedFood = signal<Food | null>(null);
 
-  /** Single-click toggles selection: clicking an unselected tile selects
-   *  it, clicking the already-selected tile unselects it. Selecting also
-   *  schedules a 1.5 s timer to open the NF popup (same wait window as
-   *  the RHS basket bloom). */
+  /** Single-click on a LHS food tile = "Pick this" → drops it straight into
+   *  the appropriate basket. Idempotent: clicking a food that's already in
+   *  its basket is a silent no-op (addFoodToBasket dedupes by id), so a
+   *  trailing double-click won't add the same food twice. If the right
+   *  pane is in Curate mode it flips back to Picks so the user sees where
+   *  the food landed. */
   onTileClick(food: Food): void {
-    const current = this.selectedFood();
-    const isSameTile = current?.id === food.id;
-    this.selectedFood.set(isSameTile ? null : food);
-    if (isSameTile) {
-      this.cancelLhsTilePopup();
-    } else {
-      this.scheduleLhsTilePopup(food);
-    }
-  }
-
-  /** Double-click activates: adds to the active picker. If Refine is open
-   *  on the right pane, we close it first so Baskets becomes visible — the
-   *  user just chose a food to add, so the destination they're filling
-   *  should be on screen. The double-click also pre-empts the pending NF
-   *  popup so the popup doesn't pop right after the food lands in a basket. */
-  onTileDblClick(food: Food): void {
-    this.cancelLhsTilePopup();
+    this.selectedFood.set(food);
     if (this.addTo() === 'right') {
       this.addTo.set('left');
     }
@@ -1140,63 +1132,102 @@ export class FoodsPanelComponent {
     this.addFoodToBasket(food, basket);
   }
 
+  /** Double-click on a LHS tile is now a no-op for NF popups — edits live
+   *  under the Edit MyFoods flow only. The first click of the double-click
+   *  already added to the basket; addFoodToBasket's dedupe makes the second
+   *  click a silent no-op, so this method intentionally does nothing.
+   *  Kept as an explicit handler so future intent (e.g. confirmation flash)
+   *  has an obvious home. */
+  onTileDblClick(_food: Food): void {
+    // No NF popup from the LHS picks display — edits require Edit mode.
+  }
+
+  /** Double-click on a row in the Edit MyFoods accordion → open the NF
+   *  popup in EDIT mode. This is the only path that hands the user the
+   *  steppers + Green Save button. */
+  onEditMyFoodsRowDblClick(food: Food): void {
+    this.openNfPopupForFood(food, 'edit');
+  }
+
+  // ----- Press-and-hold zoom on Edit MyFoods row thumbnail ----------------
+  // Single press + hold (≥ 450 ms) on the food picture pops a full-image
+  // overlay so the user can see the food clearly. Release the hold (mouseup,
+  // mouseleave, touchend, touchcancel) to dismiss.
+  zoomImageUrl = signal<string | null>(null);
+  private thumbHoldTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly THUMB_HOLD_DELAY_MS = 450;
+
+  onThumbHoldStart(event: Event, food: Food): void {
+    // Image-only zoom — bail if the food has no full-size image to show.
+    const url = food.foodImage || food.foodImageThumbnail;
+    if (!url) return;
+    // Prevent text selection / image-drag during the hold gesture.
+    event.preventDefault();
+    this.cancelThumbHold();
+    this.thumbHoldTimer = setTimeout(() => {
+      this.thumbHoldTimer = null;
+      this.zoomImageUrl.set(url);
+    }, FoodsPanelComponent.THUMB_HOLD_DELAY_MS);
+  }
+
+  onThumbHoldEnd(): void {
+    this.cancelThumbHold();
+    this.zoomImageUrl.set(null);
+  }
+
+  private cancelThumbHold(): void {
+    if (this.thumbHoldTimer) {
+      clearTimeout(this.thumbHoldTimer);
+      this.thumbHoldTimer = null;
+    }
+  }
+
   /** Drag-and-drop preserves the existing transfer shape — a JSON-encoded
    *  Food blob on application/json — so the basket drop handlers don't
-   *  need to change. Drag also cancels the pending NF popup; the user has
-   *  shifted intent. */
+   *  need to change. */
   onTileDragStart(food: Food, event: DragEvent): void {
-    this.cancelLhsTilePopup();
     event.dataTransfer?.setData('application/json', JSON.stringify(food));
     event.dataTransfer!.effectAllowed = 'copy';
   }
 
-  // ----- LHS tile NF popup timer ------------------------------------------
-  // Mirrors the RHS basket bloom timing (1.5 s wait, then open) so the two
-  // panes feel like one product. Unlike the basket bloom, the LHS goes
-  // straight to the popup — no intermediate "Click for Facts" affordance —
-  // because the LHS tile grid is single-select with a clear yellow halo
-  // already; the user knows what they picked.
-  private lhsTileTimer: ReturnType<typeof setTimeout> | null = null;
-  private static readonly LHS_TILE_POPUP_DELAY_MS = 1500;
-
-  private scheduleLhsTilePopup(food: Food): void {
-    this.cancelLhsTilePopup();
-    this.lhsTileTimer = setTimeout(() => {
-      this.lhsTileTimer = null;
-      // Only fire if the user hasn't changed their selection in the meantime.
-      if (this.selectedFood()?.id === food.id) {
-        this.openNfPopupForFood(food);
-      }
-    }, FoodsPanelComponent.LHS_TILE_POPUP_DELAY_MS);
-  }
-
-  private cancelLhsTilePopup(): void {
-    if (this.lhsTileTimer) {
-      clearTimeout(this.lhsTileTimer);
-      this.lhsTileTimer = null;
-    }
-  }
-
   /** Open the NF popup for a food and prime the adjustable-serving state.
-   *  Priority order for the initial serving size shown:
-   *   1. Basket-entry override (RHS only) — basket entries stamp their own
-   *      `servingSize` on the food object via persistBasketServingOverride.
-   *   2. User's MyFoods override (`userServingSize` in the preferences cache).
-   *   3. Food's curated baseline (`food.servingSize`).
-   *   4. Fallback 1. */
-  private openNfPopupForFood(food: Food): void {
-    let initial: number;
-    if (this.isFoodFromBasketContext(food)) {
-      // Basket entries carry their override directly on food.servingSize.
-      initial = food.servingSize ?? 1;
-    } else {
-      // MyFoods context: user's override beats the food's baseline.
-      initial = this.preferencesService.userServingSize(food.id)
-        ?? food.servingSize
-        ?? 1;
-    }
+   *  Initial serving size = user's saved MyFoods override (`userServingSize`)
+   *  when present, else the food's curated `servingSize` baseline, else 1.
+   *  `mode` defaults to `view` (read-only). Edit mode is reached only via
+   *  the Edit MyFoods flow on the RHS. */
+  private openNfPopupForFood(food: Food, mode: 'view' | 'edit' = 'view'): void {
+    const initial = this.preferencesService.userServingSize(food.id)
+      ?? food.servingSize
+      ?? 1;
     this.nfPopupServingSize.set(initial);
+    this.nfPopupOriginalServingSize.set(initial);
+    this.nfPopupMode.set(mode);
     this.nfPopupFood.set(food);
+  }
+
+  /** Close handler for the NF popup. Always reverts the draft to the
+   *  original value so that a draft change in edit mode that wasn't saved
+   *  doesn't bleed back into the cached value next time the popup opens. */
+  onNfPopupClose(): void {
+    this.nfPopupServingSize.set(this.nfPopupOriginalServingSize());
+    this.nfPopupMode.set('view');
+    this.nfPopupFood.set(null);
+  }
+
+  /** Green Save button handler. Persists the draft as the user's MyFoods
+   *  override (UserFoodPreferences.ServingSize) and closes the popup.
+   *  Disabled in the template via [disabled]="!nfPopupCanSave()" so this
+   *  shouldn't fire when there's nothing to save. */
+  onNfSave(): void {
+    const food = this.nfPopupFood();
+    if (!food || !this.nfPopupCanSave()) return;
+    this.preferencesService.setUserServingSize(food.id, this.nfPopupServingSize());
+    // Snap original to the saved value so close-revert doesn't undo it,
+    // and the popup goes back to view mode in case the user clicked Save
+    // without closing.
+    this.nfPopupOriginalServingSize.set(this.nfPopupServingSize());
+    this.nfPopupMode.set('view');
+    this.nfPopupFood.set(null);
   }
 
   /** Curated ladder of "sensible" serving sizes, used by the ▲ / ▼ buttons.
@@ -1215,10 +1246,10 @@ export class FoodsPanelComponent {
 
   /** Adjust handler emitted by the NF label's ▲ / ▼ steppers. Ladder-snap:
    *  up = smallest ladder entry strictly > current; down = largest entry
-   *  strictly < current. No-op if already at the bound. */
+   *  strictly < current. No-op if already at the bound. Updates the DRAFT
+   *  signal only — Save persists. */
   onNfAdjust(direction: 'up' | 'down'): void {
-    const food = this.nfPopupFood();
-    if (!food) return;
+    if (!this.nfPopupFood() || this.nfPopupMode() !== 'edit') return;
     const current = this.nfPopupServingSize();
     const ladder = FoodsPanelComponent.SERVING_SIZE_LADDER;
 
@@ -1233,39 +1264,21 @@ export class FoodsPanelComponent {
     }
     if (next === undefined) return; // already at the top or bottom of the ladder
 
-    const newServingSize = Number(next.toFixed(4));
-    this.nfPopupServingSize.set(newServingSize);
-    this.persistNfPopupServingSize(food, newServingSize);
+    this.nfPopupServingSize.set(Number(next.toFixed(4)));
   }
 
   /** Commit handler emitted by the NF label's typed-input mode. The label
-   *  has already validated the value is a positive number; we trust it and
-   *  persist directly, allowing off-ladder values (e.g. 0.4, 1.3) since the
-   *  ladder is for the steppers only, not a validation rule. */
+   *  has already validated the value is a positive number; we accept off-
+   *  ladder typed values (e.g. 0.4, 1.3) since the ladder is for the
+   *  steppers only. Updates the draft only — Save persists. */
   onNfCommit(value: number): void {
-    const food = this.nfPopupFood();
-    if (!food) return;
-    const newServingSize = Number(value.toFixed(4));
-    this.nfPopupServingSize.set(newServingSize);
-    this.persistNfPopupServingSize(food, newServingSize);
+    if (!this.nfPopupFood() || this.nfPopupMode() !== 'edit') return;
+    this.nfPopupServingSize.set(Number(value.toFixed(4)));
   }
 
-  /** Shared persistence path used by both ▲ / ▼ ladder steps and typed-
-   *  input commits. RHS basket context → stamp food.servingSize on the
-   *  basket entry locally (no server hit). LHS / MyFoods context → send the
-   *  user's override to the API via the preferences upsert (debounced 500
-   *  ms). */
-  private persistNfPopupServingSize(food: Food, newServingSize: number): void {
-    if (this.isFoodFromBasketContext(food)) {
-      this.persistBasketServingOverride(food.id, newServingSize);
-    } else {
-      this.preferencesService.setUserServingSize(food.id, newServingSize);
-    }
-  }
-
-  /** Returns true when the NF popup was opened from the RHS basket bloom
-   *  (i.e., the food is in one of the four baskets). Drives the
-   *  basket-override vs. MyFoods-default branch in onNfAdjust. */
+  /** Returns true when the NF popup was opened on a food sitting in one of
+   *  the four baskets. Retained for any future basket-aware logic, though
+   *  the popup itself is view-only on the basket side now. */
   private isFoodFromBasketContext(food: Food): boolean {
     const baskets = this.thisWeekBaskets();
     for (const key of this.basketKeys) {
@@ -1276,7 +1289,9 @@ export class FoodsPanelComponent {
 
   /** Store a per-basket serving-size override locally on the matching
    *  basket entry. Survives reload via the same persistThisWeek effect.
-   *  No server hop — the basket itself is client-side state. */
+   *  No server hop — the basket itself is client-side state. Currently
+   *  unused (all edits flow through Edit MyFoods now), retained in case a
+   *  per-basket override surface lands later. */
   private persistBasketServingOverride(foodId: number, servingSize: number): void {
     this.thisWeekBaskets.update(b => {
       const next = { ...b } as ThisWeekBaskets;
@@ -1295,126 +1310,18 @@ export class FoodsPanelComponent {
    *  yellow halo and the delayed bloom timer. */
   selectedBasketFood = signal<Food | null>(null);
 
-  /** Visibility flag for the bloom overlay. Goes true 3 s after a basket
-   *  food is single-clicked (if nothing intervenes), and false 5 s after
-   *  that. */
-  showNfBloom = signal(false);
-
-  /** Inline {top, left} the bloom is positioned at — pixel offsets relative
-   *  to the basket cell. Recomputed every time the bloom appears so it
-   *  floats just off the upper-right corner of the selected card (or upper-
-   *  left, if the card is too close to the basket's right edge). */
-  bloomPosition = signal<{ top: number; left: number } | null>(null);
-
-  /** Which basket cell currently owns the selected food. Used so the bloom
-   *  renders inside the right basket (bottom-right of that cell) instead of
-   *  trying to anchor to the mini-card directly. */
-  basketContainingSelected = computed<BasketKey | null>(() => {
-    const food = this.selectedBasketFood();
-    if (!food) return null;
-    const baskets = this.thisWeekBaskets();
-    for (const k of this.basketKeys) {
-      if (baskets[k].some(f => f.id === food.id)) return k;
-    }
-    return null;
-  });
-
-  private bloomShowTimer: ReturnType<typeof setTimeout> | null = null;
-  private bloomHideTimer: ReturnType<typeof setTimeout> | null = null;
-  private static readonly BLOOM_SHOW_DELAY_MS = 1500;
-  private static readonly BLOOM_VISIBLE_MS = 5000;
-
-  /** Cancel any pending bloom timers and hide the bloom immediately. */
-  private cancelBloom(): void {
-    if (this.bloomShowTimer) { clearTimeout(this.bloomShowTimer); this.bloomShowTimer = null; }
-    if (this.bloomHideTimer) { clearTimeout(this.bloomHideTimer); this.bloomHideTimer = null; }
-    this.showNfBloom.set(false);
-  }
-
-  /** Schedule the bloom: 3 s show delay, then 5 s visible window. */
-  private scheduleBloom(): void {
-    this.cancelBloom();
-    this.bloomShowTimer = setTimeout(() => {
-      // Compute the position FIRST so the bloom's entry animation starts at
-      // the right anchor — no visible jump on first paint.
-      this.computeBloomPosition();
-      this.showNfBloom.set(true);
-      this.bloomShowTimer = null;
-      this.bloomHideTimer = setTimeout(() => {
-        this.showNfBloom.set(false);
-        this.bloomHideTimer = null;
-      }, FoodsPanelComponent.BLOOM_VISIBLE_MS);
-    }, FoodsPanelComponent.BLOOM_SHOW_DELAY_MS);
-  }
-
-  /** Measure the currently-selected basket card and pick a top/left so the
-   *  bloom floats just off the card's upper-right corner. If the bloom
-   *  wouldn't fit on the right (card sits near the basket's right edge),
-   *  flip it to the upper-LEFT side. Both axes are clamped so the bloom
-   *  stays fully inside the basket cell. */
-  private computeBloomPosition(): void {
-    if (!this.selectedBasketFood()) return;
-    const cardEl = document.querySelector<HTMLElement>('.basket-mini-card.selected');
-    if (!cardEl) return;
-    const basketEl = cardEl.closest('.basket') as HTMLElement | null;
-    if (!basketEl) return;
-
-    const card = cardEl.getBoundingClientRect();
-    const basket = basketEl.getBoundingClientRect();
-    const bloomW = 84;
-    const bloomH = 100;
-    const gap = 4;
-
-    const cardRelLeft = card.left - basket.left;
-    const cardRelTop = card.top - basket.top;
-
-    // Default: right of the card.
-    let left = cardRelLeft + card.width + gap;
-    // If that overflows the basket on the right, flip to the left of the card.
-    if (left + bloomW > basket.width - 4) {
-      left = cardRelLeft - bloomW - gap;
-    }
-    // Clamp so the bloom always sits fully inside the basket cell.
-    left = Math.max(2, Math.min(left, basket.width - bloomW - 2));
-
-    // A tiny bit above the card's top edge.
-    let top = cardRelTop - 8;
-    top = Math.max(2, Math.min(top, basket.height - bloomH - 2));
-
-    this.bloomPosition.set({ top, left });
-  }
-
-  /** Single click on a basket food: select it (toggle off if it was already
-   *  selected) and schedule the "Click for Facts" bloom. A double-click on
-   *  the same card still fires (after two single-clicks) and will then
-   *  trigger removeFoodFromBasket via (dblclick); the toggle means the
-   *  selection self-cancels in that path so the bloom never appears. */
+  /** Single click on a basket food = toggle selection (yellow halo). No
+   *  bloom, no auto-popup — that's all double-click now. Click an already-
+   *  selected card to deselect. Deletion is the red X only. */
   onBasketFoodClick(food: Food): void {
     const current = this.selectedBasketFood();
-    if (current?.id === food.id) {
-      this.selectedBasketFood.set(null);
-      this.cancelBloom();
-    } else {
-      this.selectedBasketFood.set(food);
-      this.scheduleBloom();
-    }
+    this.selectedBasketFood.set(current?.id === food.id ? null : food);
   }
 
-  /** Click on the bloom button itself: open the NF popup for the selected
-   *  food and stop propagation so the underlying basket-mini-card's (click)
-   *  handler doesn't run and toggle the selection off. */
-  onNfBloomClick(event: Event): void {
-    event.stopPropagation();
-    const food = this.selectedBasketFood();
-    if (food) this.openNfPopupForFood(food);
-    this.cancelBloom();
-  }
-
-  /** Opens the Nutrition Facts popup for the currently-selected tile.
-   *  Kept around for any external caller (e.g. the future LHS bloom). */
-  openNutritionLabel(): void {
-    const food = this.selectedFood();
-    if (food) this.nfPopupFood.set(food);
+  /** Double-click on a basket food = open the Nutrition Facts popup. */
+  onBasketFoodDblClick(food: Food): void {
+    this.selectedBasketFood.set(food);
+    this.openNfPopupForFood(food);
   }
 
   // ----- Basket helpers -----
@@ -1472,22 +1379,20 @@ export class FoodsPanelComponent {
   }
 
   clearBasket(key: BasketKey): void {
-    // Cancel any pending bloom if the selected food is about to disappear
+    // Drop the selection if the selected food is about to disappear
     // along with the rest of this basket's contents.
     const selected = this.selectedBasketFood();
     if (selected && this.thisWeekBaskets()[key].some(f => f.id === selected.id)) {
       this.selectedBasketFood.set(null);
-      this.cancelBloom();
     }
     this.thisWeekBaskets.update(b => ({ ...b, [key]: [] }));
   }
 
   removeFoodFromBasket(key: BasketKey, foodId: number): void {
-    // If the food being removed is the bloom-selected one, drop the
-    // selection and any pending bloom so we don't reference a phantom row.
+    // If the selected food is the one being removed, clear the selection
+    // so the yellow halo doesn't point at a phantom row.
     if (this.selectedBasketFood()?.id === foodId) {
       this.selectedBasketFood.set(null);
-      this.cancelBloom();
     }
     this.thisWeekBaskets.update(b => ({
       ...b,
@@ -1686,10 +1591,29 @@ export class FoodsPanelComponent {
 
   /** Current effective serving size displayed inside the NF popup, in food
    *  units (e.g. 4 = "4 oz" of beef). Starts at the user's saved override
-   *  (servingMultiplier in old terms; now `userServingSize`) when present,
-   *  otherwise the food's curated `servingSize` baseline, otherwise 1.
-   *  The ▲ / ▼ steppers mutate it in place. */
+   *  (userServingSize) when present, otherwise the food's curated
+   *  `servingSize` baseline, otherwise 1. The ▲ / ▼ steppers + tap-to-edit
+   *  mutate it in place. In `edit` mode this is a DRAFT until the Green
+   *  Save button commits. */
   nfPopupServingSize = signal<number>(1);
+
+  /** Popup mode. `view` = read-only (no steppers, no Save). `edit` = editable
+   *  with steppers + tap-to-edit + Green Save button. Every edit gesture in
+   *  the app gates through this signal so the "edits only happen when the
+   *  user says Edit" invariant holds. */
+  nfPopupMode = signal<'view' | 'edit'>('view');
+
+  /** Value the popup opened at, so we can:
+   *   - detect dirty (current != original → Save enabled),
+   *   - revert if the user closes via X without saving. */
+  nfPopupOriginalServingSize = signal<number>(1);
+
+  /** Save is enabled iff popup is in edit mode AND the draft differs from
+   *  what we opened at. */
+  nfPopupCanSave = computed<boolean>(() => {
+    if (this.nfPopupMode() !== 'edit') return false;
+    return this.nfPopupServingSize() !== this.nfPopupOriginalServingSize();
+  });
 
   /** Scale factor handed to the NF label so it can recompute macros. Per the
    *  per-100g convention: macros = nf × servingSizeMultiplicand × servingSize.

@@ -633,29 +633,13 @@
 .left-pane .section-title-text { flex: 0 0 auto; }
 .left-pane .curate-toggle { margin-left: 48px; }
 
-// RHS gets the same hug-left treatment so "Fill Baskets" + AutoFill mirror
-// the "MyFoods" + Curate layout on the left. The count + close X are pushed
+// RHS gets the same hug-left treatment so "Picks" / "Edit MyFoods" mirrors
+// the "MyFoods" + Edit layout on the left. The count + close X are pushed
 // to the right edge via margin-left:auto on the count (the close trails the
 // count via its normal flow).
 .right-pane .section-title { justify-content: flex-start; }
 .right-pane .section-title-text { flex: 0 0 auto; }
-.right-pane .autofill-toggle { margin-left: 48px; }
 .right-pane .section-title-count { margin-left: auto; }
-
-// AI star sits to the LEFT of "AutoFill" inside the pill, with a tiny gap
-// before the text. Same icon family as the Health Info badge so the AI
-// affordance is recognizable across the panel.
-.autofill-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.autofill-ai-icon {
-  width: 16px;
-  height: 16px;
-  filter: drop-shadow(0 0 3px rgba(255, 213, 79, 0.85));
-}
 
 .section-title-count {
   flex-shrink: 0;
@@ -845,36 +829,32 @@
 
 .filter-bar-label { @extend %control-bar-label; }
 
-// "Curate" pill on the LHS section-title — mirrors the FILTER pill's
+// "Edit..." pill on the LHS section-title — mirrors the FILTER pill's
 // physical raised/inset behavior so the user can tell at a glance whether
-// it's "out" (Baskets visible) or "pressed in" (Curate active). Only the
-// hue differs: this one is a blue-tinted variant of the gray FILTER pills.
-.curate-toggle,
-.autofill-toggle {
+// it's "out" (Picks visible) or "pressed in" (Edit MyFoods active). Only
+// the hue differs: this one is a blue-tinted variant of the gray FILTER
+// pills.
+.curate-toggle {
   flex-shrink: 0;
   // Nudge 1 px down so the visual center of the pill sits inside the title
-  // band — the cap-height of "MyFoods" / "Fill Baskets" pulls the perceived
-  // center slightly above the geometric midline, so the pill needs to drop
-  // a touch to look balanced top/bottom.
+  // band — the cap-height of "MyFoods" pulls the perceived center slightly
+  // above the geometric midline, so the pill needs to drop a touch to look
+  // balanced top/bottom.
   margin-top: 1px;
   font-family: inherit;
   font-size: 15px;
   font-weight: 700;
-  // No text-transform so the literal "Curate" / "(Close) Curate" strings
-  // render with their natural capitalization.
   letter-spacing: 0.3px;
   color: #ffffff;
   background: linear-gradient(180deg, #5fa3d8 0%, #357095 100%);
   // Symmetric 1px borders all the way around so the border-radius reads
-  // evenly at every corner — the previous 2px bottom edge pinched the
-  // bottom corners and made the radius look broken. Depth now comes from
-  // the drop-shadow and gradient alone.
+  // evenly at every corner. Depth comes from the drop-shadow + gradient.
   border: 1px solid #4080ac;
   border-top-color: #7fbdec;
   border-radius: 6px;
-  // Tight balanced vertical padding (a few px each side) + tighter horizontal
-  // padding so the pill sits inside the slimmer section-title band without
-  // forcing the whole banner to grow around it.
+  // Tight balanced vertical padding + tighter horizontal padding so the
+  // pill sits inside the slimmer section-title band without forcing the
+  // whole banner to grow around it.
   padding: 3px 12px;
   height: 26px;
   cursor: pointer;
@@ -904,25 +884,6 @@
     box-shadow:
       0 2px 3px rgba(0, 0, 0, 0.35),
       0 0 0 2px rgba(77, 166, 255, 0.6);
-  }
-
-  // Disabled state — AutoFill rides this until its AI flow is wired up.
-  // Desaturated gradient, no hover/shadow lift, cursor change so the user
-  // immediately knows the button is intentional placeholder chrome.
-  &:disabled {
-    background: linear-gradient(180deg, #4a4a4a 0%, #353535 100%);
-    border-color: #2a2a2a;
-    border-top-color: #5a5a5a;
-    color: rgba(255, 255, 255, 0.45);
-    cursor: not-allowed;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-
-    &:hover, &:active { transform: none; filter: none; }
-
-    .autofill-ai-icon {
-      opacity: 0.5;
-      filter: grayscale(0.6);
-    }
   }
 }
 
@@ -1391,78 +1352,6 @@
   }
 }
 
-// "Click for Facts" bloom — pinned to the bottom-right of the basket cell
-// (parent .basket is position: relative). Visible after the 3-second delay
-// and fades after 5 seconds. The NF Label image is the background; yellow
-// rotated text is overlaid as the call-to-action.
-.nf-bloom {
-  position: absolute;
-  // top/left are set inline by foods-panel.ts so the bloom floats just off
-  // the selected basket-mini-card. If the card sits near the basket's right
-  // edge, the script flips the bloom to the card's left side instead so it
-  // never overflows the basket cell.
-  width: 84px;
-  height: 100px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  z-index: 30;
-  display: block;
-  overflow: visible;
-  animation: nfBloomIn 220ms ease-out both;
-  filter:
-    drop-shadow(0 0 8px rgba(255, 213, 79, 0.85))
-    drop-shadow(0 0 16px rgba(255, 193, 7, 0.45));
-
-  &:hover { filter:
-    drop-shadow(0 0 10px rgba(255, 213, 79, 1))
-    drop-shadow(0 0 20px rgba(255, 193, 7, 0.7))
-    brightness(1.08);
-  }
-}
-
-.nf-bloom-bg {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 3px;
-  pointer-events: none;
-}
-
-// Diagonal yellow stamp overlaid on the NF Label background. Slight black
-// outline so it reads against the label's white background.
-.nf-bloom-text {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-22deg);
-  font-family: 'Inter', 'Roboto', sans-serif;
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: 0.4px;
-  color: #ffd54f;
-  text-shadow:
-    -1px -1px 0 #000,
-     1px -1px 0 #000,
-    -1px  1px 0 #000,
-     1px  1px 0 #000,
-     0 0 6px rgba(255, 193, 7, 0.85);
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-@keyframes nfBloomIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.85);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 // Red X delete indicator — purely a hover affordance (the whole card is the
 // click target). Absolutely positioned over the left edge of the black label
 // banner so the centered text doesn't shift right when the X appears.
@@ -1600,6 +1489,78 @@
   color: rgba(255, 255, 255, 0.95);
   text-align: left;
   user-select: text; // let the user copy the ID
+}
+
+// Green Save button on the NF popup — rendered only in edit mode (the
+// container template gates with @if (nfPopupMode() === 'edit')). Sits at
+// the bottom of the popup chrome below the trace line. Grey + disabled
+// until the draft differs from the value the popup opened at; green +
+// active once dirty.
+.nf-popup-save {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: #5a5a5a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: not-allowed;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+  }
+
+  &.enabled {
+    background: #2e7d32;
+    border-color: #1b5e20;
+    color: #fff;
+    cursor: pointer;
+
+    &:hover  { background: #388e3c; }
+    &:active { background: #1b5e20; }
+  }
+}
+
+.nf-popup-save-label {
+  text-transform: uppercase;
+}
+
+// Press-and-hold zoom overlay — full-viewport dim with the food image
+// centered. The whole overlay is the dismiss target so any release/tap
+// closes it. z-index above the NF popup so it sits ON TOP if the user
+// somehow chains gestures.
+.thumb-zoom-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  user-select: none;
+}
+
+.thumb-zoom-image {
+  max-width: 88vw;
+  max-height: 88vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
 }
 
 // Health Info button — rides the upper-RIGHT of the NF popup IN the black
