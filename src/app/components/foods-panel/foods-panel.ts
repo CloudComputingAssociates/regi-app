@@ -210,7 +210,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
           <div class="section-title">
             <span class="section-title-text">
               @if (addTo() === 'left') {
-                Picks
+                Picks for planning
               } @else {
                 <span
                   matTooltip="Edit MyFoods — click 'star' to Favorite, 'circle-line' to Restrict. Double-click a row to edit its Serving Size, single-press-and-hold the picture to zoom."
@@ -229,7 +229,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 type="button"
                 class="section-title-close"
                 (click)="addTo.set('left')"
-                matTooltip="Back to Picks"
+                matTooltip="Back to Picks for planning"
                 matTooltipPosition="below"
                 aria-label="Close Edit">
                 ✕
@@ -386,7 +386,9 @@ const CATEGORY_PLURALS: Record<string, string> = {
                     </button>
                   </div>
                   @if (thisWeekBaskets()[key].length === 0) {
-                    <div class="basket-empty-hint">{{ basketEmptyHint(key) }}</div>
+                    <div class="basket-empty-hint">
+                      <span class="basket-empty-hint-text">{{ basketEmptyHint(key) }}</span>
+                    </div>
                   } @else {
                     <div class="basket-tiles">
                       @for (food of thisWeekBaskets()[key]; track food.id) {

@@ -520,16 +520,17 @@
 
 // Coaching tagline that lives between the SEARCH input and the TOTAL badge,
 // floated to the visual center by sandwiching it between two .top-bar-spacer
-// elements. Italic + light yellow (same #ffd54f halo family as the empty-
-// basket hints) so the LHS and the empty baskets read as one tone of voice.
+// elements. Italic + chiffon yellow (same paler-than-goldenrod tone as the
+// empty-basket hints) so the LHS and the empty baskets read as one tone of
+// voice. One size up from the empty-basket hint per the spec.
 .top-bar-tagline {
   flex-shrink: 0;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-style: italic;
   font-weight: 500;
   letter-spacing: 0.2px;
-  color: rgba(255, 213, 79, 0.85);
+  color: rgba(255, 245, 157, 0.75);
   user-select: none;
 }
 
@@ -1111,13 +1112,15 @@
     border-color: rgba(77, 166, 255, 0.4);
   }
 
-  // Yellow-halo selection — same vocabulary as the old carousel's centered
-  // card so users recognise it. Inner ring + outer warm glow.
+  // Chiffon-yellow halo selection — paler / more white than the prior
+  // goldenrod (#ffd54f). Matches the same yellow family the empty-basket
+  // hints and LHS tagline use, so the highlight, coaching text, and AI
+  // bloom all share one tone.
   &.selected {
-    border-color: rgba(255, 213, 79, 0.95);
+    border-color: rgba(255, 245, 157, 0.95);
     box-shadow:
-      0 0 14px 1px rgba(255, 213, 79, 0.85),
-      0 0 24px 2px rgba(255, 193, 7, 0.45),
+      0 0 14px 1px rgba(255, 245, 157, 0.85),
+      0 0 24px 2px rgba(255, 235, 100, 0.45),
       0 2px 4px rgba(0, 0, 0, 0.4);
     z-index: 1;
   }
@@ -1316,10 +1319,11 @@
 .basket-lights-right .basket-light { position: static; }
 
 .basket-light-min {
-  // True yellow — the prior #febc2e read as tan/amber next to the vivid
-  // green. #fcd200 reads as a clean sunny yellow at the same saturation as
-  // the green so the pair looks like a matched set.
-  background: #fcd200;
+  // Poppy lemon yellow that holds its own against the vivid green next to
+  // it — the prior #fcd200 read as goldenrod and felt washed-out when the
+  // green popped. #ffeb00 (between Material yellow 400 and 500) matches
+  // the green's saturation so the pair looks balanced and energetic.
+  background: #ffeb00;
   &::before { content: '\2212'; } // minus sign
 }
 .basket-light-max {
@@ -1338,29 +1342,35 @@
   .basket:not(.focused) { display: none; }
 }
 
-// Coaching placeholder shown inside an empty basket. Italic + light yellow
-// (the same #ffd54f halo we use on the bloom / AI star family) so it reads
-// as a hint, not real content. Centered both axes inside the basket cell,
-// wraps naturally but clamped to 2 lines max via -webkit-line-clamp.
+// Coaching placeholder shown inside an empty basket. Italic + chiffon
+// yellow (paler / more white than the goldenrod halo we use for the bloom).
+// The outer .basket-empty-hint is a flex centerer that fills the available
+// height inside the .basket cell so the text lands in the TRUE middle of
+// the basket, not just floated at the top. The inner .basket-empty-hint-
+// text carries the visual treatment + the 2-line clamp.
 .basket-empty-hint {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  user-select: none;
+}
+
+.basket-empty-hint-text {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
-  margin: 0;
-  padding: 8px 12px;
-  align-self: center;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 16px;
   font-style: italic;
   font-weight: 500;
   line-height: 1.25;
   letter-spacing: 0.2px;
-  color: rgba(255, 213, 79, 0.85);
   text-align: center;
-  user-select: none;
+  color: rgba(255, 245, 157, 0.75);
 }
 
 // Mini-cards tile in a flex-wrap grid as foods land in the basket. Each card
