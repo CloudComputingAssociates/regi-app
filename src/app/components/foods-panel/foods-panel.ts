@@ -151,9 +151,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
                    delayed "Click for Facts" bloom on RHS basket tiles
                    (see .nf-bloom in foods-panel.scss). -->
               <span class="top-bar-spacer"></span>
-              <span class="top-bar-tagline">Your healthy, curated foods ~ yum!</span>
-              <span class="top-bar-spacer"></span>
               <span class="top-bar-total">Total ({{ carouselSpinnerFoods().length }})</span>
+              <!-- Absolute-centered tagline lives OUTSIDE the flex flow so
+                   its position is unaffected by the SEARCH / TOTAL widths. -->
+              <span class="top-bar-tagline">Your healthy, curated foods ~ yum!</span>
             </div>
             <!-- Tile grid replaces the old spinning carousel. Tiles fill
                  left-to-right and wrap to the next row; the grid scrolls
@@ -285,22 +286,23 @@ const CATEGORY_PLURALS: Record<string, string> = {
               </button>
               <span class="column-hint">{{ columnHeaderText() }}</span>
               @if (spinSource() === 'myfoods') {
-                <!-- Phone button lives here in the MyFoods context — the
-                     same slot the Add-Food + button used to occupy. It
-                     opens the phone-app placeholder dialog (download QR).
-                     The blue "Add foods w/ mobile" label sits in front of
-                     the icon and the pair is right-justified via
-                     margin-left: auto on the label. -->
-                <span class="mobile-app-label">Add foods w/ mobile</span>
+                <!-- Phone-then-label combo button. Whole pill is one click
+                     target so the user can tap either the icon or the text
+                     to open the phone-app placeholder dialog. margin-left:
+                     auto on the wrapper pushes the pair to the right edge
+                     of the type-row. -->
                 <button
                   type="button"
-                  class="mobile-app-btn"
+                  class="mobile-app-combo"
                   (click)="openAddDialog()"
                   matTooltip="Add foods with the mobile app (QR download)"
                   matTooltipPosition="above"
                   [matTooltipShowDelay]="350"
-                  aria-label="Mobile app">
-                  <mat-icon class="mobile-app-icon">phone_android</mat-icon>
+                  aria-label="Add foods with mobile app">
+                  <span class="mobile-app-btn" aria-hidden="true">
+                    <mat-icon class="mobile-app-icon">phone_android</mat-icon>
+                  </span>
+                  <span class="mobile-app-label">Add foods w/ mobile</span>
                 </button>
               }
             </div>
@@ -1322,15 +1324,17 @@ export class FoodsPanelComponent {
 
   // ----- Basket helpers -----
 
-  /** Coaching text shown inside an empty basket. Wraps to at most 2 lines
-   *  by design (CSS clamp); the strings are sized so even the longest
-   *  fits 2 lines at the standard basket width. */
+  /** Coaching text shown inside an empty basket. Embedded `\n` characters
+   *  are honored as hard line breaks via `white-space: pre-line` on the
+   *  text span, so the longer strings split intentionally at a chosen
+   *  point instead of wrapping wherever the basket width happens to land.
+   *  The 2-line CSS clamp still applies as a safety net. */
   basketEmptyHint(key: BasketKey): string {
     switch (key) {
       case 'Proteins': return 'Pick 6 or more proteins';
       case 'Fats':     return 'Pick 5 or more fats sources';
-      case 'Carbs':    return 'Pick 8+ vegetables, and 2+ fruits';
-      case 'Other':    return 'Limit processed foods, add ideas for seasonings';
+      case 'Carbs':    return 'Pick 8+ vegetables,\nand 2+ fruits';
+      case 'Other':    return 'Limit processed foods,\nadd ideas for seasonings';
     }
   }
 

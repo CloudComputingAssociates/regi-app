@@ -449,6 +449,11 @@
   gap: 8px;
   padding: 6px 10px;
   background: transparent;
+  // Allows the tagline to be absolutely positioned relative to the row, so
+  // it locks to the panel midline regardless of the SEARCH / TOTAL widths
+  // on either side (which are asymmetric and would otherwise drag the
+  // flex-based centering off-axis).
+  position: relative;
 }
 
 .search-label {
@@ -518,13 +523,17 @@
 // Flex spacer that pushes the Spin button to the right edge.
 .top-bar-spacer { flex: 1; }
 
-// Coaching tagline that lives between the SEARCH input and the TOTAL badge,
-// floated to the visual center by sandwiching it between two .top-bar-spacer
-// elements. Italic + chiffon yellow (same paler-than-goldenrod tone as the
-// empty-basket hints) so the LHS and the empty baskets read as one tone of
-// voice. One size up from the empty-basket hint per the spec.
+// Coaching tagline that locks to the absolute horizontal CENTER of the
+// .carousel-top-bar row — independent of the SEARCH / TOTAL widths flanking
+// it. Flex-based centering with two spacers drifts off-axis when the left
+// and right chunks differ in width (which they do — SEARCH + input is wider
+// than TOTAL), so we anchor at left:50% and translate -50%. pointer-events:
+// none so the tagline can never block a click on the underlying row.
 .top-bar-tagline {
-  flex-shrink: 0;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   font-family: inherit;
   font-size: 14px;
   font-style: italic;
@@ -532,6 +541,8 @@
   letter-spacing: 0.2px;
   color: rgba(255, 245, 157, 0.75);
   user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 // LHS total badge — sits at the right edge of the SEARCH row, mirrors the
@@ -931,20 +942,39 @@
 // Mobile-app launcher — sits to the right of the Curate pill on the LHS
 // section-title row. Same raised "physical button" treatment as the Curate
 // pill so the two LHS chrome controls read as a pair.
-// Blue label that sits in front of the mobile phone button. margin-left:
-// auto pushes both the label and the phone button to the right edge of the
-// .type-row, so the phone shifts right a bit and the label rides with it.
-.mobile-app-label {
+// Wrapper button: the whole [phone | label] pair is one click target so
+// tapping the icon OR the label opens the phone-app dialog. margin-left:
+// auto right-aligns it inside the .type-row. Transparent / unstyled at the
+// wrapper level — the phone visual is carried by .mobile-app-btn (now a
+// span) and the label by .mobile-app-label.
+.mobile-app-combo {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin-left: auto;
-  padding-right: 4px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: #4da6ff;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+
+  // Hover lift travels to the inner phone glyph so the affordance is
+  // unmistakable on the whole pill, not just the icon area.
+  &:hover .mobile-app-btn {
+    background: linear-gradient(180deg, #6fb0e2 0%, #408bb0 100%);
+  }
+  &:active .mobile-app-btn {
+    background: linear-gradient(180deg, #1f3a55 0%, #2a5070 100%);
+    transform: translateY(1px);
+  }
+  // Subtle hover treatment on the text too so the user sees the click
+  // target spans the whole pair.
+  &:hover .mobile-app-label { color: #6fb0e2; }
 }
 
+// Phone glyph — now a styled span inside the .mobile-app-combo button (no
+// longer its own button, since the wrapper is the click target).
 .mobile-app-btn {
   flex-shrink: 0;
   width: 32px;
@@ -960,22 +990,22 @@
   border-right: 1px solid #4080ac;
   border-bottom: 2px solid #1a3a55;
   border-radius: 4px;
-  cursor: pointer;
-  outline: none;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
-  transition: background 0.05s ease;
+  transition: background 0.05s ease, transform 0.05s ease;
+  pointer-events: none; // wrapper handles the click
+}
 
-  &:hover {
-    background: linear-gradient(180deg, #6fb0e2 0%, #408bb0 100%);
-  }
-
-  &:active {
-    background: linear-gradient(180deg, #1f3a55 0%, #2a5070 100%);
-    border-top: 2px solid #15293d;
-    border-bottom: 1px solid #4080ac;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
-    transform: translateY(1px);
-  }
+// Blue label that sits AFTER the phone glyph in the combo button.
+.mobile-app-label {
+  flex-shrink: 0;
+  padding-left: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #4da6ff;
+  transition: color 0.05s ease;
+  pointer-events: none; // wrapper handles the click
 }
 
 .mobile-app-icon {
@@ -1319,11 +1349,11 @@
 .basket-lights-right .basket-light { position: static; }
 
 .basket-light-min {
-  // Poppy lemon yellow that holds its own against the vivid green next to
-  // it — the prior #fcd200 read as goldenrod and felt washed-out when the
-  // green popped. #ffeb00 (between Material yellow 400 and 500) matches
-  // the green's saturation so the pair looks balanced and energetic.
-  background: #ffeb00;
+  // Pure bright yellow. The button's 1 px dark rim + inset top highlight
+  // visually darken the perimeter, so the FILL has to be cranked all the
+  // way to pure #ffff00 for the disc to actually read as poppy yellow at
+  // 20 × 20 px next to the equally-saturated green.
+  background: #ffff00;
   &::before { content: '\2212'; } // minus sign
 }
 .basket-light-max {
@@ -1363,6 +1393,10 @@
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
+  // Honor `\n` characters embedded in the hint strings as hard line breaks
+  // (used to deliberately split the longer hint at a chosen comma rather
+  // than letting auto-wrap pick the break point).
+  white-space: pre-line;
   font-family: inherit;
   font-size: 16px;
   font-style: italic;
@@ -1763,17 +1797,18 @@
   // "double-click to edit food" hint, rendered only on the FIRST divider
   // (Proteins). margin-left:auto on this AND .category-action-hint splits
   // the leftover space so the hint floats centered between the title +
-  // count on the left and the action-column hint on the right. Italic +
-  // slightly dimmer so it reads as a coaching tip, not a heading.
+  // count on the left and the action-column hint on the right. Sized and
+  // colored to match the LHS top-bar tagline ("Your healthy, curated foods
+  // ~ yum!") so the two coaching hints on the panel read as one tone.
   .category-edit-hint {
     flex-shrink: 0;
     margin: 0 auto;
     padding: 0 6px;
-    font-size: 10px;
+    font-size: 14px;
     font-style: italic;
     font-weight: 500;
-    letter-spacing: 0.3px;
-    color: rgba(77, 166, 255, 0.7);
+    letter-spacing: 0.2px;
+    color: rgba(255, 245, 157, 0.75);
     text-transform: none;
   }
 }
