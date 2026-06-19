@@ -102,7 +102,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
               type="button"
               class="curate-toggle"
               [class.pressed]="addTo() === 'right'"
-              (click)="addTo.set(addTo() === 'right' ? 'left' : 'right')"
+              (click)="toggleEditMyFoods()"
               matTooltip="Edit ... MyFoods, further curate faves, edit Serving Sizes, delete foods you entered"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350">
@@ -373,7 +373,6 @@ const CATEGORY_PLURALS: Record<string, string> = {
                     <button
                       type="button"
                       class="basket-light basket-light-min"
-                      [disabled]="focusedBasket() !== key"
                       (click)="focusedBasket.set(null)"
                       matTooltip="Restore"
                       matTooltipPosition="above">
@@ -381,7 +380,6 @@ const CATEGORY_PLURALS: Record<string, string> = {
                     <button
                       type="button"
                       class="basket-light basket-light-max"
-                      [disabled]="focusedBasket() === key"
                       (click)="focusedBasket.set(key)"
                       matTooltip="Expand"
                       matTooltipPosition="above">
@@ -399,6 +397,9 @@ const CATEGORY_PLURALS: Record<string, string> = {
                           [class.selected]="selectedBasketFood()?.id === food.id"
                           [matTooltip]="food.shortDescription || food.description"
                           matTooltipPosition="above"
+                          [draggable]="true"
+                          (dragstart)="onBasketTileDragStart(food, key, $event)"
+                          (dragend)="onBasketTileDragEnd($event)"
                           (click)="onBasketFoodClick(food)"
                           (dblclick)="onBasketFoodDblClick(food)">
                           <!-- Hover-revealed red X — explicit remove affordance.
@@ -802,6 +803,17 @@ export class FoodsPanelComponent {
     this.pickerSearchQuery.set(value);
   }
 
+  /** Edit MyFoods toggle. Clears the picker search bar every time we *enter*
+   *  Edit mode so the user isn't squinting at a list filtered by a query
+   *  they left in there from the last session.  */
+  toggleEditMyFoods(): void {
+    const entering = this.addTo() !== 'right';
+    if (entering) {
+      this.pickerSearchQuery.set('');
+    }
+    this.addTo.set(entering ? 'right' : 'left');
+  }
+
   /** Substring match against description + shortDescription, case-insensitive.
    *  Used by both grouped accordions on the RHS. */
   private matchesPickerSearch(food: Food): boolean {
@@ -853,6 +865,11 @@ export class FoodsPanelComponent {
 
   // Drag-over basket key (for visual highlight on the drop target)
   dragOverBasket = signal<BasketKey | null>(null);
+
+  // Tracks a basket tile being dragged so dragend can detect a canceled drop
+  // (released outside any droppable area) and remove the food — a second-way
+  // delete that mirrors the explicit ✕ button.
+  private draggingBasketSource = signal<{ key: BasketKey; foodId: number } | null>(null);
 
   // Which basket (if any) is in "expanded" focus mode. When set, that basket
   // takes the full basket-grid area; the others collapse out of view. Green
@@ -1442,6 +1459,27 @@ export class FoodsPanelComponent {
       this.addFoodToBasket(food, targetBasket);
     } catch {
       // ignore malformed payload
+    }
+  }
+
+  /** Second-way delete: dragging a basket tile out of the basket area and
+   *  releasing over empty space removes it from the basket. effectAllowed
+   *  matches the carousel tile drag so dropping on another basket still
+   *  works (the food's category routes it correctly). */
+  onBasketTileDragStart(food: Food, key: BasketKey, event: DragEvent): void {
+    event.dataTransfer?.setData('application/json', JSON.stringify(food));
+    event.dataTransfer!.effectAllowed = 'copy';
+    this.draggingBasketSource.set({ key, foodId: food.id });
+  }
+
+  onBasketTileDragEnd(event: DragEvent): void {
+    const source = this.draggingBasketSource();
+    this.draggingBasketSource.set(null);
+    if (!source) return;
+    // dropEffect === 'none' means the user released outside any drop target
+    // (or onto a non-droppable area) — treat that as "drag out to delete".
+    if (event.dataTransfer?.dropEffect === 'none') {
+      this.removeFoodFromBasket(source.key, source.foodId);
     }
   }
 
