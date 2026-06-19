@@ -518,6 +518,21 @@
 // Flex spacer that pushes the Spin button to the right edge.
 .top-bar-spacer { flex: 1; }
 
+// Coaching tagline that lives between the SEARCH input and the TOTAL badge,
+// floated to the visual center by sandwiching it between two .top-bar-spacer
+// elements. Italic + light yellow (same #ffd54f halo family as the empty-
+// basket hints) so the LHS and the empty baskets read as one tone of voice.
+.top-bar-tagline {
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  color: rgba(255, 213, 79, 0.85);
+  user-select: none;
+}
+
 // LHS total badge — sits at the right edge of the SEARCH row, mirrors the
 // RHS .section-title-count style. Reflects carouselSpinnerFoods().length,
 // so it tracks the active category filter + SEARCH text live.
@@ -828,6 +843,31 @@
 }
 
 .filter-bar-label { @extend %control-bar-label; }
+
+// Invisible mirror of the LHS .filter-bar's vertical footprint, used on
+// the RHS Picks view (which has no filter row of its own) so the basket
+// card below starts at the same Y as the LHS carousel card. Matches:
+//   margin 6/6 + padding 8/8 + border 1+2 + content 28 = 59px footprint
+// Background / border are stripped so it draws nothing; layout space is
+// preserved via explicit height on a single inner row.
+.filter-bar-placeholder {
+  flex-shrink: 0;
+  margin: 6px 8px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+  visibility: hidden;
+  // Reserve the same inner content height as one row of .category-radio-btn.
+  &::before {
+    content: '';
+    display: block;
+    height: 28px;
+  }
+}
 
 // "Edit..." pill on the LHS section-title — mirrors the FILTER pill's
 // physical raised/inset behavior so the user can tell at a glance whether
@@ -1182,10 +1222,11 @@
 }
 
 // Inline trash button — small, transparent background, hover turns red.
+// Sized down 25% from the original (40 → 30) per the spec.
 .basket-trash {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   background: transparent;
   border: none;
@@ -1204,10 +1245,10 @@
 }
 
 .basket-trash-icon {
-  width: 28px;
-  height: 28px;
-  font-size: 28px;
-  line-height: 28px;
+  width: 21px;
+  height: 21px;
+  font-size: 21px;
+  line-height: 21px;
 }
 
 // (Stale .basket-name rule removed — current rule lives above in the
@@ -1295,6 +1336,31 @@
   grid-template-rows: 1fr;
 
   .basket:not(.focused) { display: none; }
+}
+
+// Coaching placeholder shown inside an empty basket. Italic + light yellow
+// (the same #ffd54f halo we use on the bloom / AI star family) so it reads
+// as a hint, not real content. Centered both axes inside the basket cell,
+// wraps naturally but clamped to 2 lines max via -webkit-line-clamp.
+.basket-empty-hint {
+  flex: 1;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  margin: 0;
+  padding: 8px 12px;
+  align-self: center;
+  font-family: inherit;
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.2px;
+  color: rgba(255, 213, 79, 0.85);
+  text-align: center;
+  user-select: none;
 }
 
 // Mini-cards tile in a flex-wrap grid as foods land in the basket. Each card
@@ -1491,51 +1557,6 @@
   user-select: text; // let the user copy the ID
 }
 
-// Green Save button on the NF popup — rendered only in edit mode (the
-// container template gates with @if (nfPopupMode() === 'edit')). Sits at
-// the bottom of the popup chrome below the trace line. Grey + disabled
-// until the draft differs from the value the popup opened at; green +
-// active once dirty.
-.nf-popup-save {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: 4px;
-  padding: 6px 10px;
-  background: #5a5a5a;
-  border: 1px solid #444;
-  border-radius: 6px;
-  color: rgba(255, 255, 255, 0.55);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  cursor: not-allowed;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
-
-  svg {
-    width: 16px;
-    height: 16px;
-    display: block;
-  }
-
-  &.enabled {
-    background: #2e7d32;
-    border-color: #1b5e20;
-    color: #fff;
-    cursor: pointer;
-
-    &:hover  { background: #388e3c; }
-    &:active { background: #1b5e20; }
-  }
-}
-
-.nf-popup-save-label {
-  text-transform: uppercase;
-}
-
 // Press-and-hold zoom overlay — full-viewport dim with the food image
 // centered. The whole overlay is the dismiss target so any release/tap
 // closes it. z-index above the NF popup so it sits ON TOP if the user
@@ -1727,6 +1748,23 @@
     font-weight: 500;
     letter-spacing: 0.3px;
     color: rgba(77, 166, 255, 0.55);
+  }
+
+  // "double-click to edit food" hint, rendered only on the FIRST divider
+  // (Proteins). margin-left:auto on this AND .category-action-hint splits
+  // the leftover space so the hint floats centered between the title +
+  // count on the left and the action-column hint on the right. Italic +
+  // slightly dimmer so it reads as a coaching tip, not a heading.
+  .category-edit-hint {
+    flex-shrink: 0;
+    margin: 0 auto;
+    padding: 0 6px;
+    font-size: 10px;
+    font-style: italic;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    color: rgba(77, 166, 255, 0.7);
+    text-transform: none;
   }
 }
 

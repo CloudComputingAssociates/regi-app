@@ -90,6 +90,19 @@ function dvPercent(actual: number | undefined | null, reference: number): number
               [class.nf-serving-clickable]="editable()"
               (click)="onValueClick()">{{ servingSizeDisplay() }}</span>
           }
+          @if (showSave()) {
+            <button
+              type="button"
+              class="nf-serving-save"
+              (click)="onSaveClick($event)"
+              title="Save"
+              aria-label="Save serving size">
+              <svg viewBox="0 0 14 14" aria-hidden="true">
+                <path d="M3 7 L6 10 L11 4" fill="none" stroke="currentColor"
+                      stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          }
         </div>
       </div>
 
@@ -385,6 +398,37 @@ function dvPercent(actual: number | undefined | null, reference: number): number
       color: #000;
     }
 
+    // Inline Save check — appears to the RIGHT of the serving-size value
+    // once the parent flags the draft as dirty (any stepper click or typed
+    // commit). Always green (no disabled state) because the parent already
+    // gates visibility — if the check is visible, there's something to
+    // save. Native title="Save" handles the tooltip.
+    .nf-serving-save {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      background: #2e7d32;
+      border: 1px solid #1b5e20;
+      border-radius: 50%;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      transition: background 0.1s ease, transform 0.1s ease;
+
+      svg {
+        width: 12px;
+        height: 12px;
+        display: block;
+      }
+
+      &:hover  { background: #388e3c; transform: scale(1.06); }
+      &:active { background: #1b5e20; transform: scale(0.96); }
+    }
+
     .nf-divider-thick {
       height: 8px;
       background: #000000;
@@ -463,10 +507,22 @@ export class NutritionFactsLabelComponent {
   // Editable mode renders ▲ / ▼ stepper buttons next to the serving-size
   // line AND makes the value tap-to-edit. The label is intentionally dumb
   // about unit semantics — it emits direction (`adjust`) or a typed value
-  // (`commit`); the parent owns the ladder-snap step + persistence.
+  // (`commit`); the parent owns the ladder-snap step + draft state.
   editable = input<boolean>(false);
   adjust = output<'up' | 'down'>();
   commit = output<number>();
+
+  // Inline Save check — shown to the right of the serving-size value when
+  // the parent flags the draft as dirty. Independent of `editable` /
+  // `editing` so the check can appear after a stepper click without the
+  // user being in tap-to-edit input mode.
+  showSave = input<boolean>(false);
+  save = output<void>();
+
+  onSaveClick(ev: Event): void {
+    ev.stopPropagation();
+    this.save.emit();
+  }
 
   // ----- Edit-mode state ---------------------------------------------------
   // `editing` flips true on tap of the displayed value. `editValue` carries

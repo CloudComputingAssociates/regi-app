@@ -103,7 +103,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
               class="curate-toggle"
               [class.pressed]="addTo() === 'right'"
               (click)="addTo.set(addTo() === 'right' ? 'left' : 'right')"
-              matTooltip="Edit MyFoods — 'Like' Regi Approved foods, set per-food serving size, or add your own MyFoods with mobile app download (Android)"
+              matTooltip="Edit ... MyFoods, further curate faves, edit Serving Sizes, delete foods you entered"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350">
               Edit...
@@ -150,6 +150,8 @@ const CATEGORY_PLURALS: Record<string, string> = {
                    Health Info button. Nutrition Facts is offered via a
                    delayed "Click for Facts" bloom on RHS basket tiles
                    (see .nf-bloom in foods-panel.scss). -->
+              <span class="top-bar-spacer"></span>
+              <span class="top-bar-tagline">Your healthy, curated foods ~ yum!</span>
               <span class="top-bar-spacer"></span>
               <span class="top-bar-total">Total ({{ carouselSpinnerFoods().length }})</span>
             </div>
@@ -329,6 +331,11 @@ const CATEGORY_PLURALS: Record<string, string> = {
           }
 
           @if (addTo() === 'left') {
+            <!-- Invisible spacer that mirrors the LHS FILTER bar's vertical
+                 footprint so the rounded basket card below starts at the
+                 same Y as the LHS carousel card. Marked aria-hidden +
+                 inert so it never leaks into accessibility / focus order. -->
+            <div class="filter-bar-placeholder" aria-hidden="true"></div>
             <!-- 4 baskets in a 2×2 grid wrapped in the same rounded card
                  chrome as the carousel side, so the two panes feel balanced. -->
             <div class="pane-card basket-card">
@@ -378,7 +385,9 @@ const CATEGORY_PLURALS: Record<string, string> = {
                       matTooltipPosition="above">
                     </button>
                   </div>
-                  @if (thisWeekBaskets()[key].length > 0) {
+                  @if (thisWeekBaskets()[key].length === 0) {
+                    <div class="basket-empty-hint">{{ basketEmptyHint(key) }}</div>
+                  } @else {
                     <div class="basket-tiles">
                       @for (food of thisWeekBaskets()[key]; track food.id) {
                         <div
@@ -428,12 +437,15 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 Favorite a Regi Approved food (or double-click it) to add it to MyFoods.
               </div>
             } @else {
-              @for (group of groupedMyFoods(); track group.category) {
+              @for (group of groupedMyFoods(); track group.category; let i = $index) {
                 <div class="category-header"
                      (click)="toggleMyFoodsCategory(group.category)">
                   <mat-icon class="collapse-icon" [class.collapsed]="group.collapsed">expand_more</mat-icon>
                   <span class="category-name">{{ categoryLabel(group.category) }}</span>
                   <span class="category-count">({{ group.foods.length }})</span>
+                  @if (i === 0) {
+                    <span class="category-edit-hint">double-click to edit food</span>
+                  }
                   <span class="category-action-hint">{{ columnHeaderText() }}</span>
                 </div>
                 @if (!group.collapsed) {
@@ -600,8 +612,10 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 [displayUnit]="nfPopupFood()!.servingUnit || 'g'"
                 [displayQuantity]="nfPopupServingSize()"
                 [editable]="nfPopupMode() === 'edit'"
+                [showSave]="nfPopupCanSave()"
                 (adjust)="onNfAdjust($event)"
-                (commit)="onNfCommit($event)" />
+                (commit)="onNfCommit($event)"
+                (save)="onNfSave()" />
             </div>
             <!-- Dev-side data-trace, OUTSIDE the inner scroll area so it
                  rides on the popup's dark bottom chrome instead of inside
@@ -610,26 +624,6 @@ const CATEGORY_PLURALS: Record<string, string> = {
             <div class="nf-popup-trace">
               {{ traceLabel(nfPopupFood()!) }}
             </div>
-            <!-- Green Save button — only visible in edit mode. Disabled
-                 until the draft differs from the value the popup opened at,
-                 so clicking Save with no changes is impossible. -->
-            @if (nfPopupMode() === 'edit') {
-              <button
-                type="button"
-                class="nf-popup-save"
-                [class.enabled]="nfPopupCanSave()"
-                [disabled]="!nfPopupCanSave()"
-                (click)="onNfSave()"
-                matTooltip="Save serving size to MyFoods"
-                matTooltipPosition="above"
-                aria-label="Save">
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path d="M3 8 L7 12 L13 5" fill="none" stroke="currentColor"
-                        stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span class="nf-popup-save-label">Save</span>
-              </button>
-            }
           </div>
         </div>
       }
@@ -1326,6 +1320,18 @@ export class FoodsPanelComponent {
 
   // ----- Basket helpers -----
 
+  /** Coaching text shown inside an empty basket. Wraps to at most 2 lines
+   *  by design (CSS clamp); the strings are sized so even the longest
+   *  fits 2 lines at the standard basket width. */
+  basketEmptyHint(key: BasketKey): string {
+    switch (key) {
+      case 'Proteins': return 'Pick 6 or more proteins';
+      case 'Fats':     return 'Pick 5 or more fats sources';
+      case 'Carbs':    return 'Pick 8+ vegetables, and 2+ fruits';
+      case 'Other':    return 'Limit processed foods, add ideas for seasonings';
+    }
+  }
+
   private basketForFood(food: Food): BasketKey {
     return CATEGORY_TO_BASKET[food.categoryName ?? ''] ?? 'Other';
   }
@@ -1465,16 +1471,20 @@ export class FoodsPanelComponent {
     this.refreshServerMyFoods();
   }
 
-  // A food belongs to the user (and is deletable from the database) only when
-  // it has a userId — that flag is set when the food was created via the
-  // phone-app Add-Food flow. YEH base foods have no userId.
+  /** A food is deletable iff it lives in the UserFoods table (foodSource
+   *  discriminator from the API). The canonical Foods rows (USDA + Regi-
+   *  curated) can never be deleted by an end user — they're shared data. */
   isUserAddedFood(food: Food): boolean {
-    return food.userId != null;
+    return food.foodSource === 'userfood';
   }
 
   async deleteUserFood(event: Event, food: Food): Promise<void> {
     event.stopPropagation();
     if (!this.isUserAddedFood(food)) return; // hard guard for keyboard activation
+    const name = food.shortDescription || food.description;
+    if (!window.confirm(`Delete "${name}"? This will permanently remove it from your MyFoods.`)) {
+      return;
+    }
     const ok = await this.userFoodService.deleteUserFood(food.id);
     if (ok) {
       this.notificationService.show('Food deleted', 'success');
