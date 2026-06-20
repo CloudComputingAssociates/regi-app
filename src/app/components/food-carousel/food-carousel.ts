@@ -13,6 +13,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { SpinnerComponent, SpinnerItem } from '../spinner/spinner';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { Food } from '../../models/food.model';
+import { nutritionLabelScale } from '../../models/food-display';
 
 @Component({
   selector: 'app-food-carousel',
@@ -108,7 +109,9 @@ import { Food } from '../../models/food.model';
                 </div>
                 <regi-nutrition-label
                   [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
-                  [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
+                  [scale]="nutritionLabelScale(nfPopupFood())"
+                  [displayUnit]="nfPopupFood()!.servingUnit || 'g'"
+                  [displayQuantity]="nfPopupFood()!.servingSize ?? 1" />
               </div>
             </div>
       }
@@ -117,6 +120,10 @@ import { Food } from '../../models/food.model';
   styleUrls: ['./food-carousel.scss'],
 })
 export class FoodCarouselComponent {
+  // Exposed to the template so the inline NF popup can compute its scale
+  // from servingSize × servingGramsPerUnit (NOT from servingSizeMultiplicand).
+  protected readonly nutritionLabelScale = nutritionLabelScale;
+
   // Inputs
   foods = input<Food[]>([]);
 

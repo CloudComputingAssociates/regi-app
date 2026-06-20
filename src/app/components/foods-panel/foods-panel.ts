@@ -13,6 +13,7 @@ import { FoodsService, FoodList } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
 import { LangfusePromptService, LangfusePromptError } from '../../services/langfuse-prompt.service';
 import { Food } from '../../models/food.model';
+import { nutritionLabelScale } from '../../models/food-display';
 
 // 'myfoods' and 'restricted' are special: they pull from the user-preferences
 // service. Any other value is treated as the handle of a curated list and
@@ -1704,14 +1705,15 @@ export class FoodsPanelComponent {
     return this.nfPopupServingSize() !== this.nfPopupOriginalServingSize();
   });
 
-  /** Scale factor handed to the NF label so it can recompute macros. Per the
-   *  per-100g convention: macros = nf × servingSizeMultiplicand × servingSize.
-   *  The label expects a single scale input, so we multiply here. */
+  /** Scale factor handed to the NF label so it can recompute macros from the
+   *  per-100g baseline. Display math is (qty × servingGramsPerUnit) / 100,
+   *  where qty is the popup's draft (`nfPopupServingSize`) — not the
+   *  historical `servingSizeMultiplicand`, which only records what the
+   *  on-ingest serving was and stays frozen when the user later edits
+   *  ServingSize / ServingUnit / ServingGramsPerUnit. See `nutritionLabelScale`
+   *  for the full reasoning. */
   nfPopupScale = computed<number>(() => {
-    const food = this.nfPopupFood();
-    if (!food) return 1;
-    const multiplicand = food.servingSizeMultiplicand || 1;
-    return multiplicand * this.nfPopupServingSize();
+    return nutritionLabelScale(this.nfPopupFood(), this.nfPopupServingSize());
   });
 
   // ---- Health Benefits popup state (Langfuse-driven) ----

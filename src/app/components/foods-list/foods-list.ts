@@ -14,6 +14,7 @@ import { UserFoodService } from '../../services/user-food.service';
 import { TabService } from '../../services/tab.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { Food } from '../../models/food.model';
+import { nutritionLabelScale } from '../../models/food-display';
 import { UserFood } from '../../models/user-food.model';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
@@ -260,7 +261,11 @@ export interface FoodNotFoundEvent {
                 <div class="splitter-grip"></div>
               </div>
             }
-            <regi-nutrition-label (click)="onNutritionLabelClick()" [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null" [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
+            <regi-nutrition-label (click)="onNutritionLabelClick()"
+              [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
+              [scale]="nutritionLabelScale(nfPopupFood())"
+              [displayUnit]="nfPopupFood()!.servingUnit || 'g'"
+              [displayQuantity]="nfPopupFood()!.servingSize ?? 1" />
           </div>
         </div>
       }
@@ -269,6 +274,10 @@ export interface FoodNotFoundEvent {
   styleUrls: ['./foods-list.scss']
 })
 export class FoodsListComponent implements OnInit {
+  // Exposed to the template so the NF popup can compute its scale from
+  // servingSize × servingGramsPerUnit (NOT from servingSizeMultiplicand).
+  protected readonly nutritionLabelScale = nutritionLabelScale;
+
   private foodsService = inject(FoodsService);
   protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
