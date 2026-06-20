@@ -69,6 +69,22 @@ const CATEGORY_PLURALS: Record<string, string> = {
   Condiment: 'Seasonings',
 };
 
+// Filter-bar groups. Each group is a single button that toggles one or more
+// raw categories together. We combine Fat+Dairy and Vegetable+Fruit so the
+// filter UI nudges users to think of them as paired choices — dairy belongs
+// with fats nutritionally, and fruits/veggies are the volume foods that
+// must not get crowded out by carbs (carbs stays its own button so a 50g
+// carb cap can't masquerade as a green-vegetable allowance).
+type FilterGroup = { readonly key: string; readonly label: string; readonly cats: readonly string[] };
+const FILTER_GROUPS: readonly FilterGroup[] = [
+  { key: 'Protein',      label: 'Proteins',         cats: ['Protein'] },
+  { key: 'FatsDairy',    label: 'Fats & Dairy',     cats: ['Fat', 'Dairy'] },
+  { key: 'FruitsVeg',    label: 'Fruits & Veggies', cats: ['Vegetable', 'Fruit'] },
+  { key: 'Carbohydrate', label: 'Carbs',            cats: ['Carbohydrate'] },
+  { key: 'Processed',    label: 'Processed',        cats: ['Processed'] },
+  { key: 'Condiment',    label: 'Seasonings',       cats: ['Condiment'] },
+];
+
 @Component({
   selector: 'app-foods-panel',
   imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, NutritionFactsLabelComponent],
@@ -113,14 +129,14 @@ const CATEGORY_PLURALS: Record<string, string> = {
           <div class="filter-bar">
             <span class="filter-bar-label">FILTER</span>
             <div class="category-radio-panel" role="group" aria-label="Category filter">
-              @for (cat of carouselCategories; track cat) {
+              @for (group of filterGroups; track group.key) {
                 <button
                   type="button"
                   class="category-radio-btn"
-                  [class.pressed]="isCategoryActive(cat)"
-                  [attr.aria-pressed]="isCategoryActive(cat)"
-                  (click)="toggleCategory(cat)">
-                  {{ categoryLabel(cat) }}
+                  [class.pressed]="isFilterGroupActive(group)"
+                  [attr.aria-pressed]="isFilterGroupActive(group)"
+                  (click)="toggleFilterGroup(group)">
+                  {{ group.label }}
                 </button>
               }
             </div>
@@ -154,7 +170,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
               <span class="top-bar-total">Total ({{ carouselSpinnerFoods().length }})</span>
               <!-- Absolute-centered tagline lives OUTSIDE the flex flow so
                    its position is unaffected by the SEARCH / TOTAL widths. -->
-              <span class="top-bar-tagline">Your healthy, curated foods ~ yum!</span>
+              <span class="top-bar-tagline">Your healthy, curated foods</span>
             </div>
             <!-- Tile grid replaces the old spinning carousel. Tiles fill
                  left-to-right and wrap to the next row; the grid scrolls
@@ -211,7 +227,12 @@ const CATEGORY_PLURALS: Record<string, string> = {
           <div class="section-title">
             <span class="section-title-text">
               @if (addTo() === 'left') {
-                Picks for planning
+                <span
+                  matTooltip="You pick foods, as a baseline for Planning your menus"
+                  matTooltipPosition="below"
+                  [matTooltipShowDelay]="350">
+                  Food Picks
+                </span>
               } @else {
                 <span
                   matTooltip="Edit MyFoods — click 'star' to Favorite, 'circle-line' to Restrict. Double-click a row to edit its Serving Size, single-press-and-hold the picture to zoom."
@@ -230,7 +251,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                 type="button"
                 class="section-title-close"
                 (click)="addTo.set('left')"
-                matTooltip="Back to Picks for planning"
+                matTooltip="Back to Food Picks"
                 matTooltipPosition="below"
                 aria-label="Close Edit">
                 ✕
@@ -356,7 +377,7 @@ const CATEGORY_PLURALS: Record<string, string> = {
                        expand) anchored to the top-RIGHT. -->
                   <div class="basket-face">
                     <span class="basket-title">
-                      {{ key }} ({{ thisWeekBaskets()[key].length }})
+                      {{ basketLabel(key) }} ({{ thisWeekBaskets()[key].length }})
                     </span>
                     @if (thisWeekBaskets()[key].length > 0) {
                       <button
@@ -740,6 +761,7 @@ export class FoodsPanelComponent {
 
   // Spin carousel state
   readonly carouselCategories = CAROUSEL_CATEGORIES;
+  readonly filterGroups = FILTER_GROUPS;
   // Default TYPE for the Refine Foods pane = MyFoods, since that's the
   // primary list users come here to curate.
   spinSource = signal<SpinSource>('myfoods');
@@ -899,8 +921,9 @@ export class FoodsPanelComponent {
     if (cats.size === 0 || cats.size === CAROUSEL_CATEGORIES.length) {
       return 'No foods to spin yet.';
     }
-    const cat = [...cats][0];
-    return `No ${this.categoryLabel(cat)} in this list.`;
+    const group = FILTER_GROUPS.find(g => this.isFilterGroupActive(g));
+    const label = group ? group.label : this.categoryLabel([...cats][0]);
+    return `No ${label} in this list.`;
   });
 
   // Server-side MyFoods cache (the user's existing allowed foods from
@@ -1349,9 +1372,21 @@ export class FoodsPanelComponent {
   basketEmptyHint(key: BasketKey): string {
     switch (key) {
       case 'Proteins': return 'Pick 6 or more proteins';
-      case 'Fats':     return 'Pick 5 or more fats sources';
+      case 'Fats':     return 'Pick 5 or more fats,\nand dairy foods';
       case 'Carbs':    return 'Pick 8+ vegetables,\nand 2+ fruits';
       case 'Other':    return 'Limit processed foods,\nadd ideas for seasonings';
+    }
+  }
+
+  /** Display label for a basket title. Fats holds dairy, and Carbs holds
+   *  veggies + fruits in addition to grains/starches, so surface that in
+   *  the title — keeps users from thinking a 50g carb allowance is a
+   *  green-vegetable allowance. */
+  basketLabel(key: BasketKey): string {
+    switch (key) {
+      case 'Fats':  return 'Fats & Dairy';
+      case 'Carbs': return 'Fruits, Veggies & Carbs';
+      default:      return key;
     }
   }
 
@@ -1787,17 +1822,23 @@ export class FoodsPanelComponent {
 
   // ---- Spin carousel ----
 
-  isCategoryActive(cat: string): boolean {
-    return this.selectedCategories().has(cat);
+  // A filter group is "pressed" when its categories exactly match the active
+  // selection — that's what radio behavior looks like once groups can carry
+  // more than one raw category each.
+  isFilterGroupActive(group: FilterGroup): boolean {
+    const set = this.selectedCategories();
+    if (set.size !== group.cats.length) return false;
+    return group.cats.every(c => set.has(c));
   }
 
   // True AM-radio behavior: pressing a button pops the previously-pressed one
-  // out (only one at a time). Pressing the currently-pressed one pops it out
-  // (none selected → show all foods, handled in loadCarouselFoods / filteredMyFoods).
-  toggleCategory(cat: string): void {
-    this.selectedCategories.update(set => {
-      if (set.has(cat)) return new Set();
-      return new Set([cat]);
+  // out (only one group at a time). Pressing the currently-pressed group pops
+  // it out (none selected → show all foods, handled in loadCarouselFoods /
+  // filteredMyFoods).
+  toggleFilterGroup(group: FilterGroup): void {
+    this.selectedCategories.update(() => {
+      if (this.isFilterGroupActive(group)) return new Set();
+      return new Set(group.cats);
     });
   }
 

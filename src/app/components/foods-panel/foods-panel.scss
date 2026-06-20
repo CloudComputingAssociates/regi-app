@@ -539,7 +539,10 @@
   font-style: italic;
   font-weight: 500;
   letter-spacing: 0.2px;
-  color: #ffff00;
+  // Chiffon yellow — same family as the basket-empty hints and the .selected
+  // halo, so the tagline reads as a softer counterpart to the rest of the UI
+  // (pure #ffff00 was too aggressive at this size).
+  color: #fff59d;
   user-select: none;
   pointer-events: none;
   white-space: nowrap;
@@ -1349,11 +1352,9 @@
 .basket-lights-right .basket-light { position: static; }
 
 .basket-light-min {
-  // Pure bright yellow. The button's 1 px dark rim + inset top highlight
-  // visually darken the perimeter, so the FILL has to be cranked all the
-  // way to pure #ffff00 for the disc to actually read as poppy yellow at
-  // 20 × 20 px next to the equally-saturated green.
-  background: #ffff00;
+  // Chiffon yellow — paired with the LHS tagline so the minimize disc shares
+  // the same softer yellow tone instead of the harsher poppy yellow.
+  background: #fff59d;
   &::before { content: '\2212'; } // minus sign
 }
 .basket-light-max {
