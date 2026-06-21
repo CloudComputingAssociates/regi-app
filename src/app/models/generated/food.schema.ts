@@ -38,9 +38,9 @@ export interface FoodSchema {
    */
   usdaCategory?: string | null;
   /**
-   * Is this a healthy food for users of the App
+   * Is this a healthy food approved by REGI for users of the App
    */
-  yehApproved?: boolean;
+  regiApproved?: boolean;
   /**
    * Glycemic Index value (0-100 scale)
    */
@@ -139,11 +139,15 @@ export interface FoodSchema {
    */
   servingSizeMultiplicand: number;
   /**
-   * Preferred display unit for serving (e.g. "whole", "cup", "oz", "g")
+   * Food's canonical baseline serving count in ServingUnit (e.g. 4 for '4 oz'). Per-user overrides live on UserFoodPreferences.ServingSize.
+   */
+  servingSize?: number | null;
+  /**
+   * Preferred display unit for serving (e.g. 'whole', 'cup', 'oz', 'g')
    */
   servingUnit?: string | null;
   /**
-   * Grams per one unit of servingUnit (e.g. 50 for 1 whole egg, 30 for 1 cup spinach)
+   * Grams per one unit of ServingUnit
    */
   servingGramsPerUnit?: number | null;
   /**
@@ -206,10 +210,6 @@ export interface FoodSchema {
    * GTIN/UPC barcode for the product
    */
   gtinUpc?: string | null;
-  /**
-   * URL to purchase this product (e.g., Amazon, Costco)
-   */
-  productPurchaseLink?: string | null;
   /**
    * AI tokens consumed for this food
    */

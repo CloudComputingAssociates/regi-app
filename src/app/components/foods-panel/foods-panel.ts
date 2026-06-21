@@ -1357,10 +1357,14 @@ export class FoodsPanelComponent {
     this.selectedBasketFood.set(current?.id === food.id ? null : food);
   }
 
-  /** Double-click on a basket food = open the Nutrition Facts popup. */
+  /** Double-click on a basket food = open the Nutrition Facts popup in
+   *  EDIT mode, with steppers and the Green Save button. Save persists
+   *  through the same UserFoodPreferences.ServingSize path as the Edit
+   *  MyFoods flow — adjusting a Pick is currently the same gesture as
+   *  adjusting the MyFoods baseline. */
   onBasketFoodDblClick(food: Food): void {
     this.selectedBasketFood.set(food);
-    this.openNfPopupForFood(food);
+    this.openNfPopupForFood(food, 'edit');
   }
 
   // ----- Basket helpers -----
@@ -1743,7 +1747,17 @@ export class FoodsPanelComponent {
     const reqId = ++this.healthBenefitsRequestId;
     const foodName = food.shortDescription || food.description || '';
     try {
-      const result = await this.langfusePromptService.run('health-benefits', { FoodName: foodName });
+      // Contract with the `health-benefits` Langfuse prompt: phrase numbers
+      // against the user's ACTUAL serving (the popup's display values), not
+      // a generic one. ServingUnit defaults to 'g' and ServingGramsPerUnit
+      // to 0 — the prompt's USER SERVING block reads those as "no preference
+      // set" and falls back to a realistic standard serving for the food.
+      const result = await this.langfusePromptService.run('health-benefits', {
+        FoodName: foodName,
+        ServingSize: String(food.servingSize ?? 1),
+        ServingUnit: food.servingUnit ?? 'g',
+        ServingGramsPerUnit: String(food.servingGramsPerUnit ?? 0),
+      });
       if (reqId !== this.healthBenefitsRequestId) return;
       this.healthBenefitsText.set(result.text);
     } catch (e) {

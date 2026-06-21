@@ -25,7 +25,7 @@ interface AllFoodRow {
   foodImage?: string;
   foodImageThumbnail?: string;
   nutritionFactsImage?: string;
-  yehApproved?: boolean;
+  regiApproved?: boolean;
   calories?: number;
   proteinG?: number;
   totalFatG?: number;
@@ -137,7 +137,7 @@ export class FoodsService {
       servingSize: row.servingSize ?? null,
       // Curated lists carry no per-user override; userServingSize stays null.
       userServingSize: null,
-      yehApproved: row.yehApproved ?? false,
+      regiApproved: row.regiApproved ?? false,
       glycemicIndex: row.glycemicIndex ?? 0,
       glycemicLoad: row.glycemicLoad,
       servingSizeMultiplicand: row.servingSizeMultiplicand ?? 1,

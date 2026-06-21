@@ -748,7 +748,7 @@ export class FoodsListComponent implements OnInit {
       foodRequestType: 'unknown',
       categoryName: this.foodsService.getCategoryName(uf.categoryId),
       dataSource: uf.dataSource || 'user',
-      yehApproved: false,
+      regiApproved: false,
       glycemicIndex: uf.glycemicIndex ?? 0,
       glycemicLoad: uf.glycemicLoad,
       servingSizeMultiplicand: uf.servingSizeMultiplicand ?? 1,

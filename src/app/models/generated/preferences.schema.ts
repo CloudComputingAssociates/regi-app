@@ -42,6 +42,10 @@ export interface UserPreferencesSchema {
    */
   repeatMeals?: number | null;
   /**
+   * Day of week that starts a new meal planning week
+   */
+  weekStartDay?: "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | null;
+  /**
    * Source of foods for meal planning
    */
   foodListSource?: "yeh_plus_myfoods" | "yeh" | "myfoods" | null;
@@ -121,6 +125,10 @@ export interface GetPreferencesResponse {
    */
   repeatMeals?: number | null;
   /**
+   * Day of week that starts a new meal planning week
+   */
+  weekStartDay?: "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | null;
+  /**
    * Source of foods for meal planning
    */
   foodListSource?: "yeh_plus_myfoods" | "yeh" | "myfoods" | null;
@@ -156,6 +164,10 @@ export interface UpdatePreferencesRequest {
    * Number of times to repeat meal plan (1-4)
    */
   repeatMeals?: number;
+  /**
+   * Day of week that starts a new meal planning week
+   */
+  weekStartDay?: "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday";
   /**
    * Source of foods for meal planning
    */

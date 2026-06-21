@@ -33,7 +33,7 @@ interface AllFoodRow {
   foodImage?: string;
   foodImageThumbnail?: string;
   nutritionFactsImage?: string;
-  yehApproved: boolean;
+  regiApproved: boolean;
   calories?: number;
   proteinG?: number;
   totalFatG?: number;
@@ -538,7 +538,7 @@ export class FoodPreferencesService {
       // dataSource fallback stays as the provenance string literals; only
       // the foodSource COMPARISON KEY flipped to 'userfood'.
       dataSource: row.dataSource ?? (row.foodSource === 'userfood' ? 'user' : 'USDA-FNDDS'),
-      yehApproved: row.yehApproved,
+      regiApproved: row.regiApproved,
       servingSize: row.servingSize ?? null,
       userServingSize: row.userServingSize ?? null,
       glycemicIndex: row.glycemicIndex ?? 0,
