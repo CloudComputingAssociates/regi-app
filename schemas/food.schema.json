@@ -285,6 +285,10 @@
       "maxLength": 20,
       "description": "GTIN/UPC barcode for the product"
     },
+    "productPurchaseLink": {
+      "type": ["string", "null"],
+      "description": "URL to buy/purchase the product (brand foods)"
+    },
     "tokensUsed": {
       "type": [
         "number",
