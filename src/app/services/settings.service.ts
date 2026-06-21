@@ -7,7 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   AllSettings, TabSettings, RegiMenuSettings,
-  DailyGoals, PersonalInfo, DefaultFoodListData, ShoppingStaple
+  DailyGoals, PersonalInfo, DefaultFoodListData, ShoppingStaple, CurrentPick
 } from '../models/settings.models';
 
 @Injectable({
@@ -113,6 +113,26 @@ export class SettingsService {
   async saveShoppingStaples(data: ShoppingStaple[]): Promise<ShoppingStaple[]> {
     const saved = await this.saveSettings({ shoppingStaples: data });
     return saved.shoppingStaples || data;
+  }
+
+  /** Persist the user's basket picks. The consolidated PUT preserves every
+   *  other settings field via server-side COALESCE, so only currentPicks is
+   *  sent. Empty array explicitly clears all picks (server distinguishes
+   *  [] from absent). Caller debounces — this method does NOT.
+   *
+   *  Returns the server's echo so the caller can detect server-side mutations
+   *  (e.g. order normalization) and reconcile.
+   *
+   *  No `sendBeacon` companion exists: the API requires an Authorization
+   *  Bearer token and `navigator.sendBeacon` can only carry cookies, so
+   *  any beacon attempt would be rejected with 401 and silently dropped.
+   *  Saves rely on the foods-panel 500ms debounce plus a 30s background
+   *  retry; the edge case of "user drags a food and immediately closes
+   *  the tab within 500ms" is accepted.
+   */
+  async saveCurrentPicks(picks: CurrentPick[]): Promise<CurrentPick[]> {
+    const saved = await this.saveSettings({ currentPicks: picks });
+    return saved.currentPicks ?? picks;
   }
 
   // ========================================================

@@ -9,6 +9,21 @@ export interface AllSettings {
   dailyGoals?: DailyGoals;
   personalInfo?: PersonalInfo;
   shoppingStaples?: ShoppingStaple[];
+  currentPicks?: CurrentPick[];
+}
+
+// Basket-staged foods picked for the next planning round. Persisted as a JSON
+// array on UserSettings.CurrentPicks. foodId + foodSource is the AllFoods view's
+// composite key (the discriminator decides USDA Foods vs UserFoods). basketKey
+// places the pick into one of the four UI baskets. pickServingSize=null means
+// "no override; follow the MyFoods baseline"; a number is the per-basket
+// override quantity in `food.servingUnit` units.
+export interface CurrentPick {
+  foodId: number;
+  foodSource: 'food' | 'userfood';
+  basketKey: 'Proteins' | 'Fats' | 'Carbs' | 'Other';
+  pickServingSize: number | null;
+  addedAt: string; // ISO 8601
 }
 
 // GET/PUT /api/user/settings/tabs

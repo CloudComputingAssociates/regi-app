@@ -12,7 +12,9 @@ import { UserFoodService } from '../../services/user-food.service';
 import { FoodsService, FoodList } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
 import { LangfusePromptService, LangfusePromptError } from '../../services/langfuse-prompt.service';
+import { SettingsService } from '../../services/settings.service';
 import { Food } from '../../models/food.model';
+import { CurrentPick } from '../../models/settings.models';
 import { nutritionLabelScale } from '../../models/food-display';
 
 // 'myfoods' and 'restricted' are special: they pull from the user-preferences
@@ -27,9 +29,10 @@ const CAROUSEL_CATEGORIES = [
 ] as const;
 
 const LS_MYFOODS = 'regi.foods.myfoods';
-// Storage key intentionally keeps the legacy "buckets" string so users who
-// already have data saved don't lose it through the rename.
-const LS_THISWEEK_BASKETS = 'regi.foods.thisweek.buckets';
+// Legacy basket localStorage key — kept ONLY so we can purge it on startup
+// for users who upgraded across the picks-on-server rollout. Read once in
+// the constructor and removed; nothing else in the code references it.
+const LS_LEGACY_THISWEEK_BASKETS = 'regi.foods.thisweek.buckets';
 
 type BasketKey = 'Proteins' | 'Fats' | 'Carbs' | 'Other';
 const BASKET_KEYS: readonly BasketKey[] = ['Proteins', 'Fats', 'Carbs', 'Other'];
@@ -742,6 +745,138 @@ export class FoodsPanelComponent {
       next: (resp) => this.availableLists.set(resp?.lists ?? []),
       error: () => this.availableLists.set([]),
     });
+    // Hydrate baskets from server-side CurrentPicks. Sequenced after the
+    // allowed-foods load so we can intersect picks with the user's actual
+    // MyFoods set and silently drop stale (un-favorited) entries.
+    void this.hydratePicksFromServer();
+    // One-shot purge of the pre-server-persistence localStorage cache so
+    // users upgrading from the localStorage era don't have a parallel set
+    // of picks lingering on disk.
+    try { localStorage.removeItem(LS_LEGACY_THISWEEK_BASKETS); } catch { /* ignore */ }
+  }
+
+  /** Reads UserSettings via SettingsService, intersects each pick with the
+   *  user's allowed-foods cache, builds the four baskets, and stamps each
+   *  basket entry with `pickAddedAt` / `pickServingSize` so the round-trip
+   *  back to the server preserves order and per-basket overrides. Picks that
+   *  reference foods the user has since un-favorited are silently dropped
+   *  (warn-logged) AND a cleaned list is saved back so the dead reference
+   *  doesn't keep showing up on every login.
+   *
+   *  Safety guard against the slow-network partial-load failure mode: if we
+   *  had picks but matched ZERO of them, that's a strong signal the
+   *  allowed-foods cache didn't finish loading in our polling window. We do
+   *  NOT save the empty list back in that case — leaving the server-side
+   *  picks intact and the retry loop will hydrate cleanly later. */
+  private async hydratePicksFromServer(): Promise<void> {
+    try {
+      // Prefer the already-loaded settings signal if app startup populated it;
+      // otherwise round-trip. Avoids a redundant GET every time the user
+      // switches into the Foods tab.
+      const all = this.settingsService.allSettings()
+        ?? await this.settingsService.loadSettings();
+      const picks = all.currentPicks ?? [];
+      // Wait for the allowed-foods cache to be populated. We need its full
+      // Food blobs to rebuild the basket entries; refreshServerMyFoods runs
+      // concurrent to this method, so retry briefly before giving up.
+      let allowed = this.serverMyFoods();
+      for (let attempt = 0; attempt < 20 && allowed.length === 0 && picks.length > 0; attempt++) {
+        await new Promise<void>(r => setTimeout(r, 100));
+        allowed = this.serverMyFoods();
+      }
+      const lookup = new Map<string, Food>();
+      for (const f of allowed) {
+        lookup.set(`${f.id}:${f.foodSource ?? 'food'}`, f);
+      }
+      const baskets = emptyBaskets();
+      const kept: CurrentPick[] = [];
+      let dropped = 0;
+      for (const p of picks) {
+        const food = lookup.get(`${p.foodId}:${p.foodSource}`);
+        if (!food) {
+          dropped++;
+          console.warn('[FoodsPanel] dropping stale pick — food no longer in MyFoods', p);
+          continue;
+        }
+        const enriched: Food = {
+          ...food,
+          pickAddedAt: p.addedAt,
+          pickServingSize: p.pickServingSize,
+        };
+        baskets[p.basketKey].push(enriched);
+        kept.push(p);
+      }
+      // Order entries within each basket by addedAt ascending so the visual
+      // bottom-up stack matches the order foods were originally added.
+      for (const k of BASKET_KEYS) {
+        baskets[k].sort((a, b) => (a.pickAddedAt ?? '').localeCompare(b.pickAddedAt ?? ''));
+      }
+      this.thisWeekBaskets.set(baskets);
+      // Save-back guard. Only push the cleaned list when at least one pick
+      // matched. "Had picks but matched zero" is the partial-load signature
+      // — saving in that case would silently destroy server-side data.
+      if (dropped > 0 && kept.length > 0) {
+        void this.settingsService.saveCurrentPicks(kept).catch(err => {
+          console.warn('[FoodsPanel] failed to save cleaned pick list', err);
+        });
+        this.hydrationSucceeded.set(true);
+      } else if (dropped > 0 && kept.length === 0 && picks.length > 0) {
+        // Partial-load signature — leave server alone. Leave hydration flag
+        // FALSE so any user interaction is gated out (no risk of wiping the
+        // real server data with empty baskets). User must refresh to retry.
+        console.warn(
+          `[FoodsPanel] hydration matched 0 of ${picks.length} picks — ` +
+          `assuming partial allowed-foods load, NOT saving back. Refresh to retry.`,
+        );
+        this.notificationService.show('Couldn\'t load your picks. Refresh to retry.', 'error', 4000);
+      } else {
+        this.hydrationSucceeded.set(true);
+      }
+    } catch (err) {
+      console.error('[FoodsPanel] hydratePicksFromServer failed', err);
+      this.notificationService.show('Server unavailable. Try again later.', 'error', 4000);
+      // CRITICAL: do NOT flip hydrationSucceeded on error. Writes stay
+      // gated so a transient outage cannot wipe server-side picks.
+    }
+  }
+
+  /** Serialize the four baskets to the CurrentPicks wire shape. addedAt
+   *  defaults to NOW for entries that lack pickAddedAt (newly dropped foods
+   *  that haven't been round-tripped yet). pickServingSize honors the
+   *  basket-local override; null = no override (follow MyFoods baseline). */
+  private picksFromBaskets(): CurrentPick[] {
+    const out: CurrentPick[] = [];
+    const baskets = this.thisWeekBaskets();
+    const now = new Date().toISOString();
+    for (const k of BASKET_KEYS) {
+      for (const f of baskets[k]) {
+        out.push({
+          foodId: f.id,
+          foodSource: (f.foodSource as 'food' | 'userfood') ?? 'food',
+          basketKey: k,
+          pickServingSize: f.pickServingSize ?? null,
+          addedAt: f.pickAddedAt ?? now,
+        });
+      }
+    }
+    return out;
+  }
+
+  /** Write-through save — every basket mutation fires the PUT immediately.
+   *  No debounce, no retry, no batching. Gated on hydrationSucceeded so a
+   *  failed init GET can never wipe server-side picks. On failure: log,
+   *  toast, move on. The next user mutation will fire another PUT with the
+   *  latest state.
+   *  Policy: see CLAUDE.md > Optimizations — no client-side caching or
+   *  request coalescing in new code. */
+  private async savePicks(): Promise<void> {
+    if (!this.hydrationSucceeded()) return;
+    try {
+      await this.settingsService.saveCurrentPicks(this.picksFromBaskets());
+    } catch (err) {
+      console.error('[FoodsPanel] failed to save currentPicks', err);
+      this.notificationService.show('Server unavailable. Try again later.', 'error', 4000);
+    }
   }
 
   private async refreshServerMyFoods(): Promise<void> {
@@ -759,6 +894,7 @@ export class FoodsPanelComponent {
   private userFoodService = inject(UserFoodService);
   private foodsService = inject(FoodsService);
   private langfusePromptService = inject(LangfusePromptService);
+  private settingsService = inject(SettingsService);
 
   // Spin carousel state
   readonly carouselCategories = CAROUSEL_CATEGORIES;
@@ -875,10 +1011,30 @@ export class FoodsPanelComponent {
   addTo = signal<'left' | 'right'>('left');
   myFoodsLocal = signal<Food[]>(this.loadLocal(LS_MYFOODS));
 
-  // Four-basket This Week store (Proteins/Fats/Carbs/Other). Replaces the old
-  // flat thisWeekLocal Food[] — each basket is its own array.
+  // Four-basket This Week store (Proteins/Fats/Carbs/Other). Server-backed
+  // via UserSettings.CurrentPicks — starts empty, hydrated by
+  // hydratePicksFromServer() in the constructor once allowed-foods finish
+  // loading. Each mutation triggers the debounced save effect below.
+  //
+  // Multi-tab note: this component uses last-write-wins for currentPicks.
+  // Editing baskets in two tabs concurrently will let the later PUT clobber
+  // the earlier tab's additions. Documented limitation — fix would require
+  // ETag/If-Match on the API or BroadcastChannel cross-tab notification.
+  //
+  // Tab-switch note: Angular re-instantiates this component on tab switch,
+  // so the constructor and hydration run again. Cache-first via
+  // SettingsService.allSettings() keeps it cheap; user may see a sub-100ms
+  // empty-basket flash before re-population.
   readonly basketKeys = BASKET_KEYS;
-  thisWeekBaskets = signal<ThisWeekBaskets>(this.loadBaskets());
+  thisWeekBaskets = signal<ThisWeekBaskets>(emptyBaskets());
+
+  /** Only flips to true on a CONFIRMED-SUCCESSFUL hydration GET. Gates every
+   *  write path — `persistThisWeek` effect bails when this is false, so a
+   *  failed hydration cannot trigger a save of empty baskets that would
+   *  overwrite the user's good server-side state. This is a data-integrity
+   *  guard, not an optimization; do not remove without replacing.
+   *  (See CLAUDE.md > Optimizations.) */
+  private hydrationSucceeded = signal<boolean>(false);
 
   // Convenience: total foods across all four baskets.
   thisWeekTotal = computed<number>(() => {
@@ -1130,8 +1286,13 @@ export class FoodsPanelComponent {
   private persistMyFoods = effect(() => {
     this.saveLocal(LS_MYFOODS, this.myFoodsLocal());
   });
+  /** Write-through to the server on every basket mutation. The
+   *  hydrationSucceeded gate prevents the initial empty-baskets state
+   *  (before the GET resolves) from being PUT back as authoritative. */
   private persistThisWeek = effect(() => {
-    this.saveBaskets(this.thisWeekBaskets());
+    this.thisWeekBaskets(); // read for dependency tracking
+    if (!this.hydrationSucceeded()) return;
+    void this.savePicks();
   });
 
   // ----- image-carousel: SpinnerItem mapping + outputs -----
@@ -1185,7 +1346,7 @@ export class FoodsPanelComponent {
    *  popup in EDIT mode. This is the only path that hands the user the
    *  steppers + Green Save button. */
   onEditMyFoodsRowDblClick(food: Food): void {
-    this.openNfPopupForFood(food, 'edit');
+    this.openNfPopupForFood(food, 'edit', 'myfoods');
   }
 
   // ----- Press-and-hold zoom on Edit MyFoods row thumbnail ----------------
@@ -1229,18 +1390,33 @@ export class FoodsPanelComponent {
     event.dataTransfer!.effectAllowed = 'copy';
   }
 
+  /** Where the open Nf popup was opened FROM. Drives Save routing: a
+   *  `'myfoods'`-origin save writes to UserFoodPreferences (the MyFoods
+   *  baseline); a `'picks'`-origin save writes the per-basket pickServingSize
+   *  override and (when the draft differs from the baseline) prompts whether
+   *  to also update the MyFoods default. */
+  nfPopupOrigin = signal<'myfoods' | 'picks' | null>(null);
+
   /** Open the NF popup for a food and prime the adjustable-serving state.
-   *  Initial serving size = user's saved MyFoods override (`userServingSize`)
-   *  when present, else the food's curated `servingSize` baseline, else 1.
-   *  `mode` defaults to `view` (read-only). Edit mode is reached only via
-   *  the Edit MyFoods flow on the RHS. */
-  private openNfPopupForFood(food: Food, mode: 'view' | 'edit' = 'view'): void {
-    const initial = this.preferencesService.userServingSize(food.id)
-      ?? food.servingSize
-      ?? 1;
+   *  Initial serving size for a Picks-origin popup starts at the pick's own
+   *  override (`pickServingSize`) when present, then falls through to the
+   *  user's saved MyFoods override (`userServingSize`), then to the food's
+   *  curated `servingSize` baseline, then 1. For a MyFoods-origin popup the
+   *  pickServingSize branch is skipped (the popup is editing the baseline,
+   *  not a pick). */
+  private openNfPopupForFood(food: Food, mode: 'view' | 'edit' = 'view', origin: 'myfoods' | 'picks' | null = null): void {
+    let initial: number;
+    if (origin === 'picks' && food.pickServingSize != null) {
+      initial = food.pickServingSize;
+    } else {
+      initial = this.preferencesService.userServingSize(food.id)
+        ?? food.servingSize
+        ?? 1;
+    }
     this.nfPopupServingSize.set(initial);
     this.nfPopupOriginalServingSize.set(initial);
     this.nfPopupMode.set(mode);
+    this.nfPopupOrigin.set(origin);
     this.nfPopupFood.set(food);
   }
 
@@ -1250,23 +1426,80 @@ export class FoodsPanelComponent {
   onNfPopupClose(): void {
     this.nfPopupServingSize.set(this.nfPopupOriginalServingSize());
     this.nfPopupMode.set('view');
+    this.nfPopupOrigin.set(null);
     this.nfPopupFood.set(null);
   }
 
-  /** Green Save button handler. Persists the draft as the user's MyFoods
-   *  override (UserFoodPreferences.ServingSize) and closes the popup.
+  /** Green Save button handler. Routes by the popup's origin:
+   *
+   *  - `myfoods` (Edit MyFoods row dbl-click) → writes to UserFoodPreferences,
+   *    same as it always has. food.foodSource is passed so the preference row
+   *    gets the correct discriminator (was missing — created duplicate rows
+   *    with FoodSource='food' for UserFoods).
+   *
+   *  - `picks` (basket dbl-click) → writes pickServingSize to the basket
+   *    entry. If the draft differs from the MyFoods baseline, also prompts
+   *    whether to make the MyFoods default match. If the draft matches the
+   *    baseline, the override is cleared (pickServingSize=null) and no
+   *    prompt — there's nothing meaningful to override.
+   *
    *  Disabled in the template via [disabled]="!nfPopupCanSave()" so this
    *  shouldn't fire when there's nothing to save. */
   onNfSave(): void {
     const food = this.nfPopupFood();
     if (!food || !this.nfPopupCanSave()) return;
-    this.preferencesService.setUserServingSize(food.id, this.nfPopupServingSize());
-    // Snap original to the saved value so close-revert doesn't undo it,
-    // and the popup goes back to view mode in case the user clicked Save
-    // without closing.
-    this.nfPopupOriginalServingSize.set(this.nfPopupServingSize());
+    const draft = this.nfPopupServingSize();
+    const origin = this.nfPopupOrigin();
+
+    if (origin === 'picks') {
+      const baseline = this.preferencesService.userServingSize(food.id)
+        ?? food.servingSize
+        ?? 1;
+      // If the draft matches the baseline, the user has no real override —
+      // clear pickServingSize so the basket entry follows the baseline going
+      // forward. No prompt — there's nothing to ask about.
+      const newOverride = draft === baseline ? null : draft;
+      this.setPickServingSize(food, newOverride);
+      this.nfPopupOriginalServingSize.set(draft);
+      this.nfPopupMode.set('view');
+      this.nfPopupOrigin.set(null);
+      this.nfPopupFood.set(null);
+      if (newOverride !== null) {
+        this.notificationService.showConfirmation(
+          `Make MyFoods default ${draft} ${food.servingUnit ?? 'unit'} as well?`,
+          'info',
+          () => this.preferencesService.setUserServingSize(food.id, draft, food.foodSource),
+          () => { /* user said no — pick override stands alone */ },
+        );
+      }
+      return;
+    }
+
+    // Default / 'myfoods' origin: write the MyFoods baseline directly.
+    this.preferencesService.setUserServingSize(food.id, draft, food.foodSource);
+    this.nfPopupOriginalServingSize.set(draft);
     this.nfPopupMode.set('view');
+    this.nfPopupOrigin.set(null);
     this.nfPopupFood.set(null);
+  }
+
+  /** Mutate the basket-local pickServingSize for the food currently being
+   *  edited. Walks all four baskets so the food gets updated wherever it
+   *  lives (currently the UI only allows a food in one basket at a time,
+   *  but the helper is defensive). The basket-signal write triggers the
+   *  debounced server PUT via persistThisWeek. */
+  private setPickServingSize(food: Food, override: number | null): void {
+    this.thisWeekBaskets.update(b => {
+      const next = { ...b } as ThisWeekBaskets;
+      for (const k of this.basketKeys) {
+        next[k] = b[k].map(f =>
+          f.id === food.id && (f.foodSource ?? 'food') === (food.foodSource ?? 'food')
+            ? { ...f, pickServingSize: override }
+            : f,
+        );
+      }
+      return next;
+    });
   }
 
   /** Curated ladder of "sensible" serving sizes, used by the ▲ / ▼ buttons.
@@ -1326,23 +1559,6 @@ export class FoodsPanelComponent {
     return false;
   }
 
-  /** Store a per-basket serving-size override locally on the matching
-   *  basket entry. Survives reload via the same persistThisWeek effect.
-   *  No server hop — the basket itself is client-side state. Currently
-   *  unused (all edits flow through Edit MyFoods now), retained in case a
-   *  per-basket override surface lands later. */
-  private persistBasketServingOverride(foodId: number, servingSize: number): void {
-    this.thisWeekBaskets.update(b => {
-      const next = { ...b } as ThisWeekBaskets;
-      for (const key of this.basketKeys) {
-        next[key] = b[key].map(f =>
-          f.id === foodId ? { ...f, servingSize } : f,
-        );
-      }
-      return next;
-    });
-  }
-
   // ----- RHS basket-tile selection + "Click for Facts" bloom -----
 
   /** The currently-selected food in a basket on the right pane. Drives the
@@ -1364,7 +1580,7 @@ export class FoodsPanelComponent {
    *  adjusting the MyFoods baseline. */
   onBasketFoodDblClick(food: Food): void {
     this.selectedBasketFood.set(food);
-    this.openNfPopupForFood(food, 'edit');
+    this.openNfPopupForFood(food, 'edit', 'picks');
   }
 
   // ----- Basket helpers -----
@@ -1406,12 +1622,20 @@ export class FoodsPanelComponent {
       // No-op (silent); user already picked this one for that basket.
       return;
     }
+    // Stamp pickAddedAt at the moment the food lands in a basket so the
+    // server round-trip and any future cross-device sync preserve the order
+    // foods were chosen — bottom-up basket tile stack reads from this.
+    const stamped: Food = {
+      ...food,
+      pickAddedAt: food.pickAddedAt ?? new Date().toISOString(),
+      pickServingSize: food.pickServingSize ?? null,
+    };
     // Append (oldest first, newest last) — the basket-tiles flex layout uses
     // `wrap-reverse` so the first item lands bottom-left and the stack grows
     // upward as foods are added.
     this.thisWeekBaskets.update(b => ({
       ...b,
-      [key]: [...b[key], food],
+      [key]: [...b[key], stamped],
     }));
   }
 
@@ -1647,35 +1871,6 @@ export class FoodsPanelComponent {
       localStorage.setItem(key, JSON.stringify(foods));
     } catch {
       // quota or disabled storage — silently swallow
-    }
-  }
-
-  private loadBaskets(): ThisWeekBaskets {
-    try {
-      const raw = localStorage.getItem(LS_THISWEEK_BASKETS);
-      if (!raw) return emptyBaskets();
-      const parsed = JSON.parse(raw);
-      // Defensive: only accept the expected shape
-      const out: ThisWeekBaskets = emptyBaskets();
-      for (const k of BASKET_KEYS) {
-        if (Array.isArray(parsed?.[k])) out[k] = parsed[k] as Food[];
-      }
-      // Migrate legacy "Misc" key (renamed to "Other") so users with saved
-      // baskets from the old naming don't silently lose their food list.
-      if (Array.isArray(parsed?.Misc) && out.Other.length === 0) {
-        out.Other = parsed.Misc as Food[];
-      }
-      return out;
-    } catch {
-      return emptyBaskets();
-    }
-  }
-
-  private saveBaskets(baskets: ThisWeekBaskets): void {
-    try {
-      localStorage.setItem(LS_THISWEEK_BASKETS, JSON.stringify(baskets));
-    } catch {
-      // ignore
     }
   }
 

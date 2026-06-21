@@ -25,6 +25,13 @@ export type Food = FoodSchema & {
   // popup should fall through to `servingSize` (the baseline) for display
   // and macro math.
   userServingSize?: number | null;
+  // Pick-state metadata — only meaningful when the Food blob is sitting
+  // inside a Picks basket. `pickAddedAt` is the ISO timestamp captured when
+  // the food was first dropped into the basket (round-trips via CurrentPicks
+  // for stable ordering across devices). `pickServingSize` is the per-basket
+  // serving override; null means "no override; follow the MyFoods baseline".
+  pickAddedAt?: string;
+  pickServingSize?: number | null;
 };
 export type FoodSearchResponse = GeneratedFoodSearchResponse;
 

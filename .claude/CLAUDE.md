@@ -27,6 +27,18 @@ These are persisted product values or discriminators, unrelated to similarly-nam
 
 When a sweep touches a field whose token also appears in the list above, change ONLY the typed wire field; leave the persisted/discriminator/route values alone.
 
+## Optimizations (DO NOT pre-optimize)
+
+The target operating envelope is up to ~500 simultaneous users. At that scale, premature optimization is the bigger risk than load.
+
+- **Default to write-through**: every user action that mutates server state hits the API immediately. No client-side caching layers, no debounced batchers, no in-flight queues, no retry orchestration.
+- **Do not add debounce, throttle, request coalescing, optimistic queues, or local persistence as a "cache"** in net-new code unless explicitly asked. If you find yourself reaching for `setTimeout`/`setInterval` to "batch" or "throttle" API calls, STOP — that's an optimization, not a feature.
+- **Existing app-level caches** (e.g. `SettingsService.allSettingsSignal` — a load-once-on-startup signal) are fine to read from but don't extend them or invent new ones for new features.
+- **If a write path looks expensive** (high frequency × payload size × user count), instrument it for Kibana / metrics dashboards instead of trying to fix it in the client. We optimize after we observe — and only what the dashboards say is actually a problem.
+- **Server is the source of truth for shared state**. Reload-on-mount is the simplest, most-correct pattern; use it unless we have evidence it's a problem.
+- **Data-integrity guards are NOT optimizations** and DO belong in the client — e.g. "don't PUT empty state if the GET failed" is correctness, not perf. The distinction: optimizations skip or batch work; integrity guards prevent corrupting server state.
+- **Refactor to caching POST-LAUNCH** when metrics justify it, not in anticipation of load.
+
 ## TypeScript Best Practices
 
 - Use strict type checking
