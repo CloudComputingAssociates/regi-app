@@ -689,6 +689,54 @@
       font-size: 12px;
     }
 
+    // "-or-" separator between the protein ratio dropdown and the direct
+    // grams input. Subtle, lowercased, mid-grey so it reads as a hinge
+    // between two equivalent input modes rather than a label.
+    .grams-or {
+      color: #b0b0b0;
+      font-size: 12px;
+      font-style: italic;
+      padding: 0 6px;
+      user-select: none;
+    }
+
+    // Direct-grams protein input in the top Nutrition Targets row. Same
+    // green gradient + border as the .macro-protein input in the lower
+    // macro-grid so the two boxes visually read as a paired set.
+    .protein-grams-input {
+      width: 58px;
+      padding: 4px 6px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: #ffffff;
+      text-align: center;
+      background: linear-gradient(180deg, #467136 0%, #3d682c 100%);
+      border: 1px solid #41ac1788;
+      border-radius: 4px;
+      outline: none;
+
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      &[type="number"] { appearance: textfield; }
+
+      &:focus {
+        border-color: #6acc3d;
+        box-shadow: 0 0 0 2px rgba(106, 204, 61, 0.25);
+      }
+    }
+
+    .grams-suffix {
+      color: #d0d0d0;
+      font-size: 12px;
+      font-weight: 600;
+      padding-left: 4px;
+      user-select: none;
+    }
+
     .calories-label-row {
       display: flex;
       align-items: center;
@@ -1011,6 +1059,18 @@
   .unit-label {
     color: #ffffff;
     font-size: 12px;
+  }
+
+  // BMR readout — same blue as the last-updated line below it and the same
+  // small font size, but explicitly NOT italic so the two lines read as
+  // related-but-distinct: BMR is the live computed number, last-updated is
+  // the audit-trail note.
+  .pi-bmr {
+    color: #4da6ff;
+    font-size: 11px;
+    font-style: normal;
+    text-align: left;
+    padding: 0 0 0 2px;
   }
 
   .pi-last-updated {

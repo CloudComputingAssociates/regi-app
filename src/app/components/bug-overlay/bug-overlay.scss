@@ -1,0 +1,77 @@
+// Bug overlay — mirrors settings-overlay's chrome (dim backdrop + dim-yellow
+// bloom border) so the two surfaces feel like the same kind of floating
+// window. Cherry-picked from settings-overlay.scss; keep the two in sync
+// when the design changes.
+
+.bug-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5vh 10vw;
+}
+
+.bug-window {
+  position: relative;
+  width: 80vw;
+  height: 80vh;
+  max-width: 720px;
+  max-height: 800px;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #2f2f2f 0%, #262626 100%);
+  border: 1.5px solid rgba(255, 213, 79, 0.55);
+  border-radius: 16px;
+  box-shadow:
+    0 0 18px 2px rgba(255, 213, 79, 0.42),
+    0 0 36px 8px rgba(255, 193, 7, 0.25),
+    0 0 64px 16px rgba(255, 193, 7, 0.12),
+    0 12px 36px rgba(0, 0, 0, 0.55);
+  // overflow:visible so the .dialog-discs cluster can hang off the outside
+  // top-right corner. Inner .bug-body owns its own scroll boundary.
+  overflow: visible;
+}
+
+.bug-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 12px 18px;
+  background: linear-gradient(180deg, #3a3a3a 0%, #2f2f2f 100%);
+  border-bottom: 1px solid rgba(255, 213, 79, 0.25);
+  border-radius: 16px 16px 0 0;
+}
+
+// Dialog-disc cluster placement — mirrors settings-overlay so every dialog
+// in the app puts confirm/cancel in the same spot. Disc visual is global
+// in styles.scss.
+.dialog-discs {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  display: flex;
+  gap: 6px;
+  z-index: 5;
+}
+
+.bug-title {
+  font-family: 'Fredoka', Roboto, sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: rgba(255, 213, 79, 0.95);
+  text-shadow: 0 1px 6px rgba(255, 193, 7, 0.18);
+}
+
+.bug-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 18px;
+  border-radius: 0 0 16px 16px;
+}

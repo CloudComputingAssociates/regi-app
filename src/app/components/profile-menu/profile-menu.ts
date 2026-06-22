@@ -51,7 +51,7 @@ import { RoleService } from '../../services/role.service';
         </button>
 
         @if (roleService.isDevOrQA()) {
-          <button mat-menu-item class="menu-item" [class.active]="isTabOpen('issue')" (click)="toggleIssue()">
+          <button mat-menu-item class="menu-item" [class.active]="tabService.bugOpen()" (click)="toggleBug()">
             <mat-icon>bug_report</mat-icon>
             <span>Bug</span>
           </button>
@@ -82,7 +82,9 @@ export class ProfileMenuComponent {
   auth = inject(AuthService);
   subscriptionService = inject(SubscriptionService);
   roleService = inject(RoleService);
-  private tabService = inject(TabService);
+  // Public so the template can read tabService.bugOpen() for the Bug menu
+  // item's active state. Other tab queries still go through isTabOpen().
+  tabService = inject(TabService);
   private chatService = inject(ChatService);
   private settingsService = inject(SettingsService);
 
@@ -136,7 +138,13 @@ export class ProfileMenuComponent {
     this.tabService.togglePanel('help', 'Help');
   }
 
-  toggleIssue(): void {
-    this.tabService.togglePanel('issue', 'Bug');
+  toggleBug(): void {
+    // Bug is the overlay (mirrors Settings) — flip the service-level signal
+    // instead of pushing a panel onto the active-panel stack.
+    if (this.tabService.bugOpen()) {
+      this.tabService.closeBug();
+    } else {
+      this.tabService.openBug();
+    }
   }
 }

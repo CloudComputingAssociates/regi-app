@@ -699,6 +699,38 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
         </div>
       }
 
+      <!-- "Make MyFoods default match the pick?" alert dialog. Backdrop click
+           and the red X both behave as "No" — the pick override always
+           saves; the only question is whether the MyFoods baseline tags
+           along. -->
+      @if (baselineDialog(); as d) {
+        <div class="dialog-overlay" (click)="onBaselineDialogNo()">
+          <div class="alert-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+            <div class="alert-dialog-titlebar">
+              <span class="alert-dialog-title">Update MyFoods baseline?</span>
+              <button
+                type="button"
+                class="alert-dialog-close"
+                (click)="onBaselineDialogNo()"
+                aria-label="Close">✕</button>
+            </div>
+            <div class="alert-dialog-body">
+              Make MyFoods default {{ d.draft }} {{ d.unit }} as well?
+            </div>
+            <div class="alert-dialog-actions">
+              <button
+                type="button"
+                class="alert-dialog-btn alert-dialog-btn-yes"
+                (click)="onBaselineDialogYes()">Yes</button>
+              <button
+                type="button"
+                class="alert-dialog-btn alert-dialog-btn-no"
+                (click)="onBaselineDialogNo()">No</button>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Add Food → phone-app handoff placeholder. The actual flow runs in
            the phone app; this just nudges the user toward the QR / download. -->
       @if (showAddDialog()) {
@@ -1465,12 +1497,7 @@ export class FoodsPanelComponent {
       this.nfPopupOrigin.set(null);
       this.nfPopupFood.set(null);
       if (newOverride !== null) {
-        this.notificationService.showConfirmation(
-          `Make MyFoods default ${draft} ${food.servingUnit ?? 'unit'} as well?`,
-          'info',
-          () => this.preferencesService.setUserServingSize(food.id, draft, food.foodSource),
-          () => { /* user said no — pick override stands alone */ },
-        );
+        this.baselineDialog.set({ food, draft, unit: food.servingUnit ?? 'unit' });
       }
       return;
     }
@@ -1876,6 +1903,23 @@ export class FoodsPanelComponent {
 
   showAddDialog = signal(false);
   showHealthBenefits = signal(false);
+
+  /** Live "Make MyFoods baseline match the pick override?" dialog state.
+   *  Set when the user saves a Pick whose draft serving differs from the
+   *  MyFoods baseline. Yes → also write the baseline; No/X → only the pick
+   *  override stands. */
+  baselineDialog = signal<{ food: Food; draft: number; unit: string } | null>(null);
+
+  onBaselineDialogYes(): void {
+    const d = this.baselineDialog();
+    if (!d) return;
+    this.preferencesService.setUserServingSize(d.food.id, d.draft, d.food.foodSource);
+    this.baselineDialog.set(null);
+  }
+
+  onBaselineDialogNo(): void {
+    this.baselineDialog.set(null);
+  }
   nfPopupFood = signal<Food | null>(null);
 
   /** Current effective serving size displayed inside the NF popup, in food

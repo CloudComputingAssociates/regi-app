@@ -15,10 +15,8 @@ import { WeekPlanPanelComponent } from '../week-plan-panel/week-plan-panel';
 import { FoodsPanelComponent } from '../foods-panel/foods-panel';
 import { AccountPanelComponent } from '../account-panel/account-panel';
 import { TodayPanelComponent } from '../today-panel/today-panel';
-import { NotificationComponent } from '../notification/notification';
 import { VideoViewerComponent } from '../video-viewer/video-viewer';
 import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
-import { IssuePanelComponent } from '../issue-panel/issue-panel';
 
 @Component({
   selector: 'app-main-body',
@@ -32,10 +30,8 @@ import { IssuePanelComponent } from '../issue-panel/issue-panel';
     FoodsPanelComponent,
     AccountPanelComponent,
     TodayPanelComponent,
-    NotificationComponent,
     VideoViewerComponent,
-    RecipeViewerComponent,
-    IssuePanelComponent
+    RecipeViewerComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -54,16 +50,12 @@ import { IssuePanelComponent } from '../issue-panel/issue-panel';
         @case ('account') { <app-account-panel /> }
         @case ('video-viewer') { <app-video-viewer /> }
         @case ('web-viewer') { <app-recipe-viewer /> }
-        @case ('issue') { <app-issue-panel /> }
         @default {
           <div class="empty-state">
             <img src="/images/YEH3.png" alt="You Eating Healthy" class="empty-state-image" />
           </div>
         }
       }
-
-      <!-- Notification component (always present) -->
-      <app-notification />
 
       @if (tabService.blockedTabSwitch()) {
         <div class="confirm-overlay" (click)="cancelTabSwitch()">

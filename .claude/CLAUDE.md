@@ -27,6 +27,22 @@ These are persisted product values or discriminators, unrelated to similarly-nam
 
 When a sweep touches a field whose token also appears in the list above, change ONLY the typed wire field; leave the persisted/discriminator/route values alone.
 
+## Dialog conventions
+
+All dialogs / overlays in the app share one control vocabulary so users learn the chrome once and don't have to re-orient on each new surface.
+
+- **Confirm = round green disc with a check icon. Cancel = round red disc with an X icon.** Mac-style traffic-light visual; we're not using the Mac semantics (close / minimize / maximize), we're glomming onto the same shape for confirm/cancel because it reads instantly.
+- **Canonical size: 20 × 20 px, `border-radius: 50 %`.** Matches the `.basket-light` discs in foods-panel — the established size in this codebase. Do not invent new sizes.
+- **Colors: green `#28c941` (confirm), red `#ff5f57` (cancel).** Apple traffic-light palette.
+- **Position: hanging off the outside top-right corner of the dialog frame.** `position: absolute; top: -10px; right: -10px;` with a flex cluster gap of 6px. The dialog window needs `overflow: visible` so the discs aren't clipped by the rounded corner.
+- **Global classes**: `.dialog-disc` + `.dialog-disc-confirm` / `.dialog-disc-cancel` are defined in `src/styles.scss`. Each overlay places them with its own `.dialog-discs` wrapper but never re-styles the disc itself.
+- **Each dialog mounts the discs ONCE.** No duplicate Save/Close buttons elsewhere in the panel content — the discs are the only confirm/cancel surface. If you find a panel with internal ✓ / ✕ buttons inside the body, that's a leftover from the old chrome and should be removed.
+- **Backdrop click = cancel** (same effect as the red X), except when there are unsaved dirty changes — in that case the backdrop swallows the click and the user must press a disc explicitly.
+- **Disc disabled state**: the green confirm disc disables when there's nothing to save (`opacity: 0.35`, no hover scale). The red cancel disc is always enabled.
+- **Tooltip**: every disc has a `matTooltip` ("Save" / "Close") on hover for accessibility and discoverability.
+
+When building a new dialog, copy the pattern from `settings-overlay.ts` / `settings-overlay.scss`. Do not write a new dialog with `SAVE` / `CLOSE` text buttons — that's the deprecated chrome.
+
 ## Optimizations (DO NOT pre-optimize)
 
 The target operating envelope is up to ~500 simultaneous users. At that scale, premature optimization is the bigger risk than load.

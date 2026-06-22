@@ -13,6 +13,8 @@ import { ChatInputComponent } from './components/chat/chat-input/chat-input';
 import { PaywallComponent } from './components/paywall/paywall';
 import { LoadingOverlayComponent } from './components/loading-overlay/loading-overlay';
 import { SettingsOverlayComponent } from './components/settings-overlay/settings-overlay';
+import { BugOverlayComponent } from './components/bug-overlay/bug-overlay';
+import { NotificationComponent } from './components/notification/notification';
 import { SubscriptionService } from './services/subscription.service';
 import { SettingsService } from './services/settings.service';
 import { TabService } from './services/tab.service';
@@ -46,6 +48,8 @@ const LEFT_NAV_PANEL_IDS = new Set([
     PaywallComponent,
     LoadingOverlayComponent,
     SettingsOverlayComponent,
+    BugOverlayComponent,
+    NotificationComponent,
     MatTooltipModule
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -96,6 +100,13 @@ const LEFT_NAV_PANEL_IDS = new Set([
       <!-- Settings overlay floats above everything when triggered. Its
            open state lives on TabService so any UI element can flip it. -->
       <app-settings-overlay />
+      <app-bug-overlay />
+      <!-- Notification toast lives at the app root (not inside main-body)
+           so its z-index: 9999 punches above the overlays' z-index: 1100.
+           Mounted inside main-body, it was trapped in main-body's stacking
+           context and rendered behind the Settings dialog backdrop, making
+           the confirmation buttons unclickable. -->
+      <app-notification />
     </div>
   `,
   styleUrls: ['./app.scss']

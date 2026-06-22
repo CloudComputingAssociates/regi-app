@@ -52,34 +52,11 @@ import { MatIconModule } from '@angular/material/icon';
           </div>
         }
         <div class="panel-content">
-          <!-- Action buttons -->
-          <div class="action-buttons">
-            <div class="action-right">
-              <button
-                class="icon-btn save-btn"
-                [class.has-changes]="hasAnyChanges()"
-                [disabled]="isSaving()"
-                (click)="save()"
-                matTooltip="Save"
-                matTooltipPosition="above"
-                [matTooltipShowDelay]="300">
-                @if (isSaving()) {
-                  <span class="save-spinner"></span>
-                } @else {
-                  ✓
-                }
-              </button>
-              <button
-                class="icon-btn close-btn"
-                (click)="close()"
-                matTooltip="Close"
-                matTooltipPosition="above"
-                [matTooltipShowDelay]="300">
-                ✕
-              </button>
-            </div>
-          </div>
-
+          <!-- Save / Close controls were removed from inside the panel; the
+               wrapping SettingsOverlayComponent now exposes the round
+               green-check / red-X dialog controls per the dialog convention
+               in CLAUDE.md. The panel's save() method is still public so
+               the overlay can call it via @ViewChild. -->
           <div class="settings-wrapper">
             <!-- Personal Info -->
             <div class="accordion-section">
@@ -165,6 +142,7 @@ import { MatIconModule } from '@angular/material/icon';
                     <option value="extremely_active">Ext. Active</option>
                   </select>
                 </div>
+                <div class="pi-bmr">BMR: {{ bmrLabel() }} cals</div>
                 <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
               </div>
             </div>
@@ -182,11 +160,11 @@ import { MatIconModule } from '@angular/material/icon';
                     <input type="checkbox"
                       [ngModel]="userSettingsService.dailyGoals().isOverridden"
                       (ngModelChange)="onOverrideChange($event)" />
-                    User override
+                    User Overridden
                   </label>
                   <span class="info-icon"
                         #overrideTooltip="matTooltip"
-                        matTooltip="Nutrition Targets calculated by your Personal Info can be overridden for more granular control."
+                        matTooltip="Lit when you've manually changed one or more Nutrition Targets, so the values shown have overridden the calculated defaults. Uncheck to discard your overrides and revert to values computed from your Personal Info."
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
                         (click)="overrideTooltip.toggle()">&#9432;</span>
@@ -208,13 +186,23 @@ import { MatIconModule } from '@angular/material/icon';
                       [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     <span class="slider-value">{{ carbSliderLabel() }}</span>
                   </div>
-                  <!-- Protein ratio dropdown -->
+                  <!-- Protein ratio dropdown + direct-grams shortcut.
+                       The dropdown is one rung from {0.5..1.2 g/lb}. The
+                       grams input next to it lets the user type a target
+                       directly — useful when they want a specific number
+                       that doesn't fall on a ratio rung. Typing in the
+                       grams box auto-overrides; the dropdown shows blank
+                       when the saved ratio is off-rung (Angular's default
+                       behavior when ngModel doesn't match any option).
+                       Both grams boxes (this one and the lower green one
+                       in the macro-grid) share a live-draft signal so a
+                       keystroke in either reflects in both. Backspace to
+                       empty + blur reverts to the pre-edit ratio. -->
                   <div class="macro-control-row">
                     <label class="setting-label">Proteins</label>
                     <select class="setting-select protein-select"
                       [ngModel]="userSettingsService.effectiveProteinRatio()"
-                      (ngModelChange)="onProteinRatioChange($event)"
-                      [disabled]="!userSettingsService.dailyGoals().isOverridden">
+                      (ngModelChange)="onProteinRatioChange($event)">
                       <option [ngValue]="0.5">0.5 g/lb</option>
                       <option [ngValue]="0.7">0.7 g/lb</option>
                       <option [ngValue]="0.8">0.8 g/lb</option>
@@ -223,7 +211,13 @@ import { MatIconModule } from '@angular/material/icon';
                       <option [ngValue]="1.1">1.1 g/lb</option>
                       <option [ngValue]="1.2">1.2 g/lb</option>
                     </select>
-                    <span class="macro-hint">of body weight</span>
+                    <span class="grams-or">-or-</span>
+                    <input type="number" class="protein-grams-input"
+                      [ngModel]="topProteinGramsDisplay()"
+                      (ngModelChange)="onProteinGramsChange($event)"
+                      (focus)="onProteinGramsFocus()"
+                      (blur)="onProteinGramsBlur()" />
+                    <span class="grams-suffix">g</span>
                   </div>
                   <div class="macro-separator"></div>
                   <div class="calories-label-row">
@@ -247,7 +241,8 @@ import { MatIconModule } from '@angular/material/icon';
                       <label>Proteins {{ userSettingsService.showPercent() ? '%' : 'g' }}</label>
                       <input type="number" [ngModel]="proteinDisplay()"
                              (ngModelChange)="onMacroFieldChange('protein', $event)"
-                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                             (focus)="onProteinGramsFocus()"
+                             (blur)="onProteinGramsBlur()" />
                     </div>
                     <div class="target-field macro-fat">
                       <label>Fats {{ userSettingsService.showPercent() ? '%' : 'g' }}</label>
@@ -889,6 +884,111 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     }
   }
 
+  // ============================================================
+  // Direct-grams protein entry (top + bottom share state)
+  // ============================================================
+
+  /** Raw text in the protein grams input(s) while the user is mid-edit.
+   *  null = not editing; the inputs fall back to dailyGoals.protein. A non-
+   *  null string takes priority so both boxes mirror each keystroke (even
+   *  during a backspace-to-empty walk). On blur with an empty value we
+   *  restore the pre-edit ratio — this is the "tip-toe back out" reset. */
+  proteinGramsDraft = signal<string | null>(null);
+
+  /** Snapshots taken on focus of either grams input so we can revert if the
+   *  user backspaces to empty and blurs. Plain class members (not signals)
+   *  because they're transient and don't drive any reactive UI. */
+  private preEditProtein: number | null = null;
+  private preEditRatio: number | undefined = undefined;
+
+  /** Display value for the top grams input — prefers the live draft when
+   *  the user is editing, falls back to the persisted protein in grams. */
+  topProteinGramsDisplay = computed<string | number>(() => {
+    const draft = this.proteinGramsDraft();
+    if (draft !== null) return draft;
+    return this.userSettingsService.dailyGoals().protein;
+  });
+
+  /** BMR shown above "last updated" in the Personal Info panel. Em-dash
+   *  when any required input is missing (matches how the lower-half date
+   *  field handles undefined values). */
+  bmrLabel = computed<string>(() => {
+    const bmr = this.userSettingsService.computedBMR();
+    return bmr === null ? '—' : String(bmr);
+  });
+
+  /** Focus of either grams input — snapshot the pre-edit state once. The
+   *  second focus (e.g. user clicks from top to bottom while editing) is a
+   *  no-op since preEditProtein is already set. */
+  onProteinGramsFocus(): void {
+    if (this.preEditProtein !== null) return;
+    this.preEditProtein = this.userSettingsService.dailyGoals().protein;
+    this.preEditRatio = this.userSettingsService.personalInfo().proteinRatio;
+  }
+
+  /** Live-typed grams value from either grams input. Empty / non-positive
+   *  input is held as a draft (no state write) so the box can show empty
+   *  without zeroing the rest of the UI — the blur handler reverts. A
+   *  valid positive number is written to dailyGoals.protein AND the
+   *  implied ratio is computed (grams / target_lbs) so the dropdown's
+   *  saved value reflects the user's actual entry, off-rung or not. */
+  onProteinGramsChange(value: string | number | null): void {
+    const str = value === null || value === undefined ? '' : String(value);
+    this.proteinGramsDraft.set(str);
+
+    const n = parseFloat(str);
+    if (!Number.isFinite(n) || n <= 0) return;
+
+    if (!this.userSettingsService.dailyGoals().isOverridden) {
+      this.userSettingsService.setIsOverridden(true);
+    }
+
+    // Recompute implied ratio so the dropdown's bound value reflects what
+    // the user actually entered. Off-rung values (e.g. 0.75) leave the
+    // select rendering blank — Angular's natural behavior when ngModel
+    // doesn't match any option.
+    const targetKg = this.userSettingsService.personalInfo().targetWeightKg;
+    if (targetKg) {
+      const targetLbs = PreferencesService.kgToLbs(targetKg);
+      if (targetLbs > 0) {
+        this.userSettingsService.setProteinRatio(n / targetLbs);
+      }
+    }
+
+    this.userSettingsService.updateDailyGoal('protein', n);
+    const dg = this.userSettingsService.dailyGoals();
+    const newFat = Math.max(0, Math.round((dg.calories - dg.protein * 4 - dg.carbs * 4) / 9));
+    this.userSettingsService.updateDailyGoal('fat', newFat);
+    this.syncMacros();
+  }
+
+  /** Blur of either grams input — if the draft is empty (user backspaced
+   *  all the way out), restore the pre-edit ratio + protein and rebalance.
+   *  Otherwise just clear the draft so the displayed value falls back to
+   *  the (now-up-to-date) state. */
+  onProteinGramsBlur(): void {
+    const draft = this.proteinGramsDraft();
+    const n = draft === null ? NaN : parseFloat(draft);
+    const isEmpty = draft === null || draft === '' || !Number.isFinite(n) || n <= 0;
+
+    if (isEmpty && this.preEditProtein !== null) {
+      if (this.preEditRatio !== undefined) {
+        this.userSettingsService.setProteinRatio(this.preEditRatio);
+      } else {
+        this.userSettingsService.clearProteinRatio();
+      }
+      this.userSettingsService.updateDailyGoal('protein', this.preEditProtein);
+      const dg = this.userSettingsService.dailyGoals();
+      const newFat = Math.max(0, Math.round((dg.calories - dg.protein * 4 - dg.carbs * 4) / 9));
+      this.userSettingsService.updateDailyGoal('fat', newFat);
+      this.syncMacros();
+    }
+
+    this.proteinGramsDraft.set(null);
+    this.preEditProtein = null;
+    this.preEditRatio = undefined;
+  }
+
   onCarbScaleChange(value: number): void {
     // Convert % → grams if in percent mode
     let grams = +value;
@@ -956,6 +1056,26 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     }
 
     this.userSettingsService.updateDailyGoal(field, grams);
+
+    // Protein: keep the implied ratio + top-grams draft in sync so the
+    // dropdown and the top grams input track the lower box's edits. Same
+    // contract as the dedicated onProteinGramsChange handler.
+    if (field === 'protein') {
+      const targetKg = this.userSettingsService.personalInfo().targetWeightKg;
+      if (targetKg && grams > 0) {
+        const targetLbs = PreferencesService.kgToLbs(targetKg);
+        if (targetLbs > 0) {
+          this.userSettingsService.setProteinRatio(grams / targetLbs);
+        }
+      }
+      // Mirror the live value into the draft so the top grams input shows
+      // the same typed number as the lower one (only matters in g mode —
+      // in % mode the top input naturally lags one keystroke as the user
+      // backspaces, which is acceptable since the user is operating in %).
+      if (!this.userSettingsService.showPercent()) {
+        this.proteinGramsDraft.set(grams > 0 ? String(grams) : '');
+      }
+    }
 
     // Keep carb slider in sync when carbs field changes
     if (field === 'carbs') {

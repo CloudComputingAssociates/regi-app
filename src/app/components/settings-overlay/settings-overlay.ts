@@ -3,12 +3,13 @@
 // Settings overlay — replaces the old "Settings as a tab" model. Settings is
 // a different kind of window: it floats over whichever panel is active at
 // 80% of the viewport, with a dim-yellow "bloom" border that's consistent
-// with how the phone app surfaces important context. Has a Save / Close
-// header in place of a plain X to signal that there's a commit step.
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+// with how the phone app surfaces important context. Dialog controls follow
+// the project convention (CLAUDE.md > Dialog conventions): round 20×20
+// green-check / red-X discs hanging off the outside top-right corner.
+import { Component, ChangeDetectionStrategy, inject, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { PreferencesPanelComponent } from '../preferences-panel/preferences-panel';
 import { PreferencesService } from '../../services/preferences.service';
 import { TabService } from '../../services/tab.service';
@@ -16,32 +17,43 @@ import { TabService } from '../../services/tab.service';
 @Component({
   selector: 'app-settings-overlay',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule, PreferencesPanelComponent],
+  imports: [CommonModule, MatIconModule, MatTooltipModule, PreferencesPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (isOpen()) {
       <div class="settings-backdrop" (click)="onBackdropClick()">
         <div class="settings-window" (click)="$event.stopPropagation()">
+          <!-- Dialog controls — round Mac-style discs hanging off the
+               outside top-right corner. Green check = save & close.
+               Red X = close without saving. -->
+          <div class="dialog-discs">
+            <button
+              type="button"
+              class="dialog-disc dialog-disc-confirm"
+              [disabled]="!preferencesService.hasDirtyGroups()"
+              (click)="onSave()"
+              matTooltip="Save"
+              matTooltipPosition="below"
+              [matTooltipShowDelay]="300"
+              aria-label="Save settings">
+              <mat-icon>check</mat-icon>
+            </button>
+            <button
+              type="button"
+              class="dialog-disc dialog-disc-cancel"
+              (click)="onClose()"
+              matTooltip="Close"
+              matTooltipPosition="below"
+              [matTooltipShowDelay]="300"
+              aria-label="Close settings">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
           <div class="settings-header">
             <span class="settings-title">Settings</span>
-            <div class="settings-actions">
-              <button
-                type="button"
-                class="settings-action settings-save"
-                [disabled]="!preferencesService.hasDirtyGroups()"
-                (click)="onSave()">
-                Save
-              </button>
-              <button
-                type="button"
-                class="settings-action settings-close"
-                (click)="onClose()">
-                Close
-              </button>
-            </div>
           </div>
           <div class="settings-body">
-            <app-preferences-panel />
+            <app-preferences-panel #panel />
           </div>
         </div>
       </div>
@@ -52,6 +64,11 @@ import { TabService } from '../../services/tab.service';
 export class SettingsOverlayComponent {
   private tabService = inject(TabService);
   preferencesService = inject(PreferencesService);
+
+  /** Handle on the embedded PreferencesPanelComponent so the green-check
+   *  disc can trigger its save() flow. The panel owns the persistence; the
+   *  overlay just sequences "save → close." */
+  private panel = viewChild.required(PreferencesPanelComponent);
 
   /** Open state is read straight from the service so any UI element can
    *  flip it (LeftNav, ProfileMenu, etc.) without needing a template ref. */
@@ -65,15 +82,19 @@ export class SettingsOverlayComponent {
   }
 
   onClose(): void {
-    // Close = discard semantically. The Save button is the commit path.
+    // Red X = discard semantically. The green check is the commit path.
     this.preferencesService.resetDirtyGroups();
     this.tabService.closeSettings();
   }
 
-  onSave(): void {
-    // The embedded PreferencesPanelComponent owns the actual persistence.
-    // Here we just close the overlay; the panel writes through on its own
-    // Save flow which is already wired.
+  async onSave(): Promise<void> {
+    // Trigger the panel's save flow then close. Close happens regardless of
+    // save outcome; the panel surfaces its own error toast on failure.
+    try {
+      await this.panel().save();
+    } catch (err) {
+      console.error('[SettingsOverlay] panel save failed:', err);
+    }
     this.tabService.closeSettings();
   }
 }

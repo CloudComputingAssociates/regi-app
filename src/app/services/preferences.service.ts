@@ -117,22 +117,30 @@ export class PreferencesService {
   // COMPUTED NUTRITION (Mifflin-St. Jeor)
   // ========================================================
 
-  /** TDEE computed from personal info via Mifflin-St. Jeor + activity multiplier */
-  readonly computedTDEE = computed(() => {
+  /** Basal Metabolic Rate via Mifflin-St. Jeor — the rate before activity
+   *  multiplier. Activity level is NOT required for this (unlike TDEE), so
+   *  this returns a value as soon as sex + DOB + height + weight are known.
+   *  Surfaces directly in the Settings dialog so the user can sanity-check
+   *  the baseline without leaving the app for an external calculator. */
+  readonly computedBMR = computed(() => {
     const pi = this.personalInfo();
-    if (!pi.sex || !pi.dateOfBirth || !pi.heightCm || !pi.currentWeightKg || !pi.activityLevel) {
+    if (!pi.sex || !pi.dateOfBirth || !pi.heightCm || !pi.currentWeightKg) {
       return null;
     }
     const age = PreferencesService.calcAge(pi.dateOfBirth);
     if (age <= 0) return null;
-
-    // Mifflin-St. Jeor: BMR
-    // Male:   10 * weight(kg) + 6.25 * height(cm) - 5 * age - 5 + 166 => +5
-    // Female: 10 * weight(kg) + 6.25 * height(cm) - 5 * age - 161
     const bmr = pi.sex === 'male'
       ? 10 * pi.currentWeightKg + 6.25 * pi.heightCm - 5 * age + 5
       : 10 * pi.currentWeightKg + 6.25 * pi.heightCm - 5 * age - 161;
+    return Math.round(bmr);
+  });
 
+  /** TDEE computed from personal info via Mifflin-St. Jeor + activity multiplier */
+  readonly computedTDEE = computed(() => {
+    const pi = this.personalInfo();
+    if (!pi.activityLevel) return null;
+    const bmr = this.computedBMR();
+    if (bmr === null) return null;
     const multiplier = PreferencesService.activityMultiplier(pi.activityLevel);
     return Math.round(bmr * multiplier);
   });

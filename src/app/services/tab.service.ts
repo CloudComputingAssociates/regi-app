@@ -266,6 +266,13 @@ export class TabService {
   openSettings(): void { this.settingsOpen.set(true); }
   closeSettings(): void { this.settingsOpen.set(false); }
 
+  // Bug-ticket overlay — same model as settings: floats over whichever panel
+  // is active. Profile menu's "Bug" entry flips this; the overlay's own
+  // Close button (or backdrop click) flips it back.
+  readonly bugOpen = signal(false);
+  openBug(): void { this.bugOpen.set(true); }
+  closeBug(): void { this.bugOpen.set(false); }
+
   // ============================================================
   // Single-active panel APIs (replaces the mat-tab strip model)
   // ============================================================
