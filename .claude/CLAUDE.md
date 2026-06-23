@@ -38,8 +38,8 @@ All dialogs / overlays in the app share one control vocabulary so users learn th
 - **Global classes**: `.dialog-disc` + `.dialog-disc-confirm` / `.dialog-disc-cancel` are defined in `src/styles.scss`. Each overlay places them with its own `.dialog-discs` wrapper but never re-styles the disc itself.
 - **Each dialog mounts the discs ONCE.** No duplicate Save/Close buttons elsewhere in the panel content — the discs are the only confirm/cancel surface. If you find a panel with internal ✓ / ✕ buttons inside the body, that's a leftover from the old chrome and should be removed.
 - **Backdrop click = cancel** (same effect as the red X), except when there are unsaved dirty changes — in that case the backdrop swallows the click and the user must press a disc explicitly.
-- **Disc disabled state**: the green confirm disc disables when there's nothing to save (`opacity: 0.35`, no hover scale). The red cancel disc is always enabled.
-- **Tooltip**: every disc has a `matTooltip` ("Save" / "Close") on hover for accessibility and discoverability.
+- **Disc visibility: appear-only-when-actionable.** The red cancel disc is ALWAYS present and serves as both "close" and "cancel." The green confirm disc APPEARS only when there's something to commit (dirty changes, valid form, etc.) — when nothing is committable, the green disc is absent from the DOM, not greyed-out. Disabled-grey buttons read as dead weight; conditional rendering reads as "now you can act." Use `@if` on the green button, never a `[disabled]` binding.
+- **Tooltip**: every disc has a `matTooltip` ("Save" / "Submit" / "Close" / etc.) on hover for accessibility and discoverability.
 
 When building a new dialog, copy the pattern from `settings-overlay.ts` / `settings-overlay.scss`. Do not write a new dialog with `SAVE` / `CLOSE` text buttons — that's the deprecated chrome.
 

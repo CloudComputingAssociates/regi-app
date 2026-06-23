@@ -24,20 +24,23 @@ import { TabService } from '../../services/tab.service';
       <div class="settings-backdrop" (click)="onBackdropClick()">
         <div class="settings-window" (click)="$event.stopPropagation()">
           <!-- Dialog controls — round Mac-style discs hanging off the
-               outside top-right corner. Green check = save & close.
-               Red X = close without saving. -->
+               outside top-right corner. Green check APPEARS only when
+               there's something to save (no disabled-grey state — the
+               disc is either fully alive or absent). Red X is always
+               present and serves as both "close" and "cancel". -->
           <div class="dialog-discs">
-            <button
-              type="button"
-              class="dialog-disc dialog-disc-confirm"
-              [disabled]="!preferencesService.hasDirtyGroups()"
-              (click)="onSave()"
-              matTooltip="Save"
-              matTooltipPosition="below"
-              [matTooltipShowDelay]="300"
-              aria-label="Save settings">
-              <mat-icon>check</mat-icon>
-            </button>
+            @if (preferencesService.hasDirtyGroups()) {
+              <button
+                type="button"
+                class="dialog-disc dialog-disc-confirm"
+                (click)="onSave()"
+                matTooltip="Save"
+                matTooltipPosition="below"
+                [matTooltipShowDelay]="300"
+                aria-label="Save settings">
+                <mat-icon>check</mat-icon>
+              </button>
+            }
             <button
               type="button"
               class="dialog-disc dialog-disc-cancel"

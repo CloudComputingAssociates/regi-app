@@ -22,23 +22,22 @@ import { TabService } from '../../services/tab.service';
         <div class="bug-window" (click)="$event.stopPropagation()">
           <!-- Dialog controls — green-check (submit) + red-X (close) discs
                hanging off the outside top-right corner per CLAUDE.md >
-               Dialog conventions. The green disc is the ONLY submit
-               affordance; the panel has no inline submit button. Disabled
-               when the form isn't ready (empty fields, mid-submit, or
-               already-submitted success state) via the panel's public
-               canSubmit() computed. -->
+               Dialog conventions. The green disc APPEARS only when the
+               form is submittable (no disabled-grey state). Red X is
+               always present and serves as both "close" and "cancel". -->
           <div class="dialog-discs">
-            <button
-              type="button"
-              class="dialog-disc dialog-disc-confirm"
-              [disabled]="!panel.canSubmit()"
-              (click)="onSubmit(panel)"
-              matTooltip="Submit"
-              matTooltipPosition="below"
-              [matTooltipShowDelay]="300"
-              aria-label="Submit bug">
-              <mat-icon>check</mat-icon>
-            </button>
+            @if (issuePanel.canSubmit()) {
+              <button
+                type="button"
+                class="dialog-disc dialog-disc-confirm"
+                (click)="onSubmit(issuePanel)"
+                matTooltip="Submit"
+                matTooltipPosition="below"
+                [matTooltipShowDelay]="300"
+                aria-label="Submit bug">
+                <mat-icon>check</mat-icon>
+              </button>
+            }
             <button
               type="button"
               class="dialog-disc dialog-disc-cancel"
@@ -54,7 +53,7 @@ import { TabService } from '../../services/tab.service';
             <span class="bug-title">Bug — Ticket Submission Form</span>
           </div>
           <div class="bug-body">
-            <app-issue-panel #panel />
+            <app-issue-panel #issuePanel />
           </div>
         </div>
       </div>
@@ -79,8 +78,7 @@ export class BugOverlayComponent {
    *  and updates its internal `submitted` signal — overlay stays open so
    *  the user can see the success state and either close or submit
    *  another. (No auto-close on success: a closing animation would steal
-   *  the confirmation feedback.) Uses the template-ref instance for
-   *  symmetry with the [disabled] binding above. */
+   *  the confirmation feedback.) */
   async onSubmit(panel: IssuePanelComponent): Promise<void> {
     await panel.submitIssue();
   }
