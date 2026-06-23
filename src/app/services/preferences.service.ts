@@ -605,10 +605,17 @@ export class PreferencesService {
     return age;
   }
 
+  /** TDEE activity multipliers — Harris-Benedict / Mifflin-St. Jeor standard.
+   *  5 of these 6 are the canonical multipliers every nutrition calculator
+   *  uses; `light_moderate` (1.4654, 4-5 d/wk) is the optional 6th tier from
+   *  calculator.net that gives users finer granularity between Light and
+   *  Moderate. Keep this list in lockstep with ValidActivityLevels in the
+   *  schema and the dropdown options in preferences-panel.ts. */
   static activityMultiplier(level: string): number {
     switch (level) {
       case 'sedentary': return 1.2;
       case 'lightly_active': return 1.375;
+      case 'light_moderate': return 1.4654;
       case 'moderately_active': return 1.55;
       case 'very_active': return 1.725;
       case 'extremely_active': return 1.9;

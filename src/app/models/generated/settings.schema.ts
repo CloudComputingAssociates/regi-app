@@ -86,6 +86,10 @@ export interface DailyGoals {
    * Daily sodium target in mg
    */
   sodium: number;
+  /**
+   * When true, user has manually edited daily goals. UX will not overwrite with calculated values until user unchecks and saves.
+   */
+  isOverridden?: boolean;
 }
 /**
  * User physical profile for nutrition calculations
@@ -115,9 +119,15 @@ export interface PersonalInfo {
    */
   targetWeightKg?: number;
   /**
-   * Physical activity level for TDEE calculation
+   * Physical activity level for TDEE calculation. light_moderate (1.4654 multiplier, 4-5 days/week) sits between lightly_active (1.375) and moderately_active (1.55) for finer granularity, mirroring the 6-tier scale calculator.net uses.
    */
-  activityLevel?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
+  activityLevel?:
+    | "sedentary"
+    | "lightly_active"
+    | "light_moderate"
+    | "moderately_active"
+    | "very_active"
+    | "extremely_active";
   /**
    * Protein ratio in g per lb of target weight
    */
@@ -130,26 +140,22 @@ export interface PersonalInfo {
    * Caloric adjustment percent: negative = deficit (losing weight), positive = surplus (gaining weight). E.g. -20 means 20% lowered, +10 means 10% raised.
    */
   deficitPercent?: number;
-}
-/**
- * Consolidated response for GET /api/user/settings (all settings at once)
- *
- * This interface was referenced by `UserSettingsSchema`'s JSON-Schema
- * via the `definition` "AllSettingsResponse".
- */
-export interface AllSettingsResponse {
-  tabs?: TabSettings;
-  regiMenu?: RegiMenuSettings;
   /**
-   * Default food list filter
+   * Calculated daily calorie target derived from BMR/TDEE/deficit
    */
-  defaultFoodList?: "yeh_approved" | "all_foods";
-  dailyGoals?: DailyGoals;
-  personalInfo?: PersonalInfo;
+  calcCalories?: number;
   /**
-   * User's recurring shopping staple items
+   * Calculated daily protein in grams (proteinRatio × targetWeight in lbs)
    */
-  shoppingStaples?: ShoppingStaple[];
+  calcProtein?: number;
+  /**
+   * Calculated daily fat in grams (remaining calories after protein and carbs)
+   */
+  calcFats?: number;
+  /**
+   * Calculated daily carbs in grams (from carbScaleGrams)
+   */
+  calcCarbs?: number;
 }
 /**
  * A single shopping staple item
@@ -190,4 +196,58 @@ export interface ShoppingStaple {
    * Display order within category
    */
   sortOrder?: number;
+}
+/**
+ * A single basket pick (curated food staged for menu planning)
+ *
+ * This interface was referenced by `UserSettingsSchema`'s JSON-Schema
+ * via the `definition` "CurrentPick".
+ */
+export interface CurrentPick {
+  /**
+   * References Foods.FoodID (foodSource='food') or UserFoods.UserFoodID (foodSource='userfood')
+   */
+  foodId: number;
+  /**
+   * Discriminator selecting which table foodId references
+   */
+  foodSource: "food" | "userfood";
+  /**
+   * Which UI basket this pick belongs to
+   */
+  basketKey: "Proteins" | "Fats" | "Carbs" | "Other";
+  /**
+   * Per-basket serving-size override; null = use the food's baseline serving
+   */
+  pickServingSize?: number | null;
+  /**
+   * When the pick was added — used for stable ordering within a basket
+   */
+  addedAt: string;
+}
+/**
+ * Consolidated response for GET /api/user/settings (all settings at once)
+ *
+ * This interface was referenced by `UserSettingsSchema`'s JSON-Schema
+ * via the `definition` "AllSettingsResponse".
+ */
+export interface AllSettingsResponse {
+  tabs?: TabSettings;
+  regiMenu?: RegiMenuSettings;
+  /**
+   * Default food list filter
+   */
+  defaultFoodList?: "yeh_approved" | "all_foods";
+  dailyGoals?: DailyGoals;
+  personalInfo?: PersonalInfo;
+  /**
+   * User's recurring shopping staple items
+   */
+  shoppingStaples?: ShoppingStaple[];
+  /**
+   * User's curated basket picks (server-persisted staging for menu planning)
+   *
+   * @maxItems 200
+   */
+  currentPicks?: CurrentPick[];
 }

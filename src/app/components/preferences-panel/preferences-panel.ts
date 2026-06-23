@@ -136,13 +136,14 @@ import { MatIconModule } from '@angular/material/icon';
                     (ngModelChange)="onActivityLevelChange($event)">
                     <option value="">—</option>
                     <option value="sedentary">Sedentary</option>
-                    <option value="lightly_active">Lightly Active</option>
-                    <option value="moderately_active">Mod. Active</option>
-                    <option value="very_active">Very Active</option>
-                    <option value="extremely_active">Ext. Active</option>
+                    <option value="lightly_active">Lightly Active (1-3 d/wk)</option>
+                    <option value="light_moderate">Lt-Mod (4-5 d/wk)</option>
+                    <option value="moderately_active">Mod. Active (daily / intense 3-4)</option>
+                    <option value="very_active">Very Active (intense 6-7)</option>
+                    <option value="extremely_active">Ext. Active (2×/day, physical job)</option>
                   </select>
                 </div>
-                <div class="pi-bmr">BMR: {{ bmrLabel() }} cals</div>
+                <div class="pi-bmr">{{ bmrTdeeLabel() }}</div>
                 <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
               </div>
             </div>
@@ -909,12 +910,49 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     return this.userSettingsService.dailyGoals().protein;
   });
 
-  /** BMR shown above "last updated" in the Personal Info panel. Em-dash
-   *  when any required input is missing (matches how the lower-half date
-   *  field handles undefined values). */
-  bmrLabel = computed<string>(() => {
+  /** Display labels for the activity dropdown — short forms used in the
+   *  BMR → TDEE one-liner so power users can sanity-check the multiplier
+   *  against any external calculator. Lockstep with the dropdown options
+   *  above and the multiplier switch in preferences.service.ts. */
+  private static readonly ACTIVITY_LABELS: Record<string, string> = {
+    sedentary: 'Sedentary',
+    lightly_active: 'Lightly Active',
+    light_moderate: 'Lt-Mod',
+    moderately_active: 'Moderately Active',
+    very_active: 'Very Active',
+    extremely_active: 'Extremely Active',
+  };
+  private static readonly ACTIVITY_MULTIPLIERS: Record<string, number> = {
+    sedentary: 1.2,
+    lightly_active: 1.375,
+    light_moderate: 1.4654,
+    moderately_active: 1.55,
+    very_active: 1.725,
+    extremely_active: 1.9,
+  };
+
+  /** Single-line BMR + TDEE readout under the Activity dropdown. Shows
+   *  "BMR 2,656 → 4,117 cals (Moderately Active × 1.55)" — the BMR half is
+   *  static (proves the underlying math against any external calculator);
+   *  the TDEE half + multiplier name update live as the user changes the
+   *  Activity dropdown. Em-dash short-circuit when any input is missing.
+   *
+   *  Credibility note: the math here is Mifflin-St. Jeor + standard 6-tier
+   *  multipliers — same formula calculator.net, MyFitnessPal, and the NIH
+   *  calculator use. If a user sees a number that doesn't match one of
+   *  those tools, the inputs differ (lb→kg rounding, exact age, etc.) —
+   *  not the formula. */
+  bmrTdeeLabel = computed<string>(() => {
     const bmr = this.userSettingsService.computedBMR();
-    return bmr === null ? '—' : String(bmr);
+    if (bmr === null) return 'BMR: — cals';
+    const activity = this.userSettingsService.personalInfo().activityLevel;
+    if (!activity) {
+      return `BMR ${bmr.toLocaleString()} cals (pick Activity for TDEE)`;
+    }
+    const mult = PreferencesPanelComponent.ACTIVITY_MULTIPLIERS[activity] ?? 1;
+    const label = PreferencesPanelComponent.ACTIVITY_LABELS[activity] ?? activity;
+    const tdee = Math.round(bmr * mult);
+    return `BMR ${bmr.toLocaleString()} → ${tdee.toLocaleString()} cals (${label} × ${mult})`;
   });
 
   /** Focus of either grams input — snapshot the pre-edit state once. The
