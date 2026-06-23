@@ -30,9 +30,9 @@
     0 0 36px 8px rgba(255, 193, 7, 0.25),
     0 0 64px 16px rgba(255, 193, 7, 0.12),
     0 12px 36px rgba(0, 0, 0, 0.55);
-  // overflow:visible so the .dialog-discs cluster can hang off the outside
-  // top-right corner. Inner .bug-body owns its own scroll boundary.
-  overflow: visible;
+  // Discs sit INSIDE the frame now, so the window clips its rounded
+  // corners again. Inner .bug-body owns its own scroll boundary.
+  overflow: hidden;
 }
 
 .bug-header {
@@ -47,13 +47,14 @@
   border-radius: 16px 16px 0 0;
 }
 
-// Dialog-disc cluster placement — mirrors settings-overlay so every dialog
-// in the app puts confirm/cancel in the same spot. Disc visual is global
-// in styles.scss.
+// Dialog-disc cluster placement — inside the top-right corner with a few
+// pixels of breathing room from both edges. Mirrors settings-overlay so
+// every dialog puts confirm/cancel in the same spot. Disc visual is
+// global in styles.scss.
 .dialog-discs {
   position: absolute;
-  top: -10px;
-  right: -10px;
+  top: 6px;
+  right: 6px;
   display: flex;
   gap: 6px;
   z-index: 5;

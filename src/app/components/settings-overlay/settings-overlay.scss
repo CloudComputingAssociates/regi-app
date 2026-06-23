@@ -31,10 +31,9 @@
     0 0 64px 16px rgba(255, 193, 7, 0.12),
     // Plus the standard drop shadow under the window.
     0 12px 36px rgba(0, 0, 0, 0.55);
-  // Overflow stays visible at the window level so the dialog-disc controls
-  // can hang off the outside corners. The inner .settings-body owns its
-  // own scroll boundary; nothing else overflows.
-  overflow: visible;
+  // Discs sit INSIDE the frame now, so the window can clip its rounded
+  // corners again. Inner .settings-body owns its own scroll boundary.
+  overflow: hidden;
 }
 
 // Inner scroll wrapper inherits the rounded corners since .settings-window
@@ -68,15 +67,14 @@
   text-shadow: 0 1px 6px rgba(255, 193, 7, 0.18);
 }
 
-// Dialog-disc cluster — hangs off the outside top-right corner of the
-// window so it visually reads as a window-control rather than an in-content
-// button. .settings-window has overflow:visible to keep these from being
-// clipped by the rounded corner. The disc visual lives globally in
-// styles.scss (.dialog-disc + .dialog-disc-confirm / -cancel).
+// Dialog-disc cluster — sits INSIDE the dialog's top-right corner with a
+// few pixels of breathing room from both edges so the discs don't crowd
+// the bloom border. The disc visual lives globally in styles.scss
+// (.dialog-disc + .dialog-disc-confirm / -cancel).
 .dialog-discs {
   position: absolute;
-  top: -10px;
-  right: -10px;
+  top: 6px;
+  right: 6px;
   display: flex;
   gap: 6px;
   z-index: 5;
