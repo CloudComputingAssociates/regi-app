@@ -28,6 +28,7 @@ import { NutritionTipService } from './services/nutrition-tip.service';
 // Help, Bug) are deliberately excluded so a stale overlay never re-opens.
 const LEFT_NAV_PANEL_IDS = new Set([
   'chat',
+  'meal-planning',
   'foods',
   'shop',
 ]);
@@ -58,12 +59,11 @@ const LEFT_NAV_PANEL_IDS = new Set([
           </app-app-bar>
 
           <main class="main-content">
-            <!-- app-macros, nutrition-tip-bar, and app-chat-input only render
-                 when there is an active panel that wants them. They are
-                 hidden on the Foods panel (it reclaims the vertical space)
-                 and on the splash screen (no panel active — the YEH logo
-                 stands alone without chrome above or below it). -->
-            @if (isAuthenticated() && hasChromePanel()) {
+            <!-- Macros bar + nutrition-tip render above the active panel
+                 except on Foods (reclaims space), Chat (no macros context),
+                 and the splash screen (no panel active). The chat-input
+                 below has its own rule: shown on every panel except Foods. -->
+            @if (isAuthenticated() && hasMacros()) {
               <app-macros />
               @if (!tipDismissed() && tipService.tip(); as tip) {
                 <div class="nutrition-tip-bar">
@@ -80,7 +80,7 @@ const LEFT_NAV_PANEL_IDS = new Set([
               }
             }
             <app-main-body />
-            @if (isAuthenticated() && hasChromePanel()) {
+            @if (isAuthenticated() && hasChatInput()) {
               <app-chat-input />
             }
           </main>
@@ -120,10 +120,17 @@ export class AppComponent implements OnInit, OnDestroy {
 
   tipDismissed = signal(this.isTipDismissedToday());
 
-  /** True when the active panel should have macros + chat-input rendered
-   *  around it. False on the splash (no panel) and on the Foods panel
-   *  (it reclaims the vertical space). */
-  hasChromePanel = computed(() => {
+  /** True when the active panel should render the macros bar above it.
+   *  False on splash, Foods (reclaims the vertical space), and Chat
+   *  (no macros context applies). */
+  hasMacros = computed(() => {
+    const id = this.tabService.activeTabId();
+    return id !== null && id !== 'foods' && id !== 'chat';
+  });
+
+  /** True when the active panel should render the chat-input bar below it.
+   *  False on splash and Foods (reclaims the vertical space). */
+  hasChatInput = computed(() => {
     const id = this.tabService.activeTabId();
     return id !== null && id !== 'foods';
   });

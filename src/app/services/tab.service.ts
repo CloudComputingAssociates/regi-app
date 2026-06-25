@@ -93,9 +93,9 @@ export class TabService {
   }
 
   // Define menu order - this determines tab insertion order
-  // Left nav: chat, foods (Food Preferences), shop (Shopping List)
+  // Left nav: chat, meal-planning (Menu Plan), foods (Food Preferences), shop (Shopping List)
   // Right nav (profile menu): account, preferences (Settings), help
-  private menuOrder = ['chat', 'foods', 'shop', 'video-viewer', 'web-viewer', 'issue', 'preferences', 'account', 'help'];
+  private menuOrder = ['chat', 'meal-planning', 'foods', 'shop', 'video-viewer', 'web-viewer', 'issue', 'preferences', 'account', 'help'];
 
   /** URL for the video-viewer tab (set before opening the tab) */
   videoViewerUrl: WritableSignal<string> = signal('');
@@ -106,6 +106,7 @@ export class TabService {
   // Tabs that get an image icon
   private tabIcons: Record<string, string> = {
     'chat': '/images/AI-star.png',
+    'meal-planning': '/images/AI-star.png',
     'foods': '/favicon.ico',
     'preferences': '/images/AI-star.png'
   };
@@ -388,6 +389,7 @@ export class TabService {
     // Map of tab ID to label
     const tabLabels: Record<string, string> = {
       'chat': 'Chat',
+      'meal-planning': 'Menu Plan',
       'shop': 'Shopping List',
       'foods': 'Foods',
       'preferences': 'Settings',

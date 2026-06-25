@@ -9,6 +9,7 @@ import { CommonModule } from '@angular/common';
 import { TabService } from '../../services/tab.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { ChatComponent } from '../chat/chat';
+import { MenuPlanPanelComponent } from '../menu-plan-panel/menu-plan-panel';
 import { ShoppingPanelComponent } from '../shopping-panel/shopping-panel';
 import { FoodsPanelComponent } from '../foods-panel/foods-panel';
 import { AccountPanelComponent } from '../account-panel/account-panel';
@@ -21,6 +22,7 @@ import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
   imports: [
     CommonModule,
     ChatComponent,
+    MenuPlanPanelComponent,
     ShoppingPanelComponent,
     FoodsPanelComponent,
     AccountPanelComponent,
@@ -36,6 +38,7 @@ import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
            its default state. Splash renders when nothing is active. -->
       @switch (tabService.activeTabId()) {
         @case ('chat') { <app-chat /> }
+        @case ('meal-planning') { <app-menu-plan-panel /> }
         @case ('foods') { <app-foods-panel /> }
         @case ('shop') { <app-shopping-panel /> }
         @case ('account') { <app-account-panel /> }

@@ -110,6 +110,7 @@ export class MacrosComponent implements OnInit {
     if (tabId === 'preferences') return 'preferences';
     if (tabId === 'foods') return 'foods';
     if (tabId === 'shop') return 'shopping';
+    if (tabId === 'meal-planning') return 'shopping';
     return 'default';
   });
 

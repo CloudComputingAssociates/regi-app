@@ -1,0 +1,40 @@
+// src/app/components/menu-plan-panel/menu-plan-panel.scss
+
+.panel-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #2a2a2a;
+  color: #ffffff;
+}
+
+.panel-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #4a4a4a;
+  background-color: #1f1f1f;
+
+  .page-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .brand {
+    font-size: 14px;
+    font-weight: 500;
+    color: #4da6ff;
+
+    .sm {
+      font-size: 8px;
+      vertical-align: super;
+    }
+  }
+}
+
+.panel-body {
+  flex: 1;
+  overflow: auto;
+}
