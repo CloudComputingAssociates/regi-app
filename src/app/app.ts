@@ -134,10 +134,10 @@ export class AppComponent implements OnInit, OnDestroy {
   hasTipBar = computed(() => this.tabService.activeTabId() === 'chat');
 
   /** True when the active panel should render the chat-input bar below it.
-   *  False on splash and Foods (reclaims the vertical space). */
+   *  False on splash, Foods (reclaims the vertical space), and Menu Plan. */
   hasChatInput = computed(() => {
     const id = this.tabService.activeTabId();
-    return id !== null && id !== 'foods';
+    return id !== null && id !== 'foods' && id !== 'meal-planning';
   });
 
   // ------------------------------------------------------------------
