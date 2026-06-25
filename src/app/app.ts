@@ -59,12 +59,14 @@ const LEFT_NAV_PANEL_IDS = new Set([
           </app-app-bar>
 
           <main class="main-content">
-            <!-- Macros bar + nutrition-tip render above the active panel
-                 except on Foods (reclaims space), Chat (no macros context),
-                 and the splash screen (no panel active). The chat-input
-                 below has its own rule: shown on every panel except Foods. -->
+            <!-- Macros bar renders above the active panel except on Foods
+                 (reclaims space), Chat (no macros context), and the splash
+                 screen. The "bites" tip-of-the-day is Chat-only. The
+                 chat-input below shows on every panel except Foods. -->
             @if (isAuthenticated() && hasMacros()) {
               <app-macros />
+            }
+            @if (isAuthenticated() && hasTipBar()) {
               @if (!tipDismissed() && tipService.tip(); as tip) {
                 <div class="nutrition-tip-bar">
                   <img src="/images/bites-logo.png" alt="Bites" class="tip-bar-logo"
@@ -127,6 +129,9 @@ export class AppComponent implements OnInit, OnDestroy {
     const id = this.tabService.activeTabId();
     return id !== null && id !== 'foods' && id !== 'chat';
   });
+
+  /** True when the "bites" tip-of-the-day bar should render. Chat only. */
+  hasTipBar = computed(() => this.tabService.activeTabId() === 'chat');
 
   /** True when the active panel should render the chat-input bar below it.
    *  False on splash and Foods (reclaims the vertical space). */
