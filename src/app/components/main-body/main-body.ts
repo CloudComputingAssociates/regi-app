@@ -9,12 +9,9 @@ import { CommonModule } from '@angular/common';
 import { TabService } from '../../services/tab.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { ChatComponent } from '../chat/chat';
-import { MealsPanelComponent } from '../meals-panel/meals-panel';
 import { ShoppingPanelComponent } from '../shopping-panel/shopping-panel';
-import { WeekPlanPanelComponent } from '../week-plan-panel/week-plan-panel';
 import { FoodsPanelComponent } from '../foods-panel/foods-panel';
 import { AccountPanelComponent } from '../account-panel/account-panel';
-import { TodayPanelComponent } from '../today-panel/today-panel';
 import { VideoViewerComponent } from '../video-viewer/video-viewer';
 import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
 
@@ -24,12 +21,9 @@ import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
   imports: [
     CommonModule,
     ChatComponent,
-    MealsPanelComponent,
     ShoppingPanelComponent,
-    WeekPlanPanelComponent,
     FoodsPanelComponent,
     AccountPanelComponent,
-    TodayPanelComponent,
     VideoViewerComponent,
     RecipeViewerComponent
   ],
@@ -41,12 +35,9 @@ import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
            the previous component is destroyed, so reopening always lands in
            its default state. Splash renders when nothing is active. -->
       @switch (tabService.activeTabId()) {
-        @case ('today') { <app-today-panel /> }
         @case ('chat') { <app-chat /> }
-        @case ('meal-planning') { <app-meals-panel /> }
         @case ('foods') { <app-foods-panel /> }
         @case ('shop') { <app-shopping-panel /> }
-        @case ('review') { <app-week-plan-panel /> }
         @case ('account') { <app-account-panel /> }
         @case ('video-viewer') { <app-video-viewer /> }
         @case ('web-viewer') { <app-recipe-viewer /> }

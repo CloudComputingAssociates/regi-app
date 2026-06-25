@@ -93,9 +93,9 @@ export class TabService {
   }
 
   // Define menu order - this determines tab insertion order
-  // Left nav: today, review (Week Plans), meal-planning, shop (Shopping List), foods (Food Preferences), chat
+  // Left nav: chat, foods (Food Preferences), shop (Shopping List)
   // Right nav (profile menu): account, preferences (Settings), help
-  private menuOrder = ['today', 'review', 'meal-planning', 'shop', 'foods', 'chat', 'video-viewer', 'web-viewer', 'issue', 'preferences', 'account', 'help'];
+  private menuOrder = ['chat', 'foods', 'shop', 'video-viewer', 'web-viewer', 'issue', 'preferences', 'account', 'help'];
 
   /** URL for the video-viewer tab (set before opening the tab) */
   videoViewerUrl: WritableSignal<string> = signal('');
@@ -106,16 +106,13 @@ export class TabService {
   // Tabs that get an image icon
   private tabIcons: Record<string, string> = {
     'chat': '/images/AI-star.png',
-    'meal-planning': '/images/AI-star.png',
     'foods': '/favicon.ico',
     'preferences': '/images/AI-star.png'
   };
 
   // Tabs that get an emoji icon
   private tabEmojis: Record<string, string> = {
-    'today': '📋',
-    'shop': '🛒',
-    'review': '📅'
+    'shop': '🛒'
   };
 
   toggleTab(tabId: string, label: string): void {
@@ -390,12 +387,9 @@ export class TabService {
   restoreFromSettings(tabIds: string[], activeTabId?: string): void {
     // Map of tab ID to label
     const tabLabels: Record<string, string> = {
-      'today': 'Today',
       'chat': 'Chat',
-      'meal-planning': 'Meals',
-      'shop': 'Shopping',
+      'shop': 'Shopping List',
       'foods': 'Foods',
-      'review': 'Week',
       'preferences': 'Settings',
       'account': 'Account',
       'help': 'Help',
@@ -425,11 +419,7 @@ export class TabService {
     }
 
     // Ensure the previously-active panel is in the visited set even if it
-    // wasn't sent in defaultTabs. saveOpenTabs strips 'today' from defaultTabs
-    // (server enum doesn't allow it there), but the user's active panel might
-    // STILL have been Today — in which case the server stores it under
-    // activeTabId only. Without this graft, restore would land on splash and
-    // the "last open panel" feature would silently fail for Today.
+    // wasn't sent in defaultTabs.
     if (activeTabId && tabLabels[activeTabId] && !tabs.find(t => t.id === activeTabId)) {
       tabs.push({
         id: activeTabId,

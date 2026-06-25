@@ -140,9 +140,7 @@ export class SettingsService {
   // ========================================================
 
   async saveOpenTabs(tabIds: string[], activeTabId?: string): Promise<void> {
-    // Filter out 'today' — it's always re-added on restore and isn't a valid API tab ID
-    const filtered = tabIds.filter(id => id !== 'today');
-    await this.saveTabSettings({ defaultTabs: filtered, activeTabId });
+    await this.saveTabSettings({ defaultTabs: tabIds, activeTabId });
   }
 
   clearSettings(): void {

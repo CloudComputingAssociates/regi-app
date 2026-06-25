@@ -22,18 +22,14 @@ import { ChatService } from './services/chat.service';
 import { NotificationService } from './services/notification.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { NutritionTipService } from './services/nutrition-tip.service';
-import { PlanningService } from './services/planning.service';
 
 // Panel IDs that are part of the left-nav navigator. Only these are
 // remembered across page refresh — profile-menu overlays (Settings, Account,
 // Help, Bug) are deliberately excluded so a stale overlay never re-opens.
 const LEFT_NAV_PANEL_IDS = new Set([
-  'today',
-  'review',
-  'meal-planning',
-  'shop',
-  'foods',
   'chat',
+  'foods',
+  'shop',
 ]);
 
 @Component({
@@ -120,7 +116,6 @@ export class AppComponent implements OnInit, OnDestroy {
   tabService = inject(TabService);
   private chatService = inject(ChatService);
   private notification = inject(NotificationService);
-  private planningService = inject(PlanningService);
   private errorSub?: Subscription;
 
   tipDismissed = signal(this.isTipDismissedToday());
@@ -209,7 +204,6 @@ export class AppComponent implements OnInit, OnDestroy {
         // Only check subscription status if user is authenticated
         this.subscriptionService.checkSubscriptionStatus().subscribe();
         this.tipService.fetchTip();
-        this.planningService.preloadSavedMeals();
 
         // Restore the previously-active panel. Only left-nav panels are
         // remembered across refresh — Settings / Account / Help / Bug live
