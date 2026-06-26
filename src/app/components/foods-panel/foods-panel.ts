@@ -174,7 +174,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               <span class="top-bar-total">Total ({{ carouselSpinnerFoods().length }})</span>
               <!-- Absolute-centered tagline lives OUTSIDE the flex flow so
                    its position is unaffected by the SEARCH / TOTAL widths. -->
-              <span class="top-bar-tagline">Your healthy, curated foods</span>
+              <span class="top-bar-tagline">Curated MyFoods</span>
             </div>
             <!-- Tile grid replaces the old spinning carousel. Tiles fill
                  left-to-right and wrap to the next row; the grid scrolls

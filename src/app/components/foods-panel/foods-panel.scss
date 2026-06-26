@@ -536,13 +536,15 @@
   transform: translate(-50%, -50%);
   font-family: inherit;
   font-size: 16px;
-  font-style: italic;
-  font-weight: 500;
+  font-style: normal;
+  font-weight: 400;
   letter-spacing: 0.2px;
-  // Chiffon yellow — same family as the basket-empty hints and the .selected
-  // halo, so the tagline reads as a softer counterpart to the rest of the UI
-  // (pure #ffff00 was too aggressive at this size).
-  color: #fff59d;
+  // Inset/etched: light grey body, dark shadow above + faint highlight below
+  // gives the letters a pressed-into-the-bar feel against the dark top bar.
+  color: #9a9a9a;
+  text-shadow:
+    0 -1px 0 rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.08);
   user-select: none;
   pointer-events: none;
   white-space: nowrap;
