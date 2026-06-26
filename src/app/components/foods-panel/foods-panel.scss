@@ -537,14 +537,17 @@
   font-family: inherit;
   font-size: 16px;
   font-style: normal;
-  font-weight: 400;
-  letter-spacing: 0.2px;
-  // Inset/etched: light grey body, dark shadow above + faint highlight below
-  // gives the letters a pressed-into-the-bar feel against the dark top bar.
-  color: #9a9a9a;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  // Deep etched: darker body recedes into the bar, strong dark shadow on top
+  // edge cuts the recess, brighter highlight on the bottom edge catches light
+  // — letterpress on a dark surface. Bold weight + heavier shadows so the
+  // depth reads at a glance.
+  color: #5a5a5a;
   text-shadow:
-    0 -1px 0 rgba(0, 0, 0, 0.55),
-    0 1px 0 rgba(255, 255, 255, 0.08);
+    0 -1px 0 rgba(0, 0, 0, 0.95),
+    0 1px 0 rgba(255, 255, 255, 0.22),
+    0 2px 2px rgba(255, 255, 255, 0.06);
   user-select: none;
   pointer-events: none;
   white-space: nowrap;
