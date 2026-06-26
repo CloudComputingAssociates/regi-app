@@ -537,17 +537,14 @@
   font-family: inherit;
   font-size: 16px;
   font-style: normal;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  // Deep etched: darker body recedes into the bar, strong dark shadow on top
-  // edge cuts the recess, brighter highlight on the bottom edge catches light
-  // — letterpress on a dark surface. Bold weight + heavier shadows so the
-  // depth reads at a glance.
-  color: #5a5a5a;
-  text-shadow:
-    0 -1px 0 rgba(0, 0, 0, 0.95),
-    0 1px 0 rgba(255, 255, 255, 0.22),
-    0 2px 2px rgba(255, 255, 255, 0.06);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  // Crisp letterpress: near-black body sits well below the bar's own tone so
+  // each letter reads as a real trench, plus ONE zero-blur white highlight
+  // along the bottom edge (the catch-light along the lip of the recess).
+  // No blurred shadows — blur softens edges, killing the "engraved" feel.
+  color: #111;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.22);
   user-select: none;
   pointer-events: none;
   white-space: nowrap;
