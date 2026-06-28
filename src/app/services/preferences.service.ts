@@ -757,6 +757,18 @@ export class PreferencesService {
     this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false, glp1: false });
   }
 
+  /** Hard discard — re-reads the cached settings snapshot (last server-
+   *  confirmed state) and replaces preferencesSignal with it. Use this
+   *  instead of resetDirtyGroups() when the user explicitly cancels: just
+   *  flipping the dirty bits leaves the in-memory values mutated, so on
+   *  re-open the inputs would show the "discarded" edits as if they'd been
+   *  kept. Reading from settingsService cache is correct because that cache
+   *  is updated on every successful save and on initial load. */
+  discardChanges(): void {
+    this.loadedSignal.set(false);
+    this.loadPreferences();
+  }
+
   private mapDefaultFoodList(value?: string): FoodListSource {
     switch (value) {
       case 'yeh_approved': return 'yeh';
