@@ -10,6 +10,7 @@ export interface AllSettings {
   personalInfo?: PersonalInfo;
   shoppingStaples?: ShoppingStaple[];
   currentPicks?: CurrentPick[];
+  glp1?: Glp1Settings;
 }
 
 // Basket-staged foods picked for the next planning round. Persisted as a JSON
@@ -39,6 +40,25 @@ export interface RegiMenuSettings {
   eatingStartTime?: string;
   repeatMeals?: number;
   weekStartDay?: string;
+  persons?: number;
+}
+
+// GLP-1 dose tier (start / current / maintenance)
+export interface Glp1Dose {
+  dose?: number;
+  units?: number;
+  intervalDays?: number;
+}
+
+// GET/PUT /api/user/settings — glp1 section
+export interface Glp1Settings {
+  enabled?: boolean;
+  brand?: string;
+  pharmacy?: string;
+  website?: string;
+  startDose?: Glp1Dose;
+  currentDose?: Glp1Dose;
+  maintenanceDose?: Glp1Dose;
 }
 
 // GET/PUT /api/user/settings/dailygoals

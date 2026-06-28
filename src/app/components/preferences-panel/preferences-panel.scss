@@ -1098,7 +1098,7 @@
     gap: 4px;
   }
 
-  // RegiMenu column
+  // Menu column
   .regimenu-column {
     display: flex;
     flex-direction: column;
@@ -1123,6 +1123,29 @@
       font-size: 12px;
       font-weight: 500;
       min-width: 75px;
+    }
+
+    .setting-number {
+      width: 56px;
+      padding: 4px 6px;
+      font-size: 12px;
+      font-family: inherit;
+      color: #ffffff;
+      background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+      border: 1px solid #5a5a5a;
+      border-radius: 4px;
+      outline: none;
+      box-sizing: border-box;
+
+      &:hover { border-color: #6a6a6a; }
+      &:focus {
+        border-color: #4da6ff;
+        box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.2);
+      }
+
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      -moz-appearance: textfield;
     }
 
     .setting-select {
@@ -1153,6 +1176,94 @@
         color: #ffffff;
       }
     }
+  }
+}
+
+// GLP-1 tracking section — single column inside .settings-section
+.panel-content {
+  .glp1-section {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .glp1-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .glp1-field-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .glp1-gap-left {
+    margin-left: 8px;
+  }
+
+  .glp1-text {
+    width: 110px;
+    padding: 4px 6px;
+    font-size: 12px;
+    font-family: inherit;
+    color: #ffffff;
+    background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+    border: 1px solid #5a5a5a;
+    border-radius: 4px;
+    outline: none;
+    box-sizing: border-box;
+
+    &:hover:not(:disabled) { border-color: #6a6a6a; }
+    &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.2); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+
+  .glp1-text-wide {
+    width: 200px;
+  }
+
+  .glp1-dose-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .glp1-dose-label {
+    min-width: 130px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .glp1-num {
+    width: 56px;
+    padding: 4px 6px;
+    font-size: 12px;
+    font-family: inherit;
+    color: #ffffff;
+    background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+    border: 1px solid #5a5a5a;
+    border-radius: 4px;
+    outline: none;
+    box-sizing: border-box;
+    text-align: center;
+
+    &:hover:not(:disabled) { border-color: #6a6a6a; }
+    &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.2); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    -moz-appearance: textfield;
+  }
+
+  .glp1-unit {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 11px;
+    padding-right: 4px;
   }
 }
 

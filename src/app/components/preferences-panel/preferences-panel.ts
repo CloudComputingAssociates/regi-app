@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
 import { NotificationService } from '../../services/notification.service';
-import { PreferencesService, MealsPerDay, FastingType, DailyGoals, RepeatMeals, FoodListSource, WeekStartDay } from '../../services/preferences.service';
+import { PreferencesService, MealsPerDay, DailyGoals, WeekStartDay } from '../../services/preferences.service';
 import { SettingsService } from '../../services/settings.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
@@ -334,11 +334,11 @@ import { MatIconModule } from '@angular/material/icon';
             }
             </div>
 
-            <!-- RegiMenu + Planning -->
+            <!-- Menu -->
             <div class="accordion-section">
               <button class="accordion-header" (click)="planningOpen.set(!planningOpen())">
                 <mat-icon class="accordion-arrow" [class.open]="planningOpen()">chevron_right</mat-icon>
-                <span class="accordion-title">RegiMenu + Planning</span>
+                <span class="accordion-title">Menu</span>
               </button>
               @if (planningOpen()) {
               <div class="accordion-body">
@@ -356,37 +356,15 @@ import { MatIconModule } from '@angular/material/icon';
                     <option [ngValue]="4">4 meals</option>
                     <option [ngValue]="5">5 meals</option>
                     <option [ngValue]="6">6 meals</option>
-                  </select>
-                </div>
-                <div class="setting-row">
-                  <label class="setting-label">Fasting</label>
-                  <select
-                    class="setting-select"
-                    [ngModel]="userSettingsService.fastingType()"
-                    (ngModelChange)="onFastingTypeChange($event)">
-                    <option value="none">None</option>
-                    <option value="16_8">16:8</option>
-                    <option value="18_6">18:6</option>
-                    <option value="20_4">20:4</option>
-                    <option value="omad">OMAD</option>
-                  </select>
-                </div>
-                <div class="setting-row">
-                  <label class="setting-label">Start at</label>
-                  <select
-                    class="setting-select time-select"
-                    [ngModel]="userSettingsService.eatingStartTime()"
-                    (ngModelChange)="onEatingStartTimeChange($event)">
-                    @for (time of timeOptions; track time) {
-                      <option [value]="time">{{ time }}</option>
-                    }
+                    <option [ngValue]="7">7 meals</option>
+                    <option [ngValue]="8">8 meals</option>
                   </select>
                 </div>
               </div>
 
               <div class="regimenu-column">
                 <div class="setting-row">
-                  <label class="setting-label">Week Starts</label>
+                  <label class="setting-label">Start Day</label>
                   <select
                     class="setting-select"
                     [ngModel]="userSettingsService.weekStartDay()"
@@ -401,16 +379,16 @@ import { MatIconModule } from '@angular/material/icon';
                   </select>
                 </div>
                 <div class="setting-row">
+                  <label class="setting-label">Persons</label>
+                  <input type="number" min="1" class="setting-number"
+                    [ngModel]="userSettingsService.persons()"
+                    (change)="onPersonsChange($event)" />
+                </div>
+                <div class="setting-row">
                   <label class="setting-label">Meal Repeats</label>
-                  <select
-                    class="setting-select"
+                  <input type="number" min="1" class="setting-number"
                     [ngModel]="userSettingsService.repeatMeals()"
-                    (ngModelChange)="onRepeatMealsChange($event)">
-                    <option [ngValue]="1">1</option>
-                    <option [ngValue]="2">2</option>
-                    <option [ngValue]="3">3</option>
-                    <option [ngValue]="4">4</option>
-                  </select>
+                    (change)="onRepeatMealsChange($event)" />
                   <span class="setting-hint">per week</span>
                   <span class="info-icon"
                         #repeatTooltip="matTooltip"
@@ -419,27 +397,72 @@ import { MatIconModule } from '@angular/material/icon';
                         [matTooltipShowDelay]="0"
                         (click)="repeatTooltip.toggle()">&#9432;</span>
                 </div>
-                <div class="setting-row">
-                  <label class="setting-label">Foods from</label>
-                  <select
-                    class="setting-select"
-                    [ngModel]="userSettingsService.foodListSource()"
-                    (ngModelChange)="onFoodListSourceChange($event)">
-                    <option value="yeh">YEH</option>
-                    <option value="myfoods">MyFoods</option>
-                    <option value="yeh_plus_myfoods">YEH + MyFoods</option>
-                  </select>
-                  <span class="info-icon"
-                        #foodsTooltip="matTooltip"
-                        matTooltip="Choose from YEH Approved foods, or your own list. Go to Food Preferences panel, select YEH as a starter list and favorite (star) the ones you like. Click restricted on foods you cannot have."
-                        matTooltipPosition="above"
-                        [matTooltipShowDelay]="0"
-                        (click)="foodsTooltip.toggle()">&#9432;</span>
-                </div>
               </div>
             </div>
             </div>
             }
+            </div>
+
+            <!-- GLP-1 tracking -->
+            <div class="accordion-section">
+              <button class="accordion-header" (click)="glp1Open.set(!glp1Open())">
+                <mat-icon class="accordion-arrow" [class.open]="glp1Open()">chevron_right</mat-icon>
+                <span class="accordion-title">GLP-1 tracking</span>
+                <span class="accordion-control" (click)="$event.stopPropagation()">
+                  <label class="override-label">
+                    <input type="checkbox"
+                      [ngModel]="userSettingsService.glp1().enabled"
+                      (ngModelChange)="onGlp1EnabledChange($event)" />
+                    Enabled
+                  </label>
+                </span>
+              </button>
+              @if (glp1Open()) {
+              <div class="accordion-body">
+                <div class="settings-section glp1-section">
+                  <div class="glp1-column">
+                    <div class="glp1-field-row">
+                      <label class="setting-label">Brand</label>
+                      <input type="text" class="glp1-text"
+                        [disabled]="!userSettingsService.glp1().enabled"
+                        [ngModel]="userSettingsService.glp1().brand || ''"
+                        (ngModelChange)="onGlp1FieldChange('brand', $event)" />
+                      <label class="setting-label glp1-gap-left">Pharmacy</label>
+                      <input type="text" class="glp1-text"
+                        [disabled]="!userSettingsService.glp1().enabled"
+                        [ngModel]="userSettingsService.glp1().pharmacy || ''"
+                        (ngModelChange)="onGlp1FieldChange('pharmacy', $event)" />
+                      <label class="setting-label glp1-gap-left">Website</label>
+                      <input type="text" class="glp1-text glp1-text-wide"
+                        [disabled]="!userSettingsService.glp1().enabled"
+                        [ngModel]="userSettingsService.glp1().website || ''"
+                        (ngModelChange)="onGlp1FieldChange('website', $event)" />
+                    </div>
+
+                    @for (tier of glp1Tiers; track tier.key) {
+                      <div class="glp1-dose-row">
+                        <label class="setting-label glp1-dose-label">{{ tier.label }}</label>
+                        <input type="number" min="0" class="glp1-num"
+                          [disabled]="!userSettingsService.glp1().enabled"
+                          [ngModel]="(userSettingsService.glp1()[tier.key] || {}).dose"
+                          (change)="onGlp1DoseChange(tier.key, 'dose', $event)" />
+                        <span class="glp1-unit">mg</span>
+                        <input type="number" min="0" class="glp1-num"
+                          [disabled]="!userSettingsService.glp1().enabled"
+                          [ngModel]="(userSettingsService.glp1()[tier.key] || {}).units"
+                          (change)="onGlp1DoseChange(tier.key, 'units', $event)" />
+                        <span class="glp1-unit">units</span>
+                        <input type="number" min="0" class="glp1-num"
+                          [disabled]="!userSettingsService.glp1().enabled"
+                          [ngModel]="(userSettingsService.glp1()[tier.key] || {}).intervalDays"
+                          (change)="onGlp1DoseChange(tier.key, 'intervalDays', $event)" />
+                        <span class="glp1-unit">days</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+              }
             </div>
           </div>
         </div>
@@ -472,6 +495,15 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   personalInfoOpen = signal(true);
   nutritionTargetsOpen = signal(false);
   planningOpen = signal(false);
+  glp1Open = signal(false);
+
+  // Static table — tiers rendered in fixed order so adding/reordering is
+  // a one-place edit instead of three near-identical template blocks.
+  readonly glp1Tiers: Array<{ key: 'startDose' | 'currentDose' | 'maintenanceDose'; label: string }> = [
+    { key: 'startDose', label: 'Start Dose' },
+    { key: 'currentDose', label: 'Current Dose' },
+    { key: 'maintenanceDose', label: 'Maintenance Dose' }
+  ];
 
   // Scroll hint state
   showScrollUp = signal(false);
@@ -1162,18 +1194,15 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     this.settingsChanged.set(true);
   }
 
-  onFastingTypeChange(value: FastingType): void {
-    this.userSettingsService.setFastingType(value);
+  onRepeatMealsChange(event: Event): void {
+    const raw = +(event.target as HTMLInputElement).value;
+    this.userSettingsService.setRepeatMeals(raw);
     this.settingsChanged.set(true);
   }
 
-  onEatingStartTimeChange(value: string): void {
-    this.userSettingsService.setEatingStartTime(value);
-    this.settingsChanged.set(true);
-  }
-
-  onRepeatMealsChange(value: RepeatMeals): void {
-    this.userSettingsService.setRepeatMeals(value);
+  onPersonsChange(event: Event): void {
+    const raw = +(event.target as HTMLInputElement).value;
+    this.userSettingsService.setPersons(raw);
     this.settingsChanged.set(true);
   }
 
@@ -1182,8 +1211,23 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     this.settingsChanged.set(true);
   }
 
-  onFoodListSourceChange(value: FoodListSource): void {
-    this.userSettingsService.setFoodListSource(value);
+  onGlp1EnabledChange(value: boolean): void {
+    this.userSettingsService.setGlp1Enabled(value);
+    this.settingsChanged.set(true);
+  }
+
+  onGlp1FieldChange(field: 'brand' | 'pharmacy' | 'website', value: string): void {
+    this.userSettingsService.setGlp1Field(field, value);
+    this.settingsChanged.set(true);
+  }
+
+  onGlp1DoseChange(
+    tier: 'startDose' | 'currentDose' | 'maintenanceDose',
+    field: 'dose' | 'units' | 'intervalDays',
+    event: Event
+  ): void {
+    const raw = +(event.target as HTMLInputElement).value;
+    this.userSettingsService.setGlp1Dose(tier, field, raw);
     this.settingsChanged.set(true);
   }
 

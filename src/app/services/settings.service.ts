@@ -7,7 +7,8 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   AllSettings, TabSettings, RegiMenuSettings,
-  DailyGoals, PersonalInfo, DefaultFoodListData, ShoppingStaple, CurrentPick
+  DailyGoals, PersonalInfo, DefaultFoodListData, ShoppingStaple, CurrentPick,
+  Glp1Settings
 } from '../models/settings.models';
 
 @Injectable({
@@ -113,6 +114,11 @@ export class SettingsService {
   async saveShoppingStaples(data: ShoppingStaple[]): Promise<ShoppingStaple[]> {
     const saved = await this.saveSettings({ shoppingStaples: data });
     return saved.shoppingStaples || data;
+  }
+
+  async saveGlp1Settings(data: Glp1Settings): Promise<Glp1Settings> {
+    const saved = await this.saveSettings({ glp1: data });
+    return saved.glp1 || data;
   }
 
   /** Persist the user's basket picks. The consolidated PUT preserves every

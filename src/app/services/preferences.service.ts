@@ -5,17 +5,17 @@
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { SettingsService } from './settings.service';
 import {
-  DailyGoals, RegiMenuSettings, PersonalInfo
+  DailyGoals, RegiMenuSettings, PersonalInfo, Glp1Settings, Glp1Dose
 } from '../models/settings.models';
 
 // Narrower types for UI
-export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6;
+export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type FastingType = 'none' | '16_8' | '18_6' | '20_4' | 'omad';
-export type RepeatMeals = 1 | 2 | 3 | 4;
+export type RepeatMeals = number;
 export type FoodListSource = 'yeh' | 'myfoods' | 'yeh_plus_myfoods';
 export type WeekStartDay = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
 
-export type { DailyGoals, PersonalInfo };
+export type { DailyGoals, PersonalInfo, Glp1Settings, Glp1Dose };
 
 export interface Preferences {
   mealsPerDay: MealsPerDay;
@@ -26,6 +26,8 @@ export interface Preferences {
   foodListSource: FoodListSource;
   personalInfo: PersonalInfo;
   weekStartDay: WeekStartDay;
+  persons: number;
+  glp1: Glp1Settings;
 }
 
 const DEFAULT_DAILY_GOALS: DailyGoals = {
@@ -49,15 +51,19 @@ const GOAL_LOSS_EXTREME_PCT = 50;         // % loss → medical warning
 const GOAL_GAIN_WARN_PCT = 10;            // % gain → consult warning
 const FIBER_TO_CARB_RATIO = 0.25;         // fiber > carbs * this → warning
 
+const DEFAULT_GLP1: Glp1Settings = { enabled: false };
+
 const DEFAULT_PREFERENCES: Preferences = {
   mealsPerDay: 3,
   fastingType: 'none',
   dailyGoals: DEFAULT_DAILY_GOALS,
   eatingStartTime: '08:00',
   repeatMeals: 1,
-  foodListSource: 'yeh',
+  foodListSource: 'myfoods',
   personalInfo: DEFAULT_PERSONAL_INFO,
-  weekStartDay: 'sunday'
+  weekStartDay: 'sunday',
+  persons: 1,
+  glp1: DEFAULT_GLP1
 };
 
 // Track which groups have been modified since last save
@@ -66,6 +72,7 @@ interface DirtyGroups {
   dailyGoals: boolean;
   defaultFoodList: boolean;
   personalInfo: boolean;
+  glp1: boolean;
 }
 
 @Injectable({
@@ -78,7 +85,7 @@ export class PreferencesService {
   private loadingSignal = signal(false);
   private loadedSignal = signal(false);
   private dirtyGroups = signal<DirtyGroups>({
-    regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false
+    regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false, glp1: false
   });
 
   // Auto-load preferences when settings arrive (handles refresh race condition)
@@ -112,6 +119,8 @@ export class PreferencesService {
   readonly foodListSource = computed(() => this.preferencesSignal().foodListSource);
   readonly personalInfo = computed(() => this.preferencesSignal().personalInfo);
   readonly weekStartDay = computed(() => this.preferencesSignal().weekStartDay);
+  readonly persons = computed(() => this.preferencesSignal().persons);
+  readonly glp1 = computed(() => this.preferencesSignal().glp1);
 
   // ========================================================
   // COMPUTED NUTRITION (Mifflin-St. Jeor)
@@ -368,11 +377,16 @@ export class PreferencesService {
       mealsPerDay: (rm?.mealsPerDay as MealsPerDay) || DEFAULT_PREFERENCES.mealsPerDay,
       fastingType: (rm?.fastingType as FastingType) || DEFAULT_PREFERENCES.fastingType,
       eatingStartTime: rm?.eatingStartTime || DEFAULT_PREFERENCES.eatingStartTime,
-      repeatMeals: (rm?.repeatMeals as RepeatMeals) || DEFAULT_PREFERENCES.repeatMeals,
+      repeatMeals: rm?.repeatMeals ?? DEFAULT_PREFERENCES.repeatMeals,
       weekStartDay: (rm?.weekStartDay as WeekStartDay) || DEFAULT_PREFERENCES.weekStartDay,
-      foodListSource: this.mapDefaultFoodList(all.defaultFoodList),
+      // Foods-from UI is removed — the source is always MyFoods now. We still
+      // flow this through the defaultFoodList save so the server's persisted
+      // value stays in sync with the app's actual behavior.
+      foodListSource: 'myfoods',
       dailyGoals: dg ?? DEFAULT_DAILY_GOALS,
-      personalInfo: pi ?? DEFAULT_PERSONAL_INFO
+      personalInfo: pi ?? DEFAULT_PERSONAL_INFO,
+      persons: rm?.persons ?? DEFAULT_PREFERENCES.persons,
+      glp1: all.glp1 ?? { enabled: false }
     };
 
     this.preferencesSignal.set(prefs);
@@ -384,7 +398,7 @@ export class PreferencesService {
     this.syncComputedMacros();
 
     // Reset dirty flags — the sync above is initialization, not a user change
-    this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false });
+    this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false, glp1: false });
   }
 
   // ========================================================
@@ -402,7 +416,8 @@ export class PreferencesService {
         fastingType: current.fastingType,
         eatingStartTime: current.eatingStartTime,
         repeatMeals: current.repeatMeals,
-        weekStartDay: current.weekStartDay
+        weekStartDay: current.weekStartDay,
+        persons: current.persons
       };
       promises.push(this.settingsService.saveRegiMenuSettings(data));
     }
@@ -421,10 +436,14 @@ export class PreferencesService {
       promises.push(this.settingsService.savePersonalInfo(current.personalInfo));
     }
 
+    if (dirty.glp1) {
+      promises.push(this.settingsService.saveGlp1Settings(current.glp1));
+    }
+
     if (promises.length === 0) return;
 
     await Promise.all(promises);
-    this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false });
+    this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false, glp1: false });
   }
 
   // ========================================================
@@ -446,9 +465,39 @@ export class PreferencesService {
     this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
   }
 
-  setRepeatMeals(value: RepeatMeals): void {
-    this.preferencesSignal.update(p => ({ ...p, repeatMeals: value }));
+  setRepeatMeals(value: number): void {
+    const clamped = Math.max(1, Math.floor(Number(value) || 1));
+    this.preferencesSignal.update(p => ({ ...p, repeatMeals: clamped }));
     this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
+  }
+
+  setPersons(value: number): void {
+    const clamped = Math.max(1, Math.floor(Number(value) || 1));
+    this.preferencesSignal.update(p => ({ ...p, persons: clamped }));
+    this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
+  }
+
+  setGlp1Enabled(value: boolean): void {
+    this.preferencesSignal.update(p => ({ ...p, glp1: { ...p.glp1, enabled: value } }));
+    this.dirtyGroups.update(d => ({ ...d, glp1: true }));
+  }
+
+  setGlp1Field(field: 'brand' | 'pharmacy' | 'website', value: string): void {
+    this.preferencesSignal.update(p => ({ ...p, glp1: { ...p.glp1, [field]: value } }));
+    this.dirtyGroups.update(d => ({ ...d, glp1: true }));
+  }
+
+  setGlp1Dose(
+    tier: 'startDose' | 'currentDose' | 'maintenanceDose',
+    field: 'dose' | 'units' | 'intervalDays',
+    value: number
+  ): void {
+    const n = field === 'intervalDays' ? Math.max(0, Math.floor(Number(value) || 0)) : Math.max(0, Number(value) || 0);
+    this.preferencesSignal.update(p => {
+      const currentTier: Glp1Dose = p.glp1[tier] ?? {};
+      return { ...p, glp1: { ...p.glp1, [tier]: { ...currentTier, [field]: n } } };
+    });
+    this.dirtyGroups.update(d => ({ ...d, glp1: true }));
   }
 
   setWeekStartDay(value: WeekStartDay): void {
@@ -685,12 +734,12 @@ export class PreferencesService {
   /** Returns true if any group has been modified since last load/save */
   hasDirtyGroups(): boolean {
     const d = this.dirtyGroups();
-    return d.regiMenu || d.dailyGoals || d.defaultFoodList || d.personalInfo;
+    return d.regiMenu || d.dailyGoals || d.defaultFoodList || d.personalInfo || d.glp1;
   }
 
   /** Reset all dirty flags (used when discarding unsaved changes) */
   resetDirtyGroups(): void {
-    this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false });
+    this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false, glp1: false });
   }
 
   private mapDefaultFoodList(value?: string): FoodListSource {
