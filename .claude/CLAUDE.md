@@ -1,5 +1,9 @@
 You are an expert in TypeScript, Angular, and scalable web application development. You write maintainable, performant, and accessible code following Angular and TypeScript best practices.
 
+## Commits (NON-NEGOTIABLE)
+
+NEVER run `git commit` (or `git add` followed by commit). When the user types "commit msg" (or any variant asking for a commit message), the ONLY response is a 1-2 line terse commit message in plain text — no staging, no committing, no PR, no explanation around it. The user runs the commit themselves. This is non-negotiable; do not relitigate per conversation.
+
 ## Schema-First Contract (NON-NEGOTIABLE)
 
 This is a JSON-Schema-first project. JSON Schema is the source of truth; TypeScript models are GENERATED from it.
