@@ -1192,12 +1192,23 @@
     gap: 8px;
     width: 100%;
 
-    // .setting-label is only coloured inside .plan-column / .regimenu-column /
-    // .pi-column / .macro-control-row scopes; this section is none of those,
-    // so the bare label inherits to dim grey. Restate white here.
+    // .setting-label is only fully styled inside .plan-column / .regimenu-column /
+    // .pi-column / .macro-control-row scopes; outside those scopes the bare
+    // label inherits to dim grey AND to the document base size (16px), which
+    // made these read as oversized vs every other Settings row. Restate the
+    // standard 12px / 500 / white here for parity.
     .setting-label {
       color: #ffffff;
+      font-size: 12px;
+      font-weight: 500;
     }
+  }
+
+  // Anchor class used on the row-leading labels (Website, Start Dose, Current
+  // Dose) so the first input in each row starts at the same x. Inline labels
+  // mid-row (.glp1-gap-left) keep their natural width.
+  .glp1-row-label {
+    min-width: 110px;
   }
 
   .glp1-field-row {
@@ -1236,13 +1247,27 @@
     display: flex;
     align-items: center;
     gap: 4px;
+    flex-wrap: wrap;
   }
 
-  .glp1-dose-label {
-    min-width: 130px;
+  .glp1-maint-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 14px;
     color: #ffffff;
     font-size: 12px;
     font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+
+    input[type="checkbox"] {
+      accent-color: #4da6ff;
+      cursor: pointer;
+      width: 13px;
+      height: 13px;
+    }
   }
 
   .glp1-num {
@@ -1326,31 +1351,6 @@
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 
-  .glp1-tier-select {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    padding: 4px 0 2px 0;
-
-    &.glp1-tier-disabled {
-      opacity: 0.5;
-    }
-  }
-
-  .glp1-tier-radio {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: #ffffff;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-
-    input[type="radio"] {
-      accent-color: #4da6ff;
-      cursor: pointer;
-    }
-  }
 }
 
 // Mobile responsive

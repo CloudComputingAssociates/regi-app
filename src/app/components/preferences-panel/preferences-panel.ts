@@ -421,8 +421,16 @@ import { MatIconModule } from '@angular/material/icon';
               <div class="accordion-body">
                 <div class="settings-section glp1-section">
                   <div class="glp1-column">
+                    <!-- Website is the row anchor — its left edge of the input
+                         (after the 110px label slot) lines up with the [mg]
+                         inputs in the dose rows below. -->
                     <div class="glp1-field-row">
-                      <label class="setting-label">Brand</label>
+                      <label class="setting-label glp1-row-label">Website</label>
+                      <input type="text" class="glp1-text glp1-text-wide"
+                        [disabled]="!userSettingsService.glp1().enabled"
+                        [ngModel]="userSettingsService.glp1().website || ''"
+                        (ngModelChange)="onGlp1FieldChange('website', $event)" />
+                      <label class="setting-label glp1-gap-left">Brand</label>
                       <input type="text" class="glp1-text"
                         [disabled]="!userSettingsService.glp1().enabled"
                         [ngModel]="userSettingsService.glp1().brand || ''"
@@ -432,11 +440,6 @@ import { MatIconModule } from '@angular/material/icon';
                         [disabled]="!userSettingsService.glp1().enabled"
                         [ngModel]="userSettingsService.glp1().pharmacy || ''"
                         (ngModelChange)="onGlp1FieldChange('pharmacy', $event)" />
-                      <label class="setting-label glp1-gap-left">Website</label>
-                      <input type="text" class="glp1-text glp1-text-wide"
-                        [disabled]="!userSettingsService.glp1().enabled"
-                        [ngModel]="userSettingsService.glp1().website || ''"
-                        (ngModelChange)="onGlp1FieldChange('website', $event)" />
                     </div>
 
                     <!-- Start Dose: locks once all 3 fields are filled. The
@@ -445,7 +448,7 @@ import { MatIconModule } from '@angular/material/icon';
                          Current Dose still empty, Current is auto-seeded as
                          the "you were here" snapshot. -->
                     <div class="glp1-dose-row">
-                      <label class="setting-label glp1-dose-label">Start Dose</label>
+                      <label class="setting-label glp1-row-label">Start Dose</label>
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
                         [ngModel]="(userSettingsService.glp1().startDose || {}).dose"
@@ -478,43 +481,36 @@ import { MatIconModule } from '@angular/material/icon';
                       }
                     </div>
 
-                    <!-- Current vs Maintenance is a single state — you're on
-                         one or the other. Radio picks which row is editable. -->
-                    <div class="glp1-tier-select" [class.glp1-tier-disabled]="!userSettingsService.glp1().enabled">
-                      <label class="glp1-tier-radio">
-                        <input type="radio" name="glp1ActiveTier" value="currentDose"
-                          [checked]="glp1ActiveTier() === 'currentDose'"
-                          [disabled]="!userSettingsService.glp1().enabled"
-                          (change)="onGlp1TierSelect('currentDose')" />
-                        Current Dose
-                      </label>
-                      <label class="glp1-tier-radio">
-                        <input type="radio" name="glp1ActiveTier" value="maintenanceDose"
-                          [checked]="glp1ActiveTier() === 'maintenanceDose'"
-                          [disabled]="!userSettingsService.glp1().enabled"
-                          (change)="onGlp1TierSelect('maintenanceDose')" />
-                        Maintenance Dose
-                      </label>
-                    </div>
-
+                    <!-- Current Dose row. "Maintenance" checkbox at the end is
+                         a soft decorator — it flags that the user is on the
+                         maintenance phase but doesn't change where the dose
+                         data is stored. Persisted in localStorage so it
+                         survives refresh without needing a schema field. -->
                     <div class="glp1-dose-row">
-                      <label class="setting-label glp1-dose-label">{{ glp1ActiveTier() === 'currentDose' ? 'Current' : 'Maintenance' }}</label>
+                      <label class="setting-label glp1-row-label">Current Dose</label>
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled"
-                        [ngModel]="(userSettingsService.glp1()[glp1ActiveTier()] || {}).dose"
-                        (change)="onGlp1DoseChange(glp1ActiveTier(), 'dose', $event)" />
+                        [ngModel]="(userSettingsService.glp1().currentDose || {}).dose"
+                        (change)="onGlp1DoseChange('currentDose', 'dose', $event)" />
                       <span class="glp1-unit">mg</span>
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled"
-                        [ngModel]="(userSettingsService.glp1()[glp1ActiveTier()] || {}).units"
-                        (change)="onGlp1DoseChange(glp1ActiveTier(), 'units', $event)" />
+                        [ngModel]="(userSettingsService.glp1().currentDose || {}).units"
+                        (change)="onGlp1DoseChange('currentDose', 'units', $event)" />
                       <span class="glp1-unit">units</span>
                       <span class="glp1-every">every</span>
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled"
-                        [ngModel]="(userSettingsService.glp1()[glp1ActiveTier()] || {}).intervalDays"
-                        (change)="onGlp1DoseChange(glp1ActiveTier(), 'intervalDays', $event)" />
+                        [ngModel]="(userSettingsService.glp1().currentDose || {}).intervalDays"
+                        (change)="onGlp1DoseChange('currentDose', 'intervalDays', $event)" />
                       <span class="glp1-unit">days</span>
+                      <label class="glp1-maint-check">
+                        <input type="checkbox"
+                          [disabled]="!userSettingsService.glp1().enabled"
+                          [checked]="glp1OnMaintenance()"
+                          (change)="onMaintenanceChange($event)" />
+                        Maintenance
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -554,10 +550,12 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   planningOpen = signal(false);
   glp1Open = signal(false);
 
-  // Which of (Current, Maintenance) the user is currently on. Component-local
-  // — defaults to 'currentDose' and persists for the session only. Until a
-  // schema field exists for "active tier", this lives in the UI.
-  glp1ActiveTier = signal<'currentDose' | 'maintenanceDose'>('currentDose');
+  // "Maintenance" decorator on the Current Dose row. Soft flag — does not
+  // change where dose data is stored, just notes that the user has graduated
+  // from titration to maintenance. localStorage-backed so it survives refresh
+  // without a schema field (the user said "doesn't matter much"; promote to
+  // Glp1Settings.onMaintenance later if cross-device persistence is wanted).
+  glp1OnMaintenance = signal(localStorage.getItem('yeh_glp1_onMaintenance') === 'true');
 
   /** Start Dose is a snapshot — once all three fields are filled it becomes
    *  read-only (semi-indelible). The reset arrow next to the row clears it
@@ -1309,8 +1307,10 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     this.settingsChanged.set(true);
   }
 
-  onGlp1TierSelect(tier: 'currentDose' | 'maintenanceDose'): void {
-    this.glp1ActiveTier.set(tier);
+  onMaintenanceChange(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.glp1OnMaintenance.set(checked);
+    localStorage.setItem('yeh_glp1_onMaintenance', String(checked));
   }
 
   resetStartDose(): void {
