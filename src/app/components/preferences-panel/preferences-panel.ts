@@ -439,26 +439,83 @@ import { MatIconModule } from '@angular/material/icon';
                         (ngModelChange)="onGlp1FieldChange('website', $event)" />
                     </div>
 
-                    @for (tier of glp1Tiers; track tier.key) {
-                      <div class="glp1-dose-row">
-                        <label class="setting-label glp1-dose-label">{{ tier.label }}</label>
-                        <input type="number" min="0" class="glp1-num"
+                    <!-- Start Dose: locks once all 3 fields are filled. The
+                         circular reset button reappears to wipe it back to
+                         editable. When the user completes Start Dose with
+                         Current Dose still empty, Current is auto-seeded as
+                         the "you were here" snapshot. -->
+                    <div class="glp1-dose-row">
+                      <label class="setting-label glp1-dose-label">Start Dose</label>
+                      <input type="number" min="0" class="glp1-num"
+                        [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
+                        [ngModel]="(userSettingsService.glp1().startDose || {}).dose"
+                        (change)="onGlp1DoseChange('startDose', 'dose', $event)" />
+                      <span class="glp1-unit">mg</span>
+                      <input type="number" min="0" class="glp1-num"
+                        [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
+                        [ngModel]="(userSettingsService.glp1().startDose || {}).units"
+                        (change)="onGlp1DoseChange('startDose', 'units', $event)" />
+                      <span class="glp1-unit">units</span>
+                      <span class="glp1-every">every</span>
+                      <input type="number" min="0" class="glp1-num"
+                        [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
+                        [ngModel]="(userSettingsService.glp1().startDose || {}).intervalDays"
+                        (change)="onGlp1DoseChange('startDose', 'intervalDays', $event)" />
+                      <span class="glp1-unit">days</span>
+                      <span class="glp1-every">Start date</span>
+                      <input type="date" class="glp1-date"
+                        [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
+                        [ngModel]="userSettingsService.glp1().startDate || ''"
+                        (ngModelChange)="onGlp1FieldChange('startDate', $event)" />
+                      @if (startDoseLocked()) {
+                        <button type="button" class="glp1-reset-btn"
                           [disabled]="!userSettingsService.glp1().enabled"
-                          [ngModel]="(userSettingsService.glp1()[tier.key] || {}).dose"
-                          (change)="onGlp1DoseChange(tier.key, 'dose', $event)" />
-                        <span class="glp1-unit">mg</span>
-                        <input type="number" min="0" class="glp1-num"
+                          matTooltip="Reset Start Dose"
+                          matTooltipPosition="above"
+                          (click)="resetStartDose()">
+                          <mat-icon>replay</mat-icon>
+                        </button>
+                      }
+                    </div>
+
+                    <!-- Current vs Maintenance is a single state — you're on
+                         one or the other. Radio picks which row is editable. -->
+                    <div class="glp1-tier-select" [class.glp1-tier-disabled]="!userSettingsService.glp1().enabled">
+                      <label class="glp1-tier-radio">
+                        <input type="radio" name="glp1ActiveTier" value="currentDose"
+                          [checked]="glp1ActiveTier() === 'currentDose'"
                           [disabled]="!userSettingsService.glp1().enabled"
-                          [ngModel]="(userSettingsService.glp1()[tier.key] || {}).units"
-                          (change)="onGlp1DoseChange(tier.key, 'units', $event)" />
-                        <span class="glp1-unit">units</span>
-                        <input type="number" min="0" class="glp1-num"
+                          (change)="onGlp1TierSelect('currentDose')" />
+                        Current Dose
+                      </label>
+                      <label class="glp1-tier-radio">
+                        <input type="radio" name="glp1ActiveTier" value="maintenanceDose"
+                          [checked]="glp1ActiveTier() === 'maintenanceDose'"
                           [disabled]="!userSettingsService.glp1().enabled"
-                          [ngModel]="(userSettingsService.glp1()[tier.key] || {}).intervalDays"
-                          (change)="onGlp1DoseChange(tier.key, 'intervalDays', $event)" />
-                        <span class="glp1-unit">days</span>
-                      </div>
-                    }
+                          (change)="onGlp1TierSelect('maintenanceDose')" />
+                        Maintenance Dose
+                      </label>
+                    </div>
+
+                    <div class="glp1-dose-row">
+                      <label class="setting-label glp1-dose-label">{{ glp1ActiveTier() === 'currentDose' ? 'Current' : 'Maintenance' }}</label>
+                      <input type="number" min="0" class="glp1-num"
+                        [disabled]="!userSettingsService.glp1().enabled"
+                        [ngModel]="(userSettingsService.glp1()[glp1ActiveTier()] || {}).dose"
+                        (change)="onGlp1DoseChange(glp1ActiveTier(), 'dose', $event)" />
+                      <span class="glp1-unit">mg</span>
+                      <input type="number" min="0" class="glp1-num"
+                        [disabled]="!userSettingsService.glp1().enabled"
+                        [ngModel]="(userSettingsService.glp1()[glp1ActiveTier()] || {}).units"
+                        (change)="onGlp1DoseChange(glp1ActiveTier(), 'units', $event)" />
+                      <span class="glp1-unit">units</span>
+                      <span class="glp1-every">every</span>
+                      <input type="number" min="0" class="glp1-num"
+                        [disabled]="!userSettingsService.glp1().enabled"
+                        [ngModel]="(userSettingsService.glp1()[glp1ActiveTier()] || {}).intervalDays"
+                        (change)="onGlp1DoseChange(glp1ActiveTier(), 'intervalDays', $event)" />
+                      <span class="glp1-unit">days</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -497,13 +554,19 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   planningOpen = signal(false);
   glp1Open = signal(false);
 
-  // Static table — tiers rendered in fixed order so adding/reordering is
-  // a one-place edit instead of three near-identical template blocks.
-  readonly glp1Tiers: Array<{ key: 'startDose' | 'currentDose' | 'maintenanceDose'; label: string }> = [
-    { key: 'startDose', label: 'Start Dose' },
-    { key: 'currentDose', label: 'Current Dose' },
-    { key: 'maintenanceDose', label: 'Maintenance Dose' }
-  ];
+  // Which of (Current, Maintenance) the user is currently on. Component-local
+  // — defaults to 'currentDose' and persists for the session only. Until a
+  // schema field exists for "active tier", this lives in the UI.
+  glp1ActiveTier = signal<'currentDose' | 'maintenanceDose'>('currentDose');
+
+  /** Start Dose is a snapshot — once all three fields are filled it becomes
+   *  read-only (semi-indelible). The reset arrow next to the row clears it
+   *  back to editable. We treat "all 3 positive" as the trigger so a partial
+   *  edit stays open for further input. */
+  startDoseLocked = computed(() => {
+    const sd = this.userSettingsService.glp1().startDose;
+    return !!(sd && (sd.dose ?? 0) > 0 && (sd.units ?? 0) > 0 && (sd.intervalDays ?? 0) > 0);
+  });
 
   // Scroll hint state
   showScrollUp = signal(false);
@@ -1216,7 +1279,7 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     this.settingsChanged.set(true);
   }
 
-  onGlp1FieldChange(field: 'brand' | 'pharmacy' | 'website', value: string): void {
+  onGlp1FieldChange(field: 'brand' | 'pharmacy' | 'website' | 'startDate', value: string): void {
     this.userSettingsService.setGlp1Field(field, value);
     this.settingsChanged.set(true);
   }
@@ -1228,6 +1291,30 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   ): void {
     const raw = +(event.target as HTMLInputElement).value;
     this.userSettingsService.setGlp1Dose(tier, field, raw);
+
+    // When a Start Dose edit just brought the trio to "all-positive", and
+    // Current Dose is still blank, copy Start → Current as the snapshot. We
+    // only seed once (empty Current); a later Start reset won't disturb a
+    // Current the user has been editing.
+    if (tier === 'startDose') {
+      const sd = this.userSettingsService.glp1().startDose;
+      const cd = this.userSettingsService.glp1().currentDose;
+      const sdFull = !!(sd && (sd.dose ?? 0) > 0 && (sd.units ?? 0) > 0 && (sd.intervalDays ?? 0) > 0);
+      const cdEmpty = !cd || (!cd.dose && !cd.units && !cd.intervalDays);
+      if (sdFull && cdEmpty) {
+        this.userSettingsService.setGlp1DoseTier('currentDose', { ...sd });
+      }
+    }
+
+    this.settingsChanged.set(true);
+  }
+
+  onGlp1TierSelect(tier: 'currentDose' | 'maintenanceDose'): void {
+    this.glp1ActiveTier.set(tier);
+  }
+
+  resetStartDose(): void {
+    this.userSettingsService.clearGlp1Dose('startDose');
     this.settingsChanged.set(true);
   }
 

@@ -56,6 +56,7 @@ export interface Glp1Settings {
   brand?: string;
   pharmacy?: string;
   website?: string;
+  startDate?: string; // ISO 8601 (YYYY-MM-DD) — when user began GLP-1 therapy
   startDose?: Glp1Dose;
   currentDose?: Glp1Dose;
   maintenanceDose?: Glp1Dose;

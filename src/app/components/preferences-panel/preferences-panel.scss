@@ -1191,6 +1191,13 @@
     flex-direction: column;
     gap: 8px;
     width: 100%;
+
+    // .setting-label is only coloured inside .plan-column / .regimenu-column /
+    // .pi-column / .macro-control-row scopes; this section is none of those,
+    // so the bare label inherits to dim grey. Restate white here.
+    .setting-label {
+      color: #ffffff;
+    }
   }
 
   .glp1-field-row {
@@ -1264,6 +1271,85 @@
     color: rgba(255, 255, 255, 0.6);
     font-size: 11px;
     padding-right: 4px;
+  }
+
+  // "every" word between [units] and [days] — reads as a connector, not a unit.
+  .glp1-every {
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 0 4px;
+  }
+
+  .glp1-date {
+    padding: 4px 6px;
+    font-size: 12px;
+    font-family: inherit;
+    color: #ffffff;
+    background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+    border: 1px solid #5a5a5a;
+    border-radius: 4px;
+    outline: none;
+    color-scheme: dark;
+    width: 130px;
+
+    &:hover:not(:disabled) { border-color: #6a6a6a; }
+    &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.2); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+
+  // Circular reset button for Start Dose. Matches the in-app dialog disc
+  // sizing (20×20, full circle) but renders as a neutral grey since it is
+  // a destructive-but-trivial control, not a confirm/cancel.
+  .glp1-reset-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid #6a6a6a;
+    background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      line-height: 16px;
+    }
+
+    &:hover:not(:disabled) { background: linear-gradient(180deg, #606060 0%, #454545 100%); }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  .glp1-tier-select {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 4px 0 2px 0;
+
+    &.glp1-tier-disabled {
+      opacity: 0.5;
+    }
+  }
+
+  .glp1-tier-radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+
+    input[type="radio"] {
+      accent-color: #4da6ff;
+      cursor: pointer;
+    }
   }
 }
 

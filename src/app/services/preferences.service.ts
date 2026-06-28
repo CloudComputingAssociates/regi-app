@@ -482,7 +482,7 @@ export class PreferencesService {
     this.dirtyGroups.update(d => ({ ...d, glp1: true }));
   }
 
-  setGlp1Field(field: 'brand' | 'pharmacy' | 'website', value: string): void {
+  setGlp1Field(field: 'brand' | 'pharmacy' | 'website' | 'startDate', value: string): void {
     this.preferencesSignal.update(p => ({ ...p, glp1: { ...p.glp1, [field]: value } }));
     this.dirtyGroups.update(d => ({ ...d, glp1: true }));
   }
@@ -497,6 +497,21 @@ export class PreferencesService {
       const currentTier: Glp1Dose = p.glp1[tier] ?? {};
       return { ...p, glp1: { ...p.glp1, [tier]: { ...currentTier, [field]: n } } };
     });
+    this.dirtyGroups.update(d => ({ ...d, glp1: true }));
+  }
+
+  /** Replace an entire dose tier. Used by setGlp1DoseTier to copy a snapshot
+   *  from Start → Current, and by the reset-arrow on Start Dose to wipe it. */
+  setGlp1DoseTier(
+    tier: 'startDose' | 'currentDose' | 'maintenanceDose',
+    value: Glp1Dose
+  ): void {
+    this.preferencesSignal.update(p => ({ ...p, glp1: { ...p.glp1, [tier]: { ...value } } }));
+    this.dirtyGroups.update(d => ({ ...d, glp1: true }));
+  }
+
+  clearGlp1Dose(tier: 'startDose' | 'currentDose' | 'maintenanceDose'): void {
+    this.preferencesSignal.update(p => ({ ...p, glp1: { ...p.glp1, [tier]: {} } }));
     this.dirtyGroups.update(d => ({ ...d, glp1: true }));
   }
 
