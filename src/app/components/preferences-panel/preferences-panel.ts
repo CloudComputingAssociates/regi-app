@@ -471,9 +471,18 @@ import { MatIconModule } from '@angular/material/icon';
                         [ngModel]="userSettingsService.glp1().startDate || ''"
                         (ngModelChange)="onGlp1FieldChange('startDate', $event)" />
                       @if (startDoseLocked()) {
+                        @if (currentDoseEmpty()) {
+                          <button type="button" class="glp1-promote-btn"
+                            [disabled]="!userSettingsService.glp1().enabled"
+                            matTooltip="Make Start Dose Current Dose"
+                            matTooltipPosition="above"
+                            (click)="copyStartToCurrent()">
+                            <mat-icon>arrow_downward</mat-icon>
+                          </button>
+                        }
                         <button type="button" class="glp1-reset-btn"
                           [disabled]="!userSettingsService.glp1().enabled"
-                          matTooltip="Reset Start Dose"
+                          matTooltip="Reset (clears Start + Current)"
                           matTooltipPosition="above"
                           (click)="resetStartDose()">
                           <mat-icon>replay</mat-icon>
@@ -557,13 +566,25 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   // Glp1Settings.onMaintenance later if cross-device persistence is wanted).
   glp1OnMaintenance = signal(localStorage.getItem('yeh_glp1_onMaintenance') === 'true');
 
-  /** Start Dose is a snapshot — once all three fields are filled it becomes
-   *  read-only (semi-indelible). The reset arrow next to the row clears it
-   *  back to editable. We treat "all 3 positive" as the trigger so a partial
-   *  edit stays open for further input. */
+  /** Start Dose is a snapshot — once dose + units + intervalDays + startDate
+   *  are all filled it becomes read-only (semi-indelible). The reset arrow
+   *  next to the row clears it back to editable. Including startDate in the
+   *  predicate is critical: locking on just the 3 numerics would disable the
+   *  date input the moment the third number is typed, before the user has a
+   *  chance to enter the date. */
   startDoseLocked = computed(() => {
-    const sd = this.userSettingsService.glp1().startDose;
-    return !!(sd && (sd.dose ?? 0) > 0 && (sd.units ?? 0) > 0 && (sd.intervalDays ?? 0) > 0);
+    const g = this.userSettingsService.glp1();
+    const sd = g.startDose;
+    return !!(sd && (sd.dose ?? 0) > 0 && (sd.units ?? 0) > 0 && (sd.intervalDays ?? 0) > 0 && g.startDate);
+  });
+
+  /** True when Current Dose has no values entered yet — controls whether the
+   *  green ⇩ "promote Start to Current" button appears. We don't auto-seed
+   *  Current from Start because the user wants the choice explicit (and the
+   *  Material guide-balloon nudges them toward it). */
+  currentDoseEmpty = computed(() => {
+    const cd = this.userSettingsService.glp1().currentDose;
+    return !cd || (!cd.dose && !cd.units && !cd.intervalDays);
   });
 
   // Scroll hint state
@@ -1289,21 +1310,16 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   ): void {
     const raw = +(event.target as HTMLInputElement).value;
     this.userSettingsService.setGlp1Dose(tier, field, raw);
+    this.settingsChanged.set(true);
+  }
 
-    // When a Start Dose edit just brought the trio to "all-positive", and
-    // Current Dose is still blank, copy Start → Current as the snapshot. We
-    // only seed once (empty Current); a later Start reset won't disturb a
-    // Current the user has been editing.
-    if (tier === 'startDose') {
-      const sd = this.userSettingsService.glp1().startDose;
-      const cd = this.userSettingsService.glp1().currentDose;
-      const sdFull = !!(sd && (sd.dose ?? 0) > 0 && (sd.units ?? 0) > 0 && (sd.intervalDays ?? 0) > 0);
-      const cdEmpty = !cd || (!cd.dose && !cd.units && !cd.intervalDays);
-      if (sdFull && cdEmpty) {
-        this.userSettingsService.setGlp1DoseTier('currentDose', { ...sd });
-      }
-    }
-
+  /** Green ⇩ button — explicit promote of Start Dose into Current Dose. Only
+   *  visible while currentDoseEmpty(); once Current has values the button
+   *  hides (the user is now titrating Current independently). */
+  copyStartToCurrent(): void {
+    const sd = this.userSettingsService.glp1().startDose;
+    if (!sd) return;
+    this.userSettingsService.setGlp1DoseTier('currentDose', { ...sd });
     this.settingsChanged.set(true);
   }
 
@@ -1315,6 +1331,13 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
 
   resetStartDose(): void {
     this.userSettingsService.clearGlp1Dose('startDose');
+    // Reset is the "I screwed up, start over" button. Wipe Current Dose too
+    // since it was either a copy of Start (via the green ⇩) or being titrated
+    // off a Start that's now being replaced — either way the user is asking
+    // for a clean slate. Date goes with the numerics so an orphaned date
+    // wouldn't re-trigger the lock prematurely.
+    this.userSettingsService.clearGlp1Dose('currentDose');
+    this.userSettingsService.setGlp1Field('startDate', '');
     this.settingsChanged.set(true);
   }
 

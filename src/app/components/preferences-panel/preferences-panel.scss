@@ -1323,6 +1323,38 @@
     &:disabled { opacity: 0.45; cursor: not-allowed; }
   }
 
+  // Green promote button — "make Start Dose the Current Dose". Sits in
+  // front of the reset arrow and only renders when Start is locked AND
+  // Current is empty. Uses the dialog confirm-green (#28c941 per CLAUDE.md)
+  // so the action reads as a positive commit, paired with an `arrow_downward`
+  // icon to suggest "push values down into Current".
+  .glp1-promote-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid #1f8c2f;
+    background: linear-gradient(180deg, #3fd055 0%, #28c941 100%);
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      line-height: 16px;
+    }
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(180deg, #4ddc63 0%, #34d44d 100%);
+    }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
   // Circular reset button for Start Dose. Matches the in-app dialog disc
   // sizing (20×20, full circle) but renders as a neutral grey since it is
   // a destructive-but-trivial control, not a confirm/cancel.
