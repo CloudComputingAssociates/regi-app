@@ -14,14 +14,16 @@ import { environment } from '../../../environments/environment';
 
 const APP_AREAS = [
   'Today',
-  'Week Plan',
-  'RegiMenu MealPlans',
-  'Shopping List',
-  'Food Preferences',
+  'Menu Planning',
+  'Foods',
   'Chat',
   'Settings',
   'Account',
-  'General'
+  'Mobile-Journal',
+  'Mobile UPC scan',
+  'Mobile Command-Bloom',
+  'Mobile Chat/Wake/PTT',
+  'Mobile Install/Tethering'
 ];
 
 @Component({
@@ -96,7 +98,7 @@ export class IssuePanelComponent {
   // detection when the user typed.
   subject = model('');
   description = model('');
-  appArea = model('General');
+  appArea = model('Today');
 
   submitting = signal(false);
   submitted = signal(false);
@@ -153,7 +155,7 @@ export class IssuePanelComponent {
   resetForm(): void {
     this.subject.set('');
     this.description.set('');
-    this.appArea.set('General');
+    this.appArea.set('Today');
     this.submitted.set(false);
     this.ticketId.set(0);
   }
