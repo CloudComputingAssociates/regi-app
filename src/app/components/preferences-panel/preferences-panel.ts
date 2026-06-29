@@ -474,7 +474,7 @@ import { MatIconModule } from '@angular/material/icon';
                         @if (currentDoseEmpty()) {
                           <button type="button" class="glp1-promote-btn"
                             [disabled]="!userSettingsService.glp1().enabled"
-                            matTooltip="Make Start Dose Current Dose"
+                            matTooltip="Copy Start Dose to Current"
                             matTooltipPosition="above"
                             (click)="copyStartToCurrent()">
                             <mat-icon>arrow_downward</mat-icon>

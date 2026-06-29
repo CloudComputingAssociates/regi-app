@@ -1,17 +1,6 @@
-// src/app/services/week-plan-print.service.ts
+// src/app/services/print.service.ts
 import { Injectable } from '@angular/core';
-import { WeekPlan, DayPlan, Meal, MealItem } from '../models/planning.model';
-
-export interface PrintOptions {
-  includeToday: boolean;
-  includeWeek: boolean;
-  includeShoppingList: boolean;
-  todayDate?: string; // YYYY-MM-DD for single day print
-  userName: string;
-  eatingStartTime: string;
-  mealsPerDay: number;
-  fastingType: string;
-}
+import { WeekPlan } from '../models/planning.model';
 
 interface AggregatedFood {
   foodName: string;
@@ -21,58 +10,33 @@ interface AggregatedFood {
   categoryName: string;
 }
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
 @Injectable({ providedIn: 'root' })
-export class WeekPlanPrintService {
+export class PrintService {
 
-  print(wp: WeekPlan, options: PrintOptions): void {
-    const html = this.buildHtml(wp, options);
+  print(wp: WeekPlan): void {
+    const html = this.buildHtml(wp);
     const popup = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
     if (!popup) return;
     popup.document.write(html);
     popup.document.close();
-    // Auto-trigger print after rendering
     popup.onload = () => setTimeout(() => popup.print(), 300);
   }
 
-  private buildHtml(wp: WeekPlan, options: PrintOptions): string {
-    const activeDays = (wp.days || [])
-      .filter(d => d.meals?.length > 0)
-      .sort((a, b) => new Date(a.planDate).getTime() - new Date(b.planDate).getTime());
-
+  private buildHtml(wp: WeekPlan): string {
+    const activeDays = (wp.days || []).filter(d => d.meals?.length > 0);
     const totalDays = activeDays.length;
-    let bodyContent = '';
-
-    if (options.includeToday && options.todayDate) {
-      const todayDay = activeDays.find(d => d.planDate === options.todayDate);
-      if (todayDay) {
-        const todayIdx = activeDays.indexOf(todayDay);
-        bodyContent += this.buildDaySection(todayDay, todayIdx + 1, totalDays, wp, options);
-      }
-    }
-
-    if (options.includeWeek) {
-      activeDays.forEach((day, idx) => {
-        bodyContent += this.buildDaySection(day, idx + 1, totalDays, wp, options);
-      });
-    }
-
-    if (options.includeShoppingList) {
-      bodyContent += this.buildShoppingList(wp, totalDays);
-    }
+    const bodyContent = this.buildShoppingList(wp, totalDays);
 
     return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>${this.escHtml(wp.name)} - Meal Plan</title>
+  <title>${this.escHtml(wp.name)} - Shopping List</title>
   <style>${this.getStyles()}</style>
 </head>
 <body>
   ${bodyContent}
   <script>
-    // Update page numbers after render
     const pages = document.querySelectorAll('.page');
     const total = pages.length;
     pages.forEach((p, i) => {
@@ -83,86 +47,9 @@ export class WeekPlanPrintService {
 </html>`;
   }
 
-  private buildDaySection(day: DayPlan, dayNum: number, totalDays: number, wp: WeekPlan, options: PrintOptions): string {
-    const date = new Date(day.planDate + 'T00:00:00');
-    const dayName = DAYS[date.getDay()];
-
-    // Calculate targets from meals
-    let totalCal = 0, totalPro = 0, totalFat = 0, totalCarb = 0;
-    for (const dpm of day.meals || []) {
-      if (!dpm.meal) continue;
-      totalCal += dpm.meal.totalCalories ?? 0;
-      totalPro += Math.round(dpm.meal.totalProteinG ?? 0);
-      totalFat += Math.round(dpm.meal.totalFatG ?? 0);
-      totalCarb += Math.round(dpm.meal.totalCarbG ?? 0);
-    }
-
-    const macroTotal = totalPro * 4 + totalFat * 9 + totalCarb * 4;
-    const proPct = macroTotal > 0 ? Math.round((totalPro * 4 / macroTotal) * 100) : 0;
-    const fatPct = macroTotal > 0 ? Math.round((totalFat * 9 / macroTotal) * 100) : 0;
-    const carbPct = macroTotal > 0 ? Math.round((totalCarb * 4 / macroTotal) * 100) : 0;
-
-    // Build meal sections
-    const sortedMeals = [...(day.meals || [])].sort((a, b) => a.mealSlot - b.mealSlot);
-    let mealsHtml = '';
-
-    sortedMeals.forEach((dpm, i) => {
-      if (!dpm.meal) return;
-      const mealTime = this.calculateMealTime(options.eatingStartTime, i, options.mealsPerDay, options.fastingType);
-      mealsHtml += this.buildMealSection(dpm.meal, dpm.mealSlot, mealTime);
-    });
-
-    const dateFormatted = this.formatDateDisplay(day.planDate);
-
-    return `
-    <div class="page">
-      ${this.buildDayHeader(dayName, dayNum, totalDays, dateFormatted)}
-      <div class="daily-targets">
-        Daily Targets: ${totalCal} calories | ${totalPro}g protein (${proPct}%) | ${totalCarb}g carbs (${carbPct}%) | ${totalFat}g fat (${fatPct}%)
-      </div>
-      ${mealsHtml}
-      ${this.buildFooter(options.userName)}
-    </div>`;
-  }
-
-  private buildMealSection(meal: Meal, slot: number, time: string): string {
-    const mCal = meal.totalCalories ?? 0;
-    const mPro = Math.round(meal.totalProteinG ?? 0);
-    const mFat = Math.round(meal.totalFatG ?? 0);
-    const mCarb = Math.round(meal.totalCarbG ?? 0);
-
-    let rows = '';
-    for (const item of meal.items || []) {
-      rows += `
-        <tr>
-          <td>${this.escHtml(item.shortDescription || item.foodName)}</td>
-          <td>${this.formatQty(item.quantity)} ${this.escHtml(item.unit)}</td>
-          <td class="num">${item.calories ?? 0}</td>
-          <td class="num">${Math.round(item.proteinG ?? 0)}g</td>
-          <td class="num">${Math.round(item.carbG ?? 0)}g</td>
-          <td class="num">${Math.round(item.fatG ?? 0)}g</td>
-        </tr>`;
-    }
-
-    return `
-    <div class="meal-section">
-      <div class="meal-title">${time} Meal ${slot} - ${this.escHtml(meal.name)}</div>
-      <div class="meal-totals">
-        Total: ${mCal} calories | ${mPro}g protein | ${mCarb}g carbs | ${mFat}g fat
-      </div>
-      <table class="food-table">
-        <thead>
-          <tr><th>Food Item</th><th>Amount</th><th>Calories</th><th>Protein</th><th>Carbs</th><th>Fat</th></tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
-  }
-
   private buildShoppingList(wp: WeekPlan, dayCount: number): string {
     const foods = this.aggregateFoods(wp);
 
-    // Group by category
     const categories = new Map<string, AggregatedFood[]>();
     for (const food of foods) {
       const cat = food.categoryName || 'Other';
@@ -226,65 +113,16 @@ export class WeekPlanPrintService {
     return Array.from(map.values());
   }
 
-  private buildDayHeader(dayName: string, dayNum: number, totalDays: number, date: string): string {
-    return `
-      <div class="header">
-        <div class="header-left">
-          <span class="header-day">${dayName}</span>
-          <span class="header-day-num">(Day ${dayNum} of ${totalDays})</span>
-        </div>
-        <img src="/images/yeh_logo_dark.png" class="header-logo" alt="YEH" />
-      </div>
-      <div class="sub-header-date">${date}</div>`;
-  }
-
-  private buildHeader(planName: string): string {
-    return `
-      <div class="header">
-        <div class="header-title">${this.escHtml(planName)}</div>
-        <img src="/images/yeh_logo_dark.png" class="header-logo" alt="YEH" />
-      </div>`;
-  }
-
   private buildFooter(userName: string): string {
     const userLine = userName ? ` for ${this.escHtml(userName)}` : '';
     return `
       <div class="footer">
         <div class="footer-left">
           <img src="/images/yeh_logo_dark.png" class="footer-logo" alt="" />
-          <span>: <strong>RegiMenu&trade;</strong> MealPlan${userLine}</span>
+          <span>: <strong>RegiMenu&trade;</strong> Shopping List${userLine}</span>
         </div>
         <span class="page-num"></span>
       </div>`;
-  }
-
-  private calculateMealTime(startTime: string, index: number, mealsPerDay: number, fastingType: string): string {
-    const windowHours = this.getEatingWindowHours(fastingType);
-    const spacingMinutes = mealsPerDay > 1 ? (windowHours * 60) / (mealsPerDay - 1) : 0;
-    const [hours, mins] = startTime.split(':').map(Number);
-    const totalMinutes = hours * 60 + mins + Math.round(index * spacingMinutes);
-    const h = Math.floor(totalMinutes / 60) % 24;
-    const m = totalMinutes % 60;
-    const period = h >= 12 ? 'PM' : 'AM';
-    const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    return m === 0 ? `${displayH}${period}` : `${displayH}:${String(m).padStart(2, '0')}${period}`;
-  }
-
-  private getEatingWindowHours(fastingType: string): number {
-    switch (fastingType) {
-      case '16_8': return 8;
-      case '18_6': return 6;
-      case '20_4': return 4;
-      case 'omad': return 0;
-      default: return 14;
-    }
-  }
-
-  private formatDateDisplay(planDate: string): string {
-    const d = new Date(planDate + 'T00:00:00');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${mm}/${dd}/${d.getFullYear()}`;
   }
 
   private formatQty(qty: number): string {
@@ -328,71 +166,10 @@ export class WeekPlanPrintService {
         font-weight: 700;
         color: #333;
       }
-      .header-day-num {
-        font-size: 13px;
-        font-weight: 400;
-        color: #888;
-      }
-      .header-title {
-        font-size: 22px;
-        font-weight: 700;
-        color: #333;
-      }
       .header-logo {
         width: 60px;
         height: auto;
       }
-      .sub-header-date {
-        font-size: 13px;
-        color: #666;
-        margin-bottom: 10px;
-      }
-
-      .daily-targets {
-        font-size: 12px;
-        font-weight: 600;
-        color: #555;
-        margin-bottom: 16px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid #ddd;
-      }
-
-      .meal-section {
-        margin-bottom: 20px;
-      }
-      .meal-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: #4a7fb5;
-        border-bottom: 2px solid #4a7fb5;
-        padding-bottom: 4px;
-        margin-bottom: 4px;
-      }
-      .meal-totals {
-        font-size: 12px;
-        font-weight: 600;
-        color: #555;
-        margin-bottom: 8px;
-      }
-
-      .food-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 12px;
-        margin-bottom: 8px;
-      }
-      .food-table th {
-        text-align: left;
-        border-bottom: 1px solid #999;
-        padding: 4px 8px;
-        font-weight: 600;
-        color: #333;
-      }
-      .food-table td {
-        padding: 3px 8px;
-        border-bottom: 1px solid #eee;
-      }
-      .food-table .num { text-align: right; }
 
       .footer {
         margin-top: auto;
@@ -418,7 +195,6 @@ export class WeekPlanPrintService {
         color: #888;
       }
 
-      /* Shopping list */
       .shopping-category { margin-bottom: 16px; }
       .shopping-category h3 {
         font-size: 16px;

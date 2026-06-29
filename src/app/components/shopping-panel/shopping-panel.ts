@@ -13,9 +13,7 @@ import { PreferencesService, WeekStartDay } from '../../services/preferences.ser
 import { NotificationService } from '../../services/notification.service';
 import { ShoppingStaple } from '../../models/settings.models';
 import { WeekPlan, ShoppingProgressItem } from '../../models/planning.model';
-import { WeekPlanPrintService } from '../../services/week-plan-print.service';
-import { AuthService } from '@auth0/auth0-angular';
-import { map, firstValueFrom } from 'rxjs';
+import { PrintService } from '../../services/print.service';
 
 const DAY_TO_NUM: Record<WeekStartDay, number> = {
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
@@ -258,27 +256,14 @@ const PLAN_CATEGORIES: PlanCategory[] = [
         </div>
       </div>
 
-      <!-- "Did I get everything?" confirmation dialog -->
-      <!-- Print options dialog -->
+      <!-- Print shopping-list confirmation dialog -->
       @if (showPrintDialog()) {
         <div class="confirm-overlay" (click)="closePrintDialog()">
           <div class="confirm-dialog print-dialog" (click)="$event.stopPropagation()">
             <button class="popup-close" (click)="closePrintDialog()">✕</button>
-            <p class="print-dialog-title">Print Plan Details</p>
-            <label class="print-option">
-              <input type="checkbox" [checked]="printIncludeToday()" (change)="printIncludeToday.set(!printIncludeToday())" />
-              Today
-            </label>
-            <label class="print-option">
-              <input type="checkbox" [checked]="printIncludeWeek()" (change)="printIncludeWeek.set(!printIncludeWeek())" />
-              Week
-            </label>
-            <label class="print-option">
-              <input type="checkbox" [checked]="printIncludeShoppingList()" (change)="printIncludeShoppingList.set(!printIncludeShoppingList())" />
-              Shopping List
-            </label>
+            <p class="print-dialog-title">Print Shopping List?</p>
             <div class="print-dialog-actions">
-              <button class="dismiss-btn print-go-btn" [disabled]="printLoading() || (!printIncludeToday() && !printIncludeWeek() && !printIncludeShoppingList())" (click)="executePrint()">
+              <button class="dismiss-btn print-go-btn" [disabled]="printLoading()" (click)="executePrint()">
                 @if (printLoading()) { Loading... } @else { Print }
               </button>
               <button class="dismiss-btn" (click)="closePrintDialog()">Cancel</button>
@@ -321,20 +306,14 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
   private weekPlanService = inject(WeekPlanService);
   private prefs = inject(PreferencesService);
   private notificationService = inject(NotificationService);
-  private printService = inject(WeekPlanPrintService);
-  private auth = inject(AuthService);
+  private printService = inject(PrintService);
   private el = inject(ElementRef);
   private ngZone = inject(NgZone);
-
-  private userName$ = this.auth.user$.pipe(map(u => u?.name ?? 'User'));
 
   isSaving = signal(false);
 
   // Print dialog
   showPrintDialog = signal(false);
-  printIncludeToday = signal(false);
-  printIncludeWeek = signal(false);
-  printIncludeShoppingList = signal(true);
   printLoading = signal(false);
 
   // Staples data
@@ -725,9 +704,6 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
   }
 
   openPrintDialog(): void {
-    this.printIncludeToday.set(false);
-    this.printIncludeWeek.set(false);
-    this.printIncludeShoppingList.set(true);
     this.showPrintDialog.set(true);
   }
 
@@ -735,29 +711,13 @@ export class ShoppingPanelComponent implements OnInit, OnDestroy {
     this.showPrintDialog.set(false);
   }
 
-  async executePrint(): Promise<void> {
+  executePrint(): void {
     const wp = this.selectedWeekPlan();
     if (!wp) return;
 
     this.printLoading.set(true);
     try {
-      const userName = await firstValueFrom(this.userName$);
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-
-      this.printService.print(wp, {
-        includeToday: this.printIncludeToday(),
-        includeWeek: this.printIncludeWeek(),
-        includeShoppingList: this.printIncludeShoppingList(),
-        todayDate: `${yyyy}-${mm}-${dd}`,
-        userName: userName ?? 'User',
-        eatingStartTime: this.prefs.eatingStartTime(),
-        mealsPerDay: this.prefs.mealsPerDay(),
-        fastingType: this.prefs.fastingType()
-      });
-
+      this.printService.print(wp);
       this.closePrintDialog();
     } catch {
       this.notificationService.show('Failed to print', 'error');
