@@ -125,7 +125,7 @@ export class IssuePanelComponent {
     try {
       const resp = await firstValueFrom(
         this.http.post<{ ticketId: number; message: string }>(
-          `${environment.apiUrl}/support/defect`,
+          `${environment.apiUrl}/support/issue`,
           {
             subject: this.subject().trim(),
             description: this.description().trim(),
