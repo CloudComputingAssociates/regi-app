@@ -47,9 +47,13 @@ export interface RegiMenuSettings {
    */
   eatingStartTime?: string;
   /**
-   * Number of times to repeat meal plan (1-4)
+   * Number of times to repeat meal plan (1-12)
    */
   repeatMeals?: number;
+  /**
+   * Number of people the meal plan serves
+   */
+  persons?: number;
   /**
    * Day of week that starts a new meal planning week
    */

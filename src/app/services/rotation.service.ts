@@ -156,14 +156,13 @@ export class RotationService {
     this.loading.set(true);
     this.error.set(null);
     try {
-      // peopleCount isn't modelled on RegiMenuSettings yet; read defensively.
-      const peopleCount =
-        (this.settingsService.allSettings()?.regiMenu as { peopleCount?: number } | undefined)
-          ?.peopleCount ?? 2;
+      // Standing people default for this user (persons; defaults to 1). Written
+      // through to the rotation's peopleCount on the generate request.
+      const persons = this.settingsService.allSettings()?.regiMenu?.persons ?? 1;
       const detail = await firstValueFrom(
         this.http.post<RotationDetail>(`${this.baseUrl}/rotation/generate`, {
           spanDays: 7,
-          peopleCount,
+          peopleCount: persons,
           distinctMeals: 0,
         }),
       );

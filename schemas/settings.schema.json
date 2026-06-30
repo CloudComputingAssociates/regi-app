@@ -49,8 +49,15 @@
         "repeatMeals": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 4,
-          "description": "Number of times to repeat meal plan (1-4)"
+          "maximum": 12,
+          "description": "Number of times to repeat meal plan (1-12)"
+        },
+        "persons": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "default": 1,
+          "description": "Number of people the meal plan serves"
         },
         "weekStartDay": {
           "type": "string",
