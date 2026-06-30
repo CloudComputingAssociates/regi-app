@@ -20,6 +20,24 @@
   color: #f1f1f1;
 }
 
+// Loaded state: board on the left, Meals binder on the right.
+.menus-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+}
+
+// The board column — owns the toolbar, menu-card-row and the scrolling meals
+// canvas. min-width:0 lets the meals grid reflow as the binder claims width.
+.menus-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 // Thin raised toolbar pinned at the very top of the panel. flex-shrink:0 keeps
 // it (and the menu-card-row below it) from scrolling with the meals canvas.
 // Etched in the app chrome grey family: lighter top edge, darker bottom edge,

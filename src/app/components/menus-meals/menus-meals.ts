@@ -16,7 +16,10 @@ import { MealComponent } from '../meal/meal';
     @if (menu(); as m) {
       <div class="canvas-grid">
         @for (slot of m.slots; track slot.slotOrder) {
-          <app-meal [slot]="slot" [items]="itemsFor(slot.mealId)" />
+          <app-meal
+            [slot]="slot"
+            [items]="itemsFor(slot.mealId)"
+            (placeMeal)="onPlace($event)" />
         }
       </div>
     }
@@ -30,5 +33,12 @@ export class MenusMealsComponent {
 
   itemsFor(mealId: number | null | undefined): MealItem[] {
     return this.rotation.slotItems(mealId);
+  }
+
+  /** A binder meal was dropped on an empty slot — assign it to this menu. */
+  onPlace(e: { slotOrder: number; mealId: number }): void {
+    const menuId = this.menu()?.id;
+    if (menuId == null) return;
+    this.rotation.placeMealInSlot(menuId, e.slotOrder, e.mealId);
   }
 }

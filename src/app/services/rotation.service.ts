@@ -14,6 +14,7 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Meal, MealItem, Menu, Rotation, RotationDetail } from '../models';
 import { SettingsService } from './settings.service';
+import { NotificationService } from './notification.service';
 
 /** Aggregate macro totals for a menu (grams + calories). */
 export interface MenuTotals {
@@ -28,6 +29,7 @@ export interface MenuTotals {
 export class RotationService {
   private http = inject(HttpClient);
   private settingsService = inject(SettingsService);
+  private notification = inject(NotificationService);
   private baseUrl = environment.apiUrl;
 
   // ---- State -----------------------------------------------------------
@@ -36,6 +38,9 @@ export class RotationService {
   readonly error = signal<string | null>(null);
 
   readonly selectedMenuId = signal<number | null>(null);
+
+  /** The user's saved meals, for the right-hand Meals binder. */
+  readonly binderMeals = signal<Meal[]>([]);
 
   /** Full menus (slots + macros), cached by menuId. Immutable map updates. */
   private menusById = signal<Map<number, Menu>>(new Map());
@@ -174,6 +179,85 @@ export class RotationService {
       this.error.set(this.errMessage(err));
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  /** Build an empty board manually (no AI): create a staged rotation, a menu
+   *  with N empty slots, link it, then load the detail and select the menu.
+   *  Routes/fields confirmed against the API:
+   *    POST /rotation  { spanDays, peopleCount }            -> Rotation
+   *    POST /menu      { slotCount }                        -> Menu (N slots)
+   *    POST /rotation/{id}/menus { menuId, plannedCount }   -> link
+   *    GET  /rotation/{id}                                  -> RotationDetail */
+  async startEmptyPlan(): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      const regiMenu = this.settingsService.allSettings()?.regiMenu;
+      const persons = regiMenu?.persons ?? 1;
+      const slotCount = regiMenu?.mealsPerDay ?? 4;
+
+      const rot = await firstValueFrom(
+        this.http.post<Rotation>(`${this.baseUrl}/rotation`, {
+          spanDays: 7,
+          peopleCount: persons,
+        }),
+      );
+      const menu = await firstValueFrom(
+        this.http.post<Menu>(`${this.baseUrl}/menu`, { slotCount }),
+      );
+      await firstValueFrom(
+        this.http.post(`${this.baseUrl}/rotation/${rot.id}/menus`, {
+          menuId: menu.id,
+          plannedCount: 7,
+        }),
+      );
+
+      const detail = await firstValueFrom(
+        this.http.get<RotationDetail>(`${this.baseUrl}/rotation/${rot.id}`),
+      );
+      this.rotation.set(detail);
+      if (menu.id != null) {
+        this.selectedMenuId.set(menu.id);
+        await this.selectMenu(menu.id);
+      }
+    } catch (err) {
+      this.error.set(this.errMessage(err));
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /** Load the user's saved meals into the binder. GET /meal returns a bare
+   *  Meal[] (full objects, so isSaved is present); show only saved ones. */
+  async loadBinderMeals(): Promise<void> {
+    try {
+      const meals = await firstValueFrom(
+        this.http.get<Meal[]>(`${this.baseUrl}/meal`),
+      );
+      this.binderMeals.set((meals ?? []).filter((m) => m.isSaved === true));
+    } catch {
+      this.binderMeals.set([]);
+    }
+  }
+
+  /** Assign a meal to an empty slot (copy — the meal stays in the binder).
+   *    PUT /menu/{menuId}/slot { slotOrder, mealId }
+   *  Re-fetch the menu so the slot + its macros render and selectedMenuTotals
+   *  (the top bars) recompute. A failure toasts but leaves the board intact. */
+  async placeMealInSlot(menuId: number, slotOrder: number, mealId: number): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.put(`${this.baseUrl}/menu/${menuId}/slot`, { slotOrder, mealId }),
+      );
+      const menu = await firstValueFrom(
+        this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
+      );
+      this.menusById.update((m) => new Map(m).set(menuId, menu));
+      // Stream in the assigned meal's items so its food rows appear.
+      void this.loadMeal(mealId);
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
     }
   }
 
