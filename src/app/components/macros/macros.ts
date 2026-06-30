@@ -120,6 +120,7 @@ export class MacrosComponent implements OnInit {
     return {
       macros: [
         { name: 'proteins', actual: 0, target: goals?.protein ?? 0, percentage: 100 },
+        { name: 'fiber', actual: 0, target: goals?.fiber ?? 0, percentage: 100 },
         { name: 'fats', actual: 0, target: goals?.fat ?? 0, percentage: 100 },
         { name: 'carbs', actual: 0, target: goals?.carbs ?? 0, percentage: 100 }
       ],
@@ -133,12 +134,14 @@ export class MacrosComponent implements OnInit {
     const totals = this.thisWeekMacros.totals();
     const goals = this.preferencesService.dailyGoals();
     const targetP = goals?.protein ?? 150;
+    const targetFiber = goals?.fiber ?? 30;
     const targetF = goals?.fat ?? 78;
     const targetC = goals?.carbs ?? 175;
 
     return {
       macros: [
         { name: 'proteins', actual: Math.round(totals.proteinG), target: targetP, percentage: this.calculatePercentage(totals.proteinG, targetP) },
+        { name: 'fiber', actual: Math.round(totals.fiberG), target: targetFiber, percentage: this.calculatePercentage(totals.fiberG, targetFiber) },
         { name: 'fats', actual: Math.round(totals.fatG), target: targetF, percentage: this.calculatePercentage(totals.fatG, targetF) },
         { name: 'carbs', actual: Math.round(totals.carbG), target: targetC, percentage: this.calculatePercentage(totals.carbG, targetC) },
       ],
@@ -154,6 +157,7 @@ export class MacrosComponent implements OnInit {
   private static readonly ZERO_MACROS: MacroDisplayData = {
     macros: [
       { name: 'proteins', actual: 0, target: 0, percentage: 0 },
+      { name: 'fiber', actual: 0, target: 0, percentage: 0 },
       { name: 'fats', actual: 0, target: 0, percentage: 0 },
       { name: 'carbs', actual: 0, target: 0, percentage: 0 }
     ],
@@ -188,6 +192,12 @@ export class MacrosComponent implements OnInit {
         actual: data.nutrients.protein['actual-day'],
         target: data.nutrients.protein['target-grams'],
         percentage: this.calculatePercentage(data.nutrients.protein['actual-day'], data.nutrients.protein['target-grams'])
+      },
+      {
+        name: 'fiber',
+        actual: data.nutrients.fiber['actual-day'],
+        target: data.nutrients.fiber['target-grams'],
+        percentage: this.calculatePercentage(data.nutrients.fiber['actual-day'], data.nutrients.fiber['target-grams'])
       },
       {
         name: 'fats',
@@ -251,9 +261,10 @@ export class MacrosComponent implements OnInit {
   getMacroColor(macroName: string): string {
     switch (macroName) {
       case 'proteins': return '#41ac17';
-      case 'fats': return '#902ee3';
-      case 'carbs': return '#e67300';
-      default: return '#5a62b3';
+      case 'fiber':    return '#e67300';
+      case 'fats':     return '#902ee3';
+      case 'carbs':    return '#b3261e';
+      default:         return '#5a62b3';
     }
   }
 
@@ -263,14 +274,15 @@ export class MacrosComponent implements OnInit {
   }
 
   /**
-   * Get label color - same as bar, slightly brighter for fats/carbs
+   * Get label color - same as bar, slightly brighter for fats/carbs/fiber
    */
   getLabelColor(macroName: string): string {
     switch (macroName) {
       case 'proteins': return '#41ac17';
-      case 'fats': return '#c060ff';
-      case 'carbs': return '#ffb347';
-      default: return '#5a62b3';
+      case 'fiber':    return '#ffb347';
+      case 'fats':     return '#c060ff';
+      case 'carbs':    return '#e85a4a';
+      default:         return '#5a62b3';
     }
   }
 

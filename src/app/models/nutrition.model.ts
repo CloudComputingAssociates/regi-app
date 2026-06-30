@@ -17,6 +17,7 @@ export interface NutrientData {
 export interface NutritionResponse {
   nutrients: {
     protein: NutrientData;
+    fiber: NutrientData;
     fat: NutrientData;
     carb: NutrientData;
   };

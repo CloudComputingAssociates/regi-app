@@ -24,6 +24,12 @@ export class MacrosService {
         'actual-day': 113,
         'actual-week': 945
       },
+      fiber: {
+        'target-percent': 0,
+        'target-grams': 30,
+        'actual-day': 0,
+        'actual-week': 0
+      },
       fat: {
         'target-percent': 35,
         'target-grams': 78,
@@ -47,12 +53,14 @@ export class MacrosService {
       if (goals.protein) this.nutritionData.nutrients.protein['target-grams'] = goals.protein;
       if (goals.carbs) this.nutritionData.nutrients.carb['target-grams'] = goals.carbs;
       if (goals.fat) this.nutritionData.nutrients.fat['target-grams'] = goals.fat;
+      if (goals.fiber) this.nutritionData.nutrients.fiber['target-grams'] = goals.fiber;
 
       // Recompute target percentages from calories if available
       if (goals.calories && goals.calories > 0) {
         this.nutritionData.nutrients.protein['target-percent'] = Math.round((goals.protein * 4 / goals.calories) * 100);
         this.nutritionData.nutrients.carb['target-percent'] = Math.round((goals.carbs * 4 / goals.calories) * 100);
         this.nutritionData.nutrients.fat['target-percent'] = Math.round((goals.fat * 9 / goals.calories) * 100);
+        this.nutritionData.nutrients.fiber['target-percent'] = Math.round((goals.fiber * 4 / goals.calories) * 100);
       }
 
       // Notify subscribers by re-emitting current period
