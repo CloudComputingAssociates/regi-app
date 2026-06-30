@@ -1,13 +1,21 @@
-// PHASE 0 MOCK — internals replaced with HttpClient in Phase 2; the public surface is final.
+// src/app/services/rotation.service.ts
 //
-// RotationService is the rename target for the old planning surface. It owns
-// the currently-staged Rotation, its Menus (each a set of slots), and the
-// Meals attached to those slots. The menus-panel reads everything from here;
-// the macros bar reads selectedMenuTotals for the "menu" context.
-import { Injectable, computed, signal } from '@angular/core';
-import { Meal, MealItem, Menu, MenuSlot, RotationDetail } from '../models';
+// Live read path for the Menus surface. Owns the current Rotation, its Menus
+// (lazily fetched + cached by id) and the Meals attached to slots (also lazily
+// cached). The Auth0 interceptor in app.config.ts authenticates every call to
+// environment.apiUrl, so no tokens are attached here.
+//
+// The component-facing surface is unchanged from Phase 0:
+//   menus, selectedMenuId, selectMenu, selectedMenu, selectedMenuTotals,
+//   slotItems, getMeal — plus loading/error and the loaders below.
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { Meal, MealItem, Menu, Rotation, RotationDetail } from '../models';
+import { SettingsService } from './settings.service';
 
-/** Aggregate macro totals for a menu (grams; calories derived). */
+/** Aggregate macro totals for a menu (grams + calories). */
 export interface MenuTotals {
   proteinG: number;
   fatG: number;
@@ -16,219 +24,163 @@ export interface MenuTotals {
   calories: number;
 }
 
-/** slotOrder → display label (1→A, 2→B, … 10→J). */
-function slotLabel(slotOrder: number): string {
-  return String.fromCharCode(64 + slotOrder); // 1→'A'
-}
-
 @Injectable({ providedIn: 'root' })
 export class RotationService {
-  // ---- Header + menu entries -------------------------------------------
-  readonly rotation = signal<RotationDetail>({
-    id: 1,
-    name: 'My Rotation',
-    spanDays: 7,
-    peopleCount: 2,
-    status: 'staged',
-    isFavorite: false,
-    menus: [
-      { menuId: 1, menuName: 'Menu A', plannedCount: 3, consumedCount: 0 },
-      { menuId: 2, menuName: 'Menu B', plannedCount: 2, consumedCount: 0 },
-      { menuId: 3, menuName: 'Menu C', plannedCount: 2, consumedCount: 0 },
-    ],
+  private http = inject(HttpClient);
+  private settingsService = inject(SettingsService);
+  private baseUrl = environment.apiUrl;
+
+  // ---- State -----------------------------------------------------------
+  readonly rotation = signal<RotationDetail | null>(null);
+  readonly loading = signal<boolean>(false);
+  readonly error = signal<string | null>(null);
+
+  readonly selectedMenuId = signal<number | null>(null);
+
+  /** Full menus (slots + macros), cached by menuId. Immutable map updates. */
+  private menusById = signal<Map<number, Menu>>(new Map());
+  /** Full meals (items), cached by mealId. Immutable map updates. */
+  private mealsById = signal<Map<number, Meal>>(new Map());
+
+  // ---- Derived (component-facing surface, shapes unchanged) ------------
+  readonly menus = computed(() => this.rotation()?.menus ?? []);
+
+  readonly selectedMenu = computed<Menu | undefined>(() => {
+    const id = this.selectedMenuId();
+    if (id == null) return undefined;
+    return this.menusById().get(id);
   });
 
-  /** Full menus, keyed by menuId. Slots resolve their meals from `meals`. */
-  private readonly menus = new Map<number, Menu>(buildMenus());
-  /** Full meals, keyed by mealId. */
-  private readonly meals = new Map<number, Meal>(buildMeals());
-
-  // ---- Selection -------------------------------------------------------
-  readonly selectedMenuId = signal<number>(1);
-
-  readonly selectedMenu = computed<Menu | undefined>(() =>
-    this.menus.get(this.selectedMenuId()),
-  );
-
-  selectMenu(id: number): void {
-    this.selectedMenuId.set(id);
-  }
-
-  // ---- Lookups ---------------------------------------------------------
-  getMeal(mealId: number): Meal | undefined {
-    return this.meals.get(mealId);
-  }
-
-  slotItems(mealId: number | null | undefined): MealItem[] {
-    if (mealId == null) return [];
-    return this.meals.get(mealId)?.items ?? [];
-  }
-
-  // ---- Totals for the macros bar --------------------------------------
+  // Top macro bars fill the moment the menu loads: summed from slot macros,
+  // not from meal items (which stream in a beat later).
   readonly selectedMenuTotals = computed<MenuTotals>(() => {
     const menu = this.selectedMenu();
     const totals: MenuTotals = { proteinG: 0, fatG: 0, carbG: 0, fiberG: 0, calories: 0 };
     if (!menu) return totals;
     for (const slot of menu.slots) {
-      for (const item of this.slotItems(slot.mealId)) {
-        totals.proteinG += item.proteinG ?? 0;
-        totals.fatG += item.fatG ?? 0;
-        totals.carbG += item.carbG ?? 0;
-        totals.fiberG += item.fiberG ?? 0;
-      }
+      const m = slot.macros;
+      if (!m) continue;
+      totals.proteinG += m.proteinG ?? 0;
+      totals.fatG += m.fatG ?? 0;
+      totals.carbG += m.carbG ?? 0;
+      totals.fiberG += m.fiberG ?? 0;
+      totals.calories += m.calories ?? 0;
     }
-    totals.calories = Math.round(4 * totals.proteinG + 4 * totals.carbG + 9 * totals.fatG);
     return totals;
   });
 
-  // ---- Error surface (stands in for any old planning-error consumer) ---
-  readonly error = signal<string | null>(null);
-}
+  getMeal(mealId: number): Meal | null {
+    return this.mealsById().get(mealId) ?? null;
+  }
 
-// ----------------------------------------------------------------------
-// Mock seed data
-// ----------------------------------------------------------------------
+  slotItems(mealId: number | null | undefined): MealItem[] {
+    if (mealId == null) return [];
+    return this.mealsById().get(mealId)?.items ?? [];
+  }
 
-/** Fill the required Meal fields once so seeds stay terse. */
-function mkMeal(id: number, name: string, items: MealItem[]): Meal {
-  const seq = id;
-  return {
-    id,
-    name,
-    mealType: 'meal',
-    mealSeqNum: seq,
-    isRegiApproved: false,
-    isFavorite: false,
-    isSaved: true,
-    status: 'active',
-    servings: 1,
-    shareCandidate: false,
-    shareApproved: false,
-    createdAt: '2026-06-30T00:00:00Z',
-    updatedAt: '2026-06-30T00:00:00Z',
-    items,
-  };
-}
+  // ---- Loaders ---------------------------------------------------------
 
-/** Build a tracked food item. */
-function mkItem(
-  foodId: number,
-  foodName: string,
-  quantity: number,
-  unit: string,
-  m: { proteinG?: number; fatG?: number; carbG?: number; fiberG?: number },
-  sortOrder: number,
-): MealItem {
-  return {
-    foodId,
-    foodName,
-    foodSource: 'food',
-    itemRole: sortOrder === 0 ? 'primary' : 'side',
-    isTracked: true,
-    quantity,
-    unit,
-    proteinG: m.proteinG ?? 0,
-    fatG: m.fatG ?? 0,
-    carbG: m.carbG ?? 0,
-    fiberG: m.fiberG ?? 0,
-    sortOrder,
-  };
-}
+  /** Load the user's current rotation: pick the active one (else newest),
+   *  fetch its detail, and select the first menu. Empty list → empty state. */
+  async loadCurrentRotation(): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      const list = await firstValueFrom(
+        this.http.get<Rotation[]>(`${this.baseUrl}/rotation`),
+      );
+      if (!list || list.length === 0) {
+        this.rotation.set(null);
+        return;
+      }
+      // List is newest-first; prefer the active rotation, else the first.
+      const chosen = list.find((r) => r.status === 'active') ?? list[0];
+      const detail = await firstValueFrom(
+        this.http.get<RotationDetail>(`${this.baseUrl}/rotation/${chosen.id}`),
+      );
+      this.rotation.set(detail);
+      const firstMenuId = detail.menus[0]?.menuId ?? null;
+      this.selectedMenuId.set(firstMenuId);
+      if (firstMenuId != null) await this.selectMenu(firstMenuId);
+    } catch (err) {
+      this.error.set(this.errMessage(err));
+    } finally {
+      this.loading.set(false);
+    }
+  }
 
-function buildMeals(): [number, Meal][] {
-  const meals: Meal[] = [
-    // ---- Menu A meals ----
-    mkMeal(1, 'Chicken & Rice', [
-      mkItem(101, 'Chicken thighs', 6, 'oz', { proteinG: 42, fatG: 2 }, 0),
-      mkItem(102, 'Brown rice', 0.5, 'cup', { proteinG: 3, carbG: 18, fiberG: 5 }, 1),
-      mkItem(103, 'Olive oil', 1, 'tbsp', { fatG: 3 }, 2),
-    ]),
-    mkMeal(2, 'Tuna & Cucumber', [
-      mkItem(104, 'Tuna', 5, 'oz', { proteinG: 35, fatG: 8 }, 0),
-      mkItem(105, 'Cucumber', 1, 'cup', { proteinG: 3, fatG: 2, carbG: 8 }, 1),
-    ]),
-    mkMeal(3, 'Yogurt & Berries', [
-      mkItem(106, 'Greek yogurt', 1, 'serving', { proteinG: 17, carbG: 10 }, 0),
-      mkItem(107, 'Blueberries', 0.5, 'cup', { proteinG: 1, carbG: 12, fiberG: 3 }, 1),
-    ]),
-    // ---- Menu B meals ----
-    mkMeal(4, 'Salmon & Quinoa', [
-      mkItem(108, 'Salmon', 6, 'oz', { proteinG: 40, fatG: 18 }, 0),
-      mkItem(109, 'Quinoa', 0.75, 'cup', { proteinG: 6, fatG: 3, carbG: 30, fiberG: 5 }, 1),
-    ]),
-    mkMeal(5, 'Egg Scramble', [
-      mkItem(110, 'Eggs', 3, 'large', { proteinG: 18, fatG: 15, carbG: 2 }, 0),
-      mkItem(111, 'Spinach', 1, 'cup', { proteinG: 1, carbG: 1, fiberG: 1 }, 1),
-    ]),
-    mkMeal(6, 'Protein Shake', [
-      mkItem(112, 'Whey protein', 1, 'scoop', { proteinG: 24, fatG: 1, carbG: 3 }, 0),
-      mkItem(113, 'Banana', 1, 'medium', { proteinG: 1, carbG: 27, fiberG: 3 }, 1),
-    ]),
-    // ---- Menu C meals ----
-    mkMeal(7, 'Turkey & Sweet Potato', [
-      mkItem(114, 'Ground turkey', 5, 'oz', { proteinG: 35, fatG: 11 }, 0),
-      mkItem(115, 'Sweet potato', 1, 'cup', { proteinG: 2, carbG: 27, fiberG: 4 }, 1),
-    ]),
-    mkMeal(8, 'Cottage Cheese Bowl', [
-      mkItem(116, 'Cottage cheese', 1, 'cup', { proteinG: 28, fatG: 5, carbG: 8 }, 0),
-      mkItem(117, 'Pineapple', 0.5, 'cup', { carbG: 11, fiberG: 1 }, 1),
-    ]),
-  ];
-  return meals.map((m) => [m.id, m]);
-}
+  /** Select a menu: fetch + cache its full detail if needed (this is what
+   *  makes the top macro bars fill), then stream in the meals for its filled
+   *  slots without blocking the menu render. */
+  async selectMenu(menuId: number): Promise<void> {
+    this.selectedMenuId.set(menuId);
 
-/** Build a slot, computing slotLabel from slotOrder. */
-function mkSlot(
-  slotOrder: number,
-  meal: Meal | null,
-  opts: { isDiningOut?: boolean } = {},
-): MenuSlot {
-  return {
-    slotOrder,
-    slotLabel: slotLabel(slotOrder),
-    slotName: null,
-    mealId: meal?.id ?? null,
-    mealName: meal?.name ?? null,
-    mealType: meal?.mealType ?? null,
-    isDiningOut: opts.isDiningOut ?? false,
-  };
-}
+    if (!this.menusById().has(menuId)) {
+      try {
+        const menu = await firstValueFrom(
+          this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
+        );
+        this.menusById.update((m) => new Map(m).set(menuId, menu));
+      } catch (err) {
+        this.error.set(this.errMessage(err));
+        return;
+      }
+    }
 
-function mkMenu(id: number, name: string, slots: MenuSlot[]): Menu {
-  return {
-    id,
-    name,
-    slotCount: slots.length,
-    isYeh: false,
-    isFavorite: false,
-    isSaved: true,
-    slots,
-  };
-}
+    const menu = this.menusById().get(menuId);
+    if (!menu) return;
+    for (const slot of menu.slots) {
+      if (slot.isDiningOut) continue;
+      const mealId = slot.mealId;
+      if (mealId == null || this.mealsById().has(mealId)) continue;
+      // Fire-and-forget: food rows appear as each meal resolves.
+      void this.loadMeal(mealId);
+    }
+  }
 
-function buildMenus(): [number, Menu][] {
-  // Reference seeded meals by id (mealName is denormalized onto the slot).
-  const ref = (id: number, name: string, mealType: 'meal' | 'snack' = 'meal'): Meal =>
-    ({ id, name, mealType } as Meal);
+  /** Fetch one meal into the cache. A single failure leaves that slot's food
+   *  rows empty rather than failing the whole menu. */
+  private async loadMeal(mealId: number): Promise<void> {
+    try {
+      const meal = await firstValueFrom(
+        this.http.get<Meal>(`${this.baseUrl}/meal/${mealId}`),
+      );
+      this.mealsById.update((m) => new Map(m).set(mealId, meal));
+    } catch {
+      // swallow — see doc comment
+    }
+  }
 
-  const menuA = mkMenu(1, 'Menu A', [
-    mkSlot(1, ref(1, 'Chicken & Rice')),
-    mkSlot(2, ref(2, 'Tuna & Cucumber')),
-    mkSlot(3, ref(3, 'Yogurt & Berries')),
-    mkSlot(4, null), // empty slot
-  ]);
+  // PHASE 2 BOOTSTRAP — replaced by the generate dialog in Phase 3.
+  async generateDefault(): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      // peopleCount isn't modelled on RegiMenuSettings yet; read defensively.
+      const peopleCount =
+        (this.settingsService.allSettings()?.regiMenu as { peopleCount?: number } | undefined)
+          ?.peopleCount ?? 2;
+      const detail = await firstValueFrom(
+        this.http.post<RotationDetail>(`${this.baseUrl}/rotation/generate`, {
+          spanDays: 7,
+          peopleCount,
+          distinctMeals: 0,
+        }),
+      );
+      this.rotation.set(detail);
+      const firstMenuId = detail.menus[0]?.menuId ?? null;
+      this.selectedMenuId.set(firstMenuId);
+      if (firstMenuId != null) await this.selectMenu(firstMenuId);
+    } catch (err) {
+      this.error.set(this.errMessage(err));
+    } finally {
+      this.loading.set(false);
+    }
+  }
 
-  const menuB = mkMenu(2, 'Menu B', [
-    mkSlot(1, ref(4, 'Salmon & Quinoa')),
-    mkSlot(2, ref(5, 'Egg Scramble')),
-    mkSlot(3, ref(6, 'Protein Shake')),
-  ]);
-
-  const menuC = mkMenu(3, 'Menu C', [
-    mkSlot(1, ref(7, 'Turkey & Sweet Potato')),
-    mkSlot(2, ref(8, 'Cottage Cheese Bowl')),
-    mkSlot(3, null, { isDiningOut: true }), // dining out
-  ]);
-
-  return [menuA, menuB, menuC].map((m) => [m.id!, m]);
+  /** Surface a useful message from an HttpErrorResponse. */
+  private errMessage(err: unknown): string {
+    const e = err as { error?: { error?: string }; statusText?: string };
+    return e?.error?.error ?? e?.statusText ?? 'Request failed';
+  }
 }
