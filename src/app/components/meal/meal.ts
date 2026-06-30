@@ -31,7 +31,7 @@ interface SlotMacros {
         <button
           type="button"
           class="edit-affordance"
-          matTooltip="Rename slot"
+          matTooltip="Edit meal name"
           matTooltipPosition="above">
           ✎
         </button>
