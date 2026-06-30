@@ -1,0 +1,49 @@
+// src/app/components/menus-panel/menus-strip.ts
+//
+// Horizontal strip of menu cards for the active rotation. Each card shows the
+// menu name and its planned day count; the selected card gets a blue border.
+// A badge tallies planned days against the rotation span, and a disabled
+// "+ Add menu" stub marks the Phase-1 affordance.
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { RotationMenuEntry } from '../../models';
+
+@Component({
+  selector: 'app-menus-strip',
+  imports: [],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div class="strip">
+      <div class="cards">
+        @for (menu of menus(); track menu.menuId) {
+          <button
+            type="button"
+            class="menu-card"
+            [class.selected]="menu.menuId === selectedMenuId()"
+            (click)="select.emit(menu.menuId)">
+            <span class="menu-name">{{ menu.menuName }}</span>
+            <span class="menu-days">{{ menu.plannedCount }} days</span>
+          </button>
+        }
+
+        <button type="button" class="add-menu-stub" disabled>+ Add menu</button>
+      </div>
+
+      <div class="span-badge" [class.complete]="plannedDays() === spanDays()">
+        <span class="check">✓</span>
+        {{ plannedDays() }} / {{ spanDays() }} days
+      </div>
+    </div>
+  `,
+  styleUrls: ['./menus-strip.scss'],
+})
+export class MenusStripComponent {
+  readonly menus = input.required<RotationMenuEntry[]>();
+  readonly selectedMenuId = input.required<number>();
+  readonly spanDays = input.required<number>();
+
+  readonly select = output<number>();
+
+  readonly plannedDays = computed(() =>
+    this.menus().reduce((sum, m) => sum + (m.plannedCount ?? 0), 0),
+  );
+}

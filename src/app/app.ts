@@ -28,7 +28,7 @@ import { NutritionTipService } from './services/nutrition-tip.service';
 // Help, Bug) are deliberately excluded so a stale overlay never re-opens.
 const LEFT_NAV_PANEL_IDS = new Set([
   'chat',
-  'meal-planning',
+  'menus',
   'foods',
   'shop',
 ]);
@@ -134,10 +134,10 @@ export class AppComponent implements OnInit, OnDestroy {
   hasTipBar = computed(() => this.tabService.activeTabId() === 'chat');
 
   /** True when the active panel should render the chat-input bar below it.
-   *  False on splash, Foods (reclaims the vertical space), and Menu Plan. */
+   *  False on splash, Foods (reclaims the vertical space), and Menus. */
   hasChatInput = computed(() => {
     const id = this.tabService.activeTabId();
-    return id !== null && id !== 'foods' && id !== 'meal-planning';
+    return id !== null && id !== 'foods' && id !== 'menus';
   });
 
   // ------------------------------------------------------------------

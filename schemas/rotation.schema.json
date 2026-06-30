@@ -1,0 +1,729 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.youeatinghealthy.com/schemas/rotation.schema.json",
+  "$comment": "TODO: DailyLog.MenuID and DailyLog.RotationID are defined in the DB (v2.0 rotation model migration). The wire type for DailyLog/Today lives in today.schema.json — those need MenuID and RotationID added there, not here.",
+  "title": "Rotation Schema",
+  "description": "Rotation model: a Rotation owns a set of Menus via menu entries, each with a planned and consumed count. Users 'affirm' a Menu they ate; consumedCount increments and the rotation drains over time. Also covers shopping list, AI recipe, and food lookup payloads driven from the rotation flow.",
+  "type": "object",
+  "definitions": {
+
+    "RotationStatus": {
+      "type": "string",
+      "description": "Lifecycle state of a Rotation. staged = being built (on deck); active = currently eating through it (at bat)",
+      "enum": ["staged", "active"]
+    },
+
+    "Rotation": {
+      "type": "object",
+      "description": "A user-owned rotation: a set of Menus the user is currently eating through, sized for a target span and people count.",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Server-assigned primary key",
+          "readOnly": true
+        },
+        "userId": {
+          "type": "integer",
+          "description": "Owner of the rotation",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name for the rotation"
+        },
+        "spanDays": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10,
+          "description": "How many days the rotation covers (2–10)"
+        },
+        "peopleCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Number of people the menus are sized for (1–10)"
+        },
+        "pinDay": {
+          "type": ["string", "null"],
+          "description": "Day of week the user typically starts (e.g. 'Monday'). Optional — the UX adapts if absent."
+        },
+        "pinDate": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Optional calendar anchor date (YYYY-MM-DD). When set, enables day-count display and macro budget balance tracking."
+        },
+        "status": {
+          "$ref": "#/definitions/RotationStatus"
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "User-saved favorite flag"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the rotation was first created",
+          "readOnly": true
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the rotation was last modified",
+          "readOnly": true
+        }
+      },
+      "required": ["name", "spanDays", "peopleCount", "status", "isFavorite"]
+    },
+
+    "CreateRotationRequest": {
+      "type": "object",
+      "description": "Request body for POST /api/rotation — creates an empty rotation skeleton (no menus yet)",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name for the rotation"
+        },
+        "spanDays": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10,
+          "description": "How many days the rotation covers (2–10)"
+        },
+        "peopleCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 1,
+          "description": "Number of people the menus are sized for (1–10). Defaults to 1."
+        },
+        "pinDay": {
+          "type": ["string", "null"],
+          "description": "Day of week the user typically starts (e.g. 'Monday'). Optional."
+        },
+        "pinDate": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Optional calendar anchor date (YYYY-MM-DD)."
+        }
+      },
+      "required": ["spanDays"]
+    },
+
+    "DiningOutSlot": {
+      "type": "object",
+      "description": "A single slot on a single day that the user wants the generator to skip (eating out)",
+      "properties": {
+        "dayOffset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9,
+          "description": "Zero-based day offset from the rotation startDate (0–9)"
+        },
+        "slotOrder": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "1-based slot order within the day's menu (1–10)"
+        }
+      },
+      "required": ["dayOffset", "slotOrder"]
+    },
+
+    "GenerateRotationRequest": {
+      "type": "object",
+      "description": "Request body for POST /api/rotation/generate — creates a rotation skeleton AND populates it with AI-generated menus and meals",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name for the rotation"
+        },
+        "spanDays": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10,
+          "description": "How many days the rotation covers (2–10)"
+        },
+        "peopleCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 1,
+          "description": "Number of people the menus are sized for (1–10). Defaults to 1."
+        },
+        "pinDay": {
+          "type": ["string", "null"],
+          "description": "Day of week the user typically starts (e.g. 'Monday'). Optional."
+        },
+        "pinDate": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Optional calendar anchor date (YYYY-MM-DD)."
+        },
+        "distinctMeals": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5,
+          "description": "How much menu variety to aim for: how many distinct menus the rotation should contain (0 = let server pick, up to 5)"
+        },
+        "diningOutSlots": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/DiningOutSlot" },
+          "description": "Slots that should be marked dining-out and left unfilled by the generator"
+        }
+      },
+      "required": ["spanDays"]
+    },
+
+    "UpdateRotationRequest": {
+      "type": "object",
+      "description": "Request body for PATCH /api/rotation/{id} — all fields optional; only provided fields are updated",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "New display name"
+        },
+        "peopleCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "New people count (1–10)"
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "New favorite flag"
+        },
+        "status": {
+          "$ref": "#/definitions/RotationStatus"
+        }
+      }
+    },
+
+    "MacroTargetsHit": {
+      "type": "object",
+      "description": "Which of the user's daily macro targets the day's menu satisfies",
+      "properties": {
+        "protein": {
+          "type": "boolean",
+          "description": "True when the day's protein target is hit"
+        },
+        "fiber": {
+          "type": "boolean",
+          "description": "True when the day's fiber target is hit"
+        },
+        "carbsUnderCeiling": {
+          "type": "boolean",
+          "description": "True when the day's carbs are under the user's ceiling"
+        },
+        "fatAboveFloor": {
+          "type": "boolean",
+          "description": "True when the day's fat is above the user's floor"
+        }
+      },
+      "required": ["protein", "fiber", "carbsUnderCeiling", "fatAboveFloor"]
+    },
+
+    "RotationMenuEntry": {
+      "type": "object",
+      "description": "One menu entry in a Rotation — a Menu with its planned and consumed counts",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Server-assigned primary key",
+          "readOnly": true
+        },
+        "rotationId": {
+          "type": "integer",
+          "description": "Owning Rotation ID",
+          "readOnly": true
+        },
+        "menuId": {
+          "type": "integer",
+          "description": "Menu attached to this menu entry"
+        },
+        "menuName": {
+          "type": "string",
+          "description": "Denormalized menu name for display"
+        },
+        "plannedCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "description": "How many times this Menu appears in the rotation"
+        },
+        "consumedCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Incremented when a DailyLog using this Menu is finalized"
+        },
+        "remainingCount": {
+          "type": "integer",
+          "description": "Computed: plannedCount - consumedCount",
+          "readOnly": true
+        },
+        "sortOrder": {
+          "type": "integer",
+          "description": "Display order in the rotation's menus panel"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the menu entry was created",
+          "readOnly": true
+        }
+      },
+      "required": ["menuId", "plannedCount", "consumedCount"]
+    },
+
+    "RotationDetail": {
+      "type": "object",
+      "description": "GET /api/rotation/{id} response: the rotation header plus its menus",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Server-assigned primary key",
+          "readOnly": true
+        },
+        "userId": {
+          "type": "integer",
+          "description": "Owner of the rotation",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name for the rotation"
+        },
+        "spanDays": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10,
+          "description": "How many days the rotation covers (2–10)"
+        },
+        "peopleCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Number of people the menus are sized for (1–10)"
+        },
+        "pinDay": {
+          "type": ["string", "null"],
+          "description": "Day of week the user typically starts (e.g. 'Monday'). Optional."
+        },
+        "pinDate": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Optional calendar anchor date (YYYY-MM-DD)."
+        },
+        "status": {
+          "$ref": "#/definitions/RotationStatus"
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "User-saved favorite flag"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the rotation was first created",
+          "readOnly": true
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the rotation was last modified",
+          "readOnly": true
+        },
+        "menus": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/RotationMenuEntry" },
+          "description": "The Menus in this rotation and their consumption counts"
+        }
+      },
+      "required": ["name", "spanDays", "peopleCount", "status", "isFavorite", "menus"]
+    },
+
+    "AddMenuEntryRequest": {
+      "type": "object",
+      "description": "Request body for POST /api/rotation/{id}/menus",
+      "properties": {
+        "menuId": {
+          "type": "integer",
+          "description": "Menu to add to the rotation"
+        },
+        "plannedCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "default": 1,
+          "description": "How many times this Menu should appear in the rotation"
+        },
+        "sortOrder": {
+          "type": "integer",
+          "description": "Display order in the rotation's menus panel"
+        }
+      },
+      "required": ["menuId"]
+    },
+
+    "UpdateMenuEntryRequest": {
+      "type": "object",
+      "description": "Request body for PUT /api/rotation/{id}/menus/{menuId}",
+      "properties": {
+        "plannedCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "description": "New planned count for this menu entry"
+        },
+        "sortOrder": {
+          "type": "integer",
+          "description": "New display order in the rotation's menus panel"
+        }
+      }
+    },
+
+    "MenuMacros": {
+      "type": "object",
+      "description": "Aggregate macro totals for a menu or a slot",
+      "properties": {
+        "calories": { "type": "number", "description": "Total calories" },
+        "proteinG": { "type": "number", "description": "Total protein in grams" },
+        "carbG": { "type": "number", "description": "Total carbohydrate in grams" },
+        "fatG": { "type": "number", "description": "Total fat in grams" },
+        "fiberG": { "type": "number", "description": "Total fiber in grams" },
+        "sodiumMg": { "type": "number", "description": "Total sodium in milligrams" }
+      },
+      "required": ["calories", "proteinG", "carbG", "fatG", "fiberG", "sodiumMg"]
+    },
+
+    "MenuSlot": {
+      "type": "object",
+      "description": "One slot in a Menu. Slot order maps 1→A, 2→B, … 10→J via SlotOrderToLabel.",
+      "properties": {
+        "slotOrder": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "1-based slot order within the menu (1–10)"
+        },
+        "slotLabel": {
+          "type": "string",
+          "description": "Display letter computed from slotOrder (A–J). Read-only; clients should not send it.",
+          "readOnly": true
+        },
+        "slotName": {
+          "type": ["string", "null"],
+          "description": "Optional user-set label for the slot (e.g., 'breakfast', 'lunch'). Null when unnamed."
+        },
+        "mealId": {
+          "type": ["integer", "null"],
+          "description": "Meal attached to this slot. Null when empty or dining-out."
+        },
+        "mealName": {
+          "type": ["string", "null"],
+          "description": "Denormalized meal name for display. Null when no meal is attached."
+        },
+        "mealType": {
+          "type": ["string", "null"],
+          "description": "Denormalized meal type for display. Null when no meal is attached."
+        },
+        "isDiningOut": {
+          "type": "boolean",
+          "description": "True when the user marked this slot as dining out — the slot is intentionally empty"
+        },
+        "macros": {
+          "$ref": "#/definitions/MenuMacros"
+        }
+      },
+      "required": ["slotOrder", "slotLabel", "isDiningOut"]
+    },
+
+    "Menu": {
+      "type": "object",
+      "description": "A reusable named menu — an ordered list of slots, each of which may hold a Meal",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Server-assigned primary key",
+          "readOnly": true
+        },
+        "userId": {
+          "type": "integer",
+          "description": "Owner of the menu",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name for the menu"
+        },
+        "slotCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Number of slots in the menu (1–10)"
+        },
+        "isYeh": {
+          "type": "boolean",
+          "description": "True when this menu is an admin-curated YEH menu visible to all users"
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "User-saved favorite flag"
+        },
+        "isSaved": {
+          "type": "boolean",
+          "default": false,
+          "description": "True when the user has named or explicitly saved this Menu. Saved Menus appear in the library for reuse across Rotations. False (default) means throwaway — not in pick lists, candidate for cleanup expunge."
+        },
+        "totalCalories": {
+          "type": ["number", "null"],
+          "description": "Cached total calories across all slots"
+        },
+        "totalProteinG": {
+          "type": ["number", "null"],
+          "description": "Cached total protein (g) across all slots"
+        },
+        "totalFatG": {
+          "type": ["number", "null"],
+          "description": "Cached total fat (g) across all slots"
+        },
+        "totalCarbG": {
+          "type": ["number", "null"],
+          "description": "Cached total carbohydrate (g) across all slots"
+        },
+        "totalFiberG": {
+          "type": ["number", "null"],
+          "description": "Cached total fiber (g) across all slots"
+        },
+        "totalSodiumMg": {
+          "type": ["number", "null"],
+          "description": "Cached total sodium (mg) across all slots"
+        },
+        "slots": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/MenuSlot" },
+          "description": "All slots in the menu, ordered by slotOrder ascending"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the menu was first created",
+          "readOnly": true
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the menu was last modified",
+          "readOnly": true
+        }
+      },
+      "required": ["name", "slotCount", "isYeh", "isFavorite", "slots"]
+    },
+
+    "MenuSummary": {
+      "type": "object",
+      "description": "Lightweight menu reference. Slots and macros are optional for skeleton listings; note carries a reuse hint when the same menu appears multiple times.",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Menu ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Menu display name"
+        },
+        "slots": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/MenuSlot" },
+          "description": "Optional slot list — included on detail responses, omitted on lightweight skeleton responses"
+        },
+        "menuTotals": {
+          "$ref": "#/definitions/MenuMacros"
+        },
+        "note": {
+          "type": "string",
+          "description": "Optional reuse hint, e.g. \"Reused — same as Day N\""
+        }
+      },
+      "required": ["id", "name"]
+    },
+
+    "CreateMenuRequest": {
+      "type": "object",
+      "description": "Request body for POST /api/menu — creates an empty menu with N empty slots",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name for the menu (server defaults if omitted)"
+        },
+        "slotCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 4,
+          "description": "Number of slots to create (1–10). Defaults to 4."
+        }
+      }
+    },
+
+    "UpdateMenuRequest": {
+      "type": "object",
+      "description": "Request body for PATCH /api/menu/{id} — all fields optional",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "New display name"
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "New favorite flag"
+        }
+      }
+    },
+
+    "AssignMealToSlotRequest": {
+      "type": "object",
+      "description": "Request body for POST /api/menu/{id}/slots/{slotOrder}/meal — attaches an existing meal to a slot",
+      "properties": {
+        "slotOrder": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "1-based slot order within the menu (1–10)"
+        },
+        "mealId": {
+          "type": "integer",
+          "description": "ID of the Meal to attach"
+        }
+      },
+      "required": ["slotOrder", "mealId"]
+    },
+
+    "SetSlotNameRequest": {
+      "type": "object",
+      "description": "Request body for PUT /api/menu/{id}/slots/{slotOrder}/name — sets or clears the user-defined name on a slot",
+      "properties": {
+        "slotName": {
+          "type": ["string", "null"],
+          "description": "New slot name. Null explicitly clears any existing name."
+        }
+      }
+    },
+
+    "SetDiningOutRequest": {
+      "type": "object",
+      "description": "Request body for PUT /api/menu/{id}/slots/{slotOrder}/dining-out — marks a slot as dining out (or clears the flag)",
+      "properties": {
+        "isDiningOut": {
+          "type": "boolean",
+          "description": "True to mark the slot as dining out; false to clear the flag"
+        }
+      },
+      "required": ["isDiningOut"]
+    },
+
+    "ShoppingItem": {
+      "type": "object",
+      "description": "One line item on a shopping list",
+      "properties": {
+        "foodName": {
+          "type": "string",
+          "description": "Food name as it should appear on the list"
+        },
+        "scaledQuantity": {
+          "type": "number",
+          "description": "Quantity scaled by rotation peopleCount and meal servings"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement"
+        },
+        "usedInMeals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Optional list of meal names that contribute to this quantity"
+        },
+        "usedInMenus": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Optional list of menu names that contribute to this quantity"
+        },
+        "productPurchaseLink": {
+          "type": "string",
+          "description": "Optional pre-baked purchase link (e.g., Amazon URL)"
+        },
+        "isStaple": {
+          "type": "boolean",
+          "description": "True when the item is a pantry staple"
+        },
+        "isUntracked": {
+          "type": "boolean",
+          "description": "True when the item is an untracked freeform entry"
+        },
+        "note": {
+          "type": "string",
+          "description": "Optional shopper-facing note"
+        }
+      },
+      "required": ["foodName", "scaledQuantity", "unit", "isStaple", "isUntracked"]
+    },
+
+    "ShoppingCategory": {
+      "type": "object",
+      "description": "A named grouping of shopping items (e.g., 'Produce', 'Protein')",
+      "properties": {
+        "categoryName": {
+          "type": "string",
+          "description": "Display name of the category"
+        },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ShoppingItem" },
+          "description": "Items in this category"
+        }
+      },
+      "required": ["categoryName", "items"]
+    },
+
+    "ShoppingList": {
+      "type": "object",
+      "description": "GET /api/rotation/{id}/shopping-list response",
+      "properties": {
+        "rotationId": {
+          "type": "integer",
+          "description": "ID of the source rotation"
+        },
+        "rotationName": {
+          "type": "string",
+          "description": "Display name of the source rotation"
+        },
+        "peopleCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "People count the quantities were scaled to"
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the shopping list was generated"
+        },
+        "categories": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ShoppingCategory" },
+          "description": "Tracked items, grouped by category"
+        },
+        "untrackedItems": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ShoppingItem" },
+          "description": "Freeform untracked items collected from meals"
+        },
+        "stapleItems": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ShoppingItem" },
+          "description": "Pantry staple items pulled in from user prefs / curated lists"
+        }
+      },
+      "required": ["rotationId", "rotationName", "peopleCount", "generatedAt", "categories", "untrackedItems", "stapleItems"]
+    }
+  }
+}

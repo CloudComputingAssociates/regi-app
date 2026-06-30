@@ -21,11 +21,11 @@ export interface TabSettings {
   /**
    * List of default tabs to open on login
    */
-  defaultTabs: ("chat" | "meal-planning" | "foods" | "shop" | "review" | "preferences" | "account" | "help")[];
+  defaultTabs: ("chat" | "menus" | "foods" | "shop" | "review" | "preferences" | "account" | "help")[];
   /**
    * The tab that had focus when settings were saved
    */
-  activeTabId?: "chat" | "meal-planning" | "foods" | "shop" | "review" | "preferences" | "account" | "help";
+  activeTabId?: "chat" | "menus" | "foods" | "shop" | "review" | "preferences" | "account" | "help";
 }
 /**
  * RegiMenu meal planning settings

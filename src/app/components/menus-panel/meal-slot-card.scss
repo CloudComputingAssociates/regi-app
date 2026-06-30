@@ -1,0 +1,122 @@
+// src/app/components/menus-panel/meal-slot-card.scss
+
+.slot-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+
+  &.empty {
+    background: #333;
+    border-style: dashed;
+  }
+}
+
+.slot-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+
+  .slot-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4da6ff;
+    white-space: nowrap;
+  }
+
+  .meal-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #f1f1f1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1 1 auto;
+  }
+
+  .edit-affordance {
+    margin-left: auto;
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border: 1px solid #4a4a4a;
+    border-radius: 4px;
+    background: #2a2a2a;
+    color: #9aa0a6;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover {
+      color: #4da6ff;
+      border-color: #4da6ff;
+    }
+  }
+}
+
+.macro-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  .chip {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    color: #ffffff;
+
+    &.protein {
+      background: #41ac17;
+    }
+    &.carb {
+      background: #ef5350;
+    }
+    &.fat {
+      background: #c060ff;
+    }
+    &.fiber {
+      background: #e67300;
+    }
+  }
+}
+
+.food-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.slot-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 72px;
+  color: #9aa0a6;
+  font-size: 13px;
+
+  &.dining-out {
+    flex-direction: row;
+    gap: 8px;
+
+    .placeholder-icon {
+      font-size: 18px;
+    }
+  }
+
+  .add-stub {
+    padding: 4px 12px;
+    border: 1px dashed #5a5a5a;
+    border-radius: 6px;
+    background: transparent;
+    color: #6a6f75;
+    font-size: 12px;
+    cursor: not-allowed;
+  }
+}

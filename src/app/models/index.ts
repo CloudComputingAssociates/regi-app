@@ -8,3 +8,5 @@ export * from './generated/chat.schema';
 export * from './generated/food.schema';
 export * from './generated/food-preferences.schema';
 export * from './generated/preferences.schema';
+export * from './generated/rotation.schema';
+export * from './generated/meal.schema';

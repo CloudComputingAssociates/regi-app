@@ -8,10 +8,11 @@ import { MacrosService } from '../../services/macros.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { TabService } from '../../services/tab.service';
 import { ThisWeekMacrosService } from '../../services/this-week-macros.service';
+import { RotationService } from '../../services/rotation.service';
 import { TimePeriod, NutritionResponse } from '../../models/nutrition.model';
 
 // Context determines how the macros component behaves
-export type MacrosContext = 'preferences' | 'foods' | 'shopping' | 'default';
+export type MacrosContext = 'preferences' | 'foods' | 'shopping' | 'menu' | 'default';
 
 export interface MacroNutrient {
   name: string;
@@ -102,6 +103,7 @@ export class MacrosComponent implements OnInit {
   private preferencesService = inject(PreferencesService);
   private tabService = inject(TabService);
   private thisWeekMacros = inject(ThisWeekMacrosService);
+  private rotationService = inject(RotationService);
 
   // Derive context from active tab
   readonly context = computed<MacrosContext>(() => {
@@ -110,7 +112,7 @@ export class MacrosComponent implements OnInit {
     if (tabId === 'preferences') return 'preferences';
     if (tabId === 'foods') return 'foods';
     if (tabId === 'shop') return 'shopping';
-    if (tabId === 'meal-planning') return 'shopping';
+    if (tabId === 'menus') return 'menu';
     return 'default';
   });
 
@@ -149,6 +151,27 @@ export class MacrosComponent implements OnInit {
     };
   });
 
+  // Signal-based display data for the Menus context (actual = selected menu's
+  // summed macros from RotationService; target = the user's daily goals).
+  readonly menuDisplayData = computed<MacroDisplayData>(() => {
+    const totals = this.rotationService.selectedMenuTotals();
+    const goals = this.preferencesService.dailyGoals();
+    const targetP = goals?.protein ?? 150;
+    const targetFiber = goals?.fiber ?? 30;
+    const targetF = goals?.fat ?? 78;
+    const targetC = goals?.carbs ?? 175;
+
+    return {
+      macros: [
+        { name: 'proteins', actual: Math.round(totals.proteinG), target: targetP, percentage: this.calculatePercentage(totals.proteinG, targetP) },
+        { name: 'fiber', actual: Math.round(totals.fiberG), target: targetFiber, percentage: this.calculatePercentage(totals.fiberG, targetFiber) },
+        { name: 'fats', actual: Math.round(totals.fatG), target: targetF, percentage: this.calculatePercentage(totals.fatG, targetF) },
+        { name: 'carbs', actual: Math.round(totals.carbG), target: targetC, percentage: this.calculatePercentage(totals.carbG, targetC) },
+      ],
+      timePeriod: 'day'
+    };
+  });
+
   // Signal for subscription-based display data (non-preferences contexts)
   private subscriptionData = signal<MacroDisplayData>({ macros: [], timePeriod: 'day' });
 
@@ -168,6 +191,7 @@ export class MacrosComponent implements OnInit {
     const ctx = this.context();
     if (ctx === 'preferences') return this.preferencesDisplayData();
     if (ctx === 'foods') return this.thisWeekDisplayData();
+    if (ctx === 'menu') return this.menuDisplayData();
     if (ctx === 'shopping') return MacrosComponent.ZERO_MACROS;
     return this.subscriptionData();
   });

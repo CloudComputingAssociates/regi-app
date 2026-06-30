@@ -1,0 +1,87 @@
+// src/app/components/menus-panel/menus-strip.scss
+
+.strip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #4a4a4a;
+  overflow-x: auto;
+}
+
+.cards {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  flex: 1 1 auto;
+}
+
+.menu-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+  padding: 10px 14px;
+  border: 2px solid #4a4a4a;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
+  color: #f1f1f1;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s ease;
+
+  &:hover {
+    border-color: #6a6f75;
+  }
+
+  &.selected {
+    border-color: #4da6ff;
+  }
+
+  .menu-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .menu-days {
+    font-size: 12px;
+    color: #9aa0a6;
+  }
+}
+
+.add-menu-stub {
+  min-width: 120px;
+  border: 2px dashed #5a5a5a;
+  border-radius: 8px;
+  background: transparent;
+  color: #6a6f75;
+  font-size: 13px;
+  cursor: not-allowed;
+}
+
+.span-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border: 1px solid #4a4a4a;
+  border-radius: 16px;
+  background: #333;
+  color: #9aa0a6;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  .check {
+    color: #6a6f75;
+  }
+
+  &.complete {
+    color: #f1f1f1;
+
+    .check {
+      color: #41ac17;
+    }
+  }
+}

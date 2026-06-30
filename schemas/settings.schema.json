@@ -13,13 +13,13 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["chat", "meal-planning", "foods", "shop", "review", "preferences", "account", "help"]
+            "enum": ["chat", "menus", "foods", "shop", "review", "preferences", "account", "help"]
           },
           "description": "List of default tabs to open on login"
         },
         "activeTabId": {
           "type": "string",
-          "enum": ["chat", "meal-planning", "foods", "shop", "review", "preferences", "account", "help"],
+          "enum": ["chat", "menus", "foods", "shop", "review", "preferences", "account", "help"],
           "description": "The tab that had focus when settings were saved"
         }
       },

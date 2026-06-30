@@ -1,0 +1,63 @@
+// src/app/components/menus-panel/food-row.scss
+
+.food-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 4px;
+
+  &:hover {
+    background: #ffffff0a;
+
+    .swap-btn {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+}
+
+.food-text {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+  color: #f1f1f1;
+  min-width: 0;
+
+  .qty {
+    color: #9aa0a6;
+    white-space: nowrap;
+  }
+
+  .dot {
+    color: #6a6f75;
+  }
+
+  .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.swap-btn {
+  opacity: 0;
+  pointer-events: none;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
+  color: #4da6ff;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+
+  &:hover {
+    border-color: #4da6ff;
+  }
+}
