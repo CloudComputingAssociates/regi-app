@@ -1,5 +1,11 @@
 // src/app/components/menus-panel/menus-strip.scss
 
+// Pinned row: never shrink, never absorb the vertical scroll.
+:host {
+  display: block;
+  flex-shrink: 0;
+}
+
 .strip {
   display: flex;
   align-items: center;

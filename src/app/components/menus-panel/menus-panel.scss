@@ -1,14 +1,30 @@
 // src/app/components/menus-panel/menus-panel.scss
 
-.panel-container {
+// Fill the tab content host and become a constrained flex column so the
+// menus-strip can stay pinned while the canvas scrolls (mirrors foods-panel).
+:host {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.panel-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   background-color: #2a2a2a;
   color: #f1f1f1;
 }
 
+// The strip stays pinned (it has its own horizontal scroll); only the body
+// scrolls vertically. min-height:0 lets the flex child shrink below content
+// height so overflow-y actually kicks in.
 .panel-body {
   flex: 1;
-  overflow: auto;
+  min-height: 0;
+  overflow-y: auto;
 }
