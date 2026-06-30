@@ -14,11 +14,6 @@ import { MenuCanvasComponent } from './menu-canvas';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <div class="panel-header">
-        <span class="page-title">Menus</span>
-        <span class="brand">RegiMenu<sup class="sm">SM</sup></span>
-      </div>
-
       <app-menus-strip
         [menus]="rotation.rotation().menus"
         [selectedMenuId]="rotation.selectedMenuId()"
