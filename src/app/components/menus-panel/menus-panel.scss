@@ -20,6 +20,51 @@
   color: #f1f1f1;
 }
 
+// Thin raised toolbar pinned at the very top of the panel. flex-shrink:0 keeps
+// it (and the menu-card-row below it) from scrolling with the meals canvas.
+// Etched in the app chrome grey family: lighter top edge, darker bottom edge,
+// so it stands slightly proud of the #2a2a2a panel surface.
+.menus-toolbar {
+  flex-shrink: 0;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: #2e2e2e;
+  border-top: 1px solid #4a4a4a;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+// Raised/etched app-grey key — no accent colour. Positioned ~2/3 from the left
+// (the left two-thirds is left empty for future controls).
+.wipe-btn {
+  margin-left: 66.6%;
+  height: 26px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #d8d8d8;
+  background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
+  border: 1px solid #1f1f1f;
+  border-top-color: #555555;
+  border-radius: 5px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+
+  &:hover {
+    background: linear-gradient(180deg, #454545 0%, #363636 100%);
+    color: #ffffff;
+  }
+
+  &:active {
+    background: linear-gradient(180deg, #2c2c2c 0%, #3a3a3a 100%);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+}
+
 // The strip stays pinned (it has its own horizontal scroll); only the body
 // scrolls vertically. min-height:0 lets the flex child shrink below content
 // height so overflow-y actually kicks in.

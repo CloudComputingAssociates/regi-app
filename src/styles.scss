@@ -150,6 +150,21 @@ sup.sm {
   z-index: 9999 !important;
 }
 
+// Dark surface for the menus-panel Wipe confirm dialog (panelClass on
+// MatDialog.open). Overrides Material's light default so there's no white
+// flash; matches the app's #2a2a2a panel surface + #4a4a4a chrome border.
+// Content/buttons are styled in wipe-confirm-dialog.scss.
+.wipe-dialog-panel {
+  --mdc-dialog-container-color: #2a2a2a;
+
+  .mat-mdc-dialog-surface {
+    background-color: #2a2a2a;
+    color: #f1f1f1;
+    border: 1px solid #4a4a4a;
+    border-radius: 10px;
+  }
+}
+
 // Food picker filter radio buttons - white theme
 .filter-radio-group .mat-mdc-radio-button {
   --mdc-radio-selected-icon-color: #ffffff !important;
