@@ -252,11 +252,20 @@
 // ============================================
 // Bottom pane: Staples
 // ============================================
+.shopping-placeholder {
+  flex: 0 0 auto;
+  padding: 16px 20px;
+  border-bottom: 1px solid #4a4a4a;
+  color: #9aa0a6;
+  font-size: 14px;
+}
+
 .staples-pane {
   display: flex;
   flex-direction: column;
   overflow: hidden;
   min-height: 60px;
+  flex: 1 1 auto; // was driven by the now-removed splitter's bottomFlex binding
 }
 
 .staples-header {
