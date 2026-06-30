@@ -55,6 +55,11 @@
     color: #ffffff;
   }
 
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
   .genmeal-icon {
     width: 18px;
     height: 18px;
@@ -62,9 +67,34 @@
   }
 }
 
-// Reserved candidate region (empty this phase) — collapses to nothing.
+// Candidate region — holds the generation progress indicator.
 .binder-candidates {
   flex-shrink: 0;
+}
+
+.generating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 14px 0;
+  font-size: 13px;
+  color: #9aa0a6;
+
+  .generating-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+  }
+
+  .spin {
+    animation: binder-spin 1s linear infinite;
+  }
+}
+
+@keyframes binder-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .binder-list {
@@ -97,6 +127,11 @@
 
   &:active {
     cursor: grabbing;
+  }
+
+  // Freshly generated, unplaced — accent so it reads as new.
+  &.candidate {
+    border-color: #4da6ff;
   }
 
   .binder-card-name {

@@ -42,6 +42,12 @@ export class RotationService {
   /** The user's saved meals, for the right-hand Meals binder. */
   readonly binderMeals = signal<Meal[]>([]);
 
+  /** Freshly AI-generated, not-yet-placed meals (the "NewMeal N" candidates
+   *  at the top of the binder). Persisted server-side with isSaved=false. */
+  readonly candidateMeals = signal<Meal[]>([]);
+  /** True while a single meal generation is in flight. */
+  readonly generating = signal<boolean>(false);
+
   /** Full menus (slots + macros), cached by menuId. Immutable map updates. */
   private menusById = signal<Map<number, Menu>>(new Map());
   /** Full meals (items), cached by mealId. Immutable map updates. */
@@ -238,6 +244,27 @@ export class RotationService {
       this.binderMeals.set((meals ?? []).filter((m) => m.isSaved === true));
     } catch {
       this.binderMeals.set([]);
+    }
+  }
+
+  /** Generate ONE meal on demand and drop it into the binder's candidate
+   *  region. anchorProtein/macroTarget are omitted — the server falls back to
+   *  the user's picks/preferences and fair-share daily goals.
+   *    POST /meal/generate { mealType } -> Meal (persisted, isSaved=false)
+   *  Failures toast rather than setting the panel-wide error signal, which
+   *  would replace the whole board (menus-panel error-state precedence) on a
+   *  transient generation failure — mirrors placeMealInSlot. */
+  async generateMeal(): Promise<void> {
+    this.generating.set(true);
+    try {
+      const meal = await firstValueFrom(
+        this.http.post<Meal>(`${this.baseUrl}/meal/generate`, { mealType: 'meal' }),
+      );
+      this.candidateMeals.update((list) => [...list, meal]);
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    } finally {
+      this.generating.set(false);
     }
   }
 

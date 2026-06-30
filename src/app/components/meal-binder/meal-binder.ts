@@ -24,29 +24,51 @@ import { RotationService } from '../../services/rotation.service';
         type="button"
         class="genmeal-btn"
         matTooltip="Generate another meal"
-        (click)="onGenMeal()">
+        [disabled]="rotation.generating()"
+        (click)="rotation.generateMeal()">
         <img src="images/AI-star.png" alt="" class="genmeal-icon" />
         <span>GenMeal</span>
       </button>
 
-      <!-- Reserved for unplaced NewMeal N candidates (Phase B fills this). -->
-      <div class="binder-candidates"></div>
+      <!-- Candidate region: generation progress indicator. -->
+      <div class="binder-candidates">
+        @if (rotation.generating()) {
+          <div class="generating">
+            <img src="images/AI-star.png" alt="" class="generating-icon spin" />
+            <span>generating meal…</span>
+          </div>
+        }
+      </div>
 
       <div class="binder-list" cdkDropList>
-        @if (rotation.binderMeals().length === 0) {
-          <p class="binder-empty">No saved meals yet — build some, or generate with GenMeal.</p>
-        } @else {
-          @for (meal of rotation.binderMeals(); track meal.id) {
-            <div class="binder-card" cdkDrag [cdkDragData]="meal">
-              <span class="binder-card-name">{{ meal.name }}</span>
-              <div class="binder-chips">
-                <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
-                <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
-                <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
-                <span class="chip fiber">Fi {{ round(meal.totalFiberG) }}</span>
-              </div>
+        <!-- Unplaced AI candidates first, then saved meals. Both are cdkDrag
+             in the same drop list, so they place into slots identically. -->
+        @for (meal of rotation.candidateMeals(); track meal.id; let i = $index) {
+          <div class="binder-card candidate" cdkDrag [cdkDragData]="meal">
+            <span class="binder-card-name">NewMeal {{ i + 1 }}</span>
+            <div class="binder-chips">
+              <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
+              <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
+              <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
+              <span class="chip fiber">Fi {{ round(meal.totalFiberG) }}</span>
             </div>
-          }
+          </div>
+        }
+
+        @for (meal of rotation.binderMeals(); track meal.id) {
+          <div class="binder-card" cdkDrag [cdkDragData]="meal">
+            <span class="binder-card-name">{{ meal.name }}</span>
+            <div class="binder-chips">
+              <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
+              <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
+              <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
+              <span class="chip fiber">Fi {{ round(meal.totalFiberG) }}</span>
+            </div>
+          </div>
+        }
+
+        @if (rotation.candidateMeals().length === 0 && rotation.binderMeals().length === 0 && !rotation.generating()) {
+          <p class="binder-empty">No saved meals yet — build some, or generate with GenMeal.</p>
         }
       </div>
     </div>
@@ -62,10 +84,5 @@ export class MealBinderComponent implements OnInit {
 
   round(n: number | undefined): number {
     return Math.round(n ?? 0);
-  }
-
-  /** STUB — wired to the meal generator in Phase B. */
-  onGenMeal(): void {
-    // no-op
   }
 }
