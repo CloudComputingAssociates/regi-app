@@ -1,6 +1,6 @@
-// src/app/components/menus-panel/menus-strip.ts
+// src/app/components/menu-card-row/menu-card-row.ts
 //
-// Horizontal strip of menu cards for the active rotation. Each card shows the
+// Horizontal row of menu cards for the active rotation. Each card shows the
 // menu name and its planned day count; the selected card gets a blue border.
 // A badge tallies planned days against the rotation span, and a disabled
 // "+ Add menu" stub marks the Phase-1 affordance.
@@ -8,7 +8,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { RotationMenuEntry } from '../../models';
 
 @Component({
-  selector: 'app-menus-strip',
+  selector: 'app-menu-card-row',
   imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -34,9 +34,9 @@ import { RotationMenuEntry } from '../../models';
       </div>
     </div>
   `,
-  styleUrls: ['./menus-strip.scss'],
+  styleUrls: ['./menu-card-row.scss'],
 })
-export class MenusStripComponent {
+export class MenuCardRowComponent {
   readonly menus = input.required<RotationMenuEntry[]>();
   readonly selectedMenuId = input.required<number>();
   readonly spanDays = input.required<number>();

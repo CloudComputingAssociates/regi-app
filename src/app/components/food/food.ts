@@ -1,6 +1,6 @@
-// src/app/components/menus-panel/food-row.ts
+// src/app/components/food/food.ts
 //
-// One food line inside a meal-slot card: "{quantity} {unit} · {foodName}".
+// One food line inside a meal card: "{quantity} {unit} · {foodName}".
 // Hovering reveals a "swap" affordance — a NO-OP stub this phase; it gets
 // wired to the lookaside food picker in Phase 4.
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
@@ -8,7 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MealItem } from '../../models';
 
 @Component({
-  selector: 'app-food-row',
+  selector: 'app-food',
   imports: [MatTooltipModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -28,9 +28,9 @@ import { MealItem } from '../../models';
       </button>
     </div>
   `,
-  styleUrls: ['./food-row.scss'],
+  styleUrls: ['./food.scss'],
 })
-export class FoodRowComponent {
+export class FoodComponent {
   readonly item = input.required<MealItem>();
 
   /** Phase 4 affordance — intentionally a no-op for now. */

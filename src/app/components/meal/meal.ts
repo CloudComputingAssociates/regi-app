@@ -1,13 +1,13 @@
-// src/app/components/menus-panel/meal-slot-card.ts
+// src/app/components/meal/meal.ts
 //
-// One meal slot on the menu canvas. Header reads "Meal {slotOrder}
+// One meal slot on the menus-meals grid. Header reads "Meal {slotOrder}
 // ({slotLabel})" with a visual-only inline-edit affordance. Body shows
 // macro chips (P/C/F/Fi grams — never calories) and the food rows. Handles
 // three states: filled, empty (pick a meal), and dining-out.
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MealItem, MenuSlot } from '../../models';
-import { FoodRowComponent } from './food-row';
+import { FoodComponent } from '../food/food';
 
 interface SlotMacros {
   proteinG: number;
@@ -17,8 +17,8 @@ interface SlotMacros {
 }
 
 @Component({
-  selector: 'app-meal-slot-card',
-  imports: [MatTooltipModule, FoodRowComponent],
+  selector: 'app-meal',
+  imports: [MatTooltipModule, FoodComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="slot-card" [class.empty]="isEmpty()">
@@ -55,15 +55,15 @@ interface SlotMacros {
         </div>
         <div class="food-rows">
           @for (item of items(); track item.foodId) {
-            <app-food-row [item]="item" />
+            <app-food [item]="item" />
           }
         </div>
       }
     </div>
   `,
-  styleUrls: ['./meal-slot-card.scss'],
+  styleUrls: ['./meal.scss'],
 })
-export class MealSlotCardComponent {
+export class MealComponent {
   readonly slot = input.required<MenuSlot>();
   readonly items = input.required<MealItem[]>();
 

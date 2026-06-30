@@ -1,7 +1,7 @@
 // src/app/components/menus-panel/menus-panel.scss
 
 // Fill the tab content host and become a constrained flex column so the
-// menus-strip can stay pinned while the canvas scrolls (mirrors foods-panel).
+// menu-card-row can stay pinned while the meals grid scrolls (mirrors foods-panel).
 :host {
   display: flex;
   flex-direction: column;
