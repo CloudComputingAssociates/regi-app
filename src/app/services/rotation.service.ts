@@ -257,7 +257,10 @@ export class RotationService {
   async generateMeal(): Promise<void> {
     this.generating.set(true);
     try {
-      const body: GenerateMealRequest = { mealType: 'meal' };
+      // Feed the meals we already have back to the generator so it produces
+      // something different (candidate NewMeals + meals placed in this menu).
+      const excludeMeals = this.knownMealNames();
+      const body: GenerateMealRequest = { mealType: 'meal', excludeMeals };
       const meal = await firstValueFrom(
         this.http.post<Meal>(`${this.baseUrl}/meal/generate`, body),
       );
@@ -267,6 +270,22 @@ export class RotationService {
     } finally {
       this.generating.set(false);
     }
+  }
+
+  /** Names of meals the session already knows — generated candidates plus
+   *  meals placed in the selected menu — so the generator can avoid repeats. */
+  private knownMealNames(): string[] {
+    const names = new Set<string>();
+    for (const m of this.candidateMeals()) {
+      if (m.name) names.add(m.name);
+    }
+    const menu = this.selectedMenu();
+    if (menu) {
+      for (const slot of menu.slots) {
+        if (slot.mealName) names.add(slot.mealName);
+      }
+    }
+    return [...names];
   }
 
   /** Assign a meal to an empty slot (copy — the meal stays in the binder).
@@ -284,6 +303,91 @@ export class RotationService {
       this.menusById.update((m) => new Map(m).set(menuId, menu));
       // Stream in the assigned meal's items so its food rows appear.
       void this.loadMeal(mealId);
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Clear a slot's meal (trash on an in-slot meal). DELETE /menu/{id}/slot/{n},
+   *  then re-fetch so the slot renders empty and totals recompute. */
+  async clearSlot(menuId: number, slotOrder: number): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.baseUrl}/menu/${menuId}/slot/${slotOrder}`),
+      );
+      const menu = await firstValueFrom(
+        this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
+      );
+      this.menusById.update((m) => new Map(m).set(menuId, menu));
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Add a new empty menu to the rotation (the "+ Add menu" link).
+   *  POST /menu -> POST /rotation/{id}/menus -> reload + select the new menu. */
+  async addMenu(): Promise<void> {
+    const rot = this.rotation();
+    if (!rot?.id) return;
+    try {
+      const slotCount = this.settingsService.allSettings()?.regiMenu?.mealsPerDay ?? 4;
+      const menu = await firstValueFrom(
+        this.http.post<Menu>(`${this.baseUrl}/menu`, { slotCount }),
+      );
+      await firstValueFrom(
+        this.http.post(`${this.baseUrl}/rotation/${rot.id}/menus`, {
+          menuId: menu.id,
+          plannedCount: 1,
+        }),
+      );
+      const detail = await firstValueFrom(
+        this.http.get<RotationDetail>(`${this.baseUrl}/rotation/${rot.id}`),
+      );
+      this.rotation.set(detail);
+      if (menu.id != null) {
+        this.selectedMenuId.set(menu.id);
+        await this.selectMenu(menu.id);
+      }
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Trash on a menu tile. With more than one menu, remove this menu entry from
+   *  the rotation (DELETE /rotation/{id}/menus/{menuId}) and select another.
+   *  On the last remaining menu, clear its slots instead so an empty Menu A
+   *  always stays. */
+  async removeOrClearMenu(menuId: number): Promise<void> {
+    const rot = this.rotation();
+    if (!rot?.id) return;
+    try {
+      if ((rot.menus?.length ?? 0) > 1) {
+        await firstValueFrom(
+          this.http.delete(`${this.baseUrl}/rotation/${rot.id}/menus/${menuId}`),
+        );
+        const detail = await firstValueFrom(
+          this.http.get<RotationDetail>(`${this.baseUrl}/rotation/${rot.id}`),
+        );
+        this.rotation.set(detail);
+        const firstId = detail.menus[0]?.menuId ?? null;
+        this.selectedMenuId.set(firstId);
+        if (firstId != null) await this.selectMenu(firstId);
+      } else {
+        const menu =
+          this.menusById().get(menuId) ??
+          (await firstValueFrom(this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`)));
+        for (const slot of menu.slots) {
+          if (slot.mealId != null) {
+            await firstValueFrom(
+              this.http.delete(`${this.baseUrl}/menu/${menuId}/slot/${slot.slotOrder}`),
+            );
+          }
+        }
+        const fresh = await firstValueFrom(
+          this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
+        );
+        this.menusById.update((m) => new Map(m).set(menuId, fresh));
+      }
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }

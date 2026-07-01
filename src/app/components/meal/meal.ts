@@ -25,8 +25,8 @@ interface SlotMacros {
     <div class="slot-card" [class.empty]="isEmpty()">
       <div class="slot-header">
         <span class="slot-title">Meal {{ slot().slotOrder }}</span>
-        @if (slot().mealName) {
-          <span class="meal-name">{{ slot().mealName }}</span>
+        @if (title()) {
+          <span class="meal-name">{{ title() }}</span>
         }
         <button
           type="button"
@@ -35,6 +35,16 @@ interface SlotMacros {
           matTooltipPosition="above">
           ✎
         </button>
+        @if (slot().mealId != null) {
+          <button
+            type="button"
+            class="delete-affordance"
+            matTooltip="Remove meal from slot"
+            matTooltipPosition="above"
+            (click)="deleteMeal.emit(slot().slotOrder)">
+            🗑
+          </button>
+        }
       </div>
 
       @if (slot().isDiningOut) {
@@ -55,7 +65,7 @@ interface SlotMacros {
           <span class="chip carb">C {{ round(macros().carbG) }}</span>
         </div>
         <div class="food-rows">
-          @for (item of items(); track item.foodId) {
+          @for (item of items(); track item.id) {
             <app-food [item]="item" />
           }
         </div>
@@ -72,7 +82,20 @@ export class MealComponent {
    *  supplies the menuId and calls the assign endpoint. */
   readonly placeMeal = output<{ slotOrder: number; mealId: number }>();
 
+  /** Emitted (with this slot's slotOrder) when the trash is clicked. */
+  readonly deleteMeal = output<number>();
+
   readonly isEmpty = computed(() => !this.slot().isDiningOut && this.slot().mealId == null);
+
+  // Title = the primary protein's short name (shortDescription, else foodName),
+  // from the meal's items (streamed in, so it refines once they load). Falls
+  // back to the slot's meal name with the generator's trailing " meal" stripped.
+  readonly title = computed<string>(() => {
+    const items = this.items();
+    const primary = items.find((i) => i.itemRole === 'primary') ?? items[0];
+    if (primary) return (primary.shortDescription?.trim() || primary.foodName?.trim()) ?? '';
+    return (this.slot().mealName ?? '').replace(/\s+meal$/i, '').trim();
+  });
 
   /** CDK drop handler for an empty slot — copy semantics (no array mutation),
    *  so the dragged meal stays in the binder. */

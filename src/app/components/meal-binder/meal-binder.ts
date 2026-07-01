@@ -9,6 +9,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/cor
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RotationService } from '../../services/rotation.service';
+import { Meal } from '../../models';
 
 @Component({
   selector: 'app-meal-binder',
@@ -45,7 +46,7 @@ import { RotationService } from '../../services/rotation.service';
              in the same drop list, so they place into slots identically. -->
         @for (meal of rotation.candidateMeals(); track meal.id; let i = $index) {
           <div class="binder-card candidate" cdkDrag [cdkDragData]="meal">
-            <span class="binder-card-name">NewMeal {{ i + 1 }}</span>
+            <span class="binder-card-name">{{ i + 1 }} {{ candidateTitle(meal) }}</span>
             <div class="binder-chips">
               <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
               <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
@@ -84,5 +85,14 @@ export class MealBinderComponent implements OnInit {
 
   round(n: number | undefined): number {
     return Math.round(n ?? 0);
+  }
+
+  /** GenMeal candidate label: the primary protein's short name
+   *  (shortDescription, else foodName). Rendered as "{n} {name}". */
+  candidateTitle(meal: Meal): string {
+    const items = meal.items ?? [];
+    const primary = items.find((i) => i.itemRole === 'primary') ?? items[0];
+    if (primary) return (primary.shortDescription?.trim() || primary.foodName?.trim()) ?? '';
+    return meal.name ?? '';
   }
 }

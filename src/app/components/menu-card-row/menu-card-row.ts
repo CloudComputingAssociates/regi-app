@@ -5,27 +5,35 @@
 // A badge tallies planned days against the rotation span, and a disabled
 // "+ Add menu" stub marks the Phase-1 affordance.
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RotationMenuEntry } from '../../models';
 
 @Component({
   selector: 'app-menu-card-row',
-  imports: [],
+  imports: [MatTooltipModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="strip">
       <div class="cards">
         @for (menu of menus(); track menu.menuId; let i = $index) {
-          <button
-            type="button"
+          <div
             class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
             (click)="select.emit(menu.menuId)">
+            <button
+              type="button"
+              class="menu-delete"
+              matTooltip="Clear / remove this menu"
+              matTooltipPosition="above"
+              (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
+              🗑
+            </button>
             <span class="menu-name">Menu {{ letter(i) }}</span>
             <span class="menu-days">{{ menu.plannedCount }} days</span>
-          </button>
+          </div>
         }
 
-        <button type="button" class="add-menu-stub" disabled>+ Add menu</button>
+        <button type="button" class="add-menu-link" (click)="addMenu.emit()">+ Add menu</button>
       </div>
 
       <div class="span-badge" [class.complete]="plannedDays() === spanDays()">
@@ -42,6 +50,10 @@ export class MenuCardRowComponent {
   readonly spanDays = input.required<number>();
 
   readonly select = output<number>();
+  /** Trash on a menu tile (emits the menuId). */
+  readonly deleteMenu = output<number>();
+  /** "+ Add menu" clicked. */
+  readonly addMenu = output<void>();
 
   readonly plannedDays = computed(() =>
     this.menus().reduce((sum, m) => sum + (m.plannedCount ?? 0), 0),

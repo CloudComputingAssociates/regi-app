@@ -63,7 +63,9 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
               [menus]="rotation.menus()"
               [selectedMenuId]="rotation.selectedMenuId() ?? -1"
               [spanDays]="rotation.rotation()!.spanDays"
-              (select)="rotation.selectMenu($event)" />
+              (select)="rotation.selectMenu($event)"
+              (deleteMenu)="rotation.removeOrClearMenu($event)"
+              (addMenu)="rotation.addMenu()" />
 
             <div class="panel-body">
               <app-menus-meals [menu]="rotation.selectedMenu()" />

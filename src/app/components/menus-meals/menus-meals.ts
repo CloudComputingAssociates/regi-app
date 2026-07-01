@@ -19,7 +19,8 @@ import { MealComponent } from '../meal/meal';
           <app-meal
             [slot]="slot"
             [items]="itemsFor(slot.mealId)"
-            (placeMeal)="onPlace($event)" />
+            (placeMeal)="onPlace($event)"
+            (deleteMeal)="onDelete($event)" />
         }
       </div>
     }
@@ -40,5 +41,12 @@ export class MenusMealsComponent {
     const menuId = this.menu()?.id;
     if (menuId == null) return;
     this.rotation.placeMealInSlot(menuId, e.slotOrder, e.mealId);
+  }
+
+  /** Trash on an in-slot meal — clear that slot. */
+  onDelete(slotOrder: number): void {
+    const menuId = this.menu()?.id;
+    if (menuId == null) return;
+    this.rotation.clearSlot(menuId, slotOrder);
   }
 }

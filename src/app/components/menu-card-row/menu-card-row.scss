@@ -23,6 +23,7 @@
 }
 
 .menu-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -38,6 +39,10 @@
 
   &:hover {
     border-color: #6a6f75;
+
+    .menu-delete {
+      opacity: 1;
+    }
   }
 
   &.selected {
@@ -55,14 +60,45 @@
   }
 }
 
-.add-menu-stub {
+// Trash sits in the tile's top-right, revealed on hover.
+.menu-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #9aa0a6;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.12s ease;
+
+  &:hover {
+    color: #ef5350;
+  }
+}
+
+// Live "+ Add menu" — dashed area, white clickable text.
+.add-menu-link {
   min-width: 120px;
   border: 2px dashed #5a5a5a;
   border-radius: 8px;
   background: transparent;
-  color: #6a6f75;
+  color: #f1f1f1;
   font-size: 13px;
-  cursor: not-allowed;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease;
+
+  &:hover {
+    border-color: #4da6ff;
+    color: #4da6ff;
+  }
 }
 
 .span-badge {
