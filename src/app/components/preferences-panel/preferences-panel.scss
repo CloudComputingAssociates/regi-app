@@ -689,6 +689,54 @@
       font-size: 12px;
     }
 
+    // "-or-" separator between the protein ratio dropdown and the direct
+    // grams input. Subtle, lowercased, mid-grey so it reads as a hinge
+    // between two equivalent input modes rather than a label.
+    .grams-or {
+      color: #b0b0b0;
+      font-size: 12px;
+      font-style: italic;
+      padding: 0 6px;
+      user-select: none;
+    }
+
+    // Direct-grams protein input in the top Nutrition Targets row. Same
+    // green gradient + border as the .macro-protein input in the lower
+    // macro-grid so the two boxes visually read as a paired set.
+    .protein-grams-input {
+      width: 58px;
+      padding: 4px 6px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: #ffffff;
+      text-align: center;
+      background: linear-gradient(180deg, #467136 0%, #3d682c 100%);
+      border: 1px solid #41ac1788;
+      border-radius: 4px;
+      outline: none;
+
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      &[type="number"] { appearance: textfield; }
+
+      &:focus {
+        border-color: #6acc3d;
+        box-shadow: 0 0 0 2px rgba(106, 204, 61, 0.25);
+      }
+    }
+
+    .grams-suffix {
+      color: #d0d0d0;
+      font-size: 12px;
+      font-weight: 600;
+      padding-left: 4px;
+      user-select: none;
+    }
+
     .calories-label-row {
       display: flex;
       align-items: center;
@@ -1013,6 +1061,18 @@
     font-size: 12px;
   }
 
+  // BMR readout — same blue as the last-updated line below it and the same
+  // small font size, but explicitly NOT italic so the two lines read as
+  // related-but-distinct: BMR is the live computed number, last-updated is
+  // the audit-trail note.
+  .pi-bmr {
+    color: #4da6ff;
+    font-size: 11px;
+    font-style: normal;
+    text-align: left;
+    padding: 0 0 0 2px;
+  }
+
   .pi-last-updated {
     color: #4da6ff;
     font-size: 11px;
@@ -1038,7 +1098,7 @@
     gap: 4px;
   }
 
-  // RegiMenu column
+  // Menu column
   .regimenu-column {
     display: flex;
     flex-direction: column;
@@ -1063,6 +1123,29 @@
       font-size: 12px;
       font-weight: 500;
       min-width: 75px;
+    }
+
+    .setting-number {
+      width: 56px;
+      padding: 4px 6px;
+      font-size: 12px;
+      font-family: inherit;
+      color: #ffffff;
+      background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+      border: 1px solid #5a5a5a;
+      border-radius: 4px;
+      outline: none;
+      box-sizing: border-box;
+
+      &:hover { border-color: #6a6a6a; }
+      &:focus {
+        border-color: #4da6ff;
+        box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.2);
+      }
+
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      -moz-appearance: textfield;
     }
 
     .setting-select {
@@ -1094,6 +1177,212 @@
       }
     }
   }
+}
+
+// GLP-1 tracking section — single column inside .settings-section
+.panel-content {
+  .glp1-section {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .glp1-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+
+    // .setting-label is only fully styled inside .plan-column / .regimenu-column /
+    // .pi-column / .macro-control-row scopes; outside those scopes the bare
+    // label inherits to dim grey AND to the document base size (16px), which
+    // made these read as oversized vs every other Settings row. Restate the
+    // standard 12px / 500 / white here for parity.
+    .setting-label {
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 500;
+    }
+  }
+
+  // Anchor class used on the row-leading labels (Website, Start Dose, Current
+  // Dose) so the first input in each row starts at the same x. Inline labels
+  // mid-row (.glp1-gap-left) keep their natural width.
+  .glp1-row-label {
+    min-width: 110px;
+  }
+
+  .glp1-field-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .glp1-gap-left {
+    margin-left: 8px;
+  }
+
+  .glp1-text {
+    width: 110px;
+    padding: 4px 6px;
+    font-size: 12px;
+    font-family: inherit;
+    color: #ffffff;
+    background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+    border: 1px solid #5a5a5a;
+    border-radius: 4px;
+    outline: none;
+    box-sizing: border-box;
+
+    &:hover:not(:disabled) { border-color: #6a6a6a; }
+    &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.2); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+
+  .glp1-text-wide {
+    width: 200px;
+  }
+
+  .glp1-dose-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .glp1-maint-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 14px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+
+    input[type="checkbox"] {
+      accent-color: #4da6ff;
+      cursor: pointer;
+      width: 13px;
+      height: 13px;
+    }
+  }
+
+  .glp1-num {
+    width: 56px;
+    padding: 4px 6px;
+    font-size: 12px;
+    font-family: inherit;
+    color: #ffffff;
+    background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+    border: 1px solid #5a5a5a;
+    border-radius: 4px;
+    outline: none;
+    box-sizing: border-box;
+    text-align: center;
+
+    &:hover:not(:disabled) { border-color: #6a6a6a; }
+    &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.2); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    -moz-appearance: textfield;
+  }
+
+  .glp1-unit {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 11px;
+    padding-right: 4px;
+  }
+
+  // "every" word between [units] and [days] — reads as a connector, not a unit.
+  .glp1-every {
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 0 4px;
+  }
+
+  .glp1-date {
+    padding: 4px 6px;
+    font-size: 12px;
+    font-family: inherit;
+    color: #ffffff;
+    background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+    border: 1px solid #5a5a5a;
+    border-radius: 4px;
+    outline: none;
+    color-scheme: dark;
+    width: 130px;
+
+    &:hover:not(:disabled) { border-color: #6a6a6a; }
+    &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.2); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+
+  // Green promote button — "make Start Dose the Current Dose". Sits in
+  // front of the reset arrow and only renders when Start is locked AND
+  // Current is empty. Uses the dialog confirm-green (#28c941 per CLAUDE.md)
+  // so the action reads as a positive commit, paired with an `arrow_downward`
+  // icon to suggest "push values down into Current".
+  .glp1-promote-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid #1f8c2f;
+    background: linear-gradient(180deg, #3fd055 0%, #28c941 100%);
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      line-height: 16px;
+    }
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(180deg, #4ddc63 0%, #34d44d 100%);
+    }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  // Circular reset button for Start Dose. Matches the in-app dialog disc
+  // sizing (20×20, full circle) but renders as a neutral grey since it is
+  // a destructive-but-trivial control, not a confirm/cancel.
+  .glp1-reset-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid #6a6a6a;
+    background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      line-height: 16px;
+    }
+
+    &:hover:not(:disabled) { background: linear-gradient(180deg, #606060 0%, #454545 100%); }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
 }
 
 // Mobile responsive

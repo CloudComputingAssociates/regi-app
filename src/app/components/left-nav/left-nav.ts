@@ -103,12 +103,10 @@ export class LeftNavComponent {
   );
 
   menuItems: MenuItem[] = [
-    { label: 'Today', icon: '📋', tabId: 'today' },
-    { label: 'Week', icon: '📅', tabId: 'review' },
-    { label: 'Meals', iconImage: 'images/AI-star.png', tabId: 'meal-planning' },
-    { label: 'Shopping', icon: '🛒', tabId: 'shop' },
+    { label: 'Chat', iconImage: 'images/AI-star.png', tabId: 'chat' },
+    { label: 'Menus', iconImage: 'images/AI-star.png', tabId: 'menus' },
     { label: 'Foods', iconImage: 'favicon.ico', tabId: 'foods' },
-    { label: 'Chat', iconImage: 'images/AI-star.png', tabId: 'chat' }
+    { label: 'Shopping List', icon: '🛒', tabId: 'shop' }
   ];
 
   tabService = inject(TabService);
@@ -121,14 +119,20 @@ export class LeftNavComponent {
     return label.replace('RegiMenu', 'RegiMenu<sup class="sm">SM</sup>');
   }
 
+  /** True if this nav item's panel is the currently active one. Used to
+   *  highlight the active item in the drawer. */
   isTabOpen(tabId: string): boolean {
-    return this.tabService.tabs().some(tab => tab.id === tabId);
+    return this.tabService.activeTabId() === tabId;
   }
 
+  /** Click a left-nav item:
+   *   - If the clicked panel is already active → close it (returns to splash).
+   *   - Otherwise → open it (mounts on first visit, swaps to it on later).
+   *  Panel state is preserved across hide/show via the visited set. */
   navigateTo(tabId: string, drawer: MatSidenav): void {
     const menuItem = this.menuItems.find(item => item.tabId === tabId);
     if (menuItem) {
-      this.tabService.toggleTab(tabId, menuItem.label);
+      this.tabService.togglePanel(tabId, menuItem.label);
     }
     drawer.close();
   }

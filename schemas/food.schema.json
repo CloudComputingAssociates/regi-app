@@ -41,10 +41,10 @@
       "type": ["string", "null"],
       "description": "Original USDA category classification"
     },
-    "yehApproved": {
+    "regiApproved": {
       "type": "boolean",
       "default": false,
-      "description": "Is this a healthy food for users of the App"
+      "description": "Is this a healthy food approved by REGI for users of the App"
     },
     "glycemicIndex": {
       "type": "number",
@@ -176,6 +176,21 @@
       "minimum": 0,
       "description": "Multiplier for serving size calculations"
     },
+    "servingSize": {
+      "type": ["number", "null"],
+      "exclusiveMinimum": 0,
+      "maximum": 1000,
+      "description": "Food's canonical baseline serving count in ServingUnit (e.g. 4 for '4 oz'). Per-user overrides live on UserFoodPreferences.ServingSize."
+    },
+    "servingUnit": {
+      "type": ["string", "null"],
+      "description": "Preferred display unit for serving (e.g. 'whole', 'cup', 'oz', 'g')"
+    },
+    "servingGramsPerUnit": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Grams per one unit of ServingUnit"
+    },
     "dataSource": {
       "type": "string",
       "description": "Source of nutrition data (e.g., 'USDA-FNDDS', 'FatSecret')"
@@ -269,6 +284,10 @@
       "type": ["string", "null"],
       "maxLength": 20,
       "description": "GTIN/UPC barcode for the product"
+    },
+    "productPurchaseLink": {
+      "type": ["string", "null"],
+      "description": "URL to buy/purchase the product (brand foods)"
     },
     "tokensUsed": {
       "type": [

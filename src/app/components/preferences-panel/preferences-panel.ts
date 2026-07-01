@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
 import { NotificationService } from '../../services/notification.service';
-import { PreferencesService, MealsPerDay, FastingType, DailyGoals, RepeatMeals, FoodListSource, WeekStartDay } from '../../services/preferences.service';
+import { PreferencesService, MealsPerDay, DailyGoals, WeekStartDay } from '../../services/preferences.service';
 import { SettingsService } from '../../services/settings.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
@@ -52,34 +52,11 @@ import { MatIconModule } from '@angular/material/icon';
           </div>
         }
         <div class="panel-content">
-          <!-- Action buttons -->
-          <div class="action-buttons">
-            <div class="action-right">
-              <button
-                class="icon-btn save-btn"
-                [class.has-changes]="hasAnyChanges()"
-                [disabled]="isSaving()"
-                (click)="save()"
-                matTooltip="Save"
-                matTooltipPosition="above"
-                [matTooltipShowDelay]="300">
-                @if (isSaving()) {
-                  <span class="save-spinner"></span>
-                } @else {
-                  ✓
-                }
-              </button>
-              <button
-                class="icon-btn close-btn"
-                (click)="close()"
-                matTooltip="Close"
-                matTooltipPosition="above"
-                [matTooltipShowDelay]="300">
-                ✕
-              </button>
-            </div>
-          </div>
-
+          <!-- Save / Close controls were removed from inside the panel; the
+               wrapping SettingsOverlayComponent now exposes the round
+               green-check / red-X dialog controls per the dialog convention
+               in CLAUDE.md. The panel's save() method is still public so
+               the overlay can call it via @ViewChild. -->
           <div class="settings-wrapper">
             <!-- Personal Info -->
             <div class="accordion-section">
@@ -159,12 +136,14 @@ import { MatIconModule } from '@angular/material/icon';
                     (ngModelChange)="onActivityLevelChange($event)">
                     <option value="">—</option>
                     <option value="sedentary">Sedentary</option>
-                    <option value="lightly_active">Lightly Active</option>
-                    <option value="moderately_active">Mod. Active</option>
-                    <option value="very_active">Very Active</option>
-                    <option value="extremely_active">Ext. Active</option>
+                    <option value="lightly_active">Lightly Active (1-3 d/wk)</option>
+                    <option value="light_moderate">Lt-Mod (4-5 d/wk)</option>
+                    <option value="moderately_active">Mod. Active (daily / intense 3-4)</option>
+                    <option value="very_active">Very Active (intense 6-7)</option>
+                    <option value="extremely_active">Ext. Active (2×/day, physical job)</option>
                   </select>
                 </div>
+                <div class="pi-bmr">{{ bmrTdeeLabel() }}</div>
                 <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
               </div>
             </div>
@@ -182,11 +161,11 @@ import { MatIconModule } from '@angular/material/icon';
                     <input type="checkbox"
                       [ngModel]="userSettingsService.dailyGoals().isOverridden"
                       (ngModelChange)="onOverrideChange($event)" />
-                    User override
+                    User Overridden
                   </label>
                   <span class="info-icon"
                         #overrideTooltip="matTooltip"
-                        matTooltip="Nutrition Targets calculated by your Personal Info can be overridden for more granular control."
+                        matTooltip="Lit when you've manually changed one or more Nutrition Targets, so the values shown have overridden the calculated defaults. Uncheck to discard your overrides and revert to values computed from your Personal Info."
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
                         (click)="overrideTooltip.toggle()">&#9432;</span>
@@ -208,13 +187,23 @@ import { MatIconModule } from '@angular/material/icon';
                       [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     <span class="slider-value">{{ carbSliderLabel() }}</span>
                   </div>
-                  <!-- Protein ratio dropdown -->
+                  <!-- Protein ratio dropdown + direct-grams shortcut.
+                       The dropdown is one rung from {0.5..1.2 g/lb}. The
+                       grams input next to it lets the user type a target
+                       directly — useful when they want a specific number
+                       that doesn't fall on a ratio rung. Typing in the
+                       grams box auto-overrides; the dropdown shows blank
+                       when the saved ratio is off-rung (Angular's default
+                       behavior when ngModel doesn't match any option).
+                       Both grams boxes (this one and the lower green one
+                       in the macro-grid) share a live-draft signal so a
+                       keystroke in either reflects in both. Backspace to
+                       empty + blur reverts to the pre-edit ratio. -->
                   <div class="macro-control-row">
                     <label class="setting-label">Proteins</label>
                     <select class="setting-select protein-select"
                       [ngModel]="userSettingsService.effectiveProteinRatio()"
-                      (ngModelChange)="onProteinRatioChange($event)"
-                      [disabled]="!userSettingsService.dailyGoals().isOverridden">
+                      (ngModelChange)="onProteinRatioChange($event)">
                       <option [ngValue]="0.5">0.5 g/lb</option>
                       <option [ngValue]="0.7">0.7 g/lb</option>
                       <option [ngValue]="0.8">0.8 g/lb</option>
@@ -223,7 +212,13 @@ import { MatIconModule } from '@angular/material/icon';
                       <option [ngValue]="1.1">1.1 g/lb</option>
                       <option [ngValue]="1.2">1.2 g/lb</option>
                     </select>
-                    <span class="macro-hint">of body weight</span>
+                    <span class="grams-or">-or-</span>
+                    <input type="number" class="protein-grams-input"
+                      [ngModel]="topProteinGramsDisplay()"
+                      (ngModelChange)="onProteinGramsChange($event)"
+                      (focus)="onProteinGramsFocus()"
+                      (blur)="onProteinGramsBlur()" />
+                    <span class="grams-suffix">g</span>
                   </div>
                   <div class="macro-separator"></div>
                   <div class="calories-label-row">
@@ -247,7 +242,8 @@ import { MatIconModule } from '@angular/material/icon';
                       <label>Proteins {{ userSettingsService.showPercent() ? '%' : 'g' }}</label>
                       <input type="number" [ngModel]="proteinDisplay()"
                              (ngModelChange)="onMacroFieldChange('protein', $event)"
-                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                             (focus)="onProteinGramsFocus()"
+                             (blur)="onProteinGramsBlur()" />
                     </div>
                     <div class="target-field macro-fat">
                       <label>Fats {{ userSettingsService.showPercent() ? '%' : 'g' }}</label>
@@ -338,11 +334,11 @@ import { MatIconModule } from '@angular/material/icon';
             }
             </div>
 
-            <!-- RegiMenu + Planning -->
+            <!-- Menu -->
             <div class="accordion-section">
               <button class="accordion-header" (click)="planningOpen.set(!planningOpen())">
                 <mat-icon class="accordion-arrow" [class.open]="planningOpen()">chevron_right</mat-icon>
-                <span class="accordion-title">RegiMenu + Planning</span>
+                <span class="accordion-title">Menu</span>
               </button>
               @if (planningOpen()) {
               <div class="accordion-body">
@@ -360,37 +356,15 @@ import { MatIconModule } from '@angular/material/icon';
                     <option [ngValue]="4">4 meals</option>
                     <option [ngValue]="5">5 meals</option>
                     <option [ngValue]="6">6 meals</option>
-                  </select>
-                </div>
-                <div class="setting-row">
-                  <label class="setting-label">Fasting</label>
-                  <select
-                    class="setting-select"
-                    [ngModel]="userSettingsService.fastingType()"
-                    (ngModelChange)="onFastingTypeChange($event)">
-                    <option value="none">None</option>
-                    <option value="16_8">16:8</option>
-                    <option value="18_6">18:6</option>
-                    <option value="20_4">20:4</option>
-                    <option value="omad">OMAD</option>
-                  </select>
-                </div>
-                <div class="setting-row">
-                  <label class="setting-label">Start at</label>
-                  <select
-                    class="setting-select time-select"
-                    [ngModel]="userSettingsService.eatingStartTime()"
-                    (ngModelChange)="onEatingStartTimeChange($event)">
-                    @for (time of timeOptions; track time) {
-                      <option [value]="time">{{ time }}</option>
-                    }
+                    <option [ngValue]="7">7 meals</option>
+                    <option [ngValue]="8">8 meals</option>
                   </select>
                 </div>
               </div>
 
               <div class="regimenu-column">
                 <div class="setting-row">
-                  <label class="setting-label">Week Starts</label>
+                  <label class="setting-label">Start Day</label>
                   <select
                     class="setting-select"
                     [ngModel]="userSettingsService.weekStartDay()"
@@ -405,16 +379,16 @@ import { MatIconModule } from '@angular/material/icon';
                   </select>
                 </div>
                 <div class="setting-row">
+                  <label class="setting-label">Persons</label>
+                  <input type="number" min="1" class="setting-number"
+                    [ngModel]="userSettingsService.persons()"
+                    (change)="onPersonsChange($event)" />
+                </div>
+                <div class="setting-row">
                   <label class="setting-label">Meal Repeats</label>
-                  <select
-                    class="setting-select"
+                  <input type="number" min="1" class="setting-number"
                     [ngModel]="userSettingsService.repeatMeals()"
-                    (ngModelChange)="onRepeatMealsChange($event)">
-                    <option [ngValue]="1">1</option>
-                    <option [ngValue]="2">2</option>
-                    <option [ngValue]="3">3</option>
-                    <option [ngValue]="4">4</option>
-                  </select>
+                    (change)="onRepeatMealsChange($event)" />
                   <span class="setting-hint">per week</span>
                   <span class="info-icon"
                         #repeatTooltip="matTooltip"
@@ -423,27 +397,134 @@ import { MatIconModule } from '@angular/material/icon';
                         [matTooltipShowDelay]="0"
                         (click)="repeatTooltip.toggle()">&#9432;</span>
                 </div>
-                <div class="setting-row">
-                  <label class="setting-label">Foods from</label>
-                  <select
-                    class="setting-select"
-                    [ngModel]="userSettingsService.foodListSource()"
-                    (ngModelChange)="onFoodListSourceChange($event)">
-                    <option value="yeh">YEH</option>
-                    <option value="myfoods">MyFoods</option>
-                    <option value="yeh_plus_myfoods">YEH + MyFoods</option>
-                  </select>
-                  <span class="info-icon"
-                        #foodsTooltip="matTooltip"
-                        matTooltip="Choose from YEH Approved foods, or your own list. Go to Food Preferences panel, select YEH as a starter list and favorite (star) the ones you like. Click restricted on foods you cannot have."
-                        matTooltipPosition="above"
-                        [matTooltipShowDelay]="0"
-                        (click)="foodsTooltip.toggle()">&#9432;</span>
-                </div>
               </div>
             </div>
             </div>
             }
+            </div>
+
+            <!-- GLP-1 tracking -->
+            <div class="accordion-section">
+              <button class="accordion-header" (click)="glp1Open.set(!glp1Open())">
+                <mat-icon class="accordion-arrow" [class.open]="glp1Open()">chevron_right</mat-icon>
+                <span class="accordion-title">GLP-1 tracking</span>
+                <span class="accordion-control" (click)="$event.stopPropagation()">
+                  <label class="override-label">
+                    <input type="checkbox"
+                      [ngModel]="userSettingsService.glp1().enabled"
+                      (ngModelChange)="onGlp1EnabledChange($event)" />
+                    Enabled
+                  </label>
+                </span>
+              </button>
+              @if (glp1Open()) {
+              <div class="accordion-body">
+                <div class="settings-section glp1-section">
+                  <div class="glp1-column">
+                    <!-- Website is the row anchor — its left edge of the input
+                         (after the 110px label slot) lines up with the [mg]
+                         inputs in the dose rows below. -->
+                    <div class="glp1-field-row">
+                      <label class="setting-label glp1-row-label">Website</label>
+                      <input type="text" class="glp1-text glp1-text-wide"
+                        [disabled]="!userSettingsService.glp1().enabled"
+                        [ngModel]="userSettingsService.glp1().website || ''"
+                        (ngModelChange)="onGlp1FieldChange('website', $event)" />
+                      <label class="setting-label glp1-gap-left">Brand</label>
+                      <input type="text" class="glp1-text"
+                        [disabled]="!userSettingsService.glp1().enabled"
+                        [ngModel]="userSettingsService.glp1().brand || ''"
+                        (ngModelChange)="onGlp1FieldChange('brand', $event)" />
+                      <label class="setting-label glp1-gap-left">Pharmacy</label>
+                      <input type="text" class="glp1-text"
+                        [disabled]="!userSettingsService.glp1().enabled"
+                        [ngModel]="userSettingsService.glp1().pharmacy || ''"
+                        (ngModelChange)="onGlp1FieldChange('pharmacy', $event)" />
+                    </div>
+
+                    <!-- Start Dose: locks once all 3 fields are filled. The
+                         circular reset button reappears to wipe it back to
+                         editable. When the user completes Start Dose with
+                         Current Dose still empty, Current is auto-seeded as
+                         the "you were here" snapshot. -->
+                    <div class="glp1-dose-row">
+                      <label class="setting-label glp1-row-label">Start Dose</label>
+                      <input type="number" min="0" class="glp1-num"
+                        [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
+                        [ngModel]="(userSettingsService.glp1().startDose || {}).dose"
+                        (change)="onGlp1DoseChange('startDose', 'dose', $event)" />
+                      <span class="glp1-unit">mg</span>
+                      <input type="number" min="0" class="glp1-num"
+                        [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
+                        [ngModel]="(userSettingsService.glp1().startDose || {}).units"
+                        (change)="onGlp1DoseChange('startDose', 'units', $event)" />
+                      <span class="glp1-unit">units</span>
+                      <span class="glp1-every">every</span>
+                      <input type="number" min="0" class="glp1-num"
+                        [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
+                        [ngModel]="(userSettingsService.glp1().startDose || {}).intervalDays"
+                        (change)="onGlp1DoseChange('startDose', 'intervalDays', $event)" />
+                      <span class="glp1-unit">days</span>
+                      <span class="glp1-every">Start date</span>
+                      <input type="date" class="glp1-date"
+                        [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
+                        [ngModel]="userSettingsService.glp1().startDate || ''"
+                        (ngModelChange)="onGlp1FieldChange('startDate', $event)" />
+                      @if (startDoseLocked()) {
+                        @if (currentDoseEmpty()) {
+                          <button type="button" class="glp1-promote-btn"
+                            [disabled]="!userSettingsService.glp1().enabled"
+                            matTooltip="Copy Start Dose to Current"
+                            matTooltipPosition="above"
+                            (click)="copyStartToCurrent()">
+                            <mat-icon>arrow_downward</mat-icon>
+                          </button>
+                        }
+                        <button type="button" class="glp1-reset-btn"
+                          [disabled]="!userSettingsService.glp1().enabled"
+                          matTooltip="Reset (clears Start + Current)"
+                          matTooltipPosition="above"
+                          (click)="resetStartDose()">
+                          <mat-icon>replay</mat-icon>
+                        </button>
+                      }
+                    </div>
+
+                    <!-- Current Dose row. "Maintenance" checkbox at the end is
+                         a soft decorator — it flags that the user is on the
+                         maintenance phase but doesn't change where the dose
+                         data is stored. Persisted in localStorage so it
+                         survives refresh without needing a schema field. -->
+                    <div class="glp1-dose-row">
+                      <label class="setting-label glp1-row-label">Current Dose</label>
+                      <input type="number" min="0" class="glp1-num"
+                        [disabled]="!userSettingsService.glp1().enabled"
+                        [ngModel]="(userSettingsService.glp1().currentDose || {}).dose"
+                        (change)="onGlp1DoseChange('currentDose', 'dose', $event)" />
+                      <span class="glp1-unit">mg</span>
+                      <input type="number" min="0" class="glp1-num"
+                        [disabled]="!userSettingsService.glp1().enabled"
+                        [ngModel]="(userSettingsService.glp1().currentDose || {}).units"
+                        (change)="onGlp1DoseChange('currentDose', 'units', $event)" />
+                      <span class="glp1-unit">units</span>
+                      <span class="glp1-every">every</span>
+                      <input type="number" min="0" class="glp1-num"
+                        [disabled]="!userSettingsService.glp1().enabled"
+                        [ngModel]="(userSettingsService.glp1().currentDose || {}).intervalDays"
+                        (change)="onGlp1DoseChange('currentDose', 'intervalDays', $event)" />
+                      <span class="glp1-unit">days</span>
+                      <label class="glp1-maint-check">
+                        <input type="checkbox"
+                          [disabled]="!userSettingsService.glp1().enabled"
+                          [checked]="glp1OnMaintenance()"
+                          (change)="onMaintenanceChange($event)" />
+                        Maintenance
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              }
             </div>
           </div>
         </div>
@@ -476,6 +557,35 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   personalInfoOpen = signal(true);
   nutritionTargetsOpen = signal(false);
   planningOpen = signal(false);
+  glp1Open = signal(false);
+
+  // "Maintenance" decorator on the Current Dose row. Soft flag — does not
+  // change where dose data is stored, just notes that the user has graduated
+  // from titration to maintenance. localStorage-backed so it survives refresh
+  // without a schema field (the user said "doesn't matter much"; promote to
+  // Glp1Settings.onMaintenance later if cross-device persistence is wanted).
+  glp1OnMaintenance = signal(localStorage.getItem('yeh_glp1_onMaintenance') === 'true');
+
+  /** Start Dose is a snapshot — once dose + units + intervalDays + startDate
+   *  are all filled it becomes read-only (semi-indelible). The reset arrow
+   *  next to the row clears it back to editable. Including startDate in the
+   *  predicate is critical: locking on just the 3 numerics would disable the
+   *  date input the moment the third number is typed, before the user has a
+   *  chance to enter the date. */
+  startDoseLocked = computed(() => {
+    const g = this.userSettingsService.glp1();
+    const sd = g.startDose;
+    return !!(sd && (sd.dose ?? 0) > 0 && (sd.units ?? 0) > 0 && (sd.intervalDays ?? 0) > 0 && g.startDate);
+  });
+
+  /** True when Current Dose has no values entered yet — controls whether the
+   *  green ⇩ "promote Start to Current" button appears. We don't auto-seed
+   *  Current from Start because the user wants the choice explicit (and the
+   *  Material guide-balloon nudges them toward it). */
+  currentDoseEmpty = computed(() => {
+    const cd = this.userSettingsService.glp1().currentDose;
+    return !cd || (!cd.dose && !cd.units && !cd.intervalDays);
+  });
 
   // Scroll hint state
   showScrollUp = signal(false);
@@ -889,6 +999,130 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     }
   }
 
+  // ============================================================
+  // Direct-grams protein entry (top + bottom share state)
+  // ============================================================
+
+  /** Raw text in the protein grams input(s) while the user is mid-edit.
+   *  null = not editing; the inputs fall back to dailyGoals.protein. A non-
+   *  null string takes priority so both boxes mirror each keystroke (even
+   *  during a backspace-to-empty walk). On blur with an empty value we
+   *  restore the pre-edit ratio — this is the "tip-toe back out" reset. */
+  proteinGramsDraft = signal<string | null>(null);
+
+  /** Snapshots taken on focus of either grams input so we can revert if the
+   *  user backspaces to empty and blurs. Plain class members (not signals)
+   *  because they're transient and don't drive any reactive UI. */
+  private preEditProtein: number | null = null;
+  private preEditRatio: number | undefined = undefined;
+
+  /** Display value for the top grams input — prefers the live draft when
+   *  the user is editing, falls back to the persisted protein in grams. */
+  topProteinGramsDisplay = computed<string | number>(() => {
+    const draft = this.proteinGramsDraft();
+    if (draft !== null) return draft;
+    return this.userSettingsService.dailyGoals().protein;
+  });
+
+  /** Activity multipliers — Mifflin-St. Jeor / Harris-Benedict standard.
+   *  Kept in lockstep with the schema enum, the dropdown options, and the
+   *  switch in preferences.service.ts. */
+  private static readonly ACTIVITY_MULTIPLIERS: Record<string, number> = {
+    sedentary: 1.2,
+    lightly_active: 1.375,
+    light_moderate: 1.4654,
+    moderately_active: 1.55,
+    very_active: 1.725,
+    extremely_active: 1.9,
+  };
+
+  /** BMR + activity-adjusted readout under the Activity dropdown. Format:
+   *  "BMR: 2,656 cals (Activity adjusted: 4,117)". Em-dash short-circuit
+   *  when BMR inputs are missing; suppresses the parenthetical until the
+   *  user picks an Activity level. */
+  bmrTdeeLabel = computed<string>(() => {
+    const bmr = this.userSettingsService.computedBMR();
+    if (bmr === null) return 'BMR: — cals';
+    const activity = this.userSettingsService.personalInfo().activityLevel;
+    const bmrStr = bmr.toLocaleString();
+    if (!activity) return `BMR: ${bmrStr} cals`;
+    const mult = PreferencesPanelComponent.ACTIVITY_MULTIPLIERS[activity] ?? 1;
+    const tdee = Math.round(bmr * mult);
+    return `BMR: ${bmrStr} cals (Activity adjusted: ${tdee.toLocaleString()})`;
+  });
+
+  /** Focus of either grams input — snapshot the pre-edit state once. The
+   *  second focus (e.g. user clicks from top to bottom while editing) is a
+   *  no-op since preEditProtein is already set. */
+  onProteinGramsFocus(): void {
+    if (this.preEditProtein !== null) return;
+    this.preEditProtein = this.userSettingsService.dailyGoals().protein;
+    this.preEditRatio = this.userSettingsService.personalInfo().proteinRatio;
+  }
+
+  /** Live-typed grams value from either grams input. Empty / non-positive
+   *  input is held as a draft (no state write) so the box can show empty
+   *  without zeroing the rest of the UI — the blur handler reverts. A
+   *  valid positive number is written to dailyGoals.protein AND the
+   *  implied ratio is computed (grams / target_lbs) so the dropdown's
+   *  saved value reflects the user's actual entry, off-rung or not. */
+  onProteinGramsChange(value: string | number | null): void {
+    const str = value === null || value === undefined ? '' : String(value);
+    this.proteinGramsDraft.set(str);
+
+    const n = parseFloat(str);
+    if (!Number.isFinite(n) || n <= 0) return;
+
+    if (!this.userSettingsService.dailyGoals().isOverridden) {
+      this.userSettingsService.setIsOverridden(true);
+    }
+
+    // Recompute implied ratio so the dropdown's bound value reflects what
+    // the user actually entered. Off-rung values (e.g. 0.75) leave the
+    // select rendering blank — Angular's natural behavior when ngModel
+    // doesn't match any option.
+    const targetKg = this.userSettingsService.personalInfo().targetWeightKg;
+    if (targetKg) {
+      const targetLbs = PreferencesService.kgToLbs(targetKg);
+      if (targetLbs > 0) {
+        this.userSettingsService.setProteinRatio(n / targetLbs);
+      }
+    }
+
+    this.userSettingsService.updateDailyGoal('protein', n);
+    const dg = this.userSettingsService.dailyGoals();
+    const newFat = Math.max(0, Math.round((dg.calories - dg.protein * 4 - dg.carbs * 4) / 9));
+    this.userSettingsService.updateDailyGoal('fat', newFat);
+    this.syncMacros();
+  }
+
+  /** Blur of either grams input — if the draft is empty (user backspaced
+   *  all the way out), restore the pre-edit ratio + protein and rebalance.
+   *  Otherwise just clear the draft so the displayed value falls back to
+   *  the (now-up-to-date) state. */
+  onProteinGramsBlur(): void {
+    const draft = this.proteinGramsDraft();
+    const n = draft === null ? NaN : parseFloat(draft);
+    const isEmpty = draft === null || draft === '' || !Number.isFinite(n) || n <= 0;
+
+    if (isEmpty && this.preEditProtein !== null) {
+      if (this.preEditRatio !== undefined) {
+        this.userSettingsService.setProteinRatio(this.preEditRatio);
+      } else {
+        this.userSettingsService.clearProteinRatio();
+      }
+      this.userSettingsService.updateDailyGoal('protein', this.preEditProtein);
+      const dg = this.userSettingsService.dailyGoals();
+      const newFat = Math.max(0, Math.round((dg.calories - dg.protein * 4 - dg.carbs * 4) / 9));
+      this.userSettingsService.updateDailyGoal('fat', newFat);
+      this.syncMacros();
+    }
+
+    this.proteinGramsDraft.set(null);
+    this.preEditProtein = null;
+    this.preEditRatio = undefined;
+  }
+
   onCarbScaleChange(value: number): void {
     // Convert % → grams if in percent mode
     let grams = +value;
@@ -957,6 +1191,26 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
 
     this.userSettingsService.updateDailyGoal(field, grams);
 
+    // Protein: keep the implied ratio + top-grams draft in sync so the
+    // dropdown and the top grams input track the lower box's edits. Same
+    // contract as the dedicated onProteinGramsChange handler.
+    if (field === 'protein') {
+      const targetKg = this.userSettingsService.personalInfo().targetWeightKg;
+      if (targetKg && grams > 0) {
+        const targetLbs = PreferencesService.kgToLbs(targetKg);
+        if (targetLbs > 0) {
+          this.userSettingsService.setProteinRatio(grams / targetLbs);
+        }
+      }
+      // Mirror the live value into the draft so the top grams input shows
+      // the same typed number as the lower one (only matters in g mode —
+      // in % mode the top input naturally lags one keystroke as the user
+      // backspaces, which is acceptable since the user is operating in %).
+      if (!this.userSettingsService.showPercent()) {
+        this.proteinGramsDraft.set(grams > 0 ? String(grams) : '');
+      }
+    }
+
     // Keep carb slider in sync when carbs field changes
     if (field === 'carbs') {
       this.userSettingsService.setCarbScaleGrams(grams);
@@ -1022,18 +1276,15 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     this.settingsChanged.set(true);
   }
 
-  onFastingTypeChange(value: FastingType): void {
-    this.userSettingsService.setFastingType(value);
+  onRepeatMealsChange(event: Event): void {
+    const raw = +(event.target as HTMLInputElement).value;
+    this.userSettingsService.setRepeatMeals(raw);
     this.settingsChanged.set(true);
   }
 
-  onEatingStartTimeChange(value: string): void {
-    this.userSettingsService.setEatingStartTime(value);
-    this.settingsChanged.set(true);
-  }
-
-  onRepeatMealsChange(value: RepeatMeals): void {
-    this.userSettingsService.setRepeatMeals(value);
+  onPersonsChange(event: Event): void {
+    const raw = +(event.target as HTMLInputElement).value;
+    this.userSettingsService.setPersons(raw);
     this.settingsChanged.set(true);
   }
 
@@ -1042,8 +1293,51 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     this.settingsChanged.set(true);
   }
 
-  onFoodListSourceChange(value: FoodListSource): void {
-    this.userSettingsService.setFoodListSource(value);
+  onGlp1EnabledChange(value: boolean): void {
+    this.userSettingsService.setGlp1Enabled(value);
+    this.settingsChanged.set(true);
+  }
+
+  onGlp1FieldChange(field: 'brand' | 'pharmacy' | 'website' | 'startDate', value: string): void {
+    this.userSettingsService.setGlp1Field(field, value);
+    this.settingsChanged.set(true);
+  }
+
+  onGlp1DoseChange(
+    tier: 'startDose' | 'currentDose' | 'maintenanceDose',
+    field: 'dose' | 'units' | 'intervalDays',
+    event: Event
+  ): void {
+    const raw = +(event.target as HTMLInputElement).value;
+    this.userSettingsService.setGlp1Dose(tier, field, raw);
+    this.settingsChanged.set(true);
+  }
+
+  /** Green ⇩ button — explicit promote of Start Dose into Current Dose. Only
+   *  visible while currentDoseEmpty(); once Current has values the button
+   *  hides (the user is now titrating Current independently). */
+  copyStartToCurrent(): void {
+    const sd = this.userSettingsService.glp1().startDose;
+    if (!sd) return;
+    this.userSettingsService.setGlp1DoseTier('currentDose', { ...sd });
+    this.settingsChanged.set(true);
+  }
+
+  onMaintenanceChange(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.glp1OnMaintenance.set(checked);
+    localStorage.setItem('yeh_glp1_onMaintenance', String(checked));
+  }
+
+  resetStartDose(): void {
+    this.userSettingsService.clearGlp1Dose('startDose');
+    // Reset is the "I screwed up, start over" button. Wipe Current Dose too
+    // since it was either a copy of Start (via the green ⇩) or being titrated
+    // off a Start that's now being replaced — either way the user is asking
+    // for a clean slate. Date goes with the numerics so an orphaned date
+    // wouldn't re-trigger the lock prematurely.
+    this.userSettingsService.clearGlp1Dose('currentDose');
+    this.userSettingsService.setGlp1Field('startDate', '');
     this.settingsChanged.set(true);
   }
 
@@ -1080,14 +1374,16 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     if (this.hasAnyChanges()) {
       this.showConfirmDialog.set(true);
     } else {
-      this.tabService.closeTab('preferences');
+      // Settings now lives in an overlay; closing the panel = closing the
+      // overlay. closeTab() would no-op since 'preferences' isn't in tabs.
+      this.tabService.closeSettings();
     }
   }
 
   confirmClose(): void {
     this.settingsChanged.set(false);
     this.showConfirmDialog.set(false);
-    this.tabService.closeTab('preferences');
+    this.tabService.closeSettings();
   }
 
   cancelClose(): void {

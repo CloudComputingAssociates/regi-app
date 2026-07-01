@@ -119,10 +119,6 @@ export interface ChatRequest {
    * User's message
    */
   message: string;
-  /**
-   * Session type: "CHAT" or "REGIMENU" (defaults to "CHAT")
-   */
-  sessionType?: 'CHAT' | 'REGIMENU' | 'PREFERENCES' | 'TODAY';
   [k: string]: unknown;
 }
 /**

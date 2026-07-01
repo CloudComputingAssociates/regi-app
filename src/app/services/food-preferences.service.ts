@@ -33,7 +33,7 @@ interface AllFoodRow {
   foodImage?: string;
   foodImageThumbnail?: string;
   nutritionFactsImage?: string;
-  yehApproved: boolean;
+  regiApproved: boolean;
   calories?: number;
   proteinG?: number;
   totalFatG?: number;
@@ -52,6 +52,15 @@ interface AllFoodRow {
   servingSizeG?: number;
   servingSizeHousehold?: string;
   productPurchaseLink?: string;
+  // Food's curated baseline — the number of `servingUnit` per serving that
+  // Regi/the curator chose (e.g. 4 for "4 oz" of beef). Comes from the
+  // AllFoods view (Foods.ServingSize for foodSource='food',
+  // UserFoods.ServingSize for foodSource='userfood').
+  servingSize?: number | null;
+  // This user's per-favorite OVERRIDE — comes from UserFoodPreferences.ServingSize
+  // on the JOIN that /allowed/foods and /restricted/foods perform. Null means
+  // "no override; use the food's servingSize baseline."
+  userServingSize?: number | null;
 }
 
 interface AllFoodsResponse {
@@ -78,13 +87,17 @@ export type CreateFoodPreferenceItem = CreateFoodPreferenceRequest;
 export type CreateFoodPreferenceResponse = CreateFoodPreferencesResponse;
 
 // Pending change types
-export type PendingChangeType = 'add-allowed' | 'add-restricted' | 'remove';
+export type PendingChangeType = 'add-allowed' | 'add-restricted' | 'remove' | 'update-serving';
 
 export interface PendingChange {
   foodId: number;
   type: PendingChangeType;
-  foodSource?: string; // 'usda' or 'user'
+  foodSource?: string; // 'food' or 'userfood'
   originalPreferenceId?: number; // For removals, we need to know what to delete
+  // Per-user serving-size override (unit count, applied on top of the food's
+  // baseline). When sent on the upsert it lands in UserFoodPreferences.ServingSize.
+  // null = explicit clear; undefined = leave alone.
+  servingSize?: number | null;
 }
 
 @Injectable({
@@ -101,6 +114,14 @@ export class FoodPreferencesService {
   // Local state - reflects UI including unsaved changes (just foodId sets)
   private localAllowedFoods = signal<Set<number>>(new Set());
   private localRestrictedFoods = signal<Set<number>>(new Set());
+
+  // Per-user serving-size overrides, keyed by foodId. Value is the user's
+  // chosen unit count (e.g. 3 = "I eat 3 oz of this beef instead of Regi's
+  // curated 4 oz default"). Sourced from /allowed/foods responses (the
+  // `userServingSize` field), mutated locally on ▲ / ▼ clicks in the NF popup.
+  // Absence = no override; UI should fall through to the food's baseline
+  // servingSize.
+  private localUserServingSizes = signal<Map<number, number>>(new Map());
 
   // Pending changes to be saved
   private pendingChanges = signal<Map<number, PendingChange>>(new Map());
@@ -143,6 +164,46 @@ export class FoodPreferencesService {
 
   restrictedFoods(): Set<number> {
     return this.localRestrictedFoods();
+  }
+
+  /** The user's per-food serving-size override (unit count, NOT a ratio).
+   *  Returns undefined when no override is set — callers should fall through
+   *  to the food's baseline `servingSize`. */
+  userServingSize(foodId: number): number | undefined {
+    return this.localUserServingSizes().get(foodId);
+  }
+
+  /** Push a serving-size override for a food. Value is the user's chosen
+   *  unit count (e.g. 3 for "3 oz"). Queued through the standard auto-save
+   *  path, so a flurry of ▲ / ▼ clicks collapses into a single PUT after the
+   *  500 ms quiet window. The food must be favorited for this to make sense;
+   *  callers in foods-panel.ts only invoke this for foods the user has
+   *  already curated. */
+  setUserServingSize(foodId: number, servingSize: number, foodSource?: string): void {
+    const map = new Map(this.localUserServingSizes());
+    map.set(foodId, servingSize);
+    this.localUserServingSizes.set(map);
+
+    const changes = new Map(this.pendingChanges());
+    const existing = changes.get(foodId);
+    if (existing && existing.type === 'remove') {
+      // Pending remove takes precedence — don't shadow it with a serving
+      // adjustment. (The user can re-favorite + re-adjust afterwards.)
+      return;
+    }
+    if (existing) {
+      // Add-allowed / add-restricted / update-serving — augment in place.
+      changes.set(foodId, { ...existing, servingSize });
+    } else {
+      changes.set(foodId, {
+        foodId,
+        type: 'update-serving',
+        foodSource,
+        servingSize,
+      });
+    }
+    this.pendingChanges.set(changes);
+    this.scheduleAutoSave();
   }
 
   /**
@@ -328,9 +389,13 @@ export class FoodPreferencesService {
 
     // Separate into deletes and upserts
     // DELETE: only for 'remove' type (user wants to completely remove the preference)
-    // UPSERT (POST): for add-allowed and add-restricted (API handles insert or update)
+    // UPSERT (POST): for add-allowed / add-restricted / update-serving
+    //   — API handles insert vs update; update-serving piggybacks on the
+    //   upsert path with allowed:true since the food is already favorited.
     const toDelete: number[] = [];
-    const toUpsert: CreateFoodPreferenceItem[] = [];
+    // CreateFoodPreferenceItem is generated; cast so the optional servingSize
+    // field flows on the wire (regenerated schema will include it natively).
+    const toUpsert: Array<CreateFoodPreferenceItem & { servingSize?: number | null }> = [];
 
     for (const change of changes) {
       if (change.type === 'remove') {
@@ -339,9 +404,29 @@ export class FoodPreferencesService {
           toDelete.push(change.originalPreferenceId);
         }
       } else if (change.type === 'add-allowed') {
-        toUpsert.push({ foodId: change.foodId, allowed: true, foodSource: change.foodSource });
+        toUpsert.push({
+          foodId: change.foodId,
+          allowed: true,
+          foodSource: change.foodSource,
+          ...(change.servingSize !== undefined && { servingSize: change.servingSize }),
+        });
       } else if (change.type === 'add-restricted') {
-        toUpsert.push({ foodId: change.foodId, allowed: false, foodSource: change.foodSource });
+        toUpsert.push({
+          foodId: change.foodId,
+          allowed: false,
+          foodSource: change.foodSource,
+          ...(change.servingSize !== undefined && { servingSize: change.servingSize }),
+        });
+      } else if (change.type === 'update-serving') {
+        // Upsert with allowed:true — the food must already be a favorite for
+        // a serving override to make sense (caller in foods-panel guarantees
+        // this; openNfPopupForFood is only reachable for MyFoods entries).
+        toUpsert.push({
+          foodId: change.foodId,
+          allowed: true,
+          foodSource: change.foodSource,
+          servingSize: change.servingSize,
+        });
       }
     }
 
@@ -415,7 +500,20 @@ export class FoodPreferencesService {
    */
   getAllowedFoodsFull(): Observable<Food[]> {
     return this.http.get<AllFoodsResponse>(`${this.baseUrl}/user/preferences/food/allowed/foods`).pipe(
-      map(response => (response.foods || []).map(row => this.allFoodRowToFood(row)))
+      tap(response => {
+        // Hydrate the per-user override map from each row's userServingSize
+        // field, so callers can ask userServingSize(foodId) right after a
+        // refresh and get the server-side override. Rows without an override
+        // are skipped — the UI falls through to the food's baseline servingSize.
+        const next = new Map<number, number>();
+        for (const row of response.foods ?? []) {
+          if (row.userServingSize != null) {
+            next.set(row.foodId, row.userServingSize);
+          }
+        }
+        this.localUserServingSizes.set(next);
+      }),
+      map(response => (response.foods || []).map(row => this.allFoodRowToFood(row))),
     );
   }
 
@@ -436,8 +534,13 @@ export class FoodPreferencesService {
       shortDescription: row.shortDescription,
       categoryName: row.categoryName,
       foodRequestType: 'unknown',
-      dataSource: row.dataSource ?? (row.foodSource === 'user' ? 'user' : 'USDA-FNDDS'),
-      yehApproved: row.yehApproved,
+      foodSource: row.foodSource === 'userfood' ? 'userfood' : 'food',
+      // dataSource fallback stays as the provenance string literals; only
+      // the foodSource COMPARISON KEY flipped to 'userfood'.
+      dataSource: row.dataSource ?? (row.foodSource === 'userfood' ? 'user' : 'USDA-FNDDS'),
+      regiApproved: row.regiApproved,
+      servingSize: row.servingSize ?? null,
+      userServingSize: row.userServingSize ?? null,
       glycemicIndex: row.glycemicIndex ?? 0,
       glycemicLoad: row.glycemicLoad,
       servingSizeMultiplicand: row.servingSizeMultiplicand ?? 1,

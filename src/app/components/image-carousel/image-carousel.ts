@@ -154,6 +154,13 @@ export class ImageCarouselComponent {
     this.spinnerRef()?.spin();
   }
 
+  /** True while the inner spinner is animating. Exposed so parent chrome
+   *  (e.g., action buttons next to the Spin button) can disable themselves
+   *  during a spin and only fire on a settled, yellow-haloed card. */
+  spinning(): boolean {
+    return this.spinnerRef()?.spinning() ?? false;
+  }
+
   // ---- single-click vs double-click discrimination ----
   private singleClickTimer: ReturnType<typeof setTimeout> | null = null;
   private static readonly DBLCLICK_WINDOW_MS = 250;

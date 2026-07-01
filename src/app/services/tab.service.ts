@@ -93,9 +93,9 @@ export class TabService {
   }
 
   // Define menu order - this determines tab insertion order
-  // Left nav: today, review (Week Plans), meal-planning, shop (Shopping List), foods (Food Preferences), chat
+  // Left nav: chat, menus (Menus), foods (Food Preferences), shop (Shopping List)
   // Right nav (profile menu): account, preferences (Settings), help
-  private menuOrder = ['today', 'review', 'meal-planning', 'shop', 'foods', 'chat', 'video-viewer', 'web-viewer', 'issue', 'preferences', 'account', 'help'];
+  private menuOrder = ['chat', 'menus', 'foods', 'shop', 'video-viewer', 'web-viewer', 'issue', 'preferences', 'account', 'help'];
 
   /** URL for the video-viewer tab (set before opening the tab) */
   videoViewerUrl: WritableSignal<string> = signal('');
@@ -106,16 +106,14 @@ export class TabService {
   // Tabs that get an image icon
   private tabIcons: Record<string, string> = {
     'chat': '/images/AI-star.png',
-    'meal-planning': '/images/AI-star.png',
+    'menus': '/images/AI-star.png',
     'foods': '/favicon.ico',
     'preferences': '/images/AI-star.png'
   };
 
   // Tabs that get an emoji icon
   private tabEmojis: Record<string, string> = {
-    'today': '📋',
-    'shop': '🛒',
-    'review': '📅'
+    'shop': '🛒'
   };
 
   toggleTab(tabId: string, label: string): void {
@@ -255,6 +253,81 @@ export class TabService {
     }
   }
 
+  // ============================================================
+  // Settings overlay — separate from the single-active panel stack.
+  // ============================================================
+  // Settings doesn't live in the panel keepalive set; it's a modal that
+  // floats over whichever panel is active. UI components (LeftNav,
+  // ProfileMenu) call openSettings() to show it; the overlay's own Save /
+  // Close buttons call closeSettings().
+  readonly settingsOpen = signal(false);
+  openSettings(): void { this.settingsOpen.set(true); }
+  closeSettings(): void { this.settingsOpen.set(false); }
+
+  // Bug-ticket overlay — same model as settings: floats over whichever panel
+  // is active. Profile menu's "Bug" entry flips this; the overlay's own
+  // Close button (or backdrop click) flips it back.
+  readonly bugOpen = signal(false);
+  openBug(): void { this.bugOpen.set(true); }
+  closeBug(): void { this.bugOpen.set(false); }
+
+  // ============================================================
+  // Single-active panel APIs (replaces the mat-tab strip model)
+  // ============================================================
+  // These methods preserve the "visited" panel set in `tabsSignal` so that
+  // hidden panels stay mounted (and keep their internal state) when the user
+  // toggles them off. The left-nav uses togglePanel for its open/close
+  // semantics: clicking the currently active item closes back to splash.
+
+  /** Open a panel. Adds it to the visited set if it's not there yet. Always
+   *  sets it as the active panel. State is preserved across hide/show. */
+  openPanel(tabId: string, label: string): void {
+    const currentTabs = this.tabsSignal();
+    const existingIndex = currentTabs.findIndex(t => t.id === tabId);
+    if (existingIndex !== -1) {
+      // Already visited — just activate.
+      this._switchToTabInternal(tabId);
+      return;
+    }
+    // First visit — append (or insert per menuOrder).
+    let insertIndex = currentTabs.length;
+    const menuIndex = this.menuOrder.indexOf(tabId);
+    if (menuIndex !== -1) {
+      for (let i = 0; i < currentTabs.length; i++) {
+        const currentMenuIndex = this.menuOrder.indexOf(currentTabs[i].id);
+        if (currentMenuIndex > menuIndex) { insertIndex = i; break; }
+      }
+    }
+    const newTabs = [...currentTabs];
+    newTabs.splice(insertIndex, 0, {
+      id: tabId,
+      label,
+      closeable: true,
+      icon: this.tabIcons[tabId],
+      emoji: this.tabEmojis[tabId],
+    });
+    this.tabsSignal.set(newTabs);
+    this.activeTabIndexSignal.set(insertIndex);
+  }
+
+  /** Close the active panel back to the splash (no panel visible). The
+   *  closed panel stays in the visited set so its state is preserved when
+   *  the user reopens it. */
+  closePanel(): void {
+    this.activeTabIndexSignal.set(-1);
+  }
+
+  /** Toggle a panel: if it's currently active, close it (back to splash);
+   *  otherwise, open it. Used by the left-nav single-active model. */
+  togglePanel(tabId: string, label: string): void {
+    if (this.activeTabId() === tabId) {
+      this.closePanel();
+    } else {
+      this.openPanel(tabId, label);
+    }
+  }
+
+
   switchToChat(): void {
     this.activeTabIndexSignal.set(0);
   }
@@ -271,12 +344,13 @@ export class TabService {
     this.activeTabIndexSignal.set(-1);
   }
 
-  /** Reset to initial state with Today tab open - used on login */
+  /** Reset to initial state — used on login. No panels visited, no active
+   *  panel: the user lands on the splash screen and chooses what to open
+   *  from the left-nav. (A future "default-landing panel" preference will
+   *  override this; for now splash is the deterministic post-login state.) */
   resetToChat(): void {
-    this.tabsSignal.set([
-      { id: 'today', label: 'Today', closeable: true, emoji: this.tabEmojis['today'] }
-    ]);
-    this.activeTabIndexSignal.set(0);
+    this.tabsSignal.set([]);
+    this.activeTabIndexSignal.set(-1);
   }
 
   /** Open the video viewer tab with the given URL */
@@ -312,20 +386,12 @@ export class TabService {
 
   /** Restore tabs from saved settings - used on login */
   restoreFromSettings(tabIds: string[], activeTabId?: string): void {
-    if (!tabIds || tabIds.length === 0) {
-      // Fall back to default (just Chat)
-      this.resetToChat();
-      return;
-    }
-
     // Map of tab ID to label
     const tabLabels: Record<string, string> = {
-      'today': 'Today',
       'chat': 'Chat',
-      'meal-planning': 'Meals',
-      'shop': 'Shopping',
+      'menus': 'Menus',
+      'shop': 'Shopping List',
       'foods': 'Foods',
-      'review': 'Week',
       'preferences': 'Settings',
       'account': 'Account',
       'help': 'Help',
@@ -333,21 +399,14 @@ export class TabService {
       'issue': 'Bug'
     };
 
-    // Create tabs in the order they were saved, but sorted by menuOrder
+    // Build the visited set from tabIds, sorted by menuOrder so the underlying
+    // list stays in menu order regardless of save order.
     const tabs: Tab[] = [];
-
-    // Sort tab IDs by menu order
-    const sortedTabIds = [...tabIds].sort((a, b) => {
+    const sortedTabIds = [...(tabIds ?? [])].sort((a, b) => {
       const aIndex = this.menuOrder.indexOf(a);
       const bIndex = this.menuOrder.indexOf(b);
       return aIndex - bIndex;
     });
-
-    // Ensure 'today' is always included
-    if (!sortedTabIds.includes('today')) {
-      sortedTabIds.unshift('today');
-    }
-
     for (const tabId of sortedTabIds) {
       const label = tabLabels[tabId];
       if (label) {
@@ -361,23 +420,34 @@ export class TabService {
       }
     }
 
+    // Ensure the previously-active panel is in the visited set even if it
+    // wasn't sent in defaultTabs.
+    if (activeTabId && tabLabels[activeTabId] && !tabs.find(t => t.id === activeTabId)) {
+      tabs.push({
+        id: activeTabId,
+        label: tabLabels[activeTabId],
+        closeable: true,
+        icon: this.tabIcons[activeTabId],
+        emoji: this.tabEmojis[activeTabId],
+      });
+    }
+
     if (tabs.length === 0) {
-      // No valid tabs, fall back to default
+      // Nothing saved and no active id — fall back to the post-login default.
       this.resetToChat();
       return;
     }
 
     this.tabsSignal.set(tabs);
 
-    // Restore the previously active tab, or default to first tab
-    let activeIndex = 0;
+    // Activate the saved panel. After the graft above, the activeTabId is
+    // guaranteed to be in `tabs` when one was provided.
+    let activeIndex = -1;
     if (activeTabId) {
       const idx = tabs.findIndex(t => t.id === activeTabId);
-      if (idx !== -1) {
-        activeIndex = idx;
-      }
+      if (idx !== -1) activeIndex = idx;
     }
     this.activeTabIndexSignal.set(activeIndex);
-    console.log('[TabService] Restored tabs from settings:', tabIds, 'active:', activeTabId ?? tabs[0].id);
+    console.log('[TabService] Restored tabs from settings:', tabIds, 'active:', activeTabId ?? '(splash)');
   }
 }

@@ -1,0 +1,160 @@
+// src/app/components/menu-card-row/menu-card-row.scss
+
+// Pinned row: never shrink, never absorb the vertical scroll.
+:host {
+  display: block;
+  flex-shrink: 0;
+}
+
+.strip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #4a4a4a;
+  overflow-x: auto;
+}
+
+.cards {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  flex: 1 1 auto;
+}
+
+.menu-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+  padding: 10px 14px;
+  border: 2px solid #4a4a4a;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
+  color: #f1f1f1;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s ease;
+
+  &:hover {
+    border-color: #6a6f75;
+
+    .menu-delete {
+      opacity: 1;
+    }
+  }
+
+  &.selected {
+    border-color: #4da6ff;
+  }
+
+  .menu-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .menu-days {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .days-value {
+      font-size: 12px;
+      color: #9aa0a6;
+      min-width: 46px;
+      text-align: center;
+    }
+
+    .days-step {
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      border: 1px solid #4a4a4a;
+      border-radius: 4px;
+      background: #2a2a2a;
+      color: #d8d8d8;
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+
+      &:hover:not(:disabled) {
+        border-color: #4da6ff;
+        color: #4da6ff;
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+    }
+  }
+}
+
+// Trash sits in the tile's top-right, revealed on hover.
+.menu-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #9aa0a6;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.12s ease;
+
+  &:hover {
+    color: #ef5350;
+  }
+}
+
+// Live "+ Add menu" — dashed area, white clickable text.
+.add-menu-link {
+  min-width: 120px;
+  border: 2px dashed #5a5a5a;
+  border-radius: 8px;
+  background: transparent;
+  color: #f1f1f1;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease;
+
+  &:hover {
+    border-color: #4da6ff;
+    color: #4da6ff;
+  }
+}
+
+.span-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border: 1px solid #4a4a4a;
+  border-radius: 16px;
+  background: #333;
+  color: #9aa0a6;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  .check {
+    color: #6a6f75;
+  }
+
+  &.complete {
+    color: #f1f1f1;
+
+    .check {
+      color: #41ac17;
+    }
+  }
+}

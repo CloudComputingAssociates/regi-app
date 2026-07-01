@@ -7,7 +7,8 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   AllSettings, TabSettings, RegiMenuSettings,
-  DailyGoals, PersonalInfo, DefaultFoodListData, ShoppingStaple
+  DailyGoals, PersonalInfo, DefaultFoodListData, ShoppingStaple, CurrentPick,
+  Glp1Settings
 } from '../models/settings.models';
 
 @Injectable({
@@ -115,14 +116,37 @@ export class SettingsService {
     return saved.shoppingStaples || data;
   }
 
+  async saveGlp1Settings(data: Glp1Settings): Promise<Glp1Settings> {
+    const saved = await this.saveSettings({ glp1: data });
+    return saved.glp1 || data;
+  }
+
+  /** Persist the user's basket picks. The consolidated PUT preserves every
+   *  other settings field via server-side COALESCE, so only currentPicks is
+   *  sent. Empty array explicitly clears all picks (server distinguishes
+   *  [] from absent). Caller debounces — this method does NOT.
+   *
+   *  Returns the server's echo so the caller can detect server-side mutations
+   *  (e.g. order normalization) and reconcile.
+   *
+   *  No `sendBeacon` companion exists: the API requires an Authorization
+   *  Bearer token and `navigator.sendBeacon` can only carry cookies, so
+   *  any beacon attempt would be rejected with 401 and silently dropped.
+   *  Saves rely on the foods-panel 500ms debounce plus a 30s background
+   *  retry; the edge case of "user drags a food and immediately closes
+   *  the tab within 500ms" is accepted.
+   */
+  async saveCurrentPicks(picks: CurrentPick[]): Promise<CurrentPick[]> {
+    const saved = await this.saveSettings({ currentPicks: picks });
+    return saved.currentPicks ?? picks;
+  }
+
   // ========================================================
   // CONVENIENCE
   // ========================================================
 
   async saveOpenTabs(tabIds: string[], activeTabId?: string): Promise<void> {
-    // Filter out 'today' — it's always re-added on restore and isn't a valid API tab ID
-    const filtered = tabIds.filter(id => id !== 'today');
-    await this.saveTabSettings({ defaultTabs: filtered, activeTabId });
+    await this.saveTabSettings({ defaultTabs: tabIds, activeTabId });
   }
 
   clearSettings(): void {

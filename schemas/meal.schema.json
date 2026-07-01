@@ -1,0 +1,429 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.youeatinghealthy.com/schemas/meal.schema.json",
+  "title": "Meal Schema",
+  "description": "The Meal entity and its request/response payloads: a named meal is an ordered set of food items, each with a role. Also covers the meal enums (type/status/food source/item role), the food-lookup payloads, and the AI-recipe draft payloads driven from the meal flow. Self-contained — no cross-file $ref.",
+  "type": "object",
+  "definitions": {
+
+    "MealType": {
+      "type": "string",
+      "description": "Whether the meal is treated as a full meal or a snack",
+      "enum": ["meal", "snack"]
+    },
+
+    "MealStatus": {
+      "type": "string",
+      "description": "Lifecycle state of a Meal",
+      "enum": ["active", "archived"]
+    },
+
+    "FoodSource": {
+      "type": "string",
+      "description": "Where a meal item's food record lives. 'food' = Food DB (USDA/brand), 'userfood' = user-owned UserFoods row, 'pending' = looked up on the fly, not yet saved to UserFoods; name is stored for the shopping list, IsTracked is false until resolved",
+      "enum": ["food", "userfood", "pending"]
+    },
+
+    "ItemRole": {
+      "type": "string",
+      "description": "Role of the food within a meal — drives shopping list grouping and AI portioning. primary: The anchor of the meal — main protein or star ingredient. secondary: Supporting protein or substantial complement to the primary. side: Accompaniment — carb, vegetable, or supporting component. ingredient: Recipe component, not a standalone food (oil, spices, sauces).",
+      "enum": ["primary", "secondary", "side", "ingredient"]
+    },
+
+    "MealItem": {
+      "type": "object",
+      "description": "A food item within a meal",
+      "properties": {
+        "id": { "type": "integer", "description": "MealItem ID (omit for new items)" },
+        "foodId": { "type": "integer", "description": "Reference to the Food row" },
+        "foodName": { "type": "string", "description": "Denormalized food name for display" },
+        "foodSource": { "$ref": "#/definitions/FoodSource" },
+        "itemRole": { "$ref": "#/definitions/ItemRole" },
+        "isTracked": { "type": "boolean", "description": "True when the item contributes to macro totals and shopping list" },
+        "quantity": { "type": "number", "description": "Amount of food" },
+        "unit": { "type": "string", "description": "Unit of measurement (serving, oz, g, etc.)" },
+        "calories": { "type": "integer" },
+        "proteinG": { "type": "number" },
+        "fatG": { "type": "number" },
+        "carbG": { "type": "number" },
+        "fiberG": { "type": "number" },
+        "sodiumMg": { "type": "integer" },
+        "sortOrder": { "type": "integer", "description": "Display order within the meal" },
+        "servingSizeG": { "type": "number" },
+        "servingGramsPerUnit": { "type": "number" },
+        "foodImageThumbnail": { "type": "string" },
+        "shortDescription": { "type": "string" },
+        "categoryName": { "type": "string" },
+        "productPurchaseLink": { "type": "string", "description": "Optional pre-baked purchase link (e.g., Amazon URL)" }
+      },
+      "required": ["foodId", "foodName", "foodSource", "itemRole", "isTracked", "quantity", "unit"]
+    },
+
+    "Meal": {
+      "type": "object",
+      "description": "A standalone meal with its items",
+      "properties": {
+        "id": { "type": "integer" },
+        "name": { "type": "string" },
+        "mealType": { "$ref": "#/definitions/MealType" },
+        "mealSeqNum": { "type": "integer", "description": "Per-user counter since signup" },
+        "primaryProteinFoodId": { "type": ["integer", "null"] },
+        "primaryProteinName": { "type": ["string", "null"], "description": "Denormalized for UI" },
+        "isRegiApproved": { "type": "boolean", "description": "True when this is an admin-curated, REGI-approved meal visible to all users" },
+        "isFavorite": { "type": "boolean" },
+        "isSaved": { "type": "boolean", "description": "Throwaway flag — false until the user names/saves the meal" },
+        "status": { "$ref": "#/definitions/MealStatus" },
+        "totalCalories": { "type": "integer" },
+        "totalProteinG": { "type": "number" },
+        "totalFatG": { "type": "number" },
+        "totalCarbG": { "type": "number" },
+        "totalFiberG": { "type": "number" },
+        "totalSodiumMg": { "type": "integer" },
+        "prepVideoLink": { "type": "string" },
+        "recipeLink": { "type": "string" },
+        "mealImage": { "type": "string" },
+        "mealImageThumbnail": { "type": "string" },
+        "servings": { "type": "integer", "description": "How many servings this meal yields" },
+        "shareCandidate": { "type": "boolean" },
+        "shareApproved": { "type": "boolean" },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/MealItem" }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "mealType", "mealSeqNum", "isRegiApproved", "isFavorite", "isSaved", "status", "servings", "shareCandidate", "shareApproved", "createdAt", "updatedAt"]
+    },
+
+    "MealSummary": {
+      "type": "object",
+      "description": "Lightweight meal info for list views",
+      "properties": {
+        "id": { "type": "integer" },
+        "name": { "type": "string" },
+        "mealSeqNum": { "type": "integer" },
+        "primaryProteinFoodId": { "type": ["integer", "null"] },
+        "primaryProteinName": { "type": ["string", "null"] },
+        "isRegiApproved": { "type": "boolean" },
+        "isFavorite": { "type": "boolean" },
+        "status": { "type": "string" },
+        "totalCalories": { "type": "integer" },
+        "totalProteinG": { "type": "number" },
+        "totalFatG": { "type": "number" },
+        "totalCarbG": { "type": "number" },
+        "totalFiberG": { "type": "number" },
+        "totalSodiumMg": { "type": "integer" },
+        "mealImageThumbnail": { "type": "string" },
+        "servings": { "type": "integer" },
+        "shareCandidate": { "type": "boolean" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "mealSeqNum", "isRegiApproved", "isFavorite", "status", "servings", "shareCandidate", "createdAt"]
+    },
+
+    "ListMealsRequest": {
+      "type": "object",
+      "description": "Query parameters for GET /api/meal",
+      "properties": {
+        "status": { "type": "string", "description": "Filter by status" },
+        "isFavorite": { "type": "boolean", "description": "Filter to favorites only" },
+        "includeYeh": { "type": "boolean", "description": "Include admin-curated YEH meals" },
+        "limit": { "type": "integer", "description": "Max results (default 20, max 100)" },
+        "offset": { "type": "integer", "description": "Results offset for pagination" }
+      }
+    },
+
+    "CreateMealRequest": {
+      "type": "object",
+      "description": "Request body for POST /api/meal — creates an empty named meal",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name for the meal"
+        },
+        "mealType": {
+          "$ref": "#/definitions/MealType",
+          "default": "meal"
+        },
+        "servings": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 1,
+          "description": "How many servings this meal yields (1–100). Defaults to 1."
+        }
+      },
+      "required": ["name"]
+    },
+
+    "UpdateMealRequest": {
+      "type": "object",
+      "description": "Request body for PATCH /api/meal/{id} — all fields optional; only provided fields are updated",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "New display name"
+        },
+        "mealType": {
+          "$ref": "#/definitions/MealType"
+        },
+        "servings": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "New servings count (1–100)"
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "New favorite flag"
+        },
+        "isSaved": {
+          "type": "boolean",
+          "description": "Whether the meal is saved to the user's library"
+        },
+        "status": {
+          "$ref": "#/definitions/MealStatus"
+        },
+        "prepVideoLink": {
+          "type": "string",
+          "description": "New prep video URL (empty string clears the link)"
+        },
+        "recipeLink": {
+          "type": "string",
+          "description": "New recipe URL (empty string clears the link)"
+        }
+      }
+    },
+
+    "AddMealItemRequest": {
+      "type": "object",
+      "description": "Request body for POST /api/meal/{id}/items — adds a single food item to a meal",
+      "properties": {
+        "foodId": {
+          "type": ["integer", "null"],
+          "description": "FK into the Food row (food/userfood). Null when foodSource is 'pending'."
+        },
+        "foodSource": {
+          "$ref": "#/definitions/FoodSource"
+        },
+        "foodName": {
+          "type": "string",
+          "description": "Denormalized food name for display"
+        },
+        "itemRole": {
+          "$ref": "#/definitions/ItemRole"
+        },
+        "isTracked": {
+          "type": "boolean",
+          "description": "True when the item contributes to macro totals and shopping list. False for ingredients we don't pre-shop."
+        },
+        "quantity": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Amount of food (must be > 0)"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement (serving, oz, g, etc.)"
+        }
+      },
+      "required": ["foodSource", "foodName", "itemRole", "quantity", "unit"]
+    },
+
+    "UpdateMealItemRequest": {
+      "type": "object",
+      "description": "Request body for PATCH /api/meal/{id}/items/{itemId} — all fields optional",
+      "properties": {
+        "quantity": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "New amount of food (must be > 0)"
+        },
+        "unit": {
+          "type": "string",
+          "description": "New unit of measurement"
+        },
+        "itemRole": {
+          "$ref": "#/definitions/ItemRole"
+        },
+        "isTracked": {
+          "type": "boolean",
+          "description": "Whether the item should contribute to macros and shopping list"
+        },
+        "sortOrder": {
+          "type": "integer",
+          "description": "New display order within the meal"
+        }
+      }
+    },
+
+    "FoodLookupRequest": {
+      "type": "object",
+      "description": "Request body for POST /api/food/lookup — searches the food database for an item by name or UPC, optionally adding it to the user's UserFoods if found",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Free-text search query (food name or fragment)"
+        },
+        "upcCode": {
+          "type": "string",
+          "description": "Optional UPC barcode to look up directly"
+        },
+        "addIfFound": {
+          "type": "boolean",
+          "description": "When true, persist the matched food into the user's UserFoods so it can be reused"
+        }
+      }
+    },
+
+    "FoodLookupResponse": {
+      "type": "object",
+      "description": "Response for POST /api/food/lookup",
+      "properties": {
+        "found": {
+          "type": "boolean",
+          "description": "True when a match was located"
+        },
+        "source": {
+          "type": "string",
+          "description": "Where the match came from (e.g., 'food', 'userfood')"
+        },
+        "userFoodCreated": {
+          "type": "boolean",
+          "description": "True when addIfFound was honored and a new UserFoods row was created"
+        },
+        "userFoodId": {
+          "type": ["integer", "null"],
+          "description": "ID of the UserFoods row created by addIfFound (null when none was created)"
+        },
+        "item": {
+          "type": ["object", "null"],
+          "additionalProperties": true,
+          "description": "When found, shape matches MealItem from meal.schema.json (foodId, foodName, foodSource, quantity, unit, plus optional macros)"
+        }
+      },
+      "required": ["found", "userFoodCreated"]
+    },
+
+    "AIRecipeRequest": {
+      "type": "object",
+      "description": "Request body for POST /api/meal/{id}/ai-recipe — asks the AI to draft a recipe shaped around the meal's primary food",
+      "properties": {
+        "primaryFoodName": {
+          "type": "string",
+          "description": "Optional override for the primary food name (defaults to the meal's main item)"
+        },
+        "cuisineHint": {
+          "type": "string",
+          "description": "Optional cuisine hint (e.g., 'Mediterranean', 'Tex-Mex')"
+        },
+        "maxPrepMinutes": {
+          "type": "integer",
+          "description": "Optional cap on combined prep + cook time"
+        },
+        "servings": {
+          "type": "integer",
+          "description": "Optional override for servings the recipe should yield"
+        }
+      }
+    },
+
+    "AIRecipeIngredient": {
+      "type": "object",
+      "description": "One ingredient line in an AI-drafted recipe",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Ingredient name"
+        },
+        "quantity": {
+          "type": "string",
+          "description": "Ingredient quantity as free-form text (e.g., '2 cups', '1 tbsp')"
+        }
+      },
+      "required": ["name", "quantity"]
+    },
+
+    "AIRecipeResponse": {
+      "type": "object",
+      "description": "Response for POST /api/meal/{id}/ai-recipe",
+      "properties": {
+        "recipeId": {
+          "type": "integer",
+          "description": "ID of the persisted recipe row"
+        },
+        "title": {
+          "type": "string",
+          "description": "Recipe title"
+        },
+        "servingsBase": {
+          "type": "integer",
+          "description": "Servings the macros and ingredient quantities are based on"
+        },
+        "prepTimeMin": {
+          "type": "integer",
+          "description": "Prep time in minutes"
+        },
+        "cookTimeMin": {
+          "type": "integer",
+          "description": "Cook time in minutes"
+        },
+        "source": {
+          "type": "string",
+          "description": "Where the recipe came from (e.g., 'ai', model name)"
+        },
+        "ingredientsSummary": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/AIRecipeIngredient" },
+          "description": "Concise list of ingredient lines"
+        },
+        "recipeLink": {
+          "type": "string",
+          "description": "Optional canonical URL to the recipe"
+        },
+        "appliedToMeal": {
+          "type": "boolean",
+          "description": "True when the AI-drafted items were also added to the meal (write-through)"
+        },
+        "itemsAdded": {
+          "type": "integer",
+          "description": "How many meal items were created when appliedToMeal is true"
+        }
+      },
+      "required": ["recipeId", "title", "servingsBase", "prepTimeMin", "cookTimeMin", "source", "ingredientsSummary", "appliedToMeal", "itemsAdded"]
+    },
+
+    "GenerateMealRequest": {
+      "type": "object",
+      "description": "Request body for POST /api/meal/generate — AI-generates ONE meal (persisted, isSaved=false) anchored on a protein and avoiding a list of already-made meals. The per-meal primitive the binder fills from; never generates a rotation. Omitted fields are filled server-side from the user's picks/preferences and daily goals.",
+      "properties": {
+        "anchorProtein": {
+          "type": "string",
+          "description": "The protein this meal is built around. When absent, the server falls back to the user's first Proteins pick, else a protein from UserFoodPreferences."
+        },
+        "macroTarget": {
+          "type": "object",
+          "description": "Per-meal macro goal the meal should aim for. When absent, the server computes fair-share = DailyGoals ÷ mealsPerDay.",
+          "properties": {
+            "proteinG": { "type": "number" },
+            "fiberG": { "type": "number" },
+            "carbG": { "type": "number" },
+            "fatG": { "type": "number" }
+          }
+        },
+        "excludeMeals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Names or descriptions of meals already generated this session, so the AI produces something different."
+        },
+        "mealType": {
+          "$ref": "#/definitions/MealType",
+          "default": "meal"
+        }
+      }
+    }
+  }
+}

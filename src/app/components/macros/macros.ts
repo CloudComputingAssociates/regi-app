@@ -6,15 +6,13 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MacrosService } from '../../services/macros.service';
 import { PreferencesService } from '../../services/preferences.service';
-import { PlanningService } from '../../services/planning.service';
 import { TabService } from '../../services/tab.service';
-import { WeekPlanMacrosService } from '../../services/week-plan-macros.service';
 import { ThisWeekMacrosService } from '../../services/this-week-macros.service';
-import { TodayService } from '../../services/today.service';
+import { RotationService } from '../../services/rotation.service';
 import { TimePeriod, NutritionResponse } from '../../models/nutrition.model';
 
 // Context determines how the macros component behaves
-export type MacrosContext = 'preferences' | 'foods' | 'regimenu' | 'weekplan' | 'today' | 'shopping' | 'default';
+export type MacrosContext = 'preferences' | 'foods' | 'shopping' | 'menu' | 'default';
 
 export interface MacroNutrient {
   name: string;
@@ -103,11 +101,9 @@ export class MacrosComponent implements OnInit {
 
   private macrosService = inject(MacrosService);
   private preferencesService = inject(PreferencesService);
-  private planningService = inject(PlanningService);
   private tabService = inject(TabService);
-  private weekPlanMacros = inject(WeekPlanMacrosService);
   private thisWeekMacros = inject(ThisWeekMacrosService);
-  private todayService = inject(TodayService);
+  private rotationService = inject(RotationService);
 
   // Derive context from active tab
   readonly context = computed<MacrosContext>(() => {
@@ -115,10 +111,8 @@ export class MacrosComponent implements OnInit {
     if (!tabId) return 'default';
     if (tabId === 'preferences') return 'preferences';
     if (tabId === 'foods') return 'foods';
-    if (tabId === 'meal-planning') return 'regimenu';
-    if (tabId === 'review') return 'weekplan';
-    if (tabId === 'today') return 'today';
-    if (tabId === 'shopping') return 'shopping';
+    if (tabId === 'shop') return 'shopping';
+    if (tabId === 'menus') return 'menu';
     return 'default';
   });
 
@@ -128,49 +122,9 @@ export class MacrosComponent implements OnInit {
     return {
       macros: [
         { name: 'proteins', actual: 0, target: goals?.protein ?? 0, percentage: 100 },
+        { name: 'fiber', actual: 0, target: goals?.fiber ?? 0, percentage: 100 },
         { name: 'fats', actual: 0, target: goals?.fat ?? 0, percentage: 100 },
         { name: 'carbs', actual: 0, target: goals?.carbs ?? 0, percentage: 100 }
-      ],
-      timePeriod: 'day'
-    };
-  });
-
-  // Signal-based display data for regimenu context (live from PlanningService)
-  readonly regimenuDisplayData = computed<MacroDisplayData>(() => {
-    const meal = this.planningService.currentMeal();
-    const goals = this.preferencesService.dailyGoals();
-    const targetP = goals?.protein ?? 150;
-    const targetF = goals?.fat ?? 78;
-    const targetC = goals?.carbs ?? 175;
-
-    const servings = meal?.servings ?? 1;
-    const actualP = (meal?.totalProteinG ?? 0) / servings;
-    const actualF = (meal?.totalFatG ?? 0) / servings;
-    const actualC = (meal?.totalCarbG ?? 0) / servings;
-
-    return {
-      macros: [
-        { name: 'proteins', actual: Math.round(actualP), target: targetP, percentage: this.calculatePercentage(actualP, targetP) },
-        { name: 'fats', actual: Math.round(actualF), target: targetF, percentage: this.calculatePercentage(actualF, targetF) },
-        { name: 'carbs', actual: Math.round(actualC), target: targetC, percentage: this.calculatePercentage(actualC, targetC) },
-      ],
-      timePeriod: 'day'
-    };
-  });
-
-  // Signal-based display data for week plan context
-  readonly weekPlanDisplayData = computed<MacroDisplayData>(() => {
-    const totals = this.weekPlanMacros.totals();
-    const goals = this.preferencesService.dailyGoals();
-    const targetP = goals?.protein ?? 150;
-    const targetF = goals?.fat ?? 78;
-    const targetC = goals?.carbs ?? 175;
-
-    return {
-      macros: [
-        { name: 'proteins', actual: Math.round(totals.proteinG), target: targetP, percentage: this.calculatePercentage(totals.proteinG, targetP) },
-        { name: 'fats', actual: Math.round(totals.fatG), target: targetF, percentage: this.calculatePercentage(totals.fatG, targetF) },
-        { name: 'carbs', actual: Math.round(totals.carbG), target: targetC, percentage: this.calculatePercentage(totals.carbG, targetC) },
       ],
       timePeriod: 'day'
     };
@@ -182,12 +136,14 @@ export class MacrosComponent implements OnInit {
     const totals = this.thisWeekMacros.totals();
     const goals = this.preferencesService.dailyGoals();
     const targetP = goals?.protein ?? 150;
+    const targetFiber = goals?.fiber ?? 30;
     const targetF = goals?.fat ?? 78;
     const targetC = goals?.carbs ?? 175;
 
     return {
       macros: [
         { name: 'proteins', actual: Math.round(totals.proteinG), target: targetP, percentage: this.calculatePercentage(totals.proteinG, targetP) },
+        { name: 'fiber', actual: Math.round(totals.fiberG), target: targetFiber, percentage: this.calculatePercentage(totals.fiberG, targetFiber) },
         { name: 'fats', actual: Math.round(totals.fatG), target: targetF, percentage: this.calculatePercentage(totals.fatG, targetF) },
         { name: 'carbs', actual: Math.round(totals.carbG), target: targetC, percentage: this.calculatePercentage(totals.carbG, targetC) },
       ],
@@ -195,19 +151,22 @@ export class MacrosComponent implements OnInit {
     };
   });
 
-  // Signal-based display data for today context (live from checked items)
-  readonly todayDisplayData = computed<MacroDisplayData>(() => {
-    const checked = this.todayService.checkedMacros();
+  // Signal-based display data for the Menus context (actual = selected menu's
+  // summed macros from RotationService; target = the user's daily goals).
+  readonly menuDisplayData = computed<MacroDisplayData>(() => {
+    const totals = this.rotationService.selectedMenuTotals();
     const goals = this.preferencesService.dailyGoals();
     const targetP = goals?.protein ?? 150;
+    const targetFiber = goals?.fiber ?? 30;
     const targetF = goals?.fat ?? 78;
     const targetC = goals?.carbs ?? 175;
 
     return {
       macros: [
-        { name: 'proteins', actual: checked.protein, target: targetP, percentage: this.calculatePercentage(checked.protein, targetP) },
-        { name: 'fats', actual: checked.fat, target: targetF, percentage: this.calculatePercentage(checked.fat, targetF) },
-        { name: 'carbs', actual: checked.carbs, target: targetC, percentage: this.calculatePercentage(checked.carbs, targetC) },
+        { name: 'proteins', actual: Math.round(totals.proteinG), target: targetP, percentage: this.calculatePercentage(totals.proteinG, targetP) },
+        { name: 'fiber', actual: Math.round(totals.fiberG), target: targetFiber, percentage: this.calculatePercentage(totals.fiberG, targetFiber) },
+        { name: 'fats', actual: Math.round(totals.fatG), target: targetF, percentage: this.calculatePercentage(totals.fatG, targetF) },
+        { name: 'carbs', actual: Math.round(totals.carbG), target: targetC, percentage: this.calculatePercentage(totals.carbG, targetC) },
       ],
       timePeriod: 'day'
     };
@@ -221,6 +180,7 @@ export class MacrosComponent implements OnInit {
   private static readonly ZERO_MACROS: MacroDisplayData = {
     macros: [
       { name: 'proteins', actual: 0, target: 0, percentage: 0 },
+      { name: 'fiber', actual: 0, target: 0, percentage: 0 },
       { name: 'fats', actual: 0, target: 0, percentage: 0 },
       { name: 'carbs', actual: 0, target: 0, percentage: 0 }
     ],
@@ -230,10 +190,8 @@ export class MacrosComponent implements OnInit {
   readonly effectiveDisplayData = computed<MacroDisplayData>(() => {
     const ctx = this.context();
     if (ctx === 'preferences') return this.preferencesDisplayData();
-    if (ctx === 'regimenu') return this.regimenuDisplayData();
-    if (ctx === 'weekplan') return this.weekPlanDisplayData();
-    if (ctx === 'today') return this.todayDisplayData();
     if (ctx === 'foods') return this.thisWeekDisplayData();
+    if (ctx === 'menu') return this.menuDisplayData();
     if (ctx === 'shopping') return MacrosComponent.ZERO_MACROS;
     return this.subscriptionData();
   });
@@ -258,6 +216,12 @@ export class MacrosComponent implements OnInit {
         actual: data.nutrients.protein['actual-day'],
         target: data.nutrients.protein['target-grams'],
         percentage: this.calculatePercentage(data.nutrients.protein['actual-day'], data.nutrients.protein['target-grams'])
+      },
+      {
+        name: 'fiber',
+        actual: data.nutrients.fiber['actual-day'],
+        target: data.nutrients.fiber['target-grams'],
+        percentage: this.calculatePercentage(data.nutrients.fiber['actual-day'], data.nutrients.fiber['target-grams'])
       },
       {
         name: 'fats',
@@ -309,7 +273,7 @@ export class MacrosComponent implements OnInit {
       }
       return `${macro.target}g`;
     }
-    if (ctx === 'regimenu' || ctx === 'weekplan' || ctx === 'foods') {
+    if (ctx === 'foods') {
       return this.showPercent ? `${macro.percentage}%` : `${macro.actual}g`;
     }
     return this.showPercent ? `${macro.percentage}%` : `${macro.actual}g`;
@@ -321,9 +285,10 @@ export class MacrosComponent implements OnInit {
   getMacroColor(macroName: string): string {
     switch (macroName) {
       case 'proteins': return '#41ac17';
-      case 'fats': return '#902ee3';
-      case 'carbs': return '#e67300';
-      default: return '#5a62b3';
+      case 'fiber':    return '#e67300';
+      case 'fats':     return '#902ee3';
+      case 'carbs':    return '#b3261e';
+      default:         return '#5a62b3';
     }
   }
 
@@ -333,14 +298,15 @@ export class MacrosComponent implements OnInit {
   }
 
   /**
-   * Get label color - same as bar, slightly brighter for fats/carbs
+   * Get label color - same as bar, slightly brighter for fats/carbs/fiber
    */
   getLabelColor(macroName: string): string {
     switch (macroName) {
       case 'proteins': return '#41ac17';
-      case 'fats': return '#c060ff';
-      case 'carbs': return '#ffb347';
-      default: return '#5a62b3';
+      case 'fiber':    return '#ffb347';
+      case 'fats':     return '#c060ff';
+      case 'carbs':    return '#e85a4a';
+      default:         return '#5a62b3';
     }
   }
 

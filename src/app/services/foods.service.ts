@@ -2,14 +2,66 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, firstValueFrom } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { FoodSearchResponse } from '../models/food.model';
+import { Food, FoodSearchResponse } from '../models/food.model';
+
+// Raw shape returned by the AllFoods-view endpoints (e.g. /api/lists/{name}/items).
+// Differs from FoodSchema in two ways: the id key is `foodId`, and nutrition
+// fields are flattened to the root instead of nested under `nutritionFacts`.
+interface AllFoodRow {
+  foodId: number;
+  foodSource?: string;
+  description: string;
+  shortDescription?: string;
+  categoryId?: number;
+  categoryName?: string;
+  dataSource?: string;
+  servingSizeMultiplicand?: number;
+  servingUnit?: string;
+  servingGramsPerUnit?: number;
+  glycemicIndex?: number;
+  glycemicLoad?: number;
+  foodImage?: string;
+  foodImageThumbnail?: string;
+  nutritionFactsImage?: string;
+  regiApproved?: boolean;
+  calories?: number;
+  proteinG?: number;
+  totalFatG?: number;
+  saturatedFatG?: number;
+  totalCarbohydrateG?: number;
+  dietaryFiberG?: number;
+  sodiumMG?: number;
+  transFatG?: number;
+  cholesterolMG?: number;
+  totalSugarsG?: number;
+  addedSugarsG?: number;
+  vitaminDMcg?: number;
+  calciumMG?: number;
+  ironMG?: number;
+  potassiumMG?: number;
+  servingSizeG?: number;
+  servingSizeHousehold?: string;
+  productPurchaseLink?: string;
+  // Food's curated baseline (number of servingUnit per serving). Comes from
+  // the AllFoods view. /lists/{name}/items returns this but no per-user
+  // override (curated lists don't carry user-specific data).
+  servingSize?: number | null;
+}
 
 export interface Category {
   id: number;
   name: string;
   description?: string;
   sortOrder: number;
+}
+
+export interface FoodList {
+  name: string;
+  description: string;
+  toolTip?: string;
+  assigned?: boolean;
 }
 
 @Injectable({
@@ -38,6 +90,86 @@ export class FoodsService {
   searchYehApprovedFoods(limit: number = 50): Observable<FoodSearchResponse> {
     const url = `${this.baseUrl}/foods/search/all/yehapproved?limit=${limit}`;
     return this.http.get<FoodSearchResponse>(url);
+  }
+
+  // All curated lists (for the dropdown). Optional foodId adds an `assigned`
+  // flag per list — not needed here, used by the detail-panel work.
+  getLists(foodId?: number, foodSource: string = 'food'): Observable<{ lists: FoodList[]; count: number }> {
+    let url = `${this.baseUrl}/lists`;
+    if (foodId != null) {
+      url += `?foodId=${foodId}&foodSource=${foodSource}`;
+    }
+    return this.http.get<{ lists: FoodList[]; count: number }>(url);
+  }
+
+  // Hydrated foods in a list. The server returns AllFoodRow shape (foodId,
+  // flat macros) rather than the FoodSchema shape (id, nested
+  // nutritionFacts) — without remapping, `food.id` is undefined for every
+  // row, which silently breaks isAllowed(food.id), drag-drop, selection,
+  // and every other downstream lookup. Remap to the FoodSchema shape so
+  // callers can treat list items identically to /foods/search results.
+  getListItems(name: string): Observable<FoodSearchResponse> {
+    return this.http.get<{ foods: AllFoodRow[]; count: number }>(
+      `${this.baseUrl}/lists/${encodeURIComponent(name)}/items`,
+    ).pipe(
+      map(resp => ({
+        foods: (resp?.foods ?? []).map(row => FoodsService.allFoodRowToFood(row)),
+        count: resp?.count ?? 0,
+      } as FoodSearchResponse)),
+    );
+  }
+
+  /** Map an AllFoodRow (the view-endpoint shape) to the Food (FoodSchema)
+   *  shape the UI expects. Static so other services / tests can reuse it. */
+  static allFoodRowToFood(row: AllFoodRow): Food {
+    return {
+      id: row.foodId,
+      description: row.description,
+      shortDescription: row.shortDescription,
+      categoryName: row.categoryName,
+      foodRequestType: 'unknown',
+      foodSource: row.foodSource === 'userfood' ? 'userfood' : 'food',
+      // The dataSource fallback values ('user' and 'USDA-FNDDS') are
+      // dataSource literals — provenance strings, NOT foodSource
+      // discriminators. They must stay verbatim even though the
+      // foodSource comparison key flipped.
+      dataSource: row.dataSource ?? (row.foodSource === 'userfood' ? 'user' : 'USDA-FNDDS'),
+      servingSize: row.servingSize ?? null,
+      // Curated lists carry no per-user override; userServingSize stays null.
+      userServingSize: null,
+      regiApproved: row.regiApproved ?? false,
+      glycemicIndex: row.glycemicIndex ?? 0,
+      glycemicLoad: row.glycemicLoad,
+      servingSizeMultiplicand: row.servingSizeMultiplicand ?? 1,
+      servingUnit: row.servingUnit,
+      servingGramsPerUnit: row.servingGramsPerUnit,
+      foodImage: row.foodImage,
+      foodImageThumbnail: row.foodImageThumbnail,
+      nutritionFactsImage: row.nutritionFactsImage,
+      verifiedType: 'unknown',
+      verifiedBy: '',
+      duplicateCount: 0,
+      productPurchaseLink: row.productPurchaseLink,
+      nutritionFacts: {
+        calories: row.calories ?? 0,
+        proteinG: row.proteinG ?? 0,
+        totalFatG: row.totalFatG ?? 0,
+        saturatedFatG: row.saturatedFatG ?? 0,
+        transFatG: row.transFatG ?? 0,
+        cholesterolMG: row.cholesterolMG ?? 0,
+        totalCarbohydrateG: row.totalCarbohydrateG ?? 0,
+        dietaryFiberG: row.dietaryFiberG ?? 0,
+        totalSugarsG: row.totalSugarsG ?? 0,
+        addedSugarsG: row.addedSugarsG,
+        sodiumMG: row.sodiumMG ?? 0,
+        vitaminDMcg: row.vitaminDMcg ?? 0,
+        calciumMG: row.calciumMG ?? 0,
+        ironMG: row.ironMG ?? 0,
+        potassiumMG: row.potassiumMG ?? 0,
+        servingSizeG: row.servingSizeG ?? 0,
+        servingSizeHousehold: row.servingSizeHousehold ?? '',
+      },
+    };
   }
 
   // Categories cache

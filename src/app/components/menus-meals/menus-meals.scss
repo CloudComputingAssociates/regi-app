@@ -1,0 +1,14 @@
+// src/app/components/menus-meals/menus-meals.scss
+
+// Block host so the grid lays out and scrolls inside the panel-body region.
+:host {
+  display: block;
+}
+
+.canvas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+  padding: 16px 20px;
+  align-content: start;
+}

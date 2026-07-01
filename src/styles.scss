@@ -150,6 +150,21 @@ sup.sm {
   z-index: 9999 !important;
 }
 
+// Dark surface for the menus-panel Wipe confirm dialog (panelClass on
+// MatDialog.open). Overrides Material's light default so there's no white
+// flash; matches the app's #2a2a2a panel surface + #4a4a4a chrome border.
+// Content/buttons are styled in wipe-confirm-dialog.scss.
+.wipe-dialog-panel {
+  --mdc-dialog-container-color: #2a2a2a;
+
+  .mat-mdc-dialog-surface {
+    background-color: #2a2a2a;
+    color: #f1f1f1;
+    border: 1px solid #4a4a4a;
+    border-radius: 10px;
+  }
+}
+
 // Food picker filter radio buttons - white theme
 .filter-radio-group .mat-mdc-radio-button {
   --mdc-radio-selected-icon-color: #ffffff !important;
@@ -173,6 +188,54 @@ sup.sm {
 .filter-radio-group .mat-mdc-radio-button .mdc-radio__background::before {
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
+
+// ============================================================================
+// Dialog conventions — Mac-style round green-check / red-X dialog controls.
+// See CLAUDE.md > Dialog conventions for the policy. Used by every dialog
+// overlay in the app (settings, bug, future ones). The .dialog-discs wrapper
+// is positioned by each overlay; the disc styling below is canonical.
+// ============================================================================
+.dialog-disc {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.25),
+    0 1px 1px rgba(0, 0, 0, 0.35);
+  transition: transform 0.1s ease, filter 0.1s ease, opacity 0.1s ease;
+
+  .mat-icon {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+    line-height: 14px;
+    color: #000;
+  }
+
+  &:hover:not(:disabled) {
+    transform: scale(1.12);
+    filter: brightness(1.15);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.95);
+    filter: brightness(0.9);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.35;
+  }
+}
+
+.dialog-disc-confirm { background: #28c941; }   // Apple green
+.dialog-disc-cancel  { background: #ff5f57; }   // Apple red
 
 .filter-radio-group .mat-mdc-radio-button .mdc-label {
   color: #ffffff !important;

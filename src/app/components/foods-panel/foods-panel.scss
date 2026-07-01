@@ -1,4 +1,45 @@
 // src/app/components/foods-panel/foods-panel.scss
+
+// ---- Standardized close button ---------------------------------------------
+// Shared placeholder for every panel/dialog close X across the Foods panel
+// (NF popup, Health Benefits popup, Curate section title). Same 20 × 20 form
+// factor as the basket traffic-lights so the chrome reads as one family.
+// macOS-style red disc, raised look via inset highlight + drop shadow, dark
+// × glyph that pops against the red. Per the user's preference these always
+// ride the RIGHT side of their host (Apple puts them on the left).
+%app-close-circle {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: #ff5f57;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  color: rgba(0, 0, 0, 0.7);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.25),
+    0 1px 1px rgba(0, 0, 0, 0.35);
+  transition: transform 0.1s ease, filter 0.1s ease;
+
+  &:hover {
+    transform: scale(1.12);
+    filter: brightness(1.15);
+  }
+  &:active {
+    transform: scale(0.95);
+    filter: brightness(0.9);
+  }
+}
+
 :host {
   display: flex;
   height: 100%;
@@ -265,21 +306,37 @@
 }
 
 .hb-close {
+  @extend %app-close-circle;
   position: absolute;
-  top: 4px;
-  right: 4px;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 16px;
-  cursor: pointer;
-  padding: 4px 8px;
-  line-height: 1;
-  z-index: 1;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+}
 
-  &:hover {
-    color: #ffffff;
-  }
+// Header row above the food title — AI star icon + "Health Info" label.
+// Sits flush with the top of the popup so the user knows what this dialog
+// is at a glance. The icon is decorative (alt=""), the label provides the
+// semantic meaning.
+.hb-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.hb-ai-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.hb-header-text {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: rgba(77, 166, 255, 0.85);
 }
 
 .hb-title {
@@ -392,6 +449,11 @@
   gap: 8px;
   padding: 6px 10px;
   background: transparent;
+  // Allows the tagline to be absolutely positioned relative to the row, so
+  // it locks to the panel midline regardless of the SEARCH / TOTAL widths
+  // on either side (which are asymmetric and would otherwise drag the
+  // flex-based centering off-axis).
+  position: relative;
 }
 
 .search-label {
@@ -404,8 +466,9 @@
 }
 
 .carousel-search-input {
-  // ~33% of the left-pane width; clamps so it never gets absurdly small.
-  flex: 0 0 33%;
+  // ~17% of the left-pane width (half the previous 33%) per the user's
+  // "50% of the size" request. Still clamps so it never gets absurdly small.
+  flex: 0 0 17%;
   min-width: 80px;
   box-sizing: border-box;
   padding: 5px 10px;
@@ -426,33 +489,138 @@
   }
 }
 
+// Clear button for the LHS SEARCH input — Material `cancel` icon, only
+// rendered when the search text is non-empty. Mirrors the RHS
+// .picker-search-clear pattern so the two SEARCH rows feel consistent.
+.carousel-search-clear {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s ease, background 0.12s ease;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    line-height: 1;
+  }
+
+  &:hover {
+    color: #ff6b6b;
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
 // Flex spacer that pushes the Spin button to the right edge.
 .top-bar-spacer { flex: 1; }
 
-// Spin button — upper-right corner of the left pane, in the top bar.
-.spin-btn {
-  flex-shrink: 0;
-  height: 36px;
-  padding: 0 16px;
+// Coaching tagline that locks to the absolute horizontal CENTER of the
+// .carousel-top-bar row — independent of the SEARCH / TOTAL widths flanking
+// it. Flex-based centering with two spacers drifts off-axis when the left
+// and right chunks differ in width (which they do — SEARCH + input is wider
+// than TOTAL), so we anchor at left:50% and translate -50%. pointer-events:
+// none so the tagline can never block a click on the underlying row.
+.top-bar-tagline {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  // Crisp letterpress: near-black body sits well below the bar's own tone so
+  // each letter reads as a real trench, plus ONE zero-blur white highlight
+  // along the bottom edge (the catch-light along the lip of the recess).
+  // No blurred shadows — blur softens edges, killing the "engraved" feel.
+  color: #111;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.22);
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+// LHS total badge — sits at the right edge of the SEARCH row, mirrors the
+// RHS .section-title-count style. Reflects carouselSpinnerFoods().length,
+// so it tracks the active category filter + SEARCH text live.
+.top-bar-total {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
-  color: #ffffff;
-  background: #357035;
-  border: 1px solid #4a954a;
-  border-bottom: 2px solid #1a3a1a;
+  letter-spacing: 0.4px;
+  color: rgba(77, 166, 255, 0.7);
+}
+
+// RHS variant of .top-bar-total. Same look, but margin-left:auto floats it
+// to the right edge of the picker-search-row so it mirrors the LHS total
+// badge now that the picker SEARCH input is the same shorter width.
+.picker-search-total {
+  margin-left: auto;
+}
+
+// Nutrition Facts + Health Info action buttons — right-justified in the
+// top bar above the tile grid. Doubled from the previous size (60 × 72 →
+// 120 × 144) so the NF label is readable and the lime callout reads
+// clearly. When armed (a tile is selected), they pick up the same yellow
+// halo the selected tile wears — visually telling the user "these are
+// hot, click to act on what you picked."
+.top-bar-action-btn {
+  flex-shrink: 0;
+  width: 120px;
+  height: 144px;
+  padding: 0;
+  background: #1a1a1a;
+  border: 2px solid transparent;
   border-radius: 6px;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.4);
+  transition: filter 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
 
-  &:hover { background: #408040; }
-  &:active {
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  // Armed (a tile is selected): yellow halo, matching .food-tile.selected.
+  &:not(:disabled) {
+    border-color: rgba(255, 213, 79, 0.95);
+    box-shadow:
+      0 0 14px 1px rgba(255, 213, 79, 0.85),
+      0 0 24px 2px rgba(255, 193, 7, 0.45),
+      0 2px 4px rgba(0, 0, 0, 0.4);
+  }
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+
+  &:active:not(:disabled) {
     transform: translateY(1px);
-    border-bottom-width: 1px;
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
   }
 }
+
 
 // (.left-pane-carousel rule lives below in the pane-card section — both
 // inside the rounded card, so the carousel still grows to fill its parent.)
@@ -464,27 +632,56 @@
 .section-title {
   flex-shrink: 0;
   display: flex;
-  align-items: baseline;
+  // Center-align so the Curate pill (LHS) and the X close (RHS) sit cleanly
+  // next to the heading text without baseline-shifting button captions.
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 14px 6px;
+  // Balanced top/bottom so the LHS and RHS section-title banners line up
+  // when stacked side-by-side. Tighter than the prior 8/6 so the banner
+  // doesn't dwarf the filter row directly beneath it.
+  padding: 4px 14px;
   color: #4da6ff;
-  font-family: 'Fredoka', Roboto, sans-serif;
+  // Inter for the section titles too — same family as the app-bar so the
+  // hierarchy reads as "same font, one weight heavier." 700 is bold enough
+  // to feel like a header without the rounded fattening that made Fredoka's
+  // capitals look blurry at this size.
+  font-family: 'Inter', 'Roboto', sans-serif;
   font-size: 24px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  letter-spacing: -0.1px;
   background: linear-gradient(180deg, #3a3a3a 0%, #2f2f2f 100%);
   border-bottom: 1px solid #1a1a1a;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .section-title-text { flex: 1; min-width: 0; }
 
+// LHS-only override: the MyFoods heading should size to content so the
+// Curate pill sits to its right (with a generous ~1/2" of breathing room)
+// instead of being pushed to the far edge by the space-between justification.
+// justify-content flips to flex-start so the pair hugs the left edge.
+.left-pane .section-title { justify-content: flex-start; }
+.left-pane .section-title-text { flex: 0 0 auto; }
+.left-pane .curate-toggle { margin-left: 48px; }
+
+// RHS gets the same hug-left treatment so "Picks" / "Edit MyFoods" mirrors
+// the "MyFoods" + Edit layout on the left. The count + close X are pushed
+// to the right edge via margin-left:auto on the count (the close trails the
+// count via its normal flow).
+.right-pane .section-title { justify-content: flex-start; }
+.right-pane .section-title-text { flex: 0 0 auto; }
+.right-pane .section-title-count { margin-left: auto; }
+
 .section-title-count {
   flex-shrink: 0;
-  font-size: 18px;
-  font-weight: 500;
-  color: rgba(77, 166, 255, 0.75);
+  // Match the .category-count in the accordion dividers so the visual
+  // hierarchy reads as: big section title | small "Total (n)" badge | ...
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: rgba(77, 166, 255, 0.7);
 }
 
 // TYPE row sits between DISPLAY and the curated list. Only visible in Curate
@@ -494,18 +691,137 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  // Tight bottom edge so the SEARCH row sits 1 px below the dropdown row.
+  // The 1 px border-bottom IS the visible separator now — no padding gap.
+  padding: 4px 14px 1px;
   background: linear-gradient(180deg, #353535 0%, #2a2a2a 100%);
   border-bottom: 1px solid #1a1a1a;
 }
 
 .type-row-label {
   flex-shrink: 0;
+  // Reserve a fixed slot wide enough for the longest label ("FOOD LIST") so
+  // the dropdown's left edge stays put — and the SEARCH label below uses
+  // the same min-width so its input left-aligns with the dropdown.
+  min-width: 64px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: #4da6ff;
+}
+
+// Compact collapse/expand pair sitting to the right of the TYPE dropdown.
+// Pressed look (minus by default) signals which fold-state is current.
+.picker-fold-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  color: #ffffff;
+  background: linear-gradient(180deg, #5a5a5a 0%, #3a3a3a 100%);
+  border-top: 1px solid #6f6f6f;
+  border-left: 1px solid #4a4a4a;
+  border-right: 1px solid #4a4a4a;
+  border-bottom: 2px solid #1a1a1a;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  transition: background 0.05s ease;
+
+  &:hover:not(.pressed) {
+    background: linear-gradient(180deg, #6a6a6a 0%, #454545 100%);
+  }
+
+  &.pressed {
+    background: linear-gradient(180deg, #2a2a2a 0%, #3a3a3a 100%);
+    border-top: 2px solid #1a1a1a;
+    border-bottom: 1px solid #555;
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.55),
+      0 0 0 1px rgba(77, 166, 255, 0.35);
+    transform: translateY(1px);
+  }
+}
+
+// Type-ahead search row — sits between the TYPE row and the accordion list.
+// Filters the visible Food Picker rows live as the user types.
+.picker-search-row {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  // Top-tight so the SEARCH input sits 1 px under the FOOD LIST dropdown.
+  padding: 0 14px 4px;
+  background: linear-gradient(180deg, #303030 0%, #262626 100%);
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.picker-search-label {
+  flex-shrink: 0;
+  // Match the FOOD LIST label width so the SEARCH input's left edge aligns
+  // with the dropdown's left edge in the row above.
+  min-width: 64px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #4da6ff;
+}
+
+.picker-search-input {
+  // Match the LHS carousel-search-input width so the two SEARCH boxes look
+  // like siblings (~17 % of the pane width, 80 px min).
+  flex: 0 0 17%;
+  min-width: 80px;
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  color: #ffffff;
+  background: #1a1a1a;
+  border: 1px solid #555;
+  border-radius: 4px;
+  outline: none;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
+
+  &:focus { border-color: #4da6ff; }
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+    font-style: italic;
+  }
+}
+
+// Inline clear button — only renders when there's a query to clear.
+.picker-search-clear {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s ease, background 0.12s ease;
+
+  &:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+  }
 }
 
 // Shared "raised gray control bar" — used by both .display-toggle (right
@@ -545,49 +861,171 @@
 
 .filter-bar-label { @extend %control-bar-label; }
 
-// DISPLAY toggle (Fill Baskets / Curate MyFoods) — top of the right pane.
-.display-toggle {
-  @extend %control-bar;
+// Invisible mirror of the LHS .filter-bar's vertical footprint, used on
+// the RHS Picks view (which has no filter row of its own) so the basket
+// card below starts at the same Y as the LHS carousel card. Matches:
+//   margin 6/6 + padding 8/8 + border 1+2 + content 28 = 59px footprint
+// Background / border are stripped so it draws nothing; layout space is
+// preserved via explicit height on a single inner row.
+.filter-bar-placeholder {
+  flex-shrink: 0;
+  margin: 6px 8px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+  visibility: hidden;
+  // Reserve the same inner content height as one row of .category-radio-btn.
+  &::before {
+    content: '';
+    display: block;
+    height: 28px;
+  }
 }
 
-.display-toggle-label { @extend %control-bar-label; }
-
-.display-toggle-buttons {
-  display: inline-flex;
-  background: #1a1a1a;
-  border: 1px solid #555;
-  border-radius: 999px;
-  padding: 2px;
-  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-// Same typographic feel as the FILTER pills (.category-radio-btn) so the
-// DISPLAY toggle reads as a sibling control of the same weight.
-.display-toggle-btn {
+// "Edit..." pill on the LHS section-title — mirrors the FILTER pill's
+// physical raised/inset behavior so the user can tell at a glance whether
+// it's "out" (Picks visible) or "pressed in" (Edit MyFoods active). Only
+// the hue differs: this one is a blue-tinted variant of the gray FILTER
+// pills.
+.curate-toggle {
+  flex-shrink: 0;
+  // Nudge 1 px down so the visual center of the pill sits inside the title
+  // band — the cap-height of "MyFoods" pulls the perceived center slightly
+  // above the geometric midline, so the pill needs to drop a touch to look
+  // balanced top/bottom.
+  margin-top: 1px;
   font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
+  font-size: 15px;
+  font-weight: 700;
   letter-spacing: 0.3px;
-  color: rgba(255, 255, 255, 0.55);
+  color: #ffffff;
+  background: linear-gradient(180deg, #5fa3d8 0%, #357095 100%);
+  // Symmetric 1px borders all the way around so the border-radius reads
+  // evenly at every corner. Depth comes from the drop-shadow + gradient.
+  border: 1px solid #4080ac;
+  border-top-color: #7fbdec;
+  border-radius: 6px;
+  // Tight balanced vertical padding + tighter horizontal padding so the
+  // pill sits inside the slimmer section-title band without forcing the
+  // whole banner to grow around it.
+  padding: 3px 12px;
+  height: 26px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  transition: background 0.05s ease, color 0.05s ease;
+
+  &:hover:not(.pressed) {
+    background: linear-gradient(180deg, #6fb0e2 0%, #408bb0 100%);
+  }
+
+  &.pressed {
+    color: #ffffff;
+    background: linear-gradient(180deg, #1f3a55 0%, #2a5070 100%);
+    border: 1px solid #4080ac;
+    border-top-color: #15293d;
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.65),
+      0 0 0 1px rgba(77, 166, 255, 0.35);
+    transform: translateY(1px);
+  }
+
+  &:focus-visible {
+    box-shadow:
+      0 2px 3px rgba(0, 0, 0, 0.35),
+      0 0 0 2px rgba(77, 166, 255, 0.6);
+  }
+}
+
+// Mobile-app launcher — sits to the right of the Curate pill on the LHS
+// section-title row. Same raised "physical button" treatment as the Curate
+// pill so the two LHS chrome controls read as a pair.
+// Wrapper button: the whole [phone | label] pair is one click target so
+// tapping the icon OR the label opens the phone-app dialog. margin-left:
+// auto right-aligns it inside the .type-row. Transparent / unstyled at the
+// wrapper level — the phone visual is carried by .mobile-app-btn (now a
+// span) and the label by .mobile-app-label.
+.mobile-app-combo {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 0;
   background: transparent;
   border: none;
-  border-radius: 999px;
-  // Vertical padding tuned so the pill (+ 2px container pad) equals 28 px —
-  // the explicit FILTER-pill height — keeping both bars top/bottom aligned.
-  padding: 5px 14px;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  outline: none;
 
-  &:hover:not(.active) {
-    color: #ffffff;
+  // Hover lift travels to the inner phone glyph so the affordance is
+  // unmistakable on the whole pill, not just the icon area.
+  &:hover .mobile-app-btn {
+    background: linear-gradient(180deg, #6fb0e2 0%, #408bb0 100%);
   }
+  &:active .mobile-app-btn {
+    background: linear-gradient(180deg, #1f3a55 0%, #2a5070 100%);
+    transform: translateY(1px);
+  }
+  // Subtle hover treatment on the text too so the user sees the click
+  // target spans the whole pair.
+  &:hover .mobile-app-label { color: #6fb0e2; }
+}
 
-  &.active {
-    color: #ffffff;
-    background: linear-gradient(180deg, #4a8fc7 0%, #357095 100%);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  }
+// Phone glyph — now a styled span inside the .mobile-app-combo button (no
+// longer its own button, since the wrapper is the click target).
+.mobile-app-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: linear-gradient(180deg, #5fa3d8 0%, #357095 100%);
+  border-top: 1px solid #7fbdec;
+  border-left: 1px solid #4080ac;
+  border-right: 1px solid #4080ac;
+  border-bottom: 2px solid #1a3a55;
+  border-radius: 4px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
+  transition: background 0.05s ease, transform 0.05s ease;
+  pointer-events: none; // wrapper handles the click
+}
+
+// Blue label that sits AFTER the phone glyph in the combo button.
+.mobile-app-label {
+  flex-shrink: 0;
+  padding-left: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #4da6ff;
+  transition: color 0.05s ease;
+  pointer-events: none; // wrapper handles the click
+}
+
+.mobile-app-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+}
+
+// X close on the RHS section-title — only renders when Curate is active.
+// Returns the RHS to its default Baskets view (same effect as clicking the
+// active Curate button on the LHS).
+.section-title-close {
+  @extend %app-close-circle;
+  margin-left: 4px;
 }
 
 // Right-pane list (MyFoods accordion / YEH-approved rows).
@@ -657,14 +1095,110 @@
   overflow: hidden;
 }
 
-.left-pane-carousel {
+// Tile grid replaces the carousel inside .carousel-card. CSS Grid with
+// auto-fill flows tiles left-to-right and wraps to the next row; the grid
+// itself scrolls vertically when the food set exceeds the visible area.
+.tile-grid {
   flex: 1;
   min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-auto-rows: max-content;
+  gap: 10px;
+  padding: 10px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 3px;
+  }
+}
+
+.tile-grid-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 32px 16px;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  font-size: 13px;
+}
+
+// Each tile is a small portrait card with an image area and a label band.
+// Single-click selects (yellow halo via .selected), double-click activates
+// (handled in the component), drag-and-drop preserved.
+.food-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #3a3a3a;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.1s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: rgba(77, 166, 255, 0.4);
+  }
+
+  // Chiffon-yellow halo selection — paler / more white than the prior
+  // goldenrod (#ffd54f). Matches the same yellow family the empty-basket
+  // hints and LHS tagline use, so the highlight, coaching text, and AI
+  // bloom all share one tone.
+  &.selected {
+    border-color: rgba(255, 245, 157, 0.95);
+    box-shadow:
+      0 0 14px 1px rgba(255, 245, 157, 0.85),
+      0 0 24px 2px rgba(255, 235, 100, 0.45),
+      0 2px 4px rgba(0, 0, 0, 0.4);
+    z-index: 1;
+  }
+}
+
+.food-tile-image {
+  flex: 1;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2f2f2f;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+  }
+}
+
+.food-tile-label {
+  flex-shrink: 0;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.5);
+  text-align: center;
+  // LHS rule: clip on overflow, never wrap. Tiles stay grid-aligned even
+  // when the food name runs long — readability is bought via the bigger
+  // font on the names that fit, not via taller rows.
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 // ---- 2 × 2 basket grid (This Week view) ----
 // Proteins | Fats          (top row)
-// Carbs    | Misc          (bottom row)
+// Carbs    | Other          (bottom row)
 // Each basket fills its grid cell; the count rides in the middle of the face,
 // the tiles flow below.
 .basket-grid {
@@ -711,7 +1245,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  padding-right: 48px; // leaves room for yellow + green on the right
+  padding-right: 56px; // leaves room for yellow + green on the right
   user-select: none;
 }
 
@@ -726,10 +1260,11 @@
 }
 
 // Inline trash button — small, transparent background, hover turns red.
+// Sized down 25% from the original (40 → 30) per the spec.
 .basket-trash {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   background: transparent;
   border: none;
@@ -748,10 +1283,10 @@
 }
 
 .basket-trash-icon {
-  width: 14px;
-  height: 14px;
-  font-size: 14px;
-  line-height: 14px;
+  width: 21px;
+  height: 21px;
+  font-size: 21px;
+  line-height: 21px;
 }
 
 // (Stale .basket-name rule removed — current rule lives above in the
@@ -769,8 +1304,8 @@
 .basket-light {
   position: absolute;
   top: 6px;
-  width: 14px;
-  height: 14px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.4);
@@ -781,6 +1316,14 @@
   justify-content: center;
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25), 0 1px 1px rgba(0, 0, 0, 0.35);
   transition: transform 0.1s ease, filter 0.1s ease, opacity 0.1s ease;
+
+  &::before {
+    color: #000;
+    font-weight: 900;
+    font-size: 16px;
+    line-height: 1;
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.6);
+  }
 
   &:hover:not(:disabled) {
     transform: scale(1.12);
@@ -810,8 +1353,16 @@
 
 .basket-lights-right .basket-light { position: static; }
 
-.basket-light-min { background: #febc2e; }
-.basket-light-max { background: #28c941; }
+.basket-light-min {
+  // Chiffon yellow — paired with the LHS tagline so the minimize disc shares
+  // the same softer yellow tone instead of the harsher poppy yellow.
+  background: #fff59d;
+  &::before { content: '\2212'; } // minus sign
+}
+.basket-light-max {
+  background: #28c941;
+  &::before { content: '+'; }
+}
 
 // ---- Focus mode ----
 // When any basket is .focused, the grid collapses to a single cell — the
@@ -822,6 +1373,41 @@
   grid-template-rows: 1fr;
 
   .basket:not(.focused) { display: none; }
+}
+
+// Coaching placeholder shown inside an empty basket. Italic + chiffon
+// yellow (paler / more white than the goldenrod halo we use for the bloom).
+// The outer .basket-empty-hint is a flex centerer that fills the available
+// height inside the .basket cell so the text lands in the TRUE middle of
+// the basket, not just floated at the top. The inner .basket-empty-hint-
+// text carries the visual treatment + the 2-line clamp.
+.basket-empty-hint {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  user-select: none;
+}
+
+.basket-empty-hint-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  // Honor `\n` characters embedded in the hint strings as hard line breaks
+  // (used to deliberately split the longer hint at a chosen comma rather
+  // than letting auto-wrap pick the break point).
+  white-space: pre-line;
+  font-family: inherit;
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.2px;
+  text-align: center;
+  color: rgba(255, 245, 157, 0.75);
 }
 
 // Mini-cards tile in a flex-wrap grid as foods land in the basket. Each card
@@ -849,13 +1435,11 @@
 }
 
 .basket-mini-card {
-  // Bumped another 25%: 60 → 75 × 88 → 110. The label band, image area and X
-  // badge all scale via their own rules, so this just affects the outer box.
   position: relative;
   width: 75px;
   height: 110px;
   background: #2a2a2a;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 2px solid transparent;
   border-radius: 4px;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.45);
   overflow: hidden;
@@ -863,43 +1447,55 @@
   flex-direction: column;
   flex-shrink: 0;
   cursor: pointer;
-  transition: transform 0.12s ease;
+  transition: transform 0.12s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 
-  // Clicking anywhere on the card removes the food from the basket; the red X
-  // is purely a hover affordance signalling that intent.
   &:hover {
-    transform: scale(1.1);
+    transform: scale(1.08);
+  }
 
-    .basket-mini-remove {
-      opacity: 1;
-    }
+  // Selected state — yellow halo matches the LHS tile selection. Single
+  // click selects, double-click removes, click bloom for Nutrition Facts.
+  &.selected {
+    border-color: rgba(255, 213, 79, 0.95);
+    box-shadow:
+      0 0 12px 1px rgba(255, 213, 79, 0.85),
+      0 0 22px 2px rgba(255, 193, 7, 0.45),
+      0 2px 4px rgba(0, 0, 0, 0.4);
+    z-index: 2;
   }
 }
 
 // Red X delete indicator — purely a hover affordance (the whole card is the
 // click target). Absolutely positioned over the left edge of the black label
 // banner so the centered text doesn't shift right when the X appears.
+// Hover-revealed remove badge. Borrows the standard %app-close-circle look
+// (same red disc, raised treatment, dark × glyph) so every X in the panel
+// reads as one family — but 25 % smaller (15 × 15 vs 20 × 20) because this
+// is an INNER delete on a tile, not a panel-level close. Pinned to the
+// UPPER-RIGHT of the picture area (just below the label strip) so the food
+// name keeps the full width of the label without the X eating into it.
 .basket-mini-remove {
+  @extend %app-close-circle;
   position: absolute;
-  top: 1px;
-  left: 1px;
-  width: 14px;
-  height: 14px;
-  background: #e53935;
-  border: 1px solid #ffffff;
-  border-radius: 50%;
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
+  // 23 px clears the label strip (min-height 18 + 2/2 padding = 22) plus a
+  // 1 px top margin so the X isn't flush against the image's top edge.
+  // 1 px right margin keeps it tucked into the corner.
+  top: 23px;
+  right: 1px;
+  width: 15px;
+  height: 15px;
+  font-size: 10px;
   opacity: 0;
-  z-index: 2;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-  transition: opacity 0.12s ease;
+  z-index: 3;
+  // Augment the placeholder's transform/filter transitions with opacity so
+  // the hover-reveal still fades in smoothly.
+  transition: transform 0.1s ease, filter 0.1s ease, opacity 0.12s ease;
+}
+
+// Reveal the X whenever the mini-card (or the X itself) is hovered.
+.basket-mini-card:hover .basket-mini-remove,
+.basket-mini-remove:hover {
+  opacity: 1;
 }
 
 .basket-mini-card-image {
@@ -920,14 +1516,19 @@
 
 .basket-mini-card-label {
   position: relative;
-  font-size: 9px;
-  line-height: 1.1;
+  font-size: 11px;
+  line-height: 1.15;
   color: rgba(255, 255, 255, 0.92);
   background: rgba(0, 0, 0, 0.65);
   padding: 2px 3px;
   min-height: 18px;
 }
 
+// RHS rule (reversed): clip-and-ellipsis, same as the LHS. The earlier
+// wrap-for-readability bet looked too cramped in practice — long names like
+// "Chicken sausage, Isernios" would explode the tile height. Clipping to a
+// single line keeps every mini-card the same size; users can still see the
+// full name via tooltip / NF popup.
 .basket-mini-card-label-text {
   display: block;
   white-space: nowrap;
@@ -953,10 +1554,21 @@
 .nf-popup {
   background: #2a2a2a;
   border-radius: 8px;
-  padding: 12px;
+  // Sides 12, top 12, bottom 0 — the data-trace line below the white label
+  // sits flush at the bottom and provides its own ~3 px of breathing room so
+  // the dark bottom band matches the left/right margins instead of dwarfing
+  // them. The trace is a developer indicator, not user content.
+  padding: 12px 12px 0;
   width: 310px;
   box-sizing: border-box;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  // Same warm yellow glow we use on the "Click for Facts" bloom — the bloom
+  // visually "lands" on this popup, so the halo carries through and the
+  // transition reads as one continuous element.
+  border: 2px solid #ffd54f;
+  box-shadow:
+    0 0 16px rgba(255, 213, 79, 0.85),
+    0 0 32px rgba(255, 193, 7, 0.45),
+    0 8px 24px rgba(0, 0, 0, 0.5);
   // overflow:visible so the Health Info badge can overhang above the popup
   // without being clipped. The inner wrapper handles the scroll instead.
   overflow: visible;
@@ -972,22 +1584,120 @@
   scrollbar-width: none;
 }
 
+// Data-trace line riding on the dark bottom chrome of the NF popup. Slim
+// strip whose total height matches the 12 px side margins. Left-aligned so
+// the ID lines up with the left edge of the white nutrition label above,
+// and bright enough to actually be readable against the dark background.
+.nf-popup-trace {
+  margin-top: 2px;
+  padding: 2px 0 3px;
+  font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+  font-size: 9px;
+  // Regular weight — the prior 600 looked smudgy at 9 px against the dark
+  // band. Bright color carries readability without needing the extra
+  // stroke weight.
+  font-weight: 400;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: left;
+  user-select: text; // let the user copy the ID
+}
+
+// Press-and-hold zoom overlay — full-viewport dim with the food image
+// centered. The whole overlay is the dismiss target so any release/tap
+// closes it. z-index above the NF popup so it sits ON TOP if the user
+// somehow chains gestures.
+.thumb-zoom-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  user-select: none;
+}
+
+.thumb-zoom-image {
+  max-width: 88vw;
+  max-height: 88vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
 // Health Info button — rides the upper-RIGHT of the NF popup IN the black
 // banner area, to the LEFT of the close button with ~18 px breathing room
 // so the click targets can't overlap. Image height bumped 80 → 100 (another
 // 25% bigger).
 .nf-popup-health-info {
   position: absolute;
-  // Lifted so the badge bottom rides the black/white border instead of dipping
-  // into the white nutrition label. The badge overhangs the popup's top edge
-  // by ~50 px — overflow:visible on .nf-popup lets it show through.
-  top: -52px;
-  // Close button is at right:0, ~22 px wide. Anchoring the badge at right:
-  // 40px puts an 18 px gap between the two hit areas.
-  right: 40px;
-  z-index: 2;
+  top: -22px;
+  // X close occupies right:6 → right:38. Badge at right:38 sits flush with
+  // the X's left edge.
+  right: 38px;
+  z-index: 3;
+  width: 90px;
+  height: 80px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  // overflow:visible so the AI star can ride OUTSIDE the button's bounding
+  // box (above and to the left of the green pill) without being clipped.
+  overflow: visible;
+}
 
-  img { height: 100px; }
+// Green "Health Info" image rides as the badge background. object-fit keeps
+// the natural aspect ratio inside the fixed button box.
+.nf-popup-health-info-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+// AI star floats CLEARLY above-and-left of the green pill so "Health Info"
+// reads unobstructed. The star.png is used as a CSS mask, so the star's own
+// pixels take whatever color we paint underneath — that lets us actually
+// animate the star between yellow and white instead of just the halo.
+//
+// Cycle: starts YELLOW + tilted, undulates to WHITE + upright, then back.
+.nf-popup-health-info-ai {
+  position: absolute;
+  // Dropped INSIDE the popup's black banner so the star reads as part of
+  // the dialog chrome. The PNG's transparent padding shifts the visible
+  // mask leftward inside the 22 px box, so left:12 is what's needed for
+  // the star to actually kiss the green pill's left edge.
+  top: 28px;
+  left: 16px;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+  -webkit-mask: url(/images/AI-star-white.png) center / contain no-repeat;
+          mask: url(/images/AI-star-white.png) center / contain no-repeat;
+  background-color: #ffd54f; // initial yellow
+  animation: nf-ai-shimmer 2.4s ease-in-out infinite;
+}
+
+@keyframes nf-ai-shimmer {
+  0%, 100% {
+    // Tilted, yellow body, yellow halo — the "active / AI" pose.
+    background-color: #ffd54f;
+    filter: drop-shadow(0 0 3px rgba(255, 213, 79, 0.95));
+    transform: rotate(28deg);
+  }
+  50% {
+    // Upright, white body, white halo — the "rest" pose.
+    background-color: #ffffff;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.95));
+    transform: rotate(0deg);
+  }
 }
 
 .nf-popup-header {
@@ -995,17 +1705,22 @@
   justify-content: space-between;
   align-items: center;
   margin: 4px 0 12px;
-  // Leave enough room on the right for the now ~100-px-wide badge plus the
-  // close button so the food name doesn't get clipped.
-  padding-right: 160px;
+  // Just enough right-padding to clear the close button. The Health Info
+  // badge intentionally rides ABOVE this header (z-index: 3) so a long food
+  // name can extend under it — clean clip, no awkward ellipsis.
+  padding-right: 38px;
+  // Hide whatever extends past the popup edge so the title clip is sharp.
+  overflow: hidden;
 }
 
 .nf-popup-title {
   color: #ffffff;
   font-size: 20px;
   font-weight: 600;
+  // Clean clip — no ellipsis. The badge overlays the right portion of the
+  // name (intentional per the spec), so the truncated visible portion just
+  // ends mid-character at the badge edge instead of showing "Chicken sa…".
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
 }
@@ -1018,21 +1733,12 @@
 }
 
 .nf-popup-close {
+  @extend %app-close-circle;
   position: absolute;
-  top: 0;
-  right: 0;
-  background: none;
-  border: none;
-  color: #ffffff;
-  font-size: 14px;
-  cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
-  z-index: 1;
-
-  &:hover {
-    color: #ccc;
-  }
+  top: 6px;
+  right: 6px;
+  // Highest z-index so the X is always on top of the badge / title overlap.
+  z-index: 5;
 }
 
 // Accordion section header inside the MyFoods bottom list.
@@ -1068,12 +1774,45 @@
   }
 
   .category-name {
-    flex: 1;
+    flex-shrink: 0;
   }
 
   .category-count {
+    flex-shrink: 0;
     color: rgba(77, 166, 255, 0.7);
     font-weight: 600;
+  }
+
+  // Right-side action-column hint. margin-left: auto floats it to the right
+  // edge of the divider, where it sits roughly above the star/restrict/delete
+  // icons in the food rows beneath. Smaller and dimmer than the title so the
+  // category name stays the dominant element.
+  .category-action-hint {
+    flex-shrink: 0;
+    margin-left: auto;
+    padding-right: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    color: rgba(77, 166, 255, 0.55);
+  }
+
+  // "double-click to edit food" hint, rendered only on the FIRST divider
+  // (Proteins). margin-left:auto on this AND .category-action-hint splits
+  // the leftover space so the hint floats centered between the title +
+  // count on the left and the action-column hint on the right. Sized and
+  // colored to match the LHS top-bar tagline ("Your healthy, curated foods
+  // ~ yum!") so the two coaching hints on the panel read as one tone.
+  .category-edit-hint {
+    flex-shrink: 0;
+    margin: 0 auto;
+    padding: 0 6px;
+    font-size: 14px;
+    font-style: italic;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    color: rgba(255, 245, 157, 0.75);
+    text-transform: none;
   }
 }
 
@@ -1238,6 +1977,105 @@
   justify-content: center;
   z-index: 100;
   padding: 16px;
+}
+
+// ---- Generic alert dialog — white card, titlebar, centered Yes/No, red X
+// in the upper-right. Used for the "Make MyFoods default match the pick?"
+// confirm flow. Centered by the .dialog-overlay flex container; this just
+// styles the card chrome.
+.alert-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  color: #1a1a1a;
+  font-family: inherit;
+}
+
+.alert-dialog-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 10px 16px;
+  background: linear-gradient(180deg, #f4f4f4 0%, #e6e6e6 100%);
+  border-bottom: 1px solid #d0d0d0;
+}
+
+.alert-dialog-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: #1a1a1a;
+}
+
+// Red X dismiss — semantically identical to clicking "No".
+.alert-dialog-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: #c0392b;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover {
+    background: rgba(192, 57, 43, 0.12);
+    color: #a83020;
+  }
+}
+
+.alert-dialog-body {
+  padding: 20px 20px 16px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #2a2a2a;
+  text-align: center;
+}
+
+.alert-dialog-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 20px 18px;
+}
+
+.alert-dialog-btn {
+  min-width: 88px;
+  padding: 8px 18px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border-radius: 5px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  transition: filter 0.05s ease, transform 0.05s ease;
+
+  &:active { transform: translateY(1px); }
+}
+
+.alert-dialog-btn-yes {
+  color: #ffffff;
+  background: linear-gradient(180deg, #4caf50 0%, #388e3c 100%);
+  border: 1px solid #2e7031;
+  &:hover { filter: brightness(1.08); }
+}
+
+.alert-dialog-btn-no {
+  color: #2a2a2a;
+  background: linear-gradient(180deg, #ffffff 0%, #e8e8e8 100%);
+  border: 1px solid #b0b0b0;
+  &:hover { filter: brightness(0.97); }
 }
 
 // ---- Phone-app placeholder dialog ----

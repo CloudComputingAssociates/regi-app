@@ -15,6 +15,18 @@
   overflow: hidden;
 }
 
+// In-flight hint shown beneath the form while the submit is awaiting the
+// API. The actual submit affordance is the green-check disc on the
+// wrapping BugOverlayComponent; this just gives the user a textual cue
+// that the click registered.
+.submitting-hint {
+  margin-top: 12px;
+  font-size: 12px;
+  font-style: italic;
+  color: #4da6ff;
+  text-align: right;
+}
+
 .panel-header {
   display: flex;
   align-items: center;

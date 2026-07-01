@@ -24,10 +24,6 @@ export type CreateFoodPreferenceRequest = {
    * True to allow, false to restrict
    */
   allowed: boolean;
-  /**
-   * Which table FoodID points to: 'usda' or 'user'
-   */
-  foodSource?: string;
 } & CreateFoodPreferenceRequest1;
 export type CreateFoodPreferenceRequest1 = {
   [k: string]: unknown;

@@ -1,5 +1,5 @@
 // src/app/components/issue-panel/issue-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, model } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,14 +14,16 @@ import { environment } from '../../../environments/environment';
 
 const APP_AREAS = [
   'Today',
-  'Week Plan',
-  'RegiMenu MealPlans',
-  'Shopping List',
-  'Food Preferences',
+  'Menu Planning',
+  'Foods',
   'Chat',
   'Settings',
   'Account',
-  'General'
+  'Mobile-Journal',
+  'Mobile UPC scan',
+  'Mobile Command-Bloom',
+  'Mobile Chat/Wake/PTT',
+  'Mobile Install/Tethering'
 ];
 
 @Component({
@@ -30,19 +32,12 @@ const APP_AREAS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <div class="panel-header">
-        <span class="panel-title">Submit Bug</span>
-        <button class="icon-btn close-btn" (click)="close()" matTooltip="Close" matTooltipPosition="above">
-          ✕
-        </button>
-      </div>
-
       <div class="form-area">
         @if (submitted()) {
           <div class="success-state">
             <mat-icon class="success-icon">check_circle</mat-icon>
             <p class="success-text">Issue #{{ ticketId() }} submitted successfully!</p>
-            <button class="submit-btn" (click)="resetForm()">Submit Another</button>
+            <button class="submit-btn" (click)="resetForm()">New Bug</button>
           </div>
         } @else {
           <div class="form-group">
@@ -80,15 +75,9 @@ const APP_AREAS = [
             </div>
           </div>
 
-          <button class="submit-btn"
-            [disabled]="submitting() || !subject.trim() || !description.trim()"
-            (click)="submitIssue()">
-            @if (submitting()) {
-              Submitting...
-            } @else {
-              Submit Bug
-            }
-          </button>
+          @if (submitting()) {
+            <div class="submitting-hint">Submitting…</div>
+          }
         }
       </div>
     </div>
@@ -102,13 +91,28 @@ export class IssuePanelComponent {
   private notificationService = inject(NotificationService);
 
   appAreas = APP_AREAS;
-  subject = '';
-  description = '';
-  appArea = 'General';
+
+  // model() signals so the wrapping BugOverlayComponent's green-check disc
+  // can reactively gate on form validity via the public canSubmit computed
+  // below. Plain string properties wouldn't notify the parent's change
+  // detection when the user typed.
+  subject = model('');
+  description = model('');
+  appArea = model('Today');
 
   submitting = signal(false);
   submitted = signal(false);
   ticketId = signal(0);
+
+  /** Public so the wrapping overlay can gate its green-check disc.
+   *  False when the form is in flight, already submitted, or missing
+   *  required fields. */
+  readonly canSubmit = computed(() =>
+    !this.submitting()
+    && !this.submitted()
+    && this.subject().trim().length > 0
+    && this.description().trim().length > 0
+  );
 
   userName = signal('');
 
@@ -123,33 +127,37 @@ export class IssuePanelComponent {
     try {
       const resp = await firstValueFrom(
         this.http.post<{ ticketId: number; message: string }>(
-          `${environment.apiUrl}/support/defect`,
+          `${environment.apiUrl}/support/issue`,
           {
-            subject: this.subject.trim(),
-            description: this.description.trim(),
-            appArea: this.appArea
+            subject: this.subject().trim(),
+            description: this.description().trim(),
+            appArea: this.appArea(),
           }
         )
       );
       this.ticketId.set(resp.ticketId);
       this.submitted.set(true);
       this.notificationService.show('Issue submitted', 'success');
-    } catch {
-      this.notificationService.show('Failed to submit issue', 'error');
+    } catch (err: unknown) {
+      // Toast stays terse — the raw server body (which can include nested
+      // upstream JSON from GitHub) goes to the console for triage but
+      // never crowds the UI. Power-user diagnostics live in DevTools.
+      console.error('[IssuePanel] submit failed:', err);
+      this.notificationService.show(
+        'Couldn\'t submit the ticket. Try again in a moment.',
+        'error',
+      );
     } finally {
       this.submitting.set(false);
     }
   }
 
   resetForm(): void {
-    this.subject = '';
-    this.description = '';
-    this.appArea = 'General';
+    this.subject.set('');
+    this.description.set('');
+    this.appArea.set('Today');
     this.submitted.set(false);
     this.ticketId.set(0);
   }
 
-  close(): void {
-    this.tabService.closeTab('issue');
-  }
 }

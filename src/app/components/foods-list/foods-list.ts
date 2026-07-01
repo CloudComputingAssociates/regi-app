@@ -14,6 +14,7 @@ import { UserFoodService } from '../../services/user-food.service';
 import { TabService } from '../../services/tab.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { Food } from '../../models/food.model';
+import { nutritionLabelScale } from '../../models/food-display';
 import { UserFood } from '../../models/user-food.model';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
@@ -260,7 +261,11 @@ export interface FoodNotFoundEvent {
                 <div class="splitter-grip"></div>
               </div>
             }
-            <regi-nutrition-label (click)="onNutritionLabelClick()" [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null" [scale]="nfPopupFood()!.servingSizeMultiplicand || 1" />
+            <regi-nutrition-label (click)="onNutritionLabelClick()"
+              [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
+              [scale]="nutritionLabelScale(nfPopupFood())"
+              [displayUnit]="nfPopupFood()!.servingUnit || 'g'"
+              [displayQuantity]="nfPopupFood()!.servingSize ?? 1" />
           </div>
         </div>
       }
@@ -269,6 +274,10 @@ export interface FoodNotFoundEvent {
   styleUrls: ['./foods-list.scss']
 })
 export class FoodsListComponent implements OnInit {
+  // Exposed to the template so the NF popup can compute its scale from
+  // servingSize × servingGramsPerUnit (NOT from servingSizeMultiplicand).
+  protected readonly nutritionLabelScale = nutritionLabelScale;
+
   private foodsService = inject(FoodsService);
   protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
@@ -739,7 +748,7 @@ export class FoodsListComponent implements OnInit {
       foodRequestType: 'unknown',
       categoryName: this.foodsService.getCategoryName(uf.categoryId),
       dataSource: uf.dataSource || 'user',
-      yehApproved: false,
+      regiApproved: false,
       glycemicIndex: uf.glycemicIndex ?? 0,
       glycemicLoad: uf.glycemicLoad,
       servingSizeMultiplicand: uf.servingSizeMultiplicand ?? 1,
@@ -975,8 +984,11 @@ export class FoodsListComponent implements OnInit {
   private getFoodSource(foodId: number): string | undefined {
     const food = this.foods().find(f => f.id === foodId);
     if (!food) return undefined;
-    // USDA foods have DataSource like 'USDA-FNDDS-...' — anything else is a user food
-    return food.dataSource.startsWith('USDA') ? undefined : 'user';
+    // USDA foods have DataSource like 'USDA-FNDDS-...' — anything else is a user food.
+    // Return value is the foodSource discriminator: 'userfood' for user-entered
+    // rows; undefined for USDA-prefixed rows so the caller falls through to its
+    // default (the API treats absence as 'food').
+    return food.dataSource.startsWith('USDA') ? undefined : 'userfood';
   }
 
   toggleFavorite(event: Event, foodId: number): void {

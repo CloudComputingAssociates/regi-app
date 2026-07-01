@@ -9,6 +9,22 @@ export interface AllSettings {
   dailyGoals?: DailyGoals;
   personalInfo?: PersonalInfo;
   shoppingStaples?: ShoppingStaple[];
+  currentPicks?: CurrentPick[];
+  glp1?: Glp1Settings;
+}
+
+// Basket-staged foods picked for the next planning round. Persisted as a JSON
+// array on UserSettings.CurrentPicks. foodId + foodSource is the AllFoods view's
+// composite key (the discriminator decides USDA Foods vs UserFoods). basketKey
+// places the pick into one of the four UI baskets. pickServingSize=null means
+// "no override; follow the MyFoods baseline"; a number is the per-basket
+// override quantity in `food.servingUnit` units.
+export interface CurrentPick {
+  foodId: number;
+  foodSource: 'food' | 'userfood';
+  basketKey: 'Proteins' | 'Fats' | 'Carbs' | 'Other';
+  pickServingSize: number | null;
+  addedAt: string; // ISO 8601
 }
 
 // GET/PUT /api/user/settings/tabs
@@ -24,6 +40,26 @@ export interface RegiMenuSettings {
   eatingStartTime?: string;
   repeatMeals?: number;
   weekStartDay?: string;
+  persons?: number;
+}
+
+// GLP-1 dose tier (start / current / maintenance)
+export interface Glp1Dose {
+  dose?: number;
+  units?: number;
+  intervalDays?: number;
+}
+
+// GET/PUT /api/user/settings — glp1 section
+export interface Glp1Settings {
+  enabled?: boolean;
+  brand?: string;
+  pharmacy?: string;
+  website?: string;
+  startDate?: string; // ISO 8601 (YYYY-MM-DD) — when user began GLP-1 therapy
+  startDose?: Glp1Dose;
+  currentDose?: Glp1Dose;
+  maintenanceDose?: Glp1Dose;
 }
 
 // GET/PUT /api/user/settings/dailygoals

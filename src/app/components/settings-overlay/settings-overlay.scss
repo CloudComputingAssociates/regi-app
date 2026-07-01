@@ -1,0 +1,210 @@
+// Backdrop dims the rest of the app to ~60 % so the settings window pops.
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5vh 10vw;
+}
+
+// 80 % window with a dim-yellow "bloom" border that mirrors how the phone
+// app halos focused content. The glow + thin border tells the user this
+// window is a different kind of UI than a left-nav-navigated panel.
+.settings-window {
+  position: relative;
+  width: 80vw;
+  height: 80vh;
+  max-width: 1100px;
+  max-height: 800px;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #2f2f2f 0%, #262626 100%);
+  border: 1.5px solid rgba(255, 213, 79, 0.55);
+  border-radius: 16px;
+  box-shadow:
+    // The bloom — three concentric warm-yellow halos at increasing radii.
+    0 0 18px 2px rgba(255, 213, 79, 0.42),
+    0 0 36px 8px rgba(255, 193, 7, 0.25),
+    0 0 64px 16px rgba(255, 193, 7, 0.12),
+    // Plus the standard drop shadow under the window.
+    0 12px 36px rgba(0, 0, 0, 0.55);
+  // Discs sit INSIDE the frame now, so the window can clip its rounded
+  // corners again. Inner .settings-body owns its own scroll boundary.
+  overflow: hidden;
+}
+
+// Inner scroll wrapper inherits the rounded corners since .settings-window
+// no longer clips. Keeps the inner UI clean at the rounded edges.
+.settings-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 18px;
+  border-radius: 0 0 16px 16px;
+}
+
+.settings-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 12px 18px;
+  background: linear-gradient(180deg, #3a3a3a 0%, #2f2f2f 100%);
+  border-bottom: 1px solid rgba(255, 213, 79, 0.25);
+  border-radius: 16px 16px 0 0;
+}
+
+.settings-title {
+  font-family: 'Fredoka', Roboto, sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: rgba(255, 213, 79, 0.95);
+  text-shadow: 0 1px 6px rgba(255, 193, 7, 0.18);
+}
+
+// Dialog-disc cluster — sits INSIDE the dialog's top-right corner with a
+// few pixels of breathing room from both edges so the discs don't crowd
+// the bloom border. The disc visual lives globally in styles.scss
+// (.dialog-disc + .dialog-disc-confirm / -cancel).
+.dialog-discs {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 5;
+}
+
+// Twin Save control — text button paired with the green-check disc. The
+// disc obeys CLAUDE.md (appears only when dirty, never grey). The text
+// button stays always-rendered but disabled until dirty so its label
+// continues to teach the user what the disc means once it materializes.
+// When dirty, both pulse on the same rhythm so they read as a pair.
+.settings-save-btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: #ffffff;
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  border: 1px solid #5a5a5a;
+  border-radius: 6px;
+  padding: 4px 14px;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.2s ease, opacity 0.15s ease;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &.is-dirty {
+    color: #ffffff;
+    background: linear-gradient(180deg, #3fd055 0%, #28c941 100%);
+    border-color: #1f8c2f;
+    animation: settings-save-pulse 1.6s ease-in-out infinite;
+  }
+
+  &.is-dirty:hover {
+    background: linear-gradient(180deg, #4ddc63 0%, #34d44d 100%);
+  }
+}
+
+// Pulse the confirm disc too when there are unsaved changes — same
+// rhythm as the Save button so the two read as a pair.
+.dialog-disc.dialog-disc-confirm {
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &.is-dirty {
+    animation: settings-save-pulse 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes settings-save-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.25),
+      0 0 0 0 rgba(40, 201, 65, 0.55);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.25),
+      0 0 0 6px rgba(40, 201, 65, 0);
+  }
+}
+
+// Inline save-or-discard confirm modal. Sits over the settings window;
+// shape matches the panel's own confirm-dialog so the two read as the
+// same convention regardless of which surface raises it.
+.confirm-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  border-radius: 16px;
+}
+
+.confirm-dialog {
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  border: 1px solid #5a5a5a;
+  border-radius: 8px;
+  padding: 20px 24px;
+  max-width: 340px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+
+  p {
+    color: #ffffff;
+    font-size: 14px;
+    margin: 0 0 16px 0;
+    text-align: center;
+    line-height: 1.4;
+  }
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+
+  .confirm-btn {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 18px;
+    min-width: 86px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    outline: none;
+
+    &.save {
+      background: linear-gradient(180deg, #3fd055 0%, #28c941 100%);
+      color: #ffffff;
+      border: 1px solid #1f8c2f;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+
+      &:hover { background: linear-gradient(180deg, #4ddc63 0%, #34d44d 100%); }
+    }
+
+    &.cancel {
+      background: linear-gradient(180deg, #c75050 0%, #a03030 100%);
+      color: #ffffff;
+      border: 1px solid #b04040;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+
+      &:hover { background: linear-gradient(180deg, #d76060 0%, #b04040 100%); }
+    }
+  }
+}

@@ -6,13 +6,14 @@ import { Injectable, signal } from '@angular/core';
 
 export interface MacroTotals {
   proteinG: number;
+  fiberG: number;
   fatG: number;
   carbG: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class ThisWeekMacrosService {
-  private totalsSignal = signal<MacroTotals>({ proteinG: 0, fatG: 0, carbG: 0 });
+  private totalsSignal = signal<MacroTotals>({ proteinG: 0, fiberG: 0, fatG: 0, carbG: 0 });
   readonly totals = this.totalsSignal.asReadonly();
 
   setTotals(totals: MacroTotals): void {
@@ -20,6 +21,6 @@ export class ThisWeekMacrosService {
   }
 
   clear(): void {
-    this.totalsSignal.set({ proteinG: 0, fatG: 0, carbG: 0 });
+    this.totalsSignal.set({ proteinG: 0, fiberG: 0, fatG: 0, carbG: 0 });
   }
 }

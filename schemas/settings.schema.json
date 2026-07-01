@@ -13,13 +13,13 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["chat", "meal-planning", "foods", "shop", "review", "preferences", "account", "help"]
+            "enum": ["chat", "menus", "foods", "shop", "preferences", "account", "help"]
           },
           "description": "List of default tabs to open on login"
         },
         "activeTabId": {
           "type": "string",
-          "enum": ["chat", "meal-planning", "foods", "shop", "review", "preferences", "account", "help"],
+          "enum": ["chat", "menus", "foods", "shop", "preferences", "account", "help"],
           "description": "The tab that had focus when settings were saved"
         }
       },
@@ -49,8 +49,15 @@
         "repeatMeals": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 4,
-          "description": "Number of times to repeat meal plan (1-4)"
+          "maximum": 12,
+          "description": "Number of times to repeat meal plan (1-12)"
+        },
+        "persons": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "default": 1,
+          "description": "Number of people the meal plan serves"
         },
         "weekStartDay": {
           "type": "string",
@@ -94,6 +101,11 @@
           "type": "number",
           "minimum": 0,
           "description": "Daily sodium target in mg"
+        },
+        "isOverridden": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, user has manually edited daily goals. UX will not overwrite with calculated values until user unchecks and saves."
         }
       },
       "required": ["calories", "protein", "carbs", "fat", "fiber", "sodium"],
@@ -130,8 +142,8 @@
         },
         "activityLevel": {
           "type": "string",
-          "enum": ["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"],
-          "description": "Physical activity level for TDEE calculation"
+          "enum": ["sedentary", "lightly_active", "light_moderate", "moderately_active", "very_active", "extremely_active"],
+          "description": "Physical activity level for TDEE calculation. light_moderate (1.4654 multiplier, 4-5 days/week) sits between lightly_active (1.375) and moderately_active (1.55) for finer granularity, mirroring the 6-tier scale calculator.net uses."
         },
         "proteinRatio": {
           "type": "number",
@@ -146,27 +158,26 @@
         "deficitPercent": {
           "type": "number",
           "description": "Caloric adjustment percent: negative = deficit (losing weight), positive = surplus (gaining weight). E.g. -20 means 20% lowered, +10 means 10% raised."
-        }
-      },
-      "additionalProperties": false
-    },
-    "AllSettingsResponse": {
-      "type": "object",
-      "description": "Consolidated response for GET /api/user/settings (all settings at once)",
-      "properties": {
-        "tabs": { "$ref": "#/definitions/TabSettings" },
-        "regiMenu": { "$ref": "#/definitions/RegiMenuSettings" },
-        "defaultFoodList": {
-          "type": "string",
-          "enum": ["yeh_approved", "all_foods"],
-          "description": "Default food list filter"
         },
-        "dailyGoals": { "$ref": "#/definitions/DailyGoals" },
-        "personalInfo": { "$ref": "#/definitions/PersonalInfo" },
-        "shoppingStaples": {
-          "type": "array",
-          "items": { "$ref": "#/definitions/ShoppingStaple" },
-          "description": "User's recurring shopping staple items"
+        "calcCalories": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Calculated daily calorie target derived from BMR/TDEE/deficit"
+        },
+        "calcProtein": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Calculated daily protein in grams (proteinRatio × targetWeight in lbs)"
+        },
+        "calcFats": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Calculated daily fat in grams (remaining calories after protein and carbs)"
+        },
+        "calcCarbs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Calculated daily carbs in grams (from carbScaleGrams)"
         }
       },
       "additionalProperties": false
@@ -213,6 +224,66 @@
         }
       },
       "required": ["id", "category", "item"],
+      "additionalProperties": false
+    },
+    "CurrentPick": {
+      "type": "object",
+      "description": "A single basket pick (curated food staged for menu planning)",
+      "properties": {
+        "foodId": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "References Foods.FoodID (foodSource='food') or UserFoods.UserFoodID (foodSource='userfood')"
+        },
+        "foodSource": {
+          "type": "string",
+          "enum": ["food", "userfood"],
+          "description": "Discriminator selecting which table foodId references"
+        },
+        "basketKey": {
+          "type": "string",
+          "enum": ["Proteins", "Fats", "Carbs", "Other"],
+          "description": "Which UI basket this pick belongs to"
+        },
+        "pickServingSize": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0,
+          "description": "Per-basket serving-size override; null = use the food's baseline serving"
+        },
+        "addedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the pick was added — used for stable ordering within a basket"
+        }
+      },
+      "required": ["foodId", "foodSource", "basketKey", "addedAt"],
+      "additionalProperties": false
+    },
+    "AllSettingsResponse": {
+      "type": "object",
+      "description": "Consolidated response for GET /api/user/settings (all settings at once)",
+      "properties": {
+        "tabs": { "$ref": "#/definitions/TabSettings" },
+        "regiMenu": { "$ref": "#/definitions/RegiMenuSettings" },
+        "defaultFoodList": {
+          "type": "string",
+          "enum": ["yeh_approved", "all_foods"],
+          "description": "Default food list filter"
+        },
+        "dailyGoals": { "$ref": "#/definitions/DailyGoals" },
+        "personalInfo": { "$ref": "#/definitions/PersonalInfo" },
+        "shoppingStaples": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ShoppingStaple" },
+          "description": "User's recurring shopping staple items"
+        },
+        "currentPicks": {
+          "type": "array",
+          "maxItems": 200,
+          "items": { "$ref": "#/definitions/CurrentPick" },
+          "description": "User's curated basket picks (server-persisted staging for menu planning)"
+        }
+      },
       "additionalProperties": false
     }
   }

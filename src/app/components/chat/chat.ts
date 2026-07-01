@@ -36,12 +36,6 @@ import { ChatOutputComponent } from './chat-output/chat-output';
           [disabled]="chatService.isLoading()">
           +
         </button>
-        <button
-          class="icon-btn close-btn"
-          (click)="close()"
-          title="Close">
-          ✕
-        </button>
       </div>
 
       <!-- Chat output area -->
@@ -53,10 +47,6 @@ import { ChatOutputComponent } from './chat-output/chat-output';
 export class ChatComponent {
   private tabService = inject(TabService);
   chatService = inject(ChatService);
-
-  close(): void {
-    this.tabService.closeTab('chat');
-  }
 
   startNewChat(): void {
     this.chatService.startNewConversation();
