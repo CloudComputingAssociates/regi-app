@@ -439,15 +439,15 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                             aria-label="Remove">
                             ✕
                           </button>
-                          <div class="basket-mini-card-label">
-                            <span class="basket-mini-card-label-text">
-                              {{ food.shortDescription || food.description }}
-                            </span>
-                          </div>
                           <div class="basket-mini-card-image">
                             @if (food.foodImageThumbnail) {
                               <img [src]="food.foodImageThumbnail" alt="" />
                             }
+                          </div>
+                          <div class="basket-mini-card-label">
+                            <span class="basket-mini-card-label-text">
+                              {{ food.shortDescription || food.description }}
+                            </span>
                           </div>
                         </div>
                       }
