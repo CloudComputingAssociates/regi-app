@@ -29,7 +29,25 @@ import { RotationMenuEntry } from '../../models';
               🗑
             </button>
             <span class="menu-name">Menu {{ letter(i) }}</span>
-            <span class="menu-days">{{ menu.plannedCount }} days</span>
+            <div class="menu-days">
+              <button
+                type="button"
+                class="days-step"
+                matTooltip="Fewer days"
+                [disabled]="menu.plannedCount <= 1"
+                (click)="$event.stopPropagation(); setDays.emit({ menuId: menu.menuId, plannedCount: menu.plannedCount - 1 })">
+                −
+              </button>
+              <span class="days-value">{{ menu.plannedCount }} days</span>
+              <button
+                type="button"
+                class="days-step"
+                matTooltip="More days"
+                [disabled]="menu.plannedCount >= spanDays()"
+                (click)="$event.stopPropagation(); setDays.emit({ menuId: menu.menuId, plannedCount: menu.plannedCount + 1 })">
+                +
+              </button>
+            </div>
           </div>
         }
 
@@ -54,6 +72,8 @@ export class MenuCardRowComponent {
   readonly deleteMenu = output<number>();
   /** "+ Add menu" clicked. */
   readonly addMenu = output<void>();
+  /** Change a menu's planned days (plannedCount). */
+  readonly setDays = output<{ menuId: number; plannedCount: number }>();
 
   readonly plannedDays = computed(() =>
     this.menus().reduce((sum, m) => sum + (m.plannedCount ?? 0), 0),

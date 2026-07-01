@@ -46,6 +46,13 @@ import { Meal } from '../../models';
              in the same drop list, so they place into slots identically. -->
         @for (meal of rotation.candidateMeals(); track meal.id; let i = $index) {
           <div class="binder-card candidate" cdkDrag [cdkDragData]="meal">
+            <button
+              type="button"
+              class="card-delete"
+              matTooltip="Discard this meal"
+              (click)="$event.stopPropagation(); rotation.removeCandidate(meal.id)">
+              🗑
+            </button>
             <span class="binder-card-name">{{ i + 1 }} {{ candidateTitle(meal) }}</span>
             <div class="binder-chips">
               <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>

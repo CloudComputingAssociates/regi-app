@@ -53,10 +53,59 @@
   border-bottom: 1px solid #1a1a1a;
 }
 
+// Spacers place Wipe ~2/3 across while People stays far-left.
+.toolbar-spacer { flex: 2 1 0; }
+.toolbar-spacer-tail { flex: 1 1 0; }
+
+.people-control {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .people-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #9aa0a6;
+    margin-right: 2px;
+  }
+
+  .people-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f1f1f1;
+    min-width: 16px;
+    text-align: center;
+  }
+
+  .people-step {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid #4a4a4a;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
+    color: #d8d8d8;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      border-color: #4da6ff;
+      color: #4da6ff;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  }
+}
+
 // Raised/etched app-grey key — no accent colour. Positioned ~2/3 from the left
 // (the left two-thirds is left empty for future controls).
 .wipe-btn {
-  margin-left: 66.6%;
+  flex: 0 0 auto;
   height: 26px;
   padding: 0 14px;
   font-size: 12px;

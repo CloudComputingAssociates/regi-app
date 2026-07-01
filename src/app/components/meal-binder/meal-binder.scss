@@ -115,6 +115,7 @@
 }
 
 .binder-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -127,6 +128,32 @@
 
   &:active {
     cursor: grabbing;
+  }
+
+  &:hover .card-delete {
+    opacity: 1;
+  }
+
+  .card-delete {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #9aa0a6;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s ease, color 0.12s ease;
+
+    &:hover {
+      color: #ef5350;
+    }
   }
 
   // Freshly generated, unplaced — accent so it reads as new.

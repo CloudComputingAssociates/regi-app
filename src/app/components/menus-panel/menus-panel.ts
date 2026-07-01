@@ -46,10 +46,32 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
              draggable meal cards to the empty-slot drop targets in the board. -->
         <div class="menus-layout" cdkDropListGroup>
           <div class="menus-main">
-            <!-- Thin raised toolbar, pinned above the menu-card row. Only shown
-                 when a plan is loaded so Wipe never appears with nothing to act
-                 on. Left ~2/3 reserved for future controls; Wipe sits ~2/3. -->
+            <!-- Thin raised toolbar, pinned above the menu-card row. People
+                 (persisted) sits far-left; Wipe sits ~2/3 across. -->
             <div class="menus-toolbar">
+              <div class="people-control">
+                <span class="people-label">People</span>
+                <button
+                  type="button"
+                  class="people-step"
+                  matTooltip="Fewer people"
+                  [disabled]="rotation.persons() <= 1"
+                  (click)="rotation.setPersons(rotation.persons() - 1)">
+                  −
+                </button>
+                <span class="people-count">{{ rotation.persons() }}</span>
+                <button
+                  type="button"
+                  class="people-step"
+                  matTooltip="More people"
+                  [disabled]="rotation.persons() >= 12"
+                  (click)="rotation.setPersons(rotation.persons() + 1)">
+                  +
+                </button>
+              </div>
+
+              <span class="toolbar-spacer"></span>
+
               <button
                 type="button"
                 class="wipe-btn"
@@ -57,6 +79,8 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
                 (click)="openWipeConfirm()">
                 Wipe
               </button>
+
+              <span class="toolbar-spacer-tail"></span>
             </div>
 
             <app-menu-card-row
@@ -65,7 +89,8 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
               [spanDays]="rotation.rotation()!.spanDays"
               (select)="rotation.selectMenu($event)"
               (deleteMenu)="rotation.removeOrClearMenu($event)"
-              (addMenu)="rotation.addMenu()" />
+              (addMenu)="rotation.addMenu()"
+              (setDays)="rotation.setMenuDays($event.menuId, $event.plannedCount)" />
 
             <div class="panel-body">
               <app-menus-meals [menu]="rotation.selectedMenu()" />

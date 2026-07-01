@@ -42,6 +42,9 @@ export class RotationService {
   /** The user's saved meals, for the right-hand Meals binder. */
   readonly binderMeals = signal<Meal[]>([]);
 
+  /** Standing People count from settings (persons), default 1. Persisted. */
+  readonly persons = computed(() => this.settingsService.allSettings()?.regiMenu?.persons ?? 1);
+
   /** Freshly AI-generated, not-yet-placed meals (the "NewMeal N" candidates
    *  at the top of the binder). Persisted server-side with isSaved=false. */
   readonly candidateMeals = signal<Meal[]>([]);
@@ -306,6 +309,46 @@ export class RotationService {
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
+  }
+
+  /** Set the standing People count and persist it to settings (regiMenu.persons,
+   *  1–12). generateDefault reads this as the rotation's peopleCount. */
+  async setPersons(n: number): Promise<void> {
+    const clamped = Math.max(1, Math.min(12, n));
+    const current = this.settingsService.allSettings()?.regiMenu ?? {};
+    try {
+      await this.settingsService.saveRegiMenuSettings({ ...current, persons: clamped });
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Set how many days of the rotation span a menu covers (plannedCount).
+   *  PUT /rotation/{id}/menus/{menuId}, then reload so tiles + the badge update. */
+  async setMenuDays(menuId: number, plannedCount: number): Promise<void> {
+    const rot = this.rotation();
+    if (!rot?.id) return;
+    const clamped = Math.max(1, Math.min(rot.spanDays, plannedCount));
+    try {
+      await firstValueFrom(
+        this.http.put(`${this.baseUrl}/rotation/${rot.id}/menus/${menuId}`, {
+          plannedCount: clamped,
+        }),
+      );
+      const detail = await firstValueFrom(
+        this.http.get<RotationDetail>(`${this.baseUrl}/rotation/${rot.id}`),
+      );
+      this.rotation.set(detail);
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Discard a generated candidate from the binder (client-only). The meal is a
+   *  throwaway (isSaved=false) expunged server-side; this does NOT affect any
+   *  slot the meal was already placed into. */
+  removeCandidate(mealId: number): void {
+    this.candidateMeals.update((list) => list.filter((m) => m.id !== mealId));
   }
 
   /** Clear a slot's meal (trash on an in-slot meal). DELETE /menu/{id}/slot/{n},
