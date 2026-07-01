@@ -12,7 +12,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Meal, MealItem, Menu, Rotation, RotationDetail } from '../models';
+import { GenerateMealRequest, Meal, MealItem, Menu, Rotation, RotationDetail } from '../models';
 import { SettingsService } from './settings.service';
 import { NotificationService } from './notification.service';
 
@@ -257,8 +257,9 @@ export class RotationService {
   async generateMeal(): Promise<void> {
     this.generating.set(true);
     try {
+      const body: GenerateMealRequest = { mealType: 'meal' };
       const meal = await firstValueFrom(
-        this.http.post<Meal>(`${this.baseUrl}/meal/generate`, { mealType: 'meal' }),
+        this.http.post<Meal>(`${this.baseUrl}/meal/generate`, body),
       );
       this.candidateMeals.update((list) => [...list, meal]);
     } catch (err) {

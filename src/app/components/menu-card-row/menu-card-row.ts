@@ -14,13 +14,13 @@ import { RotationMenuEntry } from '../../models';
   template: `
     <div class="strip">
       <div class="cards">
-        @for (menu of menus(); track menu.menuId) {
+        @for (menu of menus(); track menu.menuId; let i = $index) {
           <button
             type="button"
             class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
             (click)="select.emit(menu.menuId)">
-            <span class="menu-name">{{ menu.menuName }}</span>
+            <span class="menu-name">Menu {{ letter(i) }}</span>
             <span class="menu-days">{{ menu.plannedCount }} days</span>
           </button>
         }
@@ -46,4 +46,10 @@ export class MenuCardRowComponent {
   readonly plannedDays = computed(() =>
     this.menus().reduce((sum, m) => sum + (m.plannedCount ?? 0), 0),
   );
+
+  /** Display label by position: 0→A, 1→B, … Menus are lettered (Menu A/B/C);
+   *  meal slots within a menu are numbered (Meal 1/2/3). */
+  letter(i: number): string {
+    return String.fromCharCode(65 + i);
+  }
 }

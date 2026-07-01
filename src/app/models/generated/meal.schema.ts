@@ -458,3 +458,34 @@ export interface AIRecipeResponse {
   itemsAdded: number;
   [k: string]: unknown;
 }
+/**
+ * Request body for POST /api/meal/generate — AI-generates ONE meal (persisted, isSaved=false) anchored on a protein and avoiding a list of already-made meals. The per-meal primitive the binder fills from; never generates a rotation. Omitted fields are filled server-side from the user's picks/preferences and daily goals.
+ *
+ * This interface was referenced by `MealSchema`'s JSON-Schema
+ * via the `definition` "GenerateMealRequest".
+ */
+export interface GenerateMealRequest {
+  /**
+   * The protein this meal is built around. When absent, the server falls back to the user's first Proteins pick, else a protein from UserFoodPreferences.
+   */
+  anchorProtein?: string;
+  /**
+   * Per-meal macro goal the meal should aim for. When absent, the server computes fair-share = DailyGoals ÷ mealsPerDay.
+   */
+  macroTarget?: {
+    proteinG?: number;
+    fiberG?: number;
+    carbG?: number;
+    fatG?: number;
+    [k: string]: unknown;
+  };
+  /**
+   * Names or descriptions of meals already generated this session, so the AI produces something different.
+   */
+  excludeMeals?: string[];
+  /**
+   * Whether the meal is treated as a full meal or a snack
+   */
+  mealType?: "meal" | "snack";
+  [k: string]: unknown;
+}

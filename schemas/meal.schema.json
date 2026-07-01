@@ -394,6 +394,36 @@
         }
       },
       "required": ["recipeId", "title", "servingsBase", "prepTimeMin", "cookTimeMin", "source", "ingredientsSummary", "appliedToMeal", "itemsAdded"]
+    },
+
+    "GenerateMealRequest": {
+      "type": "object",
+      "description": "Request body for POST /api/meal/generate — AI-generates ONE meal (persisted, isSaved=false) anchored on a protein and avoiding a list of already-made meals. The per-meal primitive the binder fills from; never generates a rotation. Omitted fields are filled server-side from the user's picks/preferences and daily goals.",
+      "properties": {
+        "anchorProtein": {
+          "type": "string",
+          "description": "The protein this meal is built around. When absent, the server falls back to the user's first Proteins pick, else a protein from UserFoodPreferences."
+        },
+        "macroTarget": {
+          "type": "object",
+          "description": "Per-meal macro goal the meal should aim for. When absent, the server computes fair-share = DailyGoals ÷ mealsPerDay.",
+          "properties": {
+            "proteinG": { "type": "number" },
+            "fiberG": { "type": "number" },
+            "carbG": { "type": "number" },
+            "fatG": { "type": "number" }
+          }
+        },
+        "excludeMeals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Names or descriptions of meals already generated this session, so the AI produces something different."
+        },
+        "mealType": {
+          "$ref": "#/definitions/MealType",
+          "default": "meal"
+        }
+      }
     }
   }
 }

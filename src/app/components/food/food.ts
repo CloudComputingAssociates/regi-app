@@ -21,10 +21,11 @@ import { MealItem } from '../../models';
       <button
         type="button"
         class="swap-btn"
-        matTooltip="Swap food"
+        matTooltip="AI Swap Food"
         matTooltipPosition="left"
         (click)="onSwap()">
-        ⇄
+        <img src="images/AI-star.png" alt="" class="swap-icon" />
+        <span class="swap-text">AI Swap Food</span>
       </button>
     </div>
   `,

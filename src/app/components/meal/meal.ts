@@ -24,7 +24,7 @@ interface SlotMacros {
   template: `
     <div class="slot-card" [class.empty]="isEmpty()">
       <div class="slot-header">
-        <span class="slot-title">Meal {{ slot().slotOrder }} ({{ slot().slotLabel }})</span>
+        <span class="slot-title">Meal {{ slot().slotOrder }}</span>
         @if (slot().mealName) {
           <span class="meal-name">{{ slot().mealName }}</span>
         }
@@ -50,9 +50,9 @@ interface SlotMacros {
       } @else {
         <div class="macro-chips">
           <span class="chip protein">P {{ round(macros().proteinG) }}</span>
-          <span class="chip carb">C {{ round(macros().carbG) }}</span>
+          <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
           <span class="chip fat">F {{ round(macros().fatG) }}</span>
-          <span class="chip fiber">Fi {{ round(macros().fiberG) }}</span>
+          <span class="chip carb">C {{ round(macros().carbG) }}</span>
         </div>
         <div class="food-rows">
           @for (item of items(); track item.foodId) {
@@ -72,7 +72,7 @@ export class MealComponent {
    *  supplies the menuId and calls the assign endpoint. */
   readonly placeMeal = output<{ slotOrder: number; mealId: number }>();
 
-  readonly isEmpty = computed(() => !this.slot().isDiningOut && this.items().length === 0);
+  readonly isEmpty = computed(() => !this.slot().isDiningOut && this.slot().mealId == null);
 
   /** CDK drop handler for an empty slot — copy semantics (no array mutation),
    *  so the dragged meal stays in the binder. */
@@ -82,15 +82,17 @@ export class MealComponent {
     this.placeMeal.emit({ slotOrder: this.slot().slotOrder, mealId: meal.id });
   }
 
+  // Chips read from the server-computed slot macros (same source as the top
+  // bars) — accurate and present the moment the menu loads, rather than summing
+  // per-item macros that stream in later and are null for AI 'pending' items.
   readonly macros = computed<SlotMacros>(() => {
-    const totals: SlotMacros = { proteinG: 0, carbG: 0, fatG: 0, fiberG: 0 };
-    for (const item of this.items()) {
-      totals.proteinG += item.proteinG ?? 0;
-      totals.carbG += item.carbG ?? 0;
-      totals.fatG += item.fatG ?? 0;
-      totals.fiberG += item.fiberG ?? 0;
-    }
-    return totals;
+    const m = this.slot().macros;
+    return {
+      proteinG: m?.proteinG ?? 0,
+      carbG: m?.carbG ?? 0,
+      fatG: m?.fatG ?? 0,
+      fiberG: m?.fiberG ?? 0,
+    };
   });
 
   round(n: number): number {

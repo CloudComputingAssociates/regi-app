@@ -46,18 +46,30 @@
   opacity: 0;
   pointer-events: none;
   flex: 0 0 auto;
-  width: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   height: 22px;
+  padding: 0 8px;
   border: 1px solid #4a4a4a;
   border-radius: 4px;
   background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
-  color: #4da6ff;
-  font-size: 13px;
+  color: #d8d8d8;
+  font-size: 11px;
+  font-weight: 600;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
-  transition: opacity 0.12s ease;
+  transition: opacity 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 
   &:hover {
     border-color: #4da6ff;
+    color: #ffffff;
+  }
+
+  .swap-icon {
+    width: 13px;
+    height: 13px;
+    object-fit: contain;
   }
 }

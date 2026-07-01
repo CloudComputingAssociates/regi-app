@@ -48,9 +48,9 @@ import { RotationService } from '../../services/rotation.service';
             <span class="binder-card-name">NewMeal {{ i + 1 }}</span>
             <div class="binder-chips">
               <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
-              <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
+              <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
               <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
-              <span class="chip fiber">Fi {{ round(meal.totalFiberG) }}</span>
+              <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
             </div>
           </div>
         }
@@ -60,9 +60,9 @@ import { RotationService } from '../../services/rotation.service';
             <span class="binder-card-name">{{ meal.name }}</span>
             <div class="binder-chips">
               <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
-              <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
+              <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
               <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
-              <span class="chip fiber">Fi {{ round(meal.totalFiberG) }}</span>
+              <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
             </div>
           </div>
         }

@@ -14,13 +14,19 @@ This is a JSON-Schema-first project. JSON Schema is the source of truth; TypeScr
 
 - NEVER hand-edit generated model files (under `src/app/models/generated/`). Edit the schema, then regenerate.
 - A change to any wire field — JSON property name, type, required, enum — is a SCHEMA edit first, code second. If you are editing a generated interface directly, STOP.
-- Schema location: `<schemas/*.json — set to real path>`
-- Regenerate: `<set to real command, e.g. npm run generate:models>`
+- Schema location: `schemas/*.schema.json`
+- Regenerate: `npm run schemas:generate` (outputs `src/app/models/generated/*.schema.ts`)
+- API source of truth: the Go API repo at `c:\git\regi-api\schemas` (read access available). regi-app's `schemas/` is a downstream copy and is frequently STALE — the API is authoritative.
 - The same schema feeds the API (Go), the apps (TS), and message contracts. Treat shape as a cross-system contract, not a local type.
 
+### EVERY wire payload is typed — no untyped literals (NON-NEGOTIABLE)
+- Do NOT hand-write an untyped object literal for an HTTP request/response body. Both directions use generated types (e.g. `http.post<Meal>(url, body: GenerateMealRequest)`).
+- If the request/response type is missing from regi-app but exists in `c:\git\regi-api\schemas`, that is NOT a reason to hand-write it. Sync it: copy the API schema file into `schemas/`, run `npm run schemas:generate`, import the generated type, and type the call against it. Do this BEFORE writing the call — do not defer it as "minimal footprint."
+- Before wiring any new endpoint, `diff` the API schema against the local copy; pull the authoritative API version (it may carry other legitimate updates) and report what changed.
+
 ### Field-change procedure
-1. Edit the property in the schema (+ any `required` / `$ref` / enum references).
-2. Run the generator; do not touch generated output by hand.
+1. Edit the property in the schema (+ any `required` / `$ref` / enum references). If the change originates in the API, copy the API's schema file down rather than editing by hand.
+2. Run `npm run schemas:generate`; do not touch generated output by hand.
 3. Fix only hand-written code generation can't reach: mappers, components reading the field, service payloads.
 4. `ng build`.
 
