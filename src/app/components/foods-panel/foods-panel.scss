@@ -1307,8 +1307,10 @@
   justify-content: center;
   z-index: 3;
   pointer-events: none;
+  // Fat block letterform (heavy weight = wide strokes) with a thin 1px outline
+  // and transparent fill, so each stroke reads as a hollow band.
   font-size: 58px;
-  font-weight: 400;
+  font-weight: 900;
   line-height: 1;
   color: transparent;
   -webkit-text-stroke: 1px #ffd54f;
