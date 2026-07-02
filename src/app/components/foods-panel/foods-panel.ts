@@ -13,7 +13,7 @@ import { FoodsService, FoodList } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
 import { LangfusePromptService, LangfusePromptError } from '../../services/langfuse-prompt.service';
 import { SettingsService } from '../../services/settings.service';
-import { Food } from '../../models/food.model';
+import { Food, MealRole } from '../../models/food.model';
 import { CurrentPick } from '../../models/settings.models';
 import { nutritionLabelScale } from '../../models/food-display';
 
@@ -383,6 +383,33 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     <span class="basket-title">
                       {{ basketLabel(key) }} ({{ thisWeekBaskets()[key].length }})
                     </span>
+                    <!-- P / S / edit act on the selected pick in THIS basket
+                         (disabled otherwise). Pencil = Nutrition Facts editor. -->
+                    <div class="basket-role-controls">
+                      <button
+                        type="button"
+                        class="basket-ctl"
+                        [disabled]="!isSelectedInBasket(key)"
+                        (click)="onHeaderSetRole('PrimaryFood')"
+                        matTooltip="Primary Food"
+                        matTooltipPosition="above">P</button>
+                      <button
+                        type="button"
+                        class="basket-ctl"
+                        [disabled]="!isSelectedInBasket(key)"
+                        (click)="onHeaderSetRole('SecondaryFood')"
+                        matTooltip="Secondary Food"
+                        matTooltipPosition="above">S</button>
+                      <button
+                        type="button"
+                        class="basket-ctl basket-ctl-edit"
+                        [disabled]="!isSelectedInBasket(key)"
+                        (click)="onHeaderEditSelected()"
+                        matTooltip="Edit nutrition & serving"
+                        matTooltipPosition="above">
+                        <mat-icon class="basket-ctl-icon">edit</mat-icon>
+                      </button>
+                    </div>
                     @if (thisWeekBaskets()[key].length > 0) {
                       <button
                         type="button"
@@ -425,8 +452,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                           [draggable]="true"
                           (dragstart)="onBasketTileDragStart(food, key, $event)"
                           (dragend)="onBasketTileDragEnd($event)"
-                          (click)="onBasketFoodClick(food)"
-                          (dblclick)="onBasketFoodDblClick(food)">
+                          (click)="onBasketTileClick(food)">
                           <!-- Hover-revealed red X — explicit remove affordance.
                                stopPropagation so clicking it doesn't fire the
                                card's (click) select handler. -->
@@ -444,6 +470,11 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                               <img [src]="food.foodImageThumbnail" alt="" />
                             }
                           </div>
+                          <!-- Meal-role overlay: hollow yellow-glow P/S over the
+                               image (AnyUse shows nothing). -->
+                          @if (food.mealRole === 'PrimaryFood' || food.mealRole === 'SecondaryFood') {
+                            <span class="basket-role-badge">{{ food.mealRole === 'PrimaryFood' ? 'P' : 'S' }}</span>
+                          }
                           <div class="basket-mini-card-label">
                             <span class="basket-mini-card-label-text">
                               {{ food.shortDescription || food.description }}
@@ -858,6 +889,7 @@ export class FoodsPanelComponent {
           ...food,
           pickAddedAt: p.addedAt,
           pickServingSize: p.pickServingSize,
+          mealRole: p.mealRole ?? 'AnyUse',
         };
         baskets[p.basketKey].push(enriched);
         kept.push(p);
@@ -911,6 +943,7 @@ export class FoodsPanelComponent {
           foodSource: (f.foodSource as 'food' | 'userfood') ?? 'food',
           basketKey: k,
           pickServingSize: f.pickServingSize ?? null,
+          mealRole: f.mealRole ?? 'AnyUse',
           addedAt: f.pickAddedAt ?? now,
         });
       }
@@ -1610,28 +1643,100 @@ export class FoodsPanelComponent {
     return false;
   }
 
-  // ----- RHS basket-tile selection + "Click for Facts" bloom -----
+  // ----- RHS basket-tile selection + P/S meal-role designation -----
 
-  /** The currently-selected food in a basket on the right pane. Drives the
-   *  yellow halo and the delayed bloom timer. */
+  /** The currently-selected food in a basket on the right pane (yellow halo). */
   selectedBasketFood = signal<Food | null>(null);
 
-  /** Single click on a basket food = toggle selection (yellow halo). No
-   *  bloom, no auto-popup — that's all double-click now. Click an already-
-   *  selected card to deselect. Deletion is the red X only. */
-  onBasketFoodClick(food: Food): void {
-    const current = this.selectedBasketFood();
-    this.selectedBasketFood.set(current?.id === food.id ? null : food);
+  /** Clicks on the selected tile since selection — drives the
+   *  select → PrimaryFood → SecondaryFood → AnyUse → deselect cycle. */
+  private roleCyclePos = signal<number>(0);
+
+  /** Single-vs-double click discrimination. A tight window keeps the
+   *  role-cycle responsive while still catching the expert double-click. */
+  private tileClickTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Basket tile click. A fast second click (within the tight window) is a
+   *  double-click → Nutrition Facts (edit serving). A lone click selects, then
+   *  cycles the meal role on subsequent clicks. */
+  onBasketTileClick(food: Food): void {
+    if (this.tileClickTimer) {
+      clearTimeout(this.tileClickTimer);
+      this.tileClickTimer = null;
+      this.selectedBasketFood.set(food);
+      this.openNfPopupForFood(food, 'edit', 'picks');
+      return;
+    }
+    this.tileClickTimer = setTimeout(() => {
+      this.tileClickTimer = null;
+      this.onBasketTileSingleClick(food);
+    }, 220);
   }
 
-  /** Double-click on a basket food = open the Nutrition Facts popup in
-   *  EDIT mode, with steppers and the Green Save button. Save persists
-   *  through the same UserFoodPreferences.ServingSize path as the Edit
-   *  MyFoods flow — adjusting a Pick is currently the same gesture as
-   *  adjusting the MyFoods baseline. */
-  onBasketFoodDblClick(food: Food): void {
-    this.selectedBasketFood.set(food);
+  /** Lone-click behavior: select an unselected tile (no role change), else
+   *  advance the cycle PrimaryFood → SecondaryFood → AnyUse → deselect. */
+  private onBasketTileSingleClick(food: Food): void {
+    const selected = this.selectedBasketFood();
+    if (selected?.id !== food.id) {
+      this.selectedBasketFood.set(food);
+      this.roleCyclePos.set(0);
+      return;
+    }
+    const pos = this.roleCyclePos() + 1;
+    if (pos === 1) {
+      this.setMealRole(food, 'PrimaryFood');
+      this.roleCyclePos.set(1);
+    } else if (pos === 2) {
+      this.setMealRole(food, 'SecondaryFood');
+      this.roleCyclePos.set(2);
+    } else if (pos === 3) {
+      this.setMealRole(food, 'AnyUse');
+      this.roleCyclePos.set(3);
+    } else {
+      this.selectedBasketFood.set(null);
+      this.roleCyclePos.set(0);
+    }
+  }
+
+  /** Header P / S button — set the selected pick's role directly. */
+  onHeaderSetRole(role: 'PrimaryFood' | 'SecondaryFood'): void {
+    const food = this.selectedBasketFood();
+    if (!food) return;
+    this.setMealRole(food, role);
+    this.roleCyclePos.set(role === 'PrimaryFood' ? 1 : 2);
+  }
+
+  /** Header pencil — open Nutrition Facts (edit serving) for the selected pick. */
+  onHeaderEditSelected(): void {
+    const food = this.selectedBasketFood();
+    if (!food) return;
     this.openNfPopupForFood(food, 'edit', 'picks');
+  }
+
+  /** True when the selected pick lives in the given basket — gates that
+   *  basket's P / S / pencil header controls. */
+  isSelectedInBasket(key: BasketKey): boolean {
+    const sel = this.selectedBasketFood();
+    if (!sel) return false;
+    return this.thisWeekBaskets()[key].some(
+      f => f.id === sel.id && (f.foodSource ?? 'food') === (sel.foodSource ?? 'food'),
+    );
+  }
+
+  /** Write a meal role onto the basket food wherever it lives; the signal
+   *  write triggers the debounced CurrentPicks PUT via persistThisWeek. */
+  private setMealRole(food: Food, role: MealRole): void {
+    this.thisWeekBaskets.update(b => {
+      const next = { ...b } as ThisWeekBaskets;
+      for (const k of this.basketKeys) {
+        next[k] = b[k].map(f =>
+          f.id === food.id && (f.foodSource ?? 'food') === (food.foodSource ?? 'food')
+            ? { ...f, mealRole: role }
+            : f,
+        );
+      }
+      return next;
+    });
   }
 
   // ----- Basket helpers -----
@@ -1680,6 +1785,7 @@ export class FoodsPanelComponent {
       ...food,
       pickAddedAt: food.pickAddedAt ?? new Date().toISOString(),
       pickServingSize: food.pickServingSize ?? null,
+      mealRole: food.mealRole ?? 'AnyUse',
     };
     // Append (oldest first, newest last) — the basket-tiles flex layout uses
     // `wrap-reverse` so the first item lands bottom-left and the stack grows

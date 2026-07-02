@@ -32,7 +32,13 @@ export type Food = FoodSchema & {
   // serving override; null means "no override; follow the MyFoods baseline".
   pickAddedAt?: string;
   pickServingSize?: number | null;
+  // Per-pick meal role (round-trips via CurrentPicks). Drives how the meal
+  // generator uses the pick: PrimaryFood = build the meal around it,
+  // SecondaryFood = supporting, AnyUse = unconstrained (default).
+  mealRole?: MealRole;
 };
+
+export type MealRole = 'AnyUse' | 'PrimaryFood' | 'SecondaryFood';
 export type FoodSearchResponse = GeneratedFoodSearchResponse;
 
 // Extract nested types for standalone use if needed

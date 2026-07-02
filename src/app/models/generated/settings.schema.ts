@@ -225,6 +225,10 @@ export interface CurrentPick {
    */
   pickServingSize?: number | null;
   /**
+   * How the generator should use this pick: PrimaryFood = build the meal around it; SecondaryFood = supporting/complementary; AnyUse = no constraint (default).
+   */
+  mealRole?: "AnyUse" | "PrimaryFood" | "SecondaryFood";
+  /**
    * When the pick was added — used for stable ordering within a basket
    */
   addedAt: string;

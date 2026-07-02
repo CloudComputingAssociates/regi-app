@@ -250,6 +250,12 @@
           "exclusiveMinimum": 0,
           "description": "Per-basket serving-size override; null = use the food's baseline serving"
         },
+        "mealRole": {
+          "type": "string",
+          "enum": ["AnyUse", "PrimaryFood", "SecondaryFood"],
+          "default": "AnyUse",
+          "description": "How the generator should use this pick: PrimaryFood = build the meal around it; SecondaryFood = supporting/complementary; AnyUse = no constraint (default)."
+        },
         "addedAt": {
           "type": "string",
           "format": "date-time",

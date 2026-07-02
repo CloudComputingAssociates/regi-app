@@ -24,6 +24,7 @@ export interface CurrentPick {
   foodSource: 'food' | 'userfood';
   basketKey: 'Proteins' | 'Fats' | 'Carbs' | 'Other';
   pickServingSize: number | null;
+  mealRole?: 'AnyUse' | 'PrimaryFood' | 'SecondaryFood';
   addedAt: string; // ISO 8601
 }
 
