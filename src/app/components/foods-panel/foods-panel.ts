@@ -1761,8 +1761,8 @@ export class FoodsPanelComponent {
    *  green-vegetable allowance. */
   basketLabel(key: BasketKey): string {
     switch (key) {
-      case 'Fats':  return 'Fats & Dairy';
-      case 'Carbs': return 'Fruits, Veggies & Carbs';
+      case 'Fats':  return 'Fats';
+      case 'Carbs': return 'Carbs';
       default:      return key;
     }
   }

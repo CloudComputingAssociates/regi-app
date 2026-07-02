@@ -1308,11 +1308,11 @@
   z-index: 3;
   pointer-events: none;
   font-size: 58px;
-  font-weight: 800;
+  font-weight: 400;
   line-height: 1;
   color: transparent;
-  -webkit-text-stroke: 2px #ffd54f;
-  text-shadow: 0 0 8px rgba(255, 213, 79, 0.85);
+  -webkit-text-stroke: 1px #ffd54f;
+  text-shadow: 0 0 3px rgba(255, 213, 79, 0.4);
 }
 
 // Non-actionable: pure visual styling, no hover, no cursor change.
