@@ -603,7 +603,32 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
       @if (nfPopupFood()) {
         <div class="nf-popup-overlay" (click)="onNfPopupClose()">
           <div class="nf-popup" (click)="$event.stopPropagation()">
-            <button class="nf-popup-close" (click)="onNfPopupClose()" aria-label="Close">✕</button>
+            <!-- Canonical confirm/cancel discs (see CLAUDE.md > Dialog
+                 conventions). Stacked vertically so they clear the Health Info
+                 badge at right:38. Green Save appears only when the serving
+                 differs from the saved value; red Close is always present. -->
+            <div class="dialog-discs">
+              <button
+                type="button"
+                class="dialog-disc dialog-disc-cancel"
+                (click)="onNfPopupClose()"
+                matTooltip="Close"
+                matTooltipPosition="left"
+                aria-label="Close">
+                <mat-icon>close</mat-icon>
+              </button>
+              @if (nfPopupCanSave()) {
+                <button
+                  type="button"
+                  class="dialog-disc dialog-disc-confirm"
+                  (click)="onNfSave()"
+                  matTooltip="Save serving size"
+                  matTooltipPosition="left"
+                  aria-label="Save serving size">
+                  <mat-icon>check</mat-icon>
+                </button>
+              }
+            </div>
             <!-- Health Info button — overhangs the popup's upper edge so it
                  advertises the AI explainer affordance on every NF popup.
                  Always rendered (the previous filter-gate would silently
@@ -642,7 +667,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 [displayUnit]="nfPopupFood()!.servingUnit || 'g'"
                 [displayQuantity]="nfPopupServingSize()"
                 [editable]="nfPopupMode() === 'edit'"
-                [showSave]="nfPopupCanSave()"
+                [showSave]="false"
                 (adjust)="onNfAdjust($event)"
                 (commit)="onNfCommit($event)"
                 (save)="onNfSave()" />

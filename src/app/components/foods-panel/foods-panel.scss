@@ -1732,13 +1732,17 @@
   &:hover { text-decoration: underline; }
 }
 
-.nf-popup-close {
-  @extend %app-close-circle;
+// Confirm/cancel discs, stacked vertically at the top-right corner so they
+// clear the Health Info badge (right:38). Highest z-index so they sit above
+// the badge / title overlap.
+.dialog-discs {
   position: absolute;
   top: 6px;
   right: 6px;
-  // Highest z-index so the X is always on top of the badge / title overlap.
   z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 // Accordion section header inside the MyFoods bottom list.
