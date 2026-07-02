@@ -1968,10 +1968,11 @@ export class FoodsPanelComponent {
 
   /** Save is enabled iff popup is in edit mode AND the draft differs from
    *  what we opened at. */
-  nfPopupCanSave = computed<boolean>(() => {
-    if (this.nfPopupMode() !== 'edit') return false;
-    return this.nfPopupServingSize() !== this.nfPopupOriginalServingSize();
-  });
+  // The green Save disc is present whenever the serving is editable, so it's
+  // discoverable the moment a pick opens (not only after a change). onNfSave
+  // handles a no-change save gracefully (a pick draft equal to the baseline
+  // clears the override to null).
+  nfPopupCanSave = computed<boolean>(() => this.nfPopupMode() === 'edit');
 
   /** Scale factor handed to the NF label so it can recompute macros from the
    *  per-100g baseline. Display math is (qty × servingGramsPerUnit) / 100,
