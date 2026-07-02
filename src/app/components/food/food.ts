@@ -16,7 +16,7 @@ import { MealItem } from '../../models';
       <span class="food-text">
         <span class="qty">{{ item().quantity }} {{ item().unit }}</span>
         <span class="dot">·</span>
-        <span class="name">{{ item().foodName }}</span>
+        <span class="name">{{ item().shortDescription?.trim() || item().foodName }}</span>
       </span>
       <button
         type="button"
