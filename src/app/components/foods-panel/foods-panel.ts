@@ -604,30 +604,29 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
         <div class="nf-popup-overlay" (click)="onNfPopupClose()">
           <div class="nf-popup" (click)="$event.stopPropagation()">
             <!-- Canonical confirm/cancel discs (see CLAUDE.md > Dialog
-                 conventions). Stacked vertically so they clear the Health Info
-                 badge at right:38. Green Save appears only when the serving
-                 differs from the saved value; red Close is always present. -->
+                 conventions): green confirm LEFT of red cancel, red in the
+                 corner. Health Info is shifted left to make room. -->
             <div class="dialog-discs">
-              <button
-                type="button"
-                class="dialog-disc dialog-disc-cancel"
-                (click)="onNfPopupClose()"
-                matTooltip="Close"
-                matTooltipPosition="left"
-                aria-label="Close">
-                <mat-icon>close</mat-icon>
-              </button>
               @if (nfPopupCanSave()) {
                 <button
                   type="button"
                   class="dialog-disc dialog-disc-confirm"
                   (click)="onNfSave()"
                   matTooltip="Save serving size"
-                  matTooltipPosition="left"
+                  matTooltipPosition="below"
                   aria-label="Save serving size">
                   <mat-icon>check</mat-icon>
                 </button>
               }
+              <button
+                type="button"
+                class="dialog-disc dialog-disc-cancel"
+                (click)="onNfPopupClose()"
+                matTooltip="Close"
+                matTooltipPosition="below"
+                aria-label="Close">
+                <mat-icon>close</mat-icon>
+              </button>
             </div>
             <!-- Health Info button — overhangs the popup's upper edge so it
                  advertises the AI explainer affordance on every NF popup.

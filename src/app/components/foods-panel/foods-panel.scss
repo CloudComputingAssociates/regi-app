@@ -1638,9 +1638,9 @@
 .nf-popup-health-info {
   position: absolute;
   top: -22px;
-  // X close occupies right:6 → right:38. Badge at right:38 sits flush with
-  // the X's left edge.
-  right: 38px;
+  // The confirm/cancel disc pair occupies right:6 → right:52 (green + gap +
+  // red). Badge shifted to right:64 so it sits just left of the pair.
+  right: 64px;
   z-index: 3;
   width: 90px;
   height: 80px;
@@ -1732,16 +1732,16 @@
   &:hover { text-decoration: underline; }
 }
 
-// Confirm/cancel discs, stacked vertically at the top-right corner so they
-// clear the Health Info badge (right:38). Highest z-index so they sit above
-// the badge / title overlap.
+// Confirm/cancel discs in the top-right corner: green confirm left, red cancel
+// in the corner. Health Info is shifted left (right:64) to clear the pair.
 .dialog-discs {
   position: absolute;
   top: 6px;
   right: 6px;
   z-index: 5;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 6px;
 }
 
