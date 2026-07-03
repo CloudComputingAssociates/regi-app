@@ -18,6 +18,8 @@ This is a JSON-Schema-first project. JSON Schema is the source of truth; TypeScr
 - Regenerate: `npm run schemas:generate` (outputs `src/app/models/generated/*.schema.ts`)
 - API source of truth: the Go API repo at `c:\git\regi-api\schemas` (read access available). regi-app's `schemas/` is a downstream copy and is frequently STALE — the API is authoritative.
 - The same schema feeds the API (Go), the apps (TS), and message contracts. Treat shape as a cross-system contract, not a local type.
+- **Direction matters — pulling DOWN is only half the loop.** When a schema change ORIGINATES in this app (a product/UI request lands here first), the SAME enum/field edit must ALSO be made in the Go API repo AND deployed before the wire actually works. Editing only regi-app's `schemas/` makes the client send a shape the running API rejects (typically a `400` on save). An app-first schema change is not "done" until: (1) regi-app schema edit + `npm run schemas:generate`, (2) matching `c:\git\regi-api\schemas` edit, (3) the API deploy is live. I have read-only access to the API repo, so hand off (2)/(3) explicitly and say the client change is inert until then.
+- **Repo schema ≠ deployed build.** `c:\git\regi-api\schemas` is authoritative for the *contract*, but the running server can lag the repo. If the client is sending the new shape and getting a 4xx, suspect DEPLOY LAG before suspecting the client — the value may be valid in the repo schema yet rejected by the deployed API.
 
 ### EVERY wire payload is typed — no untyped literals (NON-NEGOTIABLE)
 - Do NOT hand-write an untyped object literal for an HTTP request/response body. Both directions use generated types (e.g. `http.post<Meal>(url, body: GenerateMealRequest)`).
@@ -34,8 +36,8 @@ This is a JSON-Schema-first project. JSON Schema is the source of truth; TypeScr
 
 These are persisted product values or discriminators, unrelated to similarly-named fields. Conflating them corrupts data or routing.
 
-- `foodListSource` enum values: `yeh`, `yeh_plus_myfoods`, `myfoods` (NOT the `regiApproved`/`yehApproved` flag)
-- `defaultFoodList` value: `yeh_approved`
+- `foodListSource` enum values: `myfoods`, `regi_plus_myfoods`, `all_foods` (NOT the `regiApproved`/`yehApproved` flag). NOTE: the app does NOT send a `foodListSource` field over the wire — it persists this token through the `settings.defaultFoodList` field and maps between the two in `preferences.service.ts`. Legacy tokens `yeh`, `yeh_plus_myfoods`, `yeh_approved` may still appear in older persisted rows; the load mapper folds them into the current values.
+- `defaultFoodList` (settings endpoint) carries the `foodListSource` token — enum `myfoods` / `regi_plus_myfoods` / `all_foods`. (A legacy `yeh_approved` value may still exist in the preferences-endpoint schema copy and in older persisted data.)
 - `dataSource` column values (`user`, `USDA-FNDDS`, `FatSecret`) vs the `foodSource` discriminator (`food` / `userfood`) — different concepts, never conflate (e.g. a blind rename of `'user'` corrupts provenance)
 - Route path strings (e.g. `/foods/search/all/yehapproved`) are URL contracts — leave unchanged unless the task explicitly renames the route
 

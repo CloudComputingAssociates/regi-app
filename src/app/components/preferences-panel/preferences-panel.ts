@@ -859,16 +859,15 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   /** Pie chart segments for P/F/C calorie distribution */
   pieChartSegments = computed(() => {
     const dg = this.userSettingsService.dailyGoals();
-    const proteinCals = dg.protein * 4;
-    const fatCals = dg.fat * 9;
-    const carbsCals = dg.carbs * 4;
-    const total = proteinCals + fatCals + carbsCals;
+    // Pure gram share: each macro's grams as a fraction of total macro grams
+    // (NOT calorie-weighted — protein/fat/carbs are compared gram-for-gram).
+    const total = dg.protein + dg.fat + dg.carbs;
     if (total <= 0) return [];
 
     const raw = [
-      { pct: proteinCals / total, color: '#41ac17', label: 'P' },
-      { pct: fatCals / total, color: '#902ee3', label: 'F' },
-      { pct: carbsCals / total, color: '#e67300', label: 'C' }
+      { pct: dg.protein / total, color: '#41ac17', label: 'P' },
+      { pct: dg.fat / total, color: '#902ee3', label: 'F' },
+      { pct: dg.carbs / total, color: '#e67300', label: 'C' }
     ];
 
     const cx = 30, cy = 30, r = 25;

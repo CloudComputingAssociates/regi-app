@@ -273,8 +273,8 @@
         "regiMenu": { "$ref": "#/definitions/RegiMenuSettings" },
         "defaultFoodList": {
           "type": "string",
-          "enum": ["yeh_approved", "all_foods"],
-          "description": "Default food list filter"
+          "enum": ["myfoods", "regi_plus_myfoods", "all_foods"],
+          "description": "Default food list filter (foodListSource token)"
         },
         "dailyGoals": { "$ref": "#/definitions/DailyGoals" },
         "personalInfo": { "$ref": "#/definitions/PersonalInfo" },

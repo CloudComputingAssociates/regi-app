@@ -243,9 +243,9 @@ export interface AllSettingsResponse {
   tabs?: TabSettings;
   regiMenu?: RegiMenuSettings;
   /**
-   * Default food list filter
+   * Default food list filter (foodListSource token)
    */
-  defaultFoodList?: "yeh_approved" | "all_foods";
+  defaultFoodList?: "myfoods" | "regi_plus_myfoods" | "all_foods";
   dailyGoals?: DailyGoals;
   personalInfo?: PersonalInfo;
   /**
