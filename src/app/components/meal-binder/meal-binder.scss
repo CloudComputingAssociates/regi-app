@@ -25,7 +25,7 @@
 
   .binder-title {
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 500; // 600 read fuzzy on dark; match the crisp meal titles
     color: #f1f1f1;
   }
 }
@@ -58,7 +58,7 @@
 
   .ai-text {
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 500; // was 700 — read fuzzy; letter-spacing keeps it present
     letter-spacing: 0.5px;
     color: #d8d8d8;
   }
@@ -68,7 +68,7 @@
   flex-shrink: 0;
   padding: 8px 12px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   color: #d8d8d8;
   background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
   border: 1px solid #1f1f1f;
@@ -182,10 +182,11 @@
     border-radius: 10px;
     color: #ffffff;
 
-    &.protein { background: #41ac17; }
-    &.carb { background: #e67300; } // orange
-    &.fat { background: #c060ff; }
-    &.fiber { background: #795227; } // brown
+    // Muted macro palette — ~15% less luminance than the raw colors.
+    &.protein { background: #3a8f18; } // green
+    &.carb { background: #c46216; } // orange
+    &.fat { background: #9f5ccb; } // purple
+    &.fiber { background: #6a4823; } // brown
   }
 }
 

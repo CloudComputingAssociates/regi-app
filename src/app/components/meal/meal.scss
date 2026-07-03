@@ -88,17 +88,19 @@
     border-radius: 10px;
     color: #ffffff;
 
+    // Muted macro palette — luminance pulled ~15% down from the raw colors so
+    // the chips read calmer, not neon.
     &.protein {
-      background: #41ac17;
+      background: #3a8f18; // green
     }
     &.carb {
-      background: #e67300; // orange
+      background: #c46216; // orange
     }
     &.fat {
-      background: #c060ff;
+      background: #9f5ccb; // purple
     }
     &.fiber {
-      background: #795227; // brown
+      background: #6a4823; // brown
     }
   }
 }
