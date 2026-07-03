@@ -1295,7 +1295,9 @@
   }
 }
 
-// Hollow, yellow-glow P/S overlay centered on the tile image (~2/3 its size).
+// Vivid, glowing P/S overlay centered on the tile image. Solid bright gold
+// fill with a warm glow halo; a thin dark edge keeps it legible over light
+// foods.
 .basket-role-badge {
   position: absolute;
   top: 0;
@@ -1307,14 +1309,15 @@
   justify-content: center;
   z-index: 3;
   pointer-events: none;
-  // Large, open block letter drawn as a THIN crisp outline (transparent fill,
-  // no glow). A moderate weight keeps the counters open ("space between the
-  // lines") instead of thick bars; the glow was what made it read as fat/solid.
   font-size: 64px;
-  font-weight: 500;
+  font-weight: 800;
   line-height: 1;
-  color: transparent;
-  -webkit-text-stroke: 1px #ffd54f;
+  color: #ffd84a;
+  -webkit-text-stroke: 1px rgba(40, 24, 0, 0.8);
+  text-shadow:
+    0 0 6px rgba(255, 214, 79, 0.95),
+    0 0 16px rgba(255, 190, 30, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 // Non-actionable: pure visual styling, no hover, no cursor change.

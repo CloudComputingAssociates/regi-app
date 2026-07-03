@@ -86,7 +86,7 @@
         },
         "foodListSource": {
           "type": ["string", "null"],
-          "enum": ["yeh_plus_myfoods", "yeh", "myfoods", null],
+          "enum": ["myfoods", "regi_plus_myfoods", "all_foods", null],
           "description": "Source of foods for meal planning"
         }
       },
@@ -135,7 +135,7 @@
         },
         "foodListSource": {
           "type": "string",
-          "enum": ["yeh_plus_myfoods", "yeh", "myfoods"],
+          "enum": ["myfoods", "regi_plus_myfoods", "all_foods"],
           "description": "Source of foods for meal planning"
         }
       },
@@ -194,7 +194,7 @@
     },
     "foodListSource": {
       "type": ["string", "null"],
-      "enum": ["yeh_plus_myfoods", "yeh", "myfoods", null],
+      "enum": ["myfoods", "regi_plus_myfoods", "all_foods", null],
       "description": "Source of foods for meal planning"
     },
     "createdAt": {

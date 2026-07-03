@@ -546,10 +546,10 @@ export class FoodsListComponent implements OnInit {
 
     this.activeFilters.set(new Set([filter]));
     this.activeFilter.set(filter as FoodFilterType);
-    this.isYehApproved.set(filter === 'yeh-approved' || source === 'yeh_plus_myfoods');
+    this.isYehApproved.set(filter === 'yeh-approved' || source === 'regi_plus_myfoods');
 
     if (this.mode() === 'search') {
-      if (source === 'yeh_plus_myfoods') {
+      if (source === 'regi_plus_myfoods') {
         this.loadYehPlusMyFoods();
       } else if (filter === 'yeh-approved') {
         this.loadYehApprovedFoods();
@@ -566,19 +566,19 @@ export class FoodsListComponent implements OnInit {
       const initialFilter = source === 'myfoods' ? 'my-favorites' : 'yeh-approved';
       this.activeFilters.set(new Set([initialFilter]));
       this.activeFilter.set(initialFilter as FoodFilterType);
-      this.isYehApproved.set(initialFilter === 'yeh-approved' || source === 'yeh_plus_myfoods');
+      this.isYehApproved.set(initialFilter === 'yeh-approved' || source === 'regi_plus_myfoods');
     } else {
       // Plan tab — use preference setting, no checkbox
       const source = this.prefsService.foodListSource();
       const filter = source === 'myfoods' ? 'my-favorites' : 'yeh-approved';
       this.activeFilter.set(filter as FoodFilterType);
-      this.isYehApproved.set(filter === 'yeh-approved' || source === 'yeh_plus_myfoods');
+      this.isYehApproved.set(filter === 'yeh-approved' || source === 'regi_plus_myfoods');
     }
 
     if (this.mode() === 'search') {
       const source = this.prefsService.foodListSource();
       // Always load the initial list based on active filter
-      if (source === 'yeh_plus_myfoods') {
+      if (source === 'regi_plus_myfoods') {
         this.loadYehPlusMyFoods();
       } else if (this.isYehApproved()) {
         this.loadYehApprovedFoods();
@@ -851,7 +851,7 @@ export class FoodsListComponent implements OnInit {
     const trimmedQuery = query.trim().toLowerCase();
 
     let cache: Food[] = [];
-    if (this.combinedCache().length > 0 && this.prefsService.foodListSource() === 'yeh_plus_myfoods') {
+    if (this.combinedCache().length > 0 && this.prefsService.foodListSource() === 'regi_plus_myfoods') {
       cache = this.combinedCache();
     } else {
       switch (filter) {

@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
 import { NotificationService } from '../../services/notification.service';
-import { PreferencesService, MealsPerDay, DailyGoals, WeekStartDay } from '../../services/preferences.service';
+import { PreferencesService, MealsPerDay, DailyGoals, WeekStartDay, FoodListSource } from '../../services/preferences.service';
 import { SettingsService } from '../../services/settings.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
@@ -143,6 +143,7 @@ import { MatIconModule } from '@angular/material/icon';
                     <option value="extremely_active">Ext. Active (2×/day, physical job)</option>
                   </select>
                 </div>
+                <div class="pi-bmr">{{ bmiLabel() }}</div>
                 <div class="pi-bmr">{{ bmrTdeeLabel() }}</div>
                 <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
               </div>
@@ -396,6 +397,23 @@ import { MatIconModule } from '@angular/material/icon';
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
                         (click)="repeatTooltip.toggle()">&#9432;</span>
+                </div>
+                <div class="setting-row">
+                  <label class="setting-label">Foods from</label>
+                  <select
+                    class="setting-select"
+                    [ngModel]="userSettingsService.foodListSource()"
+                    (ngModelChange)="onFoodListSourceChange($event)">
+                    <option value="myfoods">MyFoods</option>
+                    <option value="regi_plus_myfoods">MyFoods + RegiApproved</option>
+                    <option value="all_foods">All Foods</option>
+                  </select>
+                  <span class="info-icon"
+                        #foodsTooltip="matTooltip"
+                        matTooltip="Which foods meal planning draws from: your own MyFoods, MyFoods plus the RegiApproved list, or all foods."
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="0"
+                        (click)="foodsTooltip.toggle()">&#9432;</span>
                 </div>
               </div>
             </div>
@@ -1051,6 +1069,21 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     return `BMR: ${bmrStr} cals (Activity adjusted: ${tdee.toLocaleString()})`;
   });
 
+  /** BMI readout shown directly above BMR. Format:
+   *  "BMI: 24.5 (target: 22.0)". Em-dash short-circuit when height or current
+   *  weight is missing; suppresses the parenthetical until a target weight is
+   *  known. BMI = weightKg / heightM². */
+  bmiLabel = computed<string>(() => {
+    const pi = this.userSettingsService.personalInfo();
+    if (!pi.heightCm || !pi.currentWeightKg) return 'BMI: —';
+    const heightM = pi.heightCm / 100;
+    const bmi = pi.currentWeightKg / (heightM * heightM);
+    const bmiStr = bmi.toFixed(1);
+    if (!pi.targetWeightKg) return `BMI: ${bmiStr}`;
+    const targetBmi = pi.targetWeightKg / (heightM * heightM);
+    return `BMI: ${bmiStr} (target: ${targetBmi.toFixed(1)})`;
+  });
+
   /** Focus of either grams input — snapshot the pre-edit state once. The
    *  second focus (e.g. user clicks from top to bottom while editing) is a
    *  no-op since preEditProtein is already set. */
@@ -1290,6 +1323,11 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
 
   onWeekStartDayChange(value: WeekStartDay): void {
     this.userSettingsService.setWeekStartDay(value);
+    this.settingsChanged.set(true);
+  }
+
+  onFoodListSourceChange(value: FoodListSource): void {
+    this.userSettingsService.setFoodListSource(value);
     this.settingsChanged.set(true);
   }
 

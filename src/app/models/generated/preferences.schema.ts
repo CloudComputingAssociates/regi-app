@@ -48,7 +48,7 @@ export interface UserPreferencesSchema {
   /**
    * Source of foods for meal planning
    */
-  foodListSource?: "yeh_plus_myfoods" | "yeh" | "myfoods" | null;
+  foodListSource?: "myfoods" | "regi_plus_myfoods" | "all_foods" | null;
   /**
    * When preferences were created
    */
@@ -131,7 +131,7 @@ export interface GetPreferencesResponse {
   /**
    * Source of foods for meal planning
    */
-  foodListSource?: "yeh_plus_myfoods" | "yeh" | "myfoods" | null;
+  foodListSource?: "myfoods" | "regi_plus_myfoods" | "all_foods" | null;
 }
 /**
  * Request body for PUT /api/user/preferences
@@ -171,5 +171,5 @@ export interface UpdatePreferencesRequest {
   /**
    * Source of foods for meal planning
    */
-  foodListSource?: "yeh_plus_myfoods" | "yeh" | "myfoods";
+  foodListSource?: "myfoods" | "regi_plus_myfoods" | "all_foods";
 }

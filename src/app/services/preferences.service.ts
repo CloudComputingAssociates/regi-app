@@ -12,7 +12,7 @@ import {
 export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type FastingType = 'none' | '16_8' | '18_6' | '20_4' | 'omad';
 export type RepeatMeals = number;
-export type FoodListSource = 'yeh' | 'myfoods' | 'yeh_plus_myfoods';
+export type FoodListSource = 'myfoods' | 'regi_plus_myfoods' | 'all_foods';
 export type WeekStartDay = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
 
 export type { DailyGoals, PersonalInfo, Glp1Settings, Glp1Dose };
@@ -379,10 +379,7 @@ export class PreferencesService {
       eatingStartTime: rm?.eatingStartTime || DEFAULT_PREFERENCES.eatingStartTime,
       repeatMeals: rm?.repeatMeals ?? DEFAULT_PREFERENCES.repeatMeals,
       weekStartDay: (rm?.weekStartDay as WeekStartDay) || DEFAULT_PREFERENCES.weekStartDay,
-      // Foods-from UI is removed — the source is always MyFoods now. We still
-      // flow this through the defaultFoodList save so the server's persisted
-      // value stays in sync with the app's actual behavior.
-      foodListSource: 'myfoods',
+      foodListSource: this.mapDefaultFoodList(all.defaultFoodList),
       dailyGoals: dg ?? DEFAULT_DAILY_GOALS,
       personalInfo: pi ?? DEFAULT_PERSONAL_INFO,
       persons: rm?.persons ?? DEFAULT_PREFERENCES.persons,
@@ -771,19 +768,23 @@ export class PreferencesService {
 
   private mapDefaultFoodList(value?: string): FoodListSource {
     switch (value) {
-      case 'yeh_approved': return 'yeh';
       case 'myfoods': return 'myfoods';
-      case 'yeh_plus_myfoods': return 'yeh_plus_myfoods';
+      case 'regi_plus_myfoods': return 'regi_plus_myfoods';
+      case 'all_foods': return 'all_foods';
+      // Back-compat: read legacy persisted tokens from before the enum rename.
+      case 'yeh_plus_myfoods': return 'regi_plus_myfoods';
+      case 'yeh':
+      case 'yeh_approved': return 'regi_plus_myfoods';
       default: return DEFAULT_PREFERENCES.foodListSource;
     }
   }
 
   private mapFoodListSourceToApi(value: FoodListSource): string {
     switch (value) {
-      case 'yeh': return 'yeh_approved';
       case 'myfoods': return 'myfoods';
-      case 'yeh_plus_myfoods': return 'yeh_plus_myfoods';
-      default: return 'yeh_approved';
+      case 'regi_plus_myfoods': return 'regi_plus_myfoods';
+      case 'all_foods': return 'all_foods';
+      default: return 'myfoods';
     }
   }
 }
