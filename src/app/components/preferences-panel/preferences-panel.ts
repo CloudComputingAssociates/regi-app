@@ -143,22 +143,18 @@ import { MatIconModule } from '@angular/material/icon';
                     <option value="extremely_active">Ext. Active (2×/day, physical job)</option>
                   </select>
                 </div>
-                <div class="pi-bmr">{{ bmrTdeeLabel() }}
-                  <span class="info-icon"
+                <div class="pi-bmr">BMR<span class="info-icon"
                         #bmrTooltip="matTooltip"
                         matTooltip="Basal Metabolic Rate — calories burned at complete rest to keep vital functions running."
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
-                        (click)="bmrTooltip.toggle()">&#9432;</span>
-                </div>
-                <div class="pi-bmr">{{ bmiLabel() }}
-                  <span class="info-icon"
+                        (click)="bmrTooltip.toggle()">&#9432;</span>: {{ bmrTdeeLabel() }}</div>
+                <div class="pi-bmr">BMI<span class="info-icon"
                         #bmiTooltip="matTooltip"
                         matTooltip="Body Mass Index"
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
-                        (click)="bmiTooltip.toggle()">&#9432;</span>
-                </div>
+                        (click)="bmiTooltip.toggle()">&#9432;</span>: {{ bmiLabel() }}</div>
                 <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
               </div>
             </div>
@@ -1068,35 +1064,37 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     extremely_active: 1.9,
   };
 
-  /** BMR + activity-adjusted readout under the Activity dropdown. Format:
-   *  "BMR: 2,656 cals (Activity adjusted: 4,117)". Em-dash short-circuit
-   *  when BMR inputs are missing; suppresses the parenthetical until the
-   *  user picks an Activity level. */
+  /** BMR value (no "BMR:" prefix — the template renders label + ⓘ + colon).
+   *  Format: "2,656 cals (Activity adjusted: 4,117)". Em-dash short-circuit
+   *  when BMR inputs are missing; suppresses the parenthetical until the user
+   *  picks an Activity level. */
   bmrTdeeLabel = computed<string>(() => {
     const bmr = this.userSettingsService.computedBMR();
-    if (bmr === null) return 'BMR: — cals';
+    if (bmr === null) return '— cals';
     const activity = this.userSettingsService.personalInfo().activityLevel;
     const bmrStr = bmr.toLocaleString();
-    if (!activity) return `BMR: ${bmrStr} cals`;
+    if (!activity) return `${bmrStr} cals`;
     const mult = PreferencesPanelComponent.ACTIVITY_MULTIPLIERS[activity] ?? 1;
     const tdee = Math.round(bmr * mult);
-    return `BMR: ${bmrStr} cals (Activity adjusted: ${tdee.toLocaleString()})`;
+    return `${bmrStr} cals (Activity adjusted: ${tdee.toLocaleString()})`;
   });
 
-  /** BMI readout shown directly above BMR. Format:
-   *  "BMI: 24.5 (target: 22.0)". Em-dash short-circuit when height or current
-   *  weight is missing; suppresses the parenthetical until a target weight is
-   *  known. BMI = weightKg / heightM². */
+  /** BMI value (no "BMI:" prefix — the template renders label + ⓘ + colon).
+   *  Format: "51.2 (target: 30.2)   Severe Obese III ( target: Overweight )".
+   *  A wide gap separates the numbers from the category words. Em-dash short-
+   *  circuit when height or current weight is missing; suppresses the target
+   *  half until a target weight is known. BMI = weightKg / heightM². */
   bmiLabel = computed<string>(() => {
     const pi = this.userSettingsService.personalInfo();
-    if (!pi.heightCm || !pi.currentWeightKg) return 'BMI: —';
+    if (!pi.heightCm || !pi.currentWeightKg) return '—';
     const heightM = pi.heightCm / 100;
     const bmi = pi.currentWeightKg / (heightM * heightM);
     const cat = PreferencesPanelComponent.bmiCategory(bmi);
-    const bmiStr = `${bmi.toFixed(1)} ${cat}`;
-    if (!pi.targetWeightKg) return `BMI: ${bmiStr}`;
+    const gap = '  '; // two em-spaces
+    if (!pi.targetWeightKg) return `${bmi.toFixed(1)}${gap}${cat}`;
     const targetBmi = pi.targetWeightKg / (heightM * heightM);
-    return `BMI: ${bmiStr} (target: ${targetBmi.toFixed(1)})`;
+    const targetCat = PreferencesPanelComponent.bmiCategory(targetBmi);
+    return `${bmi.toFixed(1)} (target: ${targetBmi.toFixed(1)})${gap}${cat} ( target: ${targetCat} )`;
   });
 
   /** WHO/NIH BMI category for a computed value. */
@@ -1105,8 +1103,8 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     if (bmi < 25) return 'Normal';
     if (bmi < 30) return 'Overweight';
     if (bmi < 35) return 'Obese';
-    if (bmi < 40) return 'Obese (II)';
-    return 'Severe Obese (III)';
+    if (bmi < 40) return 'Obese II';
+    return 'Severe Obese III';
   }
 
   /** Focus of either grams input — snapshot the pre-edit state once. The
