@@ -154,7 +154,36 @@ import { MatIconModule } from '@angular/material/icon';
                         matTooltip="Body Mass Index"
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
-                        (click)="bmiTooltip.toggle()">&#9432;</span>: {{ bmiLabel() }}</div>
+                        (click)="bmiTooltip.toggle()">&#9432;</span>: {{ bmiLabel() }}
+                  <span class="bmi-desc">
+                    <button class="bmi-desc-btn" type="button"
+                      (mousedown)="bmiDescOpen.set(true)"
+                      (mouseup)="bmiDescOpen.set(false)"
+                      (mouseleave)="bmiDescOpen.set(false)"
+                      (touchstart)="bmiDescOpen.set(true)"
+                      (touchend)="bmiDescOpen.set(false)">Description</button>
+                    @if (bmiDescOpen()) {
+                      <div class="bmi-scale-popup">
+                        <div class="bmi-scale-labels">
+                          @for (band of bmiScaleBands; track band.label) {
+                            <span class="bmi-scale-label" [style.top.%]="band.top">{{ band.label }}</span>
+                          }
+                        </div>
+                        <div class="bmi-scale-bar">
+                          @for (tick of bmiScaleTicks; track tick) {
+                            <span class="bmi-scale-tick" [style.top.%]="tick"></span>
+                          }
+                          @if (bmiCurrentTop() !== null) {
+                            <span class="bmi-scale-marker current" [style.top.%]="bmiCurrentTop()!"></span>
+                          }
+                          @if (bmiTargetTop() !== null) {
+                            <span class="bmi-scale-marker goal" [style.top.%]="bmiTargetTop()!"></span>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </span>
+                </div>
                 <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
               </div>
             </div>
@@ -1079,33 +1108,73 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     return `${bmrStr} cals (Activity adjusted: ${tdee.toLocaleString()})`;
   });
 
-  /** BMI value (no "BMI:" prefix — the template renders label + ⓘ + colon).
-   *  Format: "51.2 (target: 30.2)   Severe Obese III ( target: Overweight )".
-   *  A wide gap separates the numbers from the category words. Em-dash short-
-   *  circuit when height or current weight is missing; suppresses the target
-   *  half until a target weight is known. BMI = weightKg / heightM². */
-  bmiLabel = computed<string>(() => {
+  /** BMI = weightKg / heightM². Null until height + current weight are known. */
+  private rawBmi = computed<number | null>(() => {
     const pi = this.userSettingsService.personalInfo();
-    if (!pi.heightCm || !pi.currentWeightKg) return '—';
-    const heightM = pi.heightCm / 100;
-    const bmi = pi.currentWeightKg / (heightM * heightM);
-    const cat = PreferencesPanelComponent.bmiCategory(bmi);
-    const gap = '  '; // two em-spaces
-    if (!pi.targetWeightKg) return `${bmi.toFixed(1)}${gap}${cat}`;
-    const targetBmi = pi.targetWeightKg / (heightM * heightM);
-    const targetCat = PreferencesPanelComponent.bmiCategory(targetBmi);
-    return `${bmi.toFixed(1)} (target: ${targetBmi.toFixed(1)})${gap}${cat} ( target: ${targetCat} )`;
+    if (!pi.heightCm || !pi.currentWeightKg) return null;
+    const h = pi.heightCm / 100;
+    return pi.currentWeightKg / (h * h);
   });
 
-  /** WHO/NIH BMI category for a computed value. */
-  private static bmiCategory(bmi: number): string {
-    if (bmi < 18.5) return 'Underweight';
-    if (bmi < 25) return 'Normal';
-    if (bmi < 30) return 'Overweight';
-    if (bmi < 35) return 'Obese';
-    if (bmi < 40) return 'Obese II';
-    return 'Severe Obese III';
+  /** BMI at the target weight. Null until height + target weight are known. */
+  private rawTargetBmi = computed<number | null>(() => {
+    const pi = this.userSettingsService.personalInfo();
+    if (!pi.heightCm || !pi.targetWeightKg) return null;
+    const h = pi.heightCm / 100;
+    return pi.targetWeightKg / (h * h);
+  });
+
+  /** BMI numeric readout only — the category words moved into the press-and-
+   *  hold Description popup. Format: "51.2 (target: 30.2)". Em-dash until data
+   *  exists; suppresses the parenthetical until a target weight is known. */
+  bmiLabel = computed<string>(() => {
+    const bmi = this.rawBmi();
+    if (bmi === null) return '—';
+    const cur = bmi.toFixed(1);
+    const t = this.rawTargetBmi();
+    return t === null ? cur : `${cur} (target: ${t.toFixed(1)})`;
+  });
+
+  // ----- BMI Description popup (visible only while the button is held) -----
+
+  bmiDescOpen = signal(false);
+
+  /** Vertical BMI scale bounds — the TOP of the bar is the heaviest. */
+  private static readonly BMI_SCALE_MIN = 15;
+  private static readonly BMI_SCALE_MAX = 45;
+
+  /** Map a BMI value to a top-offset % on the scale (0% = top = heaviest). */
+  private static bmiTopPct(bmi: number): number {
+    const lo = PreferencesPanelComponent.BMI_SCALE_MIN;
+    const hi = PreferencesPanelComponent.BMI_SCALE_MAX;
+    const c = Math.max(lo, Math.min(hi, bmi));
+    return ((hi - c) / (hi - lo)) * 100;
   }
+
+  /** Category words placed at each band's midpoint down the left of the scale. */
+  readonly bmiScaleBands = [
+    { label: 'Severe Obese III', top: PreferencesPanelComponent.bmiTopPct(42.5) },
+    { label: 'Obese II',         top: PreferencesPanelComponent.bmiTopPct(37.5) },
+    { label: 'Obese',            top: PreferencesPanelComponent.bmiTopPct(32.5) },
+    { label: 'Overweight',       top: PreferencesPanelComponent.bmiTopPct(27.5) },
+    { label: 'Normal',           top: PreferencesPanelComponent.bmiTopPct(21.75) },
+    { label: 'Underweight',      top: PreferencesPanelComponent.bmiTopPct(16.75) },
+  ];
+
+  /** Hash-mark boundaries between categories (no numeric values shown). */
+  readonly bmiScaleTicks = [18.5, 25, 30, 35, 40].map(b => PreferencesPanelComponent.bmiTopPct(b));
+
+  /** Current-weight marker position (black), or null when no data. */
+  readonly bmiCurrentTop = computed<number | null>(() => {
+    const bmi = this.rawBmi();
+    return bmi === null ? null : PreferencesPanelComponent.bmiTopPct(bmi);
+  });
+
+  /** Goal-weight marker position (green), or null when no target. */
+  readonly bmiTargetTop = computed<number | null>(() => {
+    const bmi = this.rawTargetBmi();
+    return bmi === null ? null : PreferencesPanelComponent.bmiTopPct(bmi);
+  });
 
   /** Focus of either grams input — snapshot the pre-edit state once. The
    *  second focus (e.g. user clicks from top to bottom while editing) is a
