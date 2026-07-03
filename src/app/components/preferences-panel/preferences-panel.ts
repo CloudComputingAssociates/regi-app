@@ -222,17 +222,6 @@ import { MatIconModule } from '@angular/material/icon';
               <div class="settings-section">
               <div class="targets-column">
                 <div class="targets-body" [class.targets-disabled]="!userSettingsService.dailyGoals().isOverridden">
-                  <!-- Carb scale slider -->
-                  <div class="macro-control-row">
-                    <label class="setting-label">Carbs</label>
-                    <input type="range" class="carb-slider"
-                      [min]="0"
-                      [max]="carbSliderMax()"
-                      [ngModel]="carbSliderValue()"
-                      (ngModelChange)="onCarbScaleChange($event)"
-                      [disabled]="!userSettingsService.dailyGoals().isOverridden" />
-                    <span class="slider-value">{{ carbSliderLabel() }}</span>
-                  </div>
                   <!-- Protein ratio dropdown + direct-grams shortcut.
                        The dropdown is one rung from {0.5..1.2 g/lb}. The
                        grams input next to it lets the user type a target
@@ -266,6 +255,17 @@ import { MatIconModule } from '@angular/material/icon';
                       (blur)="onProteinGramsBlur()" />
                     <span class="grams-suffix">g</span>
                   </div>
+                  <!-- Carb scale slider -->
+                  <div class="macro-control-row">
+                    <label class="setting-label">Carbs</label>
+                    <input type="range" class="carb-slider"
+                      [min]="0"
+                      [max]="carbSliderMax()"
+                      [ngModel]="carbSliderValue()"
+                      (ngModelChange)="onCarbScaleChange($event)"
+                      [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                    <span class="slider-value">{{ carbSliderLabel() }}</span>
+                  </div>
                   <div class="macro-separator"></div>
                   <div class="calories-label-row">
                     <label>Calories</label>
@@ -291,16 +291,16 @@ import { MatIconModule } from '@angular/material/icon';
                              (focus)="onProteinGramsFocus()"
                              (blur)="onProteinGramsBlur()" />
                     </div>
-                    <div class="target-field macro-fat">
-                      <label>Fats {{ userSettingsService.showPercent() ? '%' : 'g' }}</label>
-                      <input type="number" [ngModel]="fatDisplay()"
-                             (ngModelChange)="onMacroFieldChange('fat', $event)"
-                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
-                    </div>
                     <div class="target-field macro-carbs">
                       <label>Carbs {{ userSettingsService.showPercent() ? '%' : 'g' }}</label>
                       <input type="number" [ngModel]="carbsDisplay()"
                              (ngModelChange)="onMacroFieldChange('carbs', $event)"
+                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                    </div>
+                    <div class="target-field macro-fat">
+                      <label>Fats {{ userSettingsService.showPercent() ? '%' : 'g' }}</label>
+                      <input type="number" [ngModel]="fatDisplay()"
+                             (ngModelChange)="onMacroFieldChange('fat', $event)"
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     </div>
                     <svg viewBox="0 0 60 60" class="macro-pie" xmlns="http://www.w3.org/2000/svg">
@@ -871,11 +871,13 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     ];
 
     const cx = 30, cy = 30, r = 25;
+    // Sweep COUNTER-clockwise from the top so the first segment (Proteins)
+    // lands on the LEFT half of the pie.
     let angle = -Math.PI / 2;
     return raw.filter(s => s.pct > 0.001).map(seg => {
       const start = angle;
       const sweep = seg.pct * 2 * Math.PI;
-      const end = start + sweep;
+      const end = start - sweep;
       const x1 = cx + r * Math.cos(start);
       const y1 = cy + r * Math.sin(start);
       const x2 = cx + r * Math.cos(end);
@@ -883,9 +885,9 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
       const large = sweep > Math.PI ? 1 : 0;
       // For near-full circle, nudge end point slightly to avoid collapsed arc
       const path = seg.pct > 0.999
-        ? `M ${cx},${cy - r} A ${r},${r} 0 1,1 ${cx - 0.01},${cy - r} Z`
-        : `M ${cx},${cy} L ${x1},${y1} A ${r},${r} 0 ${large},1 ${x2},${y2} Z`;
-      const mid = start + sweep / 2;
+        ? `M ${cx},${cy - r} A ${r},${r} 0 1,0 ${cx - 0.01},${cy - r} Z`
+        : `M ${cx},${cy} L ${x1},${y1} A ${r},${r} 0 ${large},0 ${x2},${y2} Z`;
+      const mid = start - sweep / 2;
       const lr = r * 0.6;
       angle = end;
       return { path, color: seg.color, label: seg.label, labelX: cx + lr * Math.cos(mid), labelY: cy + lr * Math.sin(mid) };
