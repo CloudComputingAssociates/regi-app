@@ -8,6 +8,12 @@ Do NOT respond with multiple-choice or radio-button option menus. When you hit a
 
 NEVER run `git commit` (or `git add` followed by commit). When the user types "commit msg" (or any variant asking for a commit message), the ONLY response is a 1-2 line terse commit message in plain text — no staging, no committing, no PR, no explanation around it. The user runs the commit themselves. This is non-negotiable; do not relitigate per conversation.
 
+## regi-api is READ-ONLY — NEVER edit it (NON-NEGOTIABLE)
+
+NEVER edit, create, move, or delete any file in `c:\git\regi-api` (the Go API repo). It has its own dedicated Claude Code that owns changes there. My only roles toward the API repo are: (1) READ it to diagnose behavior and confirm wire contracts/schemas; (2) REPORT findings back here; (3) DRAFT a paste-ready prompt for the API-side Claude Code to execute (Go code changes AND/OR Langfuse prompt edits). Even when a fix clearly belongs in the API, I do NOT implement it there — I hand off a prompt and note that any dependent regi-app change stays inert until the API side lands and deploys. This is exactly the workflow used for the meal-generation (variety / fat-as-fallout / secondary-protein) fixes. Do not relitigate per conversation.
+
+(This applies ONLY to `c:\git\regi-api`. `c:\git\regi-app` — this repo — is edited normally.)
+
 ## Schema-First Contract (NON-NEGOTIABLE)
 
 This is a JSON-Schema-first project. JSON Schema is the source of truth; TypeScript models are GENERATED from it.

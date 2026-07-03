@@ -46,9 +46,22 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
              draggable meal cards to the empty-slot drop targets in the board. -->
         <div class="menus-layout" cdkDropListGroup>
           <div class="menus-main">
-            <!-- Thin raised toolbar, pinned above the menu-card row. People
-                 (persisted) sits far-left; Wipe sits ~2/3 across. -->
+            <!-- Thin raised toolbar, pinned above the menu-card row. Wipe sits
+                 ~2/3 across; People (persisted) is right-justified against the
+                 right edge, adjacent to the Meals binder. -->
             <div class="menus-toolbar">
+              <span class="toolbar-spacer"></span>
+
+              <button
+                type="button"
+                class="wipe-btn"
+                matTooltip="Deletes all meals from the selected menu (the menu stays, its slots go empty)."
+                (click)="openWipeConfirm()">
+                Wipe menu
+              </button>
+
+              <span class="toolbar-spacer-tail"></span>
+
               <div class="people-control">
                 <span class="people-label">People</span>
                 <button
@@ -69,18 +82,6 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
                   +
                 </button>
               </div>
-
-              <span class="toolbar-spacer"></span>
-
-              <button
-                type="button"
-                class="wipe-btn"
-                matTooltip="Deletes all meals from the selected menu (the menu stays, its slots go empty)."
-                (click)="openWipeConfirm()">
-                Wipe menu
-              </button>
-
-              <span class="toolbar-spacer-tail"></span>
             </div>
 
             <app-menu-card-row

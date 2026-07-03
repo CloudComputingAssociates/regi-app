@@ -53,7 +53,8 @@
   border-bottom: 1px solid #1a1a1a;
 }
 
-// Spacers place Wipe ~2/3 across while People stays far-left.
+// Spacers place Wipe ~2/3 across; People is the last child, right-justified
+// flush against the toolbar's right padding edge.
 .toolbar-spacer { flex: 2 1 0; }
 .toolbar-spacer-tail { flex: 1 1 0; }
 
