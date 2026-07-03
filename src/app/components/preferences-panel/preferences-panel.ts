@@ -154,7 +154,7 @@ import { MatIconModule } from '@angular/material/icon';
                 <div class="pi-bmr">{{ bmiLabel() }}
                   <span class="info-icon"
                         #bmiTooltip="matTooltip"
-                        matTooltip="Body Mass Index — weight ÷ height² (kg/m²); flags under / healthy / over weight."
+                        matTooltip="Body Mass Index"
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
                         (click)="bmiTooltip.toggle()">&#9432;</span>
@@ -1092,11 +1092,22 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     if (!pi.heightCm || !pi.currentWeightKg) return 'BMI: —';
     const heightM = pi.heightCm / 100;
     const bmi = pi.currentWeightKg / (heightM * heightM);
-    const bmiStr = bmi.toFixed(1);
+    const cat = PreferencesPanelComponent.bmiCategory(bmi);
+    const bmiStr = `${bmi.toFixed(1)} ${cat}`;
     if (!pi.targetWeightKg) return `BMI: ${bmiStr}`;
     const targetBmi = pi.targetWeightKg / (heightM * heightM);
     return `BMI: ${bmiStr} (target: ${targetBmi.toFixed(1)})`;
   });
+
+  /** WHO/NIH BMI category for a computed value. */
+  private static bmiCategory(bmi: number): string {
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25) return 'Normal';
+    if (bmi < 30) return 'Overweight';
+    if (bmi < 35) return 'Obese';
+    if (bmi < 40) return 'Obese (II)';
+    return 'Severe Obese (III)';
+  }
 
   /** Focus of either grams input — snapshot the pre-edit state once. The
    *  second focus (e.g. user clicks from top to bottom while editing) is a
