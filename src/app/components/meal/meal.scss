@@ -83,24 +83,24 @@
 
   .chip {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500; // lighter so the chips don't grab the eye off the food text
     padding: 2px 8px;
     border-radius: 10px;
-    color: #ffffff;
+    color: rgba(255, 255, 255, 0.82); // softened white so it doesn't pop
 
-    // Muted macro palette — luminance pulled ~15% down from the raw colors so
-    // the chips read calmer, not neon.
+    // Muted macro palette — luminance pulled down so the chips recede and the
+    // meal's food rows stay the focus.
     &.protein {
-      background: #3a8f18; // green
+      background: #34781a; // green
     }
     &.carb {
-      background: #c46216; // orange
+      background: #a8541a; // orange
     }
     &.fat {
-      background: #9f5ccb; // purple
+      background: #8a55ab; // purple
     }
     &.fiber {
-      background: #6a4823; // brown
+      background: #5e4021; // brown
     }
   }
 }

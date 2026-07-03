@@ -177,16 +177,16 @@
 
   .chip {
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 500; // lighter so chips recede
     padding: 2px 7px;
     border-radius: 10px;
-    color: #ffffff;
+    color: rgba(255, 255, 255, 0.82); // softened white so it doesn't pop
 
-    // Muted macro palette — ~15% less luminance than the raw colors.
-    &.protein { background: #3a8f18; } // green
-    &.carb { background: #c46216; } // orange
-    &.fat { background: #9f5ccb; } // purple
-    &.fiber { background: #6a4823; } // brown
+    // Muted macro palette — luminance pulled down so the chips recede.
+    &.protein { background: #34781a; } // green
+    &.carb { background: #a8541a; } // orange
+    &.fat { background: #8a55ab; } // purple
+    &.fiber { background: #5e4021; } // brown
   }
 }
 
