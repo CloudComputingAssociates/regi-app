@@ -125,7 +125,7 @@ import { Meal } from '../../models';
         }
 
         @if (rotation.candidateMeals().length === 0 && rotation.binderMeals().length === 0 && !rotation.generating()) {
-          <p class="binder-empty">No saved meals yet — build some, or generate with GenMeal.</p>
+          <p class="binder-empty">No generated meals yet — build some by hand, GenMeal one, or GenAll at once.</p>
         }
       </div>
     </div>
@@ -143,9 +143,9 @@ export class MealBinderComponent implements OnInit {
     return Math.round(n ?? 0);
   }
 
-  /** "GenAll Meals" — placeholder; the user will wire the generate-all flow. */
+  /** "GenAll" — generate the whole rotation at once (GenerateRotation API). */
   onGenAllMeals(): void {
-    // no-op stub (to be wired)
+    void this.rotation.generateAll();
   }
 
   // ----- Cuisine "Twist" combobox -----------------------------------------

@@ -12,7 +12,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { GenerateMealRequest, Meal, MealItem, Menu, Rotation, RotationDetail } from '../models';
+import { GenerateMealRequest, GenerateRotationRequest, Meal, MealItem, Menu, Rotation, RotationDetail } from '../models';
 import { SettingsService } from './settings.service';
 import { NotificationService } from './notification.service';
 
@@ -188,6 +188,36 @@ export class RotationService {
       this.error.set(this.errMessage(err));
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  /** "GenAll" — generate a whole rotation of menus + meals in one shot
+   *  (POST /rotation/generate → GenerateRotation). Uses the `generating` flag
+   *  (same as GenMeal) so the binder's AI logo spins and both Gen buttons
+   *  disable while it runs; the meals populate when the rotation reloads. */
+  async generateAll(): Promise<void> {
+    this.generating.set(true);
+    this.error.set(null);
+    try {
+      const rot = this.rotation();
+      const persons = this.settingsService.allSettings()?.regiMenu?.persons ?? 1;
+      const span = rot?.spanDays;
+      const body: GenerateRotationRequest = {
+        spanDays: span && span >= 2 ? span : 7,
+        peopleCount: persons,
+        distinctMeals: 0,
+      };
+      const detail = await firstValueFrom(
+        this.http.post<RotationDetail>(`${this.baseUrl}/rotation/generate`, body),
+      );
+      this.rotation.set(detail);
+      const firstMenuId = detail.menus[0]?.menuId ?? null;
+      this.selectedMenuId.set(firstMenuId);
+      if (firstMenuId != null) await this.selectMenu(firstMenuId);
+    } catch (err) {
+      this.error.set(this.errMessage(err));
+    } finally {
+      this.generating.set(false);
     }
   }
 
