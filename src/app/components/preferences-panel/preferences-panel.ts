@@ -129,6 +129,7 @@ import { MatIconModule } from '@angular/material/icon';
                     }
                   </div>
                 </div>
+                <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
                 <div class="pi-row">
                   <label class="setting-label">Activity</label>
                   <select class="setting-select"
@@ -143,7 +144,7 @@ import { MatIconModule } from '@angular/material/icon';
                     <option value="extremely_active">Ext. Active (2×/day, physical job)</option>
                   </select>
                 </div>
-                <div class="pi-bmr">BMR: {{ bmrTdeeLabel() }}<span class="info-icon info-icon-trailing"
+                <div class="pi-bmr pi-bmr-top">BMR: {{ bmrTdeeLabel() }}<span class="info-icon info-icon-trailing"
                         #bmrTooltip="matTooltip"
                         matTooltip="Basal Metabolic Rate — calories burned at complete rest to keep vital functions running."
                         matTooltipPosition="above"
@@ -190,7 +191,6 @@ import { MatIconModule } from '@angular/material/icon';
                     }
                   </span>
                 </div>
-                <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
               </div>
             </div>
             </div>
