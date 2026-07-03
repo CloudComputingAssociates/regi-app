@@ -64,31 +64,136 @@
   }
 }
 
+// Lighter, raised, pressable buttons — top highlight + drop shadow read as
+// domed; :active sinks them with an inset shadow.
 .genmeal-btn {
   flex-shrink: 0;
   padding: 8px 12px;
   font-size: 13px;
   font-weight: 500;
-  color: #d8d8d8;
-  background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
-  border: 1px solid #1f1f1f;
-  border-top-color: #555555;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
   border-radius: 6px;
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background 0.12s ease, box-shadow 0.1s ease, transform 0.05s ease;
 
   &:hover:not(:disabled) {
-    background: linear-gradient(180deg, #454545 0%, #363636 100%);
+    background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%);
     color: #ffffff;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+    background: linear-gradient(180deg, #4c4c4c 0%, #404040 100%);
+    box-shadow:
+      0 1px 1px rgba(0, 0, 0, 0.5),
+      inset 0 1px 2px rgba(0, 0, 0, 0.45);
   }
 
   &:disabled {
     opacity: 0.6;
     cursor: default;
   }
+}
+
+// ---- Second row: cuisine "Twist" combobox ----
+.twist-row {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 14px 0;
+}
+
+.twist-label {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  .twist-word {
+    font-size: 13px;
+    font-weight: 500;
+    color: #d8d8d8;
+  }
+}
+
+.twist-combo {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+
+  // Same raised shading family as the buttons.
+  background: linear-gradient(180deg, #565656 0%, #434343 100%);
+  border: 1px solid #262626;
+  border-top-color: #6f6f6f;
+  border-radius: 6px;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.twist-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #f0f0f0;
+  background: transparent;
+  border: none;
+  border-radius: 6px 0 0 6px;
+  outline: none;
+
+  &::placeholder { color: #9aa0a6; }
+}
+
+.twist-chevron {
+  flex-shrink: 0;
+  width: 24px;
+  padding: 0;
+  font-size: 12px;
+  color: #d8d8d8;
+  background: transparent;
+  border: none;
+  border-left: 1px solid rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+
+  &:hover { color: #ffffff; }
+}
+
+.twist-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #3a3a3a;
+  border: 1px solid #1f1f1f;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+.twist-opt {
+  padding: 5px 8px;
+  font-size: 13px;
+  color: #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover { background: #4a4a4a; color: #ffffff; }
+
+  &.selected { color: #4da6ff; }
 }
 
 @keyframes binder-spin {
