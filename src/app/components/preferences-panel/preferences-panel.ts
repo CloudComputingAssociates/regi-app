@@ -408,15 +408,15 @@ import { MatIconModule } from '@angular/material/icon';
                 </div>
                 <div class="setting-row">
                   <label class="setting-label">Meal Repeats</label>
-                  <span class="info-icon"
-                        #repeatTooltip="matTooltip"
-                        matTooltip="By repeating day plans, you optimize grocery lists and reduce waste"
-                        matTooltipPosition="above"
-                        [matTooltipShowDelay]="0"
-                        (click)="repeatTooltip.toggle()">&#9432;</span>
                   <input type="number" min="1" class="setting-number"
                     [ngModel]="userSettingsService.repeatMeals()"
                     (change)="onRepeatMealsChange($event)" />
+                  <span class="info-icon"
+                        #repeatTooltip="matTooltip"
+                        matTooltip="Repeating meals is efficient. How many times can a meal repeat in planning?"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="0"
+                        (click)="repeatTooltip.toggle()">&#9432;</span>
                   <span class="setting-hint">per week</span>
                 </div>
                 <div class="setting-row">
