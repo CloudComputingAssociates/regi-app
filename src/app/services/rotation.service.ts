@@ -12,7 +12,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { GenerateMealRequest, GenerateRotationRequest, Meal, MealItem, Menu, Rotation, RotationDetail } from '../models';
+import { GenerateMealRequest, Meal, MealItem, Menu, Rotation, RotationDetail } from '../models';
 import { SettingsService } from './settings.service';
 import { NotificationService } from './notification.service';
 
@@ -191,31 +191,34 @@ export class RotationService {
     }
   }
 
-  /** "GenAll" — generate a whole rotation of menus + meals in one shot
-   *  (POST /rotation/generate → GenerateRotation). Uses the `generating` flag
-   *  (same as GenMeal) so the binder's AI logo spins and both Gen buttons
-   *  disable while it runs; the meals populate when the rotation reloads. */
+  /** "GenAll" — generate a LIST of candidate meals into the binder (does NOT
+   *  auto-place them into slots; the user drags them in). It just runs the fast
+   *  per-meal generator (same as GenMeal) once per slot, so the candidates
+   *  appear one-by-one — avoiding the single big /rotation/generate call that
+   *  blew the gateway timeout (504). Each meal excludes the names already used
+   *  this run so they stay varied; a per-meal failure toasts and the run
+   *  continues. */
   async generateAll(): Promise<void> {
+    const menu = this.selectedMenu();
+    const count =
+      menu?.slots.length ??
+      this.settingsService.allSettings()?.regiMenu?.mealsPerDay ??
+      4;
+
     this.generating.set(true);
-    this.error.set(null);
     try {
-      const rot = this.rotation();
-      const persons = this.settingsService.allSettings()?.regiMenu?.persons ?? 1;
-      const span = rot?.spanDays;
-      const body: GenerateRotationRequest = {
-        spanDays: span && span >= 2 ? span : 7,
-        peopleCount: persons,
-        distinctMeals: 0,
-      };
-      const detail = await firstValueFrom(
-        this.http.post<RotationDetail>(`${this.baseUrl}/rotation/generate`, body),
-      );
-      this.rotation.set(detail);
-      const firstMenuId = detail.menus[0]?.menuId ?? null;
-      this.selectedMenuId.set(firstMenuId);
-      if (firstMenuId != null) await this.selectMenu(firstMenuId);
-    } catch (err) {
-      this.error.set(this.errMessage(err));
+      for (let i = 0; i < count; i++) {
+        try {
+          const excludeMeals = this.knownMealNames();
+          const body: GenerateMealRequest = { mealType: 'meal', excludeMeals };
+          const meal = await firstValueFrom(
+            this.http.post<Meal>(`${this.baseUrl}/meal/generate`, body),
+          );
+          this.candidateMeals.update((list) => [...list, meal]);
+        } catch (err) {
+          this.notification.show(this.errMessage(err), 'error');
+        }
+      }
     } finally {
       this.generating.set(false);
     }
