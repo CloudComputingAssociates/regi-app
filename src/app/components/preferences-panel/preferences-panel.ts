@@ -165,13 +165,15 @@ import { MatIconModule } from '@angular/material/icon';
                     @if (bmiDescOpen()) {
                       <div class="bmi-scale-popup">
                         <div class="bmi-scale-labels">
-                          @for (band of bmiScaleBands; track band.label) {
+                          @for (band of bmiScaleBands(); track band.label) {
                             <span class="bmi-scale-label" [style.top.%]="band.top">{{ band.label }}</span>
                           }
                         </div>
                         <div class="bmi-scale-bar">
-                          @for (tick of bmiScaleTicks; track tick) {
-                            <span class="bmi-scale-tick" [style.top.%]="tick"></span>
+                          @for (tick of bmiScaleTicks(); track tick.lb) {
+                            <span class="bmi-scale-tick" [style.top.%]="tick.top">
+                              <span class="bmi-tick-weight">{{ tick.lb }}</span>
+                            </span>
                           }
                           @if (bmiCurrentTop() !== null) {
                             <span class="bmi-scale-marker current" [style.top.%]="bmiCurrentTop()!">
@@ -205,7 +207,7 @@ import { MatIconModule } from '@angular/material/icon';
                     <input type="checkbox"
                       [ngModel]="userSettingsService.dailyGoals().isOverridden"
                       (ngModelChange)="onOverrideChange($event)" />
-                    User Overridden
+                    User Override
                   </label>
                   <span class="info-icon"
                         #overrideTooltip="matTooltip"
@@ -406,16 +408,16 @@ import { MatIconModule } from '@angular/material/icon';
                 </div>
                 <div class="setting-row">
                   <label class="setting-label">Meal Repeats</label>
-                  <input type="number" min="1" class="setting-number"
-                    [ngModel]="userSettingsService.repeatMeals()"
-                    (change)="onRepeatMealsChange($event)" />
-                  <span class="setting-hint">per week</span>
                   <span class="info-icon"
                         #repeatTooltip="matTooltip"
                         matTooltip="By repeating day plans, you optimize grocery lists and reduce waste"
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
                         (click)="repeatTooltip.toggle()">&#9432;</span>
+                  <input type="number" min="1" class="setting-number"
+                    [ngModel]="userSettingsService.repeatMeals()"
+                    (change)="onRepeatMealsChange($event)" />
+                  <span class="setting-hint">per week</span>
                 </div>
                 <div class="setting-row">
                   <label class="setting-label">Start Day</label>
@@ -1139,45 +1141,65 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     return t === null ? cur : `${cur} (target: ${t.toFixed(1)})`;
   });
 
-  // ----- BMI Description popup (visible only while the button is held) -----
+  // ----- BMI "View" popup (visible only while the button is held) -----
+  // The bar is a fixed WEIGHT scale (0 lb at the bottom → 500 lb at the top),
+  // so markers sit proportionally by pounds. The BMI category boundaries are
+  // converted to weights for this person's height and drawn as labeled lines.
 
   bmiDescOpen = signal(false);
 
-  /** Vertical BMI scale bounds — the TOP of the bar is the heaviest. */
-  private static readonly BMI_SCALE_MIN = 15;
-  private static readonly BMI_SCALE_MAX = 45;
+  private static readonly LB_PER_KG = 2.20462;
+  private static readonly WEIGHT_SCALE_MAX = 500; // lb — top of the bar
+  private static readonly BMI_BOUNDS = [18.5, 25, 30, 35, 40];
+  private static readonly BMI_BAND_LABELS = // bottom → top
+    ['Underweight', 'Normal', 'Overweight', 'Obese', 'Obese II', 'Severe Obese III'];
 
-  /** Map a BMI value to a top-offset % on the scale (0% = top = heaviest). */
-  private static bmiTopPct(bmi: number): number {
-    const lo = PreferencesPanelComponent.BMI_SCALE_MIN;
-    const hi = PreferencesPanelComponent.BMI_SCALE_MAX;
-    const c = Math.max(lo, Math.min(hi, bmi));
-    return ((hi - c) / (hi - lo)) * 100;
+  /** Map a weight (lb) to a top-offset % on the scale (0% = top = 500 lb). */
+  private static weightTopPct(lb: number): number {
+    const max = PreferencesPanelComponent.WEIGHT_SCALE_MAX;
+    const c = Math.max(0, Math.min(max, lb));
+    return ((max - c) / max) * 100;
   }
 
-  /** Category words placed at each band's midpoint down the left of the scale. */
-  readonly bmiScaleBands = [
-    { label: 'Severe Obese III', top: PreferencesPanelComponent.bmiTopPct(42.5) },
-    { label: 'Obese II',         top: PreferencesPanelComponent.bmiTopPct(37.5) },
-    { label: 'Obese',            top: PreferencesPanelComponent.bmiTopPct(32.5) },
-    { label: 'Overweight',       top: PreferencesPanelComponent.bmiTopPct(27.5) },
-    { label: 'Normal',           top: PreferencesPanelComponent.bmiTopPct(21.75) },
-    { label: 'Underweight',      top: PreferencesPanelComponent.bmiTopPct(16.75) },
-  ];
+  /** The BMI category boundaries expressed as weights (lb) for this height. */
+  private boundaryWeightsLb = computed<number[]>(() => {
+    const h = this.userSettingsService.personalInfo().heightCm;
+    if (!h) return [];
+    const m = h / 100;
+    return PreferencesPanelComponent.BMI_BOUNDS.map(
+      bmi => bmi * m * m * PreferencesPanelComponent.LB_PER_KG,
+    );
+  });
 
-  /** Hash-mark boundaries between categories (no numeric values shown). */
-  readonly bmiScaleTicks = [18.5, 25, 30, 35, 40].map(b => PreferencesPanelComponent.bmiTopPct(b));
+  /** Category words placed at each band's midpoint weight, down the left. */
+  readonly bmiScaleBands = computed<{ label: string; top: number }[]>(() => {
+    const bounds = this.boundaryWeightsLb();
+    if (!bounds.length) return [];
+    const edges = [0, ...bounds, PreferencesPanelComponent.WEIGHT_SCALE_MAX];
+    return PreferencesPanelComponent.BMI_BAND_LABELS.map((label, i) => ({
+      label,
+      top: PreferencesPanelComponent.weightTopPct((edges[i] + edges[i + 1]) / 2),
+    }));
+  });
 
-  /** Current-weight marker position (black), or null when no data. */
+  /** Boundary lines, each tagged with its weight (lb) for this height. */
+  readonly bmiScaleTicks = computed<{ top: number; lb: number }[]>(() =>
+    this.boundaryWeightsLb().map(lb => ({
+      top: PreferencesPanelComponent.weightTopPct(lb),
+      lb: Math.round(lb),
+    })),
+  );
+
+  /** Current-weight marker position (yellow), or null when no data. */
   readonly bmiCurrentTop = computed<number | null>(() => {
-    const bmi = this.rawBmi();
-    return bmi === null ? null : PreferencesPanelComponent.bmiTopPct(bmi);
+    const kg = this.userSettingsService.personalInfo().currentWeightKg;
+    return kg ? PreferencesPanelComponent.weightTopPct(kg * PreferencesPanelComponent.LB_PER_KG) : null;
   });
 
   /** Goal-weight marker position (green), or null when no target. */
   readonly bmiTargetTop = computed<number | null>(() => {
-    const bmi = this.rawTargetBmi();
-    return bmi === null ? null : PreferencesPanelComponent.bmiTopPct(bmi);
+    const kg = this.userSettingsService.personalInfo().targetWeightKg;
+    return kg ? PreferencesPanelComponent.weightTopPct(kg * PreferencesPanelComponent.LB_PER_KG) : null;
   });
 
   /** Focus of either grams input — snapshot the pre-edit state once. The

@@ -106,7 +106,7 @@
   }
 
   &.is-dirty {
-    color: #ffffff;
+    color: #000000; // black reads on the bright confirm-green; white washed out
     background: linear-gradient(180deg, #3fd055 0%, #28c941 100%);
     border-color: #1f8c2f;
     animation: settings-save-pulse 1.6s ease-in-out infinite;

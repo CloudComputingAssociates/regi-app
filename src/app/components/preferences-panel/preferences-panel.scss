@@ -895,11 +895,38 @@
       gap: 6px;
     }
 
+    // Fixed width sized to the longest label ("Meal Repeats") so every control
+    // to its right lines up in one vertical column.
     .setting-label {
       color: #ffffff;
       font-size: 12px;
       font-weight: 500;
-      min-width: 45px;
+      width: 78px;
+      flex-shrink: 0;
+    }
+
+    // Compact numeric input (Meal Repeats) — small, since it holds one digit.
+    .setting-number {
+      width: 38px;
+      padding: 4px 6px;
+      font-size: 12px;
+      font-family: inherit;
+      color: #ffffff;
+      background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+      border: 1px solid #5a5a5a;
+      border-radius: 4px;
+      outline: none;
+      box-sizing: border-box;
+
+      &:hover { border-color: #6a6a6a; }
+      &:focus {
+        border-color: #4da6ff;
+        box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.2);
+      }
+
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      -moz-appearance: textfield;
     }
 
     .setting-select {
@@ -1335,7 +1362,7 @@
     border-radius: 50%;
     border: 1px solid #1f8c2f;
     background: linear-gradient(180deg, #3fd055 0%, #28c941 100%);
-    color: #ffffff;
+    color: #000000; // black arrow reads on the bright confirm-green
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -1448,7 +1475,7 @@
 
       .setting-label {
         font-size: 10px;
-        min-width: 38px;
+        width: 66px;
       }
 
       .setting-select {
@@ -1456,6 +1483,11 @@
         padding: 3px 16px 3px 4px;
         min-width: 0;
         width: auto;
+      }
+
+      .setting-number {
+        font-size: 10px;
+        width: 34px;
       }
     }
 
@@ -1535,8 +1567,8 @@
 }
 
 .bmi-desc-btn {
-  font-size: 10px;
-  padding: 1px 7px;
+  font-size: 11px;
+  padding: 1px 8px;
   border: 1px solid #4da6ff;
   border-radius: 4px;
   background: transparent;
@@ -1556,10 +1588,12 @@
   left: 0;
   z-index: 60;
   display: flex;
-  gap: 6px;
-  width: 124px;
-  height: 168px;
-  padding: 8px;
+  gap: 7px;
+  width: 172px;
+  height: 200px;
+  // Extra right padding leaves room for the per-line weight numbers that hang
+  // off the right of the bar.
+  padding: 10px 32px 10px 10px;
   background: #ffffff;
   border: 1px solid #cfd8e0;
   border-radius: 6px;
@@ -1569,7 +1603,7 @@
 
 .bmi-scale-labels {
   position: relative;
-  flex: 0 0 84px;
+  flex: 0 0 90px;
   height: 100%;
 }
 
@@ -1577,7 +1611,7 @@
   position: absolute;
   right: 0;
   transform: translateY(-50%);
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1;
   white-space: nowrap;
   color: #55606b;
@@ -1586,7 +1620,7 @@
 .bmi-scale-bar {
   position: relative;
   flex-shrink: 0;
-  width: 18px;
+  width: 20px;
   height: 100%;
   border-radius: 3px;
   border: 1px solid #c4c4c4;
@@ -1601,6 +1635,18 @@
   height: 0;
   border-top: 1px solid rgba(0, 0, 0, 0.4);
   transform: translateY(-0.5px);
+}
+
+// Weight (lb) printed just right of the bar at each boundary line.
+.bmi-tick-weight {
+  position: absolute;
+  left: calc(100% + 3px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  line-height: 1;
+  white-space: nowrap;
+  color: #55606b;
 }
 
 .bmi-scale-marker {
@@ -1626,7 +1672,7 @@
   right: calc(100% + 2px);
   top: 50%;
   transform: translateY(-50%);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
