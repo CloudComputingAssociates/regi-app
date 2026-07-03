@@ -42,6 +42,7 @@
 // "✦ AI" indicator. The star logo spins in place while generating.
 .ai-label {
   flex-shrink: 0;
+  width: 58px; // matched to .twist-label so GenMeal + the Twist combo align
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -112,12 +113,13 @@
 
 .twist-label {
   flex-shrink: 0;
+  width: 58px; // matches .ai-label width so the combo lines up under GenMeal
   display: inline-flex;
   align-items: center;
   gap: 4px;
 
   .twist-word {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     color: #d8d8d8;
   }
@@ -125,8 +127,8 @@
 
 .twist-combo {
   position: relative;
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
+  width: 150px; // was full-width — too wide
   display: flex;
   align-items: stretch;
 

@@ -48,7 +48,7 @@ import { Meal } from '../../models';
           matTooltip="Generate all meals"
           [disabled]="rotation.generating()"
           (click)="onGenAllMeals()">
-          GenAll Meals
+          GenAll
         </button>
       </div>
 

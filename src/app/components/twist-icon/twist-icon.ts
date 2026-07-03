@@ -20,8 +20,8 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   styles: [`
     :host { display: inline-flex; align-items: center; }
     .twist-svg {
-      width: 11px;
-      height: 14px;
+      width: 14px;
+      height: 18px;
       display: block;
       color: #e23b3b; // fusilli red (currentColor — override via host color)
     }
