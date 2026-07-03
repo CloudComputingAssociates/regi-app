@@ -21,24 +21,34 @@ import { Meal } from '../../models';
         <span class="binder-title">Meals</span>
       </div>
 
-      <button
-        type="button"
-        class="genmeal-btn"
-        matTooltip="Generate another meal"
-        [disabled]="rotation.generating()"
-        (click)="rotation.generateMeal()">
-        <img src="images/AI-star.png" alt="" class="genmeal-icon" />
-        <span>AI GenMeal</span>
-      </button>
-
-      <!-- Candidate region: generation progress indicator. -->
-      <div class="binder-candidates">
-        @if (rotation.generating()) {
-          <div class="generating">
-            <img src="images/AI-star.png" alt="" class="generating-icon spin" />
-            <span>generating meal…</span>
-          </div>
-        }
+      <!-- AI label + generation buttons. The star logo spins in place while a
+           generation is running (no separate progress line) — the new meals
+           just appear in the list below when done. -->
+      <div class="genmeal-bar">
+        <span class="ai-label" matTooltip="AI meal generation">
+          <img
+            src="images/AI-star.png"
+            alt=""
+            class="ai-logo"
+            [class.spinning]="rotation.generating()" />
+          <span class="ai-text">AI</span>
+        </span>
+        <button
+          type="button"
+          class="genmeal-btn"
+          matTooltip="Generate another meal"
+          [disabled]="rotation.generating()"
+          (click)="rotation.generateMeal()">
+          GenMeal
+        </button>
+        <button
+          type="button"
+          class="genmeal-btn"
+          matTooltip="Generate all meals"
+          [disabled]="rotation.generating()"
+          (click)="onGenAllMeals()">
+          GenAll Meals
+        </button>
       </div>
 
       <div class="binder-list" cdkDropList>
@@ -92,6 +102,11 @@ export class MealBinderComponent implements OnInit {
 
   round(n: number | undefined): number {
     return Math.round(n ?? 0);
+  }
+
+  /** "GenAll Meals" — placeholder; the user will wire the generate-all flow. */
+  onGenAllMeals(): void {
+    // no-op stub (to be wired)
   }
 
   /** GenMeal candidate label: the primary protein's short name

@@ -30,12 +30,42 @@
   }
 }
 
-.genmeal-btn {
+// AI label + generation buttons on one row.
+.genmeal-bar {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 12px 14px 0;
+}
+
+// "✦ AI" indicator. The star logo spins in place while generating.
+.ai-label {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  .ai-logo {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+
+    &.spinning {
+      animation: binder-spin 1s linear infinite;
+    }
+  }
+
+  .ai-text {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #d8d8d8;
+  }
+}
+
+.genmeal-btn {
+  flex-shrink: 0;
   padding: 8px 12px;
   font-size: 13px;
   font-weight: 600;
@@ -50,7 +80,7 @@
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: linear-gradient(180deg, #454545 0%, #363636 100%);
     color: #ffffff;
   }
@@ -58,36 +88,6 @@
   &:disabled {
     opacity: 0.6;
     cursor: default;
-  }
-
-  .genmeal-icon {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
-  }
-}
-
-// Candidate region — holds the generation progress indicator.
-.binder-candidates {
-  flex-shrink: 0;
-}
-
-.generating {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 12px 14px 0;
-  font-size: 13px;
-  color: #9aa0a6;
-
-  .generating-icon {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
-  }
-
-  .spin {
-    animation: binder-spin 1s linear infinite;
   }
 }
 
