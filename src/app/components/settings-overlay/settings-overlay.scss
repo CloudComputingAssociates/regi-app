@@ -67,14 +67,13 @@
   text-shadow: 0 1px 6px rgba(255, 193, 7, 0.18);
 }
 
-// Dialog-disc cluster — sits INSIDE the dialog's top-right corner with a
-// few pixels of breathing room from both edges so the discs don't crowd
-// the bloom border. The disc visual lives globally in styles.scss
-// (.dialog-disc + .dialog-disc-confirm / -cancel).
+// Dialog-disc cluster — lives in the header row, pushed to the right and
+// vertically centered with the "Settings" title (the header's own
+// align-items:center handles the vertical centering) so the control bar
+// reads as balanced instead of pinned to the top-right corner. The disc
+// visual lives globally in styles.scss (.dialog-disc + -confirm / -cancel).
 .dialog-discs {
-  position: absolute;
-  top: 6px;
-  right: 6px;
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -95,13 +94,7 @@
   background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
   border: 1px solid #5a5a5a;
   border-radius: 6px;
-  // Match the 20px disc height so the Save text + both discs sit level.
-  height: 20px;
-  padding: 0 12px;
-  display: inline-flex;
-  align-items: center;
-  box-sizing: border-box;
-  line-height: 1;
+  padding: 4px 14px;
   cursor: pointer;
   outline: none;
   transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.2s ease, opacity 0.15s ease;
