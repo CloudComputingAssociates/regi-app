@@ -75,7 +75,19 @@ export class SettingsService {
       method: 'PUT',
       body: JSON.stringify(settings)
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) {
+      // Surface the API's error body — a bare status hides WHY it rejected
+      // (e.g. a response-schema validation that fails even though the DB
+      // upsert succeeded, per the Grafana logs).
+      const body = await response.text().catch(() => '');
+      console.error(
+        '[SettingsService] PUT /user/settings failed',
+        response.status,
+        'sent:', settings,
+        'response body:', body,
+      );
+      throw new Error(`HTTP ${response.status}: ${body}`);
+    }
     const saved: AllSettings = await response.json();
     this.allSettingsSignal.set(saved);
     console.log('[SettingsService] Saved all settings:', saved);
