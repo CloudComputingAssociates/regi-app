@@ -410,7 +410,7 @@ import { MatIconModule } from '@angular/material/icon';
                   <label class="setting-label">Meal Repeats</label>
                   <input type="number" min="1" class="setting-number"
                     [ngModel]="userSettingsService.repeatMeals()"
-                    (change)="onRepeatMealsChange($event)" />
+                    (input)="onRepeatMealsChange($event)" />
                   <span class="info-icon"
                         #repeatTooltip="matTooltip"
                         matTooltip="Repeating meals is efficient. How many times can a meal repeat in planning?"
@@ -458,7 +458,7 @@ import { MatIconModule } from '@angular/material/icon';
                   <label class="setting-label">Persons</label>
                   <input type="number" min="1" class="setting-number"
                     [ngModel]="userSettingsService.persons()"
-                    (change)="onPersonsChange($event)" />
+                    (input)="onPersonsChange($event)" />
                 </div>
               </div>
             </div>
@@ -515,18 +515,18 @@ import { MatIconModule } from '@angular/material/icon';
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
                         [ngModel]="(userSettingsService.glp1().startDose || {}).dose"
-                        (change)="onGlp1DoseChange('startDose', 'dose', $event)" />
+                        (input)="onGlp1DoseChange('startDose', 'dose', $event)" />
                       <span class="glp1-unit">mg</span>
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
                         [ngModel]="(userSettingsService.glp1().startDose || {}).units"
-                        (change)="onGlp1DoseChange('startDose', 'units', $event)" />
+                        (input)="onGlp1DoseChange('startDose', 'units', $event)" />
                       <span class="glp1-unit">units</span>
                       <span class="glp1-every">every</span>
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
                         [ngModel]="(userSettingsService.glp1().startDose || {}).intervalDays"
-                        (change)="onGlp1DoseChange('startDose', 'intervalDays', $event)" />
+                        (input)="onGlp1DoseChange('startDose', 'intervalDays', $event)" />
                       <span class="glp1-unit">days</span>
                       <span class="glp1-every">Start date</span>
                       <input type="date" class="glp1-date"
@@ -563,18 +563,18 @@ import { MatIconModule } from '@angular/material/icon';
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled"
                         [ngModel]="(userSettingsService.glp1().currentDose || {}).dose"
-                        (change)="onGlp1DoseChange('currentDose', 'dose', $event)" />
+                        (input)="onGlp1DoseChange('currentDose', 'dose', $event)" />
                       <span class="glp1-unit">mg</span>
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled"
                         [ngModel]="(userSettingsService.glp1().currentDose || {}).units"
-                        (change)="onGlp1DoseChange('currentDose', 'units', $event)" />
+                        (input)="onGlp1DoseChange('currentDose', 'units', $event)" />
                       <span class="glp1-unit">units</span>
                       <span class="glp1-every">every</span>
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled"
                         [ngModel]="(userSettingsService.glp1().currentDose || {}).intervalDays"
-                        (change)="onGlp1DoseChange('currentDose', 'intervalDays', $event)" />
+                        (input)="onGlp1DoseChange('currentDose', 'intervalDays', $event)" />
                       <span class="glp1-unit">days</span>
                       <label class="glp1-maint-check">
                         <input type="checkbox"

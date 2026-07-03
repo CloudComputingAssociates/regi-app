@@ -10,7 +10,6 @@ import {
 
 // Narrower types for UI
 export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
-export type FastingType = 'none' | '16_8' | '18_6' | '20_4' | 'omad';
 export type RepeatMeals = number;
 export type FoodListSource = 'myfoods' | 'regi_plus_myfoods' | 'all_foods';
 export type WeekStartDay = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
@@ -19,9 +18,7 @@ export type { DailyGoals, PersonalInfo, Glp1Settings, Glp1Dose };
 
 export interface Preferences {
   mealsPerDay: MealsPerDay;
-  fastingType: FastingType;
   dailyGoals: DailyGoals;
-  eatingStartTime: string;
   repeatMeals: RepeatMeals;
   foodListSource: FoodListSource;
   personalInfo: PersonalInfo;
@@ -55,9 +52,7 @@ const DEFAULT_GLP1: Glp1Settings = { enabled: false };
 
 const DEFAULT_PREFERENCES: Preferences = {
   mealsPerDay: 3,
-  fastingType: 'none',
   dailyGoals: DEFAULT_DAILY_GOALS,
-  eatingStartTime: '08:00',
   repeatMeals: 1,
   foodListSource: 'myfoods',
   personalInfo: DEFAULT_PERSONAL_INFO,
@@ -112,9 +107,7 @@ export class PreferencesService {
 
   // Convenience accessors
   readonly mealsPerDay = computed(() => this.preferencesSignal().mealsPerDay);
-  readonly fastingType = computed(() => this.preferencesSignal().fastingType);
   readonly dailyGoals = computed(() => this.preferencesSignal().dailyGoals);
-  readonly eatingStartTime = computed(() => this.preferencesSignal().eatingStartTime);
   readonly repeatMeals = computed(() => this.preferencesSignal().repeatMeals);
   readonly foodListSource = computed(() => this.preferencesSignal().foodListSource);
   readonly personalInfo = computed(() => this.preferencesSignal().personalInfo);
@@ -375,8 +368,6 @@ export class PreferencesService {
 
     const prefs: Preferences = {
       mealsPerDay: (rm?.mealsPerDay as MealsPerDay) || DEFAULT_PREFERENCES.mealsPerDay,
-      fastingType: (rm?.fastingType as FastingType) || DEFAULT_PREFERENCES.fastingType,
-      eatingStartTime: rm?.eatingStartTime || DEFAULT_PREFERENCES.eatingStartTime,
       repeatMeals: rm?.repeatMeals ?? DEFAULT_PREFERENCES.repeatMeals,
       weekStartDay: (rm?.weekStartDay as WeekStartDay) || DEFAULT_PREFERENCES.weekStartDay,
       foodListSource: this.mapDefaultFoodList(all.defaultFoodList),
@@ -410,8 +401,6 @@ export class PreferencesService {
     if (dirty.regiMenu) {
       const data: RegiMenuSettings = {
         mealsPerDay: current.mealsPerDay,
-        fastingType: current.fastingType,
-        eatingStartTime: current.eatingStartTime,
         repeatMeals: current.repeatMeals,
         weekStartDay: current.weekStartDay,
         persons: current.persons
@@ -449,16 +438,6 @@ export class PreferencesService {
 
   setMealsPerDay(value: MealsPerDay): void {
     this.preferencesSignal.update(p => ({ ...p, mealsPerDay: value }));
-    this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
-  }
-
-  setFastingType(value: FastingType): void {
-    this.preferencesSignal.update(p => ({ ...p, fastingType: value }));
-    this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
-  }
-
-  setEatingStartTime(value: string): void {
-    this.preferencesSignal.update(p => ({ ...p, eatingStartTime: value }));
     this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
   }
 

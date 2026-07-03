@@ -6,7 +6,7 @@
  */
 
 /**
- * User application preferences for nutrition planning (meals, fasting, daily goals, etc.)
+ * User application preferences for nutrition planning (meals, daily goals, etc.)
  */
 export interface UserPreferencesSchema {
   /**
@@ -26,17 +26,9 @@ export interface UserPreferencesSchema {
    */
   mealsPerDay?: number | null;
   /**
-   * Intermittent fasting schedule
-   */
-  fastingType?: "none" | "16_8" | "18_6" | "20_4" | "omad" | null;
-  /**
    * JSON string containing DailyGoals object
    */
   dailyGoals?: string | null;
-  /**
-   * Eating window start time in 24-hour format HH:MM
-   */
-  eatingStartTime?: string | null;
   /**
    * Number of times to repeat meal plan (1-4)
    */
@@ -109,17 +101,9 @@ export interface GetPreferencesResponse {
    */
   mealsPerDay?: number | null;
   /**
-   * Intermittent fasting schedule
-   */
-  fastingType?: "none" | "16_8" | "18_6" | "20_4" | "omad" | null;
-  /**
    * JSON string containing DailyGoals object
    */
   dailyGoals?: string | null;
-  /**
-   * Eating window start time in 24-hour format HH:MM
-   */
-  eatingStartTime?: string | null;
   /**
    * Number of times to repeat meal plan (1-4)
    */
@@ -149,17 +133,9 @@ export interface UpdatePreferencesRequest {
    */
   mealsPerDay?: number;
   /**
-   * Intermittent fasting schedule
-   */
-  fastingType?: "none" | "16_8" | "18_6" | "20_4" | "omad";
-  /**
    * JSON string containing DailyGoals object
    */
   dailyGoals?: string;
-  /**
-   * Eating window start time in 24-hour format HH:MM
-   */
-  eatingStartTime?: string;
   /**
    * Number of times to repeat meal plan (1-4)
    */

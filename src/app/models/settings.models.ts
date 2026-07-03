@@ -37,8 +37,6 @@ export interface TabSettings {
 // GET/PUT /api/user/settings/regimenu
 export interface RegiMenuSettings {
   mealsPerDay?: number;
-  fastingType?: string;
-  eatingStartTime?: string;
   repeatMeals?: number;
   weekStartDay?: string;
   persons?: number;

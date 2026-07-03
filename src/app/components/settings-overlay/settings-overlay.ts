@@ -40,8 +40,8 @@ import { TabService } from '../../services/tab.service';
                 class="settings-save-btn"
                 [class.is-dirty]="preferencesService.hasDirtyGroups()"
                 [disabled]="!preferencesService.hasDirtyGroups()"
-                (click)="onSave()"
-                aria-label="Save settings">
+                (click)="onApply()"
+                aria-label="Apply settings">
                 Save
               </button>
               @if (preferencesService.hasDirtyGroups()) {
@@ -141,10 +141,18 @@ export class SettingsOverlayComponent {
     this.tabService.closeSettings();
   }
 
+  /** Green-check disc: Save AND close the window. */
   async onSave(): Promise<void> {
     if (!this.preferencesService.hasDirtyGroups()) return;
     await this.runSave();
     this.tabService.closeSettings();
+  }
+
+  /** "Save" text button: Apply (persist) but leave the window open — Save
+   *  reads as Apply, not a commit-and-dismiss. Only the green check closes. */
+  async onApply(): Promise<void> {
+    if (!this.preferencesService.hasDirtyGroups()) return;
+    await this.runSave();
   }
 
   private async runSave(): Promise<void> {
