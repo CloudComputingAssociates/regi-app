@@ -1522,11 +1522,12 @@
   }
 }
 
-// ---- BMI Description press-and-hold popup ----
-// The "Description" button reveals a vertical BMI scale only while held down
-// (mousedown/touchstart shows, release/leave hides). Category words run down
-// the left; a grey-gradient bar (darker = heavier, at top) runs down the
-// right with boundary hash marks and current (black) + goal (green) markers.
+// ---- BMI "View" press-and-hold popup ----
+// The blue "View" button reveals a compact vertical BMI scale only while held
+// down (mousedown/touchstart shows, release/leave hides). Category words run
+// down the left; a grey-gradient bar (darker = heavier, at top) runs down the
+// right with boundary hash marks and a yellow Current + green Target marker,
+// each tagged to its left.
 .bmi-desc {
   position: relative;
   display: inline-block;
@@ -1536,39 +1537,39 @@
 .bmi-desc-btn {
   font-size: 10px;
   padding: 1px 7px;
-  border: 1px solid #b8c4d0;
+  border: 1px solid #4da6ff;
   border-radius: 4px;
-  background: #f4f7fa;
-  color: #4a5a6a;
+  background: transparent;
+  color: #4da6ff;
   cursor: pointer;
   user-select: none;
   vertical-align: middle;
 
   &:active {
-    background: #e2e8ee;
+    background: rgba(77, 166, 255, 0.15);
   }
 }
 
 .bmi-scale-popup {
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 6px);
   left: 0;
   z-index: 60;
   display: flex;
-  gap: 8px;
-  width: 200px;
-  height: 210px;
-  padding: 12px 12px 12px 8px;
+  gap: 6px;
+  width: 124px;
+  height: 168px;
+  padding: 8px;
   background: #ffffff;
   border: 1px solid #cfd8e0;
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+  border-radius: 6px;
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.22);
   cursor: default;
 }
 
 .bmi-scale-labels {
   position: relative;
-  flex: 1;
+  flex: 0 0 84px;
   height: 100%;
 }
 
@@ -1576,7 +1577,7 @@
   position: absolute;
   right: 0;
   transform: translateY(-50%);
-  font-size: 10px;
+  font-size: 9px;
   line-height: 1;
   white-space: nowrap;
   color: #55606b;
@@ -1585,9 +1586,9 @@
 .bmi-scale-bar {
   position: relative;
   flex-shrink: 0;
-  width: 26px;
+  width: 18px;
   height: 100%;
-  border-radius: 4px;
+  border-radius: 3px;
   border: 1px solid #c4c4c4;
   // Darker grey (heaviest, top) → light grey/white (lightest, bottom).
   background: linear-gradient(to bottom, #6d6d6d 0%, #f6f6f6 100%);
@@ -1607,13 +1608,37 @@
   left: -5px;
   right: -5px;
   height: 0;
-  transform: translateY(-1px);
+  transform: translateY(-1.5px);
 
   &.current {
-    border-top: 2px solid #000000;
+    border-top: 3px solid #f5c000; // yellow — reads on both dark and light bar
   }
 
   &.goal {
-    border-top: 2px solid #1fa14e;
+    border-top: 3px solid #1fa14e;
+  }
+}
+
+// "Current" / "Target" tag sits just left of its marker, on a white pill so
+// it stays legible over the category words behind it.
+.bmi-marker-tag {
+  position: absolute;
+  right: calc(100% + 2px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  padding: 1px 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.9);
+
+  .current & {
+    color: #b8860b;
+  }
+
+  .goal & {
+    color: #1fa14e;
   }
 }

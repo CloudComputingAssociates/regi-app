@@ -161,7 +161,7 @@ import { MatIconModule } from '@angular/material/icon';
                       (mouseup)="bmiDescOpen.set(false)"
                       (mouseleave)="bmiDescOpen.set(false)"
                       (touchstart)="bmiDescOpen.set(true)"
-                      (touchend)="bmiDescOpen.set(false)">Description</button>
+                      (touchend)="bmiDescOpen.set(false)">View</button>
                     @if (bmiDescOpen()) {
                       <div class="bmi-scale-popup">
                         <div class="bmi-scale-labels">
@@ -174,10 +174,14 @@ import { MatIconModule } from '@angular/material/icon';
                             <span class="bmi-scale-tick" [style.top.%]="tick"></span>
                           }
                           @if (bmiCurrentTop() !== null) {
-                            <span class="bmi-scale-marker current" [style.top.%]="bmiCurrentTop()!"></span>
+                            <span class="bmi-scale-marker current" [style.top.%]="bmiCurrentTop()!">
+                              <span class="bmi-marker-tag">Current</span>
+                            </span>
                           }
                           @if (bmiTargetTop() !== null) {
-                            <span class="bmi-scale-marker goal" [style.top.%]="bmiTargetTop()!"></span>
+                            <span class="bmi-scale-marker goal" [style.top.%]="bmiTargetTop()!">
+                              <span class="bmi-marker-tag">Target</span>
+                            </span>
                           }
                         </div>
                       </div>
