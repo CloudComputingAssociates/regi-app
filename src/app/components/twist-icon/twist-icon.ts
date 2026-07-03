@@ -10,20 +10,20 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   selector: 'app-twist-icon',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <svg class="twist-svg" viewBox="0 0 16 16" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <svg class="twist-svg" viewBox="0 0 18 22" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
       <path
-        d="M6 2 C 11.5 3, 11.5 5, 6 6 C 11.5 7, 11.5 9, 6 10 C 11.5 11, 11.5 13, 6 14"
-        fill="none" stroke="currentColor" stroke-width="1.7"
+        d="M4 2.5 C 14.5 4, 14.5 7, 4 8.5 C 14.5 10, 14.5 13, 4 14.5 C 14.5 16, 14.5 19, 4 20.5"
+        fill="none" stroke="currentColor" stroke-width="2.6"
         stroke-linecap="round" stroke-linejoin="round" />
     </svg>
   `,
   styles: [`
     :host { display: inline-flex; align-items: center; }
     .twist-svg {
-      width: 14px;
-      height: 18px;
+      width: 17px;
+      height: 21px;
       display: block;
-      color: #e23b3b; // fusilli red (currentColor — override via host color)
+      color: #ff5252; // brighter fusilli red for visibility on dark
     }
   `],
 })
