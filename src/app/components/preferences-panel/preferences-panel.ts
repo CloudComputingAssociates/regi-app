@@ -62,7 +62,7 @@ import { MatIconModule } from '@angular/material/icon';
             <div class="accordion-section">
               <button class="accordion-header" (click)="personalInfoOpen.set(!personalInfoOpen())">
                 <mat-icon class="accordion-arrow" [class.open]="personalInfoOpen()">chevron_right</mat-icon>
-                <span class="accordion-title">Personal Info</span>
+                <span class="accordion-title">Personal info</span>
                 <span class="accordion-control" (click)="$event.stopPropagation()">
                   <span class="pi-scale-label">Units</span>
                   <button class="unit-toggle" (click)="toggleUnits()">
@@ -143,18 +143,18 @@ import { MatIconModule } from '@angular/material/icon';
                     <option value="extremely_active">Ext. Active (2×/day, physical job)</option>
                   </select>
                 </div>
-                <div class="pi-bmr">BMR<span class="info-icon"
+                <div class="pi-bmr">BMR: {{ bmrTdeeLabel() }}<span class="info-icon info-icon-trailing"
                         #bmrTooltip="matTooltip"
                         matTooltip="Basal Metabolic Rate — calories burned at complete rest to keep vital functions running."
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
-                        (click)="bmrTooltip.toggle()">&#9432;</span>: {{ bmrTdeeLabel() }}</div>
-                <div class="pi-bmr">BMI<span class="info-icon"
+                        (click)="bmrTooltip.toggle()">&#9432;</span></div>
+                <div class="pi-bmr">BMI: {{ bmiLabel() }}<span class="info-icon info-icon-trailing"
                         #bmiTooltip="matTooltip"
                         matTooltip="Body Mass Index"
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
-                        (click)="bmiTooltip.toggle()">&#9432;</span>: {{ bmiLabel() }}
+                        (click)="bmiTooltip.toggle()">&#9432;</span>
                   <span class="bmi-desc">
                     <button class="bmi-desc-btn" type="button"
                       (mousedown)="bmiDescOpen.set(true)"
@@ -201,7 +201,7 @@ import { MatIconModule } from '@angular/material/icon';
             <div class="accordion-section">
               <button class="accordion-header" (click)="nutritionTargetsOpen.set(!nutritionTargetsOpen())">
                 <mat-icon class="accordion-arrow" [class.open]="nutritionTargetsOpen()">chevron_right</mat-icon>
-                <span class="accordion-title">Nutrition Targets</span>
+                <span class="accordion-title">Nutrition targets</span>
                 <span class="accordion-control" (click)="$event.stopPropagation()">
                   <label class="override-label">
                     <input type="checkbox"
@@ -384,7 +384,7 @@ import { MatIconModule } from '@angular/material/icon';
             <div class="accordion-section">
               <button class="accordion-header" (click)="planningOpen.set(!planningOpen())">
                 <mat-icon class="accordion-arrow" [class.open]="planningOpen()">chevron_right</mat-icon>
-                <span class="accordion-title">Menu</span>
+                <span class="accordion-title">Menu settings</span>
               </button>
               @if (planningOpen()) {
               <div class="accordion-body">
@@ -1182,13 +1182,19 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     }));
   });
 
-  /** Boundary lines, each tagged with its weight (lb) for this height. */
-  readonly bmiScaleTicks = computed<{ top: number; lb: number }[]>(() =>
-    this.boundaryWeightsLb().map(lb => ({
+  /** Boundary lines, each tagged with its weight (lb) for this height, plus
+   *  the scale endpoints (0 lb bottom, 500 lb top) for base/top reference. */
+  readonly bmiScaleTicks = computed<{ top: number; lb: number }[]>(() => {
+    const bounds = this.boundaryWeightsLb().map(lb => ({
       top: PreferencesPanelComponent.weightTopPct(lb),
       lb: Math.round(lb),
-    })),
-  );
+    }));
+    return [
+      { top: 0, lb: PreferencesPanelComponent.WEIGHT_SCALE_MAX },
+      ...bounds,
+      { top: 100, lb: 0 },
+    ];
+  });
 
   /** Current-weight marker position (yellow), or null when no data. */
   readonly bmiCurrentTop = computed<number | null>(() => {

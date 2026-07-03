@@ -32,6 +32,12 @@
   &:hover { color: #82c8ff; }
 }
 
+// When the disc trails the value at the end of a line (BMR/BMI), give it the
+// same ~6px breathing room used between "User Override" and its disc.
+.info-icon-trailing {
+  margin-left: 6px;
+}
+
 :host {
   display: flex;
   height: 100%;
