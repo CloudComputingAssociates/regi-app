@@ -56,9 +56,9 @@ import { Meal } from '../../models';
             <span class="binder-card-name">{{ i + 1 }} {{ candidateTitle(meal) }}</span>
             <div class="binder-chips">
               <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
-              <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
-              <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
               <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
+              <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
+              <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
             </div>
           </div>
         }
@@ -68,9 +68,9 @@ import { Meal } from '../../models';
             <span class="binder-card-name">{{ meal.name }}</span>
             <div class="binder-chips">
               <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
-              <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
-              <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
               <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
+              <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
+              <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
             </div>
           </div>
         }

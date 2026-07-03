@@ -367,6 +367,31 @@ export class RotationService {
     }
   }
 
+  /** Delete every meal from a menu's slots (the "Wipe menu" action), leaving
+   *  the menu itself intact with empty slots. Loops filled slots → DELETE
+   *  /menu/{id}/slot/{n}, then re-fetches so slots render empty and the totals
+   *  (top bars) reset. */
+  async clearMenuMeals(menuId: number): Promise<void> {
+    try {
+      const menu =
+        this.menusById().get(menuId) ??
+        (await firstValueFrom(this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`)));
+      for (const slot of menu.slots) {
+        if (slot.mealId != null) {
+          await firstValueFrom(
+            this.http.delete(`${this.baseUrl}/menu/${menuId}/slot/${slot.slotOrder}`),
+          );
+        }
+      }
+      const fresh = await firstValueFrom(
+        this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
+      );
+      this.menusById.update((m) => new Map(m).set(menuId, fresh));
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
   /** Add a new empty menu to the rotation (the "+ Add menu" link).
    *  POST /menu -> POST /rotation/{id}/menus -> reload + select the new menu. */
   async addMenu(): Promise<void> {
@@ -416,20 +441,8 @@ export class RotationService {
         this.selectedMenuId.set(firstId);
         if (firstId != null) await this.selectMenu(firstId);
       } else {
-        const menu =
-          this.menusById().get(menuId) ??
-          (await firstValueFrom(this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`)));
-        for (const slot of menu.slots) {
-          if (slot.mealId != null) {
-            await firstValueFrom(
-              this.http.delete(`${this.baseUrl}/menu/${menuId}/slot/${slot.slotOrder}`),
-            );
-          }
-        }
-        const fresh = await firstValueFrom(
-          this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
-        );
-        this.menusById.update((m) => new Map(m).set(menuId, fresh));
+        // Last remaining menu — keep it, just empty its slots.
+        await this.clearMenuMeals(menuId);
       }
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');

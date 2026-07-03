@@ -75,9 +75,9 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
               <button
                 type="button"
                 class="wipe-btn"
-                matTooltip="Clears all menus and unsaved meals so you can start fresh."
+                matTooltip="Deletes all meals from the selected menu (the menu stays, its slots go empty)."
                 (click)="openWipeConfirm()">
-                Wipe
+                Wipe menu
               </button>
 
               <span class="toolbar-spacer-tail"></span>

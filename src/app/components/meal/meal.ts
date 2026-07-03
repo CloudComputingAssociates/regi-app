@@ -60,9 +60,9 @@ interface SlotMacros {
       } @else {
         <div class="macro-chips">
           <span class="chip protein">P {{ round(macros().proteinG) }}</span>
-          <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
-          <span class="chip fat">F {{ round(macros().fatG) }}</span>
           <span class="chip carb">C {{ round(macros().carbG) }}</span>
+          <span class="chip fat">F {{ round(macros().fatG) }}</span>
+          <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
         </div>
         <div class="food-rows">
           @for (item of items(); track item.id) {

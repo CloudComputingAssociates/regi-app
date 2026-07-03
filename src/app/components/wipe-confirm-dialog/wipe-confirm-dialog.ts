@@ -1,13 +1,14 @@
 // src/app/components/wipe-confirm-dialog/wipe-confirm-dialog.ts
 //
-// Confirm dialog for the menus-panel "Wipe" action. Dark-themed Material
+// Confirm dialog for the menus-panel "Wipe menu" action. Dark-themed Material
 // dialog (opened with panelClass 'wipe-dialog-panel' — see src/styles.scss
 // for the dark surface override so there's no white default flash).
 //
-// PHASE: all three buttons just close the dialog and do nothing. The wipe
-// endpoint is not wired yet.
+// Confirming deletes every meal from the CURRENTLY SELECTED menu (the menu
+// itself stays; its slots go empty). Wired to RotationService.clearMenuMeals.
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { RotationService } from '../../services/rotation.service';
 
 @Component({
   selector: 'app-wipe-confirm-dialog',
@@ -16,11 +17,10 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
   template: `
     <div class="wipe-dialog">
       <p class="wipe-dialog-prompt">
-        Wipe all menus and start fresh — generate a new AI set of menus and meals?
+        Delete all meals from the selected menu? The menu stays; its slots are emptied.
       </p>
       <div class="wipe-dialog-actions">
-        <button type="button" class="wipe-action" (click)="onYes()">Yes</button>
-        <button type="button" class="wipe-action" (click)="onNo()">No</button>
+        <button type="button" class="wipe-action" (click)="onDelete()">Delete</button>
         <button type="button" class="wipe-action" (click)="onCancel()">Cancel</button>
       </div>
     </div>
@@ -29,17 +29,12 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 })
 export class WipeConfirmDialogComponent {
   private dialogRef = inject(MatDialogRef<WipeConfirmDialogComponent>);
+  private rotation = inject(RotationService);
 
-  /** Yes — wipe then regenerate.
-   *  TODO: PUT /rotation/{id}/wipe, then call the generate flow to build a
-   *  fresh AI set of menus and meals. */
-  onYes(): void {
-    this.dialogRef.close();
-  }
-
-  /** No — wipe but leave empty so the user hand-builds.
-   *  TODO: PUT /rotation/{id}/wipe (no regenerate). */
-  onNo(): void {
+  /** Delete every meal from the selected menu, then close. */
+  onDelete(): void {
+    const menuId = this.rotation.selectedMenuId();
+    if (menuId != null) void this.rotation.clearMenuMeals(menuId);
     this.dialogRef.close();
   }
 
