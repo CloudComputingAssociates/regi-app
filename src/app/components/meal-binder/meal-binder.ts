@@ -28,7 +28,7 @@ import { Meal } from '../../models';
         [disabled]="rotation.generating()"
         (click)="rotation.generateMeal()">
         <img src="images/AI-star.png" alt="" class="genmeal-icon" />
-        <span>GenMeal</span>
+        <span>AI GenMeal</span>
       </button>
 
       <!-- Candidate region: generation progress indicator. -->

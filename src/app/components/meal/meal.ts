@@ -66,7 +66,10 @@ interface SlotMacros {
         </div>
         <div class="food-rows">
           @for (item of items(); track item.id) {
-            <app-food [item]="item" />
+            <app-food
+              [item]="item"
+              (editItem)="editItem.emit($event)"
+              (deleteItem)="deleteItem.emit($event)" />
           }
         </div>
       }
@@ -84,6 +87,12 @@ export class MealComponent {
 
   /** Emitted (with this slot's slotOrder) when the trash is clicked. */
   readonly deleteMeal = output<number>();
+
+  /** Pencil on a food row — edit that food's Nutrition Facts (servings) in place. */
+  readonly editItem = output<MealItem>();
+
+  /** Garbage can on a food row — delete that food from the meal. */
+  readonly deleteItem = output<MealItem>();
 
   readonly isEmpty = computed(() => !this.slot().isDiningOut && this.slot().mealId == null);
 

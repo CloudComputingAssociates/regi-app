@@ -11,7 +11,7 @@
   &:hover {
     background: #ffffff0a;
 
-    .swap-btn {
+    .food-actions {
       opacity: 1;
       pointer-events: auto;
     }
@@ -42,34 +42,40 @@
   }
 }
 
-.swap-btn {
+.food-actions {
   opacity: 0;
   pointer-events: none;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+  transition: opacity 0.12s ease;
+}
+
+.food-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
   height: 22px;
-  padding: 0 8px;
+  padding: 0;
   border: 1px solid #4a4a4a;
   border-radius: 4px;
   background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
   color: #d8d8d8;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
   line-height: 1;
-  white-space: nowrap;
   cursor: pointer;
-  transition: opacity 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
 
-  &:hover {
+  &.edit:hover {
     border-color: #4da6ff;
     color: #ffffff;
   }
 
-  .swap-icon {
-    width: 13px;
-    height: 13px;
-    object-fit: contain;
+  &.delete:hover {
+    border-color: #ff5f57;
+    color: #ff8079;
+    background: linear-gradient(180deg, #5a3a3a 0%, #482e2e 100%);
   }
 }

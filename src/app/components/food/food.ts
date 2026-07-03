@@ -1,9 +1,11 @@
 // src/app/components/food/food.ts
 //
 // One food line inside a meal card: "{quantity} {unit} · {foodName}".
-// Hovering reveals a "swap" affordance — a NO-OP stub this phase; it gets
-// wired to the lookaside food picker in Phase 4.
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+// Hovering reveals two affordances: a pencil (edit — opens the Nutrition Facts
+// editor to adjust servings for this exact food in place) and a garbage can
+// (delete — removes this food line from the meal). "Add food" comes later with
+// the empty-meal build.
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MealItem } from '../../models';
 
@@ -18,15 +20,24 @@ import { MealItem } from '../../models';
         <span class="dot">·</span>
         <span class="name">{{ item().shortDescription?.trim() || item().foodName }}</span>
       </span>
-      <button
-        type="button"
-        class="swap-btn"
-        matTooltip="AI Swap Food"
-        matTooltipPosition="left"
-        (click)="onSwap()">
-        <img src="images/AI-star.png" alt="" class="swap-icon" />
-        <span class="swap-text">AI Swap Food</span>
-      </button>
+      <span class="food-actions">
+        <button
+          type="button"
+          class="food-action edit"
+          matTooltip="Edit food (Nutrition Facts)"
+          matTooltipPosition="left"
+          (click)="editItem.emit(item())">
+          ✎
+        </button>
+        <button
+          type="button"
+          class="food-action delete"
+          matTooltip="Delete food from meal"
+          matTooltipPosition="left"
+          (click)="deleteItem.emit(item())">
+          🗑
+        </button>
+      </span>
     </div>
   `,
   styleUrls: ['./food.scss'],
@@ -34,8 +45,9 @@ import { MealItem } from '../../models';
 export class FoodComponent {
   readonly item = input.required<MealItem>();
 
-  /** Phase 4 affordance — intentionally a no-op for now. */
-  onSwap(): void {
-    // no-op stub
-  }
+  /** Pencil — open the Nutrition Facts editor for this exact food in place. */
+  readonly editItem = output<MealItem>();
+
+  /** Garbage can — remove this food line from the meal. */
+  readonly deleteItem = output<MealItem>();
 }

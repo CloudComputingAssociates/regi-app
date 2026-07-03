@@ -162,8 +162,10 @@
   }
 
   .binder-card-name {
+    // Match the meal-card name (.meal-name): 14px / 500 so it reads as crisp
+    // as the meal titles instead of muddy at 600.
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     color: #f1f1f1;
   }
 }
