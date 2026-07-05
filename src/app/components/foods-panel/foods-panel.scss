@@ -1774,8 +1774,8 @@
   z-index: 4;
   // Bigger than the row so "Health Info" is legible — it overlays (overhangs)
   // the row rather than fitting inside it.
-  width: 192px;
-  height: 96px;
+  width: 200px;
+  height: 100px;
   padding: 0;
   background: transparent;
   border: none;
@@ -1794,11 +1794,12 @@
 // AI star rides above-left of the pill, shimmering (reuses nf-ai-shimmer).
 .myfood-health-info-ai {
   position: absolute;
-  // Just off the LEFT of the balloon, vertically ~centered — tight to the pill.
-  top: 30px;
-  left: 6px;
-  width: 34px;
-  height: 34px;
+  // Sits just off the LEFT of the "Health Info" bubble, near the "H".
+  // Tweak knobs: `left` = horizontal gap to the bubble, `top` = vertical.
+  top: 14px;
+  left: 32px;
+  width: 30px;
+  height: 30px;
   pointer-events: none;
   -webkit-mask: url(/images/AI-star-white.png) center / contain no-repeat;
           mask: url(/images/AI-star-white.png) center / contain no-repeat;
