@@ -691,6 +691,18 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   </span>
                 }
               </div>
+              @if (nfPopupMode() === 'edit') {
+                <select
+                  class="nf-popup-category"
+                  [value]="nfPopupCategoryId()"
+                  [disabled]="(nfPopupFood()!.foodSource ?? 'food') !== 'userfood'"
+                  (change)="onNfCategoryChange($any($event.target).value)"
+                  aria-label="Food category">
+                  @for (cat of foodsService.categories(); track cat.id) {
+                    <option [value]="cat.id">{{ cat.name }}</option>
+                  }
+                </select>
+              }
               <regi-nutrition-label
                 [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
                 [scale]="nfPopupScale()"
@@ -981,7 +993,7 @@ export class FoodsPanelComponent {
   protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
   private userFoodService = inject(UserFoodService);
-  private foodsService = inject(FoodsService);
+  protected foodsService = inject(FoodsService);
   private langfusePromptService = inject(LangfusePromptService);
   private settingsService = inject(SettingsService);
 
@@ -1507,6 +1519,31 @@ export class FoodsPanelComponent {
     this.nfPopupMode.set(mode);
     this.nfPopupOrigin.set(origin);
     this.nfPopupFood.set(food);
+
+    // Edit mode: load the category list, then seed the dropdown from the food's
+    // current category (matched by name → id).
+    this.nfPopupCategoryId.set(null);
+    if (mode === 'edit') {
+      void this.foodsService.loadCategories().then((cats) => {
+        const id = cats.find((c) => c.name === food.categoryName)?.id ?? null;
+        this.nfPopupCategoryId.set(id);
+      });
+    }
+  }
+
+  /** Category dropdown change (edit mode). Updates the popup locally and
+   *  persists via the category-only PATCH (userfoods only — canonical foods
+   *  can't be recategorized from here). */
+  onNfCategoryChange(value: string): void {
+    const categoryId = Number(value);
+    const food = this.nfPopupFood();
+    if (!food || !Number.isFinite(categoryId)) return;
+    this.nfPopupCategoryId.set(categoryId);
+    const categoryName = this.foodsService.getCategoryName(categoryId) ?? food.categoryName;
+    this.nfPopupFood.update((f) => (f ? { ...f, categoryName } : f));
+    if ((food.foodSource ?? 'food') === 'userfood' && food.id != null) {
+      void this.userFoodService.setUserFoodCategory(food.id, categoryId);
+    }
   }
 
   /** Close handler for the NF popup. Always reverts the draft to the
@@ -2051,6 +2088,9 @@ export class FoodsPanelComponent {
     this.baselineDialog.set(null);
   }
   nfPopupFood = signal<Food | null>(null);
+  /** Selected category id for the edit-mode category dropdown (null until the
+   *  food's category is resolved against the loaded categories list). */
+  nfPopupCategoryId = signal<number | null>(null);
 
   /** Current effective serving size displayed inside the NF popup, in food
    *  units (e.g. 4 = "4 oz" of beef). Starts at the user's saved override

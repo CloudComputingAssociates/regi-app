@@ -64,6 +64,22 @@ export class UserFoodService {
     }
   }
 
+  /** Update ONLY a userfood's category. Deliberately a category-only PATCH, NOT
+   *  the full-replace PUT (updateUserFood) — that endpoint SETs every column, so
+   *  a partial body would null out serving unit, images, UPC, etc. Requires
+   *  PATCH /api/userfoods/{id}/category on the API; error-swallowed so it's a
+   *  harmless no-op until that endpoint ships. */
+  async setUserFoodCategory(id: number, categoryId: number): Promise<boolean> {
+    try {
+      await firstValueFrom(
+        this.http.patch(`${this.baseUrl}/${id}/category`, { categoryId })
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async listCommunityFoods(): Promise<UserFood[]> {
     try {
       const resp = await firstValueFrom(
