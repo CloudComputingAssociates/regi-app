@@ -904,12 +904,13 @@
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  color: #ffffff;
-  background: linear-gradient(180deg, #5fa3d8 0%, #357095 100%);
+  // Avocado two-tone green. Raised (out): light flesh → dark green, dark text.
+  color: #2c3a12;
+  background: linear-gradient(180deg, #b7c95f 0%, #6f8a38 100%);
   // Symmetric 1px borders all the way around so the border-radius reads
   // evenly at every corner. Depth comes from the drop-shadow + gradient.
-  border: 1px solid #4080ac;
-  border-top-color: #7fbdec;
+  border: 1px solid #46591f;      // avocado skin (dark)
+  border-top-color: #d4e29a;      // lightest flesh highlight
   border-radius: 6px;
   // Tight balanced vertical padding + tighter horizontal padding so the
   // pill sits inside the slimmer section-title band without forcing the
@@ -921,28 +922,29 @@
   outline: none;
   box-shadow:
     0 2px 3px rgba(0, 0, 0, 0.35),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
   transition: background 0.05s ease, color 0.05s ease;
 
   &:hover:not(.pressed) {
-    background: linear-gradient(180deg, #6fb0e2 0%, #408bb0 100%);
+    background: linear-gradient(180deg, #c3d46b 0%, #7c9740 100%);
   }
 
+  // Pressed (in): inverted dark-avocado gradient, inset shadow, light text.
   &.pressed {
-    color: #ffffff;
-    background: linear-gradient(180deg, #1f3a55 0%, #2a5070 100%);
-    border: 1px solid #4080ac;
-    border-top-color: #15293d;
+    color: #eaf1cf;
+    background: linear-gradient(180deg, #3c4e1e 0%, #567030 100%);
+    border: 1px solid #46591f;
+    border-top-color: #2a3814;
     box-shadow:
-      inset 0 2px 4px rgba(0, 0, 0, 0.65),
-      0 0 0 1px rgba(77, 166, 255, 0.35);
+      inset 0 2px 4px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(150, 180, 80, 0.35);
     transform: translateY(1px);
   }
 
   &:focus-visible {
     box-shadow:
       0 2px 3px rgba(0, 0, 0, 0.35),
-      0 0 0 2px rgba(77, 166, 255, 0.6);
+      0 0 0 2px rgba(150, 180, 80, 0.65);
   }
 }
 

@@ -123,10 +123,10 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               class="curate-toggle"
               [class.pressed]="addTo() === 'right'"
               (click)="toggleEditMyFoods()"
-              matTooltip="Edit ... MyFoods, further curate faves, edit Serving Sizes, delete foods you entered"
+              matTooltip="Edit your Picks — curate faves, set Serving Sizes, recategorize, delete foods you entered"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350">
-              Edit...
+              @if (addTo() === 'right') { Picks } @else { Edit }
             </button>
           </div>
 
@@ -239,10 +239,10 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 </span>
               } @else {
                 <span
-                  matTooltip="Edit MyFoods — click 'star' to Favorite, 'circle-line' to Restrict. Double-click a row to edit its Serving Size, single-press-and-hold the picture to zoom."
+                  matTooltip="Edit Picks — click 'star' to Favorite, 'circle-line' to Restrict. Double-click a row to edit it, single-press-and-hold the picture to zoom."
                   matTooltipPosition="below"
                   [matTooltipShowDelay]="350">
-                  Edit MyFoods
+                  Edit Picks
                 </span>
               }
             </span>
