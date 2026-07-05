@@ -523,9 +523,9 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <mat-icon class="collapse-icon" [class.collapsed]="group.collapsed">expand_more</mat-icon>
                   <span class="category-name">{{ categoryLabel(group.category) }}</span>
                   <span class="category-count">({{ group.foods.length }})</span>
-                  @if (i === 0) {
-                    <span class="category-edit-hint">double-click to edit food</span>
-                  }
+                  <!-- "double-click to edit" hint removed — editing is the
+                       single-select green pencil now; double-click stays as an
+                       expert-mode shortcut, unadvertised. -->
                   <span class="category-action-hint">{{ columnHeaderText() }}</span>
                 </div>
                 @if (!group.collapsed) {
@@ -1056,9 +1056,7 @@ export class FoodsPanelComponent {
   // Hint label shown above the action-icon column at the right edge of each
   // row. MyFoods rows also have a delete column; curated lists do not, so
   // the heading shrinks to "Fave / Restrict" when delete isn't applicable.
-  columnHeaderText = computed<string>(() =>
-    this.spinSource() === 'myfoods' ? 'Fave / Restrict / Delete' : 'Fave / Restrict'
-  );
+  columnHeaderText = computed<string>(() => 'Like / Limit');
 
   // Search: filters the carousel locally (no API round-trip per keystroke)
   searchQuery = signal('');
