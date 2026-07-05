@@ -510,25 +510,12 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   @for (food of group.foods; track food.id) {
                     <div class="selected-food-row"
                          [class.selected]="selectedMyFood()?.id === food.id"
-                         (click)="onMyFoodRowClick(food)"
-                         (dblclick)="onEditMyFoodsRowDblClick(food)">
+                         (click)="onMyFoodRowClick(food)">
                       @if (selectedMyFood()?.id === food.id) {
-                        <!-- Selection overlay (row doesn't grow): green pencil +
-                             red trash to the LEFT of the Health Info star, then
-                             the AI Health Info badge. Only shown while selected. -->
+                        <!-- Centered AI Health Info badge overlay (row doesn't
+                             grow — it overlays the row). Edit/Delete live in the
+                             row's action strip below. -->
                         <div class="myfood-select-overlay">
-                          <mat-icon
-                            class="myfood-action edit"
-                            (click)="$event.stopPropagation(); onSelectedMyFoodEdit()"
-                            matTooltip="Edit food"
-                            matTooltipPosition="above">edit</mat-icon>
-                          @if (isUserAddedFood(food)) {
-                            <mat-icon
-                              class="myfood-action trash"
-                              (click)="$event.stopPropagation(); onSelectedMyFoodDelete($event)"
-                              matTooltip="Delete food"
-                              matTooltipPosition="above">delete</mat-icon>
-                          }
                           <button
                             type="button"
                             class="myfood-health-info"
@@ -557,6 +544,20 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                       <span class="selected-food-name">
                         {{ food.shortDescription || food.description }}
                       </span>
+                      @if (selectedMyFood()?.id === food.id) {
+                        <mat-icon
+                          class="row-action edit"
+                          (click)="$event.stopPropagation(); onSelectedMyFoodEdit()"
+                          matTooltip="Edit food"
+                          matTooltipPosition="above">edit</mat-icon>
+                        @if (isUserAddedFood(food)) {
+                          <mat-icon
+                            class="row-action trash"
+                            (click)="$event.stopPropagation(); onSelectedMyFoodDelete($event)"
+                            matTooltip="Delete food"
+                            matTooltipPosition="above">delete</mat-icon>
+                        }
+                      }
                       <mat-icon
                         class="row-action favorite"
                         [class.active]="preferencesService.isAllowed(food.id)"
@@ -1425,10 +1426,24 @@ export class FoodsPanelComponent {
    *  edit-pencil / delete-trash (grey → green/red when a row is selected). */
   selectedMyFood = signal<Food | null>(null);
 
-  /** Toggle single-select on an Edit-MyFoods row (click again = deselect).
-   *  Double-click still opens the NF editor via onEditMyFoodsRowDblClick. */
+  private myFoodClickTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Single vs double click on an Edit-MyFoods row. A lone click (after a short
+   *  window) toggles selection — revealing the edit/delete actions + Health
+   *  Info badge. A fast second click is a DOUBLE-click: it opens the NF editor
+   *  directly and does NOT select (no actions/badge flash). */
   onMyFoodRowClick(food: Food): void {
-    this.selectedMyFood.update((cur) => (cur?.id === food.id ? null : food));
+    if (this.myFoodClickTimer) {
+      clearTimeout(this.myFoodClickTimer);
+      this.myFoodClickTimer = null;
+      this.selectedMyFood.set(null); // double-click never leaves it selected
+      this.onEditMyFoodsRowDblClick(food);
+      return;
+    }
+    this.myFoodClickTimer = setTimeout(() => {
+      this.myFoodClickTimer = null;
+      this.selectedMyFood.update((cur) => (cur?.id === food.id ? null : food));
+    }, 220);
   }
 
   /** Green pencil — edit the selected MyFood's Nutrition Facts. */

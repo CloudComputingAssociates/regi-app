@@ -1750,24 +1750,12 @@
   z-index: 4;
   display: flex;
   align-items: center;
-  gap: 12px;
-
-  .myfood-action {
-    font-size: 22px;
-    width: 22px;
-    height: 22px;
-    cursor: pointer;
-    transition: transform 0.1s ease;
-
-    &.edit { color: #41c941; }  // green pencil
-    &.trash { color: #ff5f57; } // red trash
-    &:hover { transform: scale(1.12); }
-  }
 }
 
 // Green Health Info badge — a flex child of the overlay, sized bigger than the
 // row so "Health Info" is legible (overlays/overhangs the row).
 .myfood-health-info {
+  position: relative; // anchor for the absolutely-positioned AI star inside
   flex: 0 0 auto;
   width: 200px;
   height: 100px;
@@ -2045,6 +2033,12 @@
 
   &.restrict {
     &:hover, &.active { color: #ff7676; }
+  }
+
+  // Edit pencil — only shown on the selected row, so it's green by default.
+  &.edit {
+    color: #41c941;
+    &:hover { color: #5fe07a; }
   }
 
   &.remove {
