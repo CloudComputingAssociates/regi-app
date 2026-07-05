@@ -504,24 +504,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <mat-icon class="collapse-icon" [class.collapsed]="group.collapsed">expand_more</mat-icon>
                   <span class="category-name">{{ categoryLabel(group.category) }}</span>
                   <span class="category-count">({{ group.foods.length }})</span>
-                  <!-- Edit / Delete for the single-selected MyFood, on the
-                       divider so they sit near the selection. Grey/inactive
-                       unless the selected food is in THIS group → green pencil
-                       + red trash. -->
-                  <span class="myfoods-divider-actions">
-                    <mat-icon
-                      class="myfoods-action edit"
-                      [class.active]="isSelectedInGroup(group.foods)"
-                      (click)="$event.stopPropagation(); onSelectedMyFoodEdit()"
-                      matTooltip="Edit selected food"
-                      matTooltipPosition="below">edit</mat-icon>
-                    <mat-icon
-                      class="myfoods-action trash"
-                      [class.active]="isSelectedInGroup(group.foods) && isUserAddedFood(selectedMyFood()!)"
-                      (click)="$event.stopPropagation(); onSelectedMyFoodDelete($event)"
-                      matTooltip="Delete selected food"
-                      matTooltipPosition="below">delete</mat-icon>
-                  </span>
                   <span class="category-action-hint">{{ columnHeaderText() }}</span>
                 </div>
                 @if (!group.collapsed) {
@@ -531,19 +513,33 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                          (click)="onMyFoodRowClick(food)"
                          (dblclick)="onEditMyFoodsRowDblClick(food)">
                       @if (selectedMyFood()?.id === food.id) {
-                        <!-- Health Info badge, dead-center over the row (overlay,
-                             row doesn't grow). Click → AI health info for this
-                             food. -->
-                        <button
-                          type="button"
-                          class="myfood-health-info"
-                          (click)="$event.stopPropagation(); openHealthBenefits(food)"
-                          matTooltip="Click for AI Health Info"
-                          matTooltipPosition="above"
-                          aria-label="Health info">
-                          <img src="/images/Health%20Benefits.png" alt="Health Info" class="myfood-health-info-bg" />
-                          <span class="myfood-health-info-ai" aria-hidden="true"></span>
-                        </button>
+                        <!-- Selection overlay (row doesn't grow): green pencil +
+                             red trash to the LEFT of the Health Info star, then
+                             the AI Health Info badge. Only shown while selected. -->
+                        <div class="myfood-select-overlay">
+                          <mat-icon
+                            class="myfood-action edit"
+                            (click)="$event.stopPropagation(); onSelectedMyFoodEdit()"
+                            matTooltip="Edit food"
+                            matTooltipPosition="above">edit</mat-icon>
+                          @if (isUserAddedFood(food)) {
+                            <mat-icon
+                              class="myfood-action trash"
+                              (click)="$event.stopPropagation(); onSelectedMyFoodDelete($event)"
+                              matTooltip="Delete food"
+                              matTooltipPosition="above">delete</mat-icon>
+                          }
+                          <button
+                            type="button"
+                            class="myfood-health-info"
+                            (click)="$event.stopPropagation(); openHealthBenefits(food)"
+                            matTooltip="Click for AI Health Info"
+                            matTooltipPosition="above"
+                            aria-label="Health info">
+                            <img src="/images/Health%20Benefits.png" alt="Health Info" class="myfood-health-info-bg" />
+                            <span class="myfood-health-info-ai" aria-hidden="true"></span>
+                          </button>
+                        </div>
                       }
                       <div class="selected-food-thumb"
                            (mousedown)="onThumbHoldStart($event, food)"
@@ -564,8 +560,11 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                       <mat-icon
                         class="row-action favorite"
                         [class.active]="preferencesService.isAllowed(food.id)"
-                        (click)="toggleFavorite($event, food)"
-                        matTooltip="Favorite"
+                        [class.disabled]="isUserAddedFood(food)"
+                        (click)="isUserAddedFood(food) ? $event.stopPropagation() : toggleFavorite($event, food)"
+                        [matTooltip]="isUserAddedFood(food)
+                          ? 'A food you added stays favorited — restrict it to exclude, or delete it'
+                          : 'Favorite'"
                         matTooltipPosition="left">
                         {{ preferencesService.isAllowed(food.id) ? 'star' : 'star_border' }}
                       </mat-icon>
@@ -1432,14 +1431,7 @@ export class FoodsPanelComponent {
     this.selectedMyFood.update((cur) => (cur?.id === food.id ? null : food));
   }
 
-  /** Is the single-selected MyFood in this category group? Drives which
-   *  divider's pencil/trash light up (proximity to the selection). */
-  isSelectedInGroup(foods: Food[]): boolean {
-    const sel = this.selectedMyFood();
-    return !!sel && foods.some((f) => f.id === sel.id);
-  }
-
-  /** Green pencil (divider) — edit the selected MyFood's Nutrition Facts. */
+  /** Green pencil — edit the selected MyFood's Nutrition Facts. */
   onSelectedMyFoodEdit(): void {
     const food = this.selectedMyFood();
     if (food) this.openNfPopupForFood(food, 'edit', 'myfoods');

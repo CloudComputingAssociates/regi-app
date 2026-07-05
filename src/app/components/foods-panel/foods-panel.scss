@@ -1728,34 +1728,9 @@
 // One pair on each category divider, near the selection. Grey/inactive unless
 // the selected food is in that group → green pencil + red trash. Spaced apart
 // so delete isn't a mis-click from edit. Inactive icons are non-interactive.
-.myfoods-divider-actions {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px; // small space between edit and delete (enough to avoid mis-clicks)
-  margin-left: auto; // right-justify, riding just left of LIKE / LIMIT
-
-  .myfoods-action {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    color: #6a6f75; // grey = not the active group
-    pointer-events: none; // grey icons aren't clickable
-    transition: color 0.12s ease;
-
-    &.active {
-      pointer-events: auto;
-      cursor: pointer;
-    }
-
-    &.edit.active { color: #41c941; }   // green pencil
-    &.trash.active { color: #ff5f57; }  // red trash
-  }
-}
-
-// ---- Edit MyFoods: selected row + centered Health Info overlay ----
+// ---- Edit MyFoods: selection overlay (only on the selected row) ----
 .selected-food-row {
-  position: relative; // anchor for the centered Health Info overlay
+  position: relative; // anchor for the centered selection overlay
 
   &.selected {
     background: rgba(77, 166, 255, 0.14);
@@ -1764,16 +1739,36 @@
   }
 }
 
-// The green Health Info badge floats dead-center over the selected row (the
-// row does NOT grow — this overlays it). Click → AI health info for the food.
-.myfood-health-info {
+// Absolutely centered over the row (row doesn't grow): green pencil + red
+// trash, then the AI Health Info badge to their right. Only rendered while
+// selected (the template gates it), so no grey/inactive state needed.
+.myfood-select-overlay {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 4;
-  // Bigger than the row so "Health Info" is legible — it overlays (overhangs)
-  // the row rather than fitting inside it.
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .myfood-action {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+
+    &.edit { color: #41c941; }  // green pencil
+    &.trash { color: #ff5f57; } // red trash
+    &:hover { transform: scale(1.12); }
+  }
+}
+
+// Green Health Info badge — a flex child of the overlay, sized bigger than the
+// row so "Health Info" is legible (overlays/overhangs the row).
+.myfood-health-info {
+  flex: 0 0 auto;
   width: 200px;
   height: 100px;
   padding: 0;
@@ -1935,13 +1930,6 @@
     color: rgba(77, 166, 255, 0.55);
   }
 
-  // When the divider actions are present (MyFoods view), they take the
-  // auto-margin (right-justified) and the hint sits just to their right with
-  // a small fixed gap instead of its own auto-margin.
-  .myfoods-divider-actions + .category-action-hint {
-    margin-left: 12px;
-  }
-
   // "double-click to edit food" hint, rendered only on the FIRST divider
   // (Proteins). margin-left:auto on this AND .category-action-hint splits
   // the leftover space so the hint floats centered between the title +
@@ -2045,6 +2033,14 @@
 
   &.favorite {
     &:hover, &.active { color: #ffcc00; }
+
+    // A food the user added is favorited-by-default and CAN'T be un-favorited
+    // (only restricted or deleted). Locked-gold + not-allowed, no hover change.
+    &.disabled {
+      color: #b8940a;
+      cursor: not-allowed;
+      &:hover { color: #b8940a; }
+    }
   }
 
   &.restrict {
