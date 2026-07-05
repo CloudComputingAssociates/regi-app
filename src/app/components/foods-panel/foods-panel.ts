@@ -1572,6 +1572,21 @@ export class FoodsPanelComponent {
     this.nfPopupCategory.set(name);
   }
 
+  /** Update a food's category in the local MyFoods caches (local + server) so
+   *  the accordion regroups it live, and expand the destination category so the
+   *  moved food is visible without a page refresh. */
+  private applyLocalCategory(foodId: number, categoryId: number, categoryName: string): void {
+    const patch = (f: Food): Food =>
+      f.id === foodId ? { ...f, categoryId, categoryName } : f;
+    this.myFoodsLocal.update((list) => list.map(patch));
+    this.serverMyFoods.update((list) => list.map(patch));
+    this.collapsedMyFoodsCategories.update((set) => {
+      const next = new Set(set);
+      next.delete(categoryName);
+      return next;
+    });
+  }
+
   /** Close handler for the NF popup. Always reverts the draft to the
    *  original value so that a draft change in edit mode that wasn't saved
    *  doesn't bleed back into the cached value next time the popup opens. */
@@ -1612,6 +1627,9 @@ export class FoodsPanelComponent {
       if (cat && (food.foodSource ?? 'food') === 'userfood' && food.id != null) {
         void this.userFoodService.setUserFoodCategory(food.id, cat.id);
         this.nfPopupFood.update((f) => (f ? { ...f, categoryId: cat.id, categoryName: cat.name } : f));
+        // Reflect the move in the local caches so the accordion regroups the
+        // food immediately — no page refresh — and expand the destination.
+        this.applyLocalCategory(food.id, cat.id, cat.name);
       }
       this.nfPopupOriginalCategory.set(newCat);
     }
