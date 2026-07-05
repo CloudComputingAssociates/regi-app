@@ -59,6 +59,11 @@ export interface UserNutritionFacts {
   createdAt: string;
 }
 
+// Body for PATCH /userfoods/{id}/category — updates ONLY the category.
+export interface UpdateUserFoodCategoryRequest {
+  categoryId: number;
+}
+
 export interface CreateUserFoodRequest {
   sourceFoodId?: number;
   description: string;

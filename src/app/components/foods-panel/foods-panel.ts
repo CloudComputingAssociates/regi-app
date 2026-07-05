@@ -694,10 +694,11 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               @if (nfPopupMode() === 'edit') {
                 <select
                   class="nf-popup-category"
-                  [value]="nfPopupCategoryId()"
+                  [value]="nfPopupCategoryId() ?? ''"
                   [disabled]="(nfPopupFood()!.foodSource ?? 'food') !== 'userfood'"
                   (change)="onNfCategoryChange($any($event.target).value)"
                   aria-label="Food category">
+                  <option value="" disabled>— category —</option>
                   @for (cat of foodsService.categories(); track cat.id) {
                     <option [value]="cat.id">{{ cat.name }}</option>
                   }
@@ -1524,8 +1525,17 @@ export class FoodsPanelComponent {
     // current category (matched by name → id).
     this.nfPopupCategoryId.set(null);
     if (mode === 'edit') {
+      // Load categories for the dropdown options, then seed the selection —
+      // prefer the FK id (now on the food); fall back to a case-insensitive
+      // name match. Never silently default to the first option.
       void this.foodsService.loadCategories().then((cats) => {
-        const id = cats.find((c) => c.name === food.categoryName)?.id ?? null;
+        let id = food.categoryId ?? null;
+        if (id == null) {
+          const target = (food.categoryName ?? '').trim().toLowerCase();
+          id = target
+            ? cats.find((c) => c.name.trim().toLowerCase() === target)?.id ?? null
+            : null;
+        }
         this.nfPopupCategoryId.set(id);
       });
     }
@@ -1535,6 +1545,7 @@ export class FoodsPanelComponent {
    *  persists via the category-only PATCH (userfoods only — canonical foods
    *  can't be recategorized from here). */
   onNfCategoryChange(value: string): void {
+    if (value === '') return; // placeholder, ignore
     const categoryId = Number(value);
     const food = this.nfPopupFood();
     if (!food || !Number.isFinite(categoryId)) return;

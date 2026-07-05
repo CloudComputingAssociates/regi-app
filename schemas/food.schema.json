@@ -29,6 +29,10 @@
       ],
       "description": "Classification of food type"
     },
+    "categoryId": {
+      "type": ["integer", "null"],
+      "description": "Food category FK (Categories.CategoryID) — bind category dropdowns by this, not the name"
+    },
     "categoryName": {
       "type": ["string", "null"],
       "description": "Food category name (e.g., Protein, Carbohydrate)"

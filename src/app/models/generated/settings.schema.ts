@@ -39,6 +39,14 @@ export interface RegiMenuSettings {
    */
   mealsPerDay?: number;
   /**
+   * Intermittent fasting schedule
+   */
+  fastingType?: "none" | "16_8" | "18_6" | "20_4" | "omad";
+  /**
+   * Eating window start time in 24-hour format HH:MM
+   */
+  eatingStartTime?: string;
+  /**
    * Number of times to repeat meal plan (1-12)
    */
   repeatMeals?: number;

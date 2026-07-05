@@ -3,7 +3,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { UserFood, CreateUserFoodRequest } from '../models/user-food.model';
+import { UserFood, CreateUserFoodRequest, UpdateUserFoodCategoryRequest } from '../models/user-food.model';
 
 interface ListUserFoodsResponse {
   foods: UserFood[];
@@ -71,8 +71,12 @@ export class UserFoodService {
    *  harmless no-op until that endpoint ships. */
   async setUserFoodCategory(id: number, categoryId: number): Promise<boolean> {
     try {
+      const body: UpdateUserFoodCategoryRequest = { categoryId };
       await firstValueFrom(
-        this.http.patch(`${this.baseUrl}/${id}/category`, { categoryId })
+        this.http.patch<UserFood>(`${this.baseUrl}/${id}/category`, body)
+      );
+      this.userFoodsSignal.update(list =>
+        list.map(f => f.id === id ? { ...f, categoryId } : f)
       );
       return true;
     } catch {
