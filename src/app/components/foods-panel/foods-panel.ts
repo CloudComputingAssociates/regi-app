@@ -699,13 +699,12 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               @if (nfPopupMode() === 'edit') {
                 <select
                   class="nf-popup-category"
-                  [value]="nfPopupCategoryId() ?? ''"
+                  [value]="nfPopupCategory()"
                   [disabled]="(nfPopupFood()!.foodSource ?? 'food') !== 'userfood'"
                   (change)="onNfCategoryChange($any($event.target).value)"
                   aria-label="Food category">
-                  <option value="">— category —</option>
-                  @for (cat of foodsService.categories(); track cat.id) {
-                    <option [value]="cat.id">{{ cat.name }}</option>
+                  @for (name of nfCategoryOptions(); track name) {
+                    <option [value]="name">{{ name }}</option>
                   }
                 </select>
               }
@@ -1556,40 +1555,21 @@ export class FoodsPanelComponent {
     this.nfPopupOrigin.set(origin);
     this.nfPopupFood.set(food);
 
-    // Edit mode: load the category list, then seed the dropdown from the food's
-    // current category (matched by name → id).
-    this.nfPopupCategoryId.set(null);
+    // Edit mode: seed the dropdown from the food's actual category name (the
+    // same value the accordion groups it under) and load the options list.
+    const cur = (food.categoryName ?? '').trim();
+    this.nfPopupCategory.set(cur);
+    this.nfPopupOriginalCategory.set(cur);
     if (mode === 'edit') {
-      // Load categories for the dropdown options, then seed the selection —
-      // prefer the FK id (now on the food); fall back to a case-insensitive
-      // name match. Never silently default to the first option.
-      void this.foodsService.loadCategories().then((cats) => {
-        let id = food.categoryId ?? null;
-        if (id == null) {
-          const target = (food.categoryName ?? '').trim().toLowerCase();
-          id = target
-            ? cats.find((c) => c.name.trim().toLowerCase() === target)?.id ?? null
-            : null;
-        }
-        this.nfPopupCategoryId.set(id);
-      });
+      void this.foodsService.loadCategories();
     }
   }
 
-  /** Category dropdown change (edit mode). Updates the popup locally and
-   *  persists via the category-only PATCH (userfoods only — canonical foods
-   *  can't be recategorized from here). */
-  onNfCategoryChange(value: string): void {
-    if (value === '') return; // placeholder, ignore
-    const categoryId = Number(value);
-    const food = this.nfPopupFood();
-    if (!food || !Number.isFinite(categoryId)) return;
-    this.nfPopupCategoryId.set(categoryId);
-    const categoryName = this.foodsService.getCategoryName(categoryId) ?? food.categoryName;
-    this.nfPopupFood.update((f) => (f ? { ...f, categoryName } : f));
-    if ((food.foodSource ?? 'food') === 'userfood' && food.id != null) {
-      void this.userFoodService.setUserFoodCategory(food.id, categoryId);
-    }
+  /** Category dropdown change (edit mode) — draft only. Persisted on the green
+   *  Save disc (onNfSave), so it appears only when something actually changed. */
+  onNfCategoryChange(name: string): void {
+    if (!name) return;
+    this.nfPopupCategory.set(name);
   }
 
   /** Close handler for the NF popup. Always reverts the draft to the
@@ -1622,6 +1602,19 @@ export class FoodsPanelComponent {
     if (!food || !this.nfPopupCanSave()) return;
     const draft = this.nfPopupServingSize();
     const origin = this.nfPopupOrigin();
+
+    // Persist a category change (userfoods only) via the category-only PATCH.
+    const newCat = this.nfPopupCategory().trim();
+    if (newCat && newCat.toLowerCase() !== this.nfPopupOriginalCategory().trim().toLowerCase()) {
+      const cat = this.foodsService.categories().find(
+        (c) => c.name.toLowerCase() === newCat.toLowerCase(),
+      );
+      if (cat && (food.foodSource ?? 'food') === 'userfood' && food.id != null) {
+        void this.userFoodService.setUserFoodCategory(food.id, cat.id);
+        this.nfPopupFood.update((f) => (f ? { ...f, categoryId: cat.id, categoryName: cat.name } : f));
+      }
+      this.nfPopupOriginalCategory.set(newCat);
+    }
 
     if (origin === 'picks') {
       const baseline = this.preferencesService.userServingSize(food.id)
@@ -2134,9 +2127,23 @@ export class FoodsPanelComponent {
     this.baselineDialog.set(null);
   }
   nfPopupFood = signal<Food | null>(null);
-  /** Selected category id for the edit-mode category dropdown (null until the
-   *  food's category is resolved against the loaded categories list). */
-  nfPopupCategoryId = signal<number | null>(null);
+  /** Category dropdown state — bound by NAME (the same value the accordion
+   *  groups the food under), so it always reflects the food's real category
+   *  with no resolution/placeholder. Original tracks the opened-at value for
+   *  the dirty check. */
+  nfPopupCategory = signal<string>('');
+  nfPopupOriginalCategory = signal<string>('');
+
+  /** Dropdown options: the category vocabulary, plus the food's own category
+   *  if it isn't in that list (so the current value is always selectable). */
+  readonly nfCategoryOptions = computed<string[]>(() => {
+    const names = this.foodsService.categories().map((c) => c.name);
+    const cur = this.nfPopupFood()?.categoryName?.trim();
+    if (cur && !names.some((n) => n.toLowerCase() === cur.toLowerCase())) {
+      return [cur, ...names];
+    }
+    return names;
+  });
 
   /** Current effective serving size displayed inside the NF popup, in food
    *  units (e.g. 4 = "4 oz" of beef). Starts at the user's saved override
@@ -2159,11 +2166,13 @@ export class FoodsPanelComponent {
 
   /** Save is enabled iff popup is in edit mode AND the draft differs from
    *  what we opened at. */
-  // The green Save disc is present whenever the serving is editable, so it's
-  // discoverable the moment a pick opens (not only after a change). onNfSave
-  // handles a no-change save gracefully (a pick draft equal to the baseline
-  // clears the override to null).
-  nfPopupCanSave = computed<boolean>(() => this.nfPopupMode() === 'edit');
+  // The green Save disc appears ONLY when something actually changed — the two
+  // editable things are serving size and category. No change → no green disc.
+  nfPopupCanSave = computed<boolean>(() =>
+    this.nfPopupMode() === 'edit' &&
+    (this.nfPopupServingSize() !== this.nfPopupOriginalServingSize() ||
+      this.nfPopupCategory().trim() !== this.nfPopupOriginalCategory().trim())
+  );
 
   /** Scale factor handed to the NF label so it can recompute macros from the
    *  per-100g baseline. Display math is (qty × servingGramsPerUnit) / 100,

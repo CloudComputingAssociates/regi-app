@@ -1732,7 +1732,7 @@
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 16px; // deliberate space between edit and delete
+  gap: 7px; // small space between edit and delete (enough to avoid mis-clicks)
   margin-left: auto; // right-justify, riding just left of LIKE / LIMIT
 
   .myfoods-action {
@@ -1774,8 +1774,8 @@
   z-index: 4;
   // Bigger than the row so "Health Info" is legible — it overlays (overhangs)
   // the row rather than fitting inside it.
-  width: 128px;
-  height: 66px;
+  width: 164px;
+  height: 84px;
   padding: 0;
   background: transparent;
   border: none;
@@ -1794,10 +1794,11 @@
 // AI star rides above-left of the pill, shimmering (reuses nf-ai-shimmer).
 .myfood-health-info-ai {
   position: absolute;
-  top: -8px;
-  left: 6px;
-  width: 26px;
-  height: 26px;
+  // Sits right at the pill's top-left corner (closer to the bubble).
+  top: 4px;
+  left: 14px;
+  width: 30px;
+  height: 30px;
   pointer-events: none;
   -webkit-mask: url(/images/AI-star-white.png) center / contain no-repeat;
           mask: url(/images/AI-star-white.png) center / contain no-repeat;
@@ -1874,7 +1875,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
 }
 
 // Accordion section header inside the MyFoods bottom list.
