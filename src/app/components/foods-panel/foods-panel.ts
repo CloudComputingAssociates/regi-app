@@ -246,6 +246,25 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 </span>
               }
             </span>
+            @if (addTo() === 'right') {
+              <!-- Edit / Delete for the single-selected MyFood. Grey when
+                   nothing is selected → green pencil + red trash on select.
+                   Spaced apart so a delete isn't a mis-click from edit. -->
+              <span class="myfoods-select-actions">
+                <mat-icon
+                  class="myfoods-action edit"
+                  [class.active]="selectedMyFood()"
+                  (click)="onSelectedMyFoodEdit()"
+                  matTooltip="Edit selected food"
+                  matTooltipPosition="below">edit</mat-icon>
+                <mat-icon
+                  class="myfoods-action trash"
+                  [class.active]="selectedMyFood() && isUserAddedFood(selectedMyFood()!)"
+                  (click)="onSelectedMyFoodDelete($event)"
+                  matTooltip="Delete selected food"
+                  matTooltipPosition="below">delete</mat-icon>
+              </span>
+            }
             <span class="section-title-count">
               @if (addTo() === 'left') { Total ({{ thisWeekTotal() }}) }
               @else { Total ({{ bottomListLength() }}) }
@@ -254,7 +273,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               <button
                 type="button"
                 class="section-title-close"
-                (click)="addTo.set('left')"
+                (click)="addTo.set('left'); selectedMyFood.set(null)"
                 matTooltip="Back to Food Picks"
                 matTooltipPosition="below"
                 aria-label="Close Edit">
@@ -512,7 +531,24 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 @if (!group.collapsed) {
                   @for (food of group.foods; track food.id) {
                     <div class="selected-food-row"
+                         [class.selected]="selectedMyFood()?.id === food.id"
+                         (click)="onMyFoodRowClick(food)"
                          (dblclick)="onEditMyFoodsRowDblClick(food)">
+                      @if (selectedMyFood()?.id === food.id) {
+                        <!-- Health Info badge, dead-center over the row (overlay,
+                             row doesn't grow). Click → AI health info for this
+                             food. -->
+                        <button
+                          type="button"
+                          class="myfood-health-info"
+                          (click)="$event.stopPropagation(); openHealthBenefits(food)"
+                          matTooltip="Click for AI Health Info"
+                          matTooltipPosition="above"
+                          aria-label="Health info">
+                          <img src="/images/Health%20Benefits.png" alt="Health Info" class="myfood-health-info-bg" />
+                          <span class="myfood-health-info-ai" aria-hidden="true"></span>
+                        </button>
+                      }
                       <div class="selected-food-thumb"
                            (mousedown)="onThumbHoldStart($event, food)"
                            (mouseup)="onThumbHoldEnd()"
@@ -545,21 +581,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                         matTooltipPosition="left">
                         block
                       </mat-icon>
-                      <!-- DELETE is only meaningful for foods the USER added
-                           (food.userId != null). YEH-base foods can be
-                           un-favorited via the star but never deleted from the
-                           database. Disabled state styles as muted gray; the
-                           tooltip explains why. -->
-                      <mat-icon
-                        class="row-action trash"
-                        [class.disabled]="!isUserAddedFood(food)"
-                        (click)="deleteUserFood($event, food)"
-                        [matTooltip]="isUserAddedFood(food)
-                          ? 'Delete this food'
-                          : 'Only foods you added can be deleted'"
-                        matTooltipPosition="left">
-                        delete
-                      </mat-icon>
+                      <!-- Per-row trash removed — deletion is now the top-bar
+                           red trash acting on the single-selected row. -->
                     </div>
                   }
                 }
@@ -659,22 +682,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 <mat-icon>close</mat-icon>
               </button>
             </div>
-            <!-- Health Info button — overhangs the popup's upper edge so it
-                 advertises the AI explainer affordance on every NF popup.
-                 Always rendered (the previous filter-gate would silently
-                 hide it whenever no LHS category was pressed). The AI
-                 star sits on top of the green badge to make the AI
-                 provenance unmistakable. -->
-            <button
-              type="button"
-              class="health-benefits-btn nf-popup-health-info"
-              (click)="openHealthBenefits()"
-              matTooltip="Click for AI Health Info"
-              matTooltipPosition="above"
-              aria-label="Health info">
-              <img src="/images/Health%20Benefits.png" alt="Health Info" class="nf-popup-health-info-bg" />
-              <span class="nf-popup-health-info-ai" aria-hidden="true"></span>
-            </button>
+            <!-- Health Info badge intentionally removed from the NF popup — it
+                 now lives centered on a selected Edit-MyFoods row. -->
             <!-- Scroll lives on this inner wrapper so the outer .nf-popup can
                  be overflow:visible and let the Health Info badge overhang
                  above without being clipped. -->
@@ -1419,6 +1428,31 @@ export class FoodsPanelComponent {
    *  buttons in the top bar act on this food. */
   selectedFood = signal<Food | null>(null);
 
+  /** Single-click selection for the RHS "Edit MyFoods" list rows. Drives the
+   *  row highlight, the centered Health Info overlay, and the top-bar
+   *  edit-pencil / delete-trash (grey → green/red when a row is selected). */
+  selectedMyFood = signal<Food | null>(null);
+
+  /** Toggle single-select on an Edit-MyFoods row (click again = deselect).
+   *  Double-click still opens the NF editor via onEditMyFoodsRowDblClick. */
+  onMyFoodRowClick(food: Food): void {
+    this.selectedMyFood.update((cur) => (cur?.id === food.id ? null : food));
+  }
+
+  /** Green pencil (top bar) — edit the selected MyFood's Nutrition Facts. */
+  onSelectedMyFoodEdit(): void {
+    const food = this.selectedMyFood();
+    if (food) this.openNfPopupForFood(food, 'edit', 'myfoods');
+  }
+
+  /** Red trash (top bar) — delete the selected MyFood (user-added only). */
+  onSelectedMyFoodDelete(event: Event): void {
+    const food = this.selectedMyFood();
+    if (!food || !this.isUserAddedFood(food)) return;
+    void this.deleteUserFood(event, food);
+    this.selectedMyFood.set(null);
+  }
+
   /** Single-click on a LHS food tile = "Pick this" → drops it straight into
    *  the appropriate basket. Idempotent: clicking a food that's already in
    *  its basket is a silent no-op (addFoodToBasket dedupes by id), so a
@@ -2151,11 +2185,11 @@ export class FoodsPanelComponent {
   healthBenefitsError = signal<string | null>(null);
   private healthBenefitsRequestId = 0;
 
-  async openHealthBenefits(): Promise<void> {
-    // Prefer the NF popup's food (if it's open) so the Health Info button
-    // inside that dialog stays consistent; otherwise act on whichever tile
-    // is currently selected in the grid.
-    const food = this.nfPopupFood() ?? this.selectedFood();
+  async openHealthBenefits(target?: Food): Promise<void> {
+    // Explicit target wins (e.g. the Health Info overlay on a selected Edit-
+    // MyFoods row); otherwise prefer the NF popup's food, then the selected
+    // MyFood row, then whichever LHS tile is selected.
+    const food = target ?? this.nfPopupFood() ?? this.selectedMyFood() ?? this.selectedFood();
     if (!food) return;
     this.healthBenefitsFood.set(food);
     this.healthBenefitsText.set(null);
