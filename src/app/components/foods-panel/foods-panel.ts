@@ -324,10 +324,10 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   matTooltipPosition="above"
                   [matTooltipShowDelay]="350"
                   aria-label="Add foods with mobile app">
+                  <span class="mobile-app-label">Tether Mobile</span>
                   <span class="mobile-app-btn" aria-hidden="true">
                     <mat-icon class="mobile-app-icon">phone_android</mat-icon>
                   </span>
-                  <span class="mobile-app-label">Tether mobile app</span>
                 </button>
               }
             </div>
