@@ -532,6 +532,7 @@ export class FoodPreferencesService {
       id: row.foodId,
       description: row.description,
       shortDescription: row.shortDescription,
+      categoryId: row.categoryId,
       categoryName: row.categoryName,
       foodRequestType: 'unknown',
       foodSource: row.foodSource === 'userfood' ? 'userfood' : 'food',

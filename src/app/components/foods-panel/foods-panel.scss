@@ -1724,26 +1724,32 @@
   }
 }
 
-// ---- Edit MyFoods: top-bar single-select actions (pencil + trash) ----
-// Grey/inactive by default; a selected row lights the pencil green (edit) and
-// the trash red (delete). Spaced apart so delete isn't a mis-click from edit.
-.myfoods-select-actions {
+// ---- Edit MyFoods: per-divider single-select actions (pencil + trash) ----
+// One pair on each category divider, near the selection. Grey/inactive unless
+// the selected food is in that group → green pencil + red trash. Spaced apart
+// so delete isn't a mis-click from edit. Inactive icons are non-interactive.
+.myfoods-divider-actions {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 18px; // deliberate space between edit and delete
+  gap: 16px; // deliberate space between edit and delete
   margin-left: 10px;
 
   .myfoods-action {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    color: #6a6f75; // grey = nothing selected
-    cursor: pointer;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #6a6f75; // grey = not the active group
+    pointer-events: none; // grey icons aren't clickable
     transition: color 0.12s ease;
 
-    &.edit.active { color: #41c941; }   // green pencil when a row is selected
-    &.trash.active { color: #ff5f57; }  // red trash when a (deletable) row is selected
+    &.active {
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    &.edit.active { color: #41c941; }   // green pencil
+    &.trash.active { color: #ff5f57; }  // red trash
   }
 }
 
@@ -1766,8 +1772,10 @@
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 4;
-  width: 76px;
-  height: 40px;
+  // Bigger than the row so "Health Info" is legible — it overlays (overhangs)
+  // the row rather than fitting inside it.
+  width: 128px;
+  height: 66px;
   padding: 0;
   background: transparent;
   border: none;
@@ -1786,10 +1794,10 @@
 // AI star rides above-left of the pill, shimmering (reuses nf-ai-shimmer).
 .myfood-health-info-ai {
   position: absolute;
-  top: -6px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
+  top: -8px;
+  left: 6px;
+  width: 26px;
+  height: 26px;
   pointer-events: none;
   -webkit-mask: url(/images/AI-star-white.png) center / contain no-repeat;
           mask: url(/images/AI-star-white.png) center / contain no-repeat;

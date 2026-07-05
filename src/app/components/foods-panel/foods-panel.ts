@@ -246,25 +246,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 </span>
               }
             </span>
-            @if (addTo() === 'right') {
-              <!-- Edit / Delete for the single-selected MyFood. Grey when
-                   nothing is selected → green pencil + red trash on select.
-                   Spaced apart so a delete isn't a mis-click from edit. -->
-              <span class="myfoods-select-actions">
-                <mat-icon
-                  class="myfoods-action edit"
-                  [class.active]="selectedMyFood()"
-                  (click)="onSelectedMyFoodEdit()"
-                  matTooltip="Edit selected food"
-                  matTooltipPosition="below">edit</mat-icon>
-                <mat-icon
-                  class="myfoods-action trash"
-                  [class.active]="selectedMyFood() && isUserAddedFood(selectedMyFood()!)"
-                  (click)="onSelectedMyFoodDelete($event)"
-                  matTooltip="Delete selected food"
-                  matTooltipPosition="below">delete</mat-icon>
-              </span>
-            }
             <span class="section-title-count">
               @if (addTo() === 'left') { Total ({{ thisWeekTotal() }}) }
               @else { Total ({{ bottomListLength() }}) }
@@ -346,7 +327,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <span class="mobile-app-btn" aria-hidden="true">
                     <mat-icon class="mobile-app-icon">phone_android</mat-icon>
                   </span>
-                  <span class="mobile-app-label">Add foods w/ mobile</span>
+                  <span class="mobile-app-label">Tether mobile app</span>
                 </button>
               }
             </div>
@@ -523,9 +504,24 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <mat-icon class="collapse-icon" [class.collapsed]="group.collapsed">expand_more</mat-icon>
                   <span class="category-name">{{ categoryLabel(group.category) }}</span>
                   <span class="category-count">({{ group.foods.length }})</span>
-                  <!-- "double-click to edit" hint removed — editing is the
-                       single-select green pencil now; double-click stays as an
-                       expert-mode shortcut, unadvertised. -->
+                  <!-- Edit / Delete for the single-selected MyFood, on the
+                       divider so they sit near the selection. Grey/inactive
+                       unless the selected food is in THIS group → green pencil
+                       + red trash. -->
+                  <span class="myfoods-divider-actions">
+                    <mat-icon
+                      class="myfoods-action edit"
+                      [class.active]="isSelectedInGroup(group.foods)"
+                      (click)="$event.stopPropagation(); onSelectedMyFoodEdit()"
+                      matTooltip="Edit selected food"
+                      matTooltipPosition="below">edit</mat-icon>
+                    <mat-icon
+                      class="myfoods-action trash"
+                      [class.active]="isSelectedInGroup(group.foods) && isUserAddedFood(selectedMyFood()!)"
+                      (click)="$event.stopPropagation(); onSelectedMyFoodDelete($event)"
+                      matTooltip="Delete selected food"
+                      matTooltipPosition="below">delete</mat-icon>
+                  </span>
                   <span class="category-action-hint">{{ columnHeaderText() }}</span>
                 </div>
                 @if (!group.collapsed) {
@@ -707,7 +703,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   [disabled]="(nfPopupFood()!.foodSource ?? 'food') !== 'userfood'"
                   (change)="onNfCategoryChange($any($event.target).value)"
                   aria-label="Food category">
-                  <option value="" disabled>— category —</option>
+                  <option value="">— category —</option>
                   @for (cat of foodsService.categories(); track cat.id) {
                     <option [value]="cat.id">{{ cat.name }}</option>
                   }
@@ -1437,7 +1433,14 @@ export class FoodsPanelComponent {
     this.selectedMyFood.update((cur) => (cur?.id === food.id ? null : food));
   }
 
-  /** Green pencil (top bar) — edit the selected MyFood's Nutrition Facts. */
+  /** Is the single-selected MyFood in this category group? Drives which
+   *  divider's pencil/trash light up (proximity to the selection). */
+  isSelectedInGroup(foods: Food[]): boolean {
+    const sel = this.selectedMyFood();
+    return !!sel && foods.some((f) => f.id === sel.id);
+  }
+
+  /** Green pencil (divider) — edit the selected MyFood's Nutrition Facts. */
   onSelectedMyFoodEdit(): void {
     const food = this.selectedMyFood();
     if (food) this.openNfPopupForFood(food, 'edit', 'myfoods');
