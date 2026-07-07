@@ -4,7 +4,16 @@
 // ({slotLabel})" with a visual-only inline-edit affordance. Body shows
 // macro chips (P/C/F/Fi grams — never calories) and the food rows. Handles
 // three states: filled, empty (pick a meal), and dining-out.
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { MealItem, MenuSlot } from '../../models';
@@ -26,7 +35,19 @@ interface SlotMacros {
     <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()">
       <div class="slot-header">
         <span class="slot-title">Meal {{ slot().slotOrder }}</span>
-        @if (title()) {
+        @if (editing() && slot().mealId != null) {
+          <!-- Recessed, indented box + blinking caret so it obviously reads as
+               editable. Commits on Enter or when focus leaves (e.g. the user
+               clicks a food row's pencil). -->
+          <input
+            #nameInput
+            type="text"
+            class="meal-name-edit"
+            [value]="nameSeed()"
+            (keydown.enter)="commitName($any($event.target).value); $any($event.target).blur()"
+            (blur)="commitName($any($event.target).value)"
+            aria-label="Meal name" />
+        } @else if (title()) {
           <span class="meal-name">{{ title() }}</span>
         }
         @if (!slot().isDiningOut) {
@@ -138,6 +159,9 @@ export class MealComponent {
   /** ✓ — leave edit mode (parent calls stopEditing). */
   readonly doneEdit = output<void>();
 
+  /** Inline name box committed — parent persists the new meal name. */
+  readonly renameMeal = output<{ mealId: number; name: string }>();
+
   /** Pencil on a food row — edit that food's Nutrition Facts (servings) in place. */
   readonly editItem = output<MealItem>();
 
@@ -152,14 +176,46 @@ export class MealComponent {
 
   readonly isEmpty = computed(() => !this.slot().isDiningOut && this.slot().mealId == null);
 
-  // Title = the primary protein's short name (shortDescription, else foodName),
-  // from the meal's items (streamed in, so it refines once they load). Falls
-  // back to the slot's meal name with the generator's trailing " meal" stripped.
+  private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
+
+  /** Seed for the inline name box — exactly what the header shows, so editing
+   *  starts from the visible name and the committed value replaces it. */
+  readonly nameSeed = computed<string>(() => this.title());
+
+  // Auto-focus the name box once per edit-mode entry so the caret blinks there
+  // immediately. Guarded by mealId so a later menu refresh (new slot reference)
+  // doesn't steal focus back while the user is elsewhere (e.g. a row pencil).
+  private focusedForMeal: number | null = null;
+  private readonly focusNameEffect = effect(() => {
+    const el = this.nameInput()?.nativeElement;
+    const mealId = this.slot().mealId ?? null;
+    if (!this.editing()) {
+      this.focusedForMeal = null;
+      return;
+    }
+    if (el && mealId != null && this.focusedForMeal !== mealId) {
+      this.focusedForMeal = mealId;
+      queueMicrotask(() => el.focus());
+    }
+  });
+
+  /** Persist a changed meal name (no-op on empty or unchanged). */
+  commitName(value: string): void {
+    const mealId = this.slot().mealId;
+    const name = value.trim();
+    if (mealId == null || !name || name === this.nameSeed().trim()) return;
+    this.renameMeal.emit({ mealId, name });
+  }
+
+  // Header name = the MEAL's own name (so an edited name shows here), with the
+  // generator's trailing " meal" stripped. Falls back to the primary food's
+  // short name only when the meal has no explicit name yet.
   readonly title = computed<string>(() => {
+    const mealName = (this.slot().mealName ?? '').replace(/\s+meal$/i, '').trim();
+    if (mealName) return mealName;
     const items = this.items();
     const primary = items.find((i) => i.itemRole === 'primary') ?? items[0];
-    if (primary) return (primary.food?.shortDescription?.trim() || primary.foodName?.trim()) ?? '';
-    return (this.slot().mealName ?? '').replace(/\s+meal$/i, '').trim();
+    return (primary?.food?.shortDescription?.trim() || primary?.foodName?.trim()) ?? '';
   });
 
   /** CDK drop handler for an empty slot — copy semantics (no array mutation),

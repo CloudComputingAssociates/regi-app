@@ -23,6 +23,7 @@ import {
   Rotation,
   RotationDetail,
   UpdateMealItemRequest,
+  UpdateMealRequest,
 } from '../models';
 import { Food } from '../models/food.model';
 import { SettingsService } from './settings.service';
@@ -490,6 +491,26 @@ export class RotationService {
       await firstValueFrom(
         this.http.put<MealItem>(`${this.baseUrl}/meal/${mealId}/items/${itemId}`, body),
       );
+      if (menuId != null) {
+        const menu = await firstValueFrom(
+          this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
+        );
+        this.menusById.update((m) => new Map(m).set(menuId, menu));
+      }
+      await this.loadMeal(mealId);
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Rename an editing slot's meal (inline name box). PATCH /api/meal/{id}
+   *  { name } → refresh the menu so the slot's denormalized mealName updates.
+   *  A failure toasts and leaves the board intact. */
+  async updateMealName(mealId: number, name: string): Promise<void> {
+    const menuId = this.editingSlot()?.menuId ?? this.selectedMenuId();
+    try {
+      const body: UpdateMealRequest = { name };
+      await firstValueFrom(this.http.patch<Meal>(`${this.baseUrl}/meal/${mealId}`, body));
       if (menuId != null) {
         const menu = await firstValueFrom(
           this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),

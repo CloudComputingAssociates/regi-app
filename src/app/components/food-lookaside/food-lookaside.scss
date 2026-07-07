@@ -68,19 +68,29 @@
   }
 }
 
-// Segmented two-button toggle — a single raised pill split in two.
-.pane-toggle {
+// Tab toggle (Picks|MyFoods) on the left, the discs|units mode pill pushed to
+// the right with a little breathing room between.
+.toggle-row {
   flex-shrink: 0;
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin: 12px 14px 0;
+}
+
+// Segmented two-button toggle — a single raised pill split in two. Shared by
+// the Picks|MyFoods tabs and the discs|units mode pill.
+.pane-toggle,
+.mode-toggle {
+  display: inline-flex;
   border: 1px solid #262626;
   border-radius: 6px;
   overflow: hidden;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 
   .toggle-btn {
-    flex: 1 1 0;
-    padding: 7px 0;
+    padding: 7px 12px;
     font-size: 13px;
     font-weight: 500;
     color: #cfcfcf;
@@ -102,6 +112,12 @@
       background: linear-gradient(180deg, #4da6ff 0%, #3d86d6 100%);
     }
   }
+}
+
+// The mode pill is smaller/quieter than the primary tabs.
+.mode-toggle .toggle-btn {
+  padding: 5px 10px;
+  font-size: 12px;
 }
 
 // MyFoods search — same raised dark field as the binder's Twist combo.
@@ -197,8 +213,9 @@
   }
 }
 
+// Name (+ the blue in-meal dot) takes ~2/3; the metrics column ~1/3.
 .la-name {
-  flex: 1 1 auto;
+  flex: 2 1 0;
   min-width: 0;
   font-size: 13px;
   color: #f1f1f1;
@@ -207,11 +224,51 @@
   white-space: nowrap;
 }
 
-.la-serving {
-  flex: 0 0 auto;
+// The 1/3 metrics area — discs (or the serving+unit), left-aligned so the
+// discs form clean columns down the list.
+.la-metrics {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+}
+
+.la-units {
   font-size: 12px;
   color: #9aa0a6;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+// Outlined "not-yet-hydrated" macro disc: 2px colored ring, black fill, the
+// value in the macro's color. Fixed width so slot 1 / slot 2 line up in
+// columns; the empty placeholder holds a trace slot's column.
+.disc,
+.disc-empty {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 40px;
+}
+
+.disc {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 0;
+  border-radius: 10px;
+  background: #000;
+  border: 2px solid currentColor;
+
+  // color drives both the ring (currentColor border) and the text. Brighter
+  // than the filled-chip palette so they read on black.
+  &.protein { color: #5bbf4a; }
+  &.carb { color: #e08a3c; }
+  &.fat { color: #b07de0; }
+  &.fiber { color: #b8935e; }
 }
 
 // MyFoods category accordion header — chevron + plural label + count. No
@@ -257,29 +314,6 @@
   .cat-count {
     font-size: 12px;
     color: #9aa0a6;
-  }
-}
-
-// The two-macro preview pucks on a MyFoods row.
-.la-pucks {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-
-  .puck {
-    font-size: 11px;
-    font-weight: 500;
-    padding: 2px 7px;
-    border-radius: 10px;
-    white-space: nowrap;
-    color: rgba(255, 255, 255, 0.82);
-
-    // Muted macro palette — same as the meal/binder chips.
-    &.protein { background: #34781a; }
-    &.carb { background: #a8541a; }
-    &.fat { background: #8a55ab; }
-    &.fiber { background: #5e4021; }
   }
 }
 

@@ -29,7 +29,9 @@
   gap: 8px;
 
   .slot-title {
-    font-size: 13px;
+    // Same size as the white meal title so "Meal 1" reads as a peer, not a
+    // sub-label.
+    font-size: 14px;
     font-weight: 600;
     color: #4da6ff;
     white-space: nowrap;
@@ -43,6 +45,31 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     flex: 1 1 auto;
+  }
+
+  // Edit mode: a recessed, indented box (darker than the card) with a blinking
+  // accent caret so it's unmistakably editable.
+  .meal-name-edit {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: #f1f1f1;
+    background: #262626;
+    border: 1px solid #1c1c1c;
+    border-radius: 4px;
+    padding: 3px 8px;
+    outline: none;
+    caret-color: #4da6ff;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+
+    &:focus {
+      border-color: #4da6ff;
+      box-shadow:
+        inset 0 1px 3px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(77, 166, 255, 0.5);
+    }
   }
 
   .edit-affordance {

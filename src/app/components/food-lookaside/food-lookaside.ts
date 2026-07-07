@@ -34,9 +34,6 @@ const MYFOOD_CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
   { cat: 'Condiment', label: 'Seasonings' },
 ];
 
-// Canonical left→right display order for whichever pucks a row shows.
-const MACRO_ORDER: readonly MacroKey[] = ['protein', 'carb', 'fat', 'fiber'];
-
 // Single-letter puck labels. Fat and Fiber share "F" — they never appear
 // together (they compete for the same slot) and their colors + tooltips
 // distinguish them.
@@ -75,21 +72,40 @@ const PUCK_MIN_G = 1;
         </button>
       </div>
 
-      <div class="pane-toggle" role="tablist">
-        <button
-          type="button"
-          class="toggle-btn"
-          [class.active]="pane() === 'picks'"
-          (click)="pane.set('picks')">
-          Picks
-        </button>
-        <button
-          type="button"
-          class="toggle-btn"
-          [class.active]="pane() === 'myfoods'"
-          (click)="pane.set('myfoods')">
-          MyFoods
-        </button>
+      <div class="toggle-row">
+        <div class="pane-toggle" role="tablist">
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="pane() === 'picks'"
+            (click)="pane.set('picks')">
+            Picks
+          </button>
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="pane() === 'myfoods'"
+            (click)="pane.set('myfoods')">
+            MyFoods
+          </button>
+        </div>
+        <!-- Whether each row's 1/3 shows macro discs or the serving+unit. -->
+        <div class="mode-toggle" role="tablist">
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="mode() === 'discs'"
+            (click)="mode.set('discs')">
+            discs
+          </button>
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="mode() === 'units'"
+            (click)="mode.set('units')">
+            units
+          </button>
+        </div>
       </div>
 
       @if (pane() === 'myfoods') {
@@ -122,12 +138,20 @@ const PUCK_MIN_G = 1;
                 (click)="onPickClick(food)">
                 <span class="la-dot" [class.on]="inMeal(food)"></span>
                 <span class="la-name">{{ name(food) }}</span>
-                <span class="la-pucks">
-                  @for (p of pucksFor(food, resolvePickServing(food)); track p.key) {
-                    <span
-                      [class]="'puck ' + p.key"
-                      [matTooltip]="p.name"
-                      matTooltipPosition="above">{{ p.label }} {{ p.value }}</span>
+                <span class="la-metrics">
+                  @if (mode() === 'discs') {
+                    @for (s of discSlots(food, resolvePickServing(food)); track $index) {
+                      @if (s) {
+                        <span
+                          [class]="'disc ' + s.key"
+                          [matTooltip]="s.name"
+                          matTooltipPosition="above">{{ s.label }} {{ s.value }}</span>
+                      } @else {
+                        <span class="disc-empty"></span>
+                      }
+                    }
+                  } @else {
+                    <span class="la-units">{{ resolvePickServing(food) }} {{ unit(food) }}</span>
                   }
                 </span>
               </div>
@@ -155,12 +179,20 @@ const PUCK_MIN_G = 1;
                   (click)="onMyFoodClick(food)">
                   <span class="la-dot" [class.on]="inMeal(food)"></span>
                   <span class="la-name">{{ name(food) }}</span>
-                  <span class="la-pucks">
-                    @for (p of pucksFor(food, resolveMyFoodServing(food)); track p.key) {
-                      <span
-                        [class]="'puck ' + p.key"
-                        [matTooltip]="p.name"
-                        matTooltipPosition="above">{{ p.label }} {{ p.value }}</span>
+                  <span class="la-metrics">
+                    @if (mode() === 'discs') {
+                      @for (s of discSlots(food, resolveMyFoodServing(food)); track $index) {
+                        @if (s) {
+                          <span
+                            [class]="'disc ' + s.key"
+                            [matTooltip]="s.name"
+                            matTooltipPosition="above">{{ s.label }} {{ s.value }}</span>
+                        } @else {
+                          <span class="disc-empty"></span>
+                        }
+                      }
+                    } @else {
+                      <span class="la-units">{{ resolveMyFoodServing(food) }} {{ unit(food) }}</span>
                     }
                   </span>
                 </div>
@@ -185,6 +217,10 @@ export class FoodLookasideComponent {
 
   /** Which pane is showing. Picks is the default. */
   readonly pane = signal<LookasidePane>('picks');
+
+  /** Whether each row's 1/3 shows macro discs or the serving+unit. Defaults to
+   *  discs. Shared across both tabs. */
+  readonly mode = signal<'discs' | 'units'>('discs');
 
   /** MyFoods live substring filter. */
   readonly search = signal('');
@@ -267,34 +303,31 @@ export class FoodLookasideComponent {
     return groups;
   });
 
-  /** Up to two macro pucks previewing a food at `serving`, chosen so the row
-   *  reads at a glance: slot 1 = the larger of Protein/Carb, slot 2 = the
-   *  larger of Fat/Fiber (falling back to the other structural macro when both
-   *  are trace so two still show). Trace slots (<1 g) drop out; the result is
-   *  rendered left→right in canonical P·C·F·Fi order. */
-  pucksFor(food: Food, serving: number): Array<{ key: MacroKey; label: string; name: string; value: number }> {
+  /** Exactly two positional disc slots so they line up in columns down the
+   *  list: slot 1 = the larger of Protein/Carb, slot 2 = the larger of
+   *  Fat/Fiber (falling back to the other structural macro when both are
+   *  trace). A slot is null when its macro is trace (<1 g) — the template
+   *  renders an invisible placeholder to keep the column aligned. */
+  discSlots(
+    food: Food,
+    serving: number,
+  ): Array<{ key: MacroKey; label: string; name: string; value: number } | null> {
     const g: Record<MacroKey, number> = {
       protein: this.macroG(food, 'protein', serving),
       carb: this.macroG(food, 'carb', serving),
       fat: this.macroG(food, 'fat', serving),
       fiber: this.macroG(food, 'fiber', serving),
     };
-    const chosen = new Set<MacroKey>();
     const structural = this.largerMaterial(g, 'protein', 'carb');
-    if (structural) chosen.add(structural);
     let energy = this.largerMaterial(g, 'fat', 'fiber');
     if (!energy && structural) {
       // Fat + Fiber both trace → show the other structural macro so two appear.
       const other: MacroKey = structural === 'protein' ? 'carb' : 'protein';
       if (g[other] >= PUCK_MIN_G) energy = other;
     }
-    if (energy) chosen.add(energy);
-    return MACRO_ORDER.filter((k) => chosen.has(k)).map((k) => ({
-      key: k,
-      label: PUCK_LABEL[k],
-      name: PUCK_NAME[k],
-      value: Math.round(g[k]),
-    }));
+    const slot = (k: MacroKey | null) =>
+      k ? { key: k, label: PUCK_LABEL[k], name: PUCK_NAME[k], value: Math.round(g[k]) } : null;
+    return [slot(structural), slot(energy)];
   }
 
   /** The larger of two macros by grams (ties → the first, which follows the
@@ -346,6 +379,10 @@ export class FoodLookasideComponent {
 
   name(food: Food): string {
     return food.shortDescription?.trim() || food.description || '';
+  }
+
+  unit(food: Food): string {
+    return food.servingUnit ?? 'serving';
   }
 
   // Resolved default serving — display only; re-resolved at add time below.

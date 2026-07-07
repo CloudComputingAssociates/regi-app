@@ -32,7 +32,7 @@ const DEFAULT_DAILY_GOALS: DailyGoals = {
   protein: 150,
   carbs: 200,
   fat: 65,
-  fiber: 30,
+  fiber: 35,
   sodium: 2300,
   isOverridden: false
 };
@@ -40,13 +40,10 @@ const DEFAULT_DAILY_GOALS: DailyGoals = {
 const DEFAULT_PERSONAL_INFO: PersonalInfo = {};
 
 // Validation thresholds (used by validateOnSave)
-const CALORIE_MISMATCH_TOLERANCE = 10;   // cal difference before warning
-const MACRO_BALANCE_TOLERANCE = 10;       // cal difference before warning
 const GOAL_LOSS_AMBITIOUS_PCT = 15;       // % loss → ambitious warning
 const GOAL_LOSS_AGGRESSIVE_PCT = 25;      // % loss → aggressive warning
 const GOAL_LOSS_EXTREME_PCT = 50;         // % loss → medical warning
 const GOAL_GAIN_WARN_PCT = 10;            // % gain → consult warning
-const FIBER_TO_CARB_RATIO = 0.25;         // fiber > carbs * this → warning
 
 const DEFAULT_GLP1: Glp1Settings = { enabled: false };
 

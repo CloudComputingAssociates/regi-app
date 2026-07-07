@@ -25,6 +25,7 @@ import { MealComponent } from '../meal/meal';
             (deleteMeal)="onDelete($event)"
             (editSlot)="onEditSlot(slot)"
             (doneEdit)="rotation.stopEditing()"
+            (renameMeal)="rotation.updateMealName($event.mealId, $event.name)"
             (removeItem)="onRemoveItem(slot.mealId, $event)"
             (editItem)="onEditItem(slot, $event)"
             (dropFood)="rotation.addFoodToEditingMeal($event.food, $event.serving)" />
