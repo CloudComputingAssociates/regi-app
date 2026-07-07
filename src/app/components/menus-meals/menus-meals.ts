@@ -20,6 +20,7 @@ import { MealComponent } from '../meal/meal';
             [slot]="slot"
             [items]="itemsFor(slot.mealId)"
             [editing]="isEditing(slot.slotOrder)"
+            [resolvingItemId]="resolvingItemId()"
             (placeMeal)="onPlace($event)"
             (deleteMeal)="onDelete($event)"
             (editSlot)="onEditSlot(slot)"
@@ -37,6 +38,10 @@ export class MenusMealsComponent {
   readonly rotation = inject(RotationService);
 
   readonly menu = input.required<Menu | undefined>();
+
+  /** The item id whose food is being resolved for the serving popup (drives the
+   *  row pencil's busy state). Threaded down from the panel. */
+  readonly resolvingItemId = input<number | null>(null);
 
   /** ✎ on a food row (edit mode) — bubble the item + its meal id so the panel
    *  can host the serving popup. */

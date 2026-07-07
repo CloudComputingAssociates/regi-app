@@ -28,6 +28,8 @@ import { MealItem } from '../../models';
             <button
               type="button"
               class="food-action edit"
+              [class.busy]="resolving()"
+              [disabled]="resolving()"
               matTooltip="Edit serving"
               matTooltipPosition="left"
               (click)="editItem.emit(item())">
@@ -73,6 +75,10 @@ export class FoodComponent {
   /** True while the parent slot is in edit mode — the row shows a ✕ remove
    *  button instead of the hover pencil/trash. */
   readonly editing = input<boolean>(false);
+
+  /** True while this item's food is being fetched to open the serving popup —
+   *  the ✎ pencil shows a brief busy state and can't be re-clicked. */
+  readonly resolving = input<boolean>(false);
 
   /** Pencil — open the Nutrition Facts editor for this exact food in place. */
   readonly editItem = output<MealItem>();

@@ -79,6 +79,12 @@
     color: #ffffff;
   }
 
+  // Resolving the item's food to open the popup — brief busy state.
+  &.busy {
+    opacity: 0.5;
+    cursor: progress;
+  }
+
   &.delete:hover {
     border-color: #ff5f57;
     color: #ff8079;

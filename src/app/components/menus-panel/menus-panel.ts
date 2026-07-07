@@ -11,6 +11,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { firstValueFrom } from 'rxjs';
 import { RotationService } from '../../services/rotation.service';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
+import { FoodsService } from '../../services/foods.service';
 import { NotificationService } from '../../services/notification.service';
 import { MenuCardRowComponent } from '../menu-card-row/menu-card-row';
 import { MenusMealsComponent } from '../menus-meals/menus-meals';
@@ -108,6 +109,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
             <div class="panel-body">
               <app-menus-meals
                 [menu]="rotation.selectedMenu()"
+                [resolvingItemId]="resolvingItemId()"
                 (editItem)="onEditItem($event)" />
             </div>
           </div>
@@ -178,6 +180,7 @@ export class MenusPanelComponent implements OnInit {
   readonly rotation = inject(RotationService);
   private dialog = inject(MatDialog);
   private preferencesService = inject(FoodPreferencesService);
+  private foodsService = inject(FoodsService);
   private notification = inject(NotificationService);
 
   // ---- Per-item serving popup state ------------------------------------
@@ -185,6 +188,18 @@ export class MenusPanelComponent implements OnInit {
   // used ONLY to resolve a meal item to its full Food for the label's per-100g
   // values. This flow never writes to FoodPreferencesService.
   private readonly allowedFull = signal<Food[]>([]);
+
+  // Foods fetched by id (GET /api/foods/{id}) to resolve items not in the
+  // allowed set, cached so repeat pencil-opens don't refetch. Read-only cache.
+  private readonly fetchedFoods = signal<Map<string, Food>>(new Map());
+
+  /** The item id whose food is being fetched (drives the pencil busy state). */
+  readonly resolvingItemId = signal<number | null>(null);
+
+  /** Resolves once the allowed-foods load settles — awaited before resolution
+   *  so a fast pencil-click on a fresh session doesn't miss a userfood that's
+   *  still loading (userfoods live only in the allowed set, not GET /foods). */
+  private allowedLoad: Promise<void> = Promise.resolve();
 
   /** The item whose serving is being edited (null = popup closed). */
   readonly popupItem = signal<MealItem | null>(null);
@@ -208,8 +223,9 @@ export class MenusPanelComponent implements OnInit {
     // Reload-on-mount: the server is the source of truth for the rotation.
     this.rotation.loadCurrentRotation();
     // Prime the allowed-foods list so the serving popup can resolve an item's
-    // food to its per-100g values. Read-only — resolution never persists here.
-    firstValueFrom(this.preferencesService.getAllowedFoodsFull())
+    // food to its per-100g values (also correct-ifies the common case without
+    // waiting on a by-id fetch). Read-only — resolution never persists here.
+    this.allowedLoad = firstValueFrom(this.preferencesService.getAllowedFoodsFull())
       .then((foods) => this.allowedFull.set(foods ?? []))
       .catch(() => this.allowedFull.set([]));
   }
@@ -222,10 +238,11 @@ export class MenusPanelComponent implements OnInit {
   }
 
   /** ✎ on a food row — resolve the item's food and open the serving popup at
-   *  the item's CURRENT quantity. If the food can't be resolved, toast and skip
-   *  (the pencil is already hidden for pending items). */
-  onEditItem(e: { mealId: number; item: MealItem }): void {
-    const food = this.resolveItemFood(e.item);
+   *  the item's CURRENT quantity. Resolution: (a) the allowed-foods set, then
+   *  (b) a by-id fetch for canonical foods not in that set. Only a genuine
+   *  fetch failure toasts (the pencil is already hidden for pending items). */
+  async onEditItem(e: { mealId: number; item: MealItem }): Promise<void> {
+    const food = await this.resolveItemFood(e.item);
     if (!food) {
       this.notification.show("Can't edit this food's serving here.", 'error');
       return;
@@ -238,11 +255,39 @@ export class MenusPanelComponent implements OnInit {
     this.original.set(initial);
   }
 
-  /** Match the item to a full Food by (foodId, foodSource), normalizing a
-   *  missing foodSource to 'food' (same key the add path / dot use). */
-  private resolveItemFood(item: MealItem): Food | null {
-    const key = `${item.foodId}:${item.foodSource ?? 'food'}`;
-    return this.allowedFull().find((f) => `${f.id}:${f.foodSource ?? 'food'}` === key) ?? null;
+  /** Resolve a meal item to a full Food (per-100g values). Key is
+   *  (foodId, foodSource) with a missing foodSource normalized to 'food' — the
+   *  same key the add path / in-meal dot use.
+   *    (a) the allowed-foods set (covers all userfoods + favorited foods),
+   *    (b) on miss, GET /api/foods/{id} for canonical 'food' items (e.g.
+   *        generated-meal foods never favorited), cached for repeat opens.
+   *  A 'userfood' miss can't be safely fetched by numeric id (that id keys the
+   *  UserFoods table, not Foods) so it returns null → toast. */
+  private async resolveItemFood(item: MealItem): Promise<Food | null> {
+    const source = item.foodSource ?? 'food';
+    const key = `${item.foodId}:${source}`;
+    // Ensure the allowed set has settled so a fresh-session click resolves
+    // userfoods (and favorited foods) without falling through to a by-id fetch.
+    await this.allowedLoad;
+    const hit = this.allowedFull().find((f) => `${f.id}:${f.foodSource ?? 'food'}` === key);
+    if (hit) return hit;
+
+    const cached = this.fetchedFoods().get(key);
+    if (cached) return cached;
+
+    if (source !== 'food' || item.foodId == null) return null;
+
+    this.resolvingItemId.set(item.id ?? null);
+    try {
+      const food = await firstValueFrom(this.foodsService.getFoodById(item.foodId));
+      if (!food?.id) return null;
+      this.fetchedFoods.update((m) => new Map(m).set(key, food));
+      return food;
+    } catch {
+      return null;
+    } finally {
+      this.resolvingItemId.set(null);
+    }
   }
 
   /** ▲ / ▼ stepper — ladder-snap the draft (shared SERVING_SIZE_LADDER). */

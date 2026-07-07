@@ -98,6 +98,7 @@ interface SlotMacros {
               <app-food
                 [item]="item"
                 [editing]="editing()"
+                [resolving]="resolvingItemId() === item.id"
                 (editItem)="editItem.emit($event)"
                 (deleteItem)="deleteItem.emit($event)"
                 (removeItem)="removeItem.emit($event)" />
@@ -119,6 +120,10 @@ export class MealComponent {
   /** True when this slot is the one currently being edited (drives the accent
    *  border, the ✎→✓ Done swap, and the per-row ✕ remove buttons). */
   readonly editing = input<boolean>(false);
+
+  /** The item id whose food is being resolved for the serving popup (drives
+   *  that row's pencil busy state). */
+  readonly resolvingItemId = input<number | null>(null);
 
   /** Emitted when a binder meal is dropped on this (empty) slot. The parent
    *  supplies the menuId and calls the assign endpoint. */

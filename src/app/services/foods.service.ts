@@ -92,6 +92,18 @@ export class FoodsService {
     return this.http.get<FoodSearchResponse>(url);
   }
 
+  /** Fetch a single canonical Food (Foods table) by id via GET /api/foods/{id}.
+   *  This endpoint returns the nested FoodSchema shape directly (unlike the
+   *  AllFoods-view endpoints, which return flat AllFoodRow), so no remap is
+   *  needed — just stamp the foodSource discriminator. Used to resolve a meal
+   *  item's full Food (per-100g values) when it isn't in the user's
+   *  allowed-foods set (e.g. a generated-meal item that was never favorited). */
+  getFoodById(id: number): Observable<Food> {
+    return this.http.get<Food>(`${this.baseUrl}/foods/${id}`).pipe(
+      map((food) => ({ ...food, foodSource: 'food' as const })),
+    );
+  }
+
   // All curated lists (for the dropdown). Optional foodId adds an `assigned`
   // flag per list — not needed here, used by the detail-panel work.
   getLists(foodId?: number, foodSource: string = 'food'): Observable<{ lists: FoodList[]; count: number }> {
