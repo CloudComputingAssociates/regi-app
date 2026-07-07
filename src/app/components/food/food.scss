@@ -47,12 +47,6 @@
   align-items: center;
   gap: 4px;
   transition: opacity 0.12s ease;
-
-  // Edit mode: the ✎ / ✕ are persistent affordances, not hover-revealed.
-  &.edit-mode {
-    opacity: 1;
-    pointer-events: auto;
-  }
 }
 
 .food-action {
@@ -81,15 +75,9 @@
     opacity: 0.5;
     cursor: progress;
   }
-
-  &.delete:hover {
-    border-color: #ff5f57;
-    color: #ff8079;
-    background: linear-gradient(180deg, #5a3a3a 0%, #482e2e 100%);
-  }
 }
 
-// Edit-mode remove — always visible (not hover-gated), red on hover.
+// Row remove ✕ — red on hover.
 .food-remove {
   flex: 0 0 auto;
   display: inline-flex;

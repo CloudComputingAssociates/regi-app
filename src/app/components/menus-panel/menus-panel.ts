@@ -89,7 +89,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                 class="wipe-btn"
                 matTooltip="Deletes all meals from the selected menu (the menu stays, its slots go empty)."
                 (click)="openWipeConfirm()">
-                Wipe menu <span class="wipe-icon" aria-hidden="true">🗑</span>
+                Wipe menu <mat-icon class="wipe-icon" aria-hidden="true">delete_outline</mat-icon>
               </button>
 
               <span class="toolbar-spacer"></span>

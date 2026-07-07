@@ -58,6 +58,9 @@ export interface MacroDisplayData {
                   <div class="label-row">
                     <span class="bar-label" [style.color]="getLabelColor(macro.name)">{{ macro.name }}</span>
                     @if ($last) {
+                      @if (caloriesTotal() > 0) {
+                        <span class="menu-cals">{{ caloriesTotal() }} cals</span>
+                      }
                       <div class="mode-toggle-container">
                         <button
                           type="button"
@@ -170,6 +173,15 @@ export class MacrosComponent implements OnInit {
       ],
       timePeriod: 'day'
     };
+  });
+
+  // Rolled-up total calories for the current context — same sum-of-all-meals
+  // source as the macro bars. Menu context only for now (0 hides it).
+  readonly caloriesTotal = computed<number>(() => {
+    if (this.context() === 'menu') {
+      return Math.round(this.rotationService.selectedMenuTotals().calories);
+    }
+    return 0;
   });
 
   // Signal for subscription-based display data (non-preferences contexts)

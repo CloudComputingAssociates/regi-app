@@ -12,6 +12,7 @@ import {
   effect,
   input,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -35,47 +36,48 @@ interface SlotMacros {
     <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()">
       <div class="slot-header">
         <span class="slot-title">Meal {{ slot().slotOrder }}</span>
-        @if (editing() && slot().mealId != null) {
-          <!-- Recessed, indented box + blinking caret so it obviously reads as
-               editable. Commits on Enter or when focus leaves (e.g. the user
-               clicks a food row's pencil). -->
+        @if (renaming() && slot().mealId != null) {
+          <!-- Recessed, indented box + blinking caret. Commits on Enter or when
+               focus leaves; Escape cancels. -->
           <input
             #nameInput
             type="text"
             class="meal-name-edit"
             [value]="nameSeed()"
             (keydown.enter)="commitName($any($event.target).value); $any($event.target).blur()"
+            (keydown.escape)="renaming.set(false)"
             (blur)="commitName($any($event.target).value)"
             aria-label="Meal name" />
         } @else if (title()) {
           <span class="meal-name">{{ title() }}</span>
         }
+        <!-- + opens the food lookaside targeted at this meal (active while it's
+             the add target). Pencil edits the title; trash deletes the meal.
+             Editing/removing individual foods happens directly on each row. -->
         @if (!slot().isDiningOut) {
-          @if (editing()) {
-            <button
-              type="button"
-              class="edit-affordance done"
-              matTooltip="Done editing"
-              matTooltipPosition="above"
-              (click)="doneEdit.emit()">
-              ✓
-            </button>
-          } @else {
-            <button
-              type="button"
-              class="edit-affordance"
-              matTooltip="Edit foods"
-              matTooltipPosition="above"
-              (click)="editSlot.emit()">
-              ✎
-            </button>
-          }
+          <button
+            type="button"
+            class="add-affordance"
+            [class.active]="editing()"
+            matTooltip="Add Food item"
+            matTooltipPosition="above"
+            (click)="toggleAdd.emit()">
+            +
+          </button>
         }
         @if (slot().mealId != null) {
           <button
             type="button"
+            class="edit-affordance"
+            matTooltip="Edit Meal Title"
+            matTooltipPosition="above"
+            (click)="renaming.set(true)">
+            ✎
+          </button>
+          <button
+            type="button"
             class="delete-affordance"
-            matTooltip="Remove meal from slot"
+            matTooltip="Delete meal"
             matTooltipPosition="above"
             (click)="deleteMeal.emit(slot().slotOrder)">
             🗑
@@ -90,12 +92,19 @@ interface SlotMacros {
         </div>
       } @else if (isEmpty() && !editing()) {
         <div
-          class="slot-placeholder"
+          class="slot-placeholder pick"
           cdkDropList
           [cdkDropListEnterPredicate]="mealDropPredicate"
           (cdkDropListDropped)="onDrop($event)">
-          <span>empty slot — pick a meal</span>
-          <button type="button" class="add-stub" disabled>+ from lookaside</button>
+          <span>Pick meal — or</span>
+          <button
+            type="button"
+            class="create-btn"
+            matTooltip="Add foods to build this meal"
+            matTooltipPosition="above"
+            (click)="toggleAdd.emit()">
+            Create
+          </button>
         </div>
       } @else {
         <!-- When editing, this body is the food drop target (enterPredicate
@@ -119,10 +128,8 @@ interface SlotMacros {
             @for (item of items(); track item.id) {
               <app-food
                 [item]="item"
-                [editing]="editing()"
                 [resolving]="resolvingItemId() === item.id"
                 (editItem)="editItem.emit($event)"
-                (deleteItem)="deleteItem.emit($event)"
                 (removeItem)="removeItem.emit($event)" />
             }
           </div>
@@ -139,8 +146,9 @@ export class MealComponent {
   readonly slot = input.required<MenuSlot>();
   readonly items = input.required<MealItem[]>();
 
-  /** True when this slot is the one currently being edited (drives the accent
-   *  border, the ✎→✓ Done swap, and the per-row ✕ remove buttons). */
+  /** True when this meal is the current lookaside "add" target — drives the
+   *  accent border, the active + disc, and the card being a food drop target.
+   *  Editing/removing individual foods is independent of this. */
   readonly editing = input<boolean>(false);
 
   /** The item id whose food is being resolved for the serving popup (drives
@@ -154,23 +162,21 @@ export class MealComponent {
   /** Emitted (with this slot's slotOrder) when the trash is clicked. */
   readonly deleteMeal = output<number>();
 
-  /** ✎ — enter edit mode for this slot (parent calls beginEditingSlot). */
-  readonly editSlot = output<void>();
-
-  /** ✓ — leave edit mode (parent calls stopEditing). */
-  readonly doneEdit = output<void>();
+  /** + — toggle this meal as the lookaside add target (parent begins/stops). */
+  readonly toggleAdd = output<void>();
 
   /** Inline name box committed — parent persists the new meal name. */
   readonly renameMeal = output<{ mealId: number; name: string }>();
 
-  /** Pencil on a food row — edit that food's Nutrition Facts (servings) in place. */
+  /** ✎ on a food row — edit that item's serving (parent opens the popup). */
   readonly editItem = output<MealItem>();
 
-  /** Garbage can on a food row — delete that food from the meal. */
-  readonly deleteItem = output<MealItem>();
-
-  /** ✕ on a food row (edit mode) — remove that item from the meal. */
+  /** ✕ on a food row — remove that item from the meal. */
   readonly removeItem = output<MealItem>();
+
+  /** True while the meal title is being renamed inline (local, independent of
+   *  the add target). */
+  readonly renaming = signal(false);
 
   /** A lookaside food dropped on this (editing) meal card. */
   readonly dropFood = output<{ food: Food; serving: number }>();
@@ -183,25 +189,21 @@ export class MealComponent {
    *  starts from the visible name and the committed value replaces it. */
   readonly nameSeed = computed<string>(() => this.title());
 
-  // Auto-focus the name box once per edit-mode entry so the caret blinks there
-  // immediately. Guarded by mealId so a later menu refresh (new slot reference)
-  // doesn't steal focus back while the user is elsewhere (e.g. a row pencil).
-  private focusedForMeal: number | null = null;
+  // Focus + select the name box the moment renaming turns on, so the caret
+  // blinks there and the user can type over the existing name.
   private readonly focusNameEffect = effect(() => {
     const el = this.nameInput()?.nativeElement;
-    const mealId = this.slot().mealId ?? null;
-    if (!this.editing()) {
-      this.focusedForMeal = null;
-      return;
-    }
-    if (el && mealId != null && this.focusedForMeal !== mealId) {
-      this.focusedForMeal = mealId;
-      queueMicrotask(() => el.focus());
+    if (this.renaming() && el) {
+      queueMicrotask(() => {
+        el.focus();
+        el.select();
+      });
     }
   });
 
-  /** Persist a changed meal name (no-op on empty or unchanged). */
+  /** Persist a changed meal name and exit rename (no-op on empty/unchanged). */
   commitName(value: string): void {
+    this.renaming.set(false);
     const mealId = this.slot().mealId;
     const name = value.trim();
     if (mealId == null || !name || name === this.nameSeed().trim()) return;

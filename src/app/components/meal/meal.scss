@@ -72,10 +72,11 @@
     }
   }
 
-  // Round action discs (not squares), following the dialog confirm/cancel
-  // vocabulary.
-  .edit-affordance {
-    margin-left: auto;
+  // Round action discs (not squares). + adds food, ✎ edits the title, 🗑
+  // deletes the meal.
+  .add-affordance,
+  .edit-affordance,
+  .delete-affordance {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
@@ -94,41 +95,26 @@
       color: #4da6ff;
       border-color: #4da6ff;
     }
+  }
 
-    // ✓ Done — the confirm disc: filled green, white check (like our dialogs).
-    &.done {
-      background: #28c941;
-      border-color: #28c941;
+  // + leads the action cluster (pushed to the right of the name).
+  .add-affordance {
+    margin-left: auto;
+    font-size: 15px;
+
+    // Active = this meal is the lookaside add target: filled accent, white +.
+    &.active {
+      background: #4da6ff;
+      border-color: #4da6ff;
       color: #ffffff;
-
-      &:hover {
-        background: #23b23a;
-        border-color: #23b23a;
-      }
     }
   }
 
-  .delete-affordance {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    border: 1px solid #4a4a4a;
-    border-radius: 50%;
-    background: #2a2a2a;
-    color: #9aa0a6;
-    font-size: 11px;
-    line-height: 1;
-    cursor: pointer;
-
-    // Cancel disc: fills red on hover.
-    &:hover {
-      background: #ff5f57;
-      border-color: #ff5f57;
-      color: #ffffff;
-    }
+  // Trash is a cancel disc: fills red on hover.
+  .delete-affordance:hover {
+    background: #ff5f57;
+    border-color: #ff5f57;
+    color: #ffffff;
   }
 }
 
@@ -221,13 +207,27 @@
     }
   }
 
-  .add-stub {
+  // "Pick meal — or [Create]" on one line.
+  &.pick {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  // Create = the Add (+) action for an empty slot; a quiet button, not dashed.
+  .create-btn {
     padding: 4px 12px;
-    border: 1px dashed #5a5a5a;
+    border: 1px solid #4a4a4a;
     border-radius: 6px;
-    background: transparent;
-    color: #6a6f75;
+    background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
+    color: #d8d8d8;
     font-size: 12px;
-    cursor: not-allowed;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.12s ease, color 0.12s ease;
+
+    &:hover {
+      border-color: #4da6ff;
+      color: #4da6ff;
+    }
   }
 }

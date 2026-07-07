@@ -117,6 +117,17 @@
         text-align: left;
         text-transform: lowercase;
       }
+
+      // Rolled-up menu total calories — sits just left of the %/g toggle
+      // (which floats absolute at the bottom-right). Blue, quiet.
+      .menu-cals {
+        margin-left: auto;
+        margin-right: 58px;
+        align-self: center;
+        font-size: 14px;
+        color: #4da6ff;
+        white-space: nowrap;
+      }
     }
   }
 

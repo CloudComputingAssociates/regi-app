@@ -23,8 +23,7 @@ import { MealComponent } from '../meal/meal';
             [resolvingItemId]="resolvingItemId()"
             (placeMeal)="onPlace($event)"
             (deleteMeal)="onDelete($event)"
-            (editSlot)="onEditSlot(slot)"
-            (doneEdit)="rotation.stopEditing()"
+            (toggleAdd)="onToggleAdd(slot)"
             (renameMeal)="rotation.updateMealName($event.mealId, $event.name)"
             (removeItem)="onRemoveItem(slot.mealId, $event)"
             (editItem)="onEditItem(slot, $event)"
@@ -72,23 +71,25 @@ export class MenusMealsComponent {
     this.rotation.clearSlot(menuId, slotOrder);
   }
 
-  /** ✎ on a slot — enter edit mode for it (rail swaps to the lookaside). */
-  onEditSlot(slot: MenuSlot): void {
+  /** + on a slot — toggle it as the lookaside add target (open/close the
+   *  food list on this meal). */
+  onToggleAdd(slot: MenuSlot): void {
     const menuId = this.menu()?.id;
     if (menuId == null) return;
-    this.rotation.beginEditingSlot(menuId, slot.slotOrder, slot.mealId ?? null);
+    if (this.isEditing(slot.slotOrder)) this.rotation.stopEditing();
+    else this.rotation.beginEditingSlot(menuId, slot.slotOrder, slot.mealId ?? null);
   }
 
-  /** ✕ on a food row (edit mode) — remove that item from the meal. */
+  /** ✕ on a food row — remove that item from the meal (works directly, no
+   *  add target needed). */
   onRemoveItem(mealId: number | null | undefined, item: MealItem): void {
     if (mealId == null || item.id == null) return;
     this.rotation.deleteMealItem(mealId, item.id);
   }
 
-  /** ✎ on a food row — only the editing slot's pencil opens the serving popup
-   *  (the non-edit-mode hover pencil in other slots stays inert). */
+  /** ✎ on a food row — open the serving popup for that item directly. */
   onEditItem(slot: MenuSlot, item: MealItem): void {
-    if (!this.isEditing(slot.slotOrder) || slot.mealId == null) return;
+    if (slot.mealId == null) return;
     this.editItem.emit({ mealId: slot.mealId, item });
   }
 }
