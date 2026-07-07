@@ -93,7 +93,7 @@ import { Meal } from '../../models';
       <div class="binder-list" cdkDropList>
         <!-- Unplaced AI candidates first, then saved meals. Both are cdkDrag
              in the same drop list, so they place into slots identically. -->
-        @for (meal of rotation.candidateMeals(); track meal.id; let i = $index) {
+        @for (meal of rotation.candidateMeals(); track meal.id) {
           <div class="binder-card candidate" cdkDrag [cdkDragData]="meal">
             <button
               type="button"
@@ -102,7 +102,7 @@ import { Meal } from '../../models';
               (click)="$event.stopPropagation(); rotation.removeCandidate(meal.id)">
               🗑
             </button>
-            <span class="binder-card-name">{{ i + 1 }} {{ candidateTitle(meal) }}</span>
+            <span class="binder-card-name">{{ candidateTitle(meal) }}</span>
             <div class="binder-chips">
               <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
               <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>

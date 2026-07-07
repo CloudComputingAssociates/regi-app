@@ -383,8 +383,8 @@ export class RotationService {
    *    • empty slot (mealId null): POST /meal {name} → PUT /menu/{id}/slot to
    *      place it (same endpoint placeMealInSlot uses) → adopt the new mealId
    *      onto editingSlot. isSaved stays false, matching generated meals.
-   *    • food already an item (same foodId + foodSource): PUT the item with
-   *      quantity = existing + serving — no duplicate row.
+   *    • food already an item (same foodId + foodSource): NO-OP — we never
+   *      auto-summate. The user changes the amount via the row pencil.
    *    • otherwise: POST a new item.
    *  itemRole = 'primary' when the food is a Protein AND the meal has no primary
    *  yet; else 'side'. On success: refresh the menu (slot macros/chips) + the
@@ -417,35 +417,30 @@ export class RotationService {
       }
 
       const existingItems = this.mealsById().get(mealId)?.items ?? [];
-      const existing = existingItems.find(
+      const alreadyInMeal = existingItems.some(
         (i) => i.food?.foodId === food.id && (i.food?.foodSource ?? 'food') === (food.foodSource ?? 'food'),
       );
 
-      if (existing?.id != null) {
-        // Same food already present → bump its quantity; no duplicate row.
-        const body: UpdateMealItemRequest = {
-          quantity: (existing.quantity ?? 0) + serving,
-        };
-        await firstValueFrom(
-          this.http.put<MealItem>(`${this.baseUrl}/meal/${mealId}/items/${existing.id}`, body),
-        );
-      } else {
-        const hasPrimary = existingItems.some((i) => i.itemRole === 'primary');
-        const itemRole: ItemRole =
-          food.categoryName === 'Protein' && !hasPrimary ? 'primary' : 'side';
-        const body: AddMealItemRequest = {
-          foodId: food.id,
-          foodSource: food.foodSource ?? 'food',
-          foodName,
-          itemRole,
-          isTracked: true,
-          quantity: serving,
-          unit,
-        };
-        await firstValueFrom(
-          this.http.post<MealItem>(`${this.baseUrl}/meal/${mealId}/items`, body),
-        );
-      }
+      // Already in the meal → adding again is a no-op. We never auto-summate the
+      // quantity; to change the amount the user edits that item with the row
+      // pencil. (No duplicate row either.)
+      if (alreadyInMeal) return;
+
+      const hasPrimary = existingItems.some((i) => i.itemRole === 'primary');
+      const itemRole: ItemRole =
+        food.categoryName === 'Protein' && !hasPrimary ? 'primary' : 'side';
+      const body: AddMealItemRequest = {
+        foodId: food.id,
+        foodSource: food.foodSource ?? 'food',
+        foodName,
+        itemRole,
+        isTracked: true,
+        quantity: serving,
+        unit,
+      };
+      await firstValueFrom(
+        this.http.post<MealItem>(`${this.baseUrl}/meal/${mealId}/items`, body),
+      );
 
       // Refresh so the slot's macro chips + top totals recompute and the meal's
       // food rows / in-meal dot reflect the add (placeMealInSlot pattern).

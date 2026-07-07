@@ -34,31 +34,28 @@ const MYFOOD_CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
   { cat: 'Condiment', label: 'Seasonings' },
 ];
 
-// The two macro pucks that preview each category — a brief "what is this food
-// mostly" cue; the full macros + serving appear once the food is in the meal.
-// Protein-forward (Proteins/Dairy) → Protein+Fiber, Fat (Fats) → Fat+Fiber,
-// carb-forward (Veggies/Fruits/Carbs/Processed/Seasonings) → Carb+Fiber.
-const CATEGORY_PUCKS: Record<string, readonly [MacroKey, MacroKey]> = {
-  Protein: ['protein', 'fiber'],
-  Dairy: ['protein', 'fiber'],
-  Fat: ['fat', 'fiber'],
-  Vegetable: ['carb', 'fiber'],
-  Fruit: ['carb', 'fiber'],
-  Carbohydrate: ['carb', 'fiber'],
-  Processed: ['carb', 'fiber'],
-  Condiment: ['carb', 'fiber'],
-};
+// Canonical left→right display order for whichever pucks a row shows.
+const MACRO_ORDER: readonly MacroKey[] = ['protein', 'carb', 'fat', 'fiber'];
 
+// Single-letter puck labels. Fat and Fiber share "F" — they never appear
+// together (they compete for the same slot) and their colors + tooltips
+// distinguish them.
 const PUCK_LABEL: Record<MacroKey, string> = {
   protein: 'P',
   carb: 'C',
   fat: 'F',
-  fiber: 'Fi',
+  fiber: 'F',
 };
 
-// Below this many grams (for the food's default serving) a macro reads as
-// "trace" — its puck is omitted entirely (pure oil → no fiber/protein puck,
-// pure fiber → no carb puck, etc.).
+const PUCK_NAME: Record<MacroKey, string> = {
+  protein: 'Protein',
+  carb: 'Carb',
+  fat: 'Fat',
+  fiber: 'Fiber',
+};
+
+// Below this many grams (for the food's serving) a macro reads as "trace" and
+// its puck is omitted (pure oil → only Fat, pure fiber → only Fiber, etc.).
 const PUCK_MIN_G = 1;
 
 @Component({
@@ -125,7 +122,14 @@ const PUCK_MIN_G = 1;
                 (click)="onPickClick(food)">
                 <span class="la-dot" [class.on]="inMeal(food)"></span>
                 <span class="la-name">{{ name(food) }}</span>
-                <span class="la-serving">{{ resolvePickServing(food) }} {{ unit(food) }}</span>
+                <span class="la-pucks">
+                  @for (p of pucksFor(food, resolvePickServing(food)); track p.key) {
+                    <span
+                      [class]="'puck ' + p.key"
+                      [matTooltip]="p.name"
+                      matTooltipPosition="above">{{ p.label }} {{ p.value }}</span>
+                  }
+                </span>
               </div>
             }
           } @empty {
@@ -152,8 +156,11 @@ const PUCK_MIN_G = 1;
                   <span class="la-dot" [class.on]="inMeal(food)"></span>
                   <span class="la-name">{{ name(food) }}</span>
                   <span class="la-pucks">
-                    @for (p of pucksFor(food); track p.key) {
-                      <span [class]="'puck ' + p.key">{{ p.label }} {{ p.value }}</span>
+                    @for (p of pucksFor(food, resolveMyFoodServing(food)); track p.key) {
+                      <span
+                        [class]="'puck ' + p.key"
+                        [matTooltip]="p.name"
+                        matTooltipPosition="above">{{ p.label }} {{ p.value }}</span>
                     }
                   </span>
                 </div>
@@ -260,25 +267,49 @@ export class FoodLookasideComponent {
     return groups;
   });
 
-  /** The (up to two) macro pucks previewed for a food, per its category, with
-   *  trace macros omitted. Values are grams for the food's default serving. */
-  pucksFor(food: Food): Array<{ key: MacroKey; label: string; value: number }> {
-    const keys = CATEGORY_PUCKS[food.categoryName ?? ''] ?? (['carb', 'fiber'] as const);
-    const out: Array<{ key: MacroKey; label: string; value: number }> = [];
-    for (const key of keys) {
-      const g = this.macroG(food, key);
-      if (g < PUCK_MIN_G) continue; // trace / really low → omit the puck
-      out.push({ key, label: PUCK_LABEL[key], value: Math.round(g) });
+  /** Up to two macro pucks previewing a food at `serving`, chosen so the row
+   *  reads at a glance: slot 1 = the larger of Protein/Carb, slot 2 = the
+   *  larger of Fat/Fiber (falling back to the other structural macro when both
+   *  are trace so two still show). Trace slots (<1 g) drop out; the result is
+   *  rendered left→right in canonical P·C·F·Fi order. */
+  pucksFor(food: Food, serving: number): Array<{ key: MacroKey; label: string; name: string; value: number }> {
+    const g: Record<MacroKey, number> = {
+      protein: this.macroG(food, 'protein', serving),
+      carb: this.macroG(food, 'carb', serving),
+      fat: this.macroG(food, 'fat', serving),
+      fiber: this.macroG(food, 'fiber', serving),
+    };
+    const chosen = new Set<MacroKey>();
+    const structural = this.largerMaterial(g, 'protein', 'carb');
+    if (structural) chosen.add(structural);
+    let energy = this.largerMaterial(g, 'fat', 'fiber');
+    if (!energy && structural) {
+      // Fat + Fiber both trace → show the other structural macro so two appear.
+      const other: MacroKey = structural === 'protein' ? 'carb' : 'protein';
+      if (g[other] >= PUCK_MIN_G) energy = other;
     }
-    return out;
+    if (energy) chosen.add(energy);
+    return MACRO_ORDER.filter((k) => chosen.has(k)).map((k) => ({
+      key: k,
+      label: PUCK_LABEL[k],
+      name: PUCK_NAME[k],
+      value: Math.round(g[k]),
+    }));
   }
 
-  /** Grams of one macro for the food's default serving (per-100g × scale, the
-   *  same math the NF label uses), so pucks match what lands in the meal. */
-  private macroG(food: Food, key: MacroKey): number {
+  /** The larger of two macros by grams (ties → the first, which follows the
+   *  P·C·F·Fi priority), or null when even the larger is trace. */
+  private largerMaterial(g: Record<MacroKey, number>, k1: MacroKey, k2: MacroKey): MacroKey | null {
+    const key = g[k1] >= g[k2] ? k1 : k2;
+    return g[key] >= PUCK_MIN_G ? key : null;
+  }
+
+  /** Grams of one macro for the food at `serving` (per-100g × scale, the same
+   *  math the NF label uses), so pucks match what lands in the meal. */
+  private macroG(food: Food, key: MacroKey, serving: number): number {
     const nf = food.nutritionFacts;
     if (!nf) return 0;
-    const scale = nutritionLabelScale(food, this.resolveMyFoodServing(food));
+    const scale = nutritionLabelScale(food, serving);
     const per100 =
       key === 'protein'
         ? nf.proteinG
@@ -315,10 +346,6 @@ export class FoodLookasideComponent {
 
   name(food: Food): string {
     return food.shortDescription?.trim() || food.description || '';
-  }
-
-  unit(food: Food): string {
-    return food.servingUnit ?? 'serving';
   }
 
   // Resolved default serving — display only; re-resolved at add time below.

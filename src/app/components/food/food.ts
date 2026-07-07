@@ -15,11 +15,10 @@ import { MealItem } from '../../models';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="food-row">
-      <span class="food-text">
-        <span class="qty">{{ item().quantity }} {{ item().unit }}</span>
-        <span class="dot">·</span>
-        <span class="name">{{ item().food?.shortDescription?.trim() || item().foodName }}</span>
-      </span>
+      <!-- Name first (2/3, clipped) then serving (1/3, clipped); the edit/trash
+           actions sit outside this split. -->
+      <span class="food-name">{{ item().food?.shortDescription?.trim() || item().foodName }}</span>
+      <span class="food-qty">{{ item().quantity }} {{ item().unit }}</span>
       @if (editing()) {
         <span class="food-actions edit-mode">
           <!-- Pencil hidden for items whose food can't be resolved to a full
