@@ -147,6 +147,9 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  // Always reserve the scrollbar gutter so expanding a long vs. short category
+  // never reflows the rows sideways (no jumping / vertigo).
+  scrollbar-gutter: stable;
   padding: 10px 14px;
   display: flex;
   flex-direction: column;
@@ -213,9 +216,10 @@
   }
 }
 
-// Name (+ the blue in-meal dot) takes ~2/3; the metrics column ~1/3.
+// Name (+ the blue in-meal dot) takes the remaining space and CLIPS — it never
+// changes the locked metrics column, so rows never shift horizontally.
 .la-name {
-  flex: 2 1 0;
+  flex: 1 1 0;
   min-width: 0;
   font-size: 15px;
   color: #f1f1f1;
@@ -224,15 +228,17 @@
   white-space: nowrap;
 }
 
-// The 1/3 metrics area — discs (or the serving+unit), left-aligned so the
-// discs form clean columns down the list.
+// The metrics area is LOCKED at 25% of the row — responsive to the pane width
+// but never widened by longer names/values, so the discs stay in fixed columns
+// down the list (no jumping). Left-aligned; overflow clipped for safety.
 .la-metrics {
-  flex: 1 1 0;
+  flex: 0 0 25%;
   min-width: 0;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 5px;
+  gap: 3px;
 }
 
 .la-units {
@@ -250,18 +256,21 @@
 .disc-empty {
   flex: 0 0 auto;
   box-sizing: border-box;
-  width: 40px;
+  // Two must fit inside the locked 25% metrics column.
+  width: 27px;
 }
 
 .disc {
   text-align: center;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 400;
   line-height: 1;
   padding: 3px 0;
   border-radius: 10px;
   background: #000;
   border: 1px solid currentColor;
+  overflow: hidden;
+  white-space: nowrap;
 
   // color drives both the thin ring (currentColor border) and the text —
   // muted so the discs recede until a food is dragged into the meal.
