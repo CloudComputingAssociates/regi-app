@@ -112,6 +112,7 @@ interface SlotMacros {
               <span class="chip carb">C {{ round(macros().carbG) }}</span>
               <span class="chip fat">F {{ round(macros().fatG) }}</span>
               <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
+              <span class="meal-cals">{{ calories() }} cals</span>
             </div>
           }
           <div class="food-rows">
@@ -263,6 +264,9 @@ export class MealComponent {
       fiberG: m?.fiberG ?? 0,
     };
   });
+
+  /** Meal total calories (server-computed slot macro), for the chips row. */
+  readonly calories = computed<number>(() => Math.round(this.slot().macros?.calories ?? 0));
 
   round(n: number): number {
     return Math.round(n);

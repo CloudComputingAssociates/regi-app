@@ -217,7 +217,7 @@
 .la-name {
   flex: 2 1 0;
   min-width: 0;
-  font-size: 13px;
+  font-size: 15px;
   color: #f1f1f1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -256,19 +256,19 @@
 .disc {
   text-align: center;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1;
   padding: 3px 0;
   border-radius: 10px;
   background: #000;
-  border: 2px solid currentColor;
+  border: 1px solid currentColor;
 
-  // color drives both the ring (currentColor border) and the text. Brighter
-  // than the filled-chip palette so they read on black.
-  &.protein { color: #5bbf4a; }
-  &.carb { color: #e08a3c; }
-  &.fat { color: #b07de0; }
-  &.fiber { color: #b8935e; }
+  // color drives both the thin ring (currentColor border) and the text —
+  // muted so the discs recede until a food is dragged into the meal.
+  &.protein { color: #6b9a5c; }
+  &.carb { color: #b0824f; }
+  &.fat { color: #9779ac; }
+  &.fiber { color: #9c8460; }
 }
 
 // MyFoods category accordion header — chevron + plural label + count. No

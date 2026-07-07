@@ -63,24 +63,12 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                  ~2/3 across; People (persisted) is right-justified against the
                  right edge, adjacent to the Meals binder. -->
             <div class="menus-toolbar">
-              <span class="toolbar-spacer"></span>
-
-              <button
-                type="button"
-                class="wipe-btn"
-                matTooltip="Deletes all meals from the selected menu (the menu stays, its slots go empty)."
-                (click)="openWipeConfirm()">
-                Wipe menu
-              </button>
-
-              <span class="toolbar-spacer-tail"></span>
-
               <div class="people-control">
-                <span class="people-label">People</span>
+                <span class="people-label">Serving:</span>
                 <button
                   type="button"
                   class="people-step"
-                  matTooltip="Fewer people"
+                  matTooltip="Fewer servings"
                   [disabled]="rotation.persons() <= 1"
                   (click)="rotation.setPersons(rotation.persons() - 1)">
                   −
@@ -89,12 +77,22 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                 <button
                   type="button"
                   class="people-step"
-                  matTooltip="More people"
+                  matTooltip="More servings"
                   [disabled]="rotation.persons() >= 12"
                   (click)="rotation.setPersons(rotation.persons() + 1)">
                   +
                 </button>
               </div>
+
+              <button
+                type="button"
+                class="wipe-btn"
+                matTooltip="Deletes all meals from the selected menu (the menu stays, its slots go empty)."
+                (click)="openWipeConfirm()">
+                Wipe menu <span class="wipe-icon" aria-hidden="true">🗑</span>
+              </button>
+
+              <span class="toolbar-spacer"></span>
             </div>
 
             <app-menu-card-row

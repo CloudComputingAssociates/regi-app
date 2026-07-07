@@ -53,10 +53,9 @@
   border-bottom: 1px solid #1a1a1a;
 }
 
-// Spacers place Wipe ~2/3 across; People is the last child, right-justified
-// flush against the toolbar's right padding edge.
-.toolbar-spacer { flex: 2 1 0; }
-.toolbar-spacer-tail { flex: 1 1 0; }
+// Trailing spacer grows to absorb the rest of the row, so Serving + Wipe are
+// left-justified against the toolbar's left padding edge.
+.toolbar-spacer { flex: 1 1 auto; }
 
 .people-control {
   flex: 0 0 auto;
@@ -103,15 +102,24 @@
   }
 }
 
-// Raised/etched app-grey key — no accent colour. Positioned ~2/3 from the left
-// (the left two-thirds is left empty for future controls).
+// Raised/etched app-grey key — no accent colour. Sits just right of the
+// Serving control with ample space between.
 .wipe-btn {
   flex: 0 0 auto;
+  margin-left: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   height: 26px;
   padding: 0 14px;
   font-size: 12px;
   font-weight: 600;
   color: #d8d8d8;
+
+  .wipe-icon {
+    font-size: 13px;
+    line-height: 1;
+  }
   background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
   border: 1px solid #1f1f1f;
   border-top-color: #555555;
