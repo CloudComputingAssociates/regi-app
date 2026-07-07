@@ -205,7 +205,7 @@ export class MealBinderComponent implements OnInit {
   candidateTitle(meal: Meal): string {
     const items = meal.items ?? [];
     const primary = items.find((i) => i.itemRole === 'primary') ?? items[0];
-    if (primary) return (primary.shortDescription?.trim() || primary.foodName?.trim()) ?? '';
+    if (primary) return (primary.food?.shortDescription?.trim() || primary.foodName?.trim()) ?? '';
     return meal.name ?? '';
   }
 }

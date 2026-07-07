@@ -41,7 +41,7 @@ export interface MealSchema {
   [k: string]: unknown;
 }
 /**
- * A food item within a meal
+ * A meal line: quantity + unit + role + per-item scaled macro totals, plus the FULL resolved food record nested under `food`. `food` is null for pending/unresolved AI items (foodName still carries the display name). The per-item calories/proteinG/… are the amounts for THIS quantity; food.calories/proteinG/… are the food's per-serving baseline.
  *
  * This interface was referenced by `MealSchema`'s JSON-Schema
  * via the `definition` "MealItem".
@@ -52,14 +52,9 @@ export interface MealItem {
    */
   id?: number;
   /**
-   * Reference to the Food row
-   */
-  foodId: number;
-  /**
-   * Denormalized food name for display
+   * Display name — always present. Mirrors food.description when resolved; the AI-proposed name when pending.
    */
   foodName: string;
-  foodSource: FoodSource;
   itemRole: ItemRole;
   /**
    * True when the item contributes to macro totals and shopping list
@@ -73,25 +68,111 @@ export interface MealItem {
    * Unit of measurement (serving, oz, g, etc.)
    */
   unit: string;
+  /**
+   * Per-item scaled calories for this quantity
+   */
   calories?: number;
+  /**
+   * Per-item scaled protein (g) for this quantity
+   */
   proteinG?: number;
+  /**
+   * Per-item scaled fat (g) for this quantity
+   */
   fatG?: number;
+  /**
+   * Per-item scaled carbohydrate (g) for this quantity
+   */
   carbG?: number;
+  /**
+   * Per-item scaled fiber (g) for this quantity
+   */
   fiberG?: number;
+  /**
+   * Per-item scaled sodium (mg) for this quantity
+   */
   sodiumMg?: number;
   /**
    * Display order within the meal
    */
   sortOrder?: number;
-  servingSizeG?: number;
-  servingGramsPerUnit?: number;
-  foodImageThumbnail?: string;
-  shortDescription?: string;
-  categoryName?: string;
+  /**
+   * The complete resolved Food/UserFood record from the AllFoods view; null for pending/unresolved AI items.
+   */
+  food?: MealItemFood | null;
+  [k: string]: unknown;
+}
+/**
+ * The full resolved food record for a meal item, mirroring the AllFoods view (union of Foods + UserFoods with nutrition). Base per-serving values — the meal line scales these by quantity into MealItem's own macro fields.
+ *
+ * This interface was referenced by `MealSchema`'s JSON-Schema
+ * via the `definition` "MealItemFood".
+ */
+export interface MealItemFood {
+  /**
+   * Foods.FoodID or UserFoods.UserFoodID
+   */
+  foodId: number;
+  /**
+   * Which table the food came from
+   */
+  foodSource: "food" | "userfood";
+  /**
+   * Full food description
+   */
+  description: string;
+  /**
+   * Short display name
+   */
+  shortDescription?: string | null;
+  /**
+   * Food category (e.g. Produce, Protein)
+   */
+  categoryName?: string | null;
+  /**
+   * Provenance (e.g. USDA, branded)
+   */
+  dataSource?: string | null;
+  foodImage?: string | null;
+  foodImageThumbnail?: string | null;
+  /**
+   * Baseline serving size (in servingUnit)
+   */
+  servingSize?: number | null;
+  servingUnit?: string | null;
+  servingGramsPerUnit?: number | null;
+  /**
+   * Baseline serving size in grams
+   */
+  servingSizeG?: number | null;
+  /**
+   * Per-serving calories
+   */
+  calories?: number | null;
+  /**
+   * Per-serving protein (g)
+   */
+  proteinG?: number | null;
+  /**
+   * Per-serving fat (g)
+   */
+  fatG?: number | null;
+  /**
+   * Per-serving carbohydrate (g)
+   */
+  carbG?: number | null;
+  /**
+   * Per-serving fiber (g)
+   */
+  fiberG?: number | null;
+  /**
+   * Per-serving sodium (mg)
+   */
+  sodiumMg?: number | null;
   /**
    * Optional pre-baked purchase link (e.g., Amazon URL)
    */
-  productPurchaseLink?: string;
+  productPurchaseLink?: string | null;
   [k: string]: unknown;
 }
 /**
@@ -360,7 +441,7 @@ export interface FoodLookupResponse {
    */
   userFoodId?: number | null;
   /**
-   * When found, shape matches MealItem from meal.schema.json (foodId, foodName, foodSource, quantity, unit, plus optional macros)
+   * When found, the resolved food record (shape mirrors MealItemFood: foodId, foodSource, description, nutrition, etc.)
    */
   item?: {
     [k: string]: unknown;
@@ -483,6 +564,10 @@ export interface GenerateMealRequest {
    * Names or descriptions of meals already generated this session, so the AI produces something different.
    */
   excludeMeals?: string[];
+  /**
+   * Food names already used in the day's other meals, so the AI varies vegetables and fats instead of repeating them (e.g. avocado in every meal). Meal names alone can't drive this — the model needs the actual foods. Cross-day repetition is fine; only pass the current day's foods.
+   */
+  excludeFoods?: string[];
   /**
    * Whether the meal is treated as a full meal or a snack
    */

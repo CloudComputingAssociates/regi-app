@@ -418,7 +418,7 @@ export class RotationService {
 
       const existingItems = this.mealsById().get(mealId)?.items ?? [];
       const existing = existingItems.find(
-        (i) => i.foodId === food.id && i.foodSource === (food.foodSource ?? 'food'),
+        (i) => i.food?.foodId === food.id && (i.food?.foodSource ?? 'food') === (food.foodSource ?? 'food'),
       );
 
       if (existing?.id != null) {

@@ -18,7 +18,7 @@ import { MealItem } from '../../models';
       <span class="food-text">
         <span class="qty">{{ item().quantity }} {{ item().unit }}</span>
         <span class="dot">·</span>
-        <span class="name">{{ item().shortDescription?.trim() || item().foodName }}</span>
+        <span class="name">{{ item().food?.shortDescription?.trim() || item().foodName }}</span>
       </span>
       @if (editing()) {
         <span class="food-actions edit-mode">
@@ -89,8 +89,7 @@ export class FoodComponent {
   /** ✕ (edit mode) — remove this item from the meal via deleteMealItem. */
   readonly removeItem = output<MealItem>();
 
-  /** Whether the edit-serving pencil is offered. Items with foodSource
-   *  'pending' have no persisted Food row to resolve per-100g values from, so
-   *  their serving can't be edited via the NF popup. */
-  readonly canEditServing = computed<boolean>(() => (this.item().foodSource ?? 'food') !== 'pending');
+  /** Whether the edit-serving pencil is offered. Pending items carry no
+   *  resolved food record (`food` is null), so there's nothing to price. */
+  readonly canEditServing = computed<boolean>(() => this.item().food != null);
 }

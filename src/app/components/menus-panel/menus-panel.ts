@@ -264,8 +264,12 @@ export class MenusPanelComponent implements OnInit {
    *  A 'userfood' miss can't be safely fetched by numeric id (that id keys the
    *  UserFoods table, not Foods) so it returns null → toast. */
   private async resolveItemFood(item: MealItem): Promise<Food | null> {
-    const source = item.foodSource ?? 'food';
-    const key = `${item.foodId}:${source}`;
+    // The food identity lives on the item's nested `food` record (null for
+    // pending items — those have the pencil hidden already).
+    const itemFood = item.food;
+    if (!itemFood) return null;
+    const source = itemFood.foodSource ?? 'food';
+    const key = `${itemFood.foodId}:${source}`;
     // Ensure the allowed set has settled so a fresh-session click resolves
     // userfoods (and favorited foods) without falling through to a by-id fetch.
     await this.allowedLoad;
@@ -275,11 +279,11 @@ export class MenusPanelComponent implements OnInit {
     const cached = this.fetchedFoods().get(key);
     if (cached) return cached;
 
-    if (source !== 'food' || item.foodId == null) return null;
+    if (source !== 'food' || itemFood.foodId == null) return null;
 
     this.resolvingItemId.set(item.id ?? null);
     try {
-      const food = await firstValueFrom(this.foodsService.getFoodById(item.foodId));
+      const food = await firstValueFrom(this.foodsService.getFoodById(itemFood.foodId));
       if (!food?.id) return null;
       this.fetchedFoods.update((m) => new Map(m).set(key, food));
       return food;

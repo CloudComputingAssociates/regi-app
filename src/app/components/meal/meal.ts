@@ -158,7 +158,7 @@ export class MealComponent {
   readonly title = computed<string>(() => {
     const items = this.items();
     const primary = items.find((i) => i.itemRole === 'primary') ?? items[0];
-    if (primary) return (primary.shortDescription?.trim() || primary.foodName?.trim()) ?? '';
+    if (primary) return (primary.food?.shortDescription?.trim() || primary.foodName?.trim()) ?? '';
     return (this.slot().mealName ?? '').replace(/\s+meal$/i, '').trim();
   });
 

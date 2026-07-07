@@ -172,7 +172,11 @@ export class FoodLookasideComponent {
    *  the in-meal dot. foodSource missing → 'food', matching add-path semantics. */
   private readonly inMealKeys = computed<Set<string>>(() => {
     const items = this.rotation.slotItems(this.rotation.editingSlot()?.mealId);
-    return new Set(items.map((i) => `${i.foodId}:${i.foodSource ?? 'food'}`));
+    return new Set(
+      items
+        .filter((i) => i.food)
+        .map((i) => `${i.food!.foodId}:${i.food!.foodSource ?? 'food'}`),
+    );
   });
 
   private key(food: Food): string {
