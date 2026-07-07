@@ -237,6 +237,53 @@ sup.sm {
 .dialog-disc-confirm { background: #28c941; }   // Apple green
 .dialog-disc-cancel  { background: #ff5f57; }   // Apple red
 
+// Shared action disc — the meal-card header (+/edit/delete) and the food-row
+// (edit/delete) controls all use this ONE definition so every disc + its icon
+// is the same size. Modifiers add the accent/danger states.
+.icon-disc {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #4a4a4a;
+  border-radius: 50%;
+  background: #2a2a2a;
+  color: #9aa0a6;
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+
+  .mat-icon {
+    width: 17px;
+    height: 17px;
+    font-size: 17px;
+    line-height: 17px;
+  }
+
+  &:hover:not(:disabled) {
+    color: #4da6ff;
+    border-color: #4da6ff;
+  }
+
+  &:disabled { opacity: 0.5; cursor: default; }
+
+  // Delete — fills red on hover.
+  &.icon-disc-danger:hover:not(:disabled) {
+    background: #ff5f57;
+    border-color: #ff5f57;
+    color: #ffffff;
+  }
+
+  // Active — e.g. the meal is the current lookaside add target.
+  &.icon-disc-active {
+    background: #4da6ff;
+    border-color: #4da6ff;
+    color: #ffffff;
+  }
+}
+
 .filter-radio-group .mat-mdc-radio-button .mdc-label {
   color: #ffffff !important;
 }

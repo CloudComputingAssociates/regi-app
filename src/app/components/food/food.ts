@@ -6,16 +6,18 @@
 // (remove — deletes this food line from the meal).
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatIconModule } from '@angular/material/icon';
 import { MealItem } from '../../models';
 
 @Component({
   selector: 'app-food',
-  imports: [MatTooltipModule],
+  imports: [MatTooltipModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="food-row">
       <!-- Name first (2/3, clipped) then serving (1/3, clipped); the edit/remove
-           actions sit outside this split and reveal on hover. -->
+           actions sit outside this split and reveal on hover. Same discs as the
+           meal-card header. -->
       <span class="food-name">{{ item().food?.shortDescription?.trim() || item().foodName }}</span>
       <span class="food-qty">{{ item().quantity }} {{ item().unit }}</span>
       <span class="food-actions">
@@ -24,22 +26,22 @@ import { MealItem } from '../../models';
         @if (canEditServing()) {
           <button
             type="button"
-            class="food-action edit"
+            class="icon-disc"
             [class.busy]="resolving()"
             [disabled]="resolving()"
             matTooltip="Edit serving"
             matTooltipPosition="left"
             (click)="editItem.emit(item())">
-            ✎
+            <mat-icon>edit</mat-icon>
           </button>
         }
         <button
           type="button"
-          class="food-remove"
+          class="icon-disc icon-disc-danger"
           matTooltip="Remove food from meal"
           matTooltipPosition="left"
           (click)="removeItem.emit(item())">
-          ✕
+          <mat-icon>delete_outline</mat-icon>
         </button>
       </span>
     </div>

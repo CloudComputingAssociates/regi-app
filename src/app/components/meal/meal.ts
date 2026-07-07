@@ -16,6 +16,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatIconModule } from '@angular/material/icon';
 import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { MealItem, MenuSlot } from '../../models';
 import { Food } from '../../models/food.model';
@@ -30,7 +31,7 @@ interface SlotMacros {
 
 @Component({
   selector: 'app-meal',
-  imports: [MatTooltipModule, FoodComponent, DragDropModule],
+  imports: [MatTooltipModule, MatIconModule, FoodComponent, DragDropModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()">
@@ -57,30 +58,30 @@ interface SlotMacros {
         @if (!slot().isDiningOut) {
           <button
             type="button"
-            class="add-affordance"
-            [class.active]="editing()"
+            class="icon-disc add-affordance"
+            [class.icon-disc-active]="editing()"
             matTooltip="Add Food item"
             matTooltipPosition="above"
             (click)="toggleAdd.emit()">
-            +
+            <mat-icon>add</mat-icon>
           </button>
         }
         @if (slot().mealId != null) {
           <button
             type="button"
-            class="edit-affordance"
+            class="icon-disc"
             matTooltip="Edit Meal Title"
             matTooltipPosition="above"
             (click)="renaming.set(true)">
-            ✎
+            <mat-icon>edit</mat-icon>
           </button>
           <button
             type="button"
-            class="delete-affordance"
+            class="icon-disc icon-disc-danger"
             matTooltip="Delete meal"
             matTooltipPosition="above"
             (click)="deleteMeal.emit(slot().slotOrder)">
-            🗑
+            <mat-icon>delete_outline</mat-icon>
           </button>
         }
       </div>

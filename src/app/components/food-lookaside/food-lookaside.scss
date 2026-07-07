@@ -261,23 +261,25 @@
 }
 
 .disc {
-  text-align: center;
+  // Left-aligned so the macro letter sits at the same spot in every row
+  // (centering made "C 9" vs "C 14" drift).
+  text-align: left;
   font-size: 10px;
   font-weight: 400;
   line-height: 1;
-  padding: 3px 0;
+  padding: 3px 5px;
   border-radius: 10px;
   background: #000;
   border: 1px solid currentColor;
   overflow: hidden;
   white-space: nowrap;
 
-  // color drives both the thin ring (currentColor border) and the text —
-  // muted so the discs recede until a food is dragged into the meal.
-  &.protein { color: #6b9a5c; }
-  &.carb { color: #b0824f; }
-  &.fat { color: #9779ac; }
-  &.fiber { color: #9c8460; }
+  // Bright, distinct hues so the color reads as the macro at a glance (ring +
+  // text both follow currentColor).
+  &.protein { color: #5bbf4a; }  // green
+  &.carb { color: #ec8b2f; }     // orange
+  &.fat { color: #b47ce6; }      // purple
+  &.fiber { color: #c99a5e; }    // tan/brown
 }
 
 // MyFoods category accordion header — chevron + plural label + count. No

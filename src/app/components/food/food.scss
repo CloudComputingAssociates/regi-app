@@ -39,6 +39,8 @@
   white-space: nowrap;
 }
 
+// Hover-revealed wrapper; the buttons themselves are the shared .icon-disc
+// (same size as the meal-card header discs).
 .food-actions {
   opacity: 0;
   pointer-events: none;
@@ -47,57 +49,10 @@
   align-items: center;
   gap: 4px;
   transition: opacity 0.12s ease;
-}
-
-.food-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid #4a4a4a;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
-  color: #d8d8d8;
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
-
-  &.edit:hover {
-    border-color: #4da6ff;
-    color: #ffffff;
-  }
 
   // Resolving the item's food to open the popup — brief busy state.
-  &.busy {
+  .icon-disc.busy {
     opacity: 0.5;
     cursor: progress;
-  }
-}
-
-// Row remove ✕ — red on hover.
-.food-remove {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid #4a4a4a;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
-  color: #d8d8d8;
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
-
-  &:hover {
-    border-color: #ff5f57;
-    color: #ff8079;
-    background: linear-gradient(180deg, #5a3a3a 0%, #482e2e 100%);
   }
 }
