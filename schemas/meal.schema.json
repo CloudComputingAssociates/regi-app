@@ -235,7 +235,7 @@
 
     "UpdateMealItemRequest": {
       "type": "object",
-      "description": "Request body for PATCH /api/meal/{id}/items/{itemId} — all fields optional",
+      "description": "Request body for PUT /api/meal/{id}/items/{itemId} — all fields optional",
       "properties": {
         "quantity": {
           "type": "number",

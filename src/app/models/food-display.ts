@@ -36,3 +36,34 @@ export function nutritionLabelScale(
   if (gpu <= 0) return 1;
   return (qty * gpu) / 100;
 }
+
+/**
+ * Curated ladder of "sensible" serving sizes, used by the ▲ / ▼ steppers in
+ * every Nutrition Facts serving editor (foods-panel picks/MyFoods, and the
+ * menus per-item quantity popup). Off-ladder values snap to the next rung in
+ * the direction pressed — never force-snapped on display, only on click. The
+ * ladder is unit-agnostic by design: users think "next bigger / smaller
+ * portion", not "delta of N grams".
+ */
+export const SERVING_SIZE_LADDER: readonly number[] = [
+  0.25, 0.5, 0.75,
+  1, 1.25, 1.5, 1.75,
+  2, 2.5, 3, 3.5,
+  4, 5, 6, 8, 10, 12, 15, 20,
+];
+
+/**
+ * Ladder-snap a serving value in the pressed direction:
+ *   up   = smallest ladder rung strictly greater than `current`
+ *   down = largest ladder rung strictly less than `current`
+ * Returns undefined when already at (or past) the top/bottom of the ladder.
+ */
+export function snapServing(current: number, direction: 'up' | 'down'): number | undefined {
+  if (direction === 'up') {
+    return SERVING_SIZE_LADDER.find((v) => v > current);
+  }
+  for (let i = SERVING_SIZE_LADDER.length - 1; i >= 0; i--) {
+    if (SERVING_SIZE_LADDER[i] < current) return SERVING_SIZE_LADDER[i];
+  }
+  return undefined;
+}

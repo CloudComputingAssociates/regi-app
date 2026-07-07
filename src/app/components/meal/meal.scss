@@ -14,6 +14,13 @@
     background: #333;
     border-style: dashed;
   }
+
+  // Editing this slot — accent border (solid even when the slot is empty).
+  &.editing {
+    border-color: #4da6ff;
+    border-style: solid;
+    box-shadow: 0 0 0 1px #4da6ff, 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
 }
 
 .slot-header {
@@ -54,6 +61,17 @@
     &:hover {
       color: #4da6ff;
       border-color: #4da6ff;
+    }
+
+    // ✓ Done — accent so it reads as the active exit affordance.
+    &.done {
+      color: #4da6ff;
+      border-color: #4da6ff;
+
+      &:hover {
+        color: #ffffff;
+        background: #3d86d6;
+      }
     }
   }
 
@@ -105,10 +123,34 @@
   }
 }
 
+.slot-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .food-rows {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+// Editing an empty meal — a small dashed target so the card reads as droppable
+// even before it has any rows.
+.edit-drop-hint {
+  padding: 10px;
+  border: 1px dashed #4da6ff;
+  border-radius: 6px;
+  text-align: center;
+  color: #9aa0a6;
+  font-size: 12px;
+}
+
+// CDK highlights the drop list the pointer is over.
+.slot-body.cdk-drop-list-receiving,
+.slot-body.cdk-drop-list-dragging {
+  outline: 1px dashed #4da6ff;
+  outline-offset: 2px;
 }
 
 .slot-placeholder {

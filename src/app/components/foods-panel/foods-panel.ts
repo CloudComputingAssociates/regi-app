@@ -15,7 +15,14 @@ import { LangfusePromptService, LangfusePromptError } from '../../services/langf
 import { SettingsService } from '../../services/settings.service';
 import { Food, MealRole } from '../../models/food.model';
 import { CurrentPick } from '../../models/settings.models';
-import { nutritionLabelScale } from '../../models/food-display';
+import {
+  BasketKey,
+  BASKET_KEYS,
+  ThisWeekBaskets,
+  emptyBaskets,
+  hydratePicks,
+} from '../../models/picks-hydration';
+import { nutritionLabelScale, snapServing } from '../../models/food-display';
 
 // 'myfoods' and 'restricted' are special: they pull from the user-preferences
 // service. Any other value is treated as the handle of a curated list and
@@ -34,8 +41,8 @@ const LS_MYFOODS = 'regi.foods.myfoods';
 // the constructor and removed; nothing else in the code references it.
 const LS_LEGACY_THISWEEK_BASKETS = 'regi.foods.thisweek.buckets';
 
-type BasketKey = 'Proteins' | 'Fats' | 'Carbs' | 'Other';
-const BASKET_KEYS: readonly BasketKey[] = ['Proteins', 'Fats', 'Carbs', 'Other'];
+// BasketKey / BASKET_KEYS / ThisWeekBaskets / emptyBaskets + the pick hydration
+// now live in ../../models/picks-hydration (shared with the menus food-lookaside).
 
 // Food.categoryName → basket. Per the spec: Dairy → Fats, Vegetables/Carbs/Fruits
 // → Carbs, Processed/Condiments → Other.
@@ -49,11 +56,6 @@ const CATEGORY_TO_BASKET: Record<string, BasketKey> = {
   Processed: 'Other',
   Condiment: 'Other',
 };
-
-type ThisWeekBaskets = Record<BasketKey, Food[]>;
-function emptyBaskets(): ThisWeekBaskets {
-  return { Proteins: [], Fats: [], Carbs: [], Other: [] };
-}
 
 // Labels for the two preference-driven sources. Curated lists are labelled
 // dynamically from their .description (see typeLabel computed below).
@@ -888,44 +890,23 @@ export class FoodsPanelComponent {
         await new Promise<void>(r => setTimeout(r, 100));
         allowed = this.serverMyFoods();
       }
-      const lookup = new Map<string, Food>();
-      for (const f of allowed) {
-        lookup.set(`${f.id}:${f.foodSource ?? 'food'}`, f);
-      }
-      const baskets = emptyBaskets();
-      const kept: CurrentPick[] = [];
-      let dropped = 0;
-      for (const p of picks) {
-        const food = lookup.get(`${p.foodId}:${p.foodSource}`);
-        if (!food) {
-          dropped++;
-          console.warn('[FoodsPanel] dropping stale pick — food no longer in MyFoods', p);
-          continue;
-        }
-        const enriched: Food = {
-          ...food,
-          pickAddedAt: p.addedAt,
-          pickServingSize: p.pickServingSize,
-          mealRole: p.mealRole ?? 'AnyUse',
-        };
-        baskets[p.basketKey].push(enriched);
-        kept.push(p);
-      }
-      // Order entries within each basket by addedAt ascending so the visual
-      // bottom-up stack matches the order foods were originally added.
-      for (const k of BASKET_KEYS) {
-        baskets[k].sort((a, b) => (a.pickAddedAt ?? '').localeCompare(b.pickAddedAt ?? ''));
+      // Shared hydration (also used by the menus food-lookaside): map picks to
+      // per-basket Food objects. `dropped` = picks whose food is no longer in
+      // the allowed set (stale, un-favorited).
+      const { baskets, kept, dropped } = hydratePicks(picks, allowed);
+      for (const p of dropped) {
+        console.warn('[FoodsPanel] dropping stale pick — food no longer in MyFoods', p);
       }
       this.thisWeekBaskets.set(baskets);
       // Save-back guard. Only push the cleaned list when at least one pick
       // matched. "Had picks but matched zero" is the partial-load signature
       // — saving in that case would silently destroy server-side data.
-      if (dropped > 0 && kept.length > 0) {
+      if (dropped.length > 0 && kept.length > 0) {
         void this.settingsService.saveCurrentPicks(kept).catch(err => {
           console.warn('[FoodsPanel] failed to save cleaned pick list', err);
         });
         this.hydrationSucceeded.set(true);
-      } else if (dropped > 0 && kept.length === 0 && picks.length > 0) {
+      } else if (dropped.length > 0 && kept.length === 0 && picks.length > 0) {
         // Partial-load signature — leave server alone. Leave hydration flag
         // FALSE so any user interaction is gated out (no risk of wiping the
         // real server data with empty baskets). User must refresh to retry.
@@ -1687,40 +1668,13 @@ export class FoodsPanelComponent {
     });
   }
 
-  /** Curated ladder of "sensible" serving sizes, used by the ▲ / ▼ buttons.
-   *  Off-ladder values (e.g. a curator-saved 0.625 whole) snap to the next
-   *  ladder rung in the direction the user pressed — they're NOT force-
-   *  snapped on display, only on click. The ladder is unit-agnostic by
-   *  design: stepping math is the same whether the unit is "oz", "whole",
-   *  "cup", or "g". This is intentional — users think "next bigger /
-   *  smaller portion", not "delta of N grams". */
-  private static readonly SERVING_SIZE_LADDER: readonly number[] = [
-    0.25, 0.5, 0.75,
-    1, 1.25, 1.5, 1.75,
-    2, 2.5, 3, 3.5,
-    4, 5, 6, 8, 10, 12, 15, 20,
-  ];
-
-  /** Adjust handler emitted by the NF label's ▲ / ▼ steppers. Ladder-snap:
-   *  up = smallest ladder entry strictly > current; down = largest entry
-   *  strictly < current. No-op if already at the bound. Updates the DRAFT
-   *  signal only — Save persists. */
+  /** Adjust handler emitted by the NF label's ▲ / ▼ steppers. Ladder-snap via
+   *  the shared SERVING_SIZE_LADDER (models/food-display). No-op if already at
+   *  the bound. Updates the DRAFT signal only — Save persists. */
   onNfAdjust(direction: 'up' | 'down'): void {
     if (!this.nfPopupFood() || this.nfPopupMode() !== 'edit') return;
-    const current = this.nfPopupServingSize();
-    const ladder = FoodsPanelComponent.SERVING_SIZE_LADDER;
-
-    let next: number | undefined;
-    if (direction === 'up') {
-      next = ladder.find(v => v > current);
-    } else {
-      // Largest value strictly less than current. Walk the ladder right-to-left.
-      for (let i = ladder.length - 1; i >= 0; i--) {
-        if (ladder[i] < current) { next = ladder[i]; break; }
-      }
-    }
+    const next = snapServing(this.nfPopupServingSize(), direction);
     if (next === undefined) return; // already at the top or bottom of the ladder
-
     this.nfPopupServingSize.set(Number(next.toFixed(4)));
   }
 

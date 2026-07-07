@@ -12,7 +12,19 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { GenerateMealRequest, Meal, MealItem, Menu, Rotation, RotationDetail } from '../models';
+import {
+  AddMealItemRequest,
+  CreateMealRequest,
+  GenerateMealRequest,
+  ItemRole,
+  Meal,
+  MealItem,
+  Menu,
+  Rotation,
+  RotationDetail,
+  UpdateMealItemRequest,
+} from '../models';
+import { Food } from '../models/food.model';
 import { SettingsService } from './settings.service';
 import { NotificationService } from './notification.service';
 
@@ -50,6 +62,13 @@ export class RotationService {
   readonly candidateMeals = signal<Meal[]>([]);
   /** True while a single meal generation is in flight. */
   readonly generating = signal<boolean>(false);
+
+  /** The slot being edited in-place from the food lookaside rail. menuId +
+   *  slotOrder locate the slot; mealId is null for an empty slot until the
+   *  first add creates + places a meal (then it's adopted here). Set when the
+   *  lookaside editing mode opens; addFoodToEditingMeal reads/updates it and
+   *  stopEditing clears it (returning the rail to the binder). */
+  readonly editingSlot = signal<{ menuId: number; slotOrder: number; mealId: number | null } | null>(null);
 
   /** Full menus (slots + macros), cached by menuId. Immutable map updates. */
   private menusById = signal<Map<number, Menu>>(new Map());
@@ -339,6 +358,150 @@ export class RotationService {
       this.menusById.update((m) => new Map(m).set(menuId, menu));
       // Stream in the assigned meal's items so its food rows appear.
       void this.loadMeal(mealId);
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Open the food lookaside on a slot: the rail switches from the binder to
+   *  the food list and adds funnel into this slot's meal. mealId is null for an
+   *  empty slot (the first add creates + places the meal). */
+  beginEditingSlot(menuId: number, slotOrder: number, mealId: number | null): void {
+    this.editingSlot.set({ menuId, slotOrder, mealId });
+  }
+
+  /** Close the lookaside — "Done" returns the rail to the binder. */
+  stopEditing(): void {
+    this.editingSlot.set(null);
+  }
+
+  /** The single add path both lookaside gestures (double-click + drag) funnel
+   *  into. A row is added at its resolved default serving — there's no
+   *  selection/preview/draft step; serving edits happen on the item after it's
+   *  in the meal. Quantity = serving; unit = the food's serving unit. Three
+   *  cases against the editing slot's meal:
+   *    • empty slot (mealId null): POST /meal {name} → PUT /menu/{id}/slot to
+   *      place it (same endpoint placeMealInSlot uses) → adopt the new mealId
+   *      onto editingSlot. isSaved stays false, matching generated meals.
+   *    • food already an item (same foodId + foodSource): PUT the item with
+   *      quantity = existing + serving — no duplicate row.
+   *    • otherwise: POST a new item.
+   *  itemRole = 'primary' when the food is a Protein AND the meal has no primary
+   *  yet; else 'side'. On success: refresh the menu (slot macros/chips) + the
+   *  meal's items (rows/dot). Failures toast and leave the board intact. */
+  async addFoodToEditingMeal(food: Food, serving: number): Promise<void> {
+    const slot = this.editingSlot();
+    if (!slot) return;
+
+    const foodName = (food.shortDescription?.trim() || food.description || '').trim();
+    const unit = food.servingUnit ?? 'serving';
+
+    try {
+      let mealId = slot.mealId;
+
+      // Empty slot → create the meal and place it, then add into it. isSaved is
+      // left false (a generated/placed-but-unsaved meal), so we don't PATCH it.
+      if (mealId == null) {
+        const createBody: CreateMealRequest = { name: foodName };
+        const meal = await firstValueFrom(
+          this.http.post<Meal>(`${this.baseUrl}/meal`, createBody),
+        );
+        mealId = meal.id;
+        await firstValueFrom(
+          this.http.put(`${this.baseUrl}/menu/${slot.menuId}/slot`, {
+            slotOrder: slot.slotOrder,
+            mealId,
+          }),
+        );
+        this.editingSlot.set({ ...slot, mealId });
+      }
+
+      const existingItems = this.mealsById().get(mealId)?.items ?? [];
+      const existing = existingItems.find(
+        (i) => i.foodId === food.id && i.foodSource === (food.foodSource ?? 'food'),
+      );
+
+      if (existing?.id != null) {
+        // Same food already present → bump its quantity; no duplicate row.
+        const body: UpdateMealItemRequest = {
+          quantity: (existing.quantity ?? 0) + serving,
+        };
+        await firstValueFrom(
+          this.http.put<MealItem>(`${this.baseUrl}/meal/${mealId}/items/${existing.id}`, body),
+        );
+      } else {
+        const hasPrimary = existingItems.some((i) => i.itemRole === 'primary');
+        const itemRole: ItemRole =
+          food.categoryName === 'Protein' && !hasPrimary ? 'primary' : 'side';
+        const body: AddMealItemRequest = {
+          foodId: food.id,
+          foodSource: food.foodSource ?? 'food',
+          foodName,
+          itemRole,
+          isTracked: true,
+          quantity: serving,
+          unit,
+        };
+        await firstValueFrom(
+          this.http.post<MealItem>(`${this.baseUrl}/meal/${mealId}/items`, body),
+        );
+      }
+
+      // Refresh so the slot's macro chips + top totals recompute and the meal's
+      // food rows / in-meal dot reflect the add (placeMealInSlot pattern).
+      const menu = await firstValueFrom(
+        this.http.get<Menu>(`${this.baseUrl}/menu/${slot.menuId}`),
+      );
+      this.menusById.update((m) => new Map(m).set(slot.menuId, menu));
+      await this.loadMeal(mealId);
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Remove one item from a meal (the ✕ on a food row in edit mode).
+   *    DELETE /api/meal/{mealId}/items/{itemId}
+   *  then refresh the selected menu (slot macros / top bars) and the meal's
+   *  items (rows) the same way addFoodToEditingMeal does. A failure toasts and
+   *  leaves the board intact rather than setting the panel-wide error signal. */
+  async deleteMealItem(mealId: number, itemId: number): Promise<void> {
+    const menuId = this.editingSlot()?.menuId ?? this.selectedMenuId();
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.baseUrl}/meal/${mealId}/items/${itemId}`),
+      );
+      if (menuId != null) {
+        const menu = await firstValueFrom(
+          this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
+        );
+        this.menusById.update((m) => new Map(m).set(menuId, menu));
+      }
+      await this.loadMeal(mealId);
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Edit one item's quantity in place (the ✎ on a food row in edit mode).
+   *    PUT /api/meal/{mealId}/items/{itemId} { quantity }
+   *  then refresh the selected menu (slot macros / top bars) and the meal's
+   *  items (row text) the same way addFoodToEditingMeal does. This is the
+   *  meal-local serving layer only — it never touches Picks/MyFoods. A failure
+   *  toasts and leaves the board intact. */
+  async updateMealItemQuantity(mealId: number, itemId: number, quantity: number): Promise<void> {
+    const menuId = this.editingSlot()?.menuId ?? this.selectedMenuId();
+    try {
+      const body: UpdateMealItemRequest = { quantity };
+      await firstValueFrom(
+        this.http.put<MealItem>(`${this.baseUrl}/meal/${mealId}/items/${itemId}`, body),
+      );
+      if (menuId != null) {
+        const menu = await firstValueFrom(
+          this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
+        );
+        this.menusById.update((m) => new Map(m).set(menuId, menu));
+      }
+      await this.loadMeal(mealId);
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
