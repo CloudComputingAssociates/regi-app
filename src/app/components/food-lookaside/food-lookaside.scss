@@ -214,6 +214,75 @@
   white-space: nowrap;
 }
 
+// MyFoods category accordion header — chevron + plural label + count. No
+// Like/Limit actions (that's the foods-panel curate surface, not this).
+.cat-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px;
+  margin-top: 4px;
+  cursor: pointer;
+  user-select: none;
+
+  &:first-child {
+    margin-top: 0;
+  }
+
+  &:hover .cat-name {
+    color: #ffffff;
+  }
+
+  .cat-caret {
+    flex: 0 0 auto;
+    width: 10px;
+    font-size: 13px;
+    line-height: 1;
+    color: #4da6ff;
+    transition: transform 0.12s ease;
+
+    &.open {
+      transform: rotate(90deg);
+    }
+  }
+
+  .cat-name {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #4da6ff;
+  }
+
+  .cat-count {
+    font-size: 12px;
+    color: #9aa0a6;
+  }
+}
+
+// The two-macro preview pucks on a MyFoods row.
+.la-pucks {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  .puck {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 10px;
+    white-space: nowrap;
+    color: rgba(255, 255, 255, 0.82);
+
+    // Muted macro palette — same as the meal/binder chips.
+    &.protein { background: #34781a; }
+    &.carb { background: #a8541a; }
+    &.fat { background: #8a55ab; }
+    &.fiber { background: #5e4021; }
+  }
+}
+
 // CDK drag visuals — match the binder.
 .cdk-drag-preview {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);

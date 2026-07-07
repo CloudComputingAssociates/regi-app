@@ -128,7 +128,10 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               matTooltip="Edit your Picks — curate faves, set Serving Sizes, recategorize, delete foods you entered"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350">
-              @if (addTo() === 'right') { Picks } @else { Edit }
+              <span class="curate-toggle-text">@if (addTo() === 'right') { Picks } @else { Edit }</span>
+              <!-- Two circular arrows (head-to-tail) → the button revolves
+                   between Edit ⟳ Picks. -->
+              <mat-icon class="curate-toggle-icon" aria-hidden="true">autorenew</mat-icon>
             </button>
           </div>
 
