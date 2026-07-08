@@ -185,32 +185,6 @@ export class RotationService {
     }
   }
 
-  // PHASE 2 BOOTSTRAP — replaced by the generate dialog in Phase 3.
-  async generateDefault(): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
-    try {
-      // Standing people default for this user (persons; defaults to 1). Written
-      // through to the rotation's peopleCount on the generate request.
-      const persons = this.settingsService.allSettings()?.regiMenu?.persons ?? 1;
-      const detail = await firstValueFrom(
-        this.http.post<RotationDetail>(`${this.baseUrl}/rotation/generate`, {
-          spanDays: 7,
-          peopleCount: persons,
-          distinctMeals: 0,
-        }),
-      );
-      this.rotation.set(detail);
-      const firstMenuId = detail.menus[0]?.menuId ?? null;
-      this.selectedMenuId.set(firstMenuId);
-      if (firstMenuId != null) await this.selectMenu(firstMenuId);
-    } catch (err) {
-      this.error.set(this.errMessage(err));
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
 
   /** Build an empty board manually (no AI): create a staged rotation, a menu
    *  with N empty slots, link it, then load the detail and select the menu.
@@ -503,7 +477,7 @@ export class RotationService {
   }
 
   /** Set the standing People count and persist it to settings (regiMenu.persons,
-   *  1–12). generateDefault reads this as the rotation's peopleCount. */
+   *  1–12). startEmptyPlan reads this as the rotation's peopleCount. */
   async setPersons(n: number): Promise<void> {
     const clamped = Math.max(1, Math.min(12, n));
     const current = this.settingsService.allSettings()?.regiMenu ?? {};
