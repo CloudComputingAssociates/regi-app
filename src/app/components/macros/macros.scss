@@ -118,15 +118,25 @@
         text-transform: lowercase;
       }
 
-      // Rolled-up menu total calories — sits just left of the %/g toggle
-      // (which floats absolute at the bottom-right). Blue, quiet.
+      // Rolled-up menu total calories — an inset read-only box that sits just
+      // left of the %/g pill and is vertically centered with it (same height,
+      // dropped to the bottom). Nudged left for a little more breathing room.
       .menu-cals {
-        margin-left: auto;
-        margin-right: 58px;
-        align-self: center;
-        font-size: 14px;
+        position: absolute;
+        bottom: 3px;
+        right: 64px;
+        height: 25px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        padding: 0 8px;
+        font-size: 13px;
         color: #4da6ff;
         white-space: nowrap;
+        background: #2f2f2f;
+        border: 1px solid #1c1c1c;
+        border-radius: 4px;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
       }
     }
   }

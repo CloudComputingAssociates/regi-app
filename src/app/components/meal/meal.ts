@@ -26,16 +26,17 @@ interface SlotMacros {
   template: `
     <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()">
       <div class="slot-header">
+        <!-- Meal N + name box occupy the left 2/3; the +/trash discs sit in the
+             right third. The name box reads as an inset field until focused. -->
+        <div class="header-name">
         <span class="slot-title">Meal {{ slot().slotOrder }}</span>
-        <!-- The title IS the name box — always visible, reads as an inset
-             read-only field until you click into it, then editable until Enter
-             or focus leaves. No separate pencil. -->
         @if (slot().mealId != null) {
           <div class="name-wrap">
             <input
               #nameBox
               type="text"
               class="meal-name-box"
+              [class.editing]="nameDirty()"
               [value]="title()"
               (focus)="onNameFocus(nameBox.value)"
               (input)="nameDraft.set(nameBox.value)"
@@ -53,11 +54,12 @@ interface SlotMacros {
                 matTooltipPosition="above"
                 (mousedown)="$event.preventDefault()"
                 (click)="nameBox.blur()">
-                <mat-icon>arrow_forward</mat-icon>
+                <mat-icon>keyboard_return</mat-icon>
               </button>
             }
           </div>
         }
+        </div>
         <!-- + opens the food lookaside targeted at this meal, flipping to a
              green check while active; trash deletes the meal. Editing/removing
              individual foods happens directly on each row. -->
