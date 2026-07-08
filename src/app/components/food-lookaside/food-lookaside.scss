@@ -19,13 +19,20 @@
 }
 
 // Tabs on the left; the red X close disc on the right.
+// Same 44px raised bar as the binder "Meals" header, so swapping binder ↔
+// lookaside doesn't change the header height (no jump). The toggle is a narrow
+// pill centered within it.
 .lookaside-header {
   flex-shrink: 0;
+  height: 44px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 14px;
-  border-bottom: 1px solid #4a4a4a;
+  padding: 0 14px;
+  background: #2e2e2e;
+  border-top: 1px solid #4a4a4a;
+  border-bottom: 1px solid #1a1a1a;
 
   .close-btn {
     margin-left: auto;
@@ -48,8 +55,8 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 
   .toggle-btn {
-    padding: 7px 14px;
-    font-size: 13px;
+    padding: 4px 12px;
+    font-size: 12px;
     font-weight: 500;
     color: #cfcfcf;
     background: linear-gradient(180deg, #4a4a4a 0%, #3c3c3c 100%);

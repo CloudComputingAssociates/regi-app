@@ -42,12 +42,15 @@
 // it (and the menu-card-row below it) from scrolling with the meals canvas.
 // Etched in the app chrome grey family: lighter top edge, darker bottom edge,
 // so it stands slightly proud of the #2a2a2a panel surface.
+// Shared header bar — same height / raised shading as the Meals + lookaside
+// headers on the right, so "Scale" lines up with "Meals" and nothing jumps.
 .menus-toolbar {
   flex-shrink: 0;
-  height: 38px;
+  height: 44px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 14px;
   background: #2e2e2e;
   border-top: 1px solid #4a4a4a;
   border-bottom: 1px solid #1a1a1a;

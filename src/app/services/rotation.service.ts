@@ -318,15 +318,21 @@ export class RotationService {
    *  (the top bars) recompute. A failure toasts but leaves the board intact. */
   async placeMealInSlot(menuId: number, slotOrder: number, mealId: number): Promise<void> {
     try {
+      // Copy-on-place: clone the source meal so the slot owns an INDEPENDENT
+      // copy. Editing the slotted meal never mutates the generated/saved source
+      // (no more shared-reference surprise), and the source stays deletable.
+      const copy = await firstValueFrom(
+        this.http.post<Meal>(`${this.baseUrl}/meal/${mealId}/duplicate`, {}),
+      );
       await firstValueFrom(
-        this.http.put(`${this.baseUrl}/menu/${menuId}/slot`, { slotOrder, mealId }),
+        this.http.put(`${this.baseUrl}/menu/${menuId}/slot`, { slotOrder, mealId: copy.id }),
       );
       const menu = await firstValueFrom(
         this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
       );
       this.menusById.update((m) => new Map(m).set(menuId, menu));
-      // Stream in the assigned meal's items so its food rows appear.
-      void this.loadMeal(mealId);
+      // Stream in the copy's items so its food rows appear.
+      void this.loadMeal(copy.id);
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
@@ -542,6 +548,19 @@ export class RotationService {
    *  slot the meal was already placed into. */
   removeCandidate(mealId: number): void {
     this.candidateMeals.update((list) => list.filter((m) => m.id !== mealId));
+  }
+
+  /** Explicitly delete a saved (named) meal from the binder library.
+   *    DELETE /api/meal/{id}  (409 if the meal is still in use)
+   *  Copy-on-place means slots hold independent copies, so a library meal is
+   *  normally deletable; reload the binder after. */
+  async deleteSavedMeal(mealId: number): Promise<void> {
+    try {
+      await firstValueFrom(this.http.delete(`${this.baseUrl}/meal/${mealId}`));
+      await this.loadBinderMeals();
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
   }
 
   /** Clear a slot's meal (trash on an in-slot meal). DELETE /menu/{id}/slot/{n},

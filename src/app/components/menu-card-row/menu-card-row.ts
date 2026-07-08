@@ -6,11 +6,12 @@
 // "+ Add menu" stub marks the Phase-1 affordance.
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatIconModule } from '@angular/material/icon';
 import { RotationMenuEntry } from '../../models';
 
 @Component({
   selector: 'app-menu-card-row',
-  imports: [MatTooltipModule],
+  imports: [MatTooltipModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="strip">
@@ -26,7 +27,7 @@ import { RotationMenuEntry } from '../../models';
               matTooltip="Clear / remove this menu"
               matTooltipPosition="above"
               (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
-              🗑
+              <mat-icon>delete_outline</mat-icon>
             </button>
             <span class="menu-name">Menu {{ letter(i) }}</span>
             <div class="menu-days">

@@ -111,7 +111,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               [selectedMenuId]="rotation.selectedMenuId() ?? -1"
               [spanDays]="rotation.rotation()!.spanDays"
               (select)="onSelectMenu($event)"
-              (deleteMenu)="rotation.removeOrClearMenu($event)"
+              (deleteMenu)="onDeleteMenu($event)"
               (addMenu)="rotation.addMenu()"
               (setDays)="rotation.setMenuDays($event.menuId, $event.plannedCount)" />
 
@@ -354,9 +354,21 @@ export class MenusPanelComponent implements OnInit {
     this.popupMealId.set(null);
   }
 
-  /** Open the dark confirm dialog. No real wipe yet — the dialog's buttons
-   *  all close to a no-op this phase (endpoint not wired). */
+  /** Open the "Are you sure?" wipe dialog — Delete clears every meal from the
+   *  selected menu (menu stays, slots empty). */
   openWipeConfirm(): void {
     this.dialog.open(WipeConfirmDialogComponent, { panelClass: 'wipe-dialog-panel' });
+  }
+
+  /** Deleting a whole menu clears a lot of work — confirm first. */
+  onDeleteMenu(menuId: number): void {
+    this.notification.showConfirmation(
+      'Are you sure? Deleting this menu clears all of its meals.',
+      'warning',
+      () => this.rotation.removeOrClearMenu(menuId),
+      () => {
+        /* keep the menu */
+      },
+    );
   }
 }

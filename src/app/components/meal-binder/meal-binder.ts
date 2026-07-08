@@ -8,13 +8,15 @@
 import { ChangeDetectionStrategy, Component, OnInit, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatIconModule } from '@angular/material/icon';
 import { RotationService } from '../../services/rotation.service';
+import { NotificationService } from '../../services/notification.service';
 import { TwistIconComponent } from '../twist-icon/twist-icon';
 import { Meal } from '../../models';
 
 @Component({
   selector: 'app-meal-binder',
-  imports: [DragDropModule, MatTooltipModule, TwistIconComponent],
+  imports: [DragDropModule, MatTooltipModule, MatIconModule, TwistIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="binder">
@@ -92,7 +94,7 @@ import { Meal } from '../../models';
               class="card-delete"
               matTooltip="Discard this meal"
               (click)="$event.stopPropagation(); rotation.removeCandidate(meal.id)">
-              🗑
+              <mat-icon>delete_outline</mat-icon>
             </button>
             <span class="binder-card-name">{{ candidateTitle(meal) }}</span>
             <div class="binder-chips">
@@ -112,6 +114,13 @@ import { Meal } from '../../models';
 
         @for (meal of rotation.binderMeals(); track meal.id) {
           <div class="binder-card saved" cdkDrag [cdkDragData]="meal">
+            <button
+              type="button"
+              class="card-delete"
+              matTooltip="Delete this meal"
+              (click)="$event.stopPropagation(); onDeleteSaved(meal)">
+              <mat-icon>delete_outline</mat-icon>
+            </button>
             <span class="binder-card-name">{{ meal.name }}</span>
             <div class="binder-chips">
               <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
@@ -132,9 +141,23 @@ import { Meal } from '../../models';
 })
 export class MealBinderComponent implements OnInit {
   readonly rotation = inject(RotationService);
+  private notification = inject(NotificationService);
 
   ngOnInit(): void {
     this.rotation.loadBinderMeals();
+  }
+
+  /** Deleting a named/saved meal is destructive to your library — confirm.
+   *  (Generated candidates are throwaway and delete without a prompt.) */
+  onDeleteSaved(meal: Meal): void {
+    this.notification.showConfirmation(
+      `Are you sure? Delete your saved meal "${meal.name}".`,
+      'warning',
+      () => void this.rotation.deleteSavedMeal(meal.id),
+      () => {
+        /* keep it */
+      },
+    );
   }
 
   round(n: number | undefined): number {

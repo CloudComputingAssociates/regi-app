@@ -96,6 +96,9 @@
   position: absolute;
   top: 4px;
   right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 20px;
   height: 20px;
   padding: 0;
@@ -103,11 +106,18 @@
   border-radius: 4px;
   background: transparent;
   color: #9aa0a6;
-  font-size: 12px;
   line-height: 1;
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.12s ease, color 0.12s ease;
+
+  // Outlined trash sized to match the Wipe menu button's icon.
+  .mat-icon {
+    width: 17px;
+    height: 17px;
+    font-size: 17px;
+    line-height: 17px;
+  }
 
   &:hover {
     color: #ef5350;
