@@ -48,22 +48,28 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
       <!-- Tabs up top; the red X (same size as the meal card's green check)
            closes the lookaside. -->
       <div class="lookaside-header">
-        <div class="pane-toggle" role="tablist">
-          <button
-            type="button"
-            class="toggle-btn"
-            [class.active]="pane() === 'picks'"
-            (click)="pane.set('picks')">
-            Picks
-          </button>
-          <button
-            type="button"
-            class="toggle-btn"
-            [class.active]="pane() === 'myfoods'"
-            (click)="pane.set('myfoods')">
-            MyFoods
-          </button>
-        </div>
+        <!-- MyFoods is primary/default; Picks second. With no picks there's
+             nothing to toggle to — just show the MyFoods label. -->
+        @if (hasPicks()) {
+          <div class="pane-toggle" role="tablist">
+            <button
+              type="button"
+              class="toggle-btn"
+              [class.active]="effectivePane() === 'myfoods'"
+              (click)="pane.set('myfoods')">
+              MyFoods
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              [class.active]="effectivePane() === 'picks'"
+              (click)="pane.set('picks')">
+              Picks
+            </button>
+          </div>
+        } @else {
+          <span class="lookaside-label">MyFoods</span>
+        }
         <button
           type="button"
           class="icon-disc icon-disc-cancel close-btn"
@@ -74,7 +80,7 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
         </button>
       </div>
 
-      @if (pane() === 'myfoods') {
+      @if (effectivePane() === 'myfoods') {
         <div class="search-row">
           <input
             type="text"
@@ -110,7 +116,7 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
             }
           }
         } @empty {
-          <p class="pane-empty">{{ pane() === 'picks' ? 'No picks yet.' : 'No MyFoods match.' }}</p>
+          <p class="pane-empty">{{ effectivePane() === 'picks' ? 'No picks yet.' : 'No MyFoods match.' }}</p>
         }
       </div>
     </div>
@@ -122,8 +128,8 @@ export class FoodLookasideComponent {
   private preferencesService = inject(FoodPreferencesService);
   private settingsService = inject(SettingsService);
 
-  /** Which pane is showing. Picks is the default. */
-  readonly pane = signal<LookasidePane>('picks');
+  /** The tab the user picked. MyFoods is the default/primary. */
+  readonly pane = signal<LookasidePane>('myfoods');
 
   /** MyFoods live substring filter. */
   readonly search = signal('');
@@ -176,10 +182,18 @@ export class FoodLookasideComponent {
     return BASKET_KEYS.flatMap((k) => baskets[k]);
   });
 
+  /** Whether the user has any hydrated picks — gates the Picks tab entirely. */
+  readonly hasPicks = computed<boolean>(() => this.pickFoods().length > 0);
+
+  /** The pane actually shown: falls back to MyFoods when there are no picks. */
+  readonly effectivePane = computed<LookasidePane>(() =>
+    this.hasPicks() ? this.pane() : 'myfoods',
+  );
+
   /** The active tab's foods grouped into the category accordion. MyFoods honors
    *  the search box (and force-expands matching groups); Picks isn't searched. */
   readonly currentGroups = computed<FoodGroup[]>(() => {
-    const myfoods = this.pane() === 'myfoods';
+    const myfoods = this.effectivePane() === 'myfoods';
     const foods = myfoods ? this.allowedFull() : this.pickFoods();
     const q = myfoods ? this.search().trim().toLowerCase() : '';
     return this.groupByCategory(foods, q);
@@ -239,7 +253,7 @@ export class FoodLookasideComponent {
 
   // Resolved default serving — display only; re-resolved at add time below.
   resolveServing(food: Food): number {
-    return this.pane() === 'picks'
+    return this.effectivePane() === 'picks'
       ? (food.pickServingSize ?? food.userServingSize ?? food.servingSize ?? 1)
       : (food.userServingSize ?? food.servingSize ?? 1);
   }
