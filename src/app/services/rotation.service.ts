@@ -271,7 +271,7 @@ export class RotationService {
       await firstValueFrom(
         this.http.post(`${this.baseUrl}/rotation/${rot.id}/menus`, {
           menuId: menu.id,
-          plannedCount: 7,
+          plannedCount: this.repeatBaseline(7),
         }),
       );
 
@@ -535,6 +535,14 @@ export class RotationService {
     }
   }
 
+  /** Baseline planned days for a NEW menu = the user's "Menu Repeats" setting
+   *  (regiMenu.repeatMeals; how many days/times a menu repeats), clamped to the
+   *  rotation span and at least 1. The user can then raise/lower it per menu. */
+  private repeatBaseline(spanDays: number): number {
+    const repeats = this.settingsService.allSettings()?.regiMenu?.repeatMeals ?? 1;
+    return Math.max(1, Math.min(spanDays, repeats));
+  }
+
   /** Set how many days of the rotation span a menu covers (plannedCount).
    *  PUT /rotation/{id}/menus/{menuId}, then reload so tiles + the badge update. */
   async setMenuDays(menuId: number, plannedCount: number): Promise<void> {
@@ -617,7 +625,7 @@ export class RotationService {
       await firstValueFrom(
         this.http.post(`${this.baseUrl}/rotation/${rot.id}/menus`, {
           menuId: menu.id,
-          plannedCount: 1,
+          plannedCount: this.repeatBaseline(rot.spanDays),
         }),
       );
       const detail = await firstValueFrom(

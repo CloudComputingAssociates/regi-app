@@ -68,7 +68,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                  right edge, adjacent to the Meals binder. -->
             <div class="menus-toolbar">
               <div class="people-control">
-                <span class="people-label">Servings</span>
+                <span class="people-label">Scale</span>
                 <button
                   type="button"
                   class="people-step"

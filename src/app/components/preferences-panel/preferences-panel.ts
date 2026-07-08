@@ -407,13 +407,13 @@ import { MatIconModule } from '@angular/material/icon';
                   </select>
                 </div>
                 <div class="setting-row">
-                  <label class="setting-label">Meal Repeats</label>
+                  <label class="setting-label">Menu Repeats</label>
                   <input type="number" min="1" class="setting-number"
                     [ngModel]="userSettingsService.repeatMeals()"
                     (input)="onRepeatMealsChange($event)" />
                   <span class="info-icon"
                         #repeatTooltip="matTooltip"
-                        matTooltip="Repeating meals is efficient. How many times can a meal repeat in planning?"
+                        matTooltip="Repeating a menu saves prep time & grocery $$ money"
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
                         (click)="repeatTooltip.toggle()">&#9432;</span>
@@ -455,10 +455,16 @@ import { MatIconModule } from '@angular/material/icon';
                         (click)="foodsTooltip.toggle()">&#9432;</span>
                 </div>
                 <div class="setting-row">
-                  <label class="setting-label">Persons</label>
+                  <label class="setting-label">People</label>
                   <input type="number" min="1" class="setting-number"
                     [ngModel]="userSettingsService.persons()"
                     (input)="onPersonsChange($event)" />
+                  <span class="info-icon"
+                        #personsTooltip="matTooltip"
+                        matTooltip="In Menus, scale shopping list for this number of people"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="0"
+                        (click)="personsTooltip.toggle()">&#9432;</span>
                 </div>
               </div>
             </div>
