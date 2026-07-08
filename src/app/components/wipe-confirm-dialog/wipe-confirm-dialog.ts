@@ -16,11 +16,9 @@ import { RotationService } from '../../services/rotation.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="wipe-dialog">
-      <p class="wipe-dialog-prompt">
-        Delete all meals from the selected menu? The menu stays; its slots are emptied.
-      </p>
+      <p class="wipe-dialog-prompt">{{ message }}</p>
       <div class="wipe-dialog-actions">
-        <button type="button" class="wipe-action" (click)="onDelete()">Delete</button>
+        <button type="button" class="wipe-action" (click)="onDelete()">{{ confirmLabel }}</button>
         <button type="button" class="wipe-action" (click)="onCancel()">Cancel</button>
       </div>
     </div>
@@ -30,10 +28,18 @@ import { RotationService } from '../../services/rotation.service';
 export class WipeConfirmDialogComponent {
   private dialogRef = inject(MatDialogRef<WipeConfirmDialogComponent>);
   private rotation = inject(RotationService);
-  // Optional override action. When omitted (the Wipe menu button) the default
-  // wipes the selected menu's meals; other callers (e.g. the menu-tile delete)
-  // reuse this ONE dialog and pass their own confirm action.
-  private data = inject<{ onConfirm?: () => void } | null>(MAT_DIALOG_DATA, { optional: true });
+  // Optional overrides. When omitted (the Wipe menu button) the defaults wipe
+  // the selected menu's meals; other callers (e.g. the menu-tile delete, the
+  // meal-card "remove from slot") reuse this ONE dialog and pass their own
+  // prompt text, confirm-button label, and confirm action.
+  private data = inject<{ message?: string; confirmLabel?: string; onConfirm?: () => void } | null>(
+    MAT_DIALOG_DATA,
+    { optional: true },
+  );
+
+  readonly message =
+    this.data?.message ?? 'Delete all meals from the selected menu? The menu stays; its slots are emptied.';
+  readonly confirmLabel = this.data?.confirmLabel ?? 'Delete';
 
   /** Run the confirm action (default: wipe the selected menu's meals), close. */
   onDelete(): void {

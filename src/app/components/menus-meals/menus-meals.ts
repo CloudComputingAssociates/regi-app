@@ -4,9 +4,11 @@
 // cards (targets 2-up at laptop width). Resolves each slot's meal items from
 // RotationService and passes them down to the meal cards.
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
 import { Menu, MealItem, MenuSlot } from '../../models';
 import { RotationService } from '../../services/rotation.service';
 import { MealComponent } from '../meal/meal';
+import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 
 @Component({
   selector: 'app-menus-meals',
@@ -36,6 +38,7 @@ import { MealComponent } from '../meal/meal';
 })
 export class MenusMealsComponent {
   readonly rotation = inject(RotationService);
+  private dialog = inject(MatDialog);
 
   readonly menu = input.required<Menu | undefined>();
 
@@ -64,11 +67,19 @@ export class MenusMealsComponent {
     this.rotation.placeMealInSlot(menuId, e.slotOrder, e.mealId);
   }
 
-  /** Trash on an in-slot meal — clear that slot. */
+  /** Trash on an in-slot meal — confirm, then clear that slot (the meal in the
+   *  Meals library is untouched; only this slot's placement is removed). */
   onDelete(slotOrder: number): void {
     const menuId = this.menu()?.id;
     if (menuId == null) return;
-    this.rotation.clearSlot(menuId, slotOrder);
+    this.dialog.open(WipeConfirmDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: {
+        message: `Remove meal from Meal ${slotOrder} slot?`,
+        confirmLabel: 'Remove',
+        onConfirm: () => this.rotation.clearSlot(menuId, slotOrder),
+      },
+    });
   }
 
   /** + on a slot — toggle it as the lookaside add target (open/close the
