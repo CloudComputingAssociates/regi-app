@@ -27,12 +27,12 @@ import { Meal } from '../../models';
            just appear in the list below when done. -->
       <div class="genmeal-bar">
         <span class="ai-label" matTooltip="AI meal generation">
+          <span class="ai-text">AI</span>
           <img
             src="images/AI-star.png"
             alt=""
             class="ai-logo"
             [class.spinning]="rotation.generating()" />
-          <span class="ai-text">AI</span>
         </span>
         <button
           type="button"

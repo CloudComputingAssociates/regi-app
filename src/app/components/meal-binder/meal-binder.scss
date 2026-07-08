@@ -47,10 +47,12 @@
   align-items: center;
   gap: 5px;
 
+  // Trails the "AI" text, raised a touch like a superscript.
   .ai-logo {
     width: 18px;
     height: 18px;
     object-fit: contain;
+    transform: translateY(-4px);
 
     &.spinning {
       animation: binder-spin 1s linear infinite;

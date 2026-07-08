@@ -668,7 +668,11 @@ export class PreferencesService {
    *  Called before save — empty array means no warnings. */
   validateOnSave(): string[] {
     const warnings: string[] = [];
-    const dg = this.dailyGoals();
+    // Only surface the weight-goal acknowledgement when the goal actually
+    // changed this session. Saving (Continue) clears the personalInfo dirty
+    // flag, so once acknowledged it never re-nags on unrelated saves — it only
+    // returns when the user edits the goal again.
+    if (!this.dirtyGroups().personalInfo) return warnings;
     const pi = this.personalInfo();
 
     // 1. Unrealistic goal weight
