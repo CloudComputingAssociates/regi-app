@@ -282,6 +282,14 @@ sup.sm {
     border-color: #4da6ff;
     color: #ffffff;
   }
+
+  // Confirm — filled green (matches the dialog confirm disc). Used for the "+"
+  // once it flips to a done-check.
+  &.icon-disc-confirm {
+    background: #28c941;
+    border-color: #28c941;
+    color: #ffffff;
+  }
 }
 
 .filter-radio-group .mat-mdc-radio-button .mdc-label {

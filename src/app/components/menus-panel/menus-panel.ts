@@ -36,6 +36,10 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
     MatIconModule,
     DragDropModule,
   ],
+  // Click anywhere outside a meal card / the food rail / the serving popup
+  // deselects the current add target (so there's an obvious way out, and you
+  // can pick another meal).
+  host: { '(document:click)': 'onDocumentClick($event)' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
@@ -64,7 +68,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                  right edge, adjacent to the Meals binder. -->
             <div class="menus-toolbar">
               <div class="people-control">
-                <span class="people-label">Serving:</span>
+                <span class="people-label">Servings</span>
                 <button
                   type="button"
                   class="people-step"
@@ -226,6 +230,24 @@ export class MenusPanelComponent implements OnInit {
     this.allowedLoad = firstValueFrom(this.preferencesService.getAllowedFoodsFull())
       .then((foods) => this.allowedFull.set(foods ?? []))
       .catch(() => this.allowedFull.set([]));
+  }
+
+  /** Deselect the add target when clicking outside a meal card, the food rail,
+   *  or the serving popup. Clicks inside a meal card are left to that card's own
+   *  controls (its + toggles/switches, food rows edit), so this never fights the
+   *  select/switch actions. */
+  onDocumentClick(ev: MouseEvent): void {
+    if (this.rotation.editingSlot() === null) return;
+    const target = ev.target as HTMLElement | null;
+    if (!target) return;
+    if (
+      target.closest('app-meal') ||
+      target.closest('app-food-lookaside') ||
+      target.closest('.nf-popup-overlay')
+    ) {
+      return;
+    }
+    this.rotation.stopEditing();
   }
 
   /** Switching menus exits any in-progress slot edit before selecting, so the

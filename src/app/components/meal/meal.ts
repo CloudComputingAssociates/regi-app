@@ -4,17 +4,7 @@
 // ({slotLabel})" with a visual-only inline-edit affordance. Body shows
 // macro chips (P/C/F/Fi grams — never calories) and the food rows. Handles
 // three states: filled, empty (pick a meal), and dining-out.
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  computed,
-  effect,
-  input,
-  output,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
@@ -37,44 +27,34 @@ interface SlotMacros {
     <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()">
       <div class="slot-header">
         <span class="slot-title">Meal {{ slot().slotOrder }}</span>
-        @if (renaming() && slot().mealId != null) {
-          <!-- Recessed, indented box + blinking caret. Commits on Enter or when
-               focus leaves; Escape cancels. -->
+        <!-- The title IS the name box — always visible, reads as an inset
+             read-only field until you click into it, then editable until Enter
+             or focus leaves. No separate pencil. -->
+        @if (slot().mealId != null) {
           <input
-            #nameInput
             type="text"
-            class="meal-name-edit"
-            [value]="nameSeed()"
+            class="meal-name-box"
+            [value]="title()"
             (keydown.enter)="commitName($any($event.target).value); $any($event.target).blur()"
-            (keydown.escape)="renaming.set(false)"
+            (keydown.escape)="$any($event.target).value = title(); $any($event.target).blur()"
             (blur)="commitName($any($event.target).value)"
             aria-label="Meal name" />
-        } @else if (title()) {
-          <span class="meal-name">{{ title() }}</span>
         }
-        <!-- + opens the food lookaside targeted at this meal (active while it's
-             the add target). Pencil edits the title; trash deletes the meal.
-             Editing/removing individual foods happens directly on each row. -->
+        <!-- + opens the food lookaside targeted at this meal, flipping to a
+             green check while active; trash deletes the meal. Editing/removing
+             individual foods happens directly on each row. -->
         @if (!slot().isDiningOut) {
           <button
             type="button"
             class="icon-disc add-affordance"
-            [class.icon-disc-active]="editing()"
-            matTooltip="Add Food item"
+            [class.icon-disc-confirm]="editing()"
+            [matTooltip]="editing() ? 'Done adding foods' : 'Add Food item'"
             matTooltipPosition="above"
             (click)="toggleAdd.emit()">
-            <mat-icon>add</mat-icon>
+            <mat-icon>{{ editing() ? 'check' : 'add' }}</mat-icon>
           </button>
         }
         @if (slot().mealId != null) {
-          <button
-            type="button"
-            class="icon-disc"
-            matTooltip="Edit Meal Title"
-            matTooltipPosition="above"
-            (click)="renaming.set(true)">
-            <mat-icon>edit</mat-icon>
-          </button>
           <button
             type="button"
             class="icon-disc icon-disc-danger"
@@ -175,39 +155,17 @@ export class MealComponent {
   /** ✕ on a food row — remove that item from the meal. */
   readonly removeItem = output<MealItem>();
 
-  /** True while the meal title is being renamed inline (local, independent of
-   *  the add target). */
-  readonly renaming = signal(false);
-
   /** A lookaside food dropped on this (editing) meal card. */
   readonly dropFood = output<{ food: Food; serving: number }>();
 
   readonly isEmpty = computed(() => !this.slot().isDiningOut && this.slot().mealId == null);
 
-  private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
-
-  /** Seed for the inline name box — exactly what the header shows, so editing
-   *  starts from the visible name and the committed value replaces it. */
-  readonly nameSeed = computed<string>(() => this.title());
-
-  // Focus + select the name box the moment renaming turns on, so the caret
-  // blinks there and the user can type over the existing name.
-  private readonly focusNameEffect = effect(() => {
-    const el = this.nameInput()?.nativeElement;
-    if (this.renaming() && el) {
-      queueMicrotask(() => {
-        el.focus();
-        el.select();
-      });
-    }
-  });
-
-  /** Persist a changed meal name and exit rename (no-op on empty/unchanged). */
+  /** Persist a changed meal name from the always-visible name box (no-op on
+   *  empty or unchanged). */
   commitName(value: string): void {
-    this.renaming.set(false);
     const mealId = this.slot().mealId;
     const name = value.trim();
-    if (mealId == null || !name || name === this.nameSeed().trim()) return;
+    if (mealId == null || !name || name === this.title().trim()) return;
     this.renameMeal.emit({ mealId, name });
   }
 
