@@ -265,13 +265,28 @@ export class RotationService {
   }
 
   /** Load the user's saved meals into the binder. GET /meal returns a bare
-   *  Meal[] (full objects, so isSaved is present); show only saved ones. */
+   *  Meal[] (full objects, so isSaved is present) but is PAGINATED — the server
+   *  defaults to 20 rows ORDER BY Name ASC and has no isSaved filter, so a
+   *  saved meal whose name sorts past the first page is silently absent. Since
+   *  we group by isSaved client-side, we must pull ALL pages, then keep the
+   *  saved ones. Page size = the server's MaxListLimit (100); stop on a short
+   *  page, with a safety cap so a runaway library can't loop forever. */
   async loadBinderMeals(): Promise<void> {
+    const PAGE = 100;
+    const MAX_PAGES = 20; // 2000 meals — a sane ceiling for the read loop
     try {
-      const meals = await firstValueFrom(
-        this.http.get<Meal[]>(`${this.baseUrl}/meal`),
-      );
-      this.binderMeals.set((meals ?? []).filter((m) => m.isSaved === true));
+      const all: Meal[] = [];
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const batch =
+          (await firstValueFrom(
+            this.http.get<Meal[]>(`${this.baseUrl}/meal`, {
+              params: { limit: String(PAGE), offset: String(page * PAGE) },
+            }),
+          )) ?? [];
+        all.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+      this.binderMeals.set(all.filter((m) => m.isSaved === true));
     } catch {
       this.binderMeals.set([]);
     }
