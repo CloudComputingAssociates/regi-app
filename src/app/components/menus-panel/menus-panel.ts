@@ -371,15 +371,13 @@ export class MenusPanelComponent implements OnInit {
     this.dialog.open(WipeConfirmDialogComponent, { panelClass: 'wipe-dialog-panel' });
   }
 
-  /** Deleting a whole menu clears a lot of work — confirm first. */
+  /** Deleting a whole menu is destructive — reuse the SAME confirm dialog as
+   *  Wipe menu (one popup for now; standardize later), routing its confirm to
+   *  removeOrClearMenu. */
   onDeleteMenu(menuId: number): void {
-    this.notification.showConfirmation(
-      'Are you sure? Deleting this menu clears all of its meals.',
-      'warning',
-      () => this.rotation.removeOrClearMenu(menuId),
-      () => {
-        /* keep the menu */
-      },
-    );
+    this.dialog.open(WipeConfirmDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: { onConfirm: () => this.rotation.removeOrClearMenu(menuId) },
+    });
   }
 }

@@ -7,7 +7,7 @@
 // Confirming deletes every meal from the CURRENTLY SELECTED menu (the menu
 // itself stays; its slots go empty). Wired to RotationService.clearMenuMeals.
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { RotationService } from '../../services/rotation.service';
 
 @Component({
@@ -30,11 +30,19 @@ import { RotationService } from '../../services/rotation.service';
 export class WipeConfirmDialogComponent {
   private dialogRef = inject(MatDialogRef<WipeConfirmDialogComponent>);
   private rotation = inject(RotationService);
+  // Optional override action. When omitted (the Wipe menu button) the default
+  // wipes the selected menu's meals; other callers (e.g. the menu-tile delete)
+  // reuse this ONE dialog and pass their own confirm action.
+  private data = inject<{ onConfirm?: () => void } | null>(MAT_DIALOG_DATA, { optional: true });
 
-  /** Delete every meal from the selected menu, then close. */
+  /** Run the confirm action (default: wipe the selected menu's meals), close. */
   onDelete(): void {
-    const menuId = this.rotation.selectedMenuId();
-    if (menuId != null) void this.rotation.clearMenuMeals(menuId);
+    if (this.data?.onConfirm) {
+      this.data.onConfirm();
+    } else {
+      const menuId = this.rotation.selectedMenuId();
+      if (menuId != null) void this.rotation.clearMenuMeals(menuId);
+    }
     this.dialogRef.close();
   }
 
