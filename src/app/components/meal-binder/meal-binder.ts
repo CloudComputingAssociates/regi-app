@@ -132,7 +132,7 @@ import { Meal } from '../../models';
         }
 
         @if (rotation.candidateMeals().length === 0 && rotation.binderMeals().length === 0 && !rotation.generating()) {
-          <p class="binder-empty">No generated meals yet — build some by hand, GenMeal one, or GenAll at once.</p>
+          <p class="binder-empty">No generated meals yet — build one by hand or Generate Meal.</p>
         }
       </div>
     </div>

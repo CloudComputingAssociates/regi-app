@@ -8,8 +8,9 @@
 // The component-facing surface is unchanged from Phase 0:
 //   menus, selectedMenuId, selectMenu, selectedMenu, selectedMenuTotals,
 //   slotItems, getMeal — plus loading/error and the loaders below.
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { AuthService } from '@auth0/auth0-angular';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
@@ -43,6 +44,7 @@ export class RotationService {
   private http = inject(HttpClient);
   private settingsService = inject(SettingsService);
   private notification = inject(NotificationService);
+  private auth = inject(AuthService);
   private baseUrl = environment.apiUrl;
 
   // ---- State -----------------------------------------------------------
@@ -63,6 +65,36 @@ export class RotationService {
   readonly candidateMeals = signal<Meal[]>([]);
   /** True while a single meal generation is in flight. */
   readonly generating = signal<boolean>(false);
+
+  /** localStorage key for THIS user's remembered candidate meal IDs. Null until
+   *  the Auth0 identity resolves (namespaced so a shared browser never leaks
+   *  candidates across accounts). */
+  private candidateStoreKey: string | null = null;
+  /** Gate: don't persist candidate IDs until the initial restore has run, so
+   *  the empty initial signal can't clobber the stored list before we read it. */
+  private candidatesRestored = false;
+
+  constructor() {
+    // Persist the RHS candidate ID list so GenMeal candidates survive a browser
+    // hard-refresh. IDs ONLY (never full Meal objects) — the meals themselves
+    // are already persisted server-side (isSaved=false) at generation time, so
+    // we only need to remember which IDs are ours and re-hydrate by id. This one
+    // effect covers every mutation path (generate, discard, restore self-heal).
+    effect(() => {
+      const ids = this.candidateMeals().map((m) => m.id);
+      if (!this.candidatesRestored) return;
+      this.writeCandidateIds(ids);
+    });
+
+    // Namespace the store by user identity. Auth0 `sub` is the stable per-user
+    // id; it arrives asynchronously, so defer restore until it does and act once.
+    this.auth.user$.subscribe((user) => {
+      const sub = user?.sub;
+      if (!sub || this.candidateStoreKey) return;
+      this.candidateStoreKey = `regi.candidates.${sub}`;
+      void this.restoreCandidates();
+    });
+  }
 
   /** The slot being edited in-place from the food lookaside rail. menuId +
    *  slotOrder locate the slot; mealId is null for an empty slot until the
@@ -517,15 +549,76 @@ export class RotationService {
     }
   }
 
-  /** Discard a generated candidate from the binder (client-only). The meal is a
-   *  throwaway (isSaved=false) expunged server-side; this does NOT affect any
-   *  slot the meal was already placed into. */
-  removeCandidate(mealId: number): void {
-    this.candidateMeals.update((list) => list.filter((m) => m.id !== mealId));
+  /** Discard a generated candidate from the RHS Meals panel. Per the server
+   *  persistence contract a generated meal is a REAL row (isSaved=false) that
+   *  persists until explicitly deleted — there is no server auto-cleanup — so
+   *  this hits the server, not just the local list.
+   *    DELETE /api/meal/{id}  (409 if the meal is currently slotted in a menu)
+   *  On success drop it from the in-session candidate list. */
+  async removeCandidate(mealId: number): Promise<void> {
+    try {
+      await firstValueFrom(this.http.delete(`${this.baseUrl}/meal/${mealId}`));
+      this.candidateMeals.update((list) => list.filter((m) => m.id !== mealId));
+    } catch (err) {
+      this.notification.show(this.deleteErrMessage(err), 'error');
+    }
+  }
+
+  /** Write the remembered candidate IDs to localStorage (empty → remove the
+   *  key). All access is guarded — private-mode / quota failures degrade to
+   *  in-memory-only and never break the binder. */
+  private writeCandidateIds(ids: number[]): void {
+    const key = this.candidateStoreKey;
+    if (!key) return;
+    try {
+      if (ids.length === 0) localStorage.removeItem(key);
+      else localStorage.setItem(key, JSON.stringify(ids));
+    } catch {
+      // localStorage unavailable (private mode / quota) — in-memory only.
+    }
+  }
+
+  /** Re-hydrate candidates by id after a hard-refresh: read the stored id list,
+   *  fetch each meal, keep only the still-unsaved survivors (drop rejects/404s
+   *  and any that were named → isSaved=true), preserve original order, then let
+   *  the persist effect self-heal the stored list down to the survivors. */
+  private async restoreCandidates(): Promise<void> {
+    const key = this.candidateStoreKey;
+    if (!key) return;
+    let ids: number[] = [];
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          ids = parsed.filter((n): n is number => typeof n === 'number');
+        }
+      }
+    } catch {
+      // Unreadable store — degrade to in-memory only, but allow future writes.
+      this.candidatesRestored = true;
+      return;
+    }
+    if (ids.length === 0) {
+      this.candidatesRestored = true;
+      return;
+    }
+    const results = await Promise.allSettled(
+      ids.map((id) => firstValueFrom(this.http.get<Meal>(`${this.baseUrl}/meal/${id}`))),
+    );
+    const survivors: Meal[] = [];
+    for (const r of results) {
+      // allSettled preserves input order, so survivors stay in stored order.
+      if (r.status === 'fulfilled' && r.value?.isSaved === false) survivors.push(r.value);
+    }
+    // Flip the gate BEFORE setting the signal so the persist effect fires and
+    // rewrites the stored list to just the survivors (self-heal).
+    this.candidatesRestored = true;
+    this.candidateMeals.set(survivors);
   }
 
   /** Explicitly delete a saved (named) meal from the binder library.
-   *    DELETE /api/meal/{id}  (409 if the meal is still in use)
+   *    DELETE /api/meal/{id}  (409 if the meal is still slotted in a menu)
    *  Copy-on-place means slots hold independent copies, so a library meal is
    *  normally deletable; reload the binder after. */
   async deleteSavedMeal(mealId: number): Promise<void> {
@@ -533,7 +626,7 @@ export class RotationService {
       await firstValueFrom(this.http.delete(`${this.baseUrl}/meal/${mealId}`));
       await this.loadBinderMeals();
     } catch (err) {
-      this.notification.show(this.errMessage(err), 'error');
+      this.notification.show(this.deleteErrMessage(err), 'error');
     }
   }
 
@@ -639,5 +732,16 @@ export class RotationService {
   private errMessage(err: unknown): string {
     const e = err as { error?: { error?: string }; statusText?: string };
     return e?.error?.error ?? e?.statusText ?? 'Request failed';
+  }
+
+  /** Delete-specific message. A 409 means the meal is still slotted in a menu;
+   *  the server refuses to delete it until it's detached. Surface that plainly
+   *  rather than the raw body. */
+  private deleteErrMessage(err: unknown): string {
+    const e = err as { status?: number };
+    if (e?.status === 409) {
+      return 'This meal is placed in a menu — remove it from that slot first.';
+    }
+    return this.errMessage(err);
   }
 }
