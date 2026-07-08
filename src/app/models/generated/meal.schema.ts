@@ -305,7 +305,7 @@ export interface CreateMealRequest {
   [k: string]: unknown;
 }
 /**
- * Request body for PATCH /api/meal/{id} — all fields optional; only provided fields are updated
+ * Request body for PUT /api/meal/{id} — all fields optional; only provided fields are updated
  *
  * This interface was referenced by `MealSchema`'s JSON-Schema
  * via the `definition` "UpdateMealRequest".

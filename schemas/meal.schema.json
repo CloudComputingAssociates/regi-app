@@ -187,7 +187,7 @@
 
     "UpdateMealRequest": {
       "type": "object",
-      "description": "Request body for PATCH /api/meal/{id} — all fields optional; only provided fields are updated",
+      "description": "Request body for PUT /api/meal/{id} — all fields optional; only provided fields are updated",
       "properties": {
         "name": {
           "type": "string",

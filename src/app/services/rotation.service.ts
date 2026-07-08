@@ -513,7 +513,7 @@ export class RotationService {
     const menuId = this.editingSlot()?.menuId ?? this.selectedMenuId();
     try {
       const body: UpdateMealRequest = { name, isSaved: true };
-      await firstValueFrom(this.http.patch<Meal>(`${this.baseUrl}/meal/${mealId}`, body));
+      await firstValueFrom(this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, body));
       if (menuId != null) {
         const menu = await firstValueFrom(
           this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
