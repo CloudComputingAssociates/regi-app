@@ -77,15 +77,18 @@ interface SlotMacros {
           cdkDropList
           [cdkDropListEnterPredicate]="mealDropPredicate"
           (cdkDropListDropped)="onDrop($event)">
-          <span>Pick meal — or</span>
-          <button
-            type="button"
-            class="create-btn"
-            matTooltip="Add foods to build this meal"
-            matTooltipPosition="above"
-            (click)="toggleAdd.emit()">
-            Create
-          </button>
+          <div class="pick-line">
+            <span>Use AI GenMeal or</span>
+            <button
+              type="button"
+              class="create-btn"
+              matTooltip="Add foods to build this meal"
+              matTooltipPosition="above"
+              (click)="toggleAdd.emit()">
+              Create
+            </button>
+          </div>
+          <span class="pick-sub">or pick saved meal</span>
         </div>
       } @else {
         <!-- When editing, this body is the food drop target (enterPredicate

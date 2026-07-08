@@ -162,10 +162,20 @@
     }
   }
 
-  // "Pick meal — or [Create]" on one line.
+  // "Use AI GenMeal or [Create]" then "or pick saved meal" beneath.
   &.pick {
-    flex-direction: row;
+    flex-direction: column;
     gap: 8px;
+  }
+
+  .pick-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pick-sub {
+    color: #9aa0a6;
   }
 
   // Create = the Add (+) action for an empty slot; a quiet button, not dashed.

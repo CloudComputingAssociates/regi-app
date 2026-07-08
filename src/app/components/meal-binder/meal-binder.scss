@@ -221,6 +221,14 @@
   color: #9aa0a6;
 }
 
+// Separates your Named + saved meals from the AI-generated candidates above.
+.binder-divider {
+  flex-shrink: 0;
+  height: 1px;
+  background: #4a4a4a;
+  margin: 4px 0;
+}
+
 .binder-card {
   position: relative;
   display: flex;

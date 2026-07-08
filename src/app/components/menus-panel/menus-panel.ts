@@ -86,6 +86,13 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                   (click)="rotation.setPersons(rotation.persons() + 1)">
                   +
                 </button>
+                <span
+                  class="scale-info"
+                  #scaleTooltip="matTooltip"
+                  matTooltip="# of People to Scale Menus for Shopping List quantities. Default value in Settings / Menu Settings."
+                  matTooltipPosition="above"
+                  [matTooltipShowDelay]="0"
+                  (click)="scaleTooltip.toggle()">&#9432;</span>
               </div>
 
               <button

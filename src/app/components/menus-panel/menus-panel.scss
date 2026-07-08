@@ -71,6 +71,16 @@
     margin-right: 4px;
   }
 
+  // Blue info bubble after the +; hover or click shows the tooltip.
+  .scale-info {
+    margin-left: 4px;
+    color: #4da6ff;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+  }
+
   .people-count {
     font-size: 13px;
     font-weight: 600;
@@ -119,7 +129,7 @@
 // binder Gen buttons) with an outlined trash sized to match the app's icons.
 .wipe-btn {
   flex: 0 0 auto;
-  margin-left: 28px;
+  margin-left: 44px;
   display: inline-flex;
   align-items: center;
   gap: 6px;

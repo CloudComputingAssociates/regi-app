@@ -112,8 +112,14 @@ import { Meal } from '../../models';
           </div>
         }
 
+        <!-- Horizontal bar separates your Named + saved meals (below) from the
+             AI-generated candidates (above) when both are present. -->
+        @if (rotation.candidateMeals().length > 0 && rotation.binderMeals().length > 0) {
+          <div class="binder-divider" aria-hidden="true"></div>
+        }
+
         @for (meal of rotation.binderMeals(); track meal.id) {
-          <div class="binder-card" cdkDrag [cdkDragData]="meal">
+          <div class="binder-card saved" cdkDrag [cdkDragData]="meal">
             <span class="binder-card-name">{{ meal.name }}</span>
             <div class="binder-chips">
               <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>

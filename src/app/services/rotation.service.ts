@@ -503,13 +503,16 @@ export class RotationService {
     }
   }
 
-  /** Rename an editing slot's meal (inline name box). PATCH /api/meal/{id}
-   *  { name } → refresh the menu so the slot's denormalized mealName updates.
-   *  A failure toasts and leaves the board intact. */
+  /** Rename a meal from the inline name box — and treat that override as the
+   *  action that makes the meal "yours": PATCH { name, isSaved: true }. A
+   *  generated / cobbled-together meal (default protein name, isSaved=false)
+   *  becomes a Named + saved meal that shows in the binder. Refreshes the menu
+   *  (slot's denormalized mealName) + the meal, then reloads the binder so the
+   *  now-saved meal appears there. A failure toasts, board stays intact. */
   async updateMealName(mealId: number, name: string): Promise<void> {
     const menuId = this.editingSlot()?.menuId ?? this.selectedMenuId();
     try {
-      const body: UpdateMealRequest = { name };
+      const body: UpdateMealRequest = { name, isSaved: true };
       await firstValueFrom(this.http.patch<Meal>(`${this.baseUrl}/meal/${mealId}`, body));
       if (menuId != null) {
         const menu = await firstValueFrom(
@@ -518,6 +521,8 @@ export class RotationService {
         this.menusById.update((m) => new Map(m).set(menuId, menu));
       }
       await this.loadMeal(mealId);
+      // The rename saved it — surface it in the binder's saved-meals list.
+      void this.loadBinderMeals();
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }

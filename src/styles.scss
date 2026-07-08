@@ -290,6 +290,14 @@ sup.sm {
     border-color: #28c941;
     color: #ffffff;
   }
+
+  // Cancel — filled red (matches the dialog cancel disc). Always red, e.g. the
+  // lookaside close X.
+  &.icon-disc-cancel {
+    background: #ff5f57;
+    border-color: #ff5f57;
+    color: #ffffff;
+  }
 }
 
 .filter-radio-group .mat-mdc-radio-button .mdc-label {
