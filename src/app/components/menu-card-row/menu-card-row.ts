@@ -4,7 +4,7 @@
 // menu name and its planned day count; the selected card gets a blue border.
 // A badge tallies planned days against the rotation span, and a disabled
 // "+ Add menu" stub marks the Phase-1 affordance.
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { RotationMenuEntry } from '../../models';
@@ -54,11 +54,6 @@ import { RotationMenuEntry } from '../../models';
 
         <button type="button" class="add-menu-link" (click)="addMenu.emit()">+ Add menu</button>
       </div>
-
-      <div class="span-badge" [class.complete]="plannedDays() === spanDays()">
-        <span class="check">✓</span>
-        {{ plannedDays() }} / {{ spanDays() }} days
-      </div>
     </div>
   `,
   styleUrls: ['./menu-card-row.scss'],
@@ -75,10 +70,6 @@ export class MenuCardRowComponent {
   readonly addMenu = output<void>();
   /** Change a menu's planned days (plannedCount). */
   readonly setDays = output<{ menuId: number; plannedCount: number }>();
-
-  readonly plannedDays = computed(() =>
-    this.menus().reduce((sum, m) => sum + (m.plannedCount ?? 0), 0),
-  );
 
   /** Display label by position: 0→A, 1→B, … Menus are lettered (Menu A/B/C);
    *  meal slots within a menu are numbered (Meal 1/2/3). */

@@ -60,6 +60,29 @@
 // left-justified against the toolbar's left padding edge.
 .toolbar-spacer { flex: 1 1 auto; }
 
+// Planned-days tally, right-justified in the toolbar bar.
+.span-badge {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px;
+  border: 1px solid #4a4a4a;
+  border-radius: 14px;
+  background: #333;
+  color: #9aa0a6;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  .check { color: #6a6f75; }
+
+  &.complete {
+    color: #f1f1f1;
+    .check { color: #41ac17; }
+  }
+}
+
 .people-control {
   flex: 0 0 auto;
   display: flex;

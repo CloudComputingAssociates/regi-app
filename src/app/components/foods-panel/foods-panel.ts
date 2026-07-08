@@ -244,28 +244,54 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 </span>
               } @else {
                 <span
-                  matTooltip="Edit Picks — click 'star' to Favorite, 'circle-line' to Restrict. Double-click a row to edit it, single-press-and-hold the picture to zoom."
+                  matTooltip="Edit MyFoods — click 'star' to Favorite, 'circle-line' to Restrict. Double-click a row to edit it, single-press-and-hold the picture to zoom."
                   matTooltipPosition="below"
                   [matTooltipShowDelay]="350">
-                  Edit Picks
+                  Edit MyFoods
                 </span>
               }
             </span>
-            <span class="section-title-count">
-              @if (addTo() === 'left') { Total ({{ thisWeekTotal() }}) }
-              @else { Total ({{ bottomListLength() }}) }
-            </span>
-            @if (addTo() === 'right') {
-              <button
-                type="button"
-                class="section-title-close"
-                (click)="addTo.set('left'); selectedMyFood.set(null)"
-                matTooltip="Back to Food Picks"
-                matTooltipPosition="below"
-                aria-label="Close Edit">
-                ✕
-              </button>
-            }
+            <div class="title-right">
+              <!-- Collapse-all (^) / expand-all (v) the accordion, right-aligned
+                   just left of the Total. Curate view only. -->
+              @if (addTo() === 'right') {
+                <button
+                  type="button"
+                  class="picker-fold-btn"
+                  [class.pressed]="allCategoriesCollapsed()"
+                  (click)="collapseAllCategories()"
+                  matTooltip="Collapse all categories"
+                  matTooltipPosition="above"
+                  aria-label="Collapse all">
+                  <mat-icon>expand_less</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="picker-fold-btn"
+                  [class.pressed]="!allCategoriesCollapsed()"
+                  (click)="expandAllCategories()"
+                  matTooltip="Expand all categories"
+                  matTooltipPosition="above"
+                  aria-label="Expand all">
+                  <mat-icon>expand_more</mat-icon>
+                </button>
+              }
+              <span class="section-title-count">
+                @if (addTo() === 'left') { Total ({{ thisWeekTotal() }}) }
+                @else { Total ({{ bottomListLength() }}) }
+              </span>
+              @if (addTo() === 'right') {
+                <button
+                  type="button"
+                  class="section-title-close"
+                  (click)="addTo.set('left'); selectedMyFood.set(null)"
+                  matTooltip="Back to Food Picks"
+                  matTooltipPosition="below"
+                  aria-label="Close Edit">
+                  ✕
+                </button>
+              }
+            </div>
           </div>
 
           @if (addTo() === 'right') {
@@ -275,7 +301,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                  MyFoods can be added to). It's stubbed gray because the
                  real Add flow lives in the phone app. -->
             <div class="type-row">
-              <span class="type-row-label">Food List</span>
+              <span class="type-row-label">Display</span>
               <select
                 class="spin-source-select"
                 [ngModel]="spinSource()"
@@ -290,30 +316,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <option [value]="list.name">{{ list.description }}</option>
                 }
               </select>
-              <!-- Collapse/expand controls for the accordion below. Minus
-                   collapses every category (the default state), plus
-                   expands them all. They're a pair so users can flip the
-                   whole list in one click. -->
-              <button
-                type="button"
-                class="picker-fold-btn"
-                [class.pressed]="allCategoriesCollapsed()"
-                (click)="collapseAllCategories()"
-                matTooltip="Collapse all categories"
-                matTooltipPosition="above"
-                aria-label="Collapse all">
-                −
-              </button>
-              <button
-                type="button"
-                class="picker-fold-btn"
-                [class.pressed]="!allCategoriesCollapsed()"
-                (click)="expandAllCategories()"
-                matTooltip="Expand all categories"
-                matTooltipPosition="above"
-                aria-label="Expand all">
-                +
-              </button>
               <span class="column-hint">{{ columnHeaderText() }}</span>
               @if (spinSource() === 'myfoods') {
                 <!-- Phone-then-label combo button. Whole pill is one click

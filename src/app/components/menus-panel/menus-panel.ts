@@ -104,6 +104,12 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               </button>
 
               <span class="toolbar-spacer"></span>
+
+              <!-- Planned-days tally, right-justified in the same bar. -->
+              <div class="span-badge" [class.complete]="plannedDays() === rotation.rotation()!.spanDays">
+                <span class="check">✓</span>
+                {{ plannedDays() }} / {{ rotation.rotation()!.spanDays }} days
+              </div>
             </div>
 
             <app-menu-card-row
@@ -223,6 +229,11 @@ export class MenusPanelComponent implements OnInit {
 
   /** Save disc appears only when the draft differs from the opened value. */
   readonly canSave = computed<boolean>(() => this.draft() !== this.original());
+
+  /** Total planned days across all menus (for the toolbar tally badge). */
+  readonly plannedDays = computed<number>(() =>
+    this.rotation.menus().reduce((sum, m) => sum + (m.plannedCount ?? 0), 0),
+  );
 
   /** Label scale: per-100g × (draft × gramsPerUnit)/100 — same math as the
    *  foods-panel popup, keyed on the ITEM's draft quantity. */

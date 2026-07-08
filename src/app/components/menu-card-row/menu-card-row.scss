@@ -142,29 +142,3 @@
   }
 }
 
-.span-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 0 0 auto;
-  padding: 6px 12px;
-  border: 1px solid #4a4a4a;
-  border-radius: 16px;
-  background: #333;
-  color: #9aa0a6;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-
-  .check {
-    color: #6a6f75;
-  }
-
-  &.complete {
-    color: #f1f1f1;
-
-    .check {
-      color: #41ac17;
-    }
-  }
-}
