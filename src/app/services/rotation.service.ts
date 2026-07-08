@@ -211,38 +211,6 @@ export class RotationService {
     }
   }
 
-  /** "GenAll" — generate a LIST of candidate meals into the binder (does NOT
-   *  auto-place them into slots; the user drags them in). It just runs the fast
-   *  per-meal generator (same as GenMeal) once per slot, so the candidates
-   *  appear one-by-one — avoiding the single big /rotation/generate call that
-   *  blew the gateway timeout (504). Each meal excludes the names already used
-   *  this run so they stay varied; a per-meal failure toasts and the run
-   *  continues. */
-  async generateAll(): Promise<void> {
-    const menu = this.selectedMenu();
-    const count =
-      menu?.slots.length ??
-      this.settingsService.allSettings()?.regiMenu?.mealsPerDay ??
-      4;
-
-    this.generating.set(true);
-    try {
-      for (let i = 0; i < count; i++) {
-        try {
-          const excludeMeals = this.knownMealNames();
-          const body: GenerateMealRequest = { mealType: 'meal', excludeMeals };
-          const meal = await firstValueFrom(
-            this.http.post<Meal>(`${this.baseUrl}/meal/generate`, body),
-          );
-          this.candidateMeals.update((list) => [...list, meal]);
-        } catch (err) {
-          this.notification.show(this.errMessage(err), 'error');
-        }
-      }
-    } finally {
-      this.generating.set(false);
-    }
-  }
 
   /** Build an empty board manually (no AI): create a staged rotation, a menu
    *  with N empty slots, link it, then load the detail and select the menu.

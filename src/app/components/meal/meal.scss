@@ -37,32 +37,67 @@
     white-space: nowrap;
   }
 
-  // The title name box — always visible. Reads as an inset read-only field;
-  // clicking into it (focus) turns it editable with an accent caret. Commits on
-  // Enter or blur (handled in the component).
+  // The name field is ~2/3 of the (responsive) card; the green commit-arrow
+  // sits at its end when the text was edited.
+  .name-wrap {
+    flex: 1 1 66%;
+    min-width: 0;
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  // Always-visible name box. Reads as a recessed grey field (depth via the
+  // inset shadow, a deeper grey — not black); focusing turns on the accent
+  // caret. Single line, no scrollbar — Home/End/arrows navigate long names.
   .meal-name-box {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-width: 0;
     font-family: inherit;
     font-size: 14px;
     font-weight: 500;
     color: #f1f1f1;
-    background: #262626;
+    background: #333333;
     border: 1px solid #1c1c1c;
     border-radius: 4px;
     padding: 3px 8px;
     outline: none;
     cursor: text;
-    text-overflow: ellipsis;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
     transition: border-color 0.12s ease, box-shadow 0.12s ease;
 
     &:focus {
       border-color: #4da6ff;
       caret-color: #4da6ff;
       box-shadow:
-        inset 0 1px 2px rgba(0, 0, 0, 0.5),
+        inset 0 1px 3px rgba(0, 0, 0, 0.6),
         0 0 0 1px rgba(77, 166, 255, 0.5);
+    }
+  }
+
+  // Green square commit-arrow, same height as the field.
+  .name-commit {
+    flex: 0 0 auto;
+    align-self: stretch;
+    aspect-ratio: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: #28c941;
+    color: #ffffff;
+    cursor: pointer;
+
+    &:hover { background: #23b23a; }
+
+    .mat-icon {
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
+      line-height: 16px;
     }
   }
 

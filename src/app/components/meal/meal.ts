@@ -4,7 +4,7 @@
 // ({slotLabel})" with a visual-only inline-edit affordance. Body shows
 // macro chips (P/C/F/Fi grams — never calories) and the food rows. Handles
 // three states: filled, empty (pick a meal), and dining-out.
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
@@ -31,14 +31,32 @@ interface SlotMacros {
              read-only field until you click into it, then editable until Enter
              or focus leaves. No separate pencil. -->
         @if (slot().mealId != null) {
-          <input
-            type="text"
-            class="meal-name-box"
-            [value]="title()"
-            (keydown.enter)="commitName($any($event.target).value); $any($event.target).blur()"
-            (keydown.escape)="$any($event.target).value = title(); $any($event.target).blur()"
-            (blur)="commitName($any($event.target).value)"
-            aria-label="Meal name" />
+          <div class="name-wrap">
+            <input
+              #nameBox
+              type="text"
+              class="meal-name-box"
+              [value]="title()"
+              (focus)="onNameFocus(nameBox.value)"
+              (input)="nameDraft.set(nameBox.value)"
+              (keydown.enter)="nameBox.blur()"
+              (keydown.escape)="nameBox.value = title(); nameBox.blur()"
+              (blur)="onNameBlur(nameBox.value)"
+              aria-label="Meal name" />
+            <!-- Green enter-arrow: only when the name was actually changed;
+                 pressing it commits, same as Enter. -->
+            @if (nameDirty()) {
+              <button
+                type="button"
+                class="name-commit"
+                matTooltip="Save name"
+                matTooltipPosition="above"
+                (mousedown)="$event.preventDefault()"
+                (click)="nameBox.blur()">
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            }
+          </div>
         }
         <!-- + opens the food lookaside targeted at this meal, flipping to a
              green check while active; trash deletes the meal. Editing/removing
@@ -163,8 +181,29 @@ export class MealComponent {
 
   readonly isEmpty = computed(() => !this.slot().isDiningOut && this.slot().mealId == null);
 
-  /** Persist a changed meal name from the always-visible name box (no-op on
-   *  empty or unchanged). */
+  /** True while the name box has focus. */
+  private readonly nameFocused = signal(false);
+  /** Current text in the name box (tracked for the dirty check). */
+  readonly nameDraft = signal('');
+
+  /** Show the green commit-arrow only while editing AND the text differs from
+   *  the current name. */
+  readonly nameDirty = computed<boolean>(() => {
+    const draft = this.nameDraft().trim();
+    return this.nameFocused() && draft !== '' && draft !== this.title().trim();
+  });
+
+  onNameFocus(current: string): void {
+    this.nameFocused.set(true);
+    this.nameDraft.set(current);
+  }
+
+  onNameBlur(value: string): void {
+    this.nameFocused.set(false);
+    this.commitName(value);
+  }
+
+  /** Persist a changed meal name from the name box (no-op on empty/unchanged). */
   commitName(value: string): void {
     const mealId = this.slot().mealId;
     const name = value.trim();

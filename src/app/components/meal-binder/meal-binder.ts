@@ -37,18 +37,10 @@ import { Meal } from '../../models';
         <button
           type="button"
           class="genmeal-btn"
-          matTooltip="Generate another meal"
+          matTooltip="Generate a meal with AI"
           [disabled]="rotation.generating()"
           (click)="rotation.generateMeal()">
-          GenMeal
-        </button>
-        <button
-          type="button"
-          class="genmeal-btn"
-          matTooltip="Generate all meals"
-          [disabled]="rotation.generating()"
-          (click)="onGenAllMeals()">
-          GenAll
+          Generate Meal
         </button>
       </div>
 
@@ -58,8 +50,8 @@ import { Meal } from '../../models';
            left blank on blur it reverts to the prior selection. -->
       <div class="twist-row">
         <span class="twist-label">
-          <app-twist-icon />
           <span class="twist-word">Twist</span>
+          <app-twist-icon />
         </span>
         <div class="twist-combo">
           <input
@@ -147,11 +139,6 @@ export class MealBinderComponent implements OnInit {
 
   round(n: number | undefined): number {
     return Math.round(n ?? 0);
-  }
-
-  /** "GenAll" — generate the whole rotation at once (GenerateRotation API). */
-  onGenAllMeals(): void {
-    void this.rotation.generateAll();
   }
 
   // ----- Cuisine "Twist" combobox -----------------------------------------
