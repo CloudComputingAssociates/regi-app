@@ -9,7 +9,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { firstValueFrom } from 'rxjs';
-import { RotationService } from '../../services/rotation.service';
+import { RotationService, TEACH_SAVE_LINE } from '../../services/rotation.service';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { FoodsService } from '../../services/foods.service';
 import { NotificationService } from '../../services/notification.service';
@@ -97,6 +97,15 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
 
               <span class="toolbar-spacer"></span>
 
+              <!-- Whole-rotation teardown, adjacent to the progress balloon. -->
+              <button
+                type="button"
+                class="wipe-menus-btn"
+                matTooltip="Tear down this week's menus (pinned menus & Binder meals are kept)"
+                (click)="onWipeMenus()">
+                Wipe Menus <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
+              </button>
+
               <!-- Planned-days tally, right-justified in the same bar. -->
               <div class="span-badge" [class.complete]="plannedDays() === rotation.rotation()!.spanDays">
                 <span class="check">✓</span>
@@ -110,6 +119,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               [spanDays]="rotation.rotation()!.spanDays"
               (select)="onSelectMenu($event)"
               (deleteMenu)="onDeleteMenu($event)"
+              (pinMenu)="rotation.pinMenu($event)"
               (addMenu)="rotation.addMenu()"
               (setDays)="rotation.setMenuDays($event.menuId, $event.plannedCount)" />
 
@@ -357,18 +367,35 @@ export class MenusPanelComponent implements OnInit {
     this.popupMealId.set(null);
   }
 
-  /** Trash on a menu tile — the single menu-removal control. Confirms, then
-   *  removeOrClearMenu unlinks the menu from the rotation (or empties the last
-   *  remaining menu's slots). Neither path deletes any Meal row — only the
-   *  RotationMenus link / the slots' MealID references — hence the reassurance
-   *  in the prompt. */
+  /** Trash on a menu tile — clear the menu's slots via the per-slot clear loop
+   *  (no bulk endpoint). Pinned occupants unlink and stay in the Binder; unsaved
+   *  occupants are discarded. Teach line appended when a slot holds diverged/
+   *  session-edited work. */
   onDeleteMenu(menuId: number): void {
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',
       data: {
-        message: 'Wipe the menu, by removing link to all meals. Meals are not deleted.',
-        confirmLabel: 'Wipe',
-        onConfirm: () => this.rotation.removeOrClearMenu(menuId),
+        message:
+          'Clear this menu? Meals in your Binder stay in your Binder. Unsaved meals in these slots are discarded.',
+        teachLine: this.rotation.menuHasUnsavedWork(menuId) ? TEACH_SAVE_LINE : undefined,
+        confirmLabel: 'Clear',
+        onConfirm: () => void this.rotation.clearMenuMeals(menuId),
+      },
+    });
+  }
+
+  /** "Wipe Menus" — whole-rotation teardown. Confirms with a strong warning;
+   *  pinned menus + Binder meals survive. Teach line when the rotation holds
+   *  diverged/session-edited work (best-effort over loaded menus). */
+  onWipeMenus(): void {
+    this.dialog.open(WipeConfirmDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: {
+        title: 'Wipe Menus',
+        message: "You will lose your work for this week's menus. O.K. to proceed?",
+        teachLine: this.rotation.rotationHasUnsavedWork() ? TEACH_SAVE_LINE : undefined,
+        confirmLabel: 'Proceed',
+        onConfirm: () => void this.rotation.wipeMenus(),
       },
     });
   }

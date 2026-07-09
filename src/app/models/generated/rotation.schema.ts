@@ -99,60 +99,6 @@ export interface CreateRotationRequest {
   [k: string]: unknown;
 }
 /**
- * A single slot on a single day that the user wants the generator to skip (eating out)
- *
- * This interface was referenced by `RotationSchema`'s JSON-Schema
- * via the `definition` "DiningOutSlot".
- */
-export interface DiningOutSlot {
-  /**
-   * Zero-based day offset from the rotation startDate (0–9)
-   */
-  dayOffset: number;
-  /**
-   * 1-based slot order within the day's menu (1–10)
-   */
-  slotOrder: number;
-  [k: string]: unknown;
-}
-/**
- * Request body for POST /api/rotation/generate — creates a rotation skeleton AND populates it with AI-generated menus and meals
- *
- * This interface was referenced by `RotationSchema`'s JSON-Schema
- * via the `definition` "GenerateRotationRequest".
- */
-export interface GenerateRotationRequest {
-  /**
-   * Display name for the rotation
-   */
-  name?: string;
-  /**
-   * How many days the rotation covers (2–10)
-   */
-  spanDays: number;
-  /**
-   * Number of people the menus are sized for (1–10). Defaults to 1.
-   */
-  peopleCount?: number;
-  /**
-   * Day of week the user typically starts (e.g. 'Monday'). Optional.
-   */
-  pinDay?: string | null;
-  /**
-   * Optional calendar anchor date (YYYY-MM-DD).
-   */
-  pinDate?: string | null;
-  /**
-   * How much menu variety to aim for: how many distinct menus the rotation should contain (0 = let server pick, up to 5)
-   */
-  distinctMeals?: number;
-  /**
-   * Slots that should be marked dining-out and left unfilled by the generator
-   */
-  diningOutSlots?: DiningOutSlot[];
-  [k: string]: unknown;
-}
-/**
  * Request body for PATCH /api/rotation/{id} — all fields optional; only provided fields are updated
  *
  * This interface was referenced by `RotationSchema`'s JSON-Schema
@@ -222,6 +168,10 @@ export interface RotationMenuEntry {
    * Denormalized menu name for display
    */
   menuName?: string;
+  /**
+   * Whether the referenced Menu is Pinned (in the Binder)
+   */
+  pinned?: boolean;
   /**
    * How many times this Menu appears in the rotation
    */
@@ -439,9 +389,9 @@ export interface Menu {
    */
   isFavorite: boolean;
   /**
-   * True when the user has named or explicitly saved this Menu. Saved Menus appear in the library for reuse across Rotations. False (default) means throwaway — not in pick lists, candidate for cleanup expunge.
+   * Binder flag — 1 = pinned menu (survives rotation teardown; only explicit delete kills it), 0 = disposable
    */
-  isSaved?: boolean;
+  pinned: boolean;
   /**
    * Cached total calories across all slots
    */
@@ -538,6 +488,10 @@ export interface UpdateMenuRequest {
    * New favorite flag
    */
   isFavorite?: boolean;
+  /**
+   * Pin (1) into the Binder or unpin (0). Flipping 0→1 cascades Pinned=1 to every meal the menu's slots reference.
+   */
+  pinned?: boolean;
   [k: string]: unknown;
 }
 /**

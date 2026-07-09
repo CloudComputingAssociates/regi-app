@@ -12,12 +12,6 @@
       "enum": ["meal", "snack"]
     },
 
-    "MealStatus": {
-      "type": "string",
-      "description": "Lifecycle state of a Meal",
-      "enum": ["active", "archived"]
-    },
-
     "FoodSource": {
       "type": "string",
       "description": "Where a meal item's food record lives. 'food' = Food DB (USDA/brand), 'userfood' = user-owned UserFoods row, 'pending' = looked up on the fly, not yet saved to UserFoods; name is stored for the shopping list, IsTracked is false until resolved",
@@ -96,9 +90,9 @@
         "primaryProteinFoodId": { "type": ["integer", "null"] },
         "primaryProteinName": { "type": ["string", "null"], "description": "Denormalized for UI" },
         "isRegiApproved": { "type": "boolean", "description": "True when this is an admin-curated, REGI-approved meal visible to all users" },
-        "isFavorite": { "type": "boolean" },
-        "isSaved": { "type": "boolean", "description": "Throwaway flag — false until the user names/saves the meal" },
-        "status": { "$ref": "#/definitions/MealStatus" },
+        "pinned": { "type": "boolean", "description": "Binder flag — 1 = in the user's Binder (survives context teardown; only explicit delete kills it), 0 = disposable (dies with its context)" },
+        "cloned": { "type": "boolean", "description": "Set once at fork-on-place; immutable after. Divergence from the source is derived as updatedAt > createdAt" },
+        "rating": { "type": ["integer", "null"], "minimum": 1, "maximum": 5, "description": "User rating 1–5, or null" },
         "totalCalories": { "type": "integer" },
         "totalProteinG": { "type": "number" },
         "totalFatG": { "type": "number" },
@@ -119,7 +113,7 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "mealType", "mealSeqNum", "isRegiApproved", "isFavorite", "isSaved", "status", "servings", "shareCandidate", "shareApproved", "createdAt", "updatedAt"]
+      "required": ["id", "name", "mealType", "mealSeqNum", "isRegiApproved", "pinned", "cloned", "servings", "shareCandidate", "shareApproved", "createdAt", "updatedAt"]
     },
 
     "MealSummary": {
@@ -132,8 +126,7 @@
         "primaryProteinFoodId": { "type": ["integer", "null"] },
         "primaryProteinName": { "type": ["string", "null"] },
         "isRegiApproved": { "type": "boolean" },
-        "isFavorite": { "type": "boolean" },
-        "status": { "type": "string" },
+        "pinned": { "type": "boolean" },
         "totalCalories": { "type": "integer" },
         "totalProteinG": { "type": "number" },
         "totalFatG": { "type": "number" },
@@ -147,15 +140,14 @@
         "userEmail": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "mealSeqNum", "isRegiApproved", "isFavorite", "status", "servings", "shareCandidate", "createdAt"]
+      "required": ["id", "name", "mealSeqNum", "isRegiApproved", "servings", "shareCandidate", "createdAt"]
     },
 
     "ListMealsRequest": {
       "type": "object",
       "description": "Query parameters for GET /api/meal",
       "properties": {
-        "status": { "type": "string", "description": "Filter by status" },
-        "isFavorite": { "type": "boolean", "description": "Filter to favorites only" },
+        "scope": { "type": "string", "enum": ["folder", "binder"], "description": "folder = disposable, unplaced meals (Pinned=0, not in any menu); binder = pinned meals (Pinned=1); omitted = current behavior" },
         "includeYeh": { "type": "boolean", "description": "Include admin-curated YEH meals" },
         "limit": { "type": "integer", "description": "Max results (default 20, max 100)" },
         "offset": { "type": "integer", "description": "Results offset for pagination" }
@@ -187,7 +179,7 @@
 
     "UpdateMealRequest": {
       "type": "object",
-      "description": "Request body for PUT /api/meal/{id} — all fields optional; only provided fields are updated",
+      "description": "Request body for PATCH /api/meal/{id} — all fields optional; only provided fields are updated",
       "properties": {
         "name": {
           "type": "string",
@@ -202,16 +194,15 @@
           "maximum": 100,
           "description": "New servings count (1–100)"
         },
-        "isFavorite": {
+        "pinned": {
           "type": "boolean",
-          "description": "New favorite flag"
+          "description": "Pin (1) into the Binder or unpin (0). Flipping 0→1 applies a Binder name-collision postfix."
         },
-        "isSaved": {
-          "type": "boolean",
-          "description": "Whether the meal is saved to the user's library"
-        },
-        "status": {
-          "$ref": "#/definitions/MealStatus"
+        "rating": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 5,
+          "description": "User rating 1–5, or null to clear"
         },
         "prepVideoLink": {
           "type": "string",
@@ -261,7 +252,7 @@
 
     "UpdateMealItemRequest": {
       "type": "object",
-      "description": "Request body for PUT /api/meal/{id}/items/{itemId} — all fields optional",
+      "description": "Request body for PATCH /api/meal/{id}/items/{itemId} — all fields optional",
       "properties": {
         "quantity": {
           "type": "number",

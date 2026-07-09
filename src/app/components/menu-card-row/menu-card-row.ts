@@ -20,11 +20,21 @@ import { RotationMenuEntry } from '../../models';
           <div
             class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
+            [class.ghost]="!menu.pinned"
             (click)="select.emit(menu.menuId)">
             <button
               type="button"
+              class="menu-pin"
+              [class.alive]="menu.pinned"
+              [matTooltip]="menu.pinned ? 'In your Binder' : 'Save to your Binder'"
+              matTooltipPosition="above"
+              (click)="$event.stopPropagation(); onPin(menu)">
+              <mat-icon>description</mat-icon>
+            </button>
+            <button
+              type="button"
               class="menu-delete"
-              matTooltip="Wipe this menu."
+              matTooltip="Clear this menu."
               matTooltipPosition="above"
               (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
               <mat-icon>delete_outline</mat-icon>
@@ -66,10 +76,18 @@ export class MenuCardRowComponent {
   readonly select = output<number>();
   /** Trash on a menu tile (emits the menuId). */
   readonly deleteMenu = output<number>();
+  /** Menu-tile pin icon clicked (emits the menuId) — pin the menu to the Binder. */
+  readonly pinMenu = output<number>();
   /** "+ Add menu" clicked. */
   readonly addMenu = output<void>();
   /** Change a menu's planned days (plannedCount). */
   readonly setDays = output<{ menuId: number; plannedCount: number }>();
+
+  /** Tile pin icon — emit pin unless the entry is already pinned. */
+  onPin(menu: RotationMenuEntry): void {
+    if (menu.pinned) return;
+    this.pinMenu.emit(menu.menuId);
+  }
 
   /** Display label by position: 0→A, 1→B, … Menus are lettered (Menu A/B/C);
    *  meal slots within a menu are numbered (Meal 1/2/3). */

@@ -1,10 +1,11 @@
 // src/app/components/meal-binder/meal-binder.ts
 //
-// Right-hand "Meals" binder. Lists the user's SAVED meals as draggable cards
-// (CDK drag-drop) that can be dropped onto empty slots on the board (copy
-// semantics — a meal stays in the binder after placing). A top region is
-// reserved for unplaced NewMeal candidates (Phase B). The GenMeal button is a
-// stub this phase.
+// Right-hand rail for the Menus surface. Two collapsible sections:
+//   1. Folder — disposable, unplaced meals (server scope=folder). GenMeal fills
+//      this. Grey/ghosted: "you'd lose this."
+//   2. Binder — pinned meals (server scope=binder). Alive: "in your Binder."
+// Cards are draggable (CDK) onto empty board slots. Each card carries a Binder
+// pin icon (top-left) to save it. Cards are NOT redesigned — same markup/chips.
 import { ChangeDetectionStrategy, Component, OnInit, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -24,9 +25,8 @@ import { Meal } from '../../models';
         <span class="binder-title">Meals</span>
       </div>
 
-      <!-- AI label + generation buttons. The star logo spins in place while a
-           generation is running (no separate progress line) — the new meals
-           just appear in the list below when done. -->
+      <!-- AI label + generation. The star spins while a generation runs; the new
+           meal appears in the Folder below when done. -->
       <div class="genmeal-bar">
         <span class="ai-label" matTooltip="AI meal generation">
           <span class="ai-text">AI</span>
@@ -46,10 +46,7 @@ import { Meal } from '../../models';
         </button>
       </div>
 
-      <!-- Second row: cuisine "Twist" — an editable combobox (free typing +
-           dropdown). Value feeds the generation prompt as CuisineTwist once the
-           API/schema carries it. Custom… clears the field for free entry; if
-           left blank on blur it reverts to the prior selection. -->
+      <!-- Cuisine "Twist" combobox (unchanged). -->
       <div class="twist-row">
         <span class="twist-label">
           <span class="twist-word">Twist</span>
@@ -84,57 +81,89 @@ import { Meal } from '../../models';
         </div>
       </div>
 
-      <div class="binder-list" cdkDropList>
-        <!-- Unplaced AI candidates first, then saved meals. Both are cdkDrag
-             in the same drop list, so they place into slots identically. -->
-        @for (meal of rotation.candidateMeals(); track meal.id) {
-          <div class="binder-card candidate" cdkDrag [cdkDragData]="meal">
-            <button
-              type="button"
-              class="card-delete"
-              matTooltip="Discard this meal"
-              (click)="$event.stopPropagation(); rotation.removeCandidate(meal.id)">
-              <mat-icon>delete_outline</mat-icon>
-            </button>
-            <span class="binder-card-name">{{ candidateTitle(meal) }}</span>
-            <div class="binder-chips">
-              <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
-              <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
-              <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
-              <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
-            </div>
+      <!-- Folder section: disposable, unplaced meals. -->
+      <div class="rail-section">
+        <button type="button" class="section-head" (click)="folderOpen.set(!folderOpen())">
+          <mat-icon class="section-icon">folder</mat-icon>
+          <span class="section-label">Folder</span>
+          <mat-icon class="section-chevron">{{ folderOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+        </button>
+        @if (folderOpen()) {
+          <div class="section-body" cdkDropList>
+            @for (meal of rotation.folderMeals(); track meal.id) {
+              <div class="binder-card" [class.ghost]="!rotation.isPinAlive(meal)" cdkDrag [cdkDragData]="meal">
+                <button
+                  type="button"
+                  class="card-pin"
+                  [class.alive]="rotation.isPinAlive(meal)"
+                  [matTooltip]="rotation.isPinAlive(meal) ? 'In your Binder' : 'Save to your Binder'"
+                  (click)="$event.stopPropagation(); onPinMeal(meal)">
+                  <mat-icon>menu_book</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="card-delete"
+                  matTooltip="Discard this meal"
+                  (click)="$event.stopPropagation(); rotation.deleteFolderMeal(meal.id)">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+                <span class="binder-card-name">{{ cardTitle(meal) }}</span>
+                <div class="binder-chips">
+                  <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
+                  <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
+                  <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
+                  <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
+                </div>
+              </div>
+            } @empty {
+              <p class="binder-empty">No Folder meals — build one by hand or Generate Meal.</p>
+            }
           </div>
-        }
-
-        <!-- Horizontal bar separates your Named + saved meals (below) from the
-             AI-generated candidates (above) when both are present. -->
-        @if (rotation.candidateMeals().length > 0 && rotation.binderMeals().length > 0) {
-          <div class="binder-divider" aria-hidden="true"></div>
-        }
-
-        @for (meal of rotation.binderMeals(); track meal.id) {
-          <div class="binder-card saved" cdkDrag [cdkDragData]="meal">
-            <button
-              type="button"
-              class="card-delete"
-              matTooltip="Delete this meal"
-              (click)="$event.stopPropagation(); onDeleteSaved(meal)">
-              <mat-icon>delete_outline</mat-icon>
-            </button>
-            <span class="binder-card-name">{{ meal.name }}</span>
-            <div class="binder-chips">
-              <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
-              <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
-              <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
-              <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
-            </div>
-          </div>
-        }
-
-        @if (rotation.candidateMeals().length === 0 && rotation.binderMeals().length === 0 && !rotation.generating()) {
-          <p class="binder-empty">No generated meals yet — build one by hand or Generate Meal.</p>
         }
       </div>
+
+      <!-- Binder section: pinned meals (your saved library). -->
+      <div class="rail-section">
+        <button type="button" class="section-head" (click)="binderOpen.set(!binderOpen())">
+          <mat-icon class="section-icon">menu_book</mat-icon>
+          <span class="section-label">Binder</span>
+          <mat-icon class="section-chevron">{{ binderOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+        </button>
+        @if (binderOpen()) {
+          <div class="section-body" cdkDropList>
+            @for (meal of rotation.binderMeals(); track meal.id) {
+              <div class="binder-card" cdkDrag [cdkDragData]="meal">
+                <button
+                  type="button"
+                  class="card-pin alive"
+                  matTooltip="In your Binder"
+                  (click)="$event.stopPropagation()">
+                  <mat-icon>menu_book</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="card-delete"
+                  matTooltip="Delete this meal"
+                  (click)="$event.stopPropagation(); onDeleteBinder(meal)">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+                <span class="binder-card-name">{{ meal.name }}</span>
+                <div class="binder-chips">
+                  <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
+                  <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
+                  <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
+                  <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
+                </div>
+              </div>
+            } @empty {
+              <p class="binder-empty">Nothing saved yet — press the book icon on a meal to keep it.</p>
+            }
+          </div>
+        }
+      </div>
+      <!-- NOTE (Step 4): pinned MENUS are not listed in this rail today (menus
+           live in the board's menu-card-row). If a Binder menu list is added
+           later, render it under this Binder section. Deferred. -->
     </div>
   `,
   styleUrls: ['./meal-binder.scss'],
@@ -143,17 +172,27 @@ export class MealBinderComponent implements OnInit {
   readonly rotation = inject(RotationService);
   private notification = inject(NotificationService);
 
+  /** Section expand state — both default open. Bodies scroll independently. */
+  readonly folderOpen = signal(true);
+  readonly binderOpen = signal(true);
+
   ngOnInit(): void {
-    this.rotation.loadBinderMeals();
+    this.rotation.loadFolder();
+    this.rotation.loadBinder();
   }
 
-  /** Deleting a named/saved meal is destructive to your library — confirm.
-   *  (Generated candidates are throwaway and delete without a prompt.) */
-  onDeleteSaved(meal: Meal): void {
+  /** Pin a Folder meal to the Binder. Alive icon = already in Binder → no-op. */
+  onPinMeal(meal: Meal): void {
+    if (this.rotation.isPinAlive(meal)) return;
+    void this.rotation.pinMeal(meal.id);
+  }
+
+  /** Deleting a Binder meal is destructive to your library — confirm. */
+  onDeleteBinder(meal: Meal): void {
     this.notification.showConfirmation(
-      `Are you sure? Delete your saved meal "${meal.name}".`,
+      `Are you sure? Delete your Binder meal "${meal.name}".`,
       'warning',
-      () => void this.rotation.deleteSavedMeal(meal.id),
+      () => void this.rotation.deleteBinderMeal(meal.id),
       () => {
         /* keep it */
       },
@@ -164,38 +203,35 @@ export class MealBinderComponent implements OnInit {
     return Math.round(n ?? 0);
   }
 
-  // ----- Cuisine "Twist" combobox -----------------------------------------
-  // Editable: the user can pick a preset OR free-type any cuisine. The value
-  // (twistValue) will be sent to generation as CuisineTwist once the API schema
-  // carries the field; today it's captured locally and ready to wire.
+  /** Card label: the meal's own name, else the primary protein's short name. */
+  cardTitle(meal: Meal): string {
+    const name = meal.name?.trim();
+    if (name) return name;
+    const items = meal.items ?? [];
+    const primary = items.find((i) => i.itemRole === 'primary') ?? items[0];
+    return (primary?.food?.shortDescription?.trim() || primary?.foodName?.trim()) ?? '';
+  }
 
+  // ----- Cuisine "Twist" combobox (unchanged) ------------------------------
   readonly twistOptions = ['none', 'Italian', 'Mexican', 'Mediterranean', 'American', 'Custom...'];
 
-  /** Committed cuisine twist. 'none' = no twist. */
   readonly twistValue = signal('none');
   readonly twistOpen = signal(false);
-
-  /** The value to fall back to if 'Custom…' is chosen but nothing is typed. */
   private twistBeforeCustom = 'none';
-
   private twistInputRef = viewChild<ElementRef<HTMLInputElement>>('twistInput');
 
   onTwistInput(value: string): void {
     this.twistValue.set(value);
   }
 
-  /** Toggle the dropdown from the chevron. mousedown+preventDefault keeps input
-   *  focus so the blur handler doesn't fight the toggle. */
   onChevronMouseDown(ev: Event): void {
     ev.preventDefault();
     this.twistOpen.update((v) => !v);
     this.twistInputRef()?.nativeElement.focus();
   }
 
-  /** Pick an option. 'Custom…' clears the field and drops the cursor for free
-   *  typing (remembering the prior value to revert to on an empty blur). */
   selectTwist(opt: string, ev: Event): void {
-    ev.preventDefault(); // keep focus; avoid the option click blurring first
+    ev.preventDefault();
     if (opt === 'Custom...') {
       this.twistBeforeCustom = this.twistValue().trim() || 'none';
       this.twistValue.set('');
@@ -207,21 +243,10 @@ export class MealBinderComponent implements OnInit {
     this.twistOpen.set(false);
   }
 
-  /** Close the menu on blur; if the field is empty (Custom… with no typing),
-   *  revert to the selection prior to Custom…. */
   onTwistBlur(): void {
     this.twistOpen.set(false);
     if (this.twistValue().trim() === '') {
       this.twistValue.set(this.twistBeforeCustom);
     }
-  }
-
-  /** GenMeal candidate label: the primary protein's short name
-   *  (shortDescription, else foodName). Rendered as "{n} {name}". */
-  candidateTitle(meal: Meal): string {
-    const items = meal.items ?? [];
-    const primary = items.find((i) => i.itemRole === 'primary') ?? items[0];
-    if (primary) return (primary.food?.shortDescription?.trim() || primary.foodName?.trim()) ?? '';
-    return meal.name ?? '';
   }
 }

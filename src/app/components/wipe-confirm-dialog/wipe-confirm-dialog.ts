@@ -1,14 +1,24 @@
 // src/app/components/wipe-confirm-dialog/wipe-confirm-dialog.ts
 //
-// Confirm dialog for the menus-panel "Wipe menu" action. Dark-themed Material
-// dialog (opened with panelClass 'wipe-dialog-panel' — see src/styles.scss
-// for the dark surface override so there's no white default flash).
+// Shared dark-themed confirm dialog for the Menus surface teardown actions
+// (opened with panelClass 'wipe-dialog-panel' — see src/styles.scss for the
+// dark surface override so there's no white default flash).
 //
-// Confirming deletes every meal from the CURRENTLY SELECTED menu (the menu
-// itself stays; its slots go empty). Wired to RotationService.clearMenuMeals.
+// One dialog, many callers: each passes its own title / message / confirm-label
+// / teach-line and a confirm action. With no data it falls back to clearing the
+// selected menu's slots.
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { RotationService } from '../../services/rotation.service';
+
+interface WipeDialogData {
+  title?: string;
+  message?: string;
+  /** Step-9 teach line, shown emphasized under the message when set. */
+  teachLine?: string;
+  confirmLabel?: string;
+  onConfirm?: () => void;
+}
 
 @Component({
   selector: 'app-wipe-confirm-dialog',
@@ -16,7 +26,13 @@ import { RotationService } from '../../services/rotation.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="wipe-dialog">
+      @if (title) {
+        <p class="wipe-dialog-title">{{ title }}</p>
+      }
       <p class="wipe-dialog-prompt">{{ message }}</p>
+      @if (teachLine) {
+        <p class="wipe-dialog-teach">{{ teachLine }}</p>
+      }
       <div class="wipe-dialog-actions">
         <button type="button" class="wipe-action" (click)="onDelete()">{{ confirmLabel }}</button>
         <button type="button" class="wipe-action" (click)="onCancel()">Cancel</button>
@@ -28,20 +44,15 @@ import { RotationService } from '../../services/rotation.service';
 export class WipeConfirmDialogComponent {
   private dialogRef = inject(MatDialogRef<WipeConfirmDialogComponent>);
   private rotation = inject(RotationService);
-  // Optional overrides. When omitted (the Wipe menu button) the defaults wipe
-  // the selected menu's meals; other callers (e.g. the menu-tile delete, the
-  // meal-card "remove from slot") reuse this ONE dialog and pass their own
-  // prompt text, confirm-button label, and confirm action.
-  private data = inject<{ message?: string; confirmLabel?: string; onConfirm?: () => void } | null>(
-    MAT_DIALOG_DATA,
-    { optional: true },
-  );
+  private data = inject<WipeDialogData | null>(MAT_DIALOG_DATA, { optional: true });
 
+  readonly title = this.data?.title ?? '';
   readonly message =
     this.data?.message ?? 'Delete all meals from the selected menu? The menu stays; its slots are emptied.';
+  readonly teachLine = this.data?.teachLine ?? '';
   readonly confirmLabel = this.data?.confirmLabel ?? 'Delete';
 
-  /** Run the confirm action (default: wipe the selected menu's meals), close. */
+  /** Run the confirm action (default: clear the selected menu's slots), close. */
   onDelete(): void {
     if (this.data?.onConfirm) {
       this.data.onConfirm();

@@ -109,71 +109,6 @@
       "required": ["spanDays"]
     },
 
-    "DiningOutSlot": {
-      "type": "object",
-      "description": "A single slot on a single day that the user wants the generator to skip (eating out)",
-      "properties": {
-        "dayOffset": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9,
-          "description": "Zero-based day offset from the rotation startDate (0–9)"
-        },
-        "slotOrder": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 10,
-          "description": "1-based slot order within the day's menu (1–10)"
-        }
-      },
-      "required": ["dayOffset", "slotOrder"]
-    },
-
-    "GenerateRotationRequest": {
-      "type": "object",
-      "description": "Request body for POST /api/rotation/generate — creates a rotation skeleton AND populates it with AI-generated menus and meals",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Display name for the rotation"
-        },
-        "spanDays": {
-          "type": "integer",
-          "minimum": 2,
-          "maximum": 10,
-          "description": "How many days the rotation covers (2–10)"
-        },
-        "peopleCount": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 10,
-          "default": 1,
-          "description": "Number of people the menus are sized for (1–10). Defaults to 1."
-        },
-        "pinDay": {
-          "type": ["string", "null"],
-          "description": "Day of week the user typically starts (e.g. 'Monday'). Optional."
-        },
-        "pinDate": {
-          "type": ["string", "null"],
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
-          "description": "Optional calendar anchor date (YYYY-MM-DD)."
-        },
-        "distinctMeals": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 5,
-          "description": "How much menu variety to aim for: how many distinct menus the rotation should contain (0 = let server pick, up to 5)"
-        },
-        "diningOutSlots": {
-          "type": "array",
-          "items": { "$ref": "#/definitions/DiningOutSlot" },
-          "description": "Slots that should be marked dining-out and left unfilled by the generator"
-        }
-      },
-      "required": ["spanDays"]
-    },
-
     "UpdateRotationRequest": {
       "type": "object",
       "description": "Request body for PATCH /api/rotation/{id} — all fields optional; only provided fields are updated",
@@ -243,6 +178,10 @@
         "menuName": {
           "type": "string",
           "description": "Denormalized menu name for display"
+        },
+        "pinned": {
+          "type": "boolean",
+          "description": "Whether the referenced Menu is Pinned (in the Binder)"
         },
         "plannedCount": {
           "type": "integer",
@@ -469,10 +408,9 @@
           "type": "boolean",
           "description": "User-saved favorite flag"
         },
-        "isSaved": {
+        "pinned": {
           "type": "boolean",
-          "default": false,
-          "description": "True when the user has named or explicitly saved this Menu. Saved Menus appear in the library for reuse across Rotations. False (default) means throwaway — not in pick lists, candidate for cleanup expunge."
+          "description": "Binder flag — 1 = pinned menu (survives rotation teardown; only explicit delete kills it), 0 = disposable"
         },
         "totalCalories": {
           "type": ["number", "null"],
@@ -516,7 +454,7 @@
           "readOnly": true
         }
       },
-      "required": ["name", "slotCount", "isYeh", "isFavorite", "slots"]
+      "required": ["name", "slotCount", "isYeh", "isFavorite", "pinned", "slots"]
     },
 
     "MenuSummary": {
@@ -576,6 +514,10 @@
         "isFavorite": {
           "type": "boolean",
           "description": "New favorite flag"
+        },
+        "pinned": {
+          "type": "boolean",
+          "description": "Pin (1) into the Binder or unpin (0). Flipping 0→1 cascades Pinned=1 to every meal the menu's slots reference."
         }
       }
     },

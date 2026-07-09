@@ -13,13 +13,6 @@
  */
 export type MealType = "meal" | "snack";
 /**
- * Lifecycle state of a Meal
- *
- * This interface was referenced by `MealSchema`'s JSON-Schema
- * via the `definition` "MealStatus".
- */
-export type MealStatus = "active" | "archived";
-/**
  * Where a meal item's food record lives. 'food' = Food DB (USDA/brand), 'userfood' = user-owned UserFoods row, 'pending' = looked up on the fly, not yet saved to UserFoods; name is stored for the shopping list, IsTracked is false until resolved
  *
  * This interface was referenced by `MealSchema`'s JSON-Schema
@@ -198,12 +191,18 @@ export interface Meal {
    * True when this is an admin-curated, REGI-approved meal visible to all users
    */
   isRegiApproved: boolean;
-  isFavorite: boolean;
   /**
-   * Throwaway flag — false until the user names/saves the meal
+   * Binder flag — 1 = in the user's Binder (survives context teardown; only explicit delete kills it), 0 = disposable (dies with its context)
    */
-  isSaved: boolean;
-  status: MealStatus;
+  pinned: boolean;
+  /**
+   * Set once at fork-on-place; immutable after. Divergence from the source is derived as updatedAt > createdAt
+   */
+  cloned: boolean;
+  /**
+   * User rating 1–5, or null
+   */
+  rating?: number | null;
   totalCalories?: number;
   totalProteinG?: number;
   totalFatG?: number;
@@ -238,8 +237,7 @@ export interface MealSummary {
   primaryProteinFoodId?: number | null;
   primaryProteinName?: string | null;
   isRegiApproved: boolean;
-  isFavorite: boolean;
-  status: string;
+  pinned?: boolean;
   totalCalories?: number;
   totalProteinG?: number;
   totalFatG?: number;
@@ -262,13 +260,9 @@ export interface MealSummary {
  */
 export interface ListMealsRequest {
   /**
-   * Filter by status
+   * folder = disposable, unplaced meals (Pinned=0, not in any menu); binder = pinned meals (Pinned=1); omitted = current behavior
    */
-  status?: string;
-  /**
-   * Filter to favorites only
-   */
-  isFavorite?: boolean;
+  scope?: "folder" | "binder";
   /**
    * Include admin-curated YEH meals
    */
@@ -305,7 +299,7 @@ export interface CreateMealRequest {
   [k: string]: unknown;
 }
 /**
- * Request body for PUT /api/meal/{id} — all fields optional; only provided fields are updated
+ * Request body for PATCH /api/meal/{id} — all fields optional; only provided fields are updated
  *
  * This interface was referenced by `MealSchema`'s JSON-Schema
  * via the `definition` "UpdateMealRequest".
@@ -321,14 +315,13 @@ export interface UpdateMealRequest {
    */
   servings?: number;
   /**
-   * New favorite flag
+   * Pin (1) into the Binder or unpin (0). Flipping 0→1 applies a Binder name-collision postfix.
    */
-  isFavorite?: boolean;
+  pinned?: boolean;
   /**
-   * Whether the meal is saved to the user's library
+   * User rating 1–5, or null to clear
    */
-  isSaved?: boolean;
-  status?: MealStatus;
+  rating?: number | null;
   /**
    * New prep video URL (empty string clears the link)
    */
@@ -371,7 +364,7 @@ export interface AddMealItemRequest {
   [k: string]: unknown;
 }
 /**
- * Request body for PUT /api/meal/{id}/items/{itemId} — all fields optional
+ * Request body for PATCH /api/meal/{id}/items/{itemId} — all fields optional
  *
  * This interface was referenced by `MealSchema`'s JSON-Schema
  * via the `definition` "UpdateMealItemRequest".

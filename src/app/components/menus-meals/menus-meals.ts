@@ -6,7 +6,7 @@
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Menu, MealItem, MenuSlot } from '../../models';
-import { RotationService } from '../../services/rotation.service';
+import { RotationService, TEACH_SAVE_LINE } from '../../services/rotation.service';
 import { MealComponent } from '../meal/meal';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 
@@ -23,10 +23,13 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
             [items]="itemsFor(slot.mealId)"
             [editing]="isEditing(slot.slotOrder)"
             [resolvingItemId]="resolvingItemId()"
+            [pinAlive]="pinAliveFor(slot.mealId)"
+            [ghosted]="ghostedFor(slot.mealId)"
             (placeMeal)="onPlace($event)"
             (deleteMeal)="onDelete($event)"
             (toggleAdd)="onToggleAdd(slot)"
             (renameMeal)="rotation.updateMealName($event.mealId, $event.name)"
+            (pinMeal)="onPinMeal(slot.mealId)"
             (removeItem)="onRemoveItem(slot.mealId, $event)"
             (editItem)="onEditItem(slot, $event)"
             (dropFood)="rotation.addFoodToEditingMeal($event.food, $event.serving)" />
@@ -54,6 +57,26 @@ export class MenusMealsComponent {
     return this.rotation.slotItems(mealId);
   }
 
+  /** Pin icon state for a slotted meal, resolved from the cached Meal. */
+  pinAliveFor(mealId: number | null | undefined): boolean {
+    if (mealId == null) return false;
+    const meal = this.rotation.getMeal(mealId);
+    return meal ? this.rotation.isPinAlive(meal) : false;
+  }
+
+  /** Ghost a filled slot whose meal is unpinned and not an undiverged clone. */
+  ghostedFor(mealId: number | null | undefined): boolean {
+    if (mealId == null) return false;
+    const meal = this.rotation.getMeal(mealId);
+    return meal ? !this.rotation.isPinAlive(meal) : false;
+  }
+
+  /** Book icon on a slotted meal — pin it to the Binder. */
+  onPinMeal(mealId: number | null | undefined): void {
+    if (mealId == null) return;
+    void this.rotation.pinMeal(mealId);
+  }
+
   /** True when this menu's slot is the one being edited. */
   isEditing(slotOrder: number): boolean {
     const e = this.rotation.editingSlot();
@@ -67,15 +90,20 @@ export class MenusMealsComponent {
     this.rotation.placeMealInSlot(menuId, e.slotOrder, e.mealId);
   }
 
-  /** Trash on an in-slot meal — confirm, then clear that slot (the meal in the
-   *  Meals library is untouched; only this slot's placement is removed). */
+  /** Trash on an in-slot meal — confirm, then clear that slot. The server deletes
+   *  the occupant if unpinned, unlinks it (kept in the Binder) if pinned. Teach
+   *  line appended when the occupant holds diverged/session-edited work. */
   onDelete(slotOrder: number): void {
     const menuId = this.menu()?.id;
     if (menuId == null) return;
+    const slot = this.menu()?.slots.find((s) => s.slotOrder === slotOrder);
+    const meal = slot?.mealId != null ? this.rotation.getMeal(slot.mealId) : null;
+    const teachLine = meal && this.rotation.shouldTeachSave(meal) ? TEACH_SAVE_LINE : undefined;
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',
       data: {
         message: `Remove meal from Meal ${slotOrder} slot?`,
+        teachLine,
         confirmLabel: 'Remove',
         onConfirm: () => this.rotation.clearSlot(menuId, slotOrder),
       },

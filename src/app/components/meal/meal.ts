@@ -24,7 +24,18 @@ interface SlotMacros {
   imports: [MatTooltipModule, MatIconModule, FoodComponent, DragDropModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()">
+    <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()" [class.ghost]="ghosted()">
+      @if (slot().mealId != null) {
+        <button
+          type="button"
+          class="card-pin"
+          [class.alive]="pinAlive()"
+          [matTooltip]="pinAlive() ? 'In your Binder' : 'Save to your Binder'"
+          matTooltipPosition="above"
+          (click)="onPin()">
+          <mat-icon>menu_book</mat-icon>
+        </button>
+      }
       <div class="slot-header">
         <!-- Meal N + name box occupy the left 2/3; the +/trash discs sit in the
              right third. The name box reads as an inset field until focused. -->
@@ -159,6 +170,14 @@ export class MealComponent {
    *  that row's pencil busy state). */
   readonly resolvingItemId = input<number | null>(null);
 
+  /** Binder pin state of the slotted meal (alive = pinned or undiverged clone).
+   *  Computed upstream from the resolved Meal so this card stays presentational. */
+  readonly pinAlive = input<boolean>(false);
+
+  /** Ghost the card ("you'd lose this") — unpinned meal that isn't an undiverged
+   *  clone. Computed upstream; empty slots are never ghosted. */
+  readonly ghosted = input<boolean>(false);
+
   /** Emitted when a binder meal is dropped on this (empty) slot. The parent
    *  supplies the menuId and calls the assign endpoint. */
   readonly placeMeal = output<{ slotOrder: number; mealId: number }>();
@@ -171,6 +190,16 @@ export class MealComponent {
 
   /** Inline name box committed — parent persists the new meal name. */
   readonly renameMeal = output<{ mealId: number; name: string }>();
+
+  /** Book icon clicked — pin this slotted meal to the Binder (parent calls the
+   *  service). No-op when already alive. */
+  readonly pinMeal = output<void>();
+
+  /** Book icon click — emit pin unless already in the Binder. */
+  onPin(): void {
+    if (this.pinAlive()) return;
+    this.pinMeal.emit();
+  }
 
   /** ✎ on a food row — edit that item's serving (parent opens the popup). */
   readonly editItem = output<MealItem>();
