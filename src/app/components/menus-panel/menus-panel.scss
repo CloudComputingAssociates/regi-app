@@ -152,47 +152,6 @@
   }
 }
 
-// A real, clearly-raised key (same domed family as the Servings steppers /
-// binder Gen buttons) with an outlined trash sized to match the app's icons.
-.wipe-btn {
-  flex: 0 0 auto;
-  margin-left: 44px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 14px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #f0f0f0;
-  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
-  border: 1px solid #262626;
-  border-top-color: #7d7d7d;
-  border-radius: 5px;
-  box-shadow:
-    0 2px 3px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
-
-  .wipe-icon {
-    width: 17px;
-    height: 17px;
-    font-size: 17px;
-    line-height: 17px;
-  }
-
-  &:hover {
-    background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%);
-    color: #ffffff;
-  }
-
-  &:active {
-    transform: translateY(1px);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
-  }
-}
-
 // The strip stays pinned (it has its own horizontal scroll); only the body
 // scrolls vertically. min-height:0 lets the flex child shrink below content
 // height so overflow-y actually kicks in.

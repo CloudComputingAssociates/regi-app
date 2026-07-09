@@ -24,7 +24,7 @@ import { RotationMenuEntry } from '../../models';
             <button
               type="button"
               class="menu-delete"
-              matTooltip="Clear / remove this menu"
+              matTooltip="Wipe this menu."
               matTooltipPosition="above"
               (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
               <mat-icon>delete_outline</mat-icon>

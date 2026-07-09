@@ -95,14 +95,6 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                   (click)="scaleTooltip.toggle()">&#9432;</span>
               </div>
 
-              <button
-                type="button"
-                class="wipe-btn"
-                matTooltip="Deletes all meals from the selected menu (the menu stays, its slots go empty)."
-                (click)="openWipeConfirm()">
-                Wipe menu <mat-icon class="wipe-icon" aria-hidden="true">delete_outline</mat-icon>
-              </button>
-
               <span class="toolbar-spacer"></span>
 
               <!-- Planned-days tally, right-justified in the same bar. -->
@@ -365,19 +357,19 @@ export class MenusPanelComponent implements OnInit {
     this.popupMealId.set(null);
   }
 
-  /** Open the "Are you sure?" wipe dialog — Delete clears every meal from the
-   *  selected menu (menu stays, slots empty). */
-  openWipeConfirm(): void {
-    this.dialog.open(WipeConfirmDialogComponent, { panelClass: 'wipe-dialog-panel' });
-  }
-
-  /** Deleting a whole menu is destructive — reuse the SAME confirm dialog as
-   *  Wipe menu (one popup for now; standardize later), routing its confirm to
-   *  removeOrClearMenu. */
+  /** Trash on a menu tile — the single menu-removal control. Confirms, then
+   *  removeOrClearMenu unlinks the menu from the rotation (or empties the last
+   *  remaining menu's slots). Neither path deletes any Meal row — only the
+   *  RotationMenus link / the slots' MealID references — hence the reassurance
+   *  in the prompt. */
   onDeleteMenu(menuId: number): void {
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',
-      data: { onConfirm: () => this.rotation.removeOrClearMenu(menuId) },
+      data: {
+        message: 'Wipe the menu, by removing link to all meals. Meals are not deleted.',
+        confirmLabel: 'Wipe',
+        onConfirm: () => this.rotation.removeOrClearMenu(menuId),
+      },
     });
   }
 }

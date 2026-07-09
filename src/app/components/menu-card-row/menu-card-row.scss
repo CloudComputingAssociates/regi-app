@@ -39,10 +39,6 @@
 
   &:hover {
     border-color: #6a6f75;
-
-    .menu-delete {
-      opacity: 1;
-    }
   }
 
   &.selected {
@@ -108,8 +104,7 @@
   color: #9aa0a6;
   line-height: 1;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.12s ease, color 0.12s ease;
+  transition: color 0.12s ease;
 
   // Outlined trash sized to match the Wipe menu button's icon.
   .mat-icon {
