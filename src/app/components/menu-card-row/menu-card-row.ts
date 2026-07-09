@@ -23,8 +23,8 @@ import { RotationMenuEntry } from '../../models';
             (click)="select.emit(menu.menuId)">
             <button
               type="button"
-              class="menu-pin"
-              [class.alive]="menu.pinned"
+              class="menu-pin icon-disc"
+              [class.icon-disc-pinned]="menu.pinned"
               [matTooltip]="menu.pinned ? 'In your Binder' : 'Save to your Binder'"
               matTooltipPosition="above"
               (click)="$event.stopPropagation(); onPin(menu)">
@@ -32,7 +32,7 @@ import { RotationMenuEntry } from '../../models';
             </button>
             <button
               type="button"
-              class="menu-delete"
+              class="menu-delete icon-disc icon-disc-danger"
               matTooltip="Clear this menu."
               matTooltipPosition="above"
               (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">

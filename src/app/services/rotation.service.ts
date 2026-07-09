@@ -604,8 +604,9 @@ export class RotationService {
 
   /** Rename a meal from the inline name box. In v6 a rename is a PURE name write
    *  — naming no longer pins/saves (that's the Binder pin icon's job). Refreshes
-   *  the menu (slot's denormalized mealName) + the meal. A failure toasts, board
-   *  stays intact. Tracked as a session edit (Step 9 teach line). */
+   *  the menu (slot's denormalized mealName) + the meal, and reloads the Binder/
+   *  Folder so a pinned/unpinned card carrying this meal shows the new name. A
+   *  failure toasts, board stays intact. Tracked as a session edit (teach line). */
   async updateMealName(mealId: number, name: string): Promise<void> {
     const menuId = this.editingSlot()?.menuId ?? this.selectedMenuId();
     try {
@@ -619,6 +620,8 @@ export class RotationService {
         this.menusById.update((m) => new Map(m).set(menuId, menu));
       }
       await this.loadMeal(mealId);
+      // Reflect the new name in the rail (a pinned meal appears in the Binder).
+      await Promise.all([this.loadBinder(), this.loadFolder()]);
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }

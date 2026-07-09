@@ -25,51 +25,53 @@ interface SlotMacros {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()">
-      @if (slot().mealId != null) {
-        <button
-          type="button"
-          class="card-pin"
-          [class.alive]="pinAlive()"
-          [matTooltip]="pinAlive() ? 'In your Binder' : 'Save to your Binder'"
-          matTooltipPosition="above"
-          (click)="onPin()">
-          <mat-icon>menu_book</mat-icon>
-        </button>
-      }
       <div class="slot-header">
-        <!-- Meal N + name box occupy the left 2/3; the +/trash discs sit in the
-             right third. The name box reads as an inset field until focused. -->
-        <div class="header-name">
-        <span class="slot-title">Meal {{ slot().slotOrder }}</span>
+        <!-- Pin disc leads; the meal NAME box is the primary title (filled slots)
+             or "Meal N" for an empty slot; + and trash discs trail. All discs
+             share the raised .icon-disc chrome and one size. -->
         @if (slot().mealId != null) {
-          <div class="name-wrap">
-            <input
-              #nameBox
-              type="text"
-              class="meal-name-box"
-              [class.editing]="nameDirty()"
-              [value]="title()"
-              (focus)="onNameFocus(nameBox.value)"
-              (input)="nameDraft.set(nameBox.value)"
-              (keydown.enter)="nameBox.blur()"
-              (keydown.escape)="nameBox.value = title(); nameBox.blur()"
-              (blur)="onNameBlur(nameBox.value)"
-              aria-label="Meal name" />
-            <!-- Green enter-arrow: only when the name was actually changed;
-                 pressing it commits, same as Enter. -->
-            @if (nameDirty()) {
-              <button
-                type="button"
-                class="name-commit"
-                matTooltip="Save name"
-                matTooltipPosition="above"
-                (mousedown)="$event.preventDefault()"
-                (click)="nameBox.blur()">
-                <mat-icon>keyboard_return</mat-icon>
-              </button>
-            }
-          </div>
+          <button
+            type="button"
+            class="icon-disc pin-disc"
+            [class.icon-disc-pinned]="pinAlive()"
+            [matTooltip]="pinAlive() ? 'In your Binder' : 'Save to your Binder'"
+            matTooltipPosition="above"
+            (click)="onPin()">
+            <mat-icon>menu_book</mat-icon>
+          </button>
         }
+        <div class="header-name">
+          @if (slot().mealId == null) {
+            <span class="slot-title">Meal {{ slot().slotOrder }}</span>
+          } @else {
+            <div class="name-wrap">
+              <input
+                #nameBox
+                type="text"
+                class="meal-name-box"
+                [class.editing]="showNameCommit()"
+                [value]="title()"
+                (focus)="onNameFocus(nameBox.value)"
+                (input)="nameDraft.set(nameBox.value)"
+                (keydown.enter)="nameBox.blur()"
+                (keydown.escape)="nameBox.value = title(); nameBox.blur()"
+                (blur)="onNameBlur(nameBox.value)"
+                aria-label="Meal name" />
+              <!-- Green enter-arrow: visible the whole time you're editing the
+                   title; pressing it commits, same as Enter (no-op if unchanged). -->
+              @if (showNameCommit()) {
+                <button
+                  type="button"
+                  class="name-commit"
+                  matTooltip="Save name"
+                  matTooltipPosition="above"
+                  (mousedown)="$event.preventDefault()"
+                  (click)="nameBox.blur()">
+                  <mat-icon>keyboard_return</mat-icon>
+                </button>
+              }
+            </div>
+          }
         </div>
         <!-- + opens the food lookaside targeted at this meal, flipping to a
              green check while active; trash deletes the meal. Editing/removing
@@ -138,6 +140,8 @@ interface SlotMacros {
               <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
               <span class="meal-cals">{{ calories() }} cals</span>
             </div>
+            <!-- Etched "Meal N" watermark, right-justified under the calories. -->
+            <div class="meal-watermark">Meal {{ slot().slotOrder }}</div>
           }
           <div class="food-rows">
             @for (item of items(); track item.id) {
@@ -214,12 +218,13 @@ export class MealComponent {
   /** Current text in the name box (tracked for the dirty check). */
   readonly nameDraft = signal('');
 
-  /** Show the green commit-arrow only while editing AND the text differs from
-   *  the current name. */
-  readonly nameDirty = computed<boolean>(() => {
-    const draft = this.nameDraft().trim();
-    return this.nameFocused() && draft !== '' && draft !== this.title().trim();
-  });
+  /** Show the green Enter/commit-arrow whenever the box is being edited (focused
+   *  with text) — the arrow is the visible "press Enter to save" affordance, so
+   *  it must be present the whole time you're editing, not only after a change.
+   *  Committing an unchanged name is a harmless no-op (see commitName). */
+  readonly showNameCommit = computed<boolean>(
+    () => this.nameFocused() && this.nameDraft().trim() !== '',
+  );
 
   onNameFocus(current: string): void {
     this.nameFocused.set(true);

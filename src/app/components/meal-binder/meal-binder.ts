@@ -95,15 +95,15 @@ import { Meal } from '../../models';
               <div class="binder-card" cdkDrag [cdkDragData]="meal">
                 <button
                   type="button"
-                  class="card-pin"
-                  [class.alive]="rotation.isPinAlive(meal)"
+                  class="card-pin icon-disc"
+                  [class.icon-disc-pinned]="rotation.isPinAlive(meal)"
                   [matTooltip]="rotation.isPinAlive(meal) ? 'In your Binder' : 'Save to your Binder'"
                   (click)="$event.stopPropagation(); onPinMeal(meal)">
                   <mat-icon>menu_book</mat-icon>
                 </button>
                 <button
                   type="button"
-                  class="card-delete"
+                  class="card-delete icon-disc icon-disc-danger"
                   matTooltip="Discard this meal"
                   (click)="$event.stopPropagation(); rotation.deleteFolderMeal(meal.id)">
                   <mat-icon>delete_outline</mat-icon>
@@ -136,14 +136,14 @@ import { Meal } from '../../models';
               <div class="binder-card" cdkDrag [cdkDragData]="meal">
                 <button
                   type="button"
-                  class="card-pin alive"
+                  class="card-pin icon-disc icon-disc-pinned"
                   matTooltip="In your Binder"
                   (click)="$event.stopPropagation()">
                   <mat-icon>menu_book</mat-icon>
                 </button>
                 <button
                   type="button"
-                  class="card-delete"
+                  class="card-delete icon-disc icon-disc-danger"
                   matTooltip="Delete this meal"
                   (click)="$event.stopPropagation(); onDeleteBinder(meal)">
                   <mat-icon>delete_outline</mat-icon>

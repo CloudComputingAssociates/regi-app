@@ -49,7 +49,10 @@
   .menu-name {
     font-size: 14px;
     font-weight: 500; // 600 read fuzzy at this size on dark; match meal titles
-    padding-left: 20px; // clear the top-left pin icon
+    padding-left: 30px; // clear the top-left pin disc (24px)
+    min-height: 24px;
+    display: flex;
+    align-items: center;
   }
 
   .menu-days {
@@ -89,74 +92,19 @@
   }
 }
 
-// Menu pin icon — TOP-LEFT corner (lined-sheet icon). Grey = save, accent =
-// pinned. Always visible (unlike the hover-revealed trash) so pin state reads
-// at a glance.
+// Menu discs use the shared raised .icon-disc chrome; these rules only PLACE
+// them in the tile corners. Pin leads top-left (lined-sheet icon; yellow when
+// pinned via .icon-disc-pinned); trash top-right.
 .menu-pin {
   position: absolute;
   top: 4px;
   left: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: #9aa0a6;
-  line-height: 1;
-  cursor: pointer;
-  transition: color 0.12s ease;
-
-  .mat-icon {
-    width: 16px;
-    height: 16px;
-    font-size: 16px;
-    line-height: 16px;
-  }
-
-  &:hover {
-    color: #b9bec4;
-  }
-
-  &.alive {
-    color: #4da6ff;
-    cursor: default;
-  }
 }
 
-// Trash sits in the tile's top-right, revealed on hover.
 .menu-delete {
   position: absolute;
   top: 4px;
   right: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: #9aa0a6;
-  line-height: 1;
-  cursor: pointer;
-  transition: color 0.12s ease;
-
-  // Outlined trash sized to match the Wipe menu button's icon.
-  .mat-icon {
-    width: 17px;
-    height: 17px;
-    font-size: 17px;
-    line-height: 17px;
-  }
-
-  &:hover {
-    color: #ef5350;
-  }
 }
 
 // Live "+ Add menu" — dashed area, white clickable text.

@@ -26,7 +26,7 @@ import { MealItem } from '../../models';
         @if (canEditServing()) {
           <button
             type="button"
-            class="icon-disc"
+            class="icon-disc icon-disc-edit"
             [class.busy]="resolving()"
             [disabled]="resolving()"
             matTooltip="Edit serving"

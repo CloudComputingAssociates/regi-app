@@ -25,63 +25,23 @@
 
 }
 
-// Binder pin icon — TOP-LEFT corner of the card. Grey = "Save to your Binder";
-// accent (.alive) = "In your Binder". Right side stays reserved for the +/trash.
-.card-pin {
-  position: absolute;
-  top: 8px;
-  left: 10px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: #9aa0a6;
-  cursor: pointer;
-  transition: color 0.12s ease;
-
-  .mat-icon {
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
-    line-height: 18px;
-  }
-
-  &:hover {
-    color: #b9bec4;
-  }
-
-  &.alive {
-    color: #4da6ff;
-    cursor: default;
-  }
-}
-
 .slot-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  // Clear the top-left pin icon so "Meal N" doesn't sit under it.
-  padding-left: 24px;
 
+  // "Meal N" for an EMPTY slot only (filled slots show the name box instead).
   .slot-title {
-    // Same size as the white meal title so "Meal 1" reads as a peer, not a
-    // sub-label.
     font-size: 14px;
     font-weight: 600;
     color: #4da6ff;
     white-space: nowrap;
   }
 
-  // Meal N + name box together cap at the left 2/3 (right edge of the box at
-  // ~2/3); the discs live in the right third.
+  // The name box fills the space between the leading pin disc and the trailing
+  // +/trash discs.
   .header-name {
-    flex: 0 1 66%;
+    flex: 1 1 auto;
     min-width: 0;
     display: flex;
     align-items: center;
@@ -107,14 +67,20 @@
     font-size: 14px;
     font-weight: 500;
     color: #f1f1f1;
-    background: #333333;
-    border: 1px solid #1c1c1c;
+    // Recessed field: dark-grey (not black) interior with LIGHTER grey edges and
+    // a strong inset shadow (darker at the top, a hairline light at the bottom)
+    // so it reads as pressed-in with depth.
+    background: #2d2d2d;
+    border: 1px solid #5a5a5a;
+    border-top-color: #4d4d4d;
     border-radius: 4px;
     padding: 3px 8px;
     outline: none;
     cursor: text;
     overflow: hidden;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.55),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.06);
     transition: border-color 0.12s ease, box-shadow 0.12s ease;
 
     // Reserve room for the commit-arrow so the text doesn't slide under it.
@@ -126,7 +92,7 @@
       border-color: #4da6ff;
       caret-color: #4da6ff;
       box-shadow:
-        inset 0 1px 3px rgba(0, 0, 0, 0.6),
+        inset 0 2px 4px rgba(0, 0, 0, 0.55),
         0 0 0 1px rgba(77, 166, 255, 0.5);
     }
   }
@@ -136,6 +102,7 @@
     position: absolute;
     top: 50%;
     right: 3px;
+    z-index: 3;
     transform: translateY(-50%);
     width: 20px;
     height: 20px;
@@ -159,11 +126,27 @@
     }
   }
 
-  // Discs use the shared global .icon-disc (consistent size). The + just leads
-  // the action cluster, pushed to the right of the name.
-  .add-affordance {
-    margin-left: auto;
+  // All header discs use the shared global .icon-disc (one size, raised chrome):
+  // pin-disc leads, then +, then trash. The name box (flex:1) fills the middle,
+  // so no explicit margins are needed to right-justify the +/trash cluster.
+  .pin-disc {
+    flex: 0 0 auto;
   }
+}
+
+// Etched "Meal N" watermark: right-justified under the calories, dim + sunken
+// (debossed) — a muted body with a hairline light rim BELOW so it reads as
+// carved into the card surface. Same engraved family as "Curated MyFoods".
+.meal-watermark {
+  text-align: right;
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #55585c;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
+  user-select: none;
+  pointer-events: none;
 }
 
 .macro-chips {

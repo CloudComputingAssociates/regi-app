@@ -240,6 +240,10 @@ sup.sm {
 // Shared action disc — the meal-card header (+/edit/delete) and the food-row
 // (edit/delete) controls all use this ONE definition so every disc + its icon
 // is the same size. Modifiers add the accent/danger states.
+// Raised, physical "button" disc — one size + one chrome for every action disc
+// on the app (meal cards, menu tiles, food rows, lookaside). Domed grey with a
+// lit top edge + drop shadow; :active sinks it. Semantic modifiers tint the icon
+// (delete=red, edit/pencil=green) or fill it (confirm/cancel/pinned).
 .icon-disc {
   flex: 0 0 auto;
   width: 24px;
@@ -248,12 +252,16 @@ sup.sm {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #4a4a4a;
+  border: 1px solid #262626;
+  border-top-color: #6a6a6a;
   border-radius: 50%;
-  background: #2a2a2a;
-  color: #9aa0a6;
+  background: linear-gradient(180deg, #4d4d4d 0%, #3a3a3a 100%);
+  color: #cfcfcf;
   cursor: pointer;
-  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: color 0.12s ease, background 0.12s ease, box-shadow 0.1s ease, transform 0.05s ease;
 
   .mat-icon {
     width: 17px;
@@ -263,17 +271,45 @@ sup.sm {
   }
 
   &:hover:not(:disabled) {
-    color: #4da6ff;
-    border-color: #4da6ff;
+    background: linear-gradient(180deg, #585858 0%, #444444 100%);
+    color: #ffffff;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
   }
 
   &:disabled { opacity: 0.5; cursor: default; }
 
-  // Delete — fills red on hover.
-  &.icon-disc-danger:hover:not(:disabled) {
-    background: #ff5f57;
-    border-color: #ff5f57;
-    color: #ffffff;
+  // Delete — red icon at rest, fills red on hover.
+  &.icon-disc-danger {
+    color: #ff6b63;
+    &:hover:not(:disabled) {
+      background: #ff5f57;
+      border-color: #ff5f57;
+      color: #ffffff;
+    }
+  }
+
+  // Edit / pencil — green icon at rest, fills green on hover.
+  &.icon-disc-edit {
+    color: #46c257;
+    &:hover:not(:disabled) {
+      background: #28c941;
+      border-color: #28c941;
+      color: #ffffff;
+    }
+  }
+
+  // Pinned (in the Binder) — bright-yellow filled indicator with a dark icon.
+  // Blue is reserved for labels/selection, so pinned reads as gold, not accent.
+  &.icon-disc-pinned {
+    background: linear-gradient(180deg, #ffe082 0%, #ffd54f 100%);
+    border-color: #d4a017;
+    border-top-color: #ffe9a8;
+    color: #2a2a2a;
+    cursor: default;
   }
 
   // Active — e.g. the meal is the current lookaside add target.
@@ -286,8 +322,8 @@ sup.sm {
   // Confirm — filled green (matches the dialog confirm disc). Used for the "+"
   // once it flips to a done-check.
   &.icon-disc-confirm {
-    background: #28c941;
-    border-color: #28c941;
+    background: linear-gradient(180deg, #35d452 0%, #28c941 100%);
+    border-color: #1f9e33;
     color: #ffffff;
   }
 

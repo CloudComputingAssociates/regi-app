@@ -539,14 +539,12 @@
   font-style: normal;
   font-weight: 500;
   letter-spacing: 0.5px;
-  // Etched but legible on the dark bar: a near-black body (the old letterpress
-  // trench) is invisible here, so use a muted light-grey body that reads
-  // clearly, with a crisp zero-blur dark lip below (the carved edge) plus a
-  // faint top darkening for depth. Still no blur — keeps the hard engraved feel.
-  color: #c7cace;
-  text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.65),
-    0 -1px 0 rgba(0, 0, 0, 0.25);
+  // Debossed / sunken watermark: a DIM body (close to the bar, so it reads as
+  // recessed, not a bright label) with a hairline light rim BELOW the glyphs —
+  // the highlight on the lower cut edge sells "carved into the surface." No
+  // blur keeps the hard engraved feel.
+  color: #55585c;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
   user-select: none;
   pointer-events: none;
   white-space: nowrap;
