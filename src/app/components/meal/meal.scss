@@ -134,22 +134,26 @@
   }
 }
 
-// Etched "Meal N" watermark: right-justified under the calories, dim + sunken
-// (debossed) — a muted body with a hairline light rim BELOW so it reads as
-// carved into the card surface. Same engraved family as "Curated MyFoods".
+// Etched "Meal N" watermark: FLOATS just under the calories (absolute, anchored
+// to the chips row) so it never pushes the food rows down — they keep their own
+// plane. Dim + sunken (debossed): a muted body with a hairline light rim below
+// so it reads as carved into the card surface. Same family as "Curated MyFoods".
 .meal-watermark {
-  text-align: right;
-  margin-top: 2px;
-  font-size: 14px;
+  position: absolute;
+  top: calc(100% + 3px);
+  right: 0;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.3px;
   color: #55585c;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
   user-select: none;
   pointer-events: none;
+  white-space: nowrap;
 }
 
 .macro-chips {
+  position: relative; // anchor for the floating "Meal N" watermark
   display: flex;
   flex-wrap: wrap;
   align-items: center;

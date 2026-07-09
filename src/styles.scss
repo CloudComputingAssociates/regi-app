@@ -302,28 +302,35 @@ sup.sm {
     }
   }
 
-  // Pinned (in the Binder) — bright-yellow filled indicator with a dark icon.
-  // Blue is reserved for labels/selection, so pinned reads as gold, not accent.
+  // Pinned (in the Binder) — the SAME grey raised disc as the others, ringed in
+  // the darker grey used OUTSIDE the card (not black), with a bright-yellow book
+  // icon. Subtle, consistent, and yellow (blue stays reserved for labels).
   &.icon-disc-pinned {
-    background: linear-gradient(180deg, #ffe082 0%, #ffd54f 100%);
-    border-color: #d4a017;
-    border-top-color: #ffe9a8;
-    color: #2a2a2a;
+    border-color: #2a2a2a;
+    border-top-color: #2a2a2a;
+    color: #ffd54f;
     cursor: default;
+  }
+
+  // Pressed toggle — the disc reads as pushed IN (inset), e.g. the "+" while its
+  // meal is the active add target. No color flip; it's a physical toggle state.
+  &.icon-disc-pressed {
+    background: linear-gradient(180deg, #333333 0%, #3f3f3f 100%);
+    border-color: #202020;
+    border-top-color: #202020;
+    color: #ffffff;
+    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.55);
+    transform: translateY(1px);
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(180deg, #333333 0%, #3f3f3f 100%);
+    }
   }
 
   // Active — e.g. the meal is the current lookaside add target.
   &.icon-disc-active {
     background: #4da6ff;
     border-color: #4da6ff;
-    color: #ffffff;
-  }
-
-  // Confirm — filled green (matches the dialog confirm disc). Used for the "+"
-  // once it flips to a done-check.
-  &.icon-disc-confirm {
-    background: linear-gradient(180deg, #35d452 0%, #28c941 100%);
-    border-color: #1f9e33;
     color: #ffffff;
   }
 

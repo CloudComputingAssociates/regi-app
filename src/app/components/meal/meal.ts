@@ -80,11 +80,11 @@ interface SlotMacros {
           <button
             type="button"
             class="icon-disc add-affordance"
-            [class.icon-disc-confirm]="editing()"
-            [matTooltip]="editing() ? 'Done adding foods' : 'Add Food item'"
+            [class.icon-disc-pressed]="editing()"
+            [matTooltip]="editing() ? 'Adding foods (close from the food list)' : 'Add Food item'"
             matTooltipPosition="above"
             (click)="toggleAdd.emit()">
-            <mat-icon>{{ editing() ? 'check' : 'add' }}</mat-icon>
+            <mat-icon>add</mat-icon>
           </button>
         }
         @if (slot().mealId != null) {
@@ -139,9 +139,10 @@ interface SlotMacros {
               <span class="chip fat">F {{ round(macros().fatG) }}</span>
               <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
               <span class="meal-cals">{{ calories() }} cals</span>
+              <!-- Etched "Meal N" watermark: floats just under the calories, OUT
+                   of flow (absolute) so it never pushes the food rows down. -->
+              <div class="meal-watermark">Meal {{ slot().slotOrder }}</div>
             </div>
-            <!-- Etched "Meal N" watermark, right-justified under the calories. -->
-            <div class="meal-watermark">Meal {{ slot().slotOrder }}</div>
           }
           <div class="food-rows">
             @for (item of items(); track item.id) {
