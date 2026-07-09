@@ -2,10 +2,11 @@
 //
 // Right-hand rail for the Menus surface. Two collapsible sections:
 //   1. Folder — disposable, unplaced meals (server scope=folder). GenMeal fills
-//      this. Grey/ghosted: "you'd lose this."
-//   2. Binder — pinned meals (server scope=binder). Alive: "in your Binder."
+//      this. Grey pin icon: "Save to your Binder."
+//   2. Binder — pinned meals (server scope=binder). Alive pin icon: "In your Binder."
 // Cards are draggable (CDK) onto empty board slots. Each card carries a Binder
-// pin icon (top-left) to save it. Cards are NOT redesigned — same markup/chips.
+// pin icon (top-left) to save it — the pin icon is the ONLY state signal; card
+// bodies always render at full opacity. Cards are NOT redesigned.
 import { ChangeDetectionStrategy, Component, OnInit, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -91,7 +92,7 @@ import { Meal } from '../../models';
         @if (folderOpen()) {
           <div class="section-body" cdkDropList>
             @for (meal of rotation.folderMeals(); track meal.id) {
-              <div class="binder-card" [class.ghost]="!rotation.isPinAlive(meal)" cdkDrag [cdkDragData]="meal">
+              <div class="binder-card" cdkDrag [cdkDragData]="meal">
                 <button
                   type="button"
                   class="card-pin"

@@ -45,10 +45,6 @@
     border-color: #4da6ff;
   }
 
-  // Ghosted "scratch paper" treatment (Step 6): unpinned menu = "you'd lose it".
-  &.ghost {
-    opacity: 0.55;
-  }
 
   .menu-name {
     font-size: 14px;
@@ -109,7 +105,7 @@
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: #7a7f85;
+  color: #9aa0a6;
   line-height: 1;
   cursor: pointer;
   transition: color 0.12s ease;

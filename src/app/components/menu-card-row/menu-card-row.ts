@@ -20,7 +20,6 @@ import { RotationMenuEntry } from '../../models';
           <div
             class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
-            [class.ghost]="!menu.pinned"
             (click)="select.emit(menu.menuId)">
             <button
               type="button"

@@ -24,7 +24,7 @@ interface SlotMacros {
   imports: [MatTooltipModule, MatIconModule, FoodComponent, DragDropModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()" [class.ghost]="ghosted()">
+    <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()">
       @if (slot().mealId != null) {
         <button
           type="button"
@@ -171,12 +171,9 @@ export class MealComponent {
   readonly resolvingItemId = input<number | null>(null);
 
   /** Binder pin state of the slotted meal (alive = pinned or undiverged clone).
-   *  Computed upstream from the resolved Meal so this card stays presentational. */
+   *  Computed upstream from the resolved Meal so this card stays presentational.
+   *  This is the SOLE visual signal — the card body never dims. */
   readonly pinAlive = input<boolean>(false);
-
-  /** Ghost the card ("you'd lose this") — unpinned meal that isn't an undiverged
-   *  clone. Computed upstream; empty slots are never ghosted. */
-  readonly ghosted = input<boolean>(false);
 
   /** Emitted when a binder meal is dropped on this (empty) slot. The parent
    *  supplies the menuId and calls the assign endpoint. */

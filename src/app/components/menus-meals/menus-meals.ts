@@ -24,7 +24,6 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
             [editing]="isEditing(slot.slotOrder)"
             [resolvingItemId]="resolvingItemId()"
             [pinAlive]="pinAliveFor(slot.mealId)"
-            [ghosted]="ghostedFor(slot.mealId)"
             (placeMeal)="onPlace($event)"
             (deleteMeal)="onDelete($event)"
             (toggleAdd)="onToggleAdd(slot)"
@@ -62,13 +61,6 @@ export class MenusMealsComponent {
     if (mealId == null) return false;
     const meal = this.rotation.getMeal(mealId);
     return meal ? this.rotation.isPinAlive(meal) : false;
-  }
-
-  /** Ghost a filled slot whose meal is unpinned and not an undiverged clone. */
-  ghostedFor(mealId: number | null | undefined): boolean {
-    if (mealId == null) return false;
-    const meal = this.rotation.getMeal(mealId);
-    return meal ? !this.rotation.isPinAlive(meal) : false;
   }
 
   /** Book icon on a slotted meal — pin it to the Binder. */
