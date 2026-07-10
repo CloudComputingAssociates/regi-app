@@ -244,6 +244,13 @@ sup.sm {
 // on the app (meal cards, menu tiles, food rows, lookaside). Domed grey with a
 // lit top edge + drop shadow; :active sinks it. Semantic modifiers tint the icon
 // (delete=red, edit/pencil=green) or fill it (confirm/cancel/pinned).
+// Binder card-name tooltip: show the FULL title on ONE line (no wrap), only
+// while the card is selected (matTooltipDisabled handles the gating).
+.binder-name-tip .mdc-tooltip__surface {
+  max-width: unset;
+  white-space: nowrap;
+}
+
 // Stacked-card silhouette — a single offset edge peeking out behind the card
 // (down-right), same rounded shape, reading as "a container of things." Applied
 // identically to menu cards in BOTH the board's card-row and the Binder Menus

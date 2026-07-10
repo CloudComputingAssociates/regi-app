@@ -132,6 +132,8 @@ import { Meal, Menu } from '../../models';
                     <span
                       class="binder-card-name"
                       [matTooltip]="menu.name"
+                      [matTooltipDisabled]="!rotation.isCardSelected('menu', menu.id ?? -1)"
+                      matTooltipClass="binder-name-tip"
                       matTooltipPosition="below"
                       [matTooltipShowDelay]="300">{{ menu.name }}</span>
                     <span class="card-cals">{{ round(menu.totalCalories) }} cals</span>
@@ -199,6 +201,8 @@ import { Meal, Menu } from '../../models';
                     <span
                       class="binder-card-name"
                       [matTooltip]="meal.name"
+                      [matTooltipDisabled]="!rotation.isCardSelected('meal', meal.id)"
+                      matTooltipClass="binder-name-tip"
                       matTooltipPosition="below"
                       [matTooltipShowDelay]="300">{{ meal.name }}</span>
                     <span class="card-cals">{{ round(meal.totalCalories) }} cals</span>

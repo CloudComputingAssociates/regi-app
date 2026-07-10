@@ -3,7 +3,15 @@
 // Tab root for the Menus surface. Hosts the menu-card row (menu picker) above
 // the menus-meals grid (the selected menu's meal slots). All state comes from
 // RotationService — Phase 0 is mock-backed.
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
@@ -39,7 +47,11 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
   // Click anywhere outside a meal card / the food rail / the serving popup
   // deselects the current add target (so there's an obvious way out, and you
   // can pick another meal).
-  host: { '(document:click)': 'onDocumentClick($event)' },
+  host: {
+    '(document:click)': 'onDocumentClick($event)',
+    '(document:mousemove)': 'onSplitterMove($event)',
+    '(document:mouseup)': 'onSplitterUp()',
+  },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
@@ -61,7 +73,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
         <!-- Flex row: board (toolbar + menu-card-row + meals) on the left,
              Meals binder on the right. cdkDropListGroup connects the binder's
              draggable meal cards to the empty-slot drop targets in the board. -->
-        <div class="menus-layout" cdkDropListGroup>
+        <div class="menus-layout" [class.splitter-dragging]="splitterDragging" cdkDropListGroup>
           <div class="menus-main">
             <!-- Thin raised toolbar, pinned above the menu-card row. Wipe sits
                  ~2/3 across; People (persisted) is right-justified against the
@@ -114,7 +126,13 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
           </div>
 
           @if (rotation.editingSlot() === null) {
-            <app-meal-binder />
+            <!-- Draggable splitter — resize the Menus & Meals rail. Not shown for
+                 the food picker (that's a fixed 25% overlay). -->
+            <div
+              class="rail-splitter"
+              [class.dragging]="splitterDragging"
+              (mousedown)="onSplitterDown($event)"></div>
+            <app-meal-binder [style.flex-basis]="railBasis()" />
           } @else {
             <app-food-lookaside />
           }
@@ -190,6 +208,39 @@ export class MenusPanelComponent implements OnInit {
   private preferencesService = inject(FoodPreferencesService);
   private foodsService = inject(FoodsService);
   private notification = inject(NotificationService);
+  private host = inject(ElementRef<HTMLElement>);
+
+  // ---- Rail splitter ---------------------------------------------------
+  // User-draggable width for the Menus & Meals rail. null = the default 25%.
+  // The food picker is a fixed 25% overlay (it ignores this), so that side is
+  // always uniform; the custom width is preserved for the Menus & Meals rail.
+  private readonly railBasisPx = signal<number | null>(null);
+  splitterDragging = false;
+
+  readonly railBasis = computed<string>(() => {
+    const px = this.railBasisPx();
+    return px != null ? `${px}px` : '25%';
+  });
+
+  onSplitterDown(e: MouseEvent): void {
+    e.preventDefault();
+    this.splitterDragging = true;
+  }
+
+  onSplitterMove(e: MouseEvent): void {
+    if (!this.splitterDragging) return;
+    const layout = this.host.nativeElement.querySelector('.menus-layout') as HTMLElement | null;
+    if (!layout) return;
+    const rect = layout.getBoundingClientRect();
+    // Rail width = distance from the cursor to the layout's right edge; clamp so
+    // neither side collapses.
+    const width = rect.right - e.clientX;
+    this.railBasisPx.set(Math.max(300, Math.min(width, rect.width - 320)));
+  }
+
+  onSplitterUp(): void {
+    this.splitterDragging = false;
+  }
 
   // ---- Per-item serving popup state ------------------------------------
   // Full allowed-foods list (same source foods-panel / the lookaside use) —
