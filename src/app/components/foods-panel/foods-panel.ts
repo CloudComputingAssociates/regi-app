@@ -273,15 +273,15 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 class="spin-source-select"
                 [ngModel]="spinSource()"
                 (ngModelChange)="onSpinSourceChange($event)">
-                <option value="myfoods">My Foods</option>
-                <option value="restricted">My Restricted Foods</option>
-                <!-- Visual separator between the two user-preference sources
-                     above and the curated lists pulled from /api/lists
-                     below. Disabled so it can't be picked. -->
-                <option disabled>──────────────</option>
-                @for (list of availableLists(); track list.name) {
+                <!-- Curated lists first — Regi Approved is the default + top,
+                     then GLP-1 Friendly — a separator, then the user's own
+                     sources (My Foods, then Restricted). -->
+                @for (list of orderedLists(); track list.name) {
                   <option [value]="list.name">{{ list.description }}</option>
                 }
+                <option disabled>──────────────</option>
+                <option value="myfoods">My Foods</option>
+                <option value="restricted">Restricted</option>
               </select>
               <!-- Search foods box, right after the LIST dropdown. -->
               <input
@@ -763,7 +763,16 @@ export class FoodsPanelComponent {
     // Pull the curated-list catalog so the Food List dropdown can show
     // every list the API publishes (regi-approved, glp-1-friendly, …).
     this.foodsService.getLists().subscribe({
-      next: (resp) => this.availableLists.set(resp?.lists ?? []),
+      next: (resp) => {
+        const lists = resp?.lists ?? [];
+        this.availableLists.set(lists);
+        // Default the curate TYPE to the Regi Approved list (top of the menu),
+        // unless the user already picked something else.
+        if (this.spinSource() === 'myfoods') {
+          const regi = lists.find((l) => /regi|approved/i.test(l.description || ''));
+          if (regi) this.spinSource.set(regi.name);
+        }
+      },
       error: () => this.availableLists.set([]),
     });
     // Hydrate baskets from server-side CurrentPicks. Sequenced after the
@@ -921,6 +930,18 @@ export class FoodsPanelComponent {
     return this.availableLists().find(l => l.name === src)?.description ?? src;
   });
 
+  // Curated-list order for the LIST dropdown: Regi Approved first (default +
+  // top), then GLP-1 Friendly, then any others.
+  readonly orderedLists = computed<FoodList[]>(() => {
+    const rank = (l: FoodList): number => {
+      const d = (l.description || '').toLowerCase();
+      if (/regi|approved/.test(d)) return 0;
+      if (/glp/.test(d)) return 1;
+      return 2;
+    };
+    return [...this.availableLists()].sort((a, b) => rank(a) - rank(b));
+  });
+
   // Count shown next to the right-pane section title. Honors the picker
   // search box so the number matches what's actually rendered — for MyFoods
   // we count the type-ahead-filtered subset of allMyFoods, and for
@@ -947,7 +968,7 @@ export class FoodsPanelComponent {
   // Hint label shown above the action-icon column at the right edge of each
   // row. MyFoods rows also have a delete column; curated lists do not, so
   // the heading shrinks to "Fave / Restrict" when delete isn't applicable.
-  columnHeaderText = computed<string>(() => 'Like / Limit');
+  columnHeaderText = computed<string>(() => 'LIKE / BAN');
 
   // Search: filters the carousel locally (no API round-trip per keystroke)
   searchQuery = signal('');
@@ -1670,7 +1691,7 @@ export class FoodsPanelComponent {
       case 'Proteins': return 'Pick 6 or more proteins';
       case 'Fats':     return 'Add fats you use,\nand dairy will go here';
       case 'Carbs':    return 'Try for 8+ vegetables,\nand 2+ fruits';
-      case 'Other':    return 'Limit processed foods,\nadd ideas for seasonings';
+      case 'Other':    return 'Ban processed foods,\nadd ideas for seasonings';
     }
   }
 
