@@ -36,13 +36,14 @@ import { Meal, Menu } from '../../models';
       <!-- Title line: "Meals" + right-justified AI toggle (star + chevron). The
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
-        <span class="binder-title">Menus &amp; Meals</span>
+        <span class="binder-title">Menus &amp; Meals Binder</span>
         <button
           type="button"
           class="ai-toggle"
           matTooltip="AI meal generation"
           (click)="aiOpen.set(!aiOpen())">
           <img src="images/AI-star.png" alt="" class="ai-logo" [class.spinning]="rotation.generating()" />
+          <span class="ai-toggle-label">AI Assist</span>
           <mat-icon class="ai-toggle-chevron">{{ aiOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
         </button>
       </div>
@@ -301,9 +302,8 @@ export class MealBinderComponent implements OnInit {
     this.rotation.loadBinderMenus();
   }
 
-  /** Deleting a Binder menu — ask whether its associated meals go too.
-   *  Yes = delete the menu AND its meals; No = delete the menu, keep the meals
-   *  in your Binder; Cancel = nothing. */
+  /** Deleting a Binder menu is a fully destructive mini-wipe — the menu AND all
+   *  its saved meals go. Warn explicitly. */
   onDeleteBinderMenu(menu: Menu): void {
     const id = menu.id;
     if (id == null) return;
@@ -311,11 +311,9 @@ export class MealBinderComponent implements OnInit {
       panelClass: 'wipe-dialog-panel',
       data: {
         title: `Delete "${menu.name}"`,
-        message: 'Do you want all associated meals deleted?',
-        confirmLabel: 'Yes',
+        message: 'Delete Menu and all saved meals?',
+        confirmLabel: 'Delete',
         onConfirm: () => void this.rotation.deleteBinderMenu(id, true),
-        secondaryLabel: 'No',
-        onSecondary: () => void this.rotation.deleteBinderMenu(id, false),
       },
     });
   }

@@ -121,7 +121,7 @@ interface SlotMacros {
               Create
             </button>
           </div>
-          <span class="pick-sub">or drag from <mat-icon class="inline-icon">restaurant</mat-icon> Meals</span>
+          <span class="pick-sub">or drag from <mat-icon class="inline-icon">restaurant</mat-icon> <span class="meals-word">Meals</span></span>
         </div>
       } @else {
         <!-- When editing, this body is the food drop target (enterPredicate

@@ -1,9 +1,11 @@
 // src/app/components/food-lookaside/food-lookaside.scss
 //
-// Same rail footprint as the Meals binder (fixed 300px, chrome-grey left
-// divider, dark surface) so swapping in/out of edit mode doesn't shift layout.
+// Same rail footprint as the Menus & Meals binder (1/4 of the panel width,
+// min 300px, chrome-grey left divider, dark surface) so swapping in/out of edit
+// mode doesn't shift the layout.
 :host {
-  flex: 0 0 300px;
+  flex: 0 0 25%;
+  min-width: 300px;
   display: flex;
   flex-direction: column;
   min-height: 0;

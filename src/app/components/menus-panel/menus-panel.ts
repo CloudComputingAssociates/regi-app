@@ -67,6 +67,13 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                  ~2/3 across; People (persisted) is right-justified against the
                  right edge, adjacent to the Meals binder. -->
             <div class="menus-toolbar">
+              <button
+                type="button"
+                class="print-btn"
+                matTooltip="Print / preview this plan"
+                (click)="onPrint()">
+                <mat-icon>print</mat-icon>
+              </button>
               <div class="people-control">
                 <span class="people-label">Scale</span>
                 <button
@@ -106,7 +113,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               <button
                 type="button"
                 class="wipe-menus-btn"
-                matTooltip="Tear down this week's menus (pinned menus & Binder meals are kept)"
+                matTooltip="Remove all from Menus and Meal slots. Saved Menus and Meals will remain available."
                 (click)="onWipeMenus()">
                 Wipe Menus <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
               </button>
@@ -378,19 +385,23 @@ export class MenusPanelComponent implements OnInit {
     this.popupMealId.set(null);
   }
 
-  /** Trash on a menu tile — clear the menu's slots via the per-slot clear loop
-   *  (no bulk endpoint). Pinned occupants unlink and stay in the Binder; unsaved
-   *  occupants are discarded. Teach line appended when a slot holds diverged/
-   *  session-edited work. */
+  /** Print the current plan. Basic hook (browser print) for now — a dedicated
+   *  restaurant-style print/preview view is a future enhancement. */
+  onPrint(): void {
+    window.print();
+  }
+
+  /** Trash on a menu tile — DELETE the menu (the tile does not stay behind as an
+   *  empty header). Its disposable meals go; pinned meals stay in the Binder.
+   *  Teach line appended when a slot holds diverged/session-edited work. */
   onDeleteMenu(menuId: number): void {
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',
       data: {
-        message:
-          'Clear this menu? Meals in your Binder stay in your Binder. Unsaved meals in these slots are discarded.',
+        message: 'Delete this menu?',
         teachLine: this.rotation.menuHasUnsavedWork(menuId) ? TEACH_SAVE_LINE : undefined,
-        confirmLabel: 'Clear',
-        onConfirm: () => void this.rotation.clearMenuMeals(menuId),
+        confirmLabel: 'Delete',
+        onConfirm: () => void this.rotation.deleteMenu(menuId),
       },
     });
   }

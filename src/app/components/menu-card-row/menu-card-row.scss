@@ -164,6 +164,11 @@
   position: absolute;
   top: 4px;
   left: 4px;
+
+  // Not saved → a dimmer sheet icon (pinned is yellow).
+  &:not(.icon-disc-pinned) {
+    color: #6a6f75;
+  }
 }
 
 .menu-delete {

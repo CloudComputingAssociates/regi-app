@@ -130,6 +130,11 @@
   // so no explicit margins are needed to right-justify the +/trash cluster.
   .pin-disc {
     flex: 0 0 auto;
+
+    // Not saved → an even greyer fork/knife (the pinned state is yellow).
+    &:not(.icon-disc-pinned) {
+      color: #6a6f75;
+    }
   }
 }
 
@@ -271,12 +276,17 @@
     gap: 3px;
     color: #9aa0a6;
 
+    // Match the binder's "Meals" header: grey fork/knife, blue word.
     .inline-icon {
       width: 15px;
       height: 15px;
       font-size: 15px;
       line-height: 15px;
-      color: #4da6ff; // fork/knife = Meals accent
+      color: #9aa0a6;
+    }
+    .meals-word {
+      color: #4da6ff;
+      font-weight: 600;
     }
   }
 

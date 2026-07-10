@@ -389,7 +389,7 @@ export class TabService {
     // Map of tab ID to label
     const tabLabels: Record<string, string> = {
       'chat': 'Chat',
-      'menus': 'Menus',
+      'menus': 'Menus & Meals',
       'shop': 'Shopping List',
       'foods': 'Foods',
       'preferences': 'Settings',

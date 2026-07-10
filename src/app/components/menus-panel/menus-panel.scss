@@ -60,6 +60,39 @@
 // justified and Wipe Menus + the days badge sit at the right edge.
 .toolbar-spacer { flex: 1 1 auto; }
 
+// Square Print key in front of Scale — same raised domed family as the steppers.
+.print-btn {
+  flex: 0 0 auto;
+  margin-right: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
+  border-radius: 5px;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.05s ease;
+
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+
+  &:hover {
+    background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%);
+    color: #ffffff;
+  }
+  &:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  }
+}
+
 // Whole-rotation teardown key at the right end, just left of the days badge.
 // Same domed family as the steppers; a warm hover marks it as destructive.
 .wipe-menus-btn {

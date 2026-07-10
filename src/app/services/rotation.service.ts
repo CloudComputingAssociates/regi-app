@@ -786,6 +786,19 @@ export class RotationService {
     }
   }
 
+  /** Delete a menu from the board (the menu-tile trash). DELETE /menu/{id}
+   *  removes the menu ENTIRELY — the tile does NOT stay behind as an empty
+   *  header — and drops its disposable meals, but KEEPS pinned meals (they
+   *  survive in the Binder). Reload the board + Binder groups. */
+  async deleteMenu(menuId: number): Promise<void> {
+    try {
+      await firstValueFrom(this.http.delete(`${this.baseUrl}/menu/${menuId}`));
+      await Promise.all([this.loadCurrentRotation(), this.loadBinder(), this.loadBinderMenus()]);
+    } catch (err) {
+      this.notification.show(this.deleteErrMessage(err), 'error');
+    }
+  }
+
   /** Delete a Binder (pinned) menu. DELETE /menu/{id} removes the menu and drops
    *  its DISPOSABLE meals but KEEPS pinned ones (they stay in your Binder) — the
    *  "No, keep associated meals" path. When deleteMeals is true ("Yes"), we also

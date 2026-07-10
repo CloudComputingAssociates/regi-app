@@ -324,12 +324,11 @@ sup.sm {
     }
   }
 
-  // Pinned (in the Binder) — the SAME grey raised disc as the others, ringed in
-  // the darker grey used OUTSIDE the card (not black), with a bright-yellow book
-  // icon. Subtle, consistent, and yellow (blue stays reserved for labels).
+  // Pinned (in the Binder) — grey raised disc with a bright-yellow icon, ringed
+  // in a thin white border so the "saved" state pops against the dark card.
   &.icon-disc-pinned {
-    border-color: #2a2a2a;
-    border-top-color: #2a2a2a;
+    border-color: rgba(255, 255, 255, 0.65);
+    border-top-color: rgba(255, 255, 255, 0.65);
     color: #ffd54f;
     cursor: default;
   }
