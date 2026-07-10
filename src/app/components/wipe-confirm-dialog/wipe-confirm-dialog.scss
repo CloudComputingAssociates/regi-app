@@ -15,8 +15,9 @@
 
 .wipe-dialog-title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  // +1px and non-bold — bold at 15px was rendering slightly blurry.
+  font-size: 16px;
+  font-weight: 400;
   color: #ffffff;
 }
 

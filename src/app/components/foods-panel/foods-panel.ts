@@ -1675,8 +1675,8 @@ export class FoodsPanelComponent {
   basketEmptyHint(key: BasketKey): string {
     switch (key) {
       case 'Proteins': return 'Pick 6 or more proteins';
-      case 'Fats':     return 'Pick 5 or more fats,\nand dairy foods';
-      case 'Carbs':    return 'Pick 8+ vegetables,\nand 2+ fruits';
+      case 'Fats':     return 'Add fats you use,\nand dairy will go here';
+      case 'Carbs':    return 'Try for 8+ vegetables,\nand 2+ fruits';
       case 'Other':    return 'Limit processed foods,\nadd ideas for seasonings';
     }
   }

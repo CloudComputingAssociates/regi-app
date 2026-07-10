@@ -307,6 +307,16 @@ export class MealBinderComponent implements OnInit {
       },
       { allowSignalWrites: true },
     );
+
+    // Empty Binder sections collapse themselves — an empty accordion is just
+    // wasted vertical space (nothing but the "No saved …" line). Populated
+    // sections open; a manual collapse sticks until the count next changes.
+    effect(() => this.binderMenusOpen.set(this.rotation.binderMenus().length > 0), {
+      allowSignalWrites: true,
+    });
+    effect(() => this.binderMealsOpen.set(this.rotation.binderMeals().length > 0), {
+      allowSignalWrites: true,
+    });
   }
 
   ngOnInit(): void {
