@@ -224,13 +224,15 @@ export class RotationService {
     return this.mealsById().get(mealId)?.items ?? [];
   }
 
-  /** Find the (menuId, slotOrder) of the slot holding a meal, across loaded
-   *  menus — so fork-on-edit can repoint that slot to the fork. */
-  private findSlotOf(mealId: number): { menuId: number; slotOrder: number } | null {
-    for (const [menuId, menu] of this.menusById()) {
-      const slot = menu.slots.find((s) => s.mealId === mealId);
-      if (slot != null) return { menuId, slotOrder: slot.slotOrder };
-    }
+  /** The (menuId, slotOrder) of the slot being edited for a meal — the editing
+   *  slot if it matches, else that meal's slot in the SELECTED menu. Targeted
+   *  (not a global search) so fork-on-edit repoints the exact slot on screen. */
+  private editingSlotOf(mealId: number): { menuId: number; slotOrder: number } | null {
+    const es = this.editingSlot();
+    if (es?.mealId === mealId) return { menuId: es.menuId, slotOrder: es.slotOrder };
+    const sel = this.selectedMenu();
+    const slot = sel?.slots.find((s) => s.mealId === mealId);
+    if (sel?.id != null && slot != null) return { menuId: sel.id, slotOrder: slot.slotOrder };
     return null;
   }
 
@@ -238,13 +240,14 @@ export class RotationService {
    *  rather than forking it, so editing a slotted PINNED meal would mutate the
    *  Binder original. Before any edit, if the slotted meal is pinned, fork a
    *  fresh disposable copy (POST /meal/{id}/duplicate), repoint the slot to the
-   *  fork, and redirect the edit onto the fork — the saved copy is never touched.
-   *  The fork's item ids differ, so an optional itemId is remapped by position.
-   *  On a non-pinned meal or any failure, returns the originals (edit in place). */
+   *  fork, refresh the board menu so the fork is what's on screen, and redirect
+   *  the edit onto the fork — the saved copy is never touched. The fork's item
+   *  ids differ, so an optional itemId is remapped by position. On a non-pinned
+   *  meal or any failure, returns the originals (edit in place). */
   private async forkOnEdit(mealId: number, itemId?: number): Promise<{ mealId: number; itemId?: number }> {
     const meal = this.getMeal(mealId);
     if (meal?.pinned !== true) return { mealId, itemId };
-    const loc = this.findSlotOf(mealId);
+    const loc = this.editingSlotOf(mealId);
     if (loc == null) return { mealId, itemId };
     try {
       const stub = await firstValueFrom(
@@ -254,14 +257,17 @@ export class RotationService {
       if (forkId == null) return { mealId, itemId };
       const assign: AssignMealToSlotRequest = { slotOrder: loc.slotOrder, mealId: forkId };
       await firstValueFrom(this.http.put(`${this.baseUrl}/menu/${loc.menuId}/slot`, assign));
-      const fork = await firstValueFrom(this.http.get<Meal>(`${this.baseUrl}/meal/${forkId}`));
-      this.mealsById.update((m) => new Map(m).set(forkId, fork));
-      const es = this.editingSlot();
-      if (es?.mealId === mealId) this.editingSlot.set({ ...es, mealId: forkId });
+      // Refresh the board menu + fork so the slot on screen now shows the fork
+      // (unpinned → its pin flips to a "Save" button) before the edit lands.
+      await this.refreshMenu(loc.menuId);
+      const fork = this.getMeal(forkId);
+      if (this.editingSlot()?.mealId === mealId) {
+        this.editingSlot.update((es) => (es ? { ...es, mealId: forkId } : es));
+      }
       let forkItemId = itemId;
       if (itemId != null) {
         const idx = (meal.items ?? []).findIndex((i) => i.id === itemId);
-        forkItemId = idx >= 0 ? fork.items?.[idx]?.id ?? itemId : itemId;
+        forkItemId = idx >= 0 ? fork?.items?.[idx]?.id ?? itemId : itemId;
       }
       return { mealId: forkId, itemId: forkItemId };
     } catch {
