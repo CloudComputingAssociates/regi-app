@@ -578,6 +578,9 @@ export class RotationService {
       );
       this.mealsById.update((m) => new Map(m).set(mealId, updated));
       await Promise.all([this.loadBinder(), this.loadFolder()]);
+      // Saving a meal you were building closes the food picker so the rail
+      // returns to the Binder.
+      this.stopEditing();
       this.notification.show('Saved to your Binder', 'success');
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
@@ -788,21 +791,23 @@ export class RotationService {
    *  Folder so a pinned/unpinned card carrying this meal shows the new name. A
    *  failure toasts, board stays intact. Tracked as a session edit (teach line). */
   async updateMealName(mealId: number, name: string): Promise<void> {
-    // Fork-on-edit: renaming a placed SAVED meal spins off a private copy first.
-    const { mealId: editId } = await this.forkOnEdit(mealId);
+    // A rename does NOT clone (only composition changes fork) — it's a pure
+    // label write on the meal in the slot, even if that meal is a saved/linked
+    // Binder meal (the rename then shows in the Binder too, since it's the same
+    // meal). Editing foods is what spins off a private copy.
     const menuId = this.editingSlot()?.menuId ?? this.selectedMenuId();
     try {
       const body: UpdateMealRequest = { name };
-      await firstValueFrom(this.http.put<Meal>(`${this.baseUrl}/meal/${editId}`, body));
-      this.markSessionEdited(editId);
+      await firstValueFrom(this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, body));
+      this.markSessionEdited(mealId);
       if (menuId != null) {
         const menu = await firstValueFrom(
           this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
         );
         this.menusById.update((m) => new Map(m).set(menuId, menu));
       }
-      await this.loadMeal(editId);
-      // Reflect the new name in the rail (a pinned meal appears in the Binder).
+      await this.loadMeal(mealId);
+      // Reflect the new name in the rail (a linked Binder meal shows there).
       await Promise.all([this.loadBinder(), this.loadFolder()]);
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
