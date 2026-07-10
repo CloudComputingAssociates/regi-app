@@ -49,7 +49,7 @@ interface SlotMacros {
               <input
                 #nameBox
                 type="text"
-                class="meal-name-box"
+                class="meal-name-box regi-field"
                 [class.editing]="showNameCommit()"
                 [value]="title()"
                 (focus)="onNameFocus(nameBox)"

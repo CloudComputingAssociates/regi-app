@@ -59,28 +59,12 @@
   // Always-visible name box. Reads as a recessed grey field (depth via the
   // inset shadow, a deeper grey — not black); focusing turns on the accent
   // caret. Single line, no scrollbar — Home/End/arrows navigate long names.
+  // Field look comes from the global .regi-field; keep only layout + specials.
   .meal-name-box {
     display: block;
     width: 100%;
-    box-sizing: border-box;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 500;
-    color: #f1f1f1;
-    // Recessed field: a LIGHTER mid-grey interior (clearly not black) with light
-    // etched edges and a crisp 1px inset shadow so the depth is visible.
-    background: #414141;
-    border: 1px solid #666666;
-    border-top-color: #5a5a5a;
-    border-radius: 4px;
-    padding: 3px 8px;
-    outline: none;
     cursor: text;
     overflow: hidden;
-    box-shadow:
-      inset 0 1px 2px rgba(0, 0, 0, 0.5),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.05);
-    transition: border-color 0.12s ease, box-shadow 0.12s ease;
 
     // Barely-there white full-select highlight (not the loud browser blue).
     &::selection {
@@ -89,17 +73,9 @@
     }
 
     // Reserve room for the commit-arrow so the text doesn't slide under it.
-    &.editing {
-      padding-right: 26px;
-    }
+    &.editing { padding-right: 26px; }
 
-    &:focus {
-      border-color: #4da6ff;
-      caret-color: #4da6ff;
-      box-shadow:
-        inset 0 1px 2px rgba(0, 0, 0, 0.5),
-        0 0 0 1px rgba(77, 166, 255, 0.5);
-    }
+    &:focus { caret-color: #4da6ff; }
   }
 
   // Green CR-LF (enter) arrow tucked INSIDE the box at the right edge.

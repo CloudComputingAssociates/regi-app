@@ -176,21 +176,9 @@
   }
 }
 
+// Look comes from the global .regi-field; keep only the pointer cursor.
 .spin-source-select {
-  font-family: inherit;
-  font-size: 12px;
-  color: #ffffff;
-  background: #1a1a1a;
-  border: 1px solid #555;
-  border-radius: 4px;
-  padding: 4px 6px;
-  outline: none;
   cursor: pointer;
-  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
-
-  &:focus {
-    border-color: #4da6ff;
-  }
 }
 
 .category-radio-panel {
@@ -461,34 +449,10 @@
   color: #4da6ff;
 }
 
+// Look lives in the global .regi-field; this only sizes/places it.
 .carousel-search-input {
-  // A bit larger than before, and clearly INSET/recessed: darker top edge +
-  // dark inner top shadow so it reads as sunken into the card (light-from-top).
   flex: 0 0 24%;
   min-width: 90px;
-  box-sizing: border-box;
-  padding: 7px 12px;
-  font-family: inherit;
-  font-size: 13px;
-  // Dark recessed field with the deep stepped inset; WHITE-ish text/placeholder
-  // (actionable) so the "Search foods…" reads clearly, not grey.
-  color: #ffffff;
-  background: #3a3a3a;
-  border: 1px solid #555555;
-  border-top-color: #2b2b2b;
-  border-radius: 4px;
-  outline: none;
-  box-shadow:
-    inset 0 2px 3px rgba(0, 0, 0, 0.8),
-    inset 0 6px 10px rgba(0, 0, 0, 0.45),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
-
-  &:focus { border-color: #4da6ff; }
-
-  &::placeholder {
-    color: rgba(255, 255, 255, 0.72);
-    font-style: italic;
-  }
 }
 
 // Clear button for the LHS SEARCH input — Material `cancel` icon, only
@@ -699,11 +663,16 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  // Single header row: LIST · dropdown · … · Total. Extra right padding pushes
-  // the Total off the list's scrollbar so it reads over the content column.
+  // Single header row: LIST · dropdown · + · Search · Total. Extra right padding
+  // pushes the Total off the list's scrollbar so it reads over the content.
   padding: 6px 24px 6px 14px;
   background: linear-gradient(180deg, #353535 0%, #2a2a2a 100%);
   border-bottom: 1px solid #1a1a1a;
+
+  // Every control on the row settles to ONE height (30px) so the LIST menu, the
+  // + key and the Search box line up — they can't be aligned in isolation.
+  .regi-field { height: 30px; }
+  .bar-icon-btn { width: 30px; height: 30px; }
 }
 
 .type-row-label {
@@ -781,32 +750,11 @@
   color: #4da6ff;
 }
 
+// Look lives in the global .regi-field; this only sizes/places it (same field
+// size as the LHS carousel "Search foods…").
 .picker-search-input {
-  // Match the LHS carousel-search-input width so the two SEARCH boxes look
-  // like siblings (~17 % of the pane width, 80 px min).
-  flex: 0 0 17%;
-  min-width: 80px;
-  padding: 5px 10px;
-  font-family: inherit;
-  font-size: 12px;
-  // Same dark recessed field + deep inset + white-ish text as carousel search.
-  color: #ffffff;
-  background: #3a3a3a;
-  border: 1px solid #555555;
-  border-top-color: #2b2b2b;
-  border-radius: 4px;
-  outline: none;
-  box-shadow:
-    inset 0 2px 3px rgba(0, 0, 0, 0.8),
-    inset 0 6px 10px rgba(0, 0, 0, 0.45),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
-
-  &:focus { border-color: #4da6ff; }
-
-  &::placeholder {
-    color: rgba(255, 255, 255, 0.72);
-    font-style: italic;
-  }
+  flex: 0 0 24%;
+  min-width: 90px;
 }
 
 // Inline clear button — only renders when there's a query to clear.

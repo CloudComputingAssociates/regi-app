@@ -136,7 +136,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             <div class="carousel-top-bar">
               <input
                 type="text"
-                class="carousel-search-input"
+                class="carousel-search-input regi-field"
                 [value]="searchQuery()"
                 (input)="onSearchInput($any($event.target).value)"
                 placeholder="Search foods…" />
@@ -270,7 +270,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             <div class="type-row">
               <span class="type-row-label">LIST</span>
               <select
-                class="spin-source-select"
+                class="spin-source-select regi-field"
                 [ngModel]="spinSource()"
                 (ngModelChange)="onSpinSourceChange($event)">
                 <!-- Curated lists first — Regi Approved is the default + top,
@@ -283,10 +283,23 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 <option value="myfoods">My Foods</option>
                 <option value="restricted">Restricted</option>
               </select>
-              <!-- Search foods box, right after the LIST dropdown. -->
+              <!-- Add food (+) — flips to MyFoods, then opens the phone-app
+                   tether dialog (adding a MyFood runs in the mobile app; the
+                   web + is a QR/download nudge for now). Same key size as the
+                   Close-panel button. -->
+              <button
+                type="button"
+                class="bar-icon-btn"
+                matTooltip="Add a food (via the mobile app)"
+                matTooltipPosition="below"
+                (click)="onAddFood()"
+                aria-label="Add food">
+                <mat-icon aria-hidden="true">add</mat-icon>
+              </button>
+              <!-- Search foods box, right after the + button. -->
               <input
                 type="text"
-                class="picker-search-input"
+                class="picker-search-input regi-field"
                 [value]="pickerSearchQuery()"
                 (input)="onPickerSearchInput($any($event.target).value)"
                 placeholder="Search foods…" />
@@ -1263,6 +1276,13 @@ export class FoodsPanelComponent {
 
   /** Food List dropdown change handler. Picking a new list opens that list's
    *  accordion fully expanded so the user sees every category right away. */
+  /** Add food (+): flip the list to MyFoods, then open the phone-app tether
+   *  dialog — adding a MyFood happens in the mobile app (QR / download for now). */
+  onAddFood(): void {
+    this.onSpinSourceChange('myfoods');
+    this.tabService.openMobileApp();
+  }
+
   onSpinSourceChange(value: SpinSource): void {
     this.spinSource.set(value);
     // Expand against the NEW value, not the prior one — clear both sets so

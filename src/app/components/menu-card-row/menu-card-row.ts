@@ -64,7 +64,7 @@ import { RotationService } from '../../services/rotation.service';
               <input
                 #nameBox
                 type="text"
-                class="menu-name-box"
+                class="menu-name-box regi-field"
                 [class.editing]="showCommitFor(menu.menuId)"
                 [value]="displayName(menu, i)"
                 (focus)="onNameFocus(menu.menuId, nameBox)"
