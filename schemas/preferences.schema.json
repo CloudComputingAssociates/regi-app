@@ -78,6 +78,13 @@
           "maximum": 4,
           "description": "Number of times to repeat meal plan (1-4)"
         },
+        "menuDays": {
+          "type": ["integer", "null"],
+          "minimum": 2,
+          "maximum": 10,
+          "default": 7,
+          "description": "Number of Menus (days) to plan at once"
+        },
         "weekStartDay": {
           "type": ["string", "null"],
           "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", null],
@@ -126,6 +133,13 @@
           "minimum": 1,
           "maximum": 4,
           "description": "Number of times to repeat meal plan (1-4)"
+        },
+        "menuDays": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10,
+          "default": 7,
+          "description": "Number of Menus (days) to plan at once"
         },
         "weekStartDay": {
           "type": "string",
@@ -185,6 +199,13 @@
       "minimum": 1,
       "maximum": 4,
       "description": "Number of times to repeat meal plan (1-4)"
+    },
+    "menuDays": {
+      "type": ["integer", "null"],
+      "minimum": 2,
+      "maximum": 10,
+      "default": 7,
+      "description": "Number of Menus (days) to plan at once"
     },
     "weekStartDay": {
       "type": ["string", "null"],

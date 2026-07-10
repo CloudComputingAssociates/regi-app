@@ -9,6 +9,7 @@ import {
   ElementRef,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -79,6 +80,15 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                  ~2/3 across; People (persisted) is right-justified against the
                  right edge, adjacent to the Meals binder. -->
             <div class="menus-toolbar">
+              <!-- Wipe (teardown) leads, immediately left of Print; both same height. -->
+              <button
+                type="button"
+                class="wipe-menus-btn"
+                matTooltip="Remove all from Menus and Meal slots. Saved Menus and Meals will remain available."
+                (click)="onWipeMenus()">
+                Wipe <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
+              </button>
+
               <button
                 type="button"
                 class="print-btn"
@@ -89,19 +99,16 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
 
               <span class="toolbar-spacer"></span>
 
-              <!-- Planned-days tally, then the teardown button at the far right. -->
-              <div class="span-badge" [class.complete]="plannedDays() === rotation.rotation()!.spanDays">
+              <!-- Planned-days tally, right-justified. Span comes from the
+                   Menu-Days setting (rotation.spanDays). -->
+              <div
+                class="span-badge"
+                matTooltip="Days is set in the Settings › Menus [Menu-Days] entry — how many you plan at once."
+                matTooltipPosition="above"
+                [class.complete]="plannedDays() === rotation.rotation()!.spanDays">
                 <span class="check">✓</span>
                 {{ plannedDays() }} / {{ rotation.rotation()!.spanDays }} days
               </div>
-
-              <button
-                type="button"
-                class="wipe-menus-btn"
-                matTooltip="Remove all from Menus and Meal slots. Saved Menus and Meals will remain available."
-                (click)="onWipeMenus()">
-                Wipe Menus <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
-              </button>
             </div>
 
             <app-menu-card-row
@@ -221,6 +228,18 @@ export class MenusPanelComponent implements OnInit {
     const px = this.railBasisPx();
     return px != null ? `${px}px` : '25%';
   });
+
+  constructor() {
+    // Entering the food picker snaps the Menus & Meals rail back to its default
+    // 25%, so that side is uniform after an edit and returns at 25% when the
+    // picker closes. Re-drag the splitter to resize again.
+    effect(
+      () => {
+        if (this.rotation.editingSlot() !== null) this.railBasisPx.set(null);
+      },
+      { allowSignalWrites: true },
+    );
+  }
 
   onSplitterDown(e: MouseEvent): void {
     e.preventDefault();

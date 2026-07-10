@@ -24,6 +24,7 @@ export interface Preferences {
   personalInfo: PersonalInfo;
   weekStartDay: WeekStartDay;
   persons: number;
+  menuDays: number;
   glp1: Glp1Settings;
 }
 
@@ -55,6 +56,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   personalInfo: DEFAULT_PERSONAL_INFO,
   weekStartDay: 'sunday',
   persons: 1,
+  menuDays: 7,
   glp1: DEFAULT_GLP1
 };
 
@@ -110,6 +112,7 @@ export class PreferencesService {
   readonly personalInfo = computed(() => this.preferencesSignal().personalInfo);
   readonly weekStartDay = computed(() => this.preferencesSignal().weekStartDay);
   readonly persons = computed(() => this.preferencesSignal().persons);
+  readonly menuDays = computed(() => this.preferencesSignal().menuDays);
   readonly glp1 = computed(() => this.preferencesSignal().glp1);
 
   // ========================================================
@@ -371,6 +374,7 @@ export class PreferencesService {
       dailyGoals: dg ?? DEFAULT_DAILY_GOALS,
       personalInfo: pi ?? DEFAULT_PERSONAL_INFO,
       persons: rm?.persons ?? DEFAULT_PREFERENCES.persons,
+      menuDays: rm?.menuDays ?? DEFAULT_PREFERENCES.menuDays,
       glp1: all.glp1 ?? { enabled: false }
     };
 
@@ -400,7 +404,8 @@ export class PreferencesService {
         mealsPerDay: current.mealsPerDay,
         repeatMeals: current.repeatMeals,
         weekStartDay: current.weekStartDay,
-        persons: current.persons
+        persons: current.persons,
+        menuDays: current.menuDays
       };
       promises.push(this.settingsService.saveRegiMenuSettings(data));
     }
@@ -447,6 +452,14 @@ export class PreferencesService {
   setPersons(value: number): void {
     const clamped = Math.max(1, Math.floor(Number(value) || 1));
     this.preferencesSignal.update(p => ({ ...p, persons: clamped }));
+    this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
+  }
+
+  /** Menu-Days — how many Menus (days) the rotation plans at once. Drives the
+   *  rotation spanDays; clamped to the API's 2–10 range. */
+  setMenuDays(value: number): void {
+    const clamped = Math.max(2, Math.min(10, Math.floor(Number(value) || 7)));
+    this.preferencesSignal.update(p => ({ ...p, menuDays: clamped }));
     this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
   }
 

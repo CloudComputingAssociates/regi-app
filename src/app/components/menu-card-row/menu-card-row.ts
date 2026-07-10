@@ -4,11 +4,12 @@
 // menu name and its planned day count; the selected card gets a blue border.
 // A badge tallies planned days against the rotation span, and a disabled
 // "+ Add menu" stub marks the Phase-1 affordance.
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { RotationMenuEntry } from '../../models';
+import { RotationService } from '../../services/rotation.service';
 
 @Component({
   selector: 'app-menu-card-row',
@@ -22,23 +23,45 @@ import { RotationMenuEntry } from '../../models';
             class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
             (click)="select.emit(menu.menuId)">
-            <button
-              type="button"
-              class="menu-pin icon-disc"
-              [class.icon-disc-pinned]="menu.pinned"
-              [matTooltip]="menu.pinned ? 'In your Binder' : 'Save to Binder'"
-              matTooltipPosition="above"
-              (click)="$event.stopPropagation(); onPin(menu)">
-              <mat-icon>description</mat-icon>
-            </button>
-            <button
-              type="button"
-              class="menu-delete icon-disc icon-disc-danger"
-              matTooltip="Delete this Menu"
-              matTooltipPosition="above"
-              (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
-              <mat-icon>delete_outline</mat-icon>
-            </button>
+            <!-- Top strip: pin + days stepper grouped left, trash pushed right. -->
+            <div class="card-top">
+              <button
+                type="button"
+                class="menu-pin icon-disc"
+                [class.icon-disc-pinned]="menu.pinned"
+                [matTooltip]="menu.pinned ? 'In your Binder' : 'Save to Binder'"
+                matTooltipPosition="above"
+                (click)="$event.stopPropagation(); onPin(menu)">
+                <mat-icon>description</mat-icon>
+              </button>
+              <div class="menu-days">
+                <button
+                  type="button"
+                  class="days-step"
+                  matTooltip="Fewer days"
+                  [disabled]="menu.plannedCount <= 1"
+                  (click)="$event.stopPropagation(); setDays.emit({ menuId: menu.menuId, plannedCount: menu.plannedCount - 1 })">
+                  −
+                </button>
+                <span class="days-value">{{ menu.plannedCount }} days</span>
+                <button
+                  type="button"
+                  class="days-step"
+                  matTooltip="More days"
+                  [disabled]="menu.plannedCount >= spanDays()"
+                  (click)="$event.stopPropagation(); setDays.emit({ menuId: menu.menuId, plannedCount: menu.plannedCount + 1 })">
+                  +
+                </button>
+              </div>
+              <button
+                type="button"
+                class="menu-delete icon-disc icon-disc-danger"
+                matTooltip="Delete this Menu"
+                matTooltipPosition="above"
+                (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
             <!-- Inline rename — same field/commit pattern as the meal name box.
                  Committing writes the label only; the pin state is untouched. -->
             <div class="name-wrap">
@@ -66,27 +89,28 @@ import { RotationMenuEntry } from '../../models';
                 </button>
               }
             </div>
-            <div class="menu-days">
+            <!-- Foot: running calories + macro-chip toggle (mirrors the Binder
+                 card), with the etched positional "Menu A" watermark at right. -->
+            <div class="menu-foot">
+              <span class="card-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
               <button
                 type="button"
-                class="days-step"
-                matTooltip="Fewer days"
-                [disabled]="menu.plannedCount <= 1"
-                (click)="$event.stopPropagation(); setDays.emit({ menuId: menu.menuId, plannedCount: menu.plannedCount - 1 })">
-                −
+                class="card-toggle"
+                [matTooltip]="isOpen(menu.menuId) ? 'Hide macros' : 'Show macros'"
+                matTooltipPosition="above"
+                (click)="$event.stopPropagation(); toggleMacros(menu.menuId)">
+                <mat-icon>{{ isOpen(menu.menuId) ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
-              <span class="days-value">{{ menu.plannedCount }} days</span>
-              <button
-                type="button"
-                class="days-step"
-                matTooltip="More days"
-                [disabled]="menu.plannedCount >= spanDays()"
-                (click)="$event.stopPropagation(); setDays.emit({ menuId: menu.menuId, plannedCount: menu.plannedCount + 1 })">
-                +
-              </button>
+              <span class="menu-watermark">Menu {{ letter(i) }}</span>
             </div>
-            <!-- Grey etched positional watermark (like "Meal N" on meal cards). -->
-            <div class="menu-watermark">Menu {{ letter(i) }}</div>
+            @if (isOpen(menu.menuId)) {
+              <div class="binder-chips">
+                <span class="chip protein">P {{ round(rotation.menuTotals(menu.menuId).proteinG) }}</span>
+                <span class="chip carb">C {{ round(rotation.menuTotals(menu.menuId).carbG) }}</span>
+                <span class="chip fat">F {{ round(rotation.menuTotals(menu.menuId).fatG) }}</span>
+                <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
+              </div>
+            }
           </div>
         }
 
@@ -103,6 +127,9 @@ import { RotationMenuEntry } from '../../models';
   styleUrls: ['./menu-card-row.scss'],
 })
 export class MenuCardRowComponent {
+  /** Source of live per-menu macro totals for the cals readout + chip dropdown. */
+  readonly rotation = inject(RotationService);
+
   readonly menus = input.required<RotationMenuEntry[]>();
   readonly selectedMenuId = input.required<number>();
   readonly spanDays = input.required<number>();
@@ -128,6 +155,26 @@ export class MenuCardRowComponent {
   private readonly editingMenuId = signal<number | null>(null);
   /** Live text in the focused name box. */
   readonly nameDraft = signal('');
+
+  /** Menu tiles whose macro-chip dropdown is expanded (keyed by menuId). Chips
+   *  are hidden by default; the calories line stays visible. */
+  private readonly openMenus = signal<Set<number>>(new Set());
+
+  isOpen(menuId: number): boolean {
+    return this.openMenus().has(menuId);
+  }
+
+  toggleMacros(menuId: number): void {
+    this.openMenus.update((s) => {
+      const next = new Set(s);
+      next.has(menuId) ? next.delete(menuId) : next.add(menuId);
+      return next;
+    });
+  }
+
+  round(n: number | null | undefined): number {
+    return Math.round(n ?? 0);
+  }
 
   /** Tile pin icon — emit pin unless the entry is already pinned. */
   onPin(menu: RotationMenuEntry): void {

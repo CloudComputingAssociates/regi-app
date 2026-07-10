@@ -1104,6 +1104,14 @@
     font-style: normal;
     text-align: left;
     padding: 0 0 0 2px;
+
+    // Tab-stop layout: fixed-width label column so the BMR/BMI numeric values
+    // line up on the left regardless of the label glyph widths (BMR vs BMI).
+    .pi-label {
+      display: inline-block;
+      width: 2.6em;
+    }
+    .pi-value { }
   }
 
   // Nudge the BMR line down 2px and pull the BMI line up by the same, so BMR

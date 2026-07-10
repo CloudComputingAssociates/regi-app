@@ -4,8 +4,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
 import { NotificationService } from '../../services/notification.service';
-import { PreferencesService, MealsPerDay, DailyGoals, WeekStartDay, FoodListSource } from '../../services/preferences.service';
+import { PreferencesService, MealsPerDay, DailyGoals, FoodListSource } from '../../services/preferences.service';
 import { SettingsService } from '../../services/settings.service';
+import { RotationService } from '../../services/rotation.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 @Component({
@@ -144,15 +145,15 @@ import { MatIconModule } from '@angular/material/icon';
                     <option value="extremely_active">Ext. Active (2×/day, physical job)</option>
                   </select>
                 </div>
-                <div class="pi-bmr pi-bmr-top">BMR: {{ bmrTdeeLabel() }}<span class="info-icon info-icon-trailing"
+                <div class="pi-bmr pi-bmr-top"><span class="pi-label">BMR</span><span class="pi-value">{{ bmrTdeeLabel() }}</span><span class="info-icon info-icon-trailing"
                         #bmrTooltip="matTooltip"
-                        matTooltip="Basal Metabolic Rate — calories burned at complete rest to keep vital functions running."
+                        matTooltip="Activity adjusted Base Metabolic Rate (BMR) daily calories. Baseline in parenthesis."
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
                         (click)="bmrTooltip.toggle()">&#9432;</span></div>
-                <div class="pi-bmr">BMI: {{ bmiLabel() }}<span class="info-icon info-icon-trailing"
+                <div class="pi-bmr"><span class="pi-label">BMI</span><span class="pi-value">{{ bmiLabel() }}</span><span class="info-icon info-icon-trailing"
                         #bmiTooltip="matTooltip"
-                        matTooltip="Body Mass Index"
+                        matTooltip="Current (Target)"
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
                         (click)="bmiTooltip.toggle()">&#9432;</span>
@@ -162,7 +163,7 @@ import { MatIconModule } from '@angular/material/icon';
                       (mouseup)="bmiDescOpen.set(false)"
                       (mouseleave)="bmiDescOpen.set(false)"
                       (touchstart)="bmiDescOpen.set(true)"
-                      (touchend)="bmiDescOpen.set(false)">View</button>
+                      (touchend)="bmiDescOpen.set(false)">Chart</button>
                     @if (bmiDescOpen()) {
                       <div class="bmi-scale-popup">
                         <div class="bmi-scale-labels">
@@ -420,19 +421,16 @@ import { MatIconModule } from '@angular/material/icon';
                   <span class="setting-hint">per week</span>
                 </div>
                 <div class="setting-row">
-                  <label class="setting-label">Start Day</label>
-                  <select
-                    class="setting-select"
-                    [ngModel]="userSettingsService.weekStartDay()"
-                    (ngModelChange)="onWeekStartDayChange($event)">
-                    <option value="sunday">Sunday</option>
-                    <option value="monday">Monday</option>
-                    <option value="tuesday">Tuesday</option>
-                    <option value="wednesday">Wednesday</option>
-                    <option value="thursday">Thursday</option>
-                    <option value="friday">Friday</option>
-                    <option value="saturday">Saturday</option>
-                  </select>
+                  <label class="setting-label">Menu-Days</label>
+                  <input type="number" min="2" max="10" class="setting-number"
+                    [ngModel]="userSettingsService.menuDays()"
+                    (input)="onMenuDaysChange($event)" />
+                  <span class="info-icon"
+                        #menuDaysTooltip="matTooltip"
+                        matTooltip="Number of Menus (days) to plan at once"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="0"
+                        (click)="menuDaysTooltip.toggle()">&#9432;</span>
                 </div>
               </div>
 
@@ -607,6 +605,7 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   private tabService = inject(TabService);
   protected userSettingsService = inject(PreferencesService);
   private settingsService = inject(SettingsService);
+  private rotationService = inject(RotationService);
   private notificationService = inject(NotificationService);
   private el = inject(ElementRef);
 
@@ -1106,19 +1105,18 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     extremely_active: 1.9,
   };
 
-  /** BMR value (no "BMR:" prefix — the template renders label + ⓘ + colon).
-   *  Format: "2,656 cals (Activity adjusted: 4,117)". Em-dash short-circuit
-   *  when BMR inputs are missing; suppresses the parenthetical until the user
-   *  picks an Activity level. */
+  /** BMR readout: the ACTIVITY-ADJUSTED daily calories, with the baseline BMR in
+   *  parentheses — e.g. "3,920 (2,675)". Before an Activity level is picked there
+   *  is no adjustment, so just the baseline shows. Em-dash until inputs exist. */
   bmrTdeeLabel = computed<string>(() => {
     const bmr = this.userSettingsService.computedBMR();
-    if (bmr === null) return '— cals';
+    if (bmr === null) return '—';
     const activity = this.userSettingsService.personalInfo().activityLevel;
     const bmrStr = bmr.toLocaleString();
-    if (!activity) return `${bmrStr} cals`;
+    if (!activity) return bmrStr;
     const mult = PreferencesPanelComponent.ACTIVITY_MULTIPLIERS[activity] ?? 1;
     const tdee = Math.round(bmr * mult);
-    return `${bmrStr} cals (Activity adjusted: ${tdee.toLocaleString()})`;
+    return `${tdee.toLocaleString()} (${bmrStr})`;
   });
 
   /** BMI = weightKg / heightM². Null until height + current weight are known. */
@@ -1145,7 +1143,7 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     if (bmi === null) return '—';
     const cur = bmi.toFixed(1);
     const t = this.rawTargetBmi();
-    return t === null ? cur : `${cur} (target: ${t.toFixed(1)})`;
+    return t === null ? cur : `${cur} (${t.toFixed(1)})`;
   });
 
   // ----- BMI "View" popup (visible only while the button is held) -----
@@ -1452,9 +1450,14 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     this.settingsChanged.set(true);
   }
 
-  onWeekStartDayChange(value: WeekStartDay): void {
-    this.userSettingsService.setWeekStartDay(value);
+  /** Menu-Days: persist the preference (drives new rotations) AND push the new
+   *  span to the active rotation so the "n / span days" badge updates live. */
+  onMenuDaysChange(event: Event): void {
+    const raw = +(event.target as HTMLInputElement).value;
+    if (!raw) return;
+    this.userSettingsService.setMenuDays(raw);
     this.settingsChanged.set(true);
+    void this.rotationService.setRotationSpanDays(this.userSettingsService.menuDays());
   }
 
   onFoodListSourceChange(value: FoodListSource): void {

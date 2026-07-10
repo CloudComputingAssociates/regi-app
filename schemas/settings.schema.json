@@ -59,6 +59,13 @@
           "default": 1,
           "description": "Number of people the meal plan serves"
         },
+        "menuDays": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10,
+          "default": 7,
+          "description": "Number of Menus (days) to plan at once — drives the rotation spanDays"
+        },
         "weekStartDay": {
           "type": "string",
           "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],

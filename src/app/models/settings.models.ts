@@ -40,6 +40,7 @@ export interface RegiMenuSettings {
   repeatMeals?: number;
   weekStartDay?: string;
   persons?: number;
+  menuDays?: number;
 }
 
 // GLP-1 dose tier (start / current / maintenance)

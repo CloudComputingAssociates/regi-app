@@ -29,7 +29,7 @@
   gap: 6px;
   // Wider so a typical menu name fits in both display and edit modes; the strip
   // has its own horizontal scroll to absorb the extra width.
-  min-width: 172px;
+  min-width: 188px;
   padding: 10px 12px;
   border: 2px solid #4a4a4a;
   border-radius: 8px;
@@ -47,12 +47,18 @@
     border-color: #4da6ff;
   }
 
-  // Name field sits on its OWN row below the top disc strip (pin left / trash
-  // right), so a full-width name never underlaps the discs.
+  // Top strip: pin + days stepper grouped at the left, trash pushed to the far
+  // right of the same row (discs now flow inline, no absolute positioning).
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  // Name field on its own row directly below the top strip.
   .name-wrap {
     position: relative;
     width: 100%;
-    margin-top: 20px;
   }
 
   // Recessed name field — mirrors the meal name box (dark-grey interior, lighter
@@ -123,12 +129,12 @@
   .menu-days {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
 
     .days-value {
       font-size: 12px;
       color: #9aa0a6;
-      min-width: 46px;
+      min-width: 40px;
       text-align: center;
     }
 
@@ -157,21 +163,11 @@
   }
 }
 
-// Menu discs use the shared raised .icon-disc chrome; these rules only PLACE
-// them in the tile corners. Pin leads top-left (lined-sheet icon; yellow when
-// pinned via .icon-disc-pinned); trash top-right.
-.menu-pin {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  // Unpinned uses the shared .icon-disc grey icon (same raised look as +/trash);
-  // pinned = yellow icon + white rim.
-}
-
+// Menu discs use the shared raised .icon-disc chrome. Pin leads the top strip
+// (lined-sheet icon; yellow when pinned via .icon-disc-pinned); trash is pushed
+// to the far right of that same row.
 .menu-delete {
-  position: absolute;
-  top: 4px;
-  right: 4px;
+  margin-left: auto;
 }
 
 // Live "+ Add menu" — dashed area, white clickable text; also a drop target for
@@ -206,12 +202,46 @@
   }
 }
 
-// Grey etched positional watermark in the tile's lower-right (mirrors the meal
-// card's "Meal N"). Dim + sunken so it reads as carved into the surface.
+// Foot row: running calories (blue text) + macro-chip chevron, with the etched
+// positional watermark pushed to the right — mirrors the Binder card head.
+.menu-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  // Calories as blue TEXT (not a disc), matching the Binder card's .card-cals.
+  .card-cals {
+    flex: 0 0 auto;
+    font-size: 13px;
+    font-weight: 400;
+    color: #4da6ff;
+    white-space: nowrap;
+  }
+
+  // Chevron that shows/hides the macro chips below.
+  .card-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #9aa0a6;
+    cursor: pointer;
+
+    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+    &:hover { color: #ffffff; }
+  }
+}
+
+// Grey etched positional watermark (mirrors the meal card's "Meal N"). Dim +
+// sunken so it reads as carved into the surface; sits at the right of the foot.
 .menu-watermark {
-  position: absolute;
-  right: 10px;
-  bottom: 6px;
+  margin-left: auto;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -220,5 +250,26 @@
   user-select: none;
   pointer-events: none;
   white-space: nowrap;
+}
+
+// Macro chips — same muted palette + P/C/F/F order as the Binder card, hidden
+// until the foot chevron is flipped.
+.binder-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  .chip {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.82);
+
+    &.protein { background: #34781a; }
+    &.carb { background: #a8541a; }
+    &.fat { background: #8a55ab; }
+    &.fiber { background: #5e4021; }
+  }
 }
 

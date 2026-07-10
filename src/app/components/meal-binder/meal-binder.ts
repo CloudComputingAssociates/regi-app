@@ -131,11 +131,11 @@ import { Meal, Menu } from '../../models';
                     </button>
                     <span
                       class="binder-card-name"
-                      [matTooltip]="menu.name"
+                      [matTooltip]="menuDisplayName(menu)"
                       [matTooltipDisabled]="!rotation.isCardSelected('menu', menu.id ?? -1)"
                       matTooltipClass="binder-name-tip"
                       matTooltipPosition="below"
-                      [matTooltipShowDelay]="300">{{ menu.name }}</span>
+                      [matTooltipShowDelay]="300">{{ menuDisplayName(menu) }}</span>
                     <span class="card-cals">{{ round(menu.totalCalories) }} cals</span>
                     <button
                       type="button"
@@ -330,23 +330,27 @@ export class MealBinderComponent implements OnInit {
     });
   }
 
-  /** Deleting a Binder meal — same dark confirm dialog as the menu delete (no
-   *  orange system-alert toast for a routine operation). */
+  /** Deleting a Binder meal — no confirm dialog (a single meal is cheap to
+   *  re-add; only the destructive menu mini-wipe warns). Deletes immediately. */
   onDeleteBinder(meal: Meal): void {
-    const id = meal.id;
-    this.dialog.open(WipeConfirmDialogComponent, {
-      panelClass: 'wipe-dialog-panel',
-      data: {
-        title: `Delete "${meal.name}"`,
-        message: 'Delete this meal from your Binder?',
-        confirmLabel: 'Delete',
-        onConfirm: () => void this.rotation.deleteBinderMeal(id),
-      },
-    });
+    void this.rotation.deleteBinderMeal(meal.id);
   }
 
   round(n: number | null | undefined): number {
     return Math.round(n ?? 0);
+  }
+
+  /** Display name for a Binder menu — mirrors the board's menu-card lettering so
+   *  the SAME menu reads "Menu A" in both places. Server-default numeric names
+   *  ("Menu 6") are treated as unnamed and shown as the positional letter from
+   *  the rotation (index → A/B/C). A real custom name is shown verbatim; an
+   *  unplaced saved menu (not in the rotation) falls back to its stored name. */
+  menuDisplayName(menu: Menu): string {
+    const name = menu.name?.trim();
+    if (name && !/^menu\s+\d+$/i.test(name)) return name;
+    const idx = this.rotation.menus().findIndex((e) => e.menuId === menu.id);
+    if (idx >= 0) return `Menu ${String.fromCharCode(65 + idx)}`;
+    return name || 'Menu';
   }
 
   // ----- Cuisine "Twist" combobox (unchanged) ------------------------------

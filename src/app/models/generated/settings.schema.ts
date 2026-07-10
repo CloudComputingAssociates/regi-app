@@ -55,6 +55,10 @@ export interface RegiMenuSettings {
    */
   persons?: number;
   /**
+   * Number of Menus (days) to plan at once — drives the rotation spanDays
+   */
+  menuDays?: number;
+  /**
    * Day of week that starts a new meal planning week
    */
   weekStartDay?: "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday";

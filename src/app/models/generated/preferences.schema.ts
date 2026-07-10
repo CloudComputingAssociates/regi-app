@@ -42,6 +42,10 @@ export interface UserPreferencesSchema {
    */
   repeatMeals?: number | null;
   /**
+   * Number of Menus (days) to plan at once
+   */
+  menuDays?: number | null;
+  /**
    * Day of week that starts a new meal planning week
    */
   weekStartDay?: "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | null;
@@ -125,6 +129,10 @@ export interface GetPreferencesResponse {
    */
   repeatMeals?: number | null;
   /**
+   * Number of Menus (days) to plan at once
+   */
+  menuDays?: number | null;
+  /**
    * Day of week that starts a new meal planning week
    */
   weekStartDay?: "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | null;
@@ -164,6 +172,10 @@ export interface UpdatePreferencesRequest {
    * Number of times to repeat meal plan (1-4)
    */
   repeatMeals?: number;
+  /**
+   * Number of Menus (days) to plan at once
+   */
+  menuDays?: number;
   /**
    * Day of week that starts a new meal planning week
    */

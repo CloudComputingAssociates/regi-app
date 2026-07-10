@@ -16,6 +16,7 @@ import {
   AddMealItemRequest,
   AssignMealToSlotRequest,
   CreateMealRequest,
+  CreateRotationRequest,
   GenerateMealRequest,
   ItemRole,
   Meal,
@@ -26,6 +27,7 @@ import {
   UpdateMealItemRequest,
   UpdateMealRequest,
   UpdateMenuRequest,
+  UpdateRotationRequest,
 } from '../models';
 import { Food } from '../models/food.model';
 import { SettingsService } from './settings.service';
@@ -200,8 +202,18 @@ export class RotationService {
   // Top macro bars fill the moment the menu loads: summed from slot macros,
   // not from meal items (which stream in a beat later).
   readonly selectedMenuTotals = computed<MenuTotals>(() => {
-    const menu = this.selectedMenu();
+    const id = this.selectedMenuId();
+    return this.menuTotals(id ?? undefined);
+  });
+
+  /** Summed slot macros for a menu by id — the same source the top macro bars
+   *  use. Reads the cached full Menu (loaded when selected/edited), so totals
+   *  build live as meals are placed and foods added. Zeros for a menu whose
+   *  detail hasn't been fetched yet. Reactive: reads the menusById signal. */
+  menuTotals(menuId: number | null | undefined): MenuTotals {
     const totals: MenuTotals = { proteinG: 0, fatG: 0, carbG: 0, fiberG: 0, calories: 0 };
+    if (menuId == null) return totals;
+    const menu = this.menusById().get(menuId);
     if (!menu) return totals;
     for (const slot of menu.slots) {
       const m = slot.macros;
@@ -213,7 +225,7 @@ export class RotationService {
       totals.calories += m.calories ?? 0;
     }
     return totals;
-  });
+  }
 
   getMeal(mealId: number): Meal | null {
     return this.mealsById().get(mealId) ?? null;
@@ -363,12 +375,11 @@ export class RotationService {
       const regiMenu = this.settingsService.allSettings()?.regiMenu;
       const persons = regiMenu?.persons ?? 1;
       const slotCount = regiMenu?.mealsPerDay ?? 4;
+      const spanDays = this.menuDaysSetting();
 
+      const createBody: CreateRotationRequest = { spanDays, peopleCount: persons };
       const rot = await firstValueFrom(
-        this.http.post<Rotation>(`${this.baseUrl}/rotation`, {
-          spanDays: 7,
-          peopleCount: persons,
-        }),
+        this.http.post<Rotation>(`${this.baseUrl}/rotation`, createBody),
       );
       const menu = await firstValueFrom(
         this.http.post<Menu>(`${this.baseUrl}/menu`, { slotCount }),
@@ -376,7 +387,7 @@ export class RotationService {
       await firstValueFrom(
         this.http.post(`${this.baseUrl}/rotation/${rot.id}/menus`, {
           menuId: menu.id,
-          plannedCount: this.repeatBaseline(7),
+          plannedCount: this.repeatBaseline(spanDays),
         }),
       );
 
@@ -832,6 +843,36 @@ export class RotationService {
   private repeatBaseline(spanDays: number): number {
     const repeats = this.settingsService.allSettings()?.regiMenu?.repeatMeals ?? 1;
     return Math.max(1, Math.min(spanDays, repeats));
+  }
+
+  /** The "Menu-Days" preference (regiMenu.menuDays) — how many Menus/days a new
+   *  rotation spans. Clamped to the API's 2–10 range; defaults to 7. */
+  private menuDaysSetting(): number {
+    const raw = this.settingsService.allSettings()?.regiMenu?.menuDays ?? 7;
+    return Math.max(2, Math.min(10, Math.floor(raw)));
+  }
+
+  /** Apply a new Menu-Days value to the ACTIVE rotation's span. PATCH
+   *  /rotation/{id} { spanDays } and reload so the "n / span days" badge and any
+   *  per-menu plannedCount clamps update live. No-op when no rotation is loaded
+   *  (the value still persists as a preference for the next rotation build). */
+  async setRotationSpanDays(days: number): Promise<void> {
+    const rot = this.rotation();
+    if (!rot?.id) return;
+    const spanDays = Math.max(2, Math.min(10, Math.floor(days)));
+    if (spanDays === rot.spanDays) return;
+    const body: UpdateRotationRequest = { spanDays };
+    try {
+      await firstValueFrom(
+        this.http.patch(`${this.baseUrl}/rotation/${rot.id}`, body),
+      );
+      const detail = await firstValueFrom(
+        this.http.get<RotationDetail>(`${this.baseUrl}/rotation/${rot.id}`),
+      );
+      this.rotation.set(detail);
+    } catch (err) {
+      this.error.set(this.errMessage(err));
+    }
   }
 
   /** Set how many days of the rotation span a menu covers (plannedCount).
