@@ -706,6 +706,16 @@
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: #4da6ff;
+
+  // Circled-i help affordance tucked right after the label text.
+  .info-icon {
+    margin-left: 4px;
+    font-size: 13px;
+    font-weight: 400;
+    color: #7cc0ff;
+    cursor: help;
+    user-select: none;
+  }
 }
 
 // Compact collapse/expand pair sitting to the right of the TYPE dropdown.

@@ -130,15 +130,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 </button>
               }
             </div>
-            <button
-              type="button"
-              class="bar-icon-btn"
-              matTooltip="Close My Foods panel"
-              matTooltipPosition="below"
-              (click)="tabService.closePanel()"
-              aria-label="Close panel">
-              <mat-icon aria-hidden="true">logout</mat-icon>
-            </button>
           </div>
 
           <div class="pane-card carousel-card">
@@ -255,45 +246,23 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               }
             </span>
             <div class="title-right">
-              <!-- Collapse-all (^) / expand-all (v) the accordion, right-aligned
-                   just left of the Total. Curate view only. -->
-              @if (addTo() === 'right') {
-                <button
-                  type="button"
-                  class="picker-fold-btn"
-                  [class.pressed]="allCategoriesCollapsed()"
-                  (click)="collapseAllCategories()"
-                  matTooltip="Collapse all categories"
-                  matTooltipPosition="above"
-                  aria-label="Collapse all">
-                  <mat-icon>expand_less</mat-icon>
-                </button>
-                <button
-                  type="button"
-                  class="picker-fold-btn"
-                  [class.pressed]="!allCategoriesCollapsed()"
-                  (click)="expandAllCategories()"
-                  matTooltip="Expand all categories"
-                  matTooltipPosition="above"
-                  aria-label="Expand all">
-                  <mat-icon>expand_more</mat-icon>
-                </button>
-              }
               <span class="section-title-count">
                 @if (addTo() === 'left') { Total ({{ thisWeekTotal() }}) }
                 @else { Total ({{ bottomListLength() }}) }
               </span>
-              @if (addTo() === 'right') {
-                <button
-                  type="button"
-                  class="section-title-close"
-                  (click)="addTo.set('left'); selectedMyFood.set(null)"
-                  matTooltip="Back to Picks"
-                  matTooltipPosition="below"
-                  aria-label="Close Edit">
-                  ✕
-                </button>
-              }
+              <!-- Leave-panel key at the far right of the header — present in
+                   both Picks and Edit so the user can always exit the panel.
+                   (Exiting Edit back to Picks is the ⟳ toggle in front of the
+                   title.) -->
+              <button
+                type="button"
+                class="bar-icon-btn"
+                matTooltip="Close My Foods panel"
+                matTooltipPosition="below"
+                (click)="tabService.closePanel()"
+                aria-label="Close panel">
+                <mat-icon aria-hidden="true">logout</mat-icon>
+              </button>
             </div>
           </div>
 
@@ -304,7 +273,13 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                  MyFoods can be added to). It's stubbed gray because the
                  real Add flow lives in the phone app. -->
             <div class="type-row">
-              <span class="type-row-label">Display</span>
+              <span class="type-row-label">LIST<span
+                  class="info-icon"
+                  #listTip="matTooltip"
+                  matTooltip="Choose from curated lists, Star (favorite) to make a MyFood, restrict those foods for religious or tolerance issues. You don't need to restrict foods you don't like, just don't favorite."
+                  matTooltipPosition="above"
+                  [matTooltipShowDelay]="0"
+                  (click)="listTip.toggle()">&#9432;</span></span>
               <select
                 class="spin-source-select"
                 [ngModel]="spinSource()"
