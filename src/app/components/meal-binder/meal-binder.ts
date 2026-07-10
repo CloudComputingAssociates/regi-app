@@ -129,7 +129,11 @@ import { Meal, Menu } from '../../models';
                       matTooltip="In your Binder">
                       <mat-icon>description</mat-icon>
                     </button>
-                    <span class="binder-card-name">{{ menu.name }}</span>
+                    <span
+                      class="binder-card-name"
+                      [matTooltip]="menu.name"
+                      matTooltipPosition="below"
+                      [matTooltipShowDelay]="300">{{ menu.name }}</span>
                     <span class="card-cals">{{ round(menu.totalCalories) }} cals</span>
                     <button
                       type="button"
@@ -192,7 +196,11 @@ import { Meal, Menu } from '../../models';
                       (click)="$event.stopPropagation()">
                       <mat-icon>restaurant</mat-icon>
                     </button>
-                    <span class="binder-card-name">{{ meal.name }}</span>
+                    <span
+                      class="binder-card-name"
+                      [matTooltip]="meal.name"
+                      matTooltipPosition="below"
+                      [matTooltipShowDelay]="300">{{ meal.name }}</span>
                     <span class="card-cals">{{ round(meal.totalCalories) }} cals</span>
                     <button
                       type="button"

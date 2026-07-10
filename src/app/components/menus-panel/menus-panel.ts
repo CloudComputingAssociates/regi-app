@@ -74,33 +74,6 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                 (click)="onPrint()">
                 <mat-icon>print</mat-icon>
               </button>
-              <div class="people-control">
-                <span class="people-label">Scale</span>
-                <button
-                  type="button"
-                  class="people-step"
-                  matTooltip="Fewer servings"
-                  [disabled]="rotation.persons() <= 1"
-                  (click)="rotation.setPersons(rotation.persons() - 1)">
-                  −
-                </button>
-                <span class="people-count">{{ rotation.persons() }}</span>
-                <button
-                  type="button"
-                  class="people-step"
-                  matTooltip="More servings"
-                  [disabled]="rotation.persons() >= 12"
-                  (click)="rotation.setPersons(rotation.persons() + 1)">
-                  +
-                </button>
-                <span
-                  class="scale-info"
-                  #scaleTooltip="matTooltip"
-                  matTooltip="# of People to Scale Menus for Shopping List quantities. Default value in Settings / Menu Settings."
-                  matTooltipPosition="above"
-                  [matTooltipShowDelay]="0"
-                  (click)="scaleTooltip.toggle()">&#9432;</span>
-              </div>
 
               <span class="toolbar-spacer"></span>
 
