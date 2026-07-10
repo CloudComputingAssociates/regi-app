@@ -392,7 +392,32 @@ import { MatIconModule } from '@angular/material/icon';
             <div class="settings-section bottom-row">
               <div class="plan-column">
                 <div class="setting-row">
-                  <label class="setting-label">Meals</label>
+                  <label class="setting-label">Days</label>
+                  <input type="number" min="2" max="10" class="setting-number"
+                    [ngModel]="userSettingsService.menuDays()"
+                    (input)="onMenuDaysChange($event)" />
+                  <span class="info-icon"
+                        #menuDaysTooltip="matTooltip"
+                        matTooltip="Number of Menus (days) to plan at once"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="0"
+                        (click)="menuDaysTooltip.toggle()">&#9432;</span>
+                </div>
+                <div class="setting-row">
+                  <label class="setting-label">Repeats</label>
+                  <input type="number" min="1" class="setting-number"
+                    [ngModel]="userSettingsService.repeatMeals()"
+                    (input)="onRepeatMealsChange($event)" />
+                  <span class="info-icon"
+                        #repeatTooltip="matTooltip"
+                        matTooltip="Repeating a menu saves prep time & grocery $$ money"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="0"
+                        (click)="repeatTooltip.toggle()">&#9432;</span>
+                  <span class="setting-hint">per week</span>
+                </div>
+                <div class="setting-row">
+                  <label class="setting-label">Contains</label>
                   <select
                     class="setting-select"
                     [ngModel]="userSettingsService.mealsPerDay()"
@@ -406,31 +431,6 @@ import { MatIconModule } from '@angular/material/icon';
                     <option [ngValue]="7">7 meals</option>
                     <option [ngValue]="8">8 meals</option>
                   </select>
-                </div>
-                <div class="setting-row">
-                  <label class="setting-label">Menu Repeats</label>
-                  <input type="number" min="1" class="setting-number"
-                    [ngModel]="userSettingsService.repeatMeals()"
-                    (input)="onRepeatMealsChange($event)" />
-                  <span class="info-icon"
-                        #repeatTooltip="matTooltip"
-                        matTooltip="Repeating a menu saves prep time & grocery $$ money"
-                        matTooltipPosition="above"
-                        [matTooltipShowDelay]="0"
-                        (click)="repeatTooltip.toggle()">&#9432;</span>
-                  <span class="setting-hint">per week</span>
-                </div>
-                <div class="setting-row">
-                  <label class="setting-label">Menu-Days</label>
-                  <input type="number" min="2" max="10" class="setting-number"
-                    [ngModel]="userSettingsService.menuDays()"
-                    (input)="onMenuDaysChange($event)" />
-                  <span class="info-icon"
-                        #menuDaysTooltip="matTooltip"
-                        matTooltip="Number of Menus (days) to plan at once"
-                        matTooltipPosition="above"
-                        [matTooltipShowDelay]="0"
-                        (click)="menuDaysTooltip.toggle()">&#9432;</span>
                 </div>
               </div>
 
