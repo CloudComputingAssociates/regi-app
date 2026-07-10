@@ -470,26 +470,23 @@
   padding: 7px 12px;
   font-family: inherit;
   font-size: 13px;
-  // Actionable field — WHITER than the grey inset hint/LIKE-LIMIT boxes so it
-  // reads as "type here", with a deep stepped inset.
-  color: #1c1c1c;
-  background: #dadada;
-  border: 1px solid #8a8a8a;
-  border-top-color: #6a6a6a;
+  // Dark recessed field with the deep stepped inset; WHITE-ish text/placeholder
+  // (actionable) so the "Search foods…" reads clearly, not grey.
+  color: #ffffff;
+  background: #3a3a3a;
+  border: 1px solid #555555;
+  border-top-color: #2b2b2b;
   border-radius: 4px;
   outline: none;
   box-shadow:
-    inset 0 2px 3px rgba(0, 0, 0, 0.4),
-    inset 0 5px 8px rgba(0, 0, 0, 0.2),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.7);
+    inset 0 2px 3px rgba(0, 0, 0, 0.8),
+    inset 0 6px 10px rgba(0, 0, 0, 0.45),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
 
-  &:focus {
-    border-color: #4da6ff;
-    border-top-color: #4da6ff;
-  }
+  &:focus { border-color: #4da6ff; }
 
   &::placeholder {
-    color: #7a7a7a;
+    color: rgba(255, 255, 255, 0.72);
     font-style: italic;
   }
 }
@@ -792,22 +789,22 @@
   padding: 5px 10px;
   font-family: inherit;
   font-size: 12px;
-  // Same actionable whiter field + deep stepped inset as the carousel search.
-  color: #1c1c1c;
-  background: #dadada;
-  border: 1px solid #8a8a8a;
-  border-top-color: #6a6a6a;
+  // Same dark recessed field + deep inset + white-ish text as carousel search.
+  color: #ffffff;
+  background: #3a3a3a;
+  border: 1px solid #555555;
+  border-top-color: #2b2b2b;
   border-radius: 4px;
   outline: none;
   box-shadow:
-    inset 0 2px 3px rgba(0, 0, 0, 0.4),
-    inset 0 5px 8px rgba(0, 0, 0, 0.2),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.7);
+    inset 0 2px 3px rgba(0, 0, 0, 0.8),
+    inset 0 6px 10px rgba(0, 0, 0, 0.45),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
 
-  &:focus { border-color: #4da6ff; border-top-color: #4da6ff; }
+  &:focus { border-color: #4da6ff; }
 
   &::placeholder {
-    color: #7a7a7a;
+    color: rgba(255, 255, 255, 0.72);
     font-style: italic;
   }
 }
@@ -1878,32 +1875,14 @@
   // edge of the divider, where it sits roughly above the star/restrict/delete
   // icons in the food rows beneath. Smaller and dimmer than the title so the
   // category name stays the dominant element.
-  // Uniform recessed box — same inset coloring as the Search Foods field.
-  // Text centered; fixed height so every category header's box matches.
   .category-action-hint {
     flex-shrink: 0;
     margin-left: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    min-width: 88px;
-    height: 24px;
-    padding: 0 10px;
+    padding-right: 4px;
     font-size: 10px;
     font-weight: 500;
     letter-spacing: 0.3px;
-    text-align: center;
-    color: #e8e8e8;
-    // Deep, stepped inset (non-actionable — stays grey).
-    background: #3a3a3a;
-    border: 1px solid #555555;
-    border-top-color: #2b2b2b;
-    border-radius: 4px;
-    box-shadow:
-      inset 0 2px 3px rgba(0, 0, 0, 0.8),
-      inset 0 6px 10px rgba(0, 0, 0, 0.45),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+    color: rgba(77, 166, 255, 0.55);
   }
 
   // "double-click to edit food" hint, rendered only on the FIRST divider

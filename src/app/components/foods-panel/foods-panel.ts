@@ -283,6 +283,24 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <option [value]="list.name">{{ list.description }}</option>
                 }
               </select>
+              <!-- Search foods box, right after the LIST dropdown. -->
+              <input
+                type="text"
+                class="picker-search-input"
+                [value]="pickerSearchQuery()"
+                (input)="onPickerSearchInput($any($event.target).value)"
+                placeholder="Search foods…" />
+              @if (pickerSearchQuery()) {
+                <button
+                  type="button"
+                  class="picker-search-clear"
+                  (click)="pickerSearchQuery.set('')"
+                  matTooltip="Clear search"
+                  matTooltipPosition="below"
+                  aria-label="Clear search">
+                  ✕
+                </button>
+              }
               <!-- Total right-aligned, padded off the list's scrollbar so it
                    reads over the content column. -->
               <span class="top-bar-total picker-search-total">Total ({{ bottomListLength() }})</span>
