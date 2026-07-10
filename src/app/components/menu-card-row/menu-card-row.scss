@@ -164,11 +164,8 @@
   position: absolute;
   top: 4px;
   left: 4px;
-
-  // Pressable (not saved) → white sheet icon (same size as pinned).
-  &:not(.icon-disc-pinned) {
-    color: #ffffff;
-  }
+  // Unpinned uses the shared .icon-disc grey icon (same raised look as +/trash);
+  // pinned = yellow icon + white rim.
 }
 
 .menu-delete {

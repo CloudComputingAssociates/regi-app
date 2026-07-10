@@ -130,11 +130,9 @@
   // so no explicit margins are needed to right-justify the +/trash cluster.
   .pin-disc {
     flex: 0 0 auto;
-
-    // Pressable (not saved) state — white fork/knife (same size as pinned).
-    &:not(.icon-disc-pinned) {
-      color: #ffffff;
-    }
+    // Unpinned pin uses the shared .icon-disc grey icon so it reads as the same
+    // raised/pearly button as the + and trash discs (a white icon washed out the
+    // top-lit shading). Pinned = yellow icon + white rim.
   }
 }
 
