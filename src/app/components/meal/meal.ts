@@ -107,11 +107,11 @@ interface SlotMacros {
       } @else if (isEmpty() && !editing()) {
         <div
           class="slot-placeholder pick"
+          [class.bloom]="dropHighlight()"
           cdkDropList
           [cdkDropListEnterPredicate]="mealDropPredicate"
           (cdkDropListDropped)="onDrop($event)">
           <div class="pick-line">
-            <span>Use AI GenMeal or</span>
             <button
               type="button"
               class="create-btn"
@@ -121,7 +121,7 @@ interface SlotMacros {
               Create
             </button>
           </div>
-          <span class="pick-sub">or pick saved meal</span>
+          <span class="pick-sub">or drag a meal from Meals</span>
         </div>
       } @else {
         <!-- When editing, this body is the food drop target (enterPredicate
@@ -179,6 +179,10 @@ export class MealComponent {
    *  Computed upstream from the resolved Meal so this card stays presentational.
    *  This is the SOLE visual signal — the card body never dims. */
   readonly pinAlive = input<boolean>(false);
+
+  /** True while a Binder meal is being dragged — the empty-slot placeholder
+   *  "blooms" a bright border to advertise it as a valid drop target. */
+  readonly dropHighlight = input<boolean>(false);
 
   /** Emitted when a binder meal is dropped on this (empty) slot. The parent
    *  supplies the menuId and calls the assign endpoint. */

@@ -78,6 +78,11 @@ export class RotationService {
   /** True while a single meal generation is in flight. */
   readonly generating = signal<boolean>(false);
 
+  /** What kind of Binder card is being dragged right now ('meal' | 'menu'), or
+   *  null. Drives the "bloom" highlight on valid drop targets: dragging a meal
+   *  lights the empty meal slots; dragging a menu lights the Add-menu target. */
+  readonly dragging = signal<'meal' | 'menu' | null>(null);
+
   /** Meal ids the user has edited THIS SPA session (rename, item add/remove,
    *  quantity change). Drives the Step-9 teach line on destroy confirms. Simple
    *  in-memory Set — no persistence; cleared on reload. */

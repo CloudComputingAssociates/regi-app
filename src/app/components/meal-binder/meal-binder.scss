@@ -26,6 +26,7 @@
   box-sizing: border-box;
   display: flex;
   align-items: center;
+  justify-content: space-between; // "Meals" left, AI toggle right
   padding: 0 14px;
   background: #2e2e2e;
   border-top: 1px solid #4a4a4a;
@@ -38,78 +39,56 @@
   }
 }
 
-// Collapsible "AI assist" — a thin header that expands to Generate Meal + Twist.
-.ai-assist {
-  flex-shrink: 0;
-}
-
-.ai-assist-head {
-  display: flex;
+// Right-justified AI toggle on the title line: star + chevron. Opens/closes the
+// AI accordion below (the whole thing collapses into this one control).
+.ai-toggle {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 8px 14px;
+  gap: 4px;
+  padding: 2px 4px;
   background: transparent;
   border: none;
-  color: #d8d8d8;
   cursor: pointer;
-  text-align: left;
 
-  .ai-assist-word {
-    flex: 1 1 auto;
-    font-size: 14px;
-    font-weight: 600;
+  .ai-logo {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    &.spinning { animation: binder-spin 1s linear infinite; }
   }
-  .ai-assist-chevron {
+  .ai-toggle-chevron {
     width: 18px;
     height: 18px;
     font-size: 18px;
     color: #9aa0a6;
   }
-
-  &:hover {
-    color: #ffffff;
-    .ai-assist-chevron { color: #c8c8c8; }
-  }
+  &:hover .ai-toggle-chevron { color: #ffffff; }
 }
 
-// Generate Meal button row (shown when AI assist is expanded).
-.genmeal-bar {
-  flex-shrink: 0;
-  display: flex;
+// Star icon in the AI accordion header (peer to .section-icon on Menus/Meals).
+.section-ai-logo {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  &.spinning { animation: binder-spin 1s linear infinite; }
+}
+
+// AI accordion body — ONE compact row: ✦ Create + Twist + dropdown.
+.section-body.ai-body {
+  flex-direction: row;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  margin: 4px 14px 0;
 }
 
-// "✦ AI" indicator. The star logo spins in place while generating.
-.ai-label {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-
-  // Trails the "AI" text, raised a touch like a superscript. The raise uses
-  // `top` (not transform) so it doesn't clash with the spin's rotate.
-  .ai-logo {
-    position: relative;
-    top: -4px;
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
-
-    &.spinning {
-      animation: binder-spin 1s linear infinite;
-    }
-  }
-
-  .ai-text {
-    font-size: 13px;
-    font-weight: 500; // was 700 — read fuzzy; letter-spacing keeps it present
-    letter-spacing: 0.5px;
-    color: #d8d8d8;
-  }
+// The ✦ star inside the Create button.
+.btn-star {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  margin-right: 5px;
+  vertical-align: middle;
 }
 
 // Lighter, raised, pressable buttons — top highlight + drop shadow read as
@@ -292,6 +271,12 @@
     font-size: 14px;
     font-weight: 600;
   }
+  .section-count {
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #7f858b;
+  }
   .section-chevron {
     width: 18px;
     height: 18px;
@@ -317,70 +302,10 @@
 }
 
 // ---- Binder inner accordion groups (Menus / Meals) ----
-.binder-group {
-  display: flex;
-  flex-direction: column;
-}
-
-// Sub-header inside the Binder: indented from the section header, lighter weight.
-.group-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  box-sizing: border-box;
-  margin: 4px 0 0;
-  padding: 4px 14px 4px 20px;
-  background: transparent;
-  border: none;
-  color: #c8c8c8;
-  cursor: pointer;
-  text-align: left;
-
-  .group-icon {
-    width: 16px;
-    height: 16px;
-    font-size: 16px;
-    color: #9aa0a6;
-  }
-  .group-label {
-    font-size: 13px;
-    font-weight: 600;
-  }
-  .group-count {
-    flex: 1 1 auto;
-    font-size: 11px;
-    font-weight: 600;
-    color: #7f858b;
-  }
-  .group-chevron {
-    width: 16px;
-    height: 16px;
-    font-size: 16px;
-    color: #9aa0a6;
-  }
-
-  &:hover {
-    color: #ffffff;
-    .group-icon,
-    .group-chevron {
-      color: #c8c8c8;
-    }
-  }
-}
-
-// Group body sizes to content; the rail-scroll wrapper owns the scrollbar.
-.group-body {
-  padding: 6px 14px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-// Binder MENU card — same card box as a meal card, but the stacked-card
-// silhouette (global) marks it as a menu. Pin (alive, top-left); no trash yet.
-.binder-menu-card {
-  position: relative;
+// Binder cards (menu + meal) share one box + head-row layout. The menu variant
+// additionally carries the global .stacked-card silhouette.
+.binder-menu-card,
+.binder-card {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -389,24 +314,58 @@
   border-radius: 8px;
   background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
 
-  .card-pin {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-  }
+.binder-card {
+  cursor: grab;
+  &:active { cursor: grabbing; }
+}
 
-  .card-delete {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-  }
+// One row: [pin][name (grows)][cals][macro toggle][trash]. Discs are the shared
+// raised .icon-disc; they flow inline here (no absolute positioning).
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 
   .binder-card-name {
-    padding: 2px 32px 0 32px; // clear the pin (left) + trash (right) discs
+    flex: 1 1 auto;
+    min-width: 0;
     font-size: 14px;
     font-weight: 500;
     color: #f1f1f1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // Calories as blue TEXT (not a disk), right-justified — mirrors the board
+  // meal-slot calorie summary.
+  .card-cals {
+    flex: 0 0 auto;
+    font-size: 13px;
+    font-weight: 400;
+    color: #4da6ff;
+    white-space: nowrap;
+  }
+
+  // Chevron that shows/hides the macro disks.
+  .card-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #9aa0a6;
+    cursor: pointer;
+
+    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+    &:hover { color: #ffffff; }
   }
 }
 
@@ -415,46 +374,6 @@
   font-size: 13px;
   line-height: 1.45;
   color: #9aa0a6;
-}
-
-.binder-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid #4a4a4a;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  cursor: grab;
-
-  &:active {
-    cursor: grabbing;
-  }
-
-  // Rail discs use the shared raised .icon-disc chrome; these rules only PLACE
-  // them in the card corners. Pin leads top-left (yellow when pinned via
-  // .icon-disc-pinned); trash top-right.
-  .card-pin {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-  }
-
-  .card-delete {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-  }
-
-  .binder-card-name {
-    // Padded to clear the top-left pin disc and top-right trash disc (24px).
-    padding: 2px 30px 0 32px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #f1f1f1;
-  }
 }
 
 .binder-chips {
@@ -474,9 +393,6 @@
     &.carb { background: #a8541a; } // orange
     &.fat { background: #8a55ab; } // purple
     &.fiber { background: #5e4021; } // brown
-    // Calories disk — the menu-card addition beyond the four macros. Muted blue
-    // (echoes the board meal-card's blue calorie summary), distinct from macros.
-    &.cals { background: #2f5578; }
   }
 }
 

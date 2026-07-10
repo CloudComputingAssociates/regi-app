@@ -24,6 +24,7 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
             [editing]="isEditing(slot.slotOrder)"
             [resolvingItemId]="resolvingItemId()"
             [pinAlive]="pinAliveFor(slot.mealId)"
+            [dropHighlight]="rotation.dragging() === 'meal'"
             (placeMeal)="onPlace($event)"
             (deleteMeal)="onDelete($event)"
             (toggleAdd)="onToggleAdd(slot)"

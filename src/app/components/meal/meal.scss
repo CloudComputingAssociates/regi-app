@@ -67,20 +67,19 @@
     font-size: 14px;
     font-weight: 500;
     color: #f1f1f1;
-    // Recessed field: dark-grey (not black) interior with LIGHTER grey edges and
-    // a strong inset shadow (darker at the top, a hairline light at the bottom)
-    // so it reads as pressed-in with depth.
-    background: #2d2d2d;
-    border: 1px solid #5a5a5a;
-    border-top-color: #4d4d4d;
+    // Recessed field: a LIGHTER mid-grey interior (clearly not black) with light
+    // etched edges and a crisp 1px inset shadow so the depth is visible.
+    background: #414141;
+    border: 1px solid #666666;
+    border-top-color: #5a5a5a;
     border-radius: 4px;
     padding: 3px 8px;
     outline: none;
     cursor: text;
     overflow: hidden;
     box-shadow:
-      inset 0 2px 4px rgba(0, 0, 0, 0.55),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+      inset 0 1px 2px rgba(0, 0, 0, 0.5),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.05);
     transition: border-color 0.12s ease, box-shadow 0.12s ease;
 
     // Reserve room for the commit-arrow so the text doesn't slide under it.
@@ -92,7 +91,7 @@
       border-color: #4da6ff;
       caret-color: #4da6ff;
       box-shadow:
-        inset 0 2px 4px rgba(0, 0, 0, 0.55),
+        inset 0 1px 2px rgba(0, 0, 0, 0.5),
         0 0 0 1px rgba(77, 166, 255, 0.5);
     }
   }
@@ -242,10 +241,21 @@
     }
   }
 
-  // "Use AI GenMeal or [Create]" then "or pick saved meal" beneath.
+  // "[Create]" then "or drag a meal from Meals" beneath.
   &.pick {
     flex-direction: column;
     gap: 8px;
+    border-radius: 6px;
+    transition: box-shadow 0.12s ease, background 0.12s ease;
+
+    // Bloom: while a Binder meal is being dragged, this empty slot advertises
+    // itself as a valid drop target with a bright accent glow.
+    &.bloom {
+      background: rgba(77, 166, 255, 0.08);
+      box-shadow:
+        0 0 0 2px #4da6ff,
+        0 0 12px rgba(77, 166, 255, 0.55);
+    }
   }
 
   .pick-line {

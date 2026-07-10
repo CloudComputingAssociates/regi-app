@@ -1,12 +1,11 @@
 // src/app/components/meal-binder/meal-binder.ts
 //
-// Right-hand rail for the Menus surface. Two collapsible sections:
-//   1. Folder — disposable, unplaced meals (server scope=folder). GenMeal fills
-//      this. Grey pin icon: "Save to your Binder."
-//   2. Binder — pinned meals (server scope=binder). Alive pin icon: "In your Binder."
-// Cards are draggable (CDK) onto empty board slots. Each card carries a Binder
-// pin icon (top-left) to save it — the pin icon is the ONLY state signal; card
-// bodies always render at full opacity. Cards are NOT redesigned.
+// Right-hand rail for the Menus surface. Vertically compact for laptops:
+//   - The "Meals" title line carries a right-justified AI toggle (star + chevron).
+//   - Three top-level accordions: AI (revealed by the toggle), Menus, Meals.
+//   - AI body is a single row: ✦ Create + Twist combobox.
+// The Folder (AI-generated, unplaced meals) is out of scope for V1.0, so it is
+// not shown here. Cards carry a pin icon (yellow = in your Binder) + a trash.
 import {
   ChangeDetectionStrategy,
   Component,
@@ -33,149 +32,100 @@ import { Meal, Menu } from '../../models';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="binder">
+      <!-- Title line: "Meals" + right-justified AI toggle (star + chevron). The
+           AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
         <span class="binder-title">Meals</span>
+        <button
+          type="button"
+          class="ai-toggle"
+          matTooltip="AI meal generation"
+          (click)="aiOpen.set(!aiOpen())">
+          <img src="images/AI-star.png" alt="" class="ai-logo" [class.spinning]="rotation.generating()" />
+          <mat-icon class="ai-toggle-chevron">{{ aiOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+        </button>
       </div>
 
-      <!-- Collapsible "AI assist" — collapsed by default so the Folder/Binder
-           accordion gets the vertical room. The header carries the AI star (spins
-           while generating); expand for Generate Meal + the Twist combo. -->
-      <div class="ai-assist">
-        <button type="button" class="ai-assist-head" (click)="aiOpen.set(!aiOpen())">
-          <span class="ai-label">
-            <span class="ai-text">AI</span>
-            <img
-              src="images/AI-star.png"
-              alt=""
-              class="ai-logo"
-              [class.spinning]="rotation.generating()" />
-          </span>
-          <span class="ai-assist-word">assist</span>
-          <mat-icon class="ai-assist-chevron">{{ aiOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-        </button>
-        @if (aiOpen()) {
-          <div class="genmeal-bar">
-            <button
-              type="button"
-              class="genmeal-btn"
-              matTooltip="Generate a meal with AI"
-              [disabled]="rotation.generating()"
-              (click)="rotation.generateMeal()">
-              Generate Meal
-            </button>
-          </div>
+      <!-- One scrollbar for the whole rail. -->
+      <div class="rail-scroll">
 
-          <!-- Cuisine "Twist" combobox. -->
-          <div class="twist-row">
-            <span class="twist-label">
-              <span class="twist-word">Twist</span>
-              <app-twist-icon />
-            </span>
-            <div class="twist-combo">
-              <input
-                #twistInput
-                type="text"
-                class="twist-input"
-                [value]="twistValue()"
-                placeholder="none"
-                (input)="onTwistInput($any($event.target).value)"
-                (focus)="twistOpen.set(true)"
-                (blur)="onTwistBlur()"
-                (keydown.escape)="twistOpen.set(false)" />
+        <!-- AI accordion — revealed by the title toggle. Star icon in front (vs
+             the fork/knife on Meals). Body is a single compact row. -->
+        @if (aiOpen()) {
+          <div class="rail-section">
+            <button type="button" class="section-head" (click)="aiOpen.set(false)">
+              <img src="images/AI-star.png" alt="" class="section-ai-logo" [class.spinning]="rotation.generating()" />
+              <span class="section-label">AI</span>
+              <mat-icon class="section-chevron">expand_less</mat-icon>
+            </button>
+            <div class="section-body ai-body">
               <button
                 type="button"
-                class="twist-chevron"
-                aria-label="Twist options"
-                (mousedown)="onChevronMouseDown($event)">▾</button>
-              @if (twistOpen()) {
-                <ul class="twist-menu">
-                  @for (opt of twistOptions; track opt) {
-                    <li
-                      class="twist-opt"
-                      [class.selected]="opt === twistValue()"
-                      (mousedown)="selectTwist(opt, $event)">{{ opt }}</li>
-                  }
-                </ul>
-              }
+                class="genmeal-btn"
+                matTooltip="Generate a meal with AI"
+                [disabled]="rotation.generating()"
+                (click)="rotation.generateMeal()">
+                <img src="images/AI-star.png" alt="" class="btn-star" />Create
+              </button>
+              <span class="twist-label"><span class="twist-word">Twist</span><app-twist-icon /></span>
+              <div class="twist-combo">
+                <input
+                  #twistInput
+                  type="text"
+                  class="twist-input"
+                  [value]="twistValue()"
+                  placeholder="none"
+                  (input)="onTwistInput($any($event.target).value)"
+                  (focus)="twistOpen.set(true)"
+                  (blur)="onTwistBlur()"
+                  (keydown.escape)="twistOpen.set(false)" />
+                <button
+                  type="button"
+                  class="twist-chevron"
+                  aria-label="Twist options"
+                  (mousedown)="onChevronMouseDown($event)">▾</button>
+                @if (twistOpen()) {
+                  <ul class="twist-menu">
+                    @for (opt of twistOptions; track opt) {
+                      <li
+                        class="twist-opt"
+                        [class.selected]="opt === twistValue()"
+                        (mousedown)="selectTwist(opt, $event)">{{ opt }}</li>
+                    }
+                  </ul>
+                }
+              </div>
             </div>
           </div>
         }
-      </div>
 
-      <!-- One scrollbar for the whole rail so nothing is stranded off-screen on
-           a short viewport. -->
-      <div class="rail-scroll">
-
-      <!-- V1.0: the Folder (AI-generated, unplaced meals only) is HIDDEN to give
-           the Binder accordion the full rail. Flip showFolder to restore it. -->
-      @if (showFolder) {
-      <div class="rail-section">
-        <button type="button" class="section-head" (click)="folderOpen.set(!folderOpen())">
-          <mat-icon class="section-icon">folder</mat-icon>
-          <span class="section-label">Folder</span>
-          <mat-icon class="section-chevron">{{ folderOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-        </button>
-        @if (folderOpen()) {
-          <div class="section-body" cdkDropList>
-            @for (meal of rotation.folderMeals(); track meal.id) {
-              <div class="binder-card" cdkDrag [cdkDragData]="meal">
-                <button
-                  type="button"
-                  class="card-pin icon-disc"
-                  [class.icon-disc-pinned]="rotation.isPinAlive(meal)"
-                  [matTooltip]="rotation.isPinAlive(meal) ? 'In your Binder' : 'Save to your Binder'"
-                  (click)="$event.stopPropagation(); onPinMeal(meal)">
-                  <mat-icon>menu_book</mat-icon>
-                </button>
-                <button
-                  type="button"
-                  class="card-delete icon-disc icon-disc-danger"
-                  matTooltip="Discard this meal"
-                  (click)="$event.stopPropagation(); rotation.deleteFolderMeal(meal.id)">
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
-                <span class="binder-card-name">{{ cardTitle(meal) }}</span>
-                <div class="binder-chips">
-                  <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
-                  <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
-                  <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
-                  <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
-                </div>
-              </div>
-            } @empty {
-              <p class="binder-empty">No Folder meals — build one by hand or Generate Meal.</p>
-            }
-          </div>
-        }
-      </div>
-      }
-
-      <!-- Binder section: pinned menus + meals (your saved library). Two
-           independently-collapsible groups — Menus on top, Meals below. -->
-      <div class="rail-section">
-        <button type="button" class="section-head" (click)="binderOpen.set(!binderOpen())">
-          <mat-icon class="section-icon">menu_book</mat-icon>
-          <span class="section-label">Binder</span>
-          <mat-icon class="section-chevron">{{ binderOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-        </button>
-        @if (binderOpen()) {
-          <!-- Menus group -->
-          <div class="binder-group">
-            <button type="button" class="group-head" (click)="binderMenusOpen.set(!binderMenusOpen())">
-              <mat-icon class="group-icon">description</mat-icon>
-              <span class="group-label">Menus</span>
-              <span class="group-count">{{ rotation.binderMenus().length }}</span>
-              <mat-icon class="group-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-            </button>
-            @if (binderMenusOpen()) {
-              <div class="group-body">
-                @for (menu of rotation.binderMenus(); track menu.id) {
-                  <div class="binder-menu-card stacked-card" [attr.data-menu-id]="menu.id">
+        <!-- Menus accordion (top-level; larger header). -->
+        <div class="rail-section">
+          <button type="button" class="section-head" (click)="binderMenusOpen.set(!binderMenusOpen())">
+            <mat-icon class="section-icon">description</mat-icon>
+            <span class="section-label">Menus</span>
+            <span class="section-count">{{ rotation.binderMenus().length }}</span>
+            <mat-icon class="section-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
+          @if (binderMenusOpen()) {
+            <div class="section-body">
+              @for (menu of rotation.binderMenus(); track menu.id) {
+                <div class="binder-menu-card stacked-card" [attr.data-menu-id]="menu.id">
+                  <div class="card-head">
                     <button
                       type="button"
                       class="card-pin icon-disc icon-disc-pinned"
                       matTooltip="In your Binder">
                       <mat-icon>description</mat-icon>
+                    </button>
+                    <span class="binder-card-name">{{ menu.name }}</span>
+                    <span class="card-cals">{{ round(menu.totalCalories) }} cals</span>
+                    <button
+                      type="button"
+                      class="card-toggle"
+                      [matTooltip]="isCardOpen('menu-' + menu.id) ? 'Hide macros' : 'Show macros'"
+                      (click)="$event.stopPropagation(); toggleCard('menu-' + menu.id)">
+                      <mat-icon>{{ isCardOpen('menu-' + menu.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
                     </button>
                     <button
                       type="button"
@@ -184,45 +134,58 @@ import { Meal, Menu } from '../../models';
                       (click)="$event.stopPropagation(); onDeleteBinderMenu(menu)">
                       <mat-icon>delete_outline</mat-icon>
                     </button>
-                    <span class="binder-card-name">{{ menu.name }}</span>
-                    <!-- SAME macro disks as meal cards (identical colors + order)
-                         PLUS a calories disk, rendered from the menu's cached
-                         totals — no client aggregation. -->
+                  </div>
+                  <!-- Macro disks hidden until the chevron is flipped; same colors
+                       + order as meal cards. Calories shown as blue text above. -->
+                  @if (isCardOpen('menu-' + menu.id)) {
                     <div class="binder-chips">
                       <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
                       <span class="chip carb">C {{ round(menu.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(menu.totalFatG) }}</span>
                       <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
-                      <span class="chip cals">{{ round(menu.totalCalories) }} cal</span>
                     </div>
-                  </div>
-                } @empty {
-                  <p class="binder-empty">No pinned menus yet — press the sheet icon on a menu to keep it.</p>
-                }
-                <!-- NOTE (Step 4): Binder-menu delete affordance is deferred this
-                     pass — no trashcan on menu cards yet. -->
-              </div>
-            }
-          </div>
+                  }
+                </div>
+              } @empty {
+                <p class="binder-empty">No pinned menus yet — press the sheet icon on a menu to keep it.</p>
+              }
+            </div>
+          }
+        </div>
 
-          <!-- Meals group -->
-          <div class="binder-group">
-            <button type="button" class="group-head" (click)="binderMealsOpen.set(!binderMealsOpen())">
-              <mat-icon class="group-icon">restaurant</mat-icon>
-              <span class="group-label">Meals</span>
-              <span class="group-count">{{ rotation.binderMeals().length }}</span>
-              <mat-icon class="group-chevron">{{ binderMealsOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-            </button>
-            @if (binderMealsOpen()) {
-              <div class="group-body" cdkDropList>
-                @for (meal of rotation.binderMeals(); track meal.id) {
-                  <div class="binder-card" cdkDrag [cdkDragData]="meal">
+        <!-- Meals accordion. -->
+        <div class="rail-section">
+          <button type="button" class="section-head" (click)="binderMealsOpen.set(!binderMealsOpen())">
+            <mat-icon class="section-icon">restaurant</mat-icon>
+            <span class="section-label">Meals</span>
+            <span class="section-count">{{ rotation.binderMeals().length }}</span>
+            <mat-icon class="section-chevron">{{ binderMealsOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
+          @if (binderMealsOpen()) {
+            <div class="section-body" cdkDropList>
+              @for (meal of rotation.binderMeals(); track meal.id) {
+                <div
+                  class="binder-card"
+                  cdkDrag
+                  [cdkDragData]="meal"
+                  (cdkDragStarted)="rotation.dragging.set('meal')"
+                  (cdkDragEnded)="rotation.dragging.set(null)">
+                  <div class="card-head">
                     <button
                       type="button"
                       class="card-pin icon-disc icon-disc-pinned"
                       matTooltip="In your Binder"
                       (click)="$event.stopPropagation()">
                       <mat-icon>menu_book</mat-icon>
+                    </button>
+                    <span class="binder-card-name">{{ meal.name }}</span>
+                    <span class="card-cals">{{ round(meal.totalCalories) }} cals</span>
+                    <button
+                      type="button"
+                      class="card-toggle"
+                      [matTooltip]="isCardOpen('meal-' + meal.id) ? 'Hide macros' : 'Show macros'"
+                      (click)="$event.stopPropagation(); toggleCard('meal-' + meal.id)">
+                      <mat-icon>{{ isCardOpen('meal-' + meal.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
                     </button>
                     <button
                       type="button"
@@ -231,22 +194,23 @@ import { Meal, Menu } from '../../models';
                       (click)="$event.stopPropagation(); onDeleteBinder(meal)">
                       <mat-icon>delete_outline</mat-icon>
                     </button>
-                    <span class="binder-card-name">{{ meal.name }}</span>
+                  </div>
+                  @if (isCardOpen('meal-' + meal.id)) {
                     <div class="binder-chips">
                       <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
                       <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
                       <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
                     </div>
-                  </div>
-                } @empty {
-                  <p class="binder-empty">Nothing saved yet — press the book icon on a meal to keep it.</p>
-                }
-              </div>
-            }
-          </div>
-        }
-      </div>
+                  }
+                </div>
+              } @empty {
+                <p class="binder-empty">Nothing saved yet — press the book icon on a meal to keep it.</p>
+              }
+            </div>
+          }
+        </div>
+
       </div>
     </div>
   `,
@@ -258,30 +222,37 @@ export class MealBinderComponent implements OnInit {
   private dialog = inject(MatDialog);
   private host = inject(ElementRef<HTMLElement>);
 
-  /** V1.0: the Folder section (AI-generated, unplaced meals) is hidden to give
-   *  the Binder the full rail. Flip to true to bring it back. */
-  readonly showFolder = false;
-
-  /** "AI assist" (Generate Meal + Twist) is collapsed by default to save room. */
+  /** AI accordion (Create + Twist) — collapsed by default to save vertical room. */
   readonly aiOpen = signal(false);
-
-  /** Section expand state. */
-  readonly folderOpen = signal(true);
-  readonly binderOpen = signal(true);
-  /** Binder inner groups — both default open. */
+  /** Top-level accordion open state — both default open. */
   readonly binderMenusOpen = signal(true);
   readonly binderMealsOpen = signal(true);
 
+  /** Per-card macro-chip expansion, keyed `menu-{id}` / `meal-{id}`. Chips are
+   *  hidden by default (calories stay visible as text); a chevron reveals them. */
+  private readonly expandedCards = signal<Set<string>>(new Set());
+
+  isCardOpen(key: string): boolean {
+    return this.expandedCards().has(key);
+  }
+
+  toggleCard(key: string): void {
+    this.expandedCards.update((s) => {
+      const next = new Set(s);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }
+
   constructor() {
-    // Step 3: when a menu is pinned, the service sets revealBinderMenuId. Expand
-    // the Binder section + its Menus group and scroll the new entry into view.
+    // When a menu is pinned, the service sets revealBinderMenuId. Expand the
+    // Menus accordion and scroll the new entry into view.
     effect(
       () => {
         const id = this.rotation.revealBinderMenuId();
         if (id == null) return;
-        this.binderOpen.set(true);
         this.binderMenusOpen.set(true);
-        // Wait a tick for the group to render, then bring the card into view.
+        // Wait a tick for the accordion to render, then bring the card into view.
         setTimeout(() => {
           const el = this.host.nativeElement.querySelector(`[data-menu-id="${id}"]`);
           el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -292,15 +263,8 @@ export class MealBinderComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.rotation.loadFolder();
     this.rotation.loadBinder();
     this.rotation.loadBinderMenus();
-  }
-
-  /** Pin a Folder meal to the Binder. Alive icon = already in Binder → no-op. */
-  onPinMeal(meal: Meal): void {
-    if (this.rotation.isPinAlive(meal)) return;
-    void this.rotation.pinMeal(meal.id);
   }
 
   /** Deleting a Binder menu — ask whether its associated meals go too.
@@ -336,15 +300,6 @@ export class MealBinderComponent implements OnInit {
 
   round(n: number | null | undefined): number {
     return Math.round(n ?? 0);
-  }
-
-  /** Card label: the meal's own name, else the primary protein's short name. */
-  cardTitle(meal: Meal): string {
-    const name = meal.name?.trim();
-    if (name) return name;
-    const items = meal.items ?? [];
-    const primary = items.find((i) => i.itemRole === 'primary') ?? items[0];
-    return (primary?.food?.shortDescription?.trim() || primary?.foodName?.trim()) ?? '';
   }
 
   // ----- Cuisine "Twist" combobox (unchanged) ------------------------------
