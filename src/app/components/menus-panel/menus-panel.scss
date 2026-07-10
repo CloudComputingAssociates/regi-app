@@ -64,7 +64,7 @@
 // Same domed family as the steppers; a warm hover marks it as destructive.
 .wipe-menus-btn {
   flex: 0 0 auto;
-  margin-right: 12px;
+  margin-left: 12px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -324,4 +324,45 @@
   flex-direction: row;
   align-items: center;
   gap: 3px;
+}
+
+// Center-screen "drag" encourager — appears while a Binder card is held down
+// (before motion), a yellow bloom pill with an arrow. pointer-events:none so it
+// never blocks the drag.
+.drag-encourager {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  color: #2a2a2a;
+  background: #ffd54f;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 3px rgba(255, 213, 79, 0.35),
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    0 0 34px rgba(255, 213, 79, 0.6);
+  pointer-events: none;
+  animation: drag-encourage-pulse 1s ease-in-out infinite;
+
+  .drag-word {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .mat-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 28px;
+  }
+}
+
+@keyframes drag-encourage-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.06); }
 }

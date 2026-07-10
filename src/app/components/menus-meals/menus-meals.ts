@@ -24,7 +24,7 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
             [editing]="isEditing(slot.slotOrder)"
             [resolvingItemId]="resolvingItemId()"
             [pinAlive]="pinAliveFor(slot.mealId)"
-            [dropHighlight]="rotation.dragging() === 'meal'"
+            [dropHighlight]="dropHighlightFor(slot.slotOrder)"
             (placeMeal)="onPlace($event)"
             (deleteMeal)="onDelete($event)"
             (toggleAdd)="onToggleAdd(slot)"
@@ -55,6 +55,18 @@ export class MenusMealsComponent {
 
   itemsFor(mealId: number | null | undefined): MealItem[] {
     return this.rotation.slotItems(mealId);
+  }
+
+  /** Should this empty slot "bloom" as a meal target? All empty slots light
+   *  while a meal is being dragged; only the NEXT empty slot lights when a Binder
+   *  meal is merely selected (click). meal.ts only paints it when the slot is
+   *  actually empty. */
+  dropHighlightFor(slotOrder: number): boolean {
+    if (this.rotation.dragging() === 'meal') return true;
+    return (
+      this.rotation.selectedCard()?.kind === 'meal' &&
+      this.rotation.nextEmptySlotOrder() === slotOrder
+    );
   }
 
   /** Pin icon state for a slotted meal, resolved from the cached Meal. */

@@ -1,9 +1,11 @@
 // src/app/components/meal-binder/meal-binder.scss
 
-// Fixed-width right column with its own vertical scroll, independent of the
-// canvas. Matches the panel's dark surface with a chrome-grey left divider.
+// Right column: 1/3 of the panel width (proportional — grows on browser resize
+// so menu/meal names stay readable), with its own vertical scroll. Holds a
+// sensible minimum on narrow viewports. Chrome-grey left divider.
 :host {
-  flex: 0 0 300px;
+  flex: 0 0 33.333%;
+  min-width: 300px;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -270,6 +272,7 @@
     flex: 1 1 auto;
     font-size: 14px;
     font-weight: 600;
+    color: #4da6ff; // blue titles (Menus / Meals / AI)
   }
   .section-count {
     flex: 0 0 auto;
@@ -319,6 +322,15 @@
 .binder-card {
   cursor: grab;
   &:active { cursor: grabbing; }
+}
+
+// Single-select: yellow "bloom" border on the clicked card.
+.binder-menu-card.selected,
+.binder-card.selected {
+  border-color: #ffd54f;
+  box-shadow:
+    0 0 0 1px #ffd54f,
+    0 0 12px rgba(255, 213, 79, 0.5);
 }
 
 // One row: [pin][name (grows)][cals][macro toggle][trash]. Discs are the shared

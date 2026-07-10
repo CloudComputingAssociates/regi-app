@@ -83,6 +83,46 @@ export class RotationService {
    *  lights the empty meal slots; dragging a menu lights the Add-menu target. */
   readonly dragging = signal<'meal' | 'menu' | null>(null);
 
+  /** The single-selected Binder card (click to select). Yellow-blooms the card
+   *  and lights its target (next empty meal slot for a meal, +Add menu for a
+   *  menu). Null = nothing selected. */
+  readonly selectedCard = signal<{ kind: 'meal' | 'menu'; id: number } | null>(null);
+
+  /** Center-screen "drag" encourager visibility — shown while a card is held
+   *  down (before motion), hidden once dragging moves or the button releases. */
+  readonly showDragHint = signal<boolean>(false);
+
+  /** Single-select toggle for a Binder card. */
+  selectCard(kind: 'meal' | 'menu', id: number): void {
+    const c = this.selectedCard();
+    this.selectedCard.set(c && c.kind === kind && c.id === id ? null : { kind, id });
+  }
+
+  isCardSelected(kind: 'meal' | 'menu', id: number): boolean {
+    const c = this.selectedCard();
+    return !!c && c.kind === kind && c.id === id;
+  }
+
+  /** The next (first) empty, non-dining-out slot in the selected menu — the
+   *  meal target that lights up. Null when the menu is full / unloaded. */
+  readonly nextEmptySlotOrder = computed<number | null>(() => {
+    const menu = this.selectedMenu();
+    if (!menu) return null;
+    const empty = menu.slots.find((s) => !s.isDiningOut && s.mealId == null);
+    return empty?.slotOrder ?? null;
+  });
+
+  /** True when a MEAL is the active target source (selected or being dragged) —
+   *  the next empty slot should light. */
+  readonly mealTargetHot = computed<boolean>(
+    () => this.selectedCard()?.kind === 'meal' || this.dragging() === 'meal',
+  );
+
+  /** True when a MENU is the active target source — the +Add menu tile lights. */
+  readonly menuTargetHot = computed<boolean>(
+    () => this.selectedCard()?.kind === 'menu' || this.dragging() === 'menu',
+  );
+
   /** Meal ids the user has edited THIS SPA session (rename, item add/remove,
    *  quantity change). Drives the Step-9 teach line on destroy confirms. Simple
    *  in-memory Set — no persistence; cleared on reload. */
@@ -840,6 +880,35 @@ export class RotationService {
       if (menu.id != null) {
         this.selectedMenuId.set(menu.id);
         await this.selectMenu(menu.id);
+      }
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Drop a Binder menu onto "+ Add menu": duplicate it into a fresh working
+   *  copy (so the Binder original stays pristine) and link that copy into the
+   *  current rotation, then reload + select it. */
+  async addMenuToRotation(menuId: number): Promise<void> {
+    const rot = this.rotation();
+    if (!rot?.id) return;
+    try {
+      const copy = await firstValueFrom(
+        this.http.post<Menu>(`${this.baseUrl}/menu/${menuId}/duplicate`, {}),
+      );
+      await firstValueFrom(
+        this.http.post(`${this.baseUrl}/rotation/${rot.id}/menus`, {
+          menuId: copy.id,
+          plannedCount: this.repeatBaseline(rot.spanDays),
+        }),
+      );
+      const detail = await firstValueFrom(
+        this.http.get<RotationDetail>(`${this.baseUrl}/rotation/${rot.id}`),
+      );
+      this.rotation.set(detail);
+      if (copy.id != null) {
+        this.selectedMenuId.set(copy.id);
+        await this.selectMenu(copy.id);
       }
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');

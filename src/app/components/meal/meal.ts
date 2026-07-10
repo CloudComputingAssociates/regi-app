@@ -37,7 +37,7 @@ interface SlotMacros {
             [matTooltip]="pinAlive() ? 'In your Binder' : 'Save to your Binder'"
             matTooltipPosition="above"
             (click)="onPin()">
-            <mat-icon>menu_book</mat-icon>
+            <mat-icon>restaurant</mat-icon>
           </button>
         }
         <div class="header-name">
@@ -121,7 +121,7 @@ interface SlotMacros {
               Create
             </button>
           </div>
-          <span class="pick-sub">or drag a meal from Meals</span>
+          <span class="pick-sub">or drag from <mat-icon class="inline-icon">restaurant</mat-icon> Meals</span>
         </div>
       } @else {
         <!-- When editing, this body is the food drop target (enterPredicate
@@ -139,9 +139,6 @@ interface SlotMacros {
               <span class="chip fat">F {{ round(macros().fatG) }}</span>
               <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
               <span class="meal-cals">{{ calories() }} cals</span>
-              <!-- Etched "Meal N" watermark: floats just under the calories, OUT
-                   of flow (absolute) so it never pushes the food rows down. -->
-              <div class="meal-watermark">Meal {{ slot().slotOrder }}</div>
             </div>
           }
           <div class="food-rows">
@@ -157,6 +154,11 @@ interface SlotMacros {
             <div class="edit-drop-hint">Click or drag a food to add</div>
           }
         </div>
+      }
+
+      <!-- Grey etched positional watermark in the card's LOWER-RIGHT corner. -->
+      @if (slot().mealId != null) {
+        <div class="meal-watermark">Meal {{ slot().slotOrder }}</div>
       }
     </div>
   `,
@@ -275,15 +277,16 @@ export class MealComponent {
     this.dropFood.emit({ food: data.food, serving: data.serving ?? 1 });
   }
 
-  // Drag-data shape guards. Binder MEAL drags carry a Meal ({ id, … }); lookaside
-  // FOOD drags carry { food, serving }. Predicates keep meal drags out of the
-  // food target and food drags out of the empty-slot (meal) target.
+  // Drag-data shape guards. Binder MEAL drags carry a Meal ({ id, mealType, … });
+  // MENU drags carry a Menu ({ id, slots, … }); lookaside FOOD drags carry
+  // { food, serving }. A meal slot accepts ONLY meals — so we exclude food
+  // (has `food`) AND menus (have `slots`), since a Menu also carries `id`.
   private isFoodDrag(d: unknown): boolean {
     return !!d && typeof d === 'object' && 'food' in d;
   }
 
   private isMealDrag(d: unknown): boolean {
-    return !!d && typeof d === 'object' && 'id' in d && !('food' in d);
+    return !!d && typeof d === 'object' && 'id' in d && !('food' in d) && !('slots' in d);
   }
 
   /** Editing meal body accepts ONLY food drags, and only while editing. */

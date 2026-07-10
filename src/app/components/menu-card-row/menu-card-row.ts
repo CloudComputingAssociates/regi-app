@@ -5,20 +5,21 @@
 // A badge tallies planned days against the rotation span, and a disabled
 // "+ Add menu" stub marks the Phase-1 affordance.
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { RotationMenuEntry } from '../../models';
 
 @Component({
   selector: 'app-menu-card-row',
-  imports: [MatTooltipModule, MatIconModule],
+  imports: [DragDropModule, MatTooltipModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="strip">
       <div class="cards">
         @for (menu of menus(); track menu.menuId; let i = $index) {
           <div
-            class="menu-card stacked-card"
+            class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
             (click)="select.emit(menu.menuId)">
             <button
@@ -84,10 +85,18 @@ import { RotationMenuEntry } from '../../models';
                 +
               </button>
             </div>
+            <!-- Grey etched positional watermark (like "Meal N" on meal cards). -->
+            <div class="menu-watermark">Menu {{ letter(i) }}</div>
           </div>
         }
 
-        <button type="button" class="add-menu-link" (click)="addMenu.emit()">+ Add menu</button>
+        <div
+          class="add-menu-link"
+          [class.bloom]="menuTargetHot()"
+          cdkDropList
+          [cdkDropListEnterPredicate]="menuDropPredicate"
+          (cdkDropListDropped)="onMenuDrop($event)"
+          (click)="addMenu.emit()">+ Add menu</div>
       </div>
     </div>
   `,
@@ -97,8 +106,13 @@ export class MenuCardRowComponent {
   readonly menus = input.required<RotationMenuEntry[]>();
   readonly selectedMenuId = input.required<number>();
   readonly spanDays = input.required<number>();
+  /** True when a Binder menu is selected or being dragged — the +Add menu tile
+   *  blooms to advertise it as the drop target. */
+  readonly menuTargetHot = input<boolean>(false);
 
   readonly select = output<number>();
+  /** A Binder menu was dropped on +Add menu (emits its menuId to add it). */
+  readonly dropMenu = output<number>();
   /** Trash on a menu tile (emits the menuId). */
   readonly deleteMenu = output<number>();
   /** Menu-tile pin icon clicked (emits the menuId) — pin the menu to the Binder. */
@@ -121,6 +135,18 @@ export class MenuCardRowComponent {
     this.pinMenu.emit(menu.menuId);
   }
 
+  /** +Add menu accepts ONLY menu drags (a Menu carries `slots`; a Meal doesn't). */
+  readonly menuDropPredicate = (drag: CdkDrag): boolean => {
+    const d = drag.data as unknown;
+    return !!d && typeof d === 'object' && 'slots' in d;
+  };
+
+  /** A Binder menu dropped on +Add menu → add it to the rotation. */
+  onMenuDrop(event: CdkDragDrop<unknown>): void {
+    const menu = event.item.data as { id?: number } | undefined;
+    if (menu?.id != null) this.dropMenu.emit(menu.id);
+  }
+
   /** Show the green commit arrow for the focused tile once it has text. */
   showCommitFor(menuId: number): boolean {
     return this.editingMenuId() === menuId && this.nameDraft().trim() !== '';
@@ -139,9 +165,14 @@ export class MenuCardRowComponent {
     this.renameMenu.emit({ menuId: menu.menuId, name });
   }
 
-  /** Tile label: the menu's own name, else the positional "Menu A/B/C". */
+  /** Tile label: a real custom name if set, else the positional "Menu A/B/C".
+   *  Server defaults are numeric ("Menu 4"), which we treat as unnamed and show
+   *  the LETTER instead — menus are lettered so they never look like numbered
+   *  meals. */
   displayName(menu: RotationMenuEntry, index: number): string {
-    return menu.menuName?.trim() || `Menu ${this.letter(index)}`;
+    const name = menu.menuName?.trim();
+    if (name && !/^menu\s+\d+$/i.test(name)) return name;
+    return `Menu ${this.letter(index)}`;
   }
 
   /** Display label by position: 0→A, 1→B, … Menus are lettered (Menu A/B/C);

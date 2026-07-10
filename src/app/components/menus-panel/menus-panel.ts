@@ -97,7 +97,12 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
 
               <span class="toolbar-spacer"></span>
 
-              <!-- Whole-rotation teardown, adjacent to the progress balloon. -->
+              <!-- Planned-days tally, then the teardown button at the far right. -->
+              <div class="span-badge" [class.complete]="plannedDays() === rotation.rotation()!.spanDays">
+                <span class="check">✓</span>
+                {{ plannedDays() }} / {{ rotation.rotation()!.spanDays }} days
+              </div>
+
               <button
                 type="button"
                 class="wipe-menus-btn"
@@ -105,22 +110,18 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                 (click)="onWipeMenus()">
                 Wipe Menus <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
               </button>
-
-              <!-- Planned-days tally, right-justified in the same bar. -->
-              <div class="span-badge" [class.complete]="plannedDays() === rotation.rotation()!.spanDays">
-                <span class="check">✓</span>
-                {{ plannedDays() }} / {{ rotation.rotation()!.spanDays }} days
-              </div>
             </div>
 
             <app-menu-card-row
               [menus]="rotation.menus()"
               [selectedMenuId]="rotation.selectedMenuId() ?? -1"
               [spanDays]="rotation.rotation()!.spanDays"
+              [menuTargetHot]="rotation.menuTargetHot()"
               (select)="onSelectMenu($event)"
               (deleteMenu)="onDeleteMenu($event)"
               (pinMenu)="rotation.pinMenu($event)"
               (renameMenu)="rotation.updateMenuName($event.menuId, $event.name)"
+              (dropMenu)="rotation.addMenuToRotation($event)"
               (addMenu)="rotation.addMenu()"
               (setDays)="rotation.setMenuDays($event.menuId, $event.plannedCount)" />
 
@@ -188,6 +189,15 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                 (save)="onPopupSave()" />
             </div>
           </div>
+        </div>
+      }
+
+      <!-- Center-screen "drag" encourager — shown only while a Binder card is
+           held down (before motion), cleared once the drag moves or releases. -->
+      @if (rotation.showDragHint()) {
+        <div class="drag-encourager">
+          <span class="drag-word">drag</span>
+          <mat-icon>arrow_forward</mat-icon>
         </div>
       }
     </div>

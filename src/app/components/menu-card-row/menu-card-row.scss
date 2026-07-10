@@ -172,8 +172,12 @@
   right: 4px;
 }
 
-// Live "+ Add menu" — dashed area, white clickable text.
+// Live "+ Add menu" — dashed area, white clickable text; also a drop target for
+// a Binder menu dragged from the rail.
 .add-menu-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-width: 120px;
   border: 2px dashed #5a5a5a;
   border-radius: 8px;
@@ -182,11 +186,37 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.12s ease, color 0.12s ease;
+  transition: border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
 
   &:hover {
     border-color: #4da6ff;
     color: #4da6ff;
   }
+
+  // Bloom: a Binder menu is selected/dragged — this is where it drops.
+  &.bloom {
+    border-color: #ffd54f;
+    border-style: solid;
+    color: #ffd54f;
+    box-shadow:
+      0 0 0 1px #ffd54f,
+      0 0 12px rgba(255, 213, 79, 0.5);
+  }
+}
+
+// Grey etched positional watermark in the tile's lower-right (mirrors the meal
+// card's "Meal N"). Dim + sunken so it reads as carved into the surface.
+.menu-watermark {
+  position: absolute;
+  right: 10px;
+  bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #55585c;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
 }
 

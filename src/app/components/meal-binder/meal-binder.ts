@@ -21,7 +21,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { RotationService } from '../../services/rotation.service';
-import { NotificationService } from '../../services/notification.service';
 import { TwistIconComponent } from '../twist-icon/twist-icon';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 import { Meal, Menu } from '../../models';
@@ -29,13 +28,15 @@ import { Meal, Menu } from '../../models';
 @Component({
   selector: 'app-meal-binder',
   imports: [DragDropModule, MatTooltipModule, MatIconModule, TwistIconComponent],
+  // Releasing the mouse anywhere cancels the "drag" encourager hint.
+  host: { '(document:mouseup)': 'clearDragHint()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="binder">
       <!-- Title line: "Meals" + right-justified AI toggle (star + chevron). The
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
-        <span class="binder-title">Meals</span>
+        <span class="binder-title">Menus &amp; Meals</span>
         <button
           type="button"
           class="ai-toggle"
@@ -108,9 +109,18 @@ import { Meal, Menu } from '../../models';
             <mat-icon class="section-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
           </button>
           @if (binderMenusOpen()) {
-            <div class="section-body">
+            <div class="section-body" cdkDropList>
               @for (menu of rotation.binderMenus(); track menu.id) {
-                <div class="binder-menu-card stacked-card" [attr.data-menu-id]="menu.id">
+                <div
+                  class="binder-menu-card stacked-card"
+                  [class.selected]="rotation.isCardSelected('menu', menu.id ?? -1)"
+                  [attr.data-menu-id]="menu.id"
+                  cdkDrag
+                  [cdkDragData]="menu"
+                  (cdkDragStarted)="rotation.dragging.set('menu'); clearDragHint()"
+                  (cdkDragEnded)="rotation.dragging.set(null)"
+                  (mousedown)="onCardMouseDown()"
+                  (click)="rotation.selectCard('menu', menu.id ?? -1)">
                   <div class="card-head">
                     <button
                       type="button"
@@ -166,17 +176,20 @@ import { Meal, Menu } from '../../models';
               @for (meal of rotation.binderMeals(); track meal.id) {
                 <div
                   class="binder-card"
+                  [class.selected]="rotation.isCardSelected('meal', meal.id)"
                   cdkDrag
                   [cdkDragData]="meal"
-                  (cdkDragStarted)="rotation.dragging.set('meal')"
-                  (cdkDragEnded)="rotation.dragging.set(null)">
+                  (cdkDragStarted)="rotation.dragging.set('meal'); clearDragHint()"
+                  (cdkDragEnded)="rotation.dragging.set(null)"
+                  (mousedown)="onCardMouseDown()"
+                  (click)="rotation.selectCard('meal', meal.id)">
                   <div class="card-head">
                     <button
                       type="button"
                       class="card-pin icon-disc icon-disc-pinned"
                       matTooltip="In your Binder"
                       (click)="$event.stopPropagation()">
-                      <mat-icon>menu_book</mat-icon>
+                      <mat-icon>restaurant</mat-icon>
                     </button>
                     <span class="binder-card-name">{{ meal.name }}</span>
                     <span class="card-cals">{{ round(meal.totalCalories) }} cals</span>
@@ -218,7 +231,6 @@ import { Meal, Menu } from '../../models';
 })
 export class MealBinderComponent implements OnInit {
   readonly rotation = inject(RotationService);
-  private notification = inject(NotificationService);
   private dialog = inject(MatDialog);
   private host = inject(ElementRef<HTMLElement>);
 
@@ -234,6 +246,28 @@ export class MealBinderComponent implements OnInit {
 
   isCardOpen(key: string): boolean {
     return this.expandedCards().has(key);
+  }
+
+  // --- Drag "encourager": while a card is held down (before motion), a center-
+  // screen hint appears. It shows after a short hold (so a quick click-select
+  // doesn't flash it) and is cleared on drag-motion or mouse release. ---
+  private hintTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onCardMouseDown(): void {
+    this.clearHintTimer();
+    this.hintTimer = setTimeout(() => this.rotation.showDragHint.set(true), 180);
+  }
+
+  clearDragHint(): void {
+    this.clearHintTimer();
+    this.rotation.showDragHint.set(false);
+  }
+
+  private clearHintTimer(): void {
+    if (this.hintTimer) {
+      clearTimeout(this.hintTimer);
+      this.hintTimer = null;
+    }
   }
 
   toggleCard(key: string): void {
@@ -286,16 +320,19 @@ export class MealBinderComponent implements OnInit {
     });
   }
 
-  /** Deleting a Binder meal is destructive to your library — confirm. */
+  /** Deleting a Binder meal — same dark confirm dialog as the menu delete (no
+   *  orange system-alert toast for a routine operation). */
   onDeleteBinder(meal: Meal): void {
-    this.notification.showConfirmation(
-      `Are you sure? Delete your Binder meal "${meal.name}".`,
-      'warning',
-      () => void this.rotation.deleteBinderMeal(meal.id),
-      () => {
-        /* keep it */
+    const id = meal.id;
+    this.dialog.open(WipeConfirmDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: {
+        title: `Delete "${meal.name}"`,
+        message: 'Delete this meal from your Binder?',
+        confirmLabel: 'Delete',
+        onConfirm: () => void this.rotation.deleteBinderMeal(id),
       },
-    );
+    });
   }
 
   round(n: number | null | undefined): number {

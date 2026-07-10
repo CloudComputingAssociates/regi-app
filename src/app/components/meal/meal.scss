@@ -133,14 +133,14 @@
   }
 }
 
-// Etched "Meal N" watermark: FLOATS just under the calories (absolute, anchored
-// to the chips row) so it never pushes the food rows down — they keep their own
-// plane. Dim + sunken (debossed): a muted body with a hairline light rim below
-// so it reads as carved into the card surface. Same family as "Curated MyFoods".
+// Etched "Meal N" watermark, pinned to the card's LOWER-RIGHT corner (absolute
+// to .slot-card), out of flow so it never affects the food rows. Dim + sunken
+// (debossed): a muted body with a hairline light rim below so it reads as carved
+// into the surface. Same engraved family as the menu-tile watermark.
 .meal-watermark {
   position: absolute;
-  top: calc(100% + 3px);
-  right: 0;
+  right: 12px;
+  bottom: 8px;
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -248,13 +248,14 @@
     border-radius: 6px;
     transition: box-shadow 0.12s ease, background 0.12s ease;
 
-    // Bloom: while a Binder meal is being dragged, this empty slot advertises
-    // itself as a valid drop target with a bright accent glow.
+    // Bloom: while a Binder meal is selected/dragged, this empty slot advertises
+    // itself as a valid drop target with a bright YELLOW glow (matches the
+    // selected card + Add-menu target — yellow = "this is where it goes").
     &.bloom {
-      background: rgba(77, 166, 255, 0.08);
+      background: rgba(255, 213, 79, 0.08);
       box-shadow:
-        0 0 0 2px #4da6ff,
-        0 0 12px rgba(77, 166, 255, 0.55);
+        0 0 0 2px #ffd54f,
+        0 0 12px rgba(255, 213, 79, 0.55);
     }
   }
 
@@ -265,7 +266,18 @@
   }
 
   .pick-sub {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
     color: #9aa0a6;
+
+    .inline-icon {
+      width: 15px;
+      height: 15px;
+      font-size: 15px;
+      line-height: 15px;
+      color: #4da6ff; // fork/knife = Meals accent
+    }
   }
 
   // Create = the Add (+) action for an empty slot; a quiet button, not dashed.
