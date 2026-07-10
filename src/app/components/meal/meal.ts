@@ -81,7 +81,7 @@ interface SlotMacros {
             type="button"
             class="icon-disc add-affordance"
             [class.icon-disc-pressed]="editing()"
-            [matTooltip]="editing() ? 'Adding foods (close from the food list)' : 'Add Food item'"
+            [matTooltip]="editing() ? 'Adding foods (close from the food list)' : 'Add food to meal'"
             matTooltipPosition="above"
             (click)="toggleAdd.emit()">
             <mat-icon>add</mat-icon>
