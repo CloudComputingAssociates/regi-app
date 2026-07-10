@@ -268,13 +268,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                  MyFoods can be added to). It's stubbed gray because the
                  real Add flow lives in the phone app. -->
             <div class="type-row">
-              <span class="type-row-label">LIST<span
-                  class="info-icon"
-                  #listTip="matTooltip"
-                  matTooltip="Choose from curated lists, Star (favorite) to make a MyFood, restrict those foods for religious or tolerance issues. You don't need to restrict foods you don't like, just don't favorite."
-                  matTooltipPosition="above"
-                  [matTooltipShowDelay]="0"
-                  (click)="listTip.toggle()">&#9432;</span></span>
+              <span class="type-row-label">LIST</span>
               <select
                 class="spin-source-select"
                 [ngModel]="spinSource()"
@@ -289,27 +283,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <option [value]="list.name">{{ list.description }}</option>
                 }
               </select>
-              <!-- Picker-side type-ahead, merged onto the same row as LIST so
-                   the header is a single line: LIST · dropdown · SEARCH · Total.
-                   Filters the accordion rows below as the user types. -->
-              <span class="picker-search-label">SEARCH</span>
-              <input
-                type="text"
-                class="picker-search-input"
-                [value]="pickerSearchQuery()"
-                (input)="onPickerSearchInput($any($event.target).value)"
-                placeholder="Search foods…" />
-              @if (pickerSearchQuery()) {
-                <button
-                  type="button"
-                  class="picker-search-clear"
-                  (click)="pickerSearchQuery.set('')"
-                  matTooltip="Clear search"
-                  matTooltipPosition="below"
-                  aria-label="Clear search">
-                  ✕
-                </button>
-              }
+              <!-- Total right-aligned, padded off the list's scrollbar so it
+                   reads over the content column. -->
               <span class="top-bar-total picker-search-total">Total ({{ bottomListLength() }})</span>
             </div>
           }

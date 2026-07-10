@@ -701,34 +701,22 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  // Single header row now: LIST · dropdown · SEARCH · Total.
-  padding: 6px 14px;
+  gap: 6px;
+  // Single header row: LIST · dropdown · … · Total. Extra right padding pushes
+  // the Total off the list's scrollbar so it reads over the content column.
+  padding: 6px 24px 6px 14px;
   background: linear-gradient(180deg, #353535 0%, #2a2a2a 100%);
   border-bottom: 1px solid #1a1a1a;
 }
 
 .type-row-label {
   flex-shrink: 0;
-  // Reserve a fixed slot wide enough for the longest label ("FOOD LIST") so
-  // the dropdown's left edge stays put — and the SEARCH label below uses
-  // the same min-width so its input left-aligns with the dropdown.
-  min-width: 64px;
+  // Hugs the dropdown now (no reserved slot) — tight LIST · dropdown spacing.
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: #4da6ff;
-
-  // Circled-i help affordance tucked right after the label text.
-  .info-icon {
-    margin-left: 4px;
-    font-size: 13px;
-    font-weight: 400;
-    color: #7cc0ff;
-    cursor: help;
-    user-select: none;
-  }
 }
 
 // Compact collapse/expand pair sitting to the right of the TYPE dropdown.
@@ -1421,14 +1409,17 @@
 }
 
 .basket-empty-hint-text {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  // Uniform inset area — same recessed coloring as the Search Foods field, one
+  // fixed width + height across every basket, text centered vertically and
+  // horizontally. `\n` in the hint strings breaks the two lines intentionally.
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 150px;
+  height: 56px;
+  padding: 6px 10px;
   overflow: hidden;
-  // Honor `\n` characters embedded in the hint strings as hard line breaks
-  // (used to deliberately split the longer hint at a chosen comma rather
-  // than letting auto-wrap pick the break point).
   white-space: pre-line;
   font-family: inherit;
   font-size: 13px;
@@ -1437,7 +1428,14 @@
   line-height: 1.3;
   letter-spacing: 0.2px;
   text-align: center;
-  color: rgba(255, 245, 157, 0.75);
+  color: rgba(255, 245, 157, 0.85);
+  background: #414141;
+  border: 1px solid #666666;
+  border-top-color: #5a5a5a;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
 }
 
 // Mini-cards tile in a flex-wrap grid as foods land in the basket. Each card
@@ -1865,14 +1863,30 @@
   // edge of the divider, where it sits roughly above the star/restrict/delete
   // icons in the food rows beneath. Smaller and dimmer than the title so the
   // category name stays the dominant element.
+  // Uniform recessed box — same inset coloring as the Search Foods field.
+  // Text centered; fixed height so every category header's box matches.
   .category-action-hint {
     flex-shrink: 0;
     margin-left: auto;
-    padding-right: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-width: 88px;
+    height: 24px;
+    padding: 0 10px;
     font-size: 10px;
     font-weight: 500;
     letter-spacing: 0.3px;
-    color: rgba(77, 166, 255, 0.55);
+    text-align: center;
+    color: #e8e8e8;
+    background: #414141;
+    border: 1px solid #666666;
+    border-top-color: #5a5a5a;
+    border-radius: 4px;
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.5),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.05);
   }
 
   // "double-click to edit food" hint, rendered only on the FIRST divider
