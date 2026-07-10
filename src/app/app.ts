@@ -14,6 +14,7 @@ import { PaywallComponent } from './components/paywall/paywall';
 import { LoadingOverlayComponent } from './components/loading-overlay/loading-overlay';
 import { SettingsOverlayComponent } from './components/settings-overlay/settings-overlay';
 import { BugOverlayComponent } from './components/bug-overlay/bug-overlay';
+import { MobileAppDialogComponent } from './components/mobile-app-dialog/mobile-app-dialog';
 import { NotificationComponent } from './components/notification/notification';
 import { SubscriptionService } from './services/subscription.service';
 import { SettingsService } from './services/settings.service';
@@ -46,6 +47,7 @@ const LEFT_NAV_PANEL_IDS = new Set([
     LoadingOverlayComponent,
     SettingsOverlayComponent,
     BugOverlayComponent,
+    MobileAppDialogComponent,
     NotificationComponent,
     MatTooltipModule
   ],
@@ -99,6 +101,7 @@ const LEFT_NAV_PANEL_IDS = new Set([
            open state lives on TabService so any UI element can flip it. -->
       <app-settings-overlay />
       <app-bug-overlay />
+      <app-mobile-app-dialog />
       <!-- Notification toast lives at the app root (not inside main-body)
            so its z-index: 9999 punches above the overlays' z-index: 1100.
            Mounted inside main-body, it was trapped in main-body's stacking

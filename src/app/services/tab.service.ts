@@ -271,6 +271,13 @@ export class TabService {
   openBug(): void { this.bugOpen.set(true); }
   closeBug(): void { this.bugOpen.set(false); }
 
+  // Mobile-app "tether" bloom dialog — a small QR/download nudge floated over
+  // the app. Profile menu's "Mobile App" entry flips this; the dialog's red X
+  // (or backdrop click) flips it back.
+  readonly mobileAppOpen = signal(false);
+  openMobileApp(): void { this.mobileAppOpen.set(true); }
+  closeMobileApp(): void { this.mobileAppOpen.set(false); }
+
   // ============================================================
   // Single-active panel APIs (replaces the mat-tab strip model)
   // ============================================================

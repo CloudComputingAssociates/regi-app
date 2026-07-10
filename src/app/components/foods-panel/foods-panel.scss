@@ -448,11 +448,10 @@
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  background: transparent;
-  // Allows the tagline to be absolutely positioned relative to the row, so
-  // it locks to the panel midline regardless of the SEARCH / TOTAL widths
-  // on either side (which are asymmetric and would otherwise drag the
-  // flex-based centering off-axis).
+  // Vertical black band so the "Curated Foods" tagline has room to sit low,
+  // bottom-aligned and centered (see .top-bar-tagline).
+  min-height: 50px;
+  background: #0d0d0d;
   position: relative;
 }
 
@@ -466,22 +465,31 @@
 }
 
 .carousel-search-input {
-  // ~17% of the left-pane width (half the previous 33%) per the user's
-  // "50% of the size" request. Still clamps so it never gets absurdly small.
-  flex: 0 0 17%;
-  min-width: 80px;
+  // A bit larger than before, and the standardized recessed field from Menus &
+  // Meals (menu/meal name box): mid-grey interior, lighter etched top edge,
+  // crisp inset shadow so it reads as sunken.
+  flex: 0 0 24%;
+  min-width: 90px;
   box-sizing: border-box;
-  padding: 5px 10px;
+  padding: 7px 12px;
   font-family: inherit;
-  font-size: 12px;
-  color: #ffffff;
-  background: #1a1a1a;
-  border: 1px solid #555;
+  font-size: 13px;
+  color: #f1f1f1;
+  background: #414141;
+  border: 1px solid #666666;
+  border-top-color: #5a5a5a;
   border-radius: 4px;
   outline: none;
-  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
 
-  &:focus { border-color: #4da6ff; }
+  &:focus {
+    border-color: #4da6ff;
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(77, 166, 255, 0.5);
+  }
 
   &::placeholder {
     color: rgba(255, 255, 255, 0.35);
@@ -530,21 +538,19 @@
 // than TOTAL), so we anchor at left:50% and translate -50%. pointer-events:
 // none so the tagline can never block a click on the underlying row.
 .top-bar-tagline {
+  // Bottom-aligned + horizontally centered in the black band (independent of
+  // the SEARCH / TOTAL widths flanking it). Blue label, not the old debossed
+  // grey watermark.
   position: absolute;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  bottom: 3px;
+  transform: translateX(-50%);
   font-family: inherit;
-  font-size: 16px;
+  font-size: 15px;
   font-style: normal;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.5px;
-  // Debossed / sunken watermark: a DIM body (close to the bar, so it reads as
-  // recessed, not a bright label) with a hairline light rim BELOW the glyphs —
-  // the highlight on the lower cut edge sells "carved into the surface." No
-  // blur keeps the hard engraved feel.
-  color: #55585c;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: #4da6ff;
   user-select: none;
   pointer-events: none;
   white-space: nowrap;
@@ -651,7 +657,14 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-.section-title-text { flex: 1; min-width: 0; }
+.section-title-text {
+  flex: 1;
+  min-width: 0;
+  // Inline-flex so the label + its small (n) count align on the baseline.
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+}
 
 // LHS-only override: the MyFoods heading should size to content so the
 // Curate pill sits to its right (with a generous ~1/2" of breathing room)
@@ -670,14 +683,16 @@
 .title-right { display: flex; align-items: center; gap: 6px; }
 .right-pane .title-right { margin-left: auto; }
 
+// Small parenthesized count that trails the heading like a subscript — e.g.
+// "Picks (32)". Deliberately small, non-bold, non-italic so it reads as a quiet
+// tally rather than a second title.
 .section-title-count {
   flex-shrink: 0;
-  // Match the .category-count in the accordion dividers so the visual
-  // hierarchy reads as: big section title | small "Total (n)" badge | ...
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  margin-left: 3px;
+  font-size: 12px;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.2px;
   color: rgba(77, 166, 255, 0.7);
 }
 
@@ -688,9 +703,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  // Tight bottom edge so the SEARCH row sits 1 px below the dropdown row.
-  // The 1 px border-bottom IS the visible separator now — no padding gap.
-  padding: 4px 14px 1px;
+  // Single header row now: LIST · dropdown · SEARCH · Total.
+  padding: 6px 14px;
   background: linear-gradient(180deg, #353535 0%, #2a2a2a 100%);
   border-bottom: 1px solid #1a1a1a;
 }
@@ -769,16 +783,7 @@
 
 // Type-ahead search row — sits between the TYPE row and the accordion list.
 // Filters the visible Food Picker rows live as the user types.
-.picker-search-row {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  // Top-tight so the SEARCH input sits 1 px under the FOOD LIST dropdown.
-  padding: 0 14px 4px;
-  background: linear-gradient(180deg, #303030 0%, #262626 100%);
-  border-bottom: 1px solid #1a1a1a;
-}
+// (.picker-search-row retired — SEARCH now lives inline on the .type-row.)
 
 .picker-search-label {
   flex-shrink: 0;
@@ -1224,17 +1229,19 @@
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  padding-right: 56px; // leaves room for yellow + green on the right
   user-select: none;
 }
 
-// P / S / edit cluster, pushed to the right after the title. The trash gets a
-// ~trashcan-width gap after it (below) so edit isn't fat-fingered into delete.
-.basket-role-controls {
+// One right-aligned control cluster: pencil, trash, then the (−)/(+) discs, all
+// vertically centered on a shared centerline (align-items:center).
+.basket-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   margin-left: auto;
+
+  // The collapse/expand discs flow inline here now (no longer absolute).
+  .basket-light { position: static; }
 }
 
 .basket-ctl {
@@ -1307,38 +1314,9 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-// Inline trash button — small, transparent background, hover turns red.
-// Sized down 25% from the original (40 → 30) per the spec.
-.basket-trash {
-  flex-shrink: 0;
-  // ~a trashcan's width of separation from the edit pencil so users don't
-  // accidentally clear the basket when reaching to edit.
-  margin-left: 28px;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 50%;
-  color: rgba(255, 255, 255, 0.55);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.12s ease, background 0.12s ease;
-
-  &:hover {
-    color: #ff5f57;
-    background: rgba(80, 0, 0, 0.35);
-  }
-}
-
-.basket-trash-icon {
-  width: 21px;
-  height: 21px;
-  font-size: 21px;
-  line-height: 21px;
-}
+// (Old .basket-trash / .basket-trash-icon retired — the empty-basket delete is
+//  now the shared red .icon-disc.icon-disc-danger, matching the Menus & Meals
+//  card delete. It lives inline in .basket-controls.)
 
 // (Stale .basket-name rule removed — current rule lives above in the
 // compact .basket-face header.)
@@ -1391,18 +1369,6 @@
     opacity: 0.35;
   }
 }
-
-// Yellow + green ride the right corner side-by-side.
-.basket-lights-right {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  display: flex;
-  gap: 6px;
-  z-index: 20;
-}
-
-.basket-lights-right .basket-light { position: static; }
 
 .basket-light-min {
   // Chiffon yellow — paired with the LHS tagline so the minimize disc shares

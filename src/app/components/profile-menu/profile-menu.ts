@@ -45,6 +45,11 @@ import { RoleService } from '../../services/role.service';
           <span>Account</span>
         </button>
 
+        <button mat-menu-item class="menu-item" [class.active]="tabService.mobileAppOpen()" (click)="toggleMobileApp()">
+          <mat-icon>phone_android</mat-icon>
+          <span>Mobile App</span>
+        </button>
+
         <button mat-menu-item class="menu-item" [class.active]="isTabOpen('preferences')" (click)="toggleSettings()">
           <mat-icon>settings</mat-icon>
           <span>Settings</span>
@@ -131,6 +136,14 @@ export class ProfileMenuComponent {
       this.tabService.closeSettings();
     } else {
       this.tabService.openSettings();
+    }
+  }
+
+  toggleMobileApp(): void {
+    if (this.tabService.mobileAppOpen()) {
+      this.tabService.closeMobileApp();
+    } else {
+      this.tabService.openMobileApp();
     }
   }
 

@@ -160,7 +160,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               <span class="top-bar-total">Total ({{ carouselSpinnerFoods().length }})</span>
               <!-- Absolute-centered tagline lives OUTSIDE the flex flow so
                    its position is unaffected by the SEARCH / TOTAL widths. -->
-              <span class="top-bar-tagline">Curated MyFoods</span>
+              <span class="top-bar-tagline">Curated Foods</span>
             </div>
             <!-- Tile grid replaces the old spinning carousel. Tiles fill
                  left-to-right and wrap to the next row; the grid scrolls
@@ -222,7 +222,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               class="bar-icon-btn"
               [class.pressed]="addTo() === 'right'"
               (click)="toggleEditMyFoods()"
-              matTooltip="Edit your Picks — curate faves, set Serving Sizes, recategorize, delete foods you entered"
+              matTooltip="Flip between Edit MyFoods and Picks (of the week)"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350"
               aria-label="Edit Picks">
@@ -236,20 +236,16 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   [matTooltipShowDelay]="350">
                   Picks
                 </span>
+                <span class="section-title-count">({{ thisWeekTotal() }})</span>
               } @else {
                 <span
-                  matTooltip="Edit MyFoods — click 'star' to Favorite, 'circle-line' to Restrict. Double-click a row to edit it, single-press-and-hold the picture to zoom."
-                  matTooltipPosition="below"
-                  [matTooltipShowDelay]="350">
+                  matTooltip="Edit MyFoods — click 'star' to Favorite, 'circle-line' to Restrict. Double-click a row to edit it, single-press-and-hold the picture to zoom.">
                   Edit
                 </span>
+                <span class="section-title-count">({{ bottomListLength() }})</span>
               }
             </span>
             <div class="title-right">
-              <span class="section-title-count">
-                @if (addTo() === 'left') { Total ({{ thisWeekTotal() }}) }
-                @else { Total ({{ bottomListLength() }}) }
-              </span>
               <!-- Leave-panel key at the far right of the header — present in
                    both Picks and Edit so the user can always exit the panel.
                    (Exiting Edit back to Picks is the ⟳ toggle in front of the
@@ -294,32 +290,9 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <option [value]="list.name">{{ list.description }}</option>
                 }
               </select>
-              <span class="column-hint">{{ columnHeaderText() }}</span>
-              @if (spinSource() === 'myfoods') {
-                <!-- Phone-then-label combo button. Whole pill is one click
-                     target so the user can tap either the icon or the text
-                     to open the phone-app placeholder dialog. margin-left:
-                     auto on the wrapper pushes the pair to the right edge
-                     of the type-row. -->
-                <button
-                  type="button"
-                  class="mobile-app-combo"
-                  (click)="openAddDialog()"
-                  matTooltip="Add foods with the mobile app (QR download)"
-                  matTooltipPosition="above"
-                  [matTooltipShowDelay]="350"
-                  aria-label="Add foods with mobile app">
-                  <span class="mobile-app-label">Tether Mobile</span>
-                  <span class="mobile-app-btn" aria-hidden="true">
-                    <mat-icon class="mobile-app-icon">phone_android</mat-icon>
-                  </span>
-                </button>
-              }
-            </div>
-            <!-- Picker-side type-ahead. Independent from the carousel SEARCH;
-                 filters the accordion rows below as the user types so they
-                 can find a specific food without scrolling. -->
-            <div class="picker-search-row">
+              <!-- Picker-side type-ahead, merged onto the same row as LIST so
+                   the header is a single line: LIST · dropdown · SEARCH · Total.
+                   Filters the accordion rows below as the user types. -->
               <span class="picker-search-label">SEARCH</span>
               <input
                 type="text"
@@ -356,30 +329,15 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   (dragover)="onBasketDragOver($event)"
                   (dragleave)="onBasketDragLeave($event, key)"
                   (drop)="onBasketDrop($event, key)">
-                  <!-- Header row: blue title "PROTEINS (6)" + inline trash on
-                       the LEFT, traffic-light pair (yellow restore, green
-                       expand) anchored to the top-RIGHT. -->
+                  <!-- Header row: blue title + one right-aligned control cluster
+                       (pencil, trash, then the collapse/expand discs) sharing a
+                       single centerline. -->
                   <div class="basket-face">
                     <span class="basket-title">
                       {{ basketLabel(key) }} ({{ thisWeekBaskets()[key].length }})
                     </span>
-                    <!-- P / S / edit act on the selected pick in THIS basket
-                         (disabled otherwise). Pencil = Nutrition Facts editor. -->
-                    <div class="basket-role-controls">
-                      <button
-                        type="button"
-                        class="basket-ctl"
-                        [disabled]="!isSelectedInBasket(key)"
-                        (click)="onHeaderSetRole('PrimaryFood')"
-                        matTooltip="Primary Food"
-                        matTooltipPosition="above">P</button>
-                      <button
-                        type="button"
-                        class="basket-ctl"
-                        [disabled]="!isSelectedInBasket(key)"
-                        (click)="onHeaderSetRole('SecondaryFood')"
-                        matTooltip="Secondary Food"
-                        matTooltipPosition="above">S</button>
+                    <div class="basket-controls">
+                      <!-- Pencil = Nutrition Facts editor for the selected pick. -->
                       <button
                         type="button"
                         class="basket-ctl basket-ctl-edit"
@@ -389,33 +347,37 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                         matTooltipPosition="above">
                         <mat-icon class="basket-ctl-icon">edit</mat-icon>
                       </button>
-                    </div>
-                    @if (thisWeekBaskets()[key].length > 0) {
+                      <!-- Empty-basket delete — same red icon-disc as the Menus
+                           & Meals card delete. -->
+                      @if (thisWeekBaskets()[key].length > 0) {
+                        <button
+                          type="button"
+                          class="icon-disc icon-disc-danger basket-del"
+                          (click)="clearBasket(key)"
+                          matTooltip="Empty Basket"
+                          matTooltipPosition="above">
+                          <mat-icon>delete_outline</mat-icon>
+                        </button>
+                      }
+                      <!-- Collapse (−): disabled until the basket is expanded. -->
                       <button
                         type="button"
-                        class="basket-trash"
-                        (click)="clearBasket(key)"
-                        matTooltip="Empty Basket"
+                        class="basket-light basket-light-min"
+                        [disabled]="focusedBasket() !== key"
+                        (click)="focusedBasket.set(null)"
+                        matTooltip="Restore"
                         matTooltipPosition="above">
-                        <mat-icon class="basket-trash-icon">delete_outline</mat-icon>
                       </button>
-                    }
-                  </div>
-                  <div class="basket-lights-right">
-                    <button
-                      type="button"
-                      class="basket-light basket-light-min"
-                      (click)="focusedBasket.set(null)"
-                      matTooltip="Restore"
-                      matTooltipPosition="above">
-                    </button>
-                    <button
-                      type="button"
-                      class="basket-light basket-light-max"
-                      (click)="focusedBasket.set(key)"
-                      matTooltip="Expand"
-                      matTooltipPosition="above">
-                    </button>
+                      <!-- Expand (+): grows the basket, then disables itself. -->
+                      <button
+                        type="button"
+                        class="basket-light basket-light-max"
+                        [disabled]="focusedBasket() === key"
+                        (click)="focusedBasket.set(key)"
+                        matTooltip="Expand"
+                        matTooltipPosition="above">
+                      </button>
+                    </div>
                   </div>
                   @if (thisWeekBaskets()[key].length === 0) {
                     <div class="basket-empty-hint">
@@ -783,31 +745,9 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
         </div>
       }
 
-      <!-- Add Food → phone-app handoff placeholder. The actual flow runs in
-           the phone app; this just nudges the user toward the QR / download. -->
-      @if (showAddDialog()) {
-        <div class="dialog-overlay" (click)="closeAddDialog()">
-          <div class="phone-app-dialog" (click)="$event.stopPropagation()">
-            <button
-              type="button"
-              class="dialog-close"
-              (click)="closeAddDialog()"
-              aria-label="Close">✕</button>
-            <div class="phone-app-icon">📱</div>
-            <h2 class="phone-app-title">Adding food requires the phone app</h2>
-            <p class="phone-app-body">
-              Scan the QR code or download the RegiMenu app to add your own foods.
-            </p>
-            <div class="phone-app-qr-placeholder" aria-hidden="true">QR</div>
-            <button
-              type="button"
-              class="phone-app-cta"
-              (click)="closeAddDialog()">
-              Got it
-            </button>
-          </div>
-        </div>
-      }
+      <!-- (The phone-app "Tether Mobile" handoff moved to a global bloom dialog
+           opened from the profile menu's "Mobile App" entry — see
+           mobile-app-dialog + TabService.mobileAppOpen.) -->
     </div>
   `,
   styleUrls: ['./foods-panel.scss']
@@ -1681,17 +1621,14 @@ export class FoodsPanelComponent {
   /** The currently-selected food in a basket on the right pane (yellow halo). */
   selectedBasketFood = signal<Food | null>(null);
 
-  /** Clicks on the selected tile since selection — drives the
-   *  select → PrimaryFood → SecondaryFood → AnyUse → deselect cycle. */
-  private roleCyclePos = signal<number>(0);
-
-  /** Single-vs-double click discrimination. A tight window keeps the
-   *  role-cycle responsive while still catching the expert double-click. */
+  /** Single-vs-double click discrimination. A tight window catches the expert
+   *  double-click (→ Nutrition Facts) vs. a lone select/deselect click. */
   private tileClickTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** Basket tile click. A fast second click (within the tight window) is a
-   *  double-click → Nutrition Facts (edit serving). A lone click selects, then
-   *  cycles the meal role on subsequent clicks. */
+   *  double-click → Nutrition Facts (edit serving). A lone click just toggles
+   *  the tile's selection (yellow halo). Meal-role (Primary/Secondary) is set
+   *  by AI later, not by clicking through here. */
   onBasketTileClick(food: Food): void {
     if (this.tileClickTimer) {
       clearTimeout(this.tileClickTimer);
@@ -1702,41 +1639,9 @@ export class FoodsPanelComponent {
     }
     this.tileClickTimer = setTimeout(() => {
       this.tileClickTimer = null;
-      this.onBasketTileSingleClick(food);
+      const selected = this.selectedBasketFood();
+      this.selectedBasketFood.set(selected?.id === food.id ? null : food);
     }, 220);
-  }
-
-  /** Lone-click behavior: select an unselected tile (no role change), else
-   *  advance the cycle PrimaryFood → SecondaryFood → AnyUse → deselect. */
-  private onBasketTileSingleClick(food: Food): void {
-    const selected = this.selectedBasketFood();
-    if (selected?.id !== food.id) {
-      this.selectedBasketFood.set(food);
-      this.roleCyclePos.set(0);
-      return;
-    }
-    const pos = this.roleCyclePos() + 1;
-    if (pos === 1) {
-      this.setMealRole(food, 'PrimaryFood');
-      this.roleCyclePos.set(1);
-    } else if (pos === 2) {
-      this.setMealRole(food, 'SecondaryFood');
-      this.roleCyclePos.set(2);
-    } else if (pos === 3) {
-      this.setMealRole(food, 'AnyUse');
-      this.roleCyclePos.set(3);
-    } else {
-      this.selectedBasketFood.set(null);
-      this.roleCyclePos.set(0);
-    }
-  }
-
-  /** Header P / S button — set the selected pick's role directly. */
-  onHeaderSetRole(role: 'PrimaryFood' | 'SecondaryFood'): void {
-    const food = this.selectedBasketFood();
-    if (!food) return;
-    this.setMealRole(food, role);
-    this.roleCyclePos.set(role === 'PrimaryFood' ? 1 : 2);
   }
 
   /** Header pencil — open Nutrition Facts (edit serving) for the selected pick. */
@@ -1754,22 +1659,6 @@ export class FoodsPanelComponent {
     return this.thisWeekBaskets()[key].some(
       f => f.id === sel.id && (f.foodSource ?? 'food') === (sel.foodSource ?? 'food'),
     );
-  }
-
-  /** Write a meal role onto the basket food wherever it lives; the signal
-   *  write triggers the debounced CurrentPicks PUT via persistThisWeek. */
-  private setMealRole(food: Food, role: MealRole): void {
-    this.thisWeekBaskets.update(b => {
-      const next = { ...b } as ThisWeekBaskets;
-      for (const k of this.basketKeys) {
-        next[k] = b[k].map(f =>
-          f.id === food.id && (f.foodSource ?? 'food') === (food.foodSource ?? 'food')
-            ? { ...f, mealRole: role }
-            : f,
-        );
-      }
-      return next;
-    });
   }
 
   // ----- Basket helpers -----
@@ -2064,7 +1953,6 @@ export class FoodsPanelComponent {
     }
   }
 
-  showAddDialog = signal(false);
   showHealthBenefits = signal(false);
 
   /** Live "Make MyFoods baseline match the pick override?" dialog state.
@@ -2246,16 +2134,6 @@ export class FoodsPanelComponent {
       this.nfPopupFood.set(null);
       window.open(url, '_blank', 'noopener');
     }
-  }
-
-  // The "Add My Food" flow runs in the phone app. The web "+" button just
-  // surfaces a placeholder that points users at the QR / download.
-  openAddDialog(): void {
-    this.showAddDialog.set(true);
-  }
-
-  closeAddDialog(): void {
-    this.showAddDialog.set(false);
   }
 
   // ---- Spin carousel ----
