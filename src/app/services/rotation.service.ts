@@ -514,6 +514,20 @@ export class RotationService {
     return null;
   }
 
+  /** Double-click placement of a Binder meal — an alternative to dragging it
+   *  onto a slot. Drops it into the highlighted (selected) menu's first empty
+   *  slot, or a fresh menu's first slot if the current one is full / none exists
+   *  yet (same target the AI "Create Meal" uses). */
+  async placeBinderMeal(mealId: number): Promise<void> {
+    const target = await this.findGenerateTargetSlot();
+    if (!target) return;
+    await this.placeMealInSlot(target.menuId, target.slotOrder, mealId);
+    if (this.selectedMenuId() !== target.menuId) {
+      this.selectedMenuId.set(target.menuId);
+      await this.selectMenu(target.menuId);
+    }
+  }
+
   /** Names of meals the session already knows — meals placed in the selected
    *  menu — so the generator can avoid repeats. */
   private knownMealNames(): string[] {

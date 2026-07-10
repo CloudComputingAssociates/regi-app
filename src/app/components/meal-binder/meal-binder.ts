@@ -189,7 +189,8 @@ import { Meal, Menu } from '../../models';
                   (cdkDragStarted)="rotation.dragging.set('meal'); clearDragHint()"
                   (cdkDragEnded)="rotation.dragging.set(null)"
                   (mousedown)="onCardMouseDown()"
-                  (click)="rotation.selectCard('meal', meal.id)">
+                  (click)="rotation.selectCard('meal', meal.id)"
+                  (dblclick)="rotation.placeBinderMeal(meal.id)">
                   <div class="card-head">
                     <button
                       type="button"

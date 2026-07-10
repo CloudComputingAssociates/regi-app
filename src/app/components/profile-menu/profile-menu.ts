@@ -23,12 +23,12 @@ import { RoleService } from '../../services/role.service';
     } @else if (auth.isAuthenticated$ | async) {
       <!-- Avatar (Apple logo) + the user's NAME — BOTH open the menu. -->
       <div class="profile-trigger">
-        <button class="profile-btn" [matMenuTriggerFor]="menu" aria-label="Open menu">
-          <img [src]="defaultImage" alt="Profile" class="profile-img" />
-        </button>
         <button class="profile-name-btn" [matMenuTriggerFor]="menu">
           <mat-icon class="profile-name-icon">person</mat-icon>
           <span class="profile-name-text">{{ (auth.user$ | async)?.name || 'Account' }}</span>
+        </button>
+        <button class="profile-btn" [matMenuTriggerFor]="menu" aria-label="Open menu">
+          <img [src]="defaultImage" alt="Profile" class="profile-img" />
         </button>
       </div>
 
