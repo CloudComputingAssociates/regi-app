@@ -445,12 +445,9 @@
 .carousel-top-bar {
   flex-shrink: 0;
   display: flex;
-  // Bottom-align the row (search input + TOTAL) so TOTAL sits on the same
-  // baseline as the CURATED FOODS tagline and the RHS PROTEINS title.
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
-  min-height: 46px; // a bit bigger area for the tagline to live in
-  padding: 6px 10px 6px;
+  padding: 5px 10px;
   background: transparent;
   position: relative;
 }
@@ -543,8 +540,8 @@
   // Uppercase; NOT a bright blue label.
   position: absolute;
   left: 50%;
-  bottom: 6px;
-  transform: translateX(-50%);
+  top: 50%;
+  transform: translate(-50%, -50%);
   font-family: inherit;
   font-size: 16px;
   font-style: normal;
@@ -1229,13 +1226,9 @@
   position: relative; // anchor for the centered controls + right-side discs
   flex-shrink: 0;
   display: flex;
-  // Bottom-align the PROTEINS/… title so it lines up with the left pane's
-  // TOTAL + CURATED FOODS baseline. The pencil/trash + discs stay vertically
-  // centered via their own absolute top:50%.
-  align-items: flex-end;
+  align-items: center;
   gap: 6px;
-  padding: 6px 10px;
-  min-height: 42px;
+  padding: 5px 10px;  // tight — content sits up top, no wasted vertical space
   user-select: none;
 }
 
