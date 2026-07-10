@@ -629,29 +629,25 @@
 // RegiMenu app-title — left pane shows "MyFoods", right pane shows "Baskets"
 // or "Curation", so the two panes feel balanced. Optional count rides on the
 // right edge of the title bar.
+// RHS header key-bar — same flat #3a3a3a rounded chrome, inset margin and
+// height as the LHS FILTER bar, so the two panes' top bars are identical. The
+// 28px Edit key drives the height to match the filter bar's category buttons.
 .section-title {
   flex-shrink: 0;
   display: flex;
-  // Center-align so the Curate pill (LHS) and the X close (RHS) sit cleanly
-  // next to the heading text without baseline-shifting button captions.
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  // Balanced top/bottom so the LHS and RHS section-title banners line up
-  // when stacked side-by-side. Tighter than the prior 8/6 so the banner
-  // doesn't dwarf the filter row directly beneath it.
-  padding: 4px 14px;
+  gap: 10px;
+  margin: 6px 8px;
+  padding: 8px 12px;
   color: #4da6ff;
-  // Inter for the section titles too — same family as the app-bar so the
-  // hierarchy reads as "same font, one weight heavier." 700 is bold enough
-  // to feel like a header without the rounded fattening that made Fredoka's
-  // capitals look blurry at this size.
   font-family: 'Inter', 'Roboto', sans-serif;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.1px;
-  background: linear-gradient(180deg, #3a3a3a 0%, #2f2f2f 100%);
-  border-bottom: 1px solid #1a1a1a;
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
@@ -905,30 +901,9 @@
   }
 }
 
-// Invisible mirror of the LHS .filter-bar's vertical footprint, used on
-// the RHS Picks view (which has no filter row of its own) so the basket
-// card below starts at the same Y as the LHS carousel card. Matches:
-//   margin 6/6 + padding 8/8 + border 1+2 + content 28 = 59px footprint
-// Background / border are stripped so it draws nothing; layout space is
-// preserved via explicit height on a single inner row.
-.filter-bar-placeholder {
-  flex-shrink: 0;
-  margin: 6px 8px;
-  padding: 8px 12px;
-  border: 1px solid transparent;
-  border-bottom: 2px solid transparent;
-  border-radius: 10px;
-  background: transparent;
-  box-shadow: none;
-  pointer-events: none;
-  visibility: hidden;
-  // Reserve the same inner content height as one row of .category-radio-btn.
-  &::before {
-    content: '';
-    display: block;
-    height: 28px;
-  }
-}
+// (The invisible .filter-bar-placeholder was retired — the RHS .section-title
+//  is now a real key-bar matching the LHS FILTER bar, so it provides the
+//  top-bar footprint itself and the basket card aligns with the carousel.)
 
 // "Edit..." pill on the LHS section-title — mirrors the FILTER pill's
 // physical raised/inset behavior so the user can tell at a glance whether

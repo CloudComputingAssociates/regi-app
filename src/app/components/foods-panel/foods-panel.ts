@@ -368,11 +368,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
           }
 
           @if (addTo() === 'left') {
-            <!-- Invisible spacer that mirrors the LHS FILTER bar's vertical
-                 footprint so the rounded basket card below starts at the
-                 same Y as the LHS carousel card. Marked aria-hidden +
-                 inert so it never leaks into accessibility / focus order. -->
-            <div class="filter-bar-placeholder" aria-hidden="true"></div>
             <!-- 4 baskets in a 2×2 grid wrapped in the same rounded card
                  chrome as the carousel side, so the two panes feel balanced. -->
             <div class="pane-card basket-card">
