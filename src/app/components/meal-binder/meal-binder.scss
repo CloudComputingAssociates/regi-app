@@ -381,19 +381,24 @@
     text-overflow: ellipsis;
   }
 
-  // Calories as blue TEXT (not a disk), right-justified — mirrors the board
-  // meal-slot calorie summary.
+  // Calories as blue TEXT (not a disk). Also a click target for the macro
+  // dropdown (no visible link) so users have a big, safe toggle away from the
+  // trash — the chevron sits tight to it.
   .card-cals {
     flex: 0 0 auto;
     font-size: 13px;
     font-weight: 400;
     color: #4da6ff;
     white-space: nowrap;
+    cursor: pointer;
+
+    &:hover { color: #7cc0ff; }
   }
 
-  // Chevron that shows/hides the macro disks.
+  // Chevron that shows/hides the macro disks — pulled tight to the cals text.
   .card-toggle {
     flex: 0 0 auto;
+    margin-left: -4px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -409,6 +414,10 @@
     .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
     &:hover { color: #ffffff; }
   }
+
+  // Extra breathing room before the trash so a user aiming for the chevron
+  // (or the cals toggle) doesn't fat-finger the delete.
+  .card-delete { margin-left: 8px; }
 }
 
 .binder-empty {

@@ -136,7 +136,10 @@ import { Meal, Menu } from '../../models';
                       matTooltipClass="binder-name-tip"
                       matTooltipPosition="below"
                       [matTooltipShowDelay]="300">{{ menuDisplayName(menu) }}</span>
-                    <span class="card-cals">{{ round(menu.totalCalories) }} cals</span>
+                    <span
+                      class="card-cals"
+                      matTooltip="Show / hide macros"
+                      (click)="$event.stopPropagation(); toggleCard('menu-' + menu.id)">{{ round(menu.totalCalories) }} cals</span>
                     <button
                       type="button"
                       class="card-toggle"
@@ -206,7 +209,10 @@ import { Meal, Menu } from '../../models';
                       matTooltipClass="binder-name-tip"
                       matTooltipPosition="below"
                       [matTooltipShowDelay]="300">{{ meal.name }}</span>
-                    <span class="card-cals">{{ round(meal.totalCalories) }} cals</span>
+                    <span
+                      class="card-cals"
+                      matTooltip="Show / hide macros"
+                      (click)="$event.stopPropagation(); toggleCard('meal-' + meal.id)">{{ round(meal.totalCalories) }} cals</span>
                     <button
                       type="button"
                       class="card-toggle"
