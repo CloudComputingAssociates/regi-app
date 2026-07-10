@@ -15,6 +15,7 @@ import { LoadingOverlayComponent } from './components/loading-overlay/loading-ov
 import { SettingsOverlayComponent } from './components/settings-overlay/settings-overlay';
 import { BugOverlayComponent } from './components/bug-overlay/bug-overlay';
 import { MobileAppDialogComponent } from './components/mobile-app-dialog/mobile-app-dialog';
+import { WebViewOverlayComponent } from './components/web-view-overlay/web-view-overlay';
 import { NotificationComponent } from './components/notification/notification';
 import { SubscriptionService } from './services/subscription.service';
 import { SettingsService } from './services/settings.service';
@@ -48,6 +49,7 @@ const LEFT_NAV_PANEL_IDS = new Set([
     SettingsOverlayComponent,
     BugOverlayComponent,
     MobileAppDialogComponent,
+    WebViewOverlayComponent,
     NotificationComponent,
     MatTooltipModule
   ],
@@ -77,7 +79,10 @@ const LEFT_NAV_PANEL_IDS = new Set([
                     @if (tip.imageUrl) {
                       <img [src]="tip.imageUrl" alt="" class="tip-bar-thumb" />
                     }
-                    <a [href]="tip.articleUrl" target="_blank" rel="noopener" class="tip-bar-title">{{ tip.title }}</a>
+                    <!-- Open the article in the in-app bloom web viewer (no new
+                         browser window; the user never leaves the app). -->
+                    <a href="javascript:void(0)" class="tip-bar-title"
+                      (click)="tabService.openWebView(tip.articleUrl)">{{ tip.title }}</a>
                   </div>
                   <button class="tip-bar-close" (click)="dismissTip()">✕</button>
                 </div>
@@ -102,6 +107,7 @@ const LEFT_NAV_PANEL_IDS = new Set([
       <app-settings-overlay />
       <app-bug-overlay />
       <app-mobile-app-dialog />
+      <app-web-view-overlay />
       <!-- Notification toast lives at the app root (not inside main-body)
            so its z-index: 9999 punches above the overlays' z-index: 1100.
            Mounted inside main-body, it was trapped in main-body's stacking

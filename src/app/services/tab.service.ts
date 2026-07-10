@@ -278,6 +278,12 @@ export class TabService {
   openMobileApp(): void { this.mobileAppOpen.set(true); }
   closeMobileApp(): void { this.mobileAppOpen.set(false); }
 
+  // In-app web viewer — opens an external page in a bloom iframe overlay instead
+  // of a new browser tab (so the user never leaves the app). null = closed.
+  readonly webViewUrl = signal<string | null>(null);
+  openWebView(url: string): void { this.webViewUrl.set(url); }
+  closeWebView(): void { this.webViewUrl.set(null); }
+
   // ============================================================
   // Single-active panel APIs (replaces the mat-tab strip model)
   // ============================================================

@@ -470,26 +470,26 @@
   padding: 7px 12px;
   font-family: inherit;
   font-size: 13px;
-  color: #f1f1f1;
-  // Exact match to the Menus & Meals meal name-box recessed field.
-  background: #414141;
-  border: 1px solid #666666;
-  border-top-color: #5a5a5a;
+  // Actionable field — WHITER than the grey inset hint/LIKE-LIMIT boxes so it
+  // reads as "type here", with a deep stepped inset.
+  color: #1c1c1c;
+  background: #dadada;
+  border: 1px solid #8a8a8a;
+  border-top-color: #6a6a6a;
   border-radius: 4px;
   outline: none;
   box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.5),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+    inset 0 2px 3px rgba(0, 0, 0, 0.4),
+    inset 0 5px 8px rgba(0, 0, 0, 0.2),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.7);
 
   &:focus {
     border-color: #4da6ff;
-    box-shadow:
-      inset 0 1px 2px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(77, 166, 255, 0.5);
+    border-top-color: #4da6ff;
   }
 
   &::placeholder {
-    color: rgba(255, 255, 255, 0.4);
+    color: #7a7a7a;
     font-style: italic;
   }
 }
@@ -792,17 +792,22 @@
   padding: 5px 10px;
   font-family: inherit;
   font-size: 12px;
-  color: #ffffff;
-  background: #1a1a1a;
-  border: 1px solid #555;
+  // Same actionable whiter field + deep stepped inset as the carousel search.
+  color: #1c1c1c;
+  background: #dadada;
+  border: 1px solid #8a8a8a;
+  border-top-color: #6a6a6a;
   border-radius: 4px;
   outline: none;
-  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 2px 3px rgba(0, 0, 0, 0.4),
+    inset 0 5px 8px rgba(0, 0, 0, 0.2),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.7);
 
-  &:focus { border-color: #4da6ff; }
+  &:focus { border-color: #4da6ff; border-top-color: #4da6ff; }
 
   &::placeholder {
-    color: rgba(255, 255, 255, 0.35);
+    color: #7a7a7a;
     font-style: italic;
   }
 }
@@ -1416,9 +1421,12 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: 150px;
-  height: 56px;
-  padding: 6px 10px;
+  // WIDE (not tall) so each \n line stays on ONE row — 2 rows, no wrap-to-3.
+  // Sized for the longest line ("add ideas for seasonings"); every basket uses
+  // this same box.
+  width: 215px;
+  height: 52px;
+  padding: 6px 14px;
   overflow: hidden;
   white-space: pre-line;
   font-family: inherit;
@@ -1429,13 +1437,15 @@
   letter-spacing: 0.2px;
   text-align: center;
   color: rgba(255, 245, 157, 0.85);
-  background: #414141;
-  border: 1px solid #666666;
-  border-top-color: #5a5a5a;
+  // Deep, stepped inset so it clearly reads as a sunken well.
+  background: #3a3a3a;
+  border: 1px solid #555555;
+  border-top-color: #2b2b2b;
   border-radius: 4px;
   box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.5),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+    inset 0 2px 3px rgba(0, 0, 0, 0.8),
+    inset 0 6px 10px rgba(0, 0, 0, 0.45),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
 }
 
 // Mini-cards tile in a flex-wrap grid as foods land in the basket. Each card
@@ -1505,11 +1515,9 @@
 .basket-mini-remove {
   @extend %app-close-circle;
   position: absolute;
-  // 23 px clears the label strip (min-height 18 + 2/2 padding = 22) plus a
-  // 1 px top margin so the X isn't flush against the image's top edge.
-  // 1 px right margin keeps it tucked into the corner.
-  top: 23px;
-  right: 1px;
+  // Upper-right corner now that the food name lives at the BOTTOM of the card.
+  top: 2px;
+  right: 2px;
   width: 15px;
   height: 15px;
   font-size: 10px;
@@ -1544,12 +1552,17 @@
 
 .basket-mini-card-label {
   position: relative;
+  // Flex-center so the name sits in the TRUE middle of the strip (was riding
+  // high, top-anchored).
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 11px;
   line-height: 1.15;
   color: rgba(255, 255, 255, 0.92);
   background: rgba(0, 0, 0, 0.65);
-  padding: 2px 3px;
-  min-height: 18px;
+  padding: 2px 4px;
+  min-height: 20px;
 }
 
 // RHS rule (reversed): clip-and-ellipsis, same as the LHS. The earlier
@@ -1559,6 +1572,8 @@
 // full name via tooltip / NF popup.
 .basket-mini-card-label-text {
   display: block;
+  min-width: 0;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1880,13 +1895,15 @@
     letter-spacing: 0.3px;
     text-align: center;
     color: #e8e8e8;
-    background: #414141;
-    border: 1px solid #666666;
-    border-top-color: #5a5a5a;
+    // Deep, stepped inset (non-actionable — stays grey).
+    background: #3a3a3a;
+    border: 1px solid #555555;
+    border-top-color: #2b2b2b;
     border-radius: 4px;
     box-shadow:
-      inset 0 1px 2px rgba(0, 0, 0, 0.5),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+      inset 0 2px 3px rgba(0, 0, 0, 0.8),
+      inset 0 6px 10px rgba(0, 0, 0, 0.45),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.08);
   }
 
   // "double-click to edit food" hint, rendered only on the FIRST divider
