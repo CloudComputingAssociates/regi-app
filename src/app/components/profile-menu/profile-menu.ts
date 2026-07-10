@@ -21,24 +21,15 @@ import { RoleService } from '../../services/role.service';
       <!-- While Auth0 is loading, show nothing to avoid flicker -->
       <div class="auth-loading"></div>
     } @else if (auth.isAuthenticated$ | async) {
-      <!-- Greeting moved out to app-bar so the centered title isn't pushed off
-           center by the trailing text. Avatar button still opens the menu. -->
-      <button class="profile-btn" [matMenuTriggerFor]="menu">
-        <img [src]="defaultImage" alt="Profile" class="profile-img" />
+      <!-- The user's NAME is the hyperlinked menu trigger (avatar/name/email
+           block removed from the dropdown). -->
+      <button class="profile-name-btn" [matMenuTriggerFor]="menu">
+        {{ (auth.user$ | async)?.name || 'Account' }}
       </button>
 
       <mat-menu #menu="matMenu" class="profile-menu" [overlapTrigger]="false">
-        @if (auth.user$ | async; as user) {
-          <div class="user-info">
-            <img [src]="defaultImage" alt="Profile" class="menu-img" />
-            <div class="details">
-              <div class="name">{{ user.name }}</div>
-              <div class="email">{{ user.email }}</div>
-            </div>
-          </div>
-        }
-
-        <mat-divider></mat-divider>
+        <!-- Tuxedo-black spacer bar at the top of the menu (just a spacer). -->
+        <div class="menu-tux-spacer"></div>
 
         <button mat-menu-item class="menu-item" [class.active]="isTabOpen('account')" (click)="toggleAccount()">
           <mat-icon>person</mat-icon>
@@ -53,6 +44,13 @@ import { RoleService } from '../../services/role.service';
         <button mat-menu-item class="menu-item" [class.active]="isTabOpen('preferences')" (click)="toggleSettings()">
           <mat-icon>settings</mat-icon>
           <span>Settings</span>
+        </button>
+
+        <!-- Suggestion path for ALL users (the Bug item below is dev/QA-only).
+             Both open the same feedback overlay. -->
+        <button mat-menu-item class="menu-item" [class.active]="tabService.bugOpen()" (click)="toggleBug()">
+          <mat-icon>lightbulb_outline</mat-icon>
+          <span>Submit suggestion</span>
         </button>
 
         @if (roleService.isDevOrQA()) {
