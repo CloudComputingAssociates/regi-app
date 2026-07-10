@@ -38,19 +38,54 @@
   }
 }
 
-// AI label + generation buttons on one row.
+// Collapsible "AI assist" — a thin header that expands to Generate Meal + Twist.
+.ai-assist {
+  flex-shrink: 0;
+}
+
+.ai-assist-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  color: #d8d8d8;
+  cursor: pointer;
+  text-align: left;
+
+  .ai-assist-word {
+    flex: 1 1 auto;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .ai-assist-chevron {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    color: #9aa0a6;
+  }
+
+  &:hover {
+    color: #ffffff;
+    .ai-assist-chevron { color: #c8c8c8; }
+  }
+}
+
+// Generate Meal button row (shown when AI assist is expanded).
 .genmeal-bar {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 12px 14px 0;
+  margin: 4px 14px 0;
 }
 
 // "✦ AI" indicator. The star logo spins in place while generating.
 .ai-label {
   flex-shrink: 0;
-  width: 64px; // matched to .twist-label so GenMeal + the Twist combo align
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -217,6 +252,14 @@
 }
 
 // ---- Collapsible Folder / Binder sections ----
+// One scrollbar for the whole rail — the sections size to content and this
+// wrapper scrolls, so nothing is stranded off-screen on a short viewport.
+.rail-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .rail-section {
   flex-shrink: 0;
   display: flex;
@@ -265,10 +308,8 @@
   }
 }
 
-// Each section body scrolls on its own when its content overflows.
+// Section body sizes to content; the rail-scroll wrapper owns the scrollbar.
 .section-body {
-  max-height: 38vh;
-  overflow-y: auto;
   padding: 8px 14px;
   display: flex;
   flex-direction: column;
@@ -328,10 +369,8 @@
   }
 }
 
-// Each group body scrolls independently when its content overflows.
+// Group body sizes to content; the rail-scroll wrapper owns the scrollbar.
 .group-body {
-  max-height: 32vh;
-  overflow-y: auto;
   padding: 6px 14px 8px;
   display: flex;
   flex-direction: column;
@@ -357,8 +396,14 @@
     left: 5px;
   }
 
+  .card-delete {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+  }
+
   .binder-card-name {
-    padding: 2px 8px 0 32px; // clear the top-left pin disc (no trash on menus)
+    padding: 2px 32px 0 32px; // clear the pin (left) + trash (right) discs
     font-size: 14px;
     font-weight: 500;
     color: #f1f1f1;

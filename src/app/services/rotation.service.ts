@@ -741,6 +741,35 @@ export class RotationService {
     }
   }
 
+  /** Delete a Binder (pinned) menu. DELETE /menu/{id} removes the menu and drops
+   *  its DISPOSABLE meals but KEEPS pinned ones (they stay in your Binder) — the
+   *  "No, keep associated meals" path. When deleteMeals is true ("Yes"), we also
+   *  delete every meal the menu held (captured before deletion), removing them
+   *  from the Binder / any other menu too. Refreshes both Binder groups and the
+   *  board (the menu may also sit in the current rotation). */
+  async deleteBinderMenu(menuId: number, deleteMeals: boolean): Promise<void> {
+    const menu = this.binderMenus().find((m) => m.id === menuId);
+    const mealIds = (menu?.slots ?? [])
+      .map((s) => s.mealId)
+      .filter((id): id is number => id != null);
+    try {
+      await firstValueFrom(this.http.delete(`${this.baseUrl}/menu/${menuId}`));
+      if (deleteMeals && mealIds.length) {
+        // Best-effort: a meal already dropped by the menu delete just 404s.
+        await Promise.allSettled(
+          mealIds.map((id) => firstValueFrom(this.http.delete(`${this.baseUrl}/meal/${id}`))),
+        );
+      }
+      await Promise.all([
+        this.loadBinderMenus(),
+        this.loadBinder(),
+        this.loadCurrentRotation(),
+      ]);
+    } catch (err) {
+      this.notification.show(this.deleteErrMessage(err), 'error');
+    }
+  }
+
   /** Clear a slot's meal (trash on an in-slot meal). DELETE /menu/{id}/slot/{n};
    *  the server decides the occupant's fate — deletes it if unpinned, unlinks it
    *  if pinned (it stays in the Binder). Re-fetch the menu so the slot renders

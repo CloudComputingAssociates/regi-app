@@ -18,12 +18,14 @@ import {
   viewChild,
 } from '@angular/core';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { RotationService } from '../../services/rotation.service';
 import { NotificationService } from '../../services/notification.service';
 import { TwistIconComponent } from '../twist-icon/twist-icon';
-import { Meal } from '../../models';
+import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
+import { Meal, Menu } from '../../models';
 
 @Component({
   selector: 'app-meal-binder',
@@ -35,63 +37,78 @@ import { Meal } from '../../models';
         <span class="binder-title">Meals</span>
       </div>
 
-      <!-- AI label + generation. The star spins while a generation runs; the new
-           meal appears in the Folder below when done. -->
-      <div class="genmeal-bar">
-        <span class="ai-label" matTooltip="AI meal generation">
-          <span class="ai-text">AI</span>
-          <img
-            src="images/AI-star.png"
-            alt=""
-            class="ai-logo"
-            [class.spinning]="rotation.generating()" />
-        </span>
-        <button
-          type="button"
-          class="genmeal-btn"
-          matTooltip="Generate a meal with AI"
-          [disabled]="rotation.generating()"
-          (click)="rotation.generateMeal()">
-          Generate Meal
+      <!-- Collapsible "AI assist" — collapsed by default so the Folder/Binder
+           accordion gets the vertical room. The header carries the AI star (spins
+           while generating); expand for Generate Meal + the Twist combo. -->
+      <div class="ai-assist">
+        <button type="button" class="ai-assist-head" (click)="aiOpen.set(!aiOpen())">
+          <span class="ai-label">
+            <span class="ai-text">AI</span>
+            <img
+              src="images/AI-star.png"
+              alt=""
+              class="ai-logo"
+              [class.spinning]="rotation.generating()" />
+          </span>
+          <span class="ai-assist-word">assist</span>
+          <mat-icon class="ai-assist-chevron">{{ aiOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
         </button>
-      </div>
+        @if (aiOpen()) {
+          <div class="genmeal-bar">
+            <button
+              type="button"
+              class="genmeal-btn"
+              matTooltip="Generate a meal with AI"
+              [disabled]="rotation.generating()"
+              (click)="rotation.generateMeal()">
+              Generate Meal
+            </button>
+          </div>
 
-      <!-- Cuisine "Twist" combobox (unchanged). -->
-      <div class="twist-row">
-        <span class="twist-label">
-          <span class="twist-word">Twist</span>
-          <app-twist-icon />
-        </span>
-        <div class="twist-combo">
-          <input
-            #twistInput
-            type="text"
-            class="twist-input"
-            [value]="twistValue()"
-            placeholder="none"
-            (input)="onTwistInput($any($event.target).value)"
-            (focus)="twistOpen.set(true)"
-            (blur)="onTwistBlur()"
-            (keydown.escape)="twistOpen.set(false)" />
-          <button
-            type="button"
-            class="twist-chevron"
-            aria-label="Twist options"
-            (mousedown)="onChevronMouseDown($event)">▾</button>
-          @if (twistOpen()) {
-            <ul class="twist-menu">
-              @for (opt of twistOptions; track opt) {
-                <li
-                  class="twist-opt"
-                  [class.selected]="opt === twistValue()"
-                  (mousedown)="selectTwist(opt, $event)">{{ opt }}</li>
+          <!-- Cuisine "Twist" combobox. -->
+          <div class="twist-row">
+            <span class="twist-label">
+              <span class="twist-word">Twist</span>
+              <app-twist-icon />
+            </span>
+            <div class="twist-combo">
+              <input
+                #twistInput
+                type="text"
+                class="twist-input"
+                [value]="twistValue()"
+                placeholder="none"
+                (input)="onTwistInput($any($event.target).value)"
+                (focus)="twistOpen.set(true)"
+                (blur)="onTwistBlur()"
+                (keydown.escape)="twistOpen.set(false)" />
+              <button
+                type="button"
+                class="twist-chevron"
+                aria-label="Twist options"
+                (mousedown)="onChevronMouseDown($event)">▾</button>
+              @if (twistOpen()) {
+                <ul class="twist-menu">
+                  @for (opt of twistOptions; track opt) {
+                    <li
+                      class="twist-opt"
+                      [class.selected]="opt === twistValue()"
+                      (mousedown)="selectTwist(opt, $event)">{{ opt }}</li>
+                  }
+                </ul>
               }
-            </ul>
-          }
-        </div>
+            </div>
+          </div>
+        }
       </div>
 
-      <!-- Folder section: disposable, unplaced meals. -->
+      <!-- One scrollbar for the whole rail so nothing is stranded off-screen on
+           a short viewport. -->
+      <div class="rail-scroll">
+
+      <!-- V1.0: the Folder (AI-generated, unplaced meals only) is HIDDEN to give
+           the Binder accordion the full rail. Flip showFolder to restore it. -->
+      @if (showFolder) {
       <div class="rail-section">
         <button type="button" class="section-head" (click)="folderOpen.set(!folderOpen())">
           <mat-icon class="section-icon">folder</mat-icon>
@@ -131,6 +148,7 @@ import { Meal } from '../../models';
           </div>
         }
       </div>
+      }
 
       <!-- Binder section: pinned menus + meals (your saved library). Two
            independently-collapsible groups — Menus on top, Meals below. -->
@@ -158,6 +176,13 @@ import { Meal } from '../../models';
                       class="card-pin icon-disc icon-disc-pinned"
                       matTooltip="In your Binder">
                       <mat-icon>description</mat-icon>
+                    </button>
+                    <button
+                      type="button"
+                      class="card-delete icon-disc icon-disc-danger"
+                      matTooltip="Delete this menu"
+                      (click)="$event.stopPropagation(); onDeleteBinderMenu(menu)">
+                      <mat-icon>delete_outline</mat-icon>
                     </button>
                     <span class="binder-card-name">{{ menu.name }}</span>
                     <!-- SAME macro disks as meal cards (identical colors + order)
@@ -222,6 +247,7 @@ import { Meal } from '../../models';
           </div>
         }
       </div>
+      </div>
     </div>
   `,
   styleUrls: ['./meal-binder.scss'],
@@ -229,9 +255,17 @@ import { Meal } from '../../models';
 export class MealBinderComponent implements OnInit {
   readonly rotation = inject(RotationService);
   private notification = inject(NotificationService);
+  private dialog = inject(MatDialog);
   private host = inject(ElementRef<HTMLElement>);
 
-  /** Section expand state — both default open. Bodies scroll independently. */
+  /** V1.0: the Folder section (AI-generated, unplaced meals) is hidden to give
+   *  the Binder the full rail. Flip to true to bring it back. */
+  readonly showFolder = false;
+
+  /** "AI assist" (Generate Meal + Twist) is collapsed by default to save room. */
+  readonly aiOpen = signal(false);
+
+  /** Section expand state. */
   readonly folderOpen = signal(true);
   readonly binderOpen = signal(true);
   /** Binder inner groups — both default open. */
@@ -267,6 +301,25 @@ export class MealBinderComponent implements OnInit {
   onPinMeal(meal: Meal): void {
     if (this.rotation.isPinAlive(meal)) return;
     void this.rotation.pinMeal(meal.id);
+  }
+
+  /** Deleting a Binder menu — ask whether its associated meals go too.
+   *  Yes = delete the menu AND its meals; No = delete the menu, keep the meals
+   *  in your Binder; Cancel = nothing. */
+  onDeleteBinderMenu(menu: Menu): void {
+    const id = menu.id;
+    if (id == null) return;
+    this.dialog.open(WipeConfirmDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: {
+        title: `Delete "${menu.name}"`,
+        message: 'Do you want all associated meals deleted?',
+        confirmLabel: 'Yes',
+        onConfirm: () => void this.rotation.deleteBinderMenu(id, true),
+        secondaryLabel: 'No',
+        onSecondary: () => void this.rotation.deleteBinderMenu(id, false),
+      },
+    });
   }
 
   /** Deleting a Binder meal is destructive to your library — confirm. */

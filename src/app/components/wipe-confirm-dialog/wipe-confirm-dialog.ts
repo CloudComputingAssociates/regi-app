@@ -18,6 +18,10 @@ interface WipeDialogData {
   teachLine?: string;
   confirmLabel?: string;
   onConfirm?: () => void;
+  /** Optional MIDDLE action → renders a three-button Yes / No / Cancel row
+   *  (confirm = Yes, secondary = No, Cancel closes). */
+  secondaryLabel?: string;
+  onSecondary?: () => void;
 }
 
 @Component({
@@ -35,6 +39,9 @@ interface WipeDialogData {
       }
       <div class="wipe-dialog-actions">
         <button type="button" class="wipe-action" (click)="onDelete()">{{ confirmLabel }}</button>
+        @if (secondaryLabel) {
+          <button type="button" class="wipe-action" (click)="onSecondaryClick()">{{ secondaryLabel }}</button>
+        }
         <button type="button" class="wipe-action" (click)="onCancel()">Cancel</button>
       </div>
     </div>
@@ -51,6 +58,7 @@ export class WipeConfirmDialogComponent {
     this.data?.message ?? 'Delete all meals from the selected menu? The menu stays; its slots are emptied.';
   readonly teachLine = this.data?.teachLine ?? '';
   readonly confirmLabel = this.data?.confirmLabel ?? 'Delete';
+  readonly secondaryLabel = this.data?.secondaryLabel ?? '';
 
   /** Run the confirm action (default: clear the selected menu's slots), close. */
   onDelete(): void {
@@ -60,6 +68,12 @@ export class WipeConfirmDialogComponent {
       const menuId = this.rotation.selectedMenuId();
       if (menuId != null) void this.rotation.clearMenuMeals(menuId);
     }
+    this.dialogRef.close();
+  }
+
+  /** Middle "No" action (three-button variant). */
+  onSecondaryClick(): void {
+    this.data?.onSecondary?.();
     this.dialogRef.close();
   }
 
