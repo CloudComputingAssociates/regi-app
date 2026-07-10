@@ -117,17 +117,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
           <!-- One control bar: Edit toggle (left), the category filters, then
                the Close-panel key (right). The old "MyFoods" title is gone. -->
           <div class="filter-bar">
-            <button
-              type="button"
-              class="bar-icon-btn"
-              [class.pressed]="addTo() === 'right'"
-              (click)="toggleEditMyFoods()"
-              matTooltip="Edit your Picks — curate faves, set Serving Sizes, recategorize, delete foods you entered"
-              matTooltipPosition="below"
-              [matTooltipShowDelay]="350"
-              aria-label="Edit Picks">
-              <mat-icon aria-hidden="true">autorenew</mat-icon>
-            </button>
             <span class="filter-bar-label">FILTER</span>
             <div class="category-radio-panel" role="group" aria-label="Category filter">
               @for (group of filterGroups; track group.key) {
@@ -235,6 +224,19 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                  that flips back to Baskets. The Curate LHS pill stays in
                  sync as the same toggle. -->
           <div class="section-title">
+            <!-- Edit toggle leads the title (same grey key as the LHS bar), so
+                 the button sits in front of "Picks" / "Edit" in both states. -->
+            <button
+              type="button"
+              class="bar-icon-btn"
+              [class.pressed]="addTo() === 'right'"
+              (click)="toggleEditMyFoods()"
+              matTooltip="Edit your Picks — curate faves, set Serving Sizes, recategorize, delete foods you entered"
+              matTooltipPosition="below"
+              [matTooltipShowDelay]="350"
+              aria-label="Edit Picks">
+              <mat-icon aria-hidden="true">autorenew</mat-icon>
+            </button>
             <span class="section-title-text">
               @if (addTo() === 'left') {
                 <span
@@ -248,7 +250,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   matTooltip="Edit MyFoods — click 'star' to Favorite, 'circle-line' to Restrict. Double-click a row to edit it, single-press-and-hold the picture to zoom."
                   matTooltipPosition="below"
                   [matTooltipShowDelay]="350">
-                  Edit MyFoods
+                  Edit
                 </span>
               }
             </span>
