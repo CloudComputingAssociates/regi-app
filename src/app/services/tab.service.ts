@@ -391,7 +391,7 @@ export class TabService {
       'chat': 'Chat',
       'menus': 'Menus & Meals',
       'shop': 'Shopping List',
-      'foods': 'Foods',
+      'foods': 'My Foods',
       'preferences': 'Settings',
       'account': 'Account',
       'help': 'Help',

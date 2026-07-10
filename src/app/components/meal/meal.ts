@@ -4,7 +4,7 @@
 // ({slotLabel})" with a visual-only inline-edit affordance. Body shows
 // macro chips (P/C/F/Fi grams — never calories) and the food rows. Handles
 // three states: filled, empty (pick a meal), and dining-out.
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
@@ -34,7 +34,8 @@ interface SlotMacros {
             type="button"
             class="icon-disc pin-disc"
             [class.icon-disc-pinned]="pinAlive()"
-            [matTooltip]="pinAlive() ? 'In your Binder' : 'Save to Binder'"
+            [class.save-hint]="saveHint() && !pinAlive()"
+            [matTooltip]="pinAlive() ? 'In your Binder' : 'Save'"
             matTooltipPosition="above"
             (click)="onPin()">
             <mat-icon>restaurant</mat-icon>
@@ -209,6 +210,35 @@ export class MealComponent {
     this.pinMeal.emit();
   }
 
+  /** Green "save me" bloom on the pin disc — a brief (3s) pulse fired when the
+   *  user adds a food (while editing) or renames this meal, nudging them to pin
+   *  it to the Binder. Auto-clears, so it draws attention without nagging. */
+  readonly saveHint = signal(false);
+  private hintTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Last-seen item count, to detect a user-added food (a net increase). */
+  private prevItemsLen: number | null = null;
+
+  constructor() {
+    effect(
+      () => {
+        const len = this.items().length;
+        const editing = this.editing();
+        const prev = this.prevItemsLen;
+        this.prevItemsLen = len;
+        // Only while THIS meal is the active edit target and its food count
+        // grew — skips the initial slot-item stream-in on load.
+        if (prev !== null && len > prev && editing) this.flashSaveHint();
+      },
+      { allowSignalWrites: true },
+    );
+  }
+
+  private flashSaveHint(): void {
+    this.saveHint.set(true);
+    if (this.hintTimer) clearTimeout(this.hintTimer);
+    this.hintTimer = setTimeout(() => this.saveHint.set(false), 3000);
+  }
+
   /** ✎ on a food row — edit that item's serving (parent opens the popup). */
   readonly editItem = output<MealItem>();
 
@@ -252,6 +282,7 @@ export class MealComponent {
     const name = value.trim();
     if (mealId == null || !name || name === this.title().trim()) return;
     this.renameMeal.emit({ mealId, name });
+    this.flashSaveHint();
   }
 
   // Header name = the MEAL's own name (so an edited name shows here), with the

@@ -663,7 +663,6 @@
 // justify-content flips to flex-start so the pair hugs the left edge.
 .left-pane .section-title { justify-content: flex-start; }
 .left-pane .section-title-text { flex: 0 0 auto; }
-.left-pane .curate-toggle { margin-left: 48px; }
 
 // RHS gets the same hug-left treatment so "Picks" / "Edit MyFoods" mirrors
 // the "MyFoods" + Edit layout on the left. The count + close X are pushed
@@ -837,6 +836,8 @@
 // Shared "raised gray control bar" — used by both .display-toggle (right
 // pane) and .filter-bar (left pane). Rounded chrome so the bars feel like
 // physical controls floating above the pane background.
+// Flat macro/Menus-toolbar shade + rounded 1px chrome, so the Foods bars read
+// as the same family as the Menus & Meals toolbar and the macro bar.
 %control-bar {
   flex-shrink: 0;
   display: flex;
@@ -844,13 +845,9 @@
   gap: 8px;
   margin: 6px 8px;
   padding: 8px 12px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
-  border: 1px solid #555;
-  border-bottom: 2px solid #1a1a1a;
-  border-radius: 10px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 2px 4px rgba(0, 0, 0, 0.4);
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
 }
 
 %control-bar-label {
@@ -870,6 +867,43 @@
 }
 
 .filter-bar-label { @extend %control-bar-label; }
+
+// Square icon keys that flank the filter bar — Edit toggle (left) and Close
+// panel (right). Same raised domed-grey chrome as the Menus & Meals toolbar
+// keys (Wipe / Print / Close). The category panel's flex:1 pushes the Close
+// key to the far right. Pressed state (Edit active) sinks inset.
+.bar-icon-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
+  border-radius: 5px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
+
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+
+  &:hover:not(.pressed) {
+    background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%);
+    color: #ffffff;
+  }
+
+  &.pressed {
+    color: #ffffff;
+    background: linear-gradient(180deg, #333333 0%, #3f3f3f 100%);
+    border-top-color: #202020;
+    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.55);
+    transform: translateY(1px);
+  }
+}
 
 // Invisible mirror of the LHS .filter-bar's vertical footprint, used on
 // the RHS Picks view (which has no filter row of its own) so the basket
@@ -901,75 +935,8 @@
 // it's "out" (Picks visible) or "pressed in" (Edit MyFoods active). Only
 // the hue differs: this one is a blue-tinted variant of the gray FILTER
 // pills.
-.curate-toggle {
-  flex-shrink: 0;
-  // Inline row so the revolving-arrows icon sits right after the label.
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  // Nudge 1 px down so the visual center of the pill sits inside the title
-  // band — the cap-height of "MyFoods" pulls the perceived center slightly
-  // above the geometric midline, so the pill needs to drop a touch to look
-  // balanced top/bottom.
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  // Bright avocado-flesh green, white text. Raised (out): bright top → deeper
-  // green bottom for the two-tone dome.
-  color: #ffffff;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
-  background: linear-gradient(180deg, #aed048 0%, #7ba52c 100%);
-  // Symmetric 1px borders all the way around so the border-radius reads
-  // evenly at every corner. Depth comes from the drop-shadow + gradient.
-  border: 1px solid #46591f;      // avocado skin (dark)
-  border-top-color: #d4e29a;      // lightest flesh highlight
-  border-radius: 6px;
-  // Tight balanced vertical padding + tighter horizontal padding so the
-  // pill sits inside the slimmer section-title band without forcing the
-  // whole banner to grow around it.
-  padding: 3px 12px;
-  height: 26px;
-  cursor: pointer;
-  user-select: none;
-  outline: none;
-  box-shadow:
-    0 2px 3px rgba(0, 0, 0, 0.35),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
-  transition: background 0.05s ease, color 0.05s ease;
-
-  &:hover:not(.pressed) {
-    background: linear-gradient(180deg, #bcdc52 0%, #8ab838 100%);
-  }
-
-  // Pressed (in): inverted dark-avocado gradient, inset shadow, white text.
-  &.pressed {
-    color: #ffffff;
-    background: linear-gradient(180deg, #3c4e1e 0%, #567030 100%);
-    border: 1px solid #46591f;
-    border-top-color: #2a3814;
-    box-shadow:
-      inset 0 2px 4px rgba(0, 0, 0, 0.6),
-      0 0 0 1px rgba(150, 180, 80, 0.35);
-    transform: translateY(1px);
-  }
-
-  &:focus-visible {
-    box-shadow:
-      0 2px 3px rgba(0, 0, 0, 0.35),
-      0 0 0 2px rgba(150, 180, 80, 0.65);
-  }
-
-  // Two circular arrows (head-to-tail) — the "revolves between Edit ⟳ Picks"
-  // cue. Sized down to sit on the slim pill.
-  .curate-toggle-icon {
-    width: 15px;
-    height: 15px;
-    font-size: 15px;
-    line-height: 15px;
-    opacity: 0.92;
-  }
-}
+// (The old avocado-green .curate-toggle pill was retired — the Edit toggle is
+//  now the grey .bar-icon-btn on the filter bar.)
 
 // Mobile-app launcher — sits to the right of the Curate pill on the LHS
 // section-title row. Same raised "physical button" treatment as the Curate

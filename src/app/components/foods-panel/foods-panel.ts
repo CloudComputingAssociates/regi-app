@@ -114,28 +114,20 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 carousel cards as a single visual unit, mirroring the basket-
                 card on the right pane. -->
         <div class="left-pane" [style.flex]="leftPaneWidthFraction()">
-          <div class="section-title">
-            <span class="section-title-text">MyFoods</span>
-            <!-- Curate MyFoods pill — blue text on the LHS. Toggles the RHS
-                 between its default Baskets view and the Curate overlay.
-                 Active state inverts to a filled blue chip so the user can
-                 tell at a glance which view is on the right. -->
+          <!-- One control bar: Edit toggle (left), the category filters, then
+               the Close-panel key (right). The old "MyFoods" title is gone. -->
+          <div class="filter-bar">
             <button
               type="button"
-              class="curate-toggle"
+              class="bar-icon-btn"
               [class.pressed]="addTo() === 'right'"
               (click)="toggleEditMyFoods()"
               matTooltip="Edit your Picks — curate faves, set Serving Sizes, recategorize, delete foods you entered"
               matTooltipPosition="below"
-              [matTooltipShowDelay]="350">
-              <span class="curate-toggle-text">@if (addTo() === 'right') { Picks } @else { Edit }</span>
-              <!-- Two circular arrows (head-to-tail) → the button revolves
-                   between Edit ⟳ Picks. -->
-              <mat-icon class="curate-toggle-icon" aria-hidden="true">autorenew</mat-icon>
+              [matTooltipShowDelay]="350"
+              aria-label="Edit Picks">
+              <mat-icon aria-hidden="true">autorenew</mat-icon>
             </button>
-          </div>
-
-          <div class="filter-bar">
             <span class="filter-bar-label">FILTER</span>
             <div class="category-radio-panel" role="group" aria-label="Category filter">
               @for (group of filterGroups; track group.key) {
@@ -149,6 +141,15 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 </button>
               }
             </div>
+            <button
+              type="button"
+              class="bar-icon-btn"
+              matTooltip="Close My Foods panel"
+              matTooltipPosition="below"
+              (click)="tabService.closePanel()"
+              aria-label="Close panel">
+              <mat-icon aria-hidden="true">logout</mat-icon>
+            </button>
           </div>
 
           <div class="pane-card carousel-card">
@@ -240,7 +241,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   matTooltip="You pick foods, as a baseline for Planning your menus"
                   matTooltipPosition="below"
                   [matTooltipShowDelay]="350">
-                  Food Picks
+                  Picks
                 </span>
               } @else {
                 <span
@@ -285,7 +286,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   type="button"
                   class="section-title-close"
                   (click)="addTo.set('left'); selectedMyFood.set(null)"
-                  matTooltip="Back to Food Picks"
+                  matTooltip="Back to Picks"
                   matTooltipPosition="below"
                   aria-label="Close Edit">
                   ✕
@@ -980,7 +981,7 @@ export class FoodsPanelComponent {
     }
   }
 
-  private tabService = inject(TabService);
+  protected tabService = inject(TabService);
   protected preferencesService = inject(FoodPreferencesService);
   private notificationService = inject(NotificationService);
   private userFoodService = inject(UserFoodService);
