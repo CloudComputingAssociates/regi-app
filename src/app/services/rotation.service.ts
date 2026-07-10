@@ -62,6 +62,10 @@ export class RotationService {
   /** The user's Binder meals (pinned) — server truth via GET /meal?scope=binder. */
   readonly binderMeals = signal<Meal[]>([]);
 
+  /** The user's Binder menus (pinned) — server truth via GET /menu?scope=binder.
+   *  First-class citizens alongside Binder meals; carry cached total macros. */
+  readonly binderMenus = signal<Menu[]>([]);
+
   /** The user's Folder meals: unpinned, unplaced disposable meals — server truth
    *  via GET /meal?scope=folder. Replaces the old localStorage-backed candidate
    *  list; the Folder is now server-authoritative, so there is no client persist
@@ -334,6 +338,19 @@ export class RotationService {
     }
   }
 
+  /** Load the Binder MENUS (pinned). GET /menu?scope=binder returns a bare
+   *  Menu[] with cached total macros — the menu cards render from those. */
+  async loadBinderMenus(): Promise<void> {
+    try {
+      const menus = await firstValueFrom(
+        this.http.get<Menu[]>(`${this.baseUrl}/menu`, { params: { scope: 'binder' } }),
+      );
+      this.binderMenus.set(menus ?? []);
+    } catch {
+      this.binderMenus.set([]);
+    }
+  }
+
   /** Generate ONE meal on demand and drop it into the Folder. anchorProtein/
    *  macroTarget are omitted — the server falls back to the user's picks/
    *  preferences and fair-share daily goals.
@@ -454,11 +471,43 @@ export class RotationService {
       const body: UpdateMenuRequest = { pinned: true };
       await firstValueFrom(this.http.put(`${this.baseUrl}/menu/${menuId}`, body));
       await this.refreshMenu(menuId);
-      await this.loadBinder();
+      // Cascade pinned the menu + its slotted meals: refresh BOTH Binder groups.
+      await Promise.all([this.loadBinder(), this.loadBinderMenus()]);
+      // Ask the Binder rail to reveal the newly pinned menu (expand + scroll).
+      this.revealBinderMenuId.set(menuId);
       this.notification.show('Saved to your Binder', 'success');
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
+  }
+
+  /** Set by pinMenu to the menu that should be revealed in the Binder's Menus
+   *  group (the rail effect expands the section/group and scrolls it into view).
+   *  Bumped to a fresh value each pin so re-pinning the same menu re-triggers. */
+  readonly revealBinderMenuId = signal<number | null>(null);
+
+  /** Rename a menu from the board tile — a PURE label write (PUT /menu/{id}
+   *  { name }); the pin state is untouched. Patches the rotation entry's
+   *  menuName locally so the tile updates immediately, and refreshes the Binder
+   *  menus (a pinned menu's Binder card shows the new name). */
+  async updateMenuName(menuId: number, name: string): Promise<void> {
+    try {
+      const body: UpdateMenuRequest = { name };
+      await firstValueFrom(this.http.put(`${this.baseUrl}/menu/${menuId}`, body));
+      this.syncEntryName(menuId, name);
+      await this.loadBinderMenus();
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Patch one rotation menu entry's denormalized `menuName` in the rotation
+   *  signal so the board tile reflects a rename without a full reload. */
+  private syncEntryName(menuId: number, name: string): void {
+    const rot = this.rotation();
+    if (!rot?.menus) return;
+    const menus = rot.menus.map((m) => (m.menuId === menuId ? { ...m, menuName: name } : m));
+    this.rotation.set({ ...rot, menus });
   }
 
   /** Open the food lookaside on a slot: the rail switches from the binder to
@@ -773,7 +822,12 @@ export class RotationService {
     if (!rot?.id) return;
     try {
       await firstValueFrom(this.http.delete(`${this.baseUrl}/rotation/${rot.id}`));
-      await Promise.all([this.loadCurrentRotation(), this.loadFolder(), this.loadBinder()]);
+      await Promise.all([
+        this.loadCurrentRotation(),
+        this.loadFolder(),
+        this.loadBinder(),
+        this.loadBinderMenus(),
+      ]);
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }

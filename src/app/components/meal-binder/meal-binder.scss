@@ -275,6 +275,96 @@
   gap: 10px;
 }
 
+// ---- Binder inner accordion groups (Menus / Meals) ----
+.binder-group {
+  display: flex;
+  flex-direction: column;
+}
+
+// Sub-header inside the Binder: indented from the section header, lighter weight.
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 4px 0 0;
+  padding: 4px 14px 4px 20px;
+  background: transparent;
+  border: none;
+  color: #c8c8c8;
+  cursor: pointer;
+  text-align: left;
+
+  .group-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    color: #9aa0a6;
+  }
+  .group-label {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .group-count {
+    flex: 1 1 auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #7f858b;
+  }
+  .group-chevron {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    color: #9aa0a6;
+  }
+
+  &:hover {
+    color: #ffffff;
+    .group-icon,
+    .group-chevron {
+      color: #c8c8c8;
+    }
+  }
+}
+
+// Each group body scrolls independently when its content overflows.
+.group-body {
+  max-height: 32vh;
+  overflow-y: auto;
+  padding: 6px 14px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+// Binder MENU card — same card box as a meal card, but the stacked-card
+// silhouette (global) marks it as a menu. Pin (alive, top-left); no trash yet.
+.binder-menu-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+
+  .card-pin {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+  }
+
+  .binder-card-name {
+    padding: 2px 8px 0 32px; // clear the top-left pin disc (no trash on menus)
+    font-size: 14px;
+    font-weight: 500;
+    color: #f1f1f1;
+  }
+}
+
 .binder-empty {
   margin: 0;
   font-size: 13px;
@@ -339,6 +429,9 @@
     &.carb { background: #a8541a; } // orange
     &.fat { background: #8a55ab; } // purple
     &.fiber { background: #5e4021; } // brown
+    // Calories disk — the menu-card addition beyond the four macros. Muted blue
+    // (echoes the board meal-card's blue calorie summary), distinct from macros.
+    &.cals { background: #2f5578; }
   }
 }
 

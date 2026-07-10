@@ -120,6 +120,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               (select)="onSelectMenu($event)"
               (deleteMenu)="onDeleteMenu($event)"
               (pinMenu)="rotation.pinMenu($event)"
+              (renameMenu)="rotation.updateMenuName($event.menuId, $event.name)"
               (addMenu)="rotation.addMenu()"
               (setDays)="rotation.setMenuDays($event.menuId, $event.plannedCount)" />
 
