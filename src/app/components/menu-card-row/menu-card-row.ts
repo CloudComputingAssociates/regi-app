@@ -29,6 +29,7 @@ import { RotationService } from '../../services/rotation.service';
                 type="button"
                 class="menu-pin icon-disc"
                 [class.icon-disc-pinned]="menu.pinned"
+                [class.save-hint]="isSaveHintMenu(menu.menuId) && !menu.pinned"
                 [matTooltip]="menu.pinned ? 'In your Binder' : 'Save to Binder'"
                 matTooltipPosition="above"
                 (click)="$event.stopPropagation(); onPin(menu)">
@@ -217,6 +218,34 @@ export class MenuCardRowComponent {
     // No-op on empty or unchanged (the fallback "Menu A" is not a real name).
     if (!name || name === this.displayName(menu, index)) return;
     this.renameMenu.emit({ menuId: menu.menuId, name });
+    this.flashSaveHint(menu.menuId);
+  }
+
+  // Green "save me" pulse on the menu pin — fired ONLY on a name change (not on
+  // meal-add: too much motion). Per-menu, auto-clears after 3s. Mirrors the meal
+  // card's save-hint bloom.
+  private readonly saveHintMenus = signal<Set<number>>(new Set());
+  private hintTimers = new Map<number, ReturnType<typeof setTimeout>>();
+
+  isSaveHintMenu(menuId: number): boolean {
+    return this.saveHintMenus().has(menuId);
+  }
+
+  private flashSaveHint(menuId: number): void {
+    this.saveHintMenus.update((s) => new Set(s).add(menuId));
+    const existing = this.hintTimers.get(menuId);
+    if (existing) clearTimeout(existing);
+    this.hintTimers.set(
+      menuId,
+      setTimeout(() => {
+        this.saveHintMenus.update((s) => {
+          const next = new Set(s);
+          next.delete(menuId);
+          return next;
+        });
+        this.hintTimers.delete(menuId);
+      }, 3000),
+    );
   }
 
   /** Tile label: a real custom name if set, else the positional "Menu A/B/C".

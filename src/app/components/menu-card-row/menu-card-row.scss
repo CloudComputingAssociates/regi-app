@@ -150,6 +150,31 @@
 // (lined-sheet icon; yellow when pinned via .icon-disc-pinned); the Repeat entry
 // + trash are grouped at the far right (the Repeat cluster carries margin-left:auto).
 
+// "Save me" nudge on the menu pin — a brief green bloom + pulse fired only when
+// the menu is RENAMED (not on meal-add). Mirrors the meal card's pin save-hint;
+// keyframes re-state the disc's raised shadow so it still reads as raised.
+.menu-pin.save-hint {
+  color: #5fe07a;
+  animation: menu-save-pulse 1s ease-in-out infinite;
+}
+
+@keyframes menu-save-pulse {
+  0%, 100% {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 0 0 1px rgba(40, 201, 65, 0.55),
+      0 0 6px rgba(40, 201, 65, 0.5);
+  }
+  50% {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 0 0 2px rgba(40, 201, 65, 0.95),
+      0 0 16px rgba(40, 201, 65, 0.9);
+  }
+}
+
 // Live "+ Add menu" — dashed area, white clickable text; also a drop target for
 // a Binder menu dragged from the rail.
 .add-menu-link {

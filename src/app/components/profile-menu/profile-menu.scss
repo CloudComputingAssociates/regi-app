@@ -13,19 +13,63 @@
   }
 }
 
-// The user's NAME as a hyperlink — the profile-menu trigger.
+// Avatar + name cluster; both open the menu.
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// Avatar (Apple logo) — a round image button that opens the menu.
+.profile-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s;
+
+  &:hover { transform: scale(1.05); }
+  &:active { transform: scale(0.98); }
+}
+
+// User icon + the NAME — a clickable menu trigger and a standing visual cue that
+// there's a menu on the RHS. Always blue; the TEXT is underlined (a textual link
+// cue) but the icon is not.
 .profile-name-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: none;
   border: none;
   padding: 4px 8px;
   cursor: pointer;
-  color: #4da6ff;
+  color: #4da6ff !important;      // hyperlink blue (beats any inherited white)
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
-  text-decoration: none;
 
-  &:hover { text-decoration: underline; }
+  .profile-name-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+    color: #4da6ff;
+  }
+
+  .profile-name-text {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  &:hover {
+    color: #7cc0ff !important;
+    .profile-name-icon { color: #7cc0ff; }
+  }
 }
 
 .profile-img, .menu-img {
@@ -80,8 +124,10 @@
 
 // Tuxedo-black spacer bar at the top of the dropdown (just a spacer — the old
 // avatar / name / email block is gone). Height ≈ what that block occupied.
+// Slim tuxedo cummerbund — a thin black strip at the top of the menu (half the
+// prior height).
 .menu-tux-spacer {
-  height: 38px;
+  height: 19px;
   background: #000000;
 }
 

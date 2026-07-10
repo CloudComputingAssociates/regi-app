@@ -1172,6 +1172,8 @@ export class FoodsPanelComponent {
   groupedMyFoods = computed<Array<{ category: string; foods: Food[]; collapsed: boolean }>>(() => {
     const all = this.allMyFoods();
     const collapsed = this.collapsedMyFoodsCategories();
+    // While a search is active, force every category open so matches show live.
+    const searching = this.pickerSearchQuery().trim() !== '';
     const map = new Map<string, Food[]>();
     for (const food of all) {
       // Pre-filter by the picker's type-ahead so the accordion narrows live.
@@ -1185,12 +1187,12 @@ export class FoodsPanelComponent {
     for (const cat of CAROUSEL_CATEGORIES) {
       const foods = map.get(cat);
       if (foods && foods.length > 0) {
-        result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+        result.push({ category: cat, foods, collapsed: searching ? false : collapsed.has(cat) });
         map.delete(cat);
       }
     }
     for (const [cat, foods] of map.entries()) {
-      result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+      result.push({ category: cat, foods, collapsed: searching ? false : collapsed.has(cat) });
     }
     return result;
   });
@@ -1214,6 +1216,8 @@ export class FoodsPanelComponent {
   groupedCarouselFoods = computed<Array<{ category: string; foods: Food[]; collapsed: boolean }>>(() => {
     const all = this.carouselFoods();
     const collapsed = this.collapsedCarouselCategories();
+    // While a search is active, force every category open so matches show live.
+    const searching = this.pickerSearchQuery().trim() !== '';
     const map = new Map<string, Food[]>();
     for (const food of all) {
       const cat = food.categoryName || 'Uncategorized';
@@ -1225,12 +1229,12 @@ export class FoodsPanelComponent {
     for (const cat of CAROUSEL_CATEGORIES) {
       const foods = map.get(cat);
       if (foods && foods.length > 0) {
-        result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+        result.push({ category: cat, foods, collapsed: searching ? false : collapsed.has(cat) });
         map.delete(cat);
       }
     }
     for (const [cat, foods] of map.entries()) {
-      result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+      result.push({ category: cat, foods, collapsed: searching ? false : collapsed.has(cat) });
     }
     return result;
   });
@@ -1285,6 +1289,9 @@ export class FoodsPanelComponent {
 
   onSpinSourceChange(value: SpinSource): void {
     this.spinSource.set(value);
+    // Clear the search so the previous list's type-ahead doesn't silently
+    // keep auto-filtering (and auto-expanding) the new list.
+    this.pickerSearchQuery.set('');
     // Expand against the NEW value, not the prior one — clear both sets so
     // whichever accordion renders is wide open.
     const empty = new Set<string>();

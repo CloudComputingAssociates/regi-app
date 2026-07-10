@@ -21,11 +21,16 @@ import { RoleService } from '../../services/role.service';
       <!-- While Auth0 is loading, show nothing to avoid flicker -->
       <div class="auth-loading"></div>
     } @else if (auth.isAuthenticated$ | async) {
-      <!-- The user's NAME is the hyperlinked menu trigger (avatar/name/email
-           block removed from the dropdown). -->
-      <button class="profile-name-btn" [matMenuTriggerFor]="menu">
-        {{ (auth.user$ | async)?.name || 'Account' }}
-      </button>
+      <!-- Avatar (Apple logo) + the user's NAME — BOTH open the menu. -->
+      <div class="profile-trigger">
+        <button class="profile-btn" [matMenuTriggerFor]="menu" aria-label="Open menu">
+          <img [src]="defaultImage" alt="Profile" class="profile-img" />
+        </button>
+        <button class="profile-name-btn" [matMenuTriggerFor]="menu">
+          <mat-icon class="profile-name-icon">person</mat-icon>
+          <span class="profile-name-text">{{ (auth.user$ | async)?.name || 'Account' }}</span>
+        </button>
+      </div>
 
       <mat-menu #menu="matMenu" class="profile-menu" [overlapTrigger]="false">
         <!-- Tuxedo-black spacer bar at the top of the menu (just a spacer). -->
