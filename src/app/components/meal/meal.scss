@@ -131,9 +131,9 @@
   .pin-disc {
     flex: 0 0 auto;
 
-    // Not saved → an even greyer fork/knife (the pinned state is yellow).
+    // Pressable (not saved) state — white fork/knife (same size as pinned).
     &:not(.icon-disc-pinned) {
-      color: #6a6f75;
+      color: #ffffff;
     }
   }
 }

@@ -147,7 +147,8 @@
 
 .twist-label {
   flex-shrink: 0;
-  width: 64px; // matches .ai-label width so the combo lines up under GenMeal
+  // Push the Twist label + dropdown flush-right in the AI row (Create stays left).
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 4px;

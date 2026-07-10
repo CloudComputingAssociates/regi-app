@@ -64,12 +64,12 @@ import { Meal, Menu } from '../../models';
               <button
                 type="button"
                 class="genmeal-btn"
-                matTooltip="Generate a meal with AI"
+                matTooltip="Meals from Foods you picked"
                 [disabled]="rotation.generating()"
                 (click)="rotation.generateMeal()">
                 <img src="images/AI-star.png" alt="" class="btn-star" />Create
               </button>
-              <span class="twist-label"><span class="twist-word">Twist</span><app-twist-icon /></span>
+              <span class="twist-label"><app-twist-icon /><span class="twist-word">Twist</span></span>
               <div class="twist-combo">
                 <input
                   #twistInput

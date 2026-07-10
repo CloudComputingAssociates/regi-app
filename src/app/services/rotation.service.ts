@@ -786,12 +786,19 @@ export class RotationService {
     }
   }
 
-  /** Delete a menu from the board (the menu-tile trash). DELETE /menu/{id}
-   *  removes the menu ENTIRELY — the tile does NOT stay behind as an empty
-   *  header — and drops its disposable meals, but KEEPS pinned meals (they
-   *  survive in the Binder). Reload the board + Binder groups. */
+  /** Delete a menu from the board (the menu-tile trash). The menu is linked into
+   *  the rotation, and the server's DELETE /menu/{id} does a raw DELETE that
+   *  trips the RotationMenus foreign key — so we UNLINK it from the rotation
+   *  first (best-effort), THEN delete the menu. Deleting drops its disposable
+   *  meals but KEEPS pinned ones (they survive in the Binder). Reload after. */
   async deleteMenu(menuId: number): Promise<void> {
+    const rot = this.rotation();
     try {
+      if (rot?.id != null) {
+        await firstValueFrom(
+          this.http.delete(`${this.baseUrl}/rotation/${rot.id}/menus/${menuId}`),
+        ).catch(() => undefined); // ignore: menu may not be linked
+      }
       await firstValueFrom(this.http.delete(`${this.baseUrl}/menu/${menuId}`));
       await Promise.all([this.loadCurrentRotation(), this.loadBinder(), this.loadBinderMenus()]);
     } catch (err) {
@@ -810,7 +817,15 @@ export class RotationService {
     const mealIds = (menu?.slots ?? [])
       .map((s) => s.mealId)
       .filter((id): id is number => id != null);
+    const rot = this.rotation();
     try {
+      // If this menu is also linked into the current rotation, unlink it first
+      // so the raw Menu delete doesn't trip the RotationMenus foreign key.
+      if (rot?.id != null) {
+        await firstValueFrom(
+          this.http.delete(`${this.baseUrl}/rotation/${rot.id}/menus/${menuId}`),
+        ).catch(() => undefined);
+      }
       await firstValueFrom(this.http.delete(`${this.baseUrl}/menu/${menuId}`));
       if (deleteMeals && mealIds.length) {
         // Best-effort: a meal already dropped by the menu delete just 404s.

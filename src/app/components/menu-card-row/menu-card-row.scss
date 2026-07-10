@@ -165,9 +165,9 @@
   top: 4px;
   left: 4px;
 
-  // Not saved → a dimmer sheet icon (pinned is yellow).
+  // Pressable (not saved) → white sheet icon (same size as pinned).
   &:not(.icon-disc-pinned) {
-    color: #6a6f75;
+    color: #ffffff;
   }
 }
 

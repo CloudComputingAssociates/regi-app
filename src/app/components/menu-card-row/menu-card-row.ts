@@ -26,7 +26,7 @@ import { RotationMenuEntry } from '../../models';
               type="button"
               class="menu-pin icon-disc"
               [class.icon-disc-pinned]="menu.pinned"
-              [matTooltip]="menu.pinned ? 'In your Binder' : 'Save to your Binder'"
+              [matTooltip]="menu.pinned ? 'In your Binder' : 'Save to Binder'"
               matTooltipPosition="above"
               (click)="$event.stopPropagation(); onPin(menu)">
               <mat-icon>description</mat-icon>

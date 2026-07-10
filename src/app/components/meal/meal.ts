@@ -34,7 +34,7 @@ interface SlotMacros {
             type="button"
             class="icon-disc pin-disc"
             [class.icon-disc-pinned]="pinAlive()"
-            [matTooltip]="pinAlive() ? 'In your Binder' : 'Save to your Binder'"
+            [matTooltip]="pinAlive() ? 'In your Binder' : 'Save to Binder'"
             matTooltipPosition="above"
             (click)="onPin()">
             <mat-icon>restaurant</mat-icon>
