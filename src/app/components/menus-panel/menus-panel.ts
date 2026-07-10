@@ -22,6 +22,7 @@ import { RotationService, TEACH_SAVE_LINE } from '../../services/rotation.servic
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { FoodsService } from '../../services/foods.service';
 import { NotificationService } from '../../services/notification.service';
+import { TabService } from '../../services/tab.service';
 import { MenuCardRowComponent } from '../menu-card-row/menu-card-row';
 import { MenusMealsComponent } from '../menus-meals/menus-meals';
 import { MealBinderComponent } from '../meal-binder/meal-binder';
@@ -109,6 +110,15 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                 <span class="check">✓</span>
                 {{ plannedDays() }} / {{ rotation.rotation()!.spanDays }} days
               </div>
+
+              <button
+                type="button"
+                class="close-panel-btn"
+                matTooltip="Close Menus &amp; Meals panel"
+                matTooltipPosition="above"
+                (click)="tabService.closePanel()">
+                <mat-icon class="close-icon" aria-hidden="true">logout</mat-icon>
+              </button>
             </div>
 
             <app-menu-card-row
@@ -215,6 +225,7 @@ export class MenusPanelComponent implements OnInit {
   private preferencesService = inject(FoodPreferencesService);
   private foodsService = inject(FoodsService);
   private notification = inject(NotificationService);
+  protected tabService = inject(TabService);
   private host = inject(ElementRef<HTMLElement>);
 
   // ---- Rail splitter ---------------------------------------------------
@@ -458,7 +469,7 @@ export class MenusPanelComponent implements OnInit {
       data: {
         title: 'Wipe Menus',
         message: "You will lose your work for this week's menus. O.K. to proceed?",
-        teachLine: this.rotation.rotationHasUnsavedWork() ? TEACH_SAVE_LINE : undefined,
+        teachLine: 'All menus will be wiped. Meal slots all cleared.\nMeals saved to Binder will be retained.',
         confirmLabel: 'Proceed',
         onConfirm: () => void this.rotation.wipeMenus(),
       },

@@ -33,7 +33,7 @@
   padding: 10px 12px;
   border: 2px solid #4a4a4a;
   border-radius: 8px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
+  background: #3a3a3a; // match the macro bar shade for a uniform card family
   color: #f1f1f1;
   text-align: left;
   cursor: pointer;
@@ -83,6 +83,12 @@
       inset 0 1px 2px rgba(0, 0, 0, 0.5),
       inset 0 -1px 0 rgba(255, 255, 255, 0.05);
     transition: border-color 0.12s ease, box-shadow 0.12s ease;
+
+    // Barely-there white full-select highlight (not the loud browser blue).
+    &::selection {
+      background: rgba(255, 255, 255, 0.16);
+      color: inherit;
+    }
 
     &.editing {
       padding-right: 26px;
@@ -240,7 +246,7 @@
 // sunken so it reads as carved into the surface; sits at the right of the foot.
 .menu-watermark {
   margin-left: auto;
-  font-size: 13px;
+  font-size: 18px; // matches the meal card's "Meal N" stamp for consistency
   font-weight: 600;
   letter-spacing: 0.3px;
   color: #55585c;

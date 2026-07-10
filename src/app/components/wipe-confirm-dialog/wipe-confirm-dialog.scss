@@ -33,6 +33,7 @@
   font-size: 13px;
   line-height: 1.4;
   color: #ffcc80;
+  white-space: pre-line; // honor explicit \n breaks in the teach text
 }
 
 .wipe-dialog-actions {
