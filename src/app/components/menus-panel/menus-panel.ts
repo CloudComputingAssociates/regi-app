@@ -60,7 +60,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
         <div class="state-center">
           <div class="spinner" aria-label="Loading"></div>
         </div>
-      } @else if (rotation.error()) {
+      } @else if (rotation.error() && rotation.rotation() === null) {
         <div class="state-center">
           <p class="state-msg error">{{ rotation.error() }}</p>
           <button type="button" class="state-btn" (click)="rotation.loadCurrentRotation()">Retry</button>
@@ -86,7 +86,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                 class="wipe-menus-btn"
                 matTooltip="Remove all from Menus and Meal slots. Saved Menus and Meals will remain available."
                 (click)="onWipeMenus()">
-                Wipe <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
+                <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
               </button>
 
               <button

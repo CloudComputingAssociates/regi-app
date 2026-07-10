@@ -35,9 +35,22 @@
   border-bottom: 1px solid #1a1a1a;
 
   .binder-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 15px;
     font-weight: 600;
     color: #4da6ff; // blue, matching the Menus / Meals accordion labels
+  }
+
+  // Blue open-book glyph in front of "Binder".
+  .binder-title-icon {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    line-height: 20px;
+    color: #4da6ff;
   }
 }
 
@@ -277,7 +290,7 @@
   }
   .section-label {
     flex: 1 1 auto;
-    font-size: 14px;
+    font-size: 15px; // same size as the "Binder" title
     font-weight: 600;
     color: #4da6ff; // blue titles (Menus / Meals / AI)
   }

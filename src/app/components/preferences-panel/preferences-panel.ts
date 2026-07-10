@@ -417,7 +417,7 @@ import { MatIconModule } from '@angular/material/icon';
                   <span class="setting-hint">per week</span>
                 </div>
                 <div class="setting-row">
-                  <label class="setting-label">Contains</label>
+                  <label class="setting-label">Meals per</label>
                   <select
                     class="setting-select"
                     [ngModel]="userSettingsService.mealsPerDay()"

@@ -36,7 +36,7 @@ import { Meal, Menu } from '../../models';
       <!-- Title line: "Meals" + right-justified AI toggle (star + chevron). The
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
-        <span class="binder-title">Menus &amp; Meals Binder</span>
+        <span class="binder-title"><mat-icon class="binder-title-icon">menu_book</mat-icon>Binder</span>
         <button
           type="button"
           class="ai-toggle"

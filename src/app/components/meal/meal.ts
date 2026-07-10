@@ -51,7 +51,7 @@ interface SlotMacros {
                 class="meal-name-box"
                 [class.editing]="showNameCommit()"
                 [value]="title()"
-                (focus)="onNameFocus(nameBox.value)"
+                (focus)="onNameFocus(nameBox)"
                 (input)="nameDraft.set(nameBox.value)"
                 (keydown.enter)="nameBox.blur()"
                 (keydown.escape)="nameBox.value = title(); nameBox.blur()"
@@ -233,9 +233,12 @@ export class MealComponent {
     () => this.nameFocused() && this.nameDraft().trim() !== '',
   );
 
-  onNameFocus(current: string): void {
+  onNameFocus(el: HTMLInputElement): void {
     this.nameFocused.set(true);
-    this.nameDraft.set(current);
+    this.nameDraft.set(el.value);
+    // Highlight the whole title on the focusing click so typing replaces it; a
+    // second click (already focused) drops the cursor to edit in place.
+    setTimeout(() => el.select());
   }
 
   onNameBlur(value: string): void {

@@ -125,11 +125,10 @@
   margin-right: 12px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 30px;
   height: 30px;
-  padding: 0 14px;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 0;
   color: #f0f0f0;
   background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
   border: 1px solid #262626;
@@ -141,11 +140,12 @@
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
 
+  // Same glyph size as the Print key (18px).
   .wipe-icon {
-    width: 17px;
-    height: 17px;
-    font-size: 17px;
-    line-height: 17px;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
   }
 
   &:hover {

@@ -863,8 +863,9 @@ export class RotationService {
     if (spanDays === rot.spanDays) return;
     const body: UpdateRotationRequest = { spanDays };
     try {
+      // API registers PUT (partial update) for /rotation/{id} — NOT PATCH.
       await firstValueFrom(
-        this.http.patch(`${this.baseUrl}/rotation/${rot.id}`, body),
+        this.http.put(`${this.baseUrl}/rotation/${rot.id}`, body),
       );
       const detail = await firstValueFrom(
         this.http.get<RotationDetail>(`${this.baseUrl}/rotation/${rot.id}`),
@@ -1103,7 +1104,13 @@ export class RotationService {
   /** Surface a useful message from an HttpErrorResponse. */
   private errMessage(err: unknown): string {
     const e = err as { error?: { error?: string }; statusText?: string };
-    return e?.error?.error ?? e?.statusText ?? 'Request failed';
+    const serverMsg = e?.error?.error;
+    if (typeof serverMsg === 'string' && serverMsg) return serverMsg;
+    // A 2xx whose body didn't yield a server error (interrupted/empty response)
+    // surfaces as statusText "OK" — that's noise, not a message, so skip it.
+    const status = e?.statusText;
+    if (status && status !== 'OK') return status;
+    return 'Request failed';
   }
 
   /** Delete-specific message. A 409 means the meal is still slotted in a menu;

@@ -34,24 +34,20 @@ import { RotationService } from '../../services/rotation.service';
                 (click)="$event.stopPropagation(); onPin(menu)">
                 <mat-icon>description</mat-icon>
               </button>
-              <div class="menu-days">
-                <button
-                  type="button"
-                  class="days-step"
-                  matTooltip="Fewer days"
-                  [disabled]="menu.plannedCount <= 1"
-                  (click)="$event.stopPropagation(); setDays.emit({ menuId: menu.menuId, plannedCount: menu.plannedCount - 1 })">
-                  −
-                </button>
-                <span class="days-value">{{ menu.plannedCount }} days</span>
-                <button
-                  type="button"
-                  class="days-step"
-                  matTooltip="More days"
-                  [disabled]="menu.plannedCount >= spanDays()"
-                  (click)="$event.stopPropagation(); setDays.emit({ menuId: menu.menuId, plannedCount: menu.plannedCount + 1 })">
-                  +
-                </button>
+              <div class="menu-repeat">
+                <span class="repeat-label">Repeat</span>
+                <input
+                  type="number"
+                  class="repeat-input"
+                  min="1"
+                  [max]="spanDays()"
+                  [value]="menu.plannedCount"
+                  matTooltip="How many days this menu repeats"
+                  matTooltipPosition="above"
+                  (click)="$event.stopPropagation()"
+                  (keydown.enter)="$any($event.target).blur()"
+                  (change)="onRepeatChange(menu.menuId, $event)"
+                  aria-label="Repeat count" />
               </div>
               <button
                 type="button"
@@ -71,7 +67,7 @@ import { RotationService } from '../../services/rotation.service';
                 class="menu-name-box"
                 [class.editing]="showCommitFor(menu.menuId)"
                 [value]="displayName(menu, i)"
-                (focus)="onNameFocus(menu.menuId, nameBox.value)"
+                (focus)="onNameFocus(menu.menuId, nameBox)"
                 (input)="nameDraft.set(nameBox.value)"
                 (keydown.enter)="nameBox.blur()"
                 (keydown.escape)="nameBox.value = displayName(menu, i); nameBox.blur()"
@@ -176,6 +172,13 @@ export class MenuCardRowComponent {
     return Math.round(n ?? 0);
   }
 
+  /** Repeat number-entry commit — clamp to [1, spanDays] and emit setDays. */
+  onRepeatChange(menuId: number, event: Event): void {
+    const raw = +(event.target as HTMLInputElement).value;
+    const plannedCount = Math.max(1, Math.min(this.spanDays(), Math.floor(raw || 1)));
+    this.setDays.emit({ menuId, plannedCount });
+  }
+
   /** Tile pin icon — emit pin unless the entry is already pinned. */
   onPin(menu: RotationMenuEntry): void {
     if (menu.pinned) return;
@@ -199,9 +202,13 @@ export class MenuCardRowComponent {
     return this.editingMenuId() === menuId && this.nameDraft().trim() !== '';
   }
 
-  onNameFocus(menuId: number, current: string): void {
+  onNameFocus(menuId: number, el: HTMLInputElement): void {
     this.editingMenuId.set(menuId);
-    this.nameDraft.set(current);
+    this.nameDraft.set(el.value);
+    // Highlight the whole title on the focusing click so typing replaces it.
+    // Deferred past the click's cursor-placement; a second click (already
+    // focused, no refocus) drops the cursor normally to edit in place.
+    setTimeout(() => el.select());
   }
 
   onNameBlur(menu: RotationMenuEntry, index: number, value: string): void {
