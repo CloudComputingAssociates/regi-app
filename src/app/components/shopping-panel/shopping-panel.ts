@@ -12,6 +12,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { SettingsService } from '../../services/settings.service';
 import { NotificationService } from '../../services/notification.service';
+import { RotationService } from '../../services/rotation.service';
 import { ShoppingStaple } from '../../models/settings.models';
 
 type StapleCategory = 'proteins' | 'produce' | 'bulk' | 'dairy' | 'aisles' | 'non_food';
@@ -27,22 +28,43 @@ interface CategorySection {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Action buttons - top right -->
-      <div class="action-buttons">
-        @if (isSaving()) {
-          <span class="auto-save-indicator">saving...</span>
-        }
-      </div>
-
-      <!-- Plan-derived shopping list is not wired yet (rotation refactor). -->
-      <div class="shopping-placeholder">
-        <p>Shopping list comes from your active plan.</p>
+      <!-- Top row: source note (left) + Scale/persons stepper (right). The Scale
+           shares the same persisted persons value as the Menus toolbar, so
+           scaling here (and future quantity re-adjustment) stays in sync. -->
+      <div class="shopping-top">
+        <p class="shopping-note">Shopping List from your active rotation of Menus &amp; Meals</p>
+        <div class="top-right">
+          @if (isSaving()) {
+            <span class="auto-save-indicator">saving...</span>
+          }
+          <div
+            class="scale-control"
+            matTooltip="People to scale the plan (and shopping quantities) for"
+            matTooltipPosition="below">
+            <span class="scale-label">Scale</span>
+            <button
+              type="button"
+              class="scale-step"
+              [disabled]="rotation.persons() <= 1"
+              (click)="rotation.setPersons(rotation.persons() - 1)">
+              −
+            </button>
+            <span class="scale-count">{{ rotation.persons() }}</span>
+            <button
+              type="button"
+              class="scale-step"
+              [disabled]="rotation.persons() >= 12"
+              (click)="rotation.setPersons(rotation.persons() + 1)">
+              +
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Staples (live, persisted to user settings) -->
       <div class="staples-pane">
         <div class="staples-header">
-          <span class="staples-title">Staples</span>
+          <span class="staples-title">Staples &amp; One-Time purchases</span>
           <span class="staples-title buy-column-label">Need</span>
         </div>
 
@@ -133,6 +155,7 @@ interface CategorySection {
 export class ShoppingPanelComponent {
   private settingsService = inject(SettingsService);
   private notificationService = inject(NotificationService);
+  readonly rotation = inject(RotationService);
 
   isSaving = signal(false);
 

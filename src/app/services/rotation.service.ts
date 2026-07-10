@@ -224,6 +224,51 @@ export class RotationService {
     return this.mealsById().get(mealId)?.items ?? [];
   }
 
+  /** Find the (menuId, slotOrder) of the slot holding a meal, across loaded
+   *  menus — so fork-on-edit can repoint that slot to the fork. */
+  private findSlotOf(mealId: number): { menuId: number; slotOrder: number } | null {
+    for (const [menuId, menu] of this.menusById()) {
+      const slot = menu.slots.find((s) => s.mealId === mealId);
+      if (slot != null) return { menuId, slotOrder: slot.slotOrder };
+    }
+    return null;
+  }
+
+  /** COPY-ON-WRITE guard (v6). The server LINKS a placed saved (pinned) meal
+   *  rather than forking it, so editing a slotted PINNED meal would mutate the
+   *  Binder original. Before any edit, if the slotted meal is pinned, fork a
+   *  fresh disposable copy (POST /meal/{id}/duplicate), repoint the slot to the
+   *  fork, and redirect the edit onto the fork — the saved copy is never touched.
+   *  The fork's item ids differ, so an optional itemId is remapped by position.
+   *  On a non-pinned meal or any failure, returns the originals (edit in place). */
+  private async forkOnEdit(mealId: number, itemId?: number): Promise<{ mealId: number; itemId?: number }> {
+    const meal = this.getMeal(mealId);
+    if (meal?.pinned !== true) return { mealId, itemId };
+    const loc = this.findSlotOf(mealId);
+    if (loc == null) return { mealId, itemId };
+    try {
+      const stub = await firstValueFrom(
+        this.http.post<Meal>(`${this.baseUrl}/meal/${mealId}/duplicate`, {}),
+      );
+      const forkId = stub.id;
+      if (forkId == null) return { mealId, itemId };
+      const assign: AssignMealToSlotRequest = { slotOrder: loc.slotOrder, mealId: forkId };
+      await firstValueFrom(this.http.put(`${this.baseUrl}/menu/${loc.menuId}/slot`, assign));
+      const fork = await firstValueFrom(this.http.get<Meal>(`${this.baseUrl}/meal/${forkId}`));
+      this.mealsById.update((m) => new Map(m).set(forkId, fork));
+      const es = this.editingSlot();
+      if (es?.mealId === mealId) this.editingSlot.set({ ...es, mealId: forkId });
+      let forkItemId = itemId;
+      if (itemId != null) {
+        const idx = (meal.items ?? []).findIndex((i) => i.id === itemId);
+        forkItemId = idx >= 0 ? fork.items?.[idx]?.id ?? itemId : itemId;
+      }
+      return { mealId: forkId, itemId: forkItemId };
+    } catch {
+      return { mealId, itemId }; // fall back to an in-place edit rather than block
+    }
+  }
+
   // ---- Loaders ---------------------------------------------------------
 
   /** Load the user's current rotation: pick the active one (else newest),
@@ -396,26 +441,34 @@ export class RotationService {
     }
   }
 
-  /** Generate ONE meal on demand and drop it into the Folder. anchorProtein/
-   *  macroTarget are omitted — the server falls back to the user's picks/
-   *  preferences and fair-share daily goals.
+  /** Generate ONE meal and place it DIRECTLY into the next open meal slot — no
+   *  Folder/RHS staging. The fresh meal is unpinned + uncloned, so the server
+   *  LINKS it straight into the slot (no fork). It lives there as a transitory
+   *  meal: the user pins it to keep it, edits it, or it's dropped with the menu.
+   *  Slot target = the selected menu's first empty slot, else a freshly-created
+   *  (next-lettered) menu's first slot.
    *    POST /meal/generate { mealType } -> Meal (persisted, pinned=false)
-   *  A generated meal is unpinned + unplaced, so it belongs in the Folder; we
-   *  append the returned meal immediately (server truth on next loadFolder).
-   *  Failures toast rather than setting the panel-wide error signal, which
-   *  would replace the whole board (menus-panel error-state precedence) on a
-   *  transient generation failure — mirrors placeMealInSlot. */
+   *  Failures toast rather than setting the panel-wide error signal (which would
+   *  replace the whole board on a transient generation failure). */
   async generateMeal(): Promise<void> {
     this.generating.set(true);
     try {
-      // Feed the meals we already have back to the generator so it produces
-      // something different (Folder meals + meals placed in this menu).
+      const target = await this.findGenerateTargetSlot();
+      if (target == null) {
+        this.notification.show('No open meal slot to place the meal.', 'error');
+        return;
+      }
       const excludeMeals = this.knownMealNames();
       const body: GenerateMealRequest = { mealType: 'meal', excludeMeals };
       const meal = await firstValueFrom(
         this.http.post<Meal>(`${this.baseUrl}/meal/generate`, body),
       );
-      this.folderMeals.update((list) => [...list, meal]);
+      // Unpinned source → linked directly (no clone) into the empty slot.
+      await this.placeMealInSlot(target.menuId, target.slotOrder, meal.id);
+      if (this.selectedMenuId() !== target.menuId) {
+        this.selectedMenuId.set(target.menuId);
+        await this.selectMenu(target.menuId);
+      }
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     } finally {
@@ -423,13 +476,31 @@ export class RotationService {
     }
   }
 
-  /** Names of meals the session already knows — Folder meals plus meals placed
-   *  in the selected menu — so the generator can avoid repeats. */
+  /** Where a freshly-generated meal lands: the selected menu's first empty,
+   *  non-dining-out slot; failing that, add the next-lettered menu (creating one
+   *  if the rotation has none) and use its first slot. Null if none can be made. */
+  private async findGenerateTargetSlot(): Promise<{ menuId: number; slotOrder: number } | null> {
+    const firstEmpty = (menu?: Menu): number | undefined =>
+      menu?.slots.find((s) => !s.isDiningOut && s.mealId == null)?.slotOrder;
+
+    const sel = this.selectedMenu();
+    const selEmpty = firstEmpty(sel);
+    if (sel?.id != null && selEmpty != null) return { menuId: sel.id, slotOrder: selEmpty };
+
+    // Selected menu is full (or there's no menu yet) → add one and use its slot.
+    await this.addMenu();
+    const created = this.selectedMenu();
+    const newEmpty = firstEmpty(created);
+    if (created?.id != null && newEmpty != null) {
+      return { menuId: created.id, slotOrder: newEmpty };
+    }
+    return null;
+  }
+
+  /** Names of meals the session already knows — meals placed in the selected
+   *  menu — so the generator can avoid repeats. */
   private knownMealNames(): string[] {
     const names = new Set<string>();
-    for (const m of this.folderMeals()) {
-      if (m.name) names.add(m.name);
-    }
     const menu = this.selectedMenu();
     if (menu) {
       for (const slot of menu.slots) {
@@ -606,6 +677,11 @@ export class RotationService {
           }),
         );
         this.editingSlot.set({ ...slot, mealId });
+      } else {
+        // Fork-on-edit: adding a food to a placed SAVED meal forks it first
+        // (repoints the slot + updates editingSlot to the fork).
+        const forked = await this.forkOnEdit(mealId);
+        mealId = forked.mealId;
       }
 
       const existingItems = this.mealsById().get(mealId)?.items ?? [];
@@ -652,19 +728,21 @@ export class RotationService {
    *  items (rows) the same way addFoodToEditingMeal does. A failure toasts and
    *  leaves the board intact rather than setting the panel-wide error signal. */
   async deleteMealItem(mealId: number, itemId: number): Promise<void> {
+    // Fork-on-edit: removing an item from a placed SAVED meal forks it first.
+    const { mealId: editId, itemId: editItemId } = await this.forkOnEdit(mealId, itemId);
     const menuId = this.editingSlot()?.menuId ?? this.selectedMenuId();
     try {
       await firstValueFrom(
-        this.http.delete(`${this.baseUrl}/meal/${mealId}/items/${itemId}`),
+        this.http.delete(`${this.baseUrl}/meal/${editId}/items/${editItemId}`),
       );
-      this.markSessionEdited(mealId);
+      this.markSessionEdited(editId);
       if (menuId != null) {
         const menu = await firstValueFrom(
           this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
         );
         this.menusById.update((m) => new Map(m).set(menuId, menu));
       }
-      await this.loadMeal(mealId);
+      await this.loadMeal(editId);
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
@@ -677,20 +755,22 @@ export class RotationService {
    *  meal-local serving layer only — it never touches Picks/MyFoods. A failure
    *  toasts and leaves the board intact. */
   async updateMealItemQuantity(mealId: number, itemId: number, quantity: number): Promise<void> {
+    // Fork-on-edit: changing a serving on a placed SAVED meal forks it first.
+    const { mealId: editId, itemId: editItemId } = await this.forkOnEdit(mealId, itemId);
     const menuId = this.editingSlot()?.menuId ?? this.selectedMenuId();
     try {
       const body: UpdateMealItemRequest = { quantity };
       await firstValueFrom(
-        this.http.put<MealItem>(`${this.baseUrl}/meal/${mealId}/items/${itemId}`, body),
+        this.http.put<MealItem>(`${this.baseUrl}/meal/${editId}/items/${editItemId}`, body),
       );
-      this.markSessionEdited(mealId);
+      this.markSessionEdited(editId);
       if (menuId != null) {
         const menu = await firstValueFrom(
           this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
         );
         this.menusById.update((m) => new Map(m).set(menuId, menu));
       }
-      await this.loadMeal(mealId);
+      await this.loadMeal(editId);
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
@@ -702,18 +782,20 @@ export class RotationService {
    *  Folder so a pinned/unpinned card carrying this meal shows the new name. A
    *  failure toasts, board stays intact. Tracked as a session edit (teach line). */
   async updateMealName(mealId: number, name: string): Promise<void> {
+    // Fork-on-edit: renaming a placed SAVED meal spins off a private copy first.
+    const { mealId: editId } = await this.forkOnEdit(mealId);
     const menuId = this.editingSlot()?.menuId ?? this.selectedMenuId();
     try {
       const body: UpdateMealRequest = { name };
-      await firstValueFrom(this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, body));
-      this.markSessionEdited(mealId);
+      await firstValueFrom(this.http.put<Meal>(`${this.baseUrl}/meal/${editId}`, body));
+      this.markSessionEdited(editId);
       if (menuId != null) {
         const menu = await firstValueFrom(
           this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
         );
         this.menusById.update((m) => new Map(m).set(menuId, menu));
       }
-      await this.loadMeal(mealId);
+      await this.loadMeal(editId);
       // Reflect the new name in the rail (a pinned meal appears in the Binder).
       await Promise.all([this.loadBinder(), this.loadFolder()]);
     } catch (err) {
@@ -806,33 +888,35 @@ export class RotationService {
     }
   }
 
-  /** Delete a Binder (pinned) menu. DELETE /menu/{id} removes the menu and drops
-   *  its DISPOSABLE meals but KEEPS pinned ones (they stay in your Binder) — the
-   *  "No, keep associated meals" path. When deleteMeals is true ("Yes"), we also
-   *  delete every meal the menu held (captured before deletion), removing them
-   *  from the Binder / any other menu too. Refreshes both Binder groups and the
-   *  board (the menu may also sit in the current rotation). */
+  /** Delete a Binder menu. When deleteMeals is true (the "Delete Menu and all
+   *  saved meals?" mini-wipe), delete every meal the menu holds FIRST — the
+   *  server's meal delete has no in-use gate, so it detaches the meal from every
+   *  menu and deletes it, avoiding any ordering/FK problem — then unlink the menu
+   *  from the rotation (FK) and delete the now-empty menu. Slot ids are read from
+   *  a FRESH menu fetch (the Binder snapshot can be stale). */
   async deleteBinderMenu(menuId: number, deleteMeals: boolean): Promise<void> {
-    const menu = this.binderMenus().find((m) => m.id === menuId);
-    const mealIds = (menu?.slots ?? [])
-      .map((s) => s.mealId)
-      .filter((id): id is number => id != null);
     const rot = this.rotation();
     try {
-      // If this menu is also linked into the current rotation, unlink it first
-      // so the raw Menu delete doesn't trip the RotationMenus foreign key.
+      if (deleteMeals) {
+        const detail = await firstValueFrom(
+          this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
+        );
+        const mealIds = (detail.slots ?? [])
+          .map((s) => s.mealId)
+          .filter((id): id is number => id != null);
+        // Surface failures (no allSettled) so a stuck delete isn't silent.
+        await Promise.all(
+          mealIds.map((id) => firstValueFrom(this.http.delete(`${this.baseUrl}/meal/${id}`))),
+        );
+      }
+      // Unlink from the rotation first so the raw Menu delete doesn't trip the
+      // RotationMenus foreign key, then delete the (now empty) menu.
       if (rot?.id != null) {
         await firstValueFrom(
           this.http.delete(`${this.baseUrl}/rotation/${rot.id}/menus/${menuId}`),
         ).catch(() => undefined);
       }
       await firstValueFrom(this.http.delete(`${this.baseUrl}/menu/${menuId}`));
-      if (deleteMeals && mealIds.length) {
-        // Best-effort: a meal already dropped by the menu delete just 404s.
-        await Promise.allSettled(
-          mealIds.map((id) => firstValueFrom(this.http.delete(`${this.baseUrl}/meal/${id}`))),
-        );
-      }
       await Promise.all([
         this.loadBinderMenus(),
         this.loadBinder(),

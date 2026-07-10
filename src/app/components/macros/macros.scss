@@ -11,6 +11,38 @@
   border: 1px solid #4a4a4a;
   position: relative;
 
+  // Backlit "screen" glow: a soft INNER luminance (like a TV's ambient backlight)
+  // rather than a surrounding bloom, so the macro bar reads as gently self-lit.
+  box-shadow:
+    inset 0 0 26px rgba(70, 120, 150, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 14px rgba(70, 120, 150, 0.14);
+
+  // Faint iridescent sheen — a low-opacity teal→indigo→magenta wash on `screen`
+  // blend gives an oil-slick shimmer WITHOUT reading as a rainbow. pointer-events
+  // none so it never blocks a click.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      115deg,
+      rgba(56, 132, 148, 0.12) 0%,
+      rgba(78, 96, 160, 0.07) 45%,
+      rgba(140, 84, 150, 0.1) 100%
+    );
+    mix-blend-mode: screen;
+  }
+
+  // Keep the actual content above the sheen.
+  .indicators-card,
+  .macro-row {
+    position: relative;
+    z-index: 1;
+  }
+
   .indicators-card {
     padding: 0 !important;
     margin: 0;

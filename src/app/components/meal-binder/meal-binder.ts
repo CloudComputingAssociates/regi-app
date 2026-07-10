@@ -67,7 +67,7 @@ import { Meal, Menu } from '../../models';
                 matTooltip="Meals from Foods you picked"
                 [disabled]="rotation.generating()"
                 (click)="rotation.generateMeal()">
-                <img src="images/AI-star.png" alt="" class="btn-star" />Create
+                <img src="images/AI-star.png" alt="" class="btn-star" />Create Meal
               </button>
               <span class="twist-label"><app-twist-icon /><span class="twist-word">Twist</span></span>
               <div class="twist-combo">
@@ -158,7 +158,7 @@ import { Meal, Menu } from '../../models';
                   }
                 </div>
               } @empty {
-                <p class="binder-empty">No pinned menus yet — press the sheet icon on a menu to keep it.</p>
+                <p class="binder-empty">No saved Menus.</p>
               }
             </div>
           }
@@ -219,7 +219,7 @@ import { Meal, Menu } from '../../models';
                   }
                 </div>
               } @empty {
-                <p class="binder-empty">Nothing saved yet — press the book icon on a meal to keep it.</p>
+                <p class="binder-empty">No saved Meals.</p>
               }
             </div>
           }
