@@ -134,7 +134,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
 
           <div class="pane-card carousel-card">
             <div class="carousel-top-bar">
-              <span class="search-label">SEARCH</span>
               <input
                 type="text"
                 class="carousel-search-input"
@@ -336,8 +335,9 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     <span class="basket-title">
                       {{ basketLabel(key) }} ({{ thisWeekBaskets()[key].length }})
                     </span>
-                    <div class="basket-controls">
-                      <!-- Pencil = Nutrition Facts editor for the selected pick. -->
+                    <!-- Pencil + trash CENTERED on the card, deliberately kept
+                         away from the collapse/expand discs. -->
+                    <div class="basket-center-controls">
                       <button
                         type="button"
                         class="basket-ctl basket-ctl-edit"
@@ -348,17 +348,21 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                         <mat-icon class="basket-ctl-icon">edit</mat-icon>
                       </button>
                       <!-- Empty-basket delete — same red icon-disc as the Menus
-                           & Meals card delete. -->
-                      @if (thisWeekBaskets()[key].length > 0) {
-                        <button
-                          type="button"
-                          class="icon-disc icon-disc-danger basket-del"
-                          (click)="clearBasket(key)"
-                          matTooltip="Empty Basket"
-                          matTooltipPosition="above">
-                          <mat-icon>delete_outline</mat-icon>
-                        </button>
-                      }
+                           & Meals card delete. Always present; disabled (dimmed)
+                           when the basket is empty, exactly like the pencil. -->
+                      <button
+                        type="button"
+                        class="icon-disc icon-disc-danger"
+                        [disabled]="thisWeekBaskets()[key].length === 0"
+                        (click)="clearBasket(key)"
+                        matTooltip="Empty Basket"
+                        matTooltipPosition="above">
+                        <mat-icon>delete_outline</mat-icon>
+                      </button>
+                    </div>
+                    <!-- Collapse/expand discs pinned at the right, on the same
+                         centerline as the centered pencil/trash. -->
+                    <div class="basket-lights">
                       <!-- Collapse (−): disabled until the basket is expanded. -->
                       <button
                         type="button"
