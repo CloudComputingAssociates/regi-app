@@ -79,10 +79,10 @@ const LEFT_NAV_PANEL_IDS = new Set([
                     @if (tip.imageUrl) {
                       <img [src]="tip.imageUrl" alt="" class="tip-bar-thumb" />
                     }
-                    <!-- Open the article in the in-app bloom web viewer (no new
-                         browser window; the user never leaves the app). -->
-                    <a href="javascript:void(0)" class="tip-bar-title"
-                      (click)="tabService.openWebView(tip.articleUrl)">{{ tip.title }}</a>
+                    <!-- Opens in a NEW TAB (the app tab stays alive). Many
+                         article sites send X-Frame-Options and refuse to load
+                         in the in-app iframe viewer, so we don't use it here. -->
+                    <a [href]="tip.articleUrl" target="_blank" rel="noopener" class="tip-bar-title">{{ tip.title }}</a>
                   </div>
                   <button class="tip-bar-close" (click)="dismissTip()">✕</button>
                 </div>

@@ -78,7 +78,7 @@ export class MarkdownPipe implements PipeTransform {
           <div class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
             @if (message.role === 'assistant') {
               <div class="message-avatar">
-                <img src="/images/AI-star.png" alt="AI" class="avatar-img" />
+                <img src="/images/AI-star.png" alt="AI" class="avatar-img" /><span class="avatar-regi">Regi</span>
               </div>
             }
             <div class="message-content" [innerHTML]="message.content | markdown"></div>
@@ -89,7 +89,7 @@ export class MarkdownPipe implements PipeTransform {
         @if (contextStreamingContent()) {
           <div class="message assistant streaming">
             <div class="message-avatar">
-              <img src="/images/AI-star.png" alt="AI" class="avatar-img" />
+              <img src="/images/AI-star.png" alt="AI" class="avatar-img" /><span class="avatar-regi">Regi</span>
             </div>
             <div class="message-content" [innerHTML]="contextStreamingContent() | markdown">
             </div>
@@ -101,7 +101,7 @@ export class MarkdownPipe implements PipeTransform {
         @if (contextIsLoading() && !contextStreamingContent()) {
           <div class="message assistant loading">
             <div class="message-avatar">
-              <img src="/images/AI-star.png" alt="AI" class="avatar-img" />
+              <img src="/images/AI-star.png" alt="AI" class="avatar-img" /><span class="avatar-regi">Regi</span>
             </div>
             <div class="message-content">
               <span class="loading-dots">

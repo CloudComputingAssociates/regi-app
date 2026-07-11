@@ -86,10 +86,28 @@
 }
 
 .message-avatar {
+  position: relative; // anchor for the "Regi" overlay on the AI avatar
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+
+  // "Regi" — the assistant's name, superimposed on the AI-star avatar. Strong
+  // shadow so it stays legible over the colorful logo.
+  .avatar-regi {
+    position: absolute;
+    left: 50%;
+    bottom: -3px;
+    transform: translateX(-50%);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #ffffff;
+    text-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.95),
+      0 0 3px rgba(0, 0, 0, 0.85);
+    pointer-events: none;
+  }
 
   // User avatar - "YOU" in jet black oval
   .avatar-name {
