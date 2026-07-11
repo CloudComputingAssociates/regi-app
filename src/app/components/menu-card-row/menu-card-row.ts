@@ -36,7 +36,7 @@ import { RotationService } from '../../services/rotation.service';
                 <mat-icon>description</mat-icon>
               </button>
               <div class="menu-repeat">
-                <span class="repeat-label">Repeat</span>
+                <span class="repeat-label">Days</span>
                 <input
                   type="number"
                   class="repeat-input"

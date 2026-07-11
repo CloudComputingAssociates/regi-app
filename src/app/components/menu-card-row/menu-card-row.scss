@@ -53,6 +53,9 @@
     display: flex;
     align-items: center;
     gap: 6px;
+
+    // Delete alone on the right — destructive action isolated from the group.
+    .menu-delete { margin-left: auto; }
   }
 
   // Name field on its own row directly below the top strip.
@@ -108,11 +111,11 @@
     }
   }
 
-  // Repeat count — a small typeable number entry with native ▲▼ spinners on its
-  // right edge. Pushed to the right of the top strip (margin-left:auto), with the
-  // trash immediately after it.
+  // Days count — how many days this menu runs in the rotation (NOT the meal-level
+  // "Repeat" clone action, which lives on the meal cards). A small typeable number
+  // entry with native ▲▼ spinners; grouped next to the pin at the left of the top
+  // strip. The trash is pushed to the far right on its own.
   .menu-repeat {
-    margin-left: auto;
     display: flex;
     align-items: center;
     gap: 6px;

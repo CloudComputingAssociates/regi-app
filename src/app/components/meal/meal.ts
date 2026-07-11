@@ -24,18 +24,19 @@ interface SlotMacros {
   imports: [MatTooltipModule, MatIconModule, FoodComponent, DragDropModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()">
+    <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()" [class.clone]="isClone()">
       <div class="slot-header">
         <!-- Pin disc leads; the meal NAME box is the primary title (filled slots)
              or "Meal N" for an empty slot; + and trash discs trail. All discs
              share the raised .icon-disc chrome and one size. -->
-        @if (slot().mealId != null) {
+        @if (slot().mealId != null && !isClone()) {
           <!-- Save-state disc (same .icon-disc circle throughout):
                • clean, unsaved → GREY fork & knife → click to save (always live)
                • dirty (changed) → GREEN check inside the disc → click to save
                • saved (Binder)  → YELLOW fork & knife → click to remove (confirm)
                Never disabled while unpinned: a fresh or just-removed meal is
-               savable in one click (no dummy edit needed to re-save). -->
+               savable in one click (no dummy edit needed to re-save).
+               Hidden on a CLONE — the origin owns the shared meal's save state. -->
           <button
             type="button"
             class="icon-disc pin-disc"
@@ -50,6 +51,10 @@ interface SlotMacros {
         <div class="header-name">
           @if (slot().mealId == null) {
             <span class="slot-title">Meal {{ slot().slotOrder }}</span>
+          } @else if (isClone()) {
+            <!-- Clone (phantom): read-only name — the origin meal is where edits
+                 happen; this slot is just a pointer that fills the day. -->
+            <span class="clone-name" [title]="title()">{{ title() }}</span>
           } @else {
             <div class="name-wrap">
               <input
@@ -83,7 +88,7 @@ interface SlotMacros {
         <!-- + opens the food lookaside targeted at this meal, flipping to a
              green check while active; trash deletes the meal. Editing/removing
              individual foods happens directly on each row. -->
-        @if (!slot().isDiningOut) {
+        @if (!slot().isDiningOut && !isClone()) {
           <button
             type="button"
             class="icon-disc add-affordance"
@@ -94,11 +99,24 @@ interface SlotMacros {
             <mat-icon>add</mat-icon>
           </button>
         }
+        <!-- Repeat: fan THIS meal out as read-only clones into the menu's empty
+             slots (shared pointer, no copies). Only offered on a non-clone meal
+             while there's at least one empty slot to fill. -->
+        @if (canRepeat()) {
+          <button
+            type="button"
+            class="icon-disc repeat-disc"
+            matTooltip="Repeat this meal into the empty slots"
+            matTooltipPosition="above"
+            (click)="repeatMeal.emit(slot().mealId!)">
+            <mat-icon>content_copy</mat-icon>
+          </button>
+        }
         @if (slot().mealId != null) {
           <button
             type="button"
             class="icon-disc icon-disc-danger"
-            matTooltip="Delete meal"
+            [matTooltip]="isClone() ? 'Remove this repeat (frees the slot)' : 'Delete meal'"
             matTooltipPosition="above"
             (click)="deleteMeal.emit(slot().slotOrder)">
             <mat-icon>delete_outline</mat-icon>
@@ -146,6 +164,11 @@ interface SlotMacros {
               <span class="chip fat">F {{ round(macros().fatG) }}</span>
               <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
               <span class="meal-cals">{{ calories() }} cals</span>
+              <!-- Small orig/clone tag — ONLY present when this meal is repeated
+                   (shared across slots). Sits by the "Meal N" stamp. -->
+              @if (repeatRole()) {
+                <span class="repeat-badge" [class.is-clone]="isClone()">{{ isClone() ? 'clone' : 'orig' }}</span>
+              }
               <!-- "Meal N" pushed to the RIGHT of the chips + cals so it never
                    clips the corner on a narrow (laptop) card. -->
               <span class="meal-watermark">Meal {{ slot().slotOrder }}</span>
@@ -156,6 +179,7 @@ interface SlotMacros {
               <app-food
                 [item]="item"
                 [resolving]="resolvingItemId() === item.id"
+                [readonly]="isClone()"
                 (editItem)="editItem.emit($event)"
                 (removeItem)="removeItem.emit($event)" />
             }
@@ -197,12 +221,28 @@ export class MealComponent {
    *  "blooms" a bright border to advertise it as a valid drop target. */
   readonly dropHighlight = input<boolean>(false);
 
+  /** Repeat role for this slot, inferred upstream from shared mealId across the
+   *  menu's slots: 'origin' = the editable master, 'clone' = a read-only phantom
+   *  pointer, null = not repeated (a plain, fully-editable meal). */
+  readonly repeatRole = input<'origin' | 'clone' | null>(null);
+
+  /** True when this meal can be fanned out — a non-clone meal with at least one
+   *  empty slot left in the menu. Drives the repeat button's presence. */
+  readonly canRepeat = input<boolean>(false);
+
+  /** True when this slot is a read-only clone (phantom) of the origin meal. */
+  readonly isClone = computed<boolean>(() => this.repeatRole() === 'clone');
+
   /** Emitted when a binder meal is dropped on this (empty) slot. The parent
    *  supplies the menuId and calls the assign endpoint. */
   readonly placeMeal = output<{ slotOrder: number; mealId: number }>();
 
   /** Emitted (with this slot's slotOrder) when the trash is clicked. */
   readonly deleteMeal = output<number>();
+
+  /** Repeat clicked — fan this meal (its mealId) out into the menu's empty slots
+   *  as read-only clones. The parent calls the fan-out on RotationService. */
+  readonly repeatMeal = output<number>();
 
   /** + — toggle this meal as the lookaside add target (parent begins/stops). */
   readonly toggleAdd = output<void>();

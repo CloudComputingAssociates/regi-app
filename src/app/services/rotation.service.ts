@@ -571,6 +571,35 @@ export class RotationService {
     }
   }
 
+  /** "Repeat" — fan one meal out as read-only clones into every empty,
+   *  non-dining-out slot of the menu. The server LINKS the same mealId into each
+   *  slot (no fork for a disposable source; a disposable meal is explicitly
+   *  allowed in several slots), so all slots share ONE meal row: editing the
+   *  origin updates every clone, and clearing a clone slot only drops that
+   *  reference (delete-on-detach keeps the meal while a sibling holds it).
+   *  Sequential PUTs so the slot writes don't race; one refresh at the end.
+   *    PUT /menu/{menuId}/slot { slotOrder, mealId } × empty slots */
+  async repeatMealIntoSlots(menuId: number, mealId: number): Promise<void> {
+    const menu = this.menusById().get(menuId);
+    if (!menu) return;
+    const targets = menu.slots
+      .filter((s) => !s.isDiningOut && s.mealId == null)
+      .map((s) => s.slotOrder);
+    if (targets.length === 0) return;
+    try {
+      for (const slotOrder of targets) {
+        const body: AssignMealToSlotRequest = { slotOrder, mealId };
+        await firstValueFrom(this.http.put(`${this.baseUrl}/menu/${menuId}/slot`, body));
+      }
+      await this.refreshMenu(menuId);
+      await this.loadFolder();
+      const n = targets.length;
+      this.notification.show(`Repeated into ${n} slot${n > 1 ? 's' : ''}`, 'success');
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
   /** Re-fetch a menu's detail + all its slotted meals into the caches. Used
    *  after slot placement (the slot may hold a new forked meal id; the menu's
    *  pinned flag may have flipped) and after pinning a menu (server cascade

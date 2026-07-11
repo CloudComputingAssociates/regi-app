@@ -16,6 +16,14 @@
     border-style: dashed;
   }
 
+  // Clone (phantom) slot — a read-only pointer to the origin meal. Slightly
+  // dimmer + a soft dashed left edge so it reads as "mirrored, not independent"
+  // without shouting. The origin card stays the bright, editable one.
+  &.clone {
+    background: #333;
+    border-left: 2px solid rgba(255, 193, 84, 0.4);
+  }
+
   // Editing this slot — accent border (solid even when the slot is empty).
   &.editing {
     border-color: #4da6ff;
@@ -115,6 +123,51 @@
     // Unpinned pin uses the shared .icon-disc grey icon so it reads as the same
     // raised/pearly button as the + and trash discs (a white icon washed out the
     // top-lit shading). Pinned = yellow icon + white rim.
+  }
+}
+
+// Clone (phantom) read-only name — mirrors the name box's grey field look but
+// without the editable chrome (a clone points at the origin meal; its name isn't
+// separately editable). Single line, clipped.
+.clone-name {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: #cfcfcf;
+  padding: 6px 12px;
+}
+
+// Repeat disc — same raised chrome as the others; the copy glyph reads "clone
+// into slots". Subtle blue tint to distinguish it from add/delete at a glance.
+.repeat-disc {
+  .mat-icon { color: #7fbfff; }
+  &:hover:not(:disabled) { color: #ffffff; }
+}
+
+// orig / clone corner tag — tiny uppercase pill, only rendered when the meal is
+// repeated. Origin reads as a quiet blue "source"; clone reads as a muted amber
+// "copy". Small + low-contrast so it labels without shouting.
+.repeat-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 8px;
+  color: #cfe4ff;
+  background: rgba(77, 166, 255, 0.18);
+  border: 1px solid rgba(77, 166, 255, 0.35);
+  white-space: nowrap;
+  user-select: none;
+
+  &.is-clone {
+    color: #ffe0a6;
+    background: rgba(255, 193, 84, 0.16);
+    border-color: rgba(255, 193, 84, 0.35);
   }
 }
 

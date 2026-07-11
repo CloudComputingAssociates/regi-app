@@ -20,6 +20,9 @@ import { MealItem } from '../../models';
            meal-card header. -->
       <span class="food-name">{{ item().food?.shortDescription?.trim() || item().foodName }}</span>
       <span class="food-qty">{{ item().quantity }} {{ item().unit }}</span>
+      <!-- Actions suppressed on a read-only (clone/phantom) row — the food is a
+           pointer to the origin meal; edits belong on the origin only. -->
+      @if (!readonly()) {
       <span class="food-actions">
         <!-- Pencil hidden for items whose food can't be resolved to a full
              Food (e.g. foodSource 'pending' — no persisted row to price). -->
@@ -44,6 +47,7 @@ import { MealItem } from '../../models';
           <mat-icon>delete_outline</mat-icon>
         </button>
       </span>
+      }
     </div>
   `,
   styleUrls: ['./food.scss'],
@@ -54,6 +58,10 @@ export class FoodComponent {
   /** True while this item's food is being fetched to open the serving popup —
    *  the ✎ pencil shows a brief busy state and can't be re-clicked. */
   readonly resolving = input<boolean>(false);
+
+  /** Read-only row — hides the edit/remove affordances. Set on clone (phantom)
+   *  meal slots, whose food is a shared pointer to the origin meal. */
+  readonly readonly = input<boolean>(false);
 
   /** ✎ — open the serving popup for this exact item. */
   readonly editItem = output<MealItem>();
