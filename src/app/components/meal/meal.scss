@@ -201,9 +201,9 @@
   white-space: nowrap;
 }
 
-// Summary macro row (always visible): Protein + Fiber discs (browse-by values) +
-// the dropdown chevron. The + add disc is pushed to the far right so expand /
-// collapse of the reveal never nudges it — nothing jumps horizontally.
+// Summary macro row (always visible): the dropdown chevron FIRST, then the
+// Protein + Fiber discs (browse-by values). Copy + delete are pushed to the far
+// right so expand/collapse of the reveal never nudges them — nothing jumps.
 .macro-summary {
   display: flex;
   align-items: center;
@@ -227,20 +227,25 @@
     &:hover { color: #ffffff; }
   }
 
-  // + add disc pinned right so opening/closing the reveal never moves it.
-  .add-affordance { margin-left: auto; }
+  // Copy + delete pinned to the far right, held still across expand/collapse.
+  .summary-actions {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
 }
 
-// Chevron reveal — all four discs followed by cals, on their own row. Opening it
-// pushes the food rows down while the summary row above stays put.
+// Chevron reveal — the OTHER macros (Carbs, Fat) followed by cals, on their own
+// row. Opening it pushes the food rows down while the summary row stays put.
 .macro-chips {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
 
-  // Meal total calories — trails the full disc set inside the reveal (we browse
-  // by protein/fiber, so calories is demoted into the dropdown).
+  // Meal total calories — trails the disc set inside the reveal (we browse by
+  // protein/fiber, so calories is demoted into the dropdown).
   .meal-cals {
     font-size: 12px;
     font-weight: 400;
@@ -271,9 +276,20 @@
 }
 
 .food-rows {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 2px;
+
+  // + add-food disc — sits in line with the first food row (top-right of the
+  // foods area) so "add food" reads as part of the foods, not the macro row.
+  // The per-food edit/remove discs only appear on row hover, so this stays clear.
+  .add-affordance {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+  }
 }
 
 // Editing an empty meal — a small dashed target so the card reads as droppable

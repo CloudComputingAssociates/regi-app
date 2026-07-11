@@ -391,8 +391,8 @@
   background: linear-gradient(180deg, #5a5220 0%, #3e3a18 100%);
 }
 
-// One row: [pin][name (grows)][cals][macro toggle][trash]. Discs are the shared
-// raised .icon-disc; they flow inline here (no absolute positioning).
+// One row: [name (grows)][chevron][P][Fiber][trash]. The chevron leads the
+// browse-by summary discs; discs are the shared raised style, flowing inline.
 .card-head {
   display: flex;
   align-items: center;
@@ -409,24 +409,9 @@
     text-overflow: ellipsis;
   }
 
-  // Calories as blue TEXT (not a disk). Also a click target for the macro
-  // dropdown (no visible link) so users have a big, safe toggle away from the
-  // trash — the chevron sits tight to it.
-  .card-cals {
-    flex: 0 0 auto;
-    font-size: 13px;
-    font-weight: 400;
-    color: #4da6ff;
-    white-space: nowrap;
-    cursor: pointer;
-
-    &:hover { color: #7cc0ff; }
-  }
-
-  // Chevron that shows/hides the macro disks — pulled tight to the cals text.
+  // Chevron that shows/hides the extra macros — leads the summary discs.
   .card-toggle {
     flex: 0 0 auto;
-    margin-left: -4px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -444,7 +429,7 @@
   }
 
   // Extra breathing room before the trash so a user aiming for the chevron
-  // (or the cals toggle) doesn't fat-finger the delete.
+  // doesn't fat-finger the delete.
   .card-delete { margin-left: 8px; }
 }
 
@@ -455,24 +440,36 @@
   color: #9aa0a6;
 }
 
+// Reveal row: the extra macros (Carbs, Fat) followed by cals.
 .binder-chips {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 
-  .chip {
-    font-size: 11px;
-    font-weight: 500; // lighter so chips recede
-    padding: 2px 7px;
-    border-radius: 10px;
-    color: rgba(255, 255, 255, 0.82); // softened white so it doesn't pop
-
-    // Muted macro palette — luminance pulled down so the chips recede.
-    &.protein { background: #34781a; } // green
-    &.carb { background: #a8541a; } // orange
-    &.fat { background: #8a55ab; } // purple
-    &.fiber { background: #5e4021; } // brown
+  // Calories demoted into the reveal (we browse by protein/fiber up in the head).
+  .binder-cals {
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 400;
+    color: #4da6ff;
+    white-space: nowrap;
   }
+}
+
+// Macro discs — shared by the summary head + the reveal. Muted palette so the
+// chips recede.
+.chip {
+  font-size: 11px;
+  font-weight: 500; // lighter so chips recede
+  padding: 2px 7px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.82); // softened white so it doesn't pop
+
+  &.protein { background: #34781a; } // green
+  &.carb { background: #a8541a; } // orange
+  &.fat { background: #8a55ab; } // purple
+  &.fiber { background: #5e4021; } // brown
 }
 
 // CDK drag visuals.

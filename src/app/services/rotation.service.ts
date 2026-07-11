@@ -600,6 +600,40 @@ export class RotationService {
     }
   }
 
+  /** "Copy" — duplicate a meal as an INDEPENDENT new meal row titled
+   *  "<name> (copy)" and link it into the menu's next empty slot. Unlike Repeat
+   *  (shared-pointer clones), the copy is its own editable meal.
+   *    POST /meal/{id}/duplicate -> Meal (fresh, unpinned)
+   *    PUT  /meal/{copyId}        -> title it "<name> (copy)"
+   *    PUT  /menu/{menuId}/slot   -> link the copy into the empty slot */
+  async duplicateMealIntoSlot(menuId: number, mealId: number): Promise<void> {
+    const menu = this.menusById().get(menuId);
+    if (!menu) return;
+    const slotOrder = menu.slots.find((s) => !s.isDiningOut && s.mealId == null)?.slotOrder;
+    if (slotOrder == null) {
+      this.notification.show('No empty slot for the copy.', 'error');
+      return;
+    }
+    try {
+      const copy = await firstValueFrom(
+        this.http.post<Meal>(`${this.baseUrl}/meal/${mealId}/duplicate`, {}),
+      );
+      if (copy.id == null) return;
+      // Title the copy "<name> (copy)" — strip any existing "(copy)" suffix on the
+      // source first so we never chain "(copy) (copy)".
+      const base = (this.getMeal(mealId)?.name ?? copy.name ?? 'Meal')
+        .replace(/\s*\(copy\)\s*$/i, '')
+        .trim();
+      const body: UpdateMealRequest = { name: `${base} (copy)` };
+      await firstValueFrom(this.http.put<Meal>(`${this.baseUrl}/meal/${copy.id}`, body));
+      // Fresh (unpinned) copy → linked directly into the empty slot (no re-fork).
+      await this.placeMealInSlot(menuId, slotOrder, copy.id);
+      this.notification.show('Copied', 'success');
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
   /** Re-fetch a menu's detail + all its slotted meals into the caches. Used
    *  after slot placement (the slot may hold a new forked meal id; the menu's
    *  pinned flag may have flipped) and after pinning a menu (server cascade

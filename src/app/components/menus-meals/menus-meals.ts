@@ -27,14 +27,14 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
             [dirty]="dirtyFor(slot.mealId)"
             [dropHighlight]="dropHighlightFor(slot.slotOrder)"
             [repeatRole]="repeatRoleFor(slot.slotOrder)"
-            [canRepeat]="canRepeatFor(slot)"
+            [canDuplicate]="canDuplicateFor(slot)"
             (placeMeal)="onPlace($event)"
             (deleteMeal)="onDelete($event)"
             (toggleAdd)="onToggleAdd(slot)"
             (renameMeal)="rotation.updateMealName($event.mealId, $event.name)"
             (pinMeal)="onPinMeal(slot.mealId)"
             (removeFromBinder)="onRemoveFromBinder(slot.mealId)"
-            (repeatMeal)="onRepeatMeal($event)"
+            (duplicateMeal)="onDuplicateMeal($event)"
             (removeItem)="onRemoveItem(slot.mealId, $event)"
             (editItem)="onEditItem(slot, $event)"
             (dropFood)="rotation.addFoodToEditingMeal($event.food, $event.serving)" />
@@ -108,9 +108,9 @@ export class MenusMealsComponent {
     return this.repeatRoles().get(slotOrder) ?? null;
   }
 
-  /** A meal can be repeated when it holds a meal, isn't itself a clone, and the
-   *  menu still has an empty slot to fan into. */
-  canRepeatFor(slot: MenuSlot): boolean {
+  /** A meal can be duplicated when it holds a meal, isn't itself a clone, and the
+   *  menu still has an empty slot for the "(copy)" to land in. */
+  canDuplicateFor(slot: MenuSlot): boolean {
     return (
       slot.mealId != null &&
       this.repeatRoleFor(slot.slotOrder) !== 'clone' &&
@@ -118,11 +118,12 @@ export class MenusMealsComponent {
     );
   }
 
-  /** Repeat clicked on a meal card — fan it out into the menu's empty slots. */
-  onRepeatMeal(mealId: number): void {
+  /** Copy clicked on a meal card — duplicate it into the menu's next empty slot
+   *  as an independent "(copy)". */
+  onDuplicateMeal(mealId: number): void {
     const menuId = this.menu()?.id;
     if (menuId == null) return;
-    void this.rotation.repeatMealIntoSlots(menuId, mealId);
+    void this.rotation.duplicateMealIntoSlot(menuId, mealId);
   }
 
   /** Pin icon state for a slotted meal, resolved from the cached Meal. */

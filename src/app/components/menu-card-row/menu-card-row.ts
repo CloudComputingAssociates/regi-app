@@ -68,19 +68,19 @@ import { RotationService } from '../../services/rotation.service';
                  Duplicate ("Copy") action + orig/copy tag + "Menu A" watermark on
                  the right. Duplicating a menu is uncommon, so it's a quiet button. -->
             <div class="menu-foot">
-              <!-- Summary: Protein + Fiber discs (we browse by those quantities,
-                   not calories) + the dropdown chevron. Cals is demoted into the
-                   reveal below. -->
-              <span class="chip protein">P {{ round(rotation.menuTotals(menu.menuId).proteinG) }}</span>
-              <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
+              <!-- Summary: the dropdown chevron FIRST, then Protein + Fiber discs
+                   (we browse by those quantities, not calories). Cals is demoted
+                   into the reveal below. -->
               <button
                 type="button"
                 class="card-toggle"
-                [matTooltip]="isOpen(menu.menuId) ? 'Hide macros' : 'Show all macros'"
+                [matTooltip]="isOpen(menu.menuId) ? 'Hide extra macros' : 'Show Calories, Carbs & Fats'"
                 matTooltipPosition="above"
                 (click)="$event.stopPropagation(); toggleMacros(menu.menuId)">
                 <mat-icon>{{ isOpen(menu.menuId) ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
+              <span class="chip protein">P {{ round(rotation.menuTotals(menu.menuId).proteinG) }}</span>
+              <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
               <!-- "Menu A" stamp sits right beside the dropdown chevron (left
                    group); the copy/delete pair is pushed to the far right. -->
               <span class="menu-watermark">Menu {{ letter(i) }}</span>
@@ -109,14 +109,13 @@ import { RotationService } from '../../services/rotation.service';
                 </button>
               </div>
             </div>
-            <!-- Chevron reveal (default OPEN): repeats ALL discs followed by cals,
-                 plus the orig/copy tag. Toggling never shifts the foot buttons. -->
+            <!-- Chevron reveal (default OPEN): the OTHER macros — Carbs, Fat, Cals
+                 (Protein + Fiber already show in the summary) — plus the orig/copy
+                 tag. Toggling never shifts the foot buttons. -->
             @if (isOpen(menu.menuId)) {
               <div class="binder-chips">
-                <span class="chip protein">P {{ round(rotation.menuTotals(menu.menuId).proteinG) }}</span>
                 <span class="chip carb">C {{ round(rotation.menuTotals(menu.menuId).carbG) }}</span>
                 <span class="chip fat">F {{ round(rotation.menuTotals(menu.menuId).fatG) }}</span>
-                <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
                 <span class="menu-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
                 <!-- orig/copy tag — ONLY when a duplicate is present (server names a
                      copy "<name> (copy)"). Origin reads quiet blue; copy reads grey. -->

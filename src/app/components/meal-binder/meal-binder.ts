@@ -133,17 +133,17 @@ import { Meal, Menu } from '../../models';
                       matTooltipClass="binder-name-tip"
                       matTooltipPosition="below"
                       [matTooltipShowDelay]="300">{{ menuDisplayName(menu) }}</span>
-                    <span
-                      class="card-cals"
-                      matTooltip="Show / hide macros"
-                      (click)="$event.stopPropagation(); toggleCard('menu-' + menu.id)">{{ round(menu.totalCalories) }} cals</span>
+                    <!-- Browse-by summary: the chevron in front of the Protein +
+                         Fiber discs; carbs/fat/cals demoted into the reveal. -->
                     <button
                       type="button"
                       class="card-toggle"
-                      [matTooltip]="isCardOpen('menu-' + menu.id) ? 'Hide macros' : 'Show macros'"
+                      [matTooltip]="isCardOpen('menu-' + menu.id) ? 'Hide extra macros' : 'Show Calories, Carbs & Fats'"
                       (click)="$event.stopPropagation(); toggleCard('menu-' + menu.id)">
                       <mat-icon>{{ isCardOpen('menu-' + menu.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
                     </button>
+                    <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
+                    <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
                     <button
                       type="button"
                       class="card-delete icon-disc icon-disc-danger"
@@ -152,14 +152,13 @@ import { Meal, Menu } from '../../models';
                       <mat-icon>delete_outline</mat-icon>
                     </button>
                   </div>
-                  <!-- Macro disks hidden until the chevron is flipped; same colors
-                       + order as meal cards. Calories shown as blue text above. -->
+                  <!-- Reveal: the OTHER macros — Carbs, Fat, Cals — hidden until
+                       the chevron is flipped (Protein + Fiber show up above). -->
                   @if (isCardOpen('menu-' + menu.id)) {
                     <div class="binder-chips">
-                      <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
                       <span class="chip carb">C {{ round(menu.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(menu.totalFatG) }}</span>
-                      <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
+                      <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
                     </div>
                   }
                 </div>
@@ -199,17 +198,17 @@ import { Meal, Menu } from '../../models';
                       matTooltipClass="binder-name-tip"
                       matTooltipPosition="below"
                       [matTooltipShowDelay]="300">{{ meal.name }}</span>
-                    <span
-                      class="card-cals"
-                      matTooltip="Show / hide macros"
-                      (click)="$event.stopPropagation(); toggleCard('meal-' + meal.id)">{{ round(meal.totalCalories) }} cals</span>
+                    <!-- Browse-by summary: the chevron in front of the Protein +
+                         Fiber discs; carbs/fat/cals demoted into the reveal. -->
                     <button
                       type="button"
                       class="card-toggle"
-                      [matTooltip]="isCardOpen('meal-' + meal.id) ? 'Hide macros' : 'Show macros'"
+                      [matTooltip]="isCardOpen('meal-' + meal.id) ? 'Hide extra macros' : 'Show Calories, Carbs & Fats'"
                       (click)="$event.stopPropagation(); toggleCard('meal-' + meal.id)">
                       <mat-icon>{{ isCardOpen('meal-' + meal.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
                     </button>
+                    <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
+                    <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
                     <button
                       type="button"
                       class="card-delete icon-disc icon-disc-danger"
@@ -218,12 +217,13 @@ import { Meal, Menu } from '../../models';
                       <mat-icon>delete_outline</mat-icon>
                     </button>
                   </div>
+                  <!-- Reveal: the OTHER macros — Carbs, Fat, Cals — hidden until
+                       the chevron is flipped (Protein + Fiber show up above). -->
                   @if (isCardOpen('meal-' + meal.id)) {
                     <div class="binder-chips">
-                      <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
                       <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
-                      <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
+                      <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
                     </div>
                   }
                 </div>
