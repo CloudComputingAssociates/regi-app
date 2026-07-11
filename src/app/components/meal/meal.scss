@@ -135,7 +135,7 @@
 // (debossed) engraved look, same family as the menu-tile watermark.
 .meal-watermark {
   margin-left: auto; // push right; chips + cals stay grouped on the left
-  font-size: 16px;
+  font-size: 11px;   // small so the chip row + cals fit one line on a 3-up card
   font-weight: 600;
   letter-spacing: 0.3px;
   color: #55585c;
@@ -149,21 +149,21 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px; // tighter so chips + cals + Meal N fit one line on a 3-up card
 
   // Meal total calories — sits right next to the chips (left group), NOT pushed
   // to the far edge (the "Meal N" stamp takes the right).
   .meal-cals {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 400;
     color: #4da6ff;
     white-space: nowrap;
   }
 
   .chip {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500; // lighter so the chips don't grab the eye off the food text
-    padding: 2px 8px;
+    padding: 2px 6px;
     border-radius: 10px;
     color: rgba(255, 255, 255, 0.82); // softened white so it doesn't pop
 
