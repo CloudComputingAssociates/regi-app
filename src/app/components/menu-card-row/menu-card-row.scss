@@ -47,9 +47,8 @@
     border-color: #4da6ff;
   }
 
-  // Top strip: pin leads, the rename box flexes to fill the middle, trash trails
-  // (mirrors the meal card header). The name box flexing naturally right-justifies
-  // the trash — no margin hacks.
+  // Top strip: pin leads, the rename box flexes to fill the freed width (copy +
+  // trash now live in the foot). Mirrors the meal card header.
   .card-top {
     display: flex;
     align-items: center;
@@ -113,8 +112,8 @@
 }
 
 // Menu discs use the shared raised .icon-disc chrome. Pin leads the top strip
-// (lined-sheet icon; yellow when pinned via .icon-disc-pinned); the Repeat entry
-// + trash are grouped at the far right (the Repeat cluster carries margin-left:auto).
+// (lined-sheet icon; yellow when pinned via .icon-disc-pinned); the Copy + trash
+// discs are grouped in the foot (.foot-actions carries margin-left:auto).
 
 // "Save me" nudge on the menu pin — a brief green bloom + pulse fired only when
 // the menu is RENAMED (not on meal-add). Mirrors the meal card's pin save-hint;
@@ -208,8 +207,9 @@
     &:hover { color: #ffffff; }
   }
 
-  // Right-group wrapper: Copy button (when present) + orig/copy tag, kept together
-  // and pushed right so the layout holds whether or not the button is shown.
+  // Right-group wrapper: Copy disc + trash disc (lined-up icon-only pair) +
+  // orig/copy tag, kept together and pushed right so the layout holds whether or
+  // not the Copy disc is shown.
   .foot-actions {
     flex: 0 0 auto;
     margin-left: auto; // opens the gap: cals+chevron left, actions right
@@ -218,26 +218,13 @@
     gap: 6px;
   }
 
-  // Duplicate ("Copy") — a quiet compact button (icon + small label). Blue-tinted
-  // copy glyph, same family as the meal card's repeat disc.
+  // Duplicate — icon-only disc using the shared raised .icon-disc chrome; blue-
+  // tinted copy glyph, matching the meal card's .repeat-disc.
   .menu-copy {
     flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 2px 7px 2px 5px;
-    border: 1px solid #4a4a4a;
-    border-radius: 10px;
-    background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
-    color: #7fbfff;
-    font-size: 11px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: border-color 0.12s ease, color 0.12s ease;
 
-    .mat-icon { width: 14px; height: 14px; font-size: 14px; line-height: 14px; }
-    .copy-label { line-height: 1; }
-    &:hover { border-color: #4da6ff; color: #ffffff; }
+    .mat-icon { color: #7fbfff; }
+    &:hover:not(:disabled) { color: #ffffff; }
   }
 
   // orig / copy tag — tiny uppercase pill, only rendered when a duplicate exists.

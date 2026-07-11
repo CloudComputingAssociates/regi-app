@@ -23,8 +23,8 @@ import { RotationService } from '../../services/rotation.service';
             class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
             (click)="select.emit(menu.menuId)">
-            <!-- Top strip: pin leads, the rename box fills the middle, trash trails.
-                 Rename lives up top; the Duplicate action moved to the foot below. -->
+            <!-- Top strip: pin leads, the rename box fills the freed width.
+                 Duplicate + trash both live in the foot below. -->
             <div class="card-top">
               <button
                 type="button"
@@ -63,14 +63,6 @@ import { RotationService } from '../../services/rotation.service';
                   </button>
                 }
               </div>
-              <button
-                type="button"
-                class="menu-delete icon-disc icon-disc-danger"
-                matTooltip="Delete this Menu"
-                matTooltipPosition="above"
-                (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
-                <mat-icon>delete_outline</mat-icon>
-              </button>
             </div>
             <!-- Foot: running calories + macro-chip toggle on the left; the
                  Duplicate ("Copy") action + orig/copy tag + "Menu A" watermark on
@@ -87,17 +79,27 @@ import { RotationService } from '../../services/rotation.service';
               </button>
               <div class="foot-actions">
                 <!-- Copy offered only on an ORIGIN / standalone menu — a copy is
-                     NOT re-copyable (avoids "(copy) (copy)" chains). -->
+                     NOT re-copyable (avoids "(copy) (copy)" chains). Icon-only disc,
+                     matching the meal card's repeat disc. -->
                 @if (copyRoleFor(menu) !== 'copy') {
                   <button
                     type="button"
-                    class="menu-copy"
+                    class="menu-copy icon-disc"
                     matTooltip="Duplicate this menu"
                     matTooltipPosition="above"
                     (click)="$event.stopPropagation(); duplicateMenu.emit(menu.menuId)">
-                    <mat-icon>content_copy</mat-icon><span class="copy-label">Copy</span>
+                    <mat-icon>content_copy</mat-icon>
                   </button>
                 }
+                <!-- Trash pulled down beside Copy: a lined-up icon-only pair. -->
+                <button
+                  type="button"
+                  class="menu-delete icon-disc icon-disc-danger"
+                  matTooltip="Delete this Menu"
+                  matTooltipPosition="above"
+                  (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
                 <!-- orig/copy tag — ONLY when a duplicate is present (server names a
                      copy "<name> (copy)"). Origin reads quiet blue; copy reads amber. -->
                 @if (copyRoleFor(menu); as role) {

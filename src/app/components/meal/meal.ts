@@ -27,8 +27,9 @@ interface SlotMacros {
     <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()" [class.clone]="isClone()">
       <div class="slot-header">
         <!-- Pin disc leads; the meal NAME box is the primary title (filled slots)
-             or "Meal N" for an empty slot; + and trash discs trail. All discs
-             share the raised .icon-disc chrome and one size. -->
+             or "Meal N" for an empty slot; copy + trash discs trail (the + add
+             disc moved down to the cals row). All discs share the raised
+             .icon-disc chrome and one size. -->
         @if (slot().mealId != null && !isClone()) {
           <!-- Save-state disc (same .icon-disc circle throughout):
                • clean, unsaved → GREY fork & knife → click to save (always live)
@@ -85,20 +86,8 @@ interface SlotMacros {
             </div>
           }
         </div>
-        <!-- + opens the food lookaside targeted at this meal, flipping to a
-             green check while active; trash deletes the meal. Editing/removing
-             individual foods happens directly on each row. -->
-        @if (!slot().isDiningOut && !isClone()) {
-          <button
-            type="button"
-            class="icon-disc add-affordance"
-            [class.icon-disc-pressed]="editing()"
-            [matTooltip]="editing() ? 'Adding foods (close from the food list)' : 'Add food to meal'"
-            matTooltipPosition="above"
-            (click)="toggleAdd.emit()">
-            <mat-icon>add</mat-icon>
-          </button>
-        }
+        <!-- Trash deletes the meal (the + add button moved down to the cals row).
+             Editing/removing individual foods happens directly on each row. -->
         <!-- Repeat: fan THIS meal out as read-only clones into the menu's empty
              slots (shared pointer, no copies). Only offered on a non-clone meal
              while there's at least one empty slot to fill. -->
@@ -143,7 +132,7 @@ interface SlotMacros {
               matTooltip="Add foods to build this meal"
               matTooltipPosition="above"
               (click)="toggleAdd.emit()">
-              Create
+              + Add meal
             </button>
           </div>
           <span class="pick-sub">or drag from <mat-icon class="inline-icon">restaurant</mat-icon> <span class="meals-word">Meals</span></span>
@@ -164,6 +153,20 @@ interface SlotMacros {
               <span class="chip fat">F {{ round(macros().fatG) }}</span>
               <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
               <span class="meal-cals">{{ calories() }} cals</span>
+              <!-- + opens the food lookaside targeted at this meal, flipping to a
+                   green check while active. Sits beside the cals so it's not missed
+                   up in the header. Not offered on a read-only clone. -->
+              @if (!isClone()) {
+                <button
+                  type="button"
+                  class="icon-disc add-affordance"
+                  [class.icon-disc-pressed]="editing()"
+                  [matTooltip]="editing() ? 'Adding foods (close from the food list)' : 'Add food to meal'"
+                  matTooltipPosition="above"
+                  (click)="toggleAdd.emit()">
+                  <mat-icon>add</mat-icon>
+                </button>
+              }
               <!-- Small orig/clone tag — ONLY present when this meal is repeated
                    (shared across slots). Sits by the "Meal N" stamp. -->
               @if (repeatRole()) {

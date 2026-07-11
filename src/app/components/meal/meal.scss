@@ -47,7 +47,7 @@
   }
 
   // The name box fills the space between the leading pin disc and the trailing
-  // +/trash discs.
+  // copy/trash discs (the + add disc moved down to the cals row, freeing width).
   .header-name {
     flex: 1 1 auto;
     min-width: 0;
@@ -116,8 +116,8 @@
   }
 
   // All header discs use the shared global .icon-disc (one size, raised chrome):
-  // pin-disc leads, then +, then trash. The name box (flex:1) fills the middle,
-  // so no explicit margins are needed to right-justify the +/trash cluster.
+  // pin-disc leads, then copy, then trash. The name box (flex:1) fills the middle,
+  // so no explicit margins are needed to right-justify the copy/trash cluster.
   .pin-disc {
     flex: 0 0 auto;
     // Unpinned pin uses the shared .icon-disc grey icon so it reads as the same
