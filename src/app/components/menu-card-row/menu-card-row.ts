@@ -269,12 +269,15 @@ export class MenuCardRowComponent {
   }
 
   /** Tile label: a real custom name if set, else the positional "Menu A/B/C".
-   *  Server defaults are numeric ("Menu 4"), which we treat as unnamed and show
-   *  the LETTER instead — menus are lettered so they never look like numbered
-   *  meals. */
+   *  Server defaults are numeric ("Menu 4") and a duplicate appends " (copy)"
+   *  ("Menu 4 (copy)"); both are treated as unnamed → show the LETTER instead, so
+   *  the strip always reads Menu A, B, C, … across (the amber "copy" badge is
+   *  what marks a duplicate, not the name). A real custom name still wins, with
+   *  any trailing "(copy)" stripped for display. */
   displayName(menu: RotationMenuEntry, index: number): string {
-    const name = menu.menuName?.trim();
-    if (name && !/^menu\s+\d+$/i.test(name)) return name;
+    const raw = menu.menuName?.trim() ?? '';
+    const base = raw.replace(/(\s*\(copy\))+\s*$/i, '').trim(); // drop copy chain
+    if (base && !/^menu\s+\d+$/i.test(base)) return base;
     return `Menu ${this.letter(index)}`;
   }
 
