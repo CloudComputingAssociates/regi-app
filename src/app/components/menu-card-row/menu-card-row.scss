@@ -208,12 +208,20 @@
     &:hover { color: #ffffff; }
   }
 
-  // Duplicate ("Copy") — a quiet compact button (icon + small label), anchored to
-  // the right group of the foot. Blue-tinted copy glyph, same family as the meal
-  // card's repeat disc.
+  // Right-group wrapper: Copy button (when present) + orig/copy tag, kept together
+  // and pushed right so the layout holds whether or not the button is shown.
+  .foot-actions {
+    flex: 0 0 auto;
+    margin-left: auto; // opens the gap: cals+chevron left, actions right
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  // Duplicate ("Copy") — a quiet compact button (icon + small label). Blue-tinted
+  // copy glyph, same family as the meal card's repeat disc.
   .menu-copy {
     flex: 0 0 auto;
-    margin-left: auto; // opens the gap: cals+chevron left, copy group right
     display: inline-flex;
     align-items: center;
     gap: 3px;

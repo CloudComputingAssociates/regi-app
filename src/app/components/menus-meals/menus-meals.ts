@@ -152,7 +152,7 @@ export class MenusMealsComponent {
       panelClass: 'wipe-dialog-panel',
       data: {
         message: 'You are removing the meal from your Binder, but it will remain slotted.',
-        confirmLabel: 'O.K.',
+        confirmLabel: 'OK',
         onConfirm: () => void this.rotation.removeMealFromBinder(mealId),
       },
     });

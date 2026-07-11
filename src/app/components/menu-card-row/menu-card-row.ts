@@ -85,19 +85,25 @@ import { RotationService } from '../../services/rotation.service';
                 (click)="$event.stopPropagation(); toggleMacros(menu.menuId)">
                 <mat-icon>{{ isOpen(menu.menuId) ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
-              <button
-                type="button"
-                class="menu-copy"
-                matTooltip="Duplicate this menu"
-                matTooltipPosition="above"
-                (click)="$event.stopPropagation(); duplicateMenu.emit(menu.menuId)">
-                <mat-icon>content_copy</mat-icon><span class="copy-label">Copy</span>
-              </button>
-              <!-- orig/copy tag — ONLY when a duplicate is present (server names a
-                   copy "<name> (copy)"). Origin reads quiet blue; copy reads amber. -->
-              @if (copyRoleFor(menu); as role) {
-                <span class="copy-badge" [class.is-copy]="role === 'copy'">{{ role }}</span>
-              }
+              <div class="foot-actions">
+                <!-- Copy offered only on an ORIGIN / standalone menu — a copy is
+                     NOT re-copyable (avoids "(copy) (copy)" chains). -->
+                @if (copyRoleFor(menu) !== 'copy') {
+                  <button
+                    type="button"
+                    class="menu-copy"
+                    matTooltip="Duplicate this menu"
+                    matTooltipPosition="above"
+                    (click)="$event.stopPropagation(); duplicateMenu.emit(menu.menuId)">
+                    <mat-icon>content_copy</mat-icon><span class="copy-label">Copy</span>
+                  </button>
+                }
+                <!-- orig/copy tag — ONLY when a duplicate is present (server names a
+                     copy "<name> (copy)"). Origin reads quiet blue; copy reads amber. -->
+                @if (copyRoleFor(menu); as role) {
+                  <span class="copy-badge" [class.is-copy]="role === 'copy'">{{ role }}</span>
+                }
+              </div>
               <span class="menu-watermark">Menu {{ letter(i) }}</span>
             </div>
             @if (isOpen(menu.menuId)) {

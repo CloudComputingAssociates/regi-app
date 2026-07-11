@@ -468,7 +468,7 @@ export class MenusPanelComponent implements OnInit {
       panelClass: 'wipe-dialog-panel',
       data: {
         title: 'Wipe Menus',
-        message: "You will lose your work for this week's menus. O.K. to proceed?",
+        message: "You will lose your work for this week's menus. OK to proceed?",
         teachLine: 'All menus will be wiped. Meal slots all cleared.\nMeals saved to Binder will be retained.',
         confirmLabel: 'Proceed',
         onConfirm: () => void this.rotation.wipeMenus(),
