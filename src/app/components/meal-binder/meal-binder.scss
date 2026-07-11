@@ -362,7 +362,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 10px 4px 10px 12px; // tight RHS — trash rides near the right edge
   border: 1px solid #4a4a4a;
   border-radius: 8px;
   background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);

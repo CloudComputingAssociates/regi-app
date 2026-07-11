@@ -5,7 +5,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 12px 4px 12px 14px; // tight RHS — delete rides near the right edge
   border: 1px solid #4a4a4a;
   border-radius: 8px;
   background: #3a3a3a; // match the macro bar shade for a uniform card family
@@ -36,7 +36,7 @@
 .slot-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px; // tighter so the copy + delete pair reads as a unit in the corner
 
   // "Meal N" for an EMPTY slot only (filled slots show the name box instead).
   .slot-title {
@@ -85,28 +85,34 @@
     &:focus { caret-color: #4da6ff; }
   }
 
-  // CR-LF (enter) arrow — a round disc just OUTSIDE the box (20×20, the canonical
-  // dialog-disc size). Always present; GREY at rest, standard confirm-green
-  // (.active) while the title is being edited. Tight padding, icon-only.
+  // CR-LF (enter) arrow — a round disc just OUTSIDE the box, styled like the other
+  // discs (same raised .icon-disc chrome) so it reads as one of the family. GREY
+  // raised at rest; standard confirm-green (.active) while the title is edited.
   .name-commit {
     flex: 0 0 auto;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0;
-    border: none;
+    border: 1px solid #262626;
+    border-top-color: #6a6a6a;
     border-radius: 50%;
-    background: #5a5a5a;
-    color: #ffffff;
+    background: linear-gradient(180deg, #4d4d4d 0%, #3a3a3a 100%);
+    color: #cfcfcf;
     cursor: pointer;
-    transition: background 0.12s ease;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    transition: background 0.12s ease, color 0.12s ease;
 
-    &:hover { background: #6a6f75; }
+    &:hover { color: #ffffff; }
 
     &.active {
+      border-color: #1f7a2e;
       background: #28c941;
+      color: #ffffff;
       &:hover { background: #23b23a; }
     }
 
@@ -148,6 +154,13 @@
 .repeat-disc {
   .mat-icon { color: #7fbfff; }
   &:hover:not(:disabled) { color: #ffffff; }
+  // Disabled-grey when the menu is full (no empty slot for the "(copy)") — the
+  // button stays put rather than popping in/out as slots free up.
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+    .mat-icon { color: #9aa0a6; }
+  }
 }
 
 // orig / clone tag — small pill, only rendered when the meal is repeated. Origin
@@ -185,22 +198,6 @@
     0 0 7px rgba(40, 201, 65, 0.55);
 }
 
-// Etched "Meal N" stamp — trailing the header disc pair (the name box's flex-grow
-// packs it to the right). In-flow (not an absolute corner) so it can't clip on a
-// narrow laptop card. Dim + sunken (debossed) engraved look, same family as the
-// menu-tile watermark.
-.meal-watermark {
-  flex: 0 0 auto;
-  font-size: 14px;   // matched to the menu card's "Menu N" stamp (met in the middle)
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  color: #55585c;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
-  user-select: none;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
 // Summary macro row (always visible): the dropdown chevron FIRST, then the
 // Protein + Fiber discs (browse-by values). Copy + delete are pushed to the far
 // right so expand/collapse of the reveal never nudges them — nothing jumps.
@@ -226,23 +223,17 @@
     .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
     &:hover { color: #ffffff; }
   }
-
-  // Copy + delete pinned to the far right, held still across expand/collapse.
-  .summary-actions {
-    margin-left: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
 }
 
 // Chevron reveal — the OTHER macros (Carbs, Fat) followed by cals, on their own
-// row. Opening it pushes the food rows down while the summary row stays put.
+// row. Indented by the chevron's width so its discs line up under the summary's
+// Protein/Fiber discs (a lined-up array, not offset). Opening pushes food down.
 .macro-chips {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
+  padding-left: 26px; // chevron (22) + gap (4) → C lines up under P
 
   // Meal total calories — trails the disc set inside the reveal (we browse by
   // protein/fiber, so calories is demoted into the dropdown).

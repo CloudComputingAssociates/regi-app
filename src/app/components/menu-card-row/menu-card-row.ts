@@ -23,8 +23,8 @@ import { RotationService } from '../../services/rotation.service';
             class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
             (click)="select.emit(menu.menuId)">
-            <!-- Top strip: pin leads, the rename box fills the freed width.
-                 Duplicate + trash both live in the foot below. -->
+            <!-- Top strip: pin leads, the rename box fills the middle, copy +
+                 delete pin to the upper-right corner (tight pair). -->
             <div class="card-top">
               <button
                 type="button"
@@ -63,14 +63,31 @@ import { RotationService } from '../../services/rotation.service';
                   <mat-icon>keyboard_return</mat-icon>
                 </button>
               </div>
+              <!-- Copy + delete in the upper-right corner (tight pair). Copy is
+                   disabled-grey on a copy (a copy isn't re-copyable) — never
+                   hidden, so nothing pops in/out and the corner stays stable. -->
+              <button
+                type="button"
+                class="menu-copy icon-disc"
+                [disabled]="copyRoleFor(menu) === 'copy'"
+                matTooltip="Duplicate this menu"
+                matTooltipPosition="above"
+                (click)="$event.stopPropagation(); duplicateMenu.emit(menu.menuId)">
+                <mat-icon>content_copy</mat-icon>
+              </button>
+              <button
+                type="button"
+                class="menu-delete icon-disc icon-disc-danger"
+                matTooltip="Delete this Menu"
+                matTooltipPosition="above"
+                (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
             </div>
-            <!-- Foot: running calories + macro-chip toggle on the left; the
-                 Duplicate ("Copy") action + orig/copy tag + "Menu A" watermark on
-                 the right. Duplicating a menu is uncommon, so it's a quiet button. -->
+            <!-- Foot: the dropdown chevron FIRST, then the Protein + Fiber discs
+                 (we browse by those quantities, not calories). Cals + carbs/fat
+                 are demoted into the reveal below. -->
             <div class="menu-foot">
-              <!-- Summary: the dropdown chevron FIRST, then Protein + Fiber discs
-                   (we browse by those quantities, not calories). Cals is demoted
-                   into the reveal below. -->
               <button
                 type="button"
                 class="card-toggle"
@@ -81,33 +98,6 @@ import { RotationService } from '../../services/rotation.service';
               </button>
               <span class="chip protein">P {{ round(rotation.menuTotals(menu.menuId).proteinG) }}</span>
               <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
-              <!-- "Menu A" stamp sits right beside the dropdown chevron (left
-                   group); the copy/delete pair is pushed to the far right. -->
-              <span class="menu-watermark">Menu {{ letter(i) }}</span>
-              <div class="foot-actions">
-                <!-- Copy offered only on an ORIGIN / standalone menu — a copy is
-                     NOT re-copyable (avoids "(copy) (copy)" chains). Icon-only disc,
-                     matching the meal card's repeat disc. -->
-                @if (copyRoleFor(menu) !== 'copy') {
-                  <button
-                    type="button"
-                    class="menu-copy icon-disc"
-                    matTooltip="Duplicate this menu"
-                    matTooltipPosition="above"
-                    (click)="$event.stopPropagation(); duplicateMenu.emit(menu.menuId)">
-                    <mat-icon>content_copy</mat-icon>
-                  </button>
-                }
-                <!-- Trash pulled down beside Copy: a lined-up icon-only pair. -->
-                <button
-                  type="button"
-                  class="menu-delete icon-disc icon-disc-danger"
-                  matTooltip="Delete this Menu"
-                  matTooltipPosition="above"
-                  (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
-              </div>
             </div>
             <!-- Chevron reveal (default OPEN): the OTHER macros — Carbs, Fat, Cals
                  (Protein + Fiber already show in the summary) — plus the orig/copy

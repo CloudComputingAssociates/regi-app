@@ -27,9 +27,9 @@ interface SlotMacros {
     <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()" [class.clone]="isClone()">
       <div class="slot-header">
         <!-- Pin disc leads; the meal NAME box is the primary title (filled slots)
-             or "Meal N" for an empty slot; the "Meal N" stamp trails. Copy +
-             delete live down in the macro summary row; the + add sits in the
-             foods area. All discs share the raised .icon-disc chrome + one size. -->
+             or "Meal N" for an empty slot. Copy + delete pin to the upper-right
+             corner; the + add sits in the foods area. All discs share the raised
+             .icon-disc chrome + one size. -->
         @if (slot().mealId != null && !isClone()) {
           <!-- Save-state disc (same .icon-disc circle throughout):
                • clean, unsaved → GREY fork & knife → click to save (always live)
@@ -85,12 +85,30 @@ interface SlotMacros {
             </div>
           }
         </div>
-        <!-- Copy + delete moved down to the macro summary row; the + add disc
-             moved into the foods area. Individual food edit/remove is per-row. -->
-        <!-- "Meal N" positional stamp — trailing the header. Empty slots show it
-             via .slot-title instead, so only stamp filled/clone slots here. -->
+        <!-- Copy + delete pinned to the upper-right corner as a tight pair, hard
+             to the right edge. Copy is disabled-grey when the menu is full (no
+             empty slot for the "(copy)") — never hidden, so deleting a slot never
+             makes it pop in/out. The + add disc lives in the foods area. -->
+        @if (slot().mealId != null && !isClone()) {
+          <button
+            type="button"
+            class="icon-disc repeat-disc"
+            [disabled]="!canDuplicate()"
+            matTooltip="Duplicate this meal"
+            matTooltipPosition="above"
+            (click)="duplicateMeal.emit(slot().mealId!)">
+            <mat-icon>content_copy</mat-icon>
+          </button>
+        }
         @if (slot().mealId != null) {
-          <span class="meal-watermark">Meal {{ slot().slotOrder }}</span>
+          <button
+            type="button"
+            class="icon-disc icon-disc-danger"
+            [matTooltip]="isClone() ? 'Remove this repeat (frees the slot)' : 'Delete meal'"
+            matTooltipPosition="above"
+            (click)="deleteMeal.emit(slot().slotOrder)">
+            <mat-icon>delete_outline</mat-icon>
+          </button>
         }
       </div>
 
@@ -130,8 +148,7 @@ interface SlotMacros {
           @if (slot().mealId != null) {
             <!-- Summary macro row: dropdown chevron FIRST, then the Protein +
                  Fiber discs (we browse meals by those quantities, not calories).
-                 Copy + delete are pushed to the far right so they hold still when
-                 the reveal opens/closes. -->
+                 Copy + delete live up in the header corner. -->
             <div class="macro-summary">
               <button
                 type="button"
@@ -143,28 +160,6 @@ interface SlotMacros {
               </button>
               <span class="chip protein">P {{ round(macros().proteinG) }}</span>
               <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
-              <div class="summary-actions">
-                <!-- Copy → duplicate this meal as an independent "(copy)" in the
-                     next empty slot. Non-clone meals, while a slot is free. -->
-                @if (canDuplicate()) {
-                  <button
-                    type="button"
-                    class="icon-disc repeat-disc"
-                    matTooltip="Duplicate this meal"
-                    matTooltipPosition="above"
-                    (click)="duplicateMeal.emit(slot().mealId!)">
-                    <mat-icon>content_copy</mat-icon>
-                  </button>
-                }
-                <button
-                  type="button"
-                  class="icon-disc icon-disc-danger"
-                  [matTooltip]="isClone() ? 'Remove this repeat (frees the slot)' : 'Delete meal'"
-                  matTooltipPosition="above"
-                  (click)="deleteMeal.emit(slot().slotOrder)">
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
-              </div>
             </div>
             <!-- Chevron reveal (default OPEN): the OTHER macros — Carbs, Fat, Cals
                  (Protein + Fiber already show in the summary, so no repeat) — plus
@@ -305,9 +300,9 @@ export class MealComponent {
 
   readonly isEmpty = computed(() => !this.slot().isDiningOut && this.slot().mealId == null);
 
-  /** Macro reveal open state — defaults OPEN so meal + menu cards line up the
-   *  same on load. Collapsed shows just the Protein + Fiber summary discs. */
-  readonly macrosOpen = signal(true);
+  /** Macro reveal open state — meals START CLOSED (just the Protein + Fiber
+   *  summary discs); the chevron reveals Carbs/Fat/Cals below. */
+  readonly macrosOpen = signal(false);
 
   toggleMacros(): void {
     this.macrosOpen.update((v) => !v);

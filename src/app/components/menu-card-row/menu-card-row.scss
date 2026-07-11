@@ -27,10 +27,10 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  // Wider so a typical menu name fits in both display and edit modes; the strip
-  // has its own horizontal scroll to absorb the extra width.
-  min-width: 188px;
-  padding: 10px 12px;
+  // Match the meal card's minimum width so menu + meal cards read the same size;
+  // the strip has its own horizontal scroll to absorb the width.
+  min-width: 280px;
+  padding: 10px 4px 10px 12px; // tight RHS — delete rides near the right edge
   border: 2px solid #4a4a4a;
   border-radius: 8px;
   background: #3a3a3a; // match the macro bar shade for a uniform card family
@@ -47,12 +47,12 @@
     border-color: #4da6ff;
   }
 
-  // Top strip: pin leads, the rename box flexes to fill the freed width (copy +
-  // trash now live in the foot). Mirrors the meal card header.
+  // Top strip: pin leads, the rename box flexes to fill the middle, copy + delete
+  // pin to the upper-right corner. Mirrors the meal card header.
   .card-top {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px; // tighter so the copy + delete pair reads as a unit in the corner
   }
 
   // Rename box — the flexing middle of the top strip. Flex row so the commit
@@ -81,28 +81,34 @@
     &:focus { caret-color: #4da6ff; }
   }
 
-  // CR-LF (enter) arrow — a round disc just OUTSIDE the box (20×20, the canonical
-  // dialog-disc size). Always present; GREY at rest, standard confirm-green
-  // (.active) while the title is being edited. Tight padding, icon-only.
+  // CR-LF (enter) arrow — a round disc just OUTSIDE the box, styled like the other
+  // discs (same raised .icon-disc chrome) so it reads as one of the family. GREY
+  // raised at rest; standard confirm-green (.active) while the title is edited.
   .name-commit {
     flex: 0 0 auto;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0;
-    border: none;
+    border: 1px solid #262626;
+    border-top-color: #6a6a6a;
     border-radius: 50%;
-    background: #5a5a5a;
-    color: #ffffff;
+    background: linear-gradient(180deg, #4d4d4d 0%, #3a3a3a 100%);
+    color: #cfcfcf;
     cursor: pointer;
-    transition: background 0.12s ease;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    transition: background 0.12s ease, color 0.12s ease;
 
-    &:hover { background: #6a6f75; }
+    &:hover { color: #ffffff; }
 
     &.active {
+      border-color: #1f7a2e;
       background: #28c941;
+      color: #ffffff;
       &:hover { background: #23b23a; }
     }
 
@@ -177,15 +183,14 @@
   }
 }
 
-// Summary foot: Protein + Fiber discs + the macro-chip chevron, then the etched
-// "Menu A" stamp; the copy/delete pair is pushed to the far right so it holds
-// still when the reveal opens/closes.
+// Summary foot: the dropdown chevron FIRST, then the Protein + Fiber discs. Cals
+// + carbs/fat are demoted into the reveal below.
 .menu-foot {
   display: flex;
   align-items: center;
   gap: 6px;
 
-  // Chevron that shows/hides the full macro chips + cals below.
+  // Chevron that shows/hides the extra macros + cals below.
   .card-toggle {
     flex: 0 0 auto;
     display: inline-flex;
@@ -203,25 +208,20 @@
     .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
     &:hover { color: #ffffff; }
   }
+}
 
-  // Right-group wrapper: Copy disc + trash disc (lined-up icon-only pair) +
-  // orig/copy tag, kept together and pushed right so the layout holds whether or
-  // not the Copy disc is shown.
-  .foot-actions {
-    flex: 0 0 auto;
-    margin-left: auto; // opens the gap: cals+chevron left, actions right
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
+// Duplicate — icon-only disc (shared raised .icon-disc chrome), blue-tinted copy
+// glyph; sits in the top-right corner next to the trash. Greyed when disabled
+// (a copy isn't re-copyable) — never hidden, so the corner layout is stable.
+.menu-copy {
+  flex: 0 0 auto;
 
-  // Duplicate — icon-only disc using the shared raised .icon-disc chrome; blue-
-  // tinted copy glyph, matching the meal card's .repeat-disc.
-  .menu-copy {
-    flex: 0 0 auto;
-
-    .mat-icon { color: #7fbfff; }
-    &:hover:not(:disabled) { color: #ffffff; }
+  .mat-icon { color: #7fbfff; }
+  &:hover:not(:disabled) { color: #ffffff; }
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+    .mat-icon { color: #9aa0a6; }
   }
 }
 
@@ -248,27 +248,15 @@
   }
 }
 
-// Grey etched positional watermark (mirrors the meal card's "Meal N"). Dim +
-// sunken so it reads as carved into the surface; sits at the far right of the foot.
-.menu-watermark {
-  flex: 0 0 auto;
-  font-size: 14px; // matched to the meal card's "Meal N" stamp (met in the middle)
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  color: #55585c;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
-  user-select: none;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-// Chevron reveal — full macro set (P/C/F/F) followed by cals + the orig/copy tag.
-// Defaults OPEN; collapsing hides this row (the summary discs stay up in the foot).
+// Chevron reveal — the extra macros (Carbs, Fat) followed by cals + the orig/copy
+// tag. Indented by the chevron's width so its discs line up under the summary's
+// Protein/Fiber discs (a lined-up array, not offset).
 .binder-chips {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  padding-left: 28px; // chevron (22) + gap (6) → C lines up under P
 
   // Calories demoted into the reveal (we browse by protein/fiber up in the foot).
   .menu-cals {
