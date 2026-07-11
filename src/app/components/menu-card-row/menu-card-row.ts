@@ -4,7 +4,7 @@
 // menu name and its planned day count; the selected card gets a blue border.
 // A badge tallies planned days against the rotation span, and a disabled
 // "+ Add menu" stub marks the Phase-1 affordance.
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,7 +23,8 @@ import { RotationService } from '../../services/rotation.service';
             class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
             (click)="select.emit(menu.menuId)">
-            <!-- Top strip: pin + days stepper grouped left, trash pushed right. -->
+            <!-- Top strip: pin leads, the rename box fills the middle, trash trails.
+                 Rename lives up top; the Duplicate action moved to the foot below. -->
             <div class="card-top">
               <button
                 type="button"
@@ -35,20 +36,32 @@ import { RotationService } from '../../services/rotation.service';
                 (click)="$event.stopPropagation(); onPin(menu)">
                 <mat-icon>description</mat-icon>
               </button>
-              <div class="menu-repeat">
-                <span class="repeat-label">Days</span>
+              <!-- Inline rename — same field/commit pattern as the meal name box.
+                   Committing writes the label only; the pin state is untouched. -->
+              <div class="name-wrap">
                 <input
-                  type="number"
-                  class="repeat-input"
-                  min="1"
-                  [max]="spanDays()"
-                  [value]="menu.plannedCount"
-                  matTooltip="How many days this menu repeats"
-                  matTooltipPosition="above"
-                  (click)="$event.stopPropagation()"
-                  (keydown.enter)="$any($event.target).blur()"
-                  (change)="onRepeatChange(menu.menuId, $event)"
-                  aria-label="Repeat count" />
+                  #nameBox
+                  type="text"
+                  class="menu-name-box regi-field"
+                  [class.editing]="showCommitFor(menu.menuId)"
+                  [value]="displayName(menu, i)"
+                  (focus)="onNameFocus(menu.menuId, nameBox)"
+                  (input)="nameDraft.set(nameBox.value)"
+                  (keydown.enter)="nameBox.blur()"
+                  (keydown.escape)="nameBox.value = displayName(menu, i); nameBox.blur()"
+                  (blur)="onNameBlur(menu, i, nameBox.value)"
+                  aria-label="Menu name" />
+                @if (showCommitFor(menu.menuId)) {
+                  <button
+                    type="button"
+                    class="name-commit"
+                    matTooltip="Save name"
+                    matTooltipPosition="above"
+                    (mousedown)="$event.preventDefault()"
+                    (click)="$event.stopPropagation(); nameBox.blur()">
+                    <mat-icon>keyboard_return</mat-icon>
+                  </button>
+                }
               </div>
               <button
                 type="button"
@@ -59,35 +72,9 @@ import { RotationService } from '../../services/rotation.service';
                 <mat-icon>delete_outline</mat-icon>
               </button>
             </div>
-            <!-- Inline rename — same field/commit pattern as the meal name box.
-                 Committing writes the label only; the pin state is untouched. -->
-            <div class="name-wrap">
-              <input
-                #nameBox
-                type="text"
-                class="menu-name-box regi-field"
-                [class.editing]="showCommitFor(menu.menuId)"
-                [value]="displayName(menu, i)"
-                (focus)="onNameFocus(menu.menuId, nameBox)"
-                (input)="nameDraft.set(nameBox.value)"
-                (keydown.enter)="nameBox.blur()"
-                (keydown.escape)="nameBox.value = displayName(menu, i); nameBox.blur()"
-                (blur)="onNameBlur(menu, i, nameBox.value)"
-                aria-label="Menu name" />
-              @if (showCommitFor(menu.menuId)) {
-                <button
-                  type="button"
-                  class="name-commit"
-                  matTooltip="Save name"
-                  matTooltipPosition="above"
-                  (mousedown)="$event.preventDefault()"
-                  (click)="$event.stopPropagation(); nameBox.blur()">
-                  <mat-icon>keyboard_return</mat-icon>
-                </button>
-              }
-            </div>
-            <!-- Foot: running calories + macro-chip toggle (mirrors the Binder
-                 card), with the etched positional "Menu A" watermark at right. -->
+            <!-- Foot: running calories + macro-chip toggle on the left; the
+                 Duplicate ("Copy") action + orig/copy tag + "Menu A" watermark on
+                 the right. Duplicating a menu is uncommon, so it's a quiet button. -->
             <div class="menu-foot">
               <span class="card-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
               <button
@@ -98,6 +85,19 @@ import { RotationService } from '../../services/rotation.service';
                 (click)="$event.stopPropagation(); toggleMacros(menu.menuId)">
                 <mat-icon>{{ isOpen(menu.menuId) ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
+              <button
+                type="button"
+                class="menu-copy"
+                matTooltip="Duplicate this menu"
+                matTooltipPosition="above"
+                (click)="$event.stopPropagation(); duplicateMenu.emit(menu.menuId)">
+                <mat-icon>content_copy</mat-icon><span class="copy-label">Copy</span>
+              </button>
+              <!-- orig/copy tag — ONLY when a duplicate is present (server names a
+                   copy "<name> (copy)"). Origin reads quiet blue; copy reads amber. -->
+              @if (copyRoleFor(menu); as role) {
+                <span class="copy-badge" [class.is-copy]="role === 'copy'">{{ role }}</span>
+              }
               <span class="menu-watermark">Menu {{ letter(i) }}</span>
             </div>
             @if (isOpen(menu.menuId)) {
@@ -145,8 +145,9 @@ export class MenuCardRowComponent {
   readonly renameMenu = output<{ menuId: number; name: string }>();
   /** "+ Add menu" clicked. */
   readonly addMenu = output<void>();
-  /** Change a menu's planned days (plannedCount). */
-  readonly setDays = output<{ menuId: number; plannedCount: number }>();
+  /** Foot "Copy" clicked — duplicate this menu into a new card (emits the menuId).
+   *  The parent duplicates it server-side and links the copy into the rotation. */
+  readonly duplicateMenu = output<number>();
 
   /** Which tile's name box currently has focus (drives its green commit arrow). */
   private readonly editingMenuId = signal<number | null>(null);
@@ -173,11 +174,30 @@ export class MenuCardRowComponent {
     return Math.round(n ?? 0);
   }
 
-  /** Repeat number-entry commit — clamp to [1, spanDays] and emit setDays. */
-  onRepeatChange(menuId: number, event: Event): void {
-    const raw = +(event.target as HTMLInputElement).value;
-    const plannedCount = Math.max(1, Math.min(this.spanDays(), Math.floor(raw || 1)));
-    this.setDays.emit({ menuId, plannedCount });
+  /** orig/copy lineage across the strip, inferred from the server's "<name>
+   *  (copy)" duplicate naming (there's no persisted source-menu link): an entry
+   *  whose name ends in "(copy)" is a 'copy'; the entry sharing that base name is
+   *  the 'orig'. Only meaningful when at least one copy is present — otherwise the
+   *  map is empty and no badge shows. Survives reloads via the persisted name. */
+  private readonly copyRoles = computed<Map<number, 'orig' | 'copy'>>(() => {
+    const roles = new Map<number, 'orig' | 'copy'>();
+    const list = this.menus();
+    const isCopyName = (n: string) => /\(copy\)\s*$/i.test(n);
+    const baseOf = (n: string) => n.replace(/\s*\(copy\)\s*$/i, '').trim();
+    const baseNames = new Set(
+      list.filter((m) => isCopyName(m.menuName ?? '')).map((m) => baseOf(m.menuName ?? '')),
+    );
+    if (baseNames.size === 0) return roles;
+    for (const m of list) {
+      const name = (m.menuName ?? '').trim();
+      if (isCopyName(name)) roles.set(m.menuId, 'copy');
+      else if (baseNames.has(name)) roles.set(m.menuId, 'orig');
+    }
+    return roles;
+  });
+
+  copyRoleFor(menu: RotationMenuEntry): 'orig' | 'copy' | null {
+    return this.copyRoles().get(menu.menuId) ?? null;
   }
 
   /** Tile pin icon — emit pin unless the entry is already pinned. */

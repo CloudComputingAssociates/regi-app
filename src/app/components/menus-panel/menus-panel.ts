@@ -132,7 +132,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               (renameMenu)="rotation.updateMenuName($event.menuId, $event.name)"
               (dropMenu)="rotation.addMenuToRotation($event)"
               (addMenu)="rotation.addMenu()"
-              (setDays)="rotation.setMenuDays($event.menuId, $event.plannedCount)" />
+              (duplicateMenu)="rotation.addMenuToRotation($event)" />
 
             <div class="panel-body">
               <app-menus-meals

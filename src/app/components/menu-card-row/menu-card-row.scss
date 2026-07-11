@@ -47,21 +47,20 @@
     border-color: #4da6ff;
   }
 
-  // Top strip: pin + days stepper grouped at the left, trash pushed to the far
-  // right of the same row (discs now flow inline, no absolute positioning).
+  // Top strip: pin leads, the rename box flexes to fill the middle, trash trails
+  // (mirrors the meal card header). The name box flexing naturally right-justifies
+  // the trash — no margin hacks.
   .card-top {
     display: flex;
     align-items: center;
     gap: 6px;
-
-    // Delete alone on the right — destructive action isolated from the group.
-    .menu-delete { margin-left: auto; }
   }
 
-  // Name field on its own row directly below the top strip.
+  // Rename box — the flexing middle of the top strip.
   .name-wrap {
     position: relative;
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   // Field look comes from the global .regi-field; keep only layout + specials.
@@ -111,42 +110,6 @@
     }
   }
 
-  // Days count — how many days this menu runs in the rotation (NOT the meal-level
-  // "Repeat" clone action, which lives on the meal cards). A small typeable number
-  // entry with native ▲▼ spinners; grouped next to the pin at the left of the top
-  // strip. The trash is pushed to the far right on its own.
-  .menu-repeat {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    .repeat-label {
-      font-size: 12px;
-      color: #9aa0a6;
-    }
-
-    .repeat-input {
-      width: 46px;
-      box-sizing: border-box;
-      font-family: inherit;
-      font-size: 12px;
-      color: #f1f1f1;
-      background: #414141;
-      border: 1px solid #666666;
-      border-top-color: #5a5a5a;
-      border-radius: 4px;
-      padding: 2px 4px;
-      text-align: center;
-      cursor: text;
-
-      &:focus {
-        border-color: #4da6ff;
-        caret-color: #4da6ff;
-        outline: none;
-        box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.5);
-      }
-    }
-  }
 }
 
 // Menu discs use the shared raised .icon-disc chrome. Pin leads the top strip
@@ -244,12 +207,60 @@
     .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
     &:hover { color: #ffffff; }
   }
+
+  // Duplicate ("Copy") — a quiet compact button (icon + small label), anchored to
+  // the right group of the foot. Blue-tinted copy glyph, same family as the meal
+  // card's repeat disc.
+  .menu-copy {
+    flex: 0 0 auto;
+    margin-left: auto; // opens the gap: cals+chevron left, copy group right
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px 2px 5px;
+    border: 1px solid #4a4a4a;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
+    color: #7fbfff;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.12s ease, color 0.12s ease;
+
+    .mat-icon { width: 14px; height: 14px; font-size: 14px; line-height: 14px; }
+    .copy-label { line-height: 1; }
+    &:hover { border-color: #4da6ff; color: #ffffff; }
+  }
+
+  // orig / copy tag — tiny uppercase pill, only rendered when a duplicate exists.
+  // Origin reads quiet blue; copy reads muted amber (matches the meal orig/clone).
+  .copy-badge {
+    flex: 0 0 auto;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    line-height: 1;
+    padding: 2px 5px;
+    border-radius: 8px;
+    color: #cfe4ff;
+    background: rgba(77, 166, 255, 0.18);
+    border: 1px solid rgba(77, 166, 255, 0.35);
+    white-space: nowrap;
+    user-select: none;
+
+    &.is-copy {
+      color: #ffe0a6;
+      background: rgba(255, 193, 84, 0.16);
+      border-color: rgba(255, 193, 84, 0.35);
+    }
+  }
 }
 
 // Grey etched positional watermark (mirrors the meal card's "Meal N"). Dim +
-// sunken so it reads as carved into the surface; sits at the right of the foot.
+// sunken so it reads as carved into the surface; sits at the far right of the foot.
 .menu-watermark {
-  margin-left: auto;
+  flex: 0 0 auto;
   font-size: 18px; // matches the meal card's "Meal N" stamp for consistency
   font-weight: 600;
   letter-spacing: 0.3px;
