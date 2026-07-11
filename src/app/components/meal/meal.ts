@@ -31,15 +31,16 @@ interface SlotMacros {
              share the raised .icon-disc chrome and one size. -->
         @if (slot().mealId != null) {
           <!-- Save-state disc (same .icon-disc circle throughout):
-               • clean, unsaved → GREY fork & knife (disabled — nothing to save)
+               • clean, unsaved → GREY fork & knife → click to save (always live)
                • dirty (changed) → GREEN check inside the disc → click to save
-               • saved (Binder)  → YELLOW fork & knife → click to remove (confirm) -->
+               • saved (Binder)  → YELLOW fork & knife → click to remove (confirm)
+               Never disabled while unpinned: a fresh or just-removed meal is
+               savable in one click (no dummy edit needed to re-save). -->
           <button
             type="button"
             class="icon-disc pin-disc"
             [class.icon-disc-pinned]="pinAlive()"
             [class.pin-dirty]="!pinAlive() && dirty()"
-            [disabled]="!pinAlive() && !dirty()"
             [matTooltip]="pinTooltip()"
             matTooltipPosition="above"
             (click)="onPin()">
@@ -219,17 +220,17 @@ export class MealComponent {
   /** Tooltip on the save-state disc, by state. */
   readonly pinTooltip = computed<string>(() => {
     if (this.pinAlive()) return 'In your Binder — click to remove';
-    return this.dirty() ? 'Save to Binder' : 'No unsaved changes';
+    return 'Save to Binder';
   });
 
-  /** Save-state disc click: saved → remove-from-Binder; dirty → save; clean is
-   *  disabled so it never fires. */
+  /** Save-state disc click: saved → remove-from-Binder; otherwise (clean OR
+   *  dirty) → save. Unpinned is always savable in one click. */
   onPin(): void {
     if (this.pinAlive()) {
       this.removeFromBinder.emit();
       return;
     }
-    if (this.dirty()) this.pinMeal.emit();
+    this.pinMeal.emit();
   }
 
   /** ✎ on a food row — edit that item's serving (parent opens the popup). */

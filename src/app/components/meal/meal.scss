@@ -119,8 +119,9 @@
 }
 
 // Save-state disc (same .icon-disc circle throughout). CLEAN keeps the default
-// GREY fork & knife (disabled). SAVED uses .icon-disc-pinned (yellow). Only the
-// DIRTY state recolors: a GREEN check with a standing green glow → click to save.
+// GREY fork & knife (still click-to-save — never disabled). SAVED uses
+// .icon-disc-pinned (yellow). Only the DIRTY state recolors: a GREEN check with
+// a standing green glow → click to save.
 .pin-disc.pin-dirty {
   .mat-icon { color: #5fe07a; }
   box-shadow:
