@@ -1,5 +1,5 @@
 // src/app/components/chat/chat.ts
-import { Component, ChangeDetectionStrategy, OnDestroy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -13,11 +13,11 @@ import { ChatOutputComponent } from './chat-output/chat-output';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="chat-container">
-      <!-- Header: New / Clear keys on the LEFT, "Chat with Regi" embossed +
-           centered (engraved like CURATED FOODS). -->
-      <div class="chat-header">
+      <!-- Status line — New / Clear keys inline with the status text on ONE row
+           (no separate title row, no wasted vertical space). -->
+      <div class="chat-status-header" [class.prompt-mode]="chatService.isPromptMeActive()">
         <div class="action-buttons">
-          <!-- New (left) -->
+          <!-- New -->
           <button
             class="icon-btn new-chat-btn"
             (click)="startNewChat()"
@@ -36,11 +36,6 @@ import { ChatOutputComponent } from './chat-output/chat-output';
             <mat-icon>clear_all</mat-icon>
           </button>
         </div>
-        <span class="chat-title" [class.animate]="titleAnimating()">Chat with Regi</span>
-      </div>
-
-      <!-- Status toast (permanent area) — AI symbol removed. -->
-      <div class="chat-status-header" [class.prompt-mode]="chatService.isPromptMeActive()">
         <span class="status-text">{{ chatService.statusMessage() }}</span>
       </div>
 
@@ -50,33 +45,9 @@ import { ChatOutputComponent } from './chat-output/chat-output';
   `,
   styleUrls: ['./chat.scss']
 })
-export class ChatComponent implements OnDestroy {
+export class ChatComponent {
   private tabService = inject(TabService);
   chatService = inject(ChatService);
-
-  /** "Chat with Regi" gets a brief flourish at a random 5–20s cadence — Regi
-   *  feels alive (unfurl → pop) without nagging. */
-  readonly titleAnimating = signal(false);
-  private titleTimer: ReturnType<typeof setTimeout> | null = null;
-  private titleOffTimer: ReturnType<typeof setTimeout> | null = null;
-
-  constructor() {
-    this.scheduleTitleFlourish();
-  }
-
-  ngOnDestroy(): void {
-    if (this.titleTimer) clearTimeout(this.titleTimer);
-    if (this.titleOffTimer) clearTimeout(this.titleOffTimer);
-  }
-
-  private scheduleTitleFlourish(): void {
-    const delay = 5000 + Math.random() * 15000; // 5–20s
-    this.titleTimer = setTimeout(() => {
-      this.titleAnimating.set(true);
-      this.titleOffTimer = setTimeout(() => this.titleAnimating.set(false), 1500);
-      this.scheduleTitleFlourish();
-    }, delay);
-  }
 
   startNewChat(): void {
     this.chatService.startNewConversation();

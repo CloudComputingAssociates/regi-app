@@ -36,7 +36,7 @@ import { RoleService } from '../../services/role.service';
         <!-- Tuxedo-black spacer bar at the top of the menu (just a spacer). -->
         <div class="menu-tux-spacer"></div>
 
-        <button mat-menu-item class="menu-item" [class.active]="isTabOpen('account')" (click)="toggleAccount()">
+        <button mat-menu-item class="menu-item" [class.active]="tabService.accountOpen()" (click)="toggleAccount()">
           <mat-icon>person</mat-icon>
           <span>Account</span>
         </button>
@@ -129,7 +129,11 @@ export class ProfileMenuComponent {
   }
 
   toggleAccount(): void {
-    this.tabService.togglePanel('account', 'Account');
+    if (this.tabService.accountOpen()) {
+      this.tabService.closeAccount();
+    } else {
+      this.tabService.openAccount();
+    }
   }
 
   toggleSettings(): void {

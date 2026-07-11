@@ -612,6 +612,26 @@ export class RotationService {
     }
   }
 
+  /** Remove a meal FROM the Binder while keeping it slotted. PUT { pinned:false }
+   *  — the meal stays in its slot (still referenced by the menu) but drops out of
+   *  the Binder, returning it to the unsaved (green-check) state. Refresh both
+   *  lists so the Binder card disappears and the slot's indicator flips. */
+  async removeMealFromBinder(mealId: number): Promise<void> {
+    try {
+      const body: UpdateMealRequest = { pinned: false };
+      const updated = await firstValueFrom(
+        this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, body),
+      );
+      this.mealsById.update((m) => new Map(m).set(mealId, updated));
+      // It's now unsaved work again — mark it so the green check is enabled.
+      this.sessionEditedMeals.add(mealId);
+      await Promise.all([this.loadBinder(), this.loadFolder()]);
+      this.notification.show('Removed from your Binder (still slotted)', 'success');
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
   /** Pin a MENU to the Binder. PUT /menu/{id} { pinned: true } runs the server
    *  cascade — the menu AND every slotted meal flip pinned in one call — so we
    *  re-fetch the menu + its meals (every card's icon flips alive together) and

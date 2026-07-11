@@ -12,7 +12,6 @@ import { ChatComponent } from '../chat/chat';
 import { MenusPanelComponent } from '../menus-panel/menus-panel';
 import { ShoppingPanelComponent } from '../shopping-panel/shopping-panel';
 import { FoodsPanelComponent } from '../foods-panel/foods-panel';
-import { AccountPanelComponent } from '../account-panel/account-panel';
 import { VideoViewerComponent } from '../video-viewer/video-viewer';
 import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
 
@@ -25,7 +24,6 @@ import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
     MenusPanelComponent,
     ShoppingPanelComponent,
     FoodsPanelComponent,
-    AccountPanelComponent,
     VideoViewerComponent,
     RecipeViewerComponent
   ],
@@ -41,7 +39,6 @@ import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
         @case ('menus') { <app-menus-panel /> }
         @case ('foods') { <app-foods-panel /> }
         @case ('shop') { <app-shopping-panel /> }
-        @case ('account') { <app-account-panel /> }
         @case ('video-viewer') { <app-video-viewer /> }
         @case ('web-viewer') { <app-recipe-viewer /> }
         @default {

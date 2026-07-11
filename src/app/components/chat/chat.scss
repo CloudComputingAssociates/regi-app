@@ -17,18 +17,22 @@
 
   // Status header - permanent toast area at top
   .chat-status-header {
+    display: flex;
+    align-items: center;
     background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
-    padding: 10px 16px;
-    text-align: center;
+    padding: 5px 12px;
     border-bottom: 1px solid #5a5a5a;
     flex-shrink: 0;
 
     .status-text {
+      flex: 1;
+      text-align: center;
       color: rgba(255, 255, 255, 0.8);
       font-size: 14px;
       font-weight: 500;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 5px;
 
       .status-ai-icon {
@@ -48,38 +52,11 @@
     }
   }
 
-  // Header row: New/Clear keys on the LEFT, "Chat with Regi" centered.
-  .chat-header {
-    position: relative;
-    display: flex;
-    align-items: center;
-    min-height: 40px;
-    padding: 4px 10px;
-  }
-
-  // Big, white (clickable-feel), centered title with a periodic flourish.
-  .chat-title {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    transform-origin: center;
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    color: #ffffff;
-    white-space: nowrap;
-    pointer-events: none;
-
-    &.animate {
-      animation: chat-title-flourish 1.5s ease both;
-    }
-  }
-
-  // Action buttons — left side of the header row.
+  // Action buttons — inline on the status line (New / Clear), left side.
   .action-buttons {
     display: flex;
     gap: 8px;
+    margin-right: 10px;
     z-index: 10;
 
     .icon-btn {
@@ -167,14 +144,3 @@
   }
 }
 
-// "Chat with Regi" flourish — unfurl (spread + grow), hold, then POP: shrink
-// away to almost nothing (disappear) and spring back with a bounce (reappear).
-@keyframes chat-title-flourish {
-  0%   { transform: translate(-50%, -50%) scale(1);    letter-spacing: 0.5px; opacity: 1; }
-  22%  { transform: translate(-50%, -50%) scale(1.08); letter-spacing: 5px; }
-  42%  { transform: translate(-50%, -50%) scale(1.08); letter-spacing: 5px; }
-  56%  { transform: translate(-50%, -50%) scale(0.18); letter-spacing: 0.5px; opacity: 0.15; }
-  74%  { transform: translate(-50%, -50%) scale(1.16); opacity: 1; }
-  88%  { transform: translate(-50%, -50%) scale(0.97); }
-  100% { transform: translate(-50%, -50%) scale(1);    letter-spacing: 0.5px; opacity: 1; }
-}

@@ -4,7 +4,7 @@
 // ({slotLabel})" with a visual-only inline-edit affordance. Body shows
 // macro chips (P/C/F/Fi grams — never calories) and the food rows. Handles
 // three states: filled, empty (pick a meal), and dining-out.
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
@@ -30,15 +30,20 @@ interface SlotMacros {
              or "Meal N" for an empty slot; + and trash discs trail. All discs
              share the raised .icon-disc chrome and one size. -->
         @if (slot().mealId != null) {
+          <!-- Save-state indicator:
+               • saved (in Binder)  → yellow fork & knife  (click = remove w/ confirm)
+               • unsaved + dirty     → green check (enabled) (click = save to Binder)
+               • unsaved + clean     → green check (disabled) — nothing to save -->
           <button
             type="button"
             class="icon-disc pin-disc"
             [class.icon-disc-pinned]="pinAlive()"
-            [class.save-hint]="saveHint() && !pinAlive()"
-            [matTooltip]="pinAlive() ? 'In your Binder' : 'Save'"
+            [class.pin-dirty]="!pinAlive() && dirty()"
+            [disabled]="!pinAlive() && !dirty()"
+            [matTooltip]="pinTooltip()"
             matTooltipPosition="above"
             (click)="onPin()">
-            <mat-icon>restaurant</mat-icon>
+            <mat-icon>{{ pinAlive() ? 'restaurant' : 'check_circle' }}</mat-icon>
           </button>
         }
         <div class="header-name">
@@ -183,6 +188,11 @@ export class MealComponent {
    *  This is the SOLE visual signal — the card body never dims. */
   readonly pinAlive = input<boolean>(false);
 
+  /** True when the meal has unsaved work (created / renamed / edited this
+   *  session, or a diverged clone) — drives the ENABLED green check. Computed
+   *  upstream so this card stays presentational. */
+  readonly dirty = input<boolean>(false);
+
   /** True while a Binder meal is being dragged — the empty-slot placeholder
    *  "blooms" a bright border to advertise it as a valid drop target. */
   readonly dropHighlight = input<boolean>(false);
@@ -200,43 +210,27 @@ export class MealComponent {
   /** Inline name box committed — parent persists the new meal name. */
   readonly renameMeal = output<{ mealId: number; name: string }>();
 
-  /** Book icon clicked — pin this slotted meal to the Binder (parent calls the
-   *  service). No-op when already alive. */
+  /** Green-check clicked — save this (dirty) meal to the Binder. */
   readonly pinMeal = output<void>();
 
-  /** Book icon click — emit pin unless already in the Binder. */
+  /** Yellow fork&knife clicked — remove this meal FROM the Binder (it stays
+   *  slotted). The parent confirms + unpins. */
+  readonly removeFromBinder = output<void>();
+
+  /** Tooltip on the save-state disc, by state. */
+  readonly pinTooltip = computed<string>(() => {
+    if (this.pinAlive()) return 'In your Binder — click to remove';
+    return this.dirty() ? 'Save to Binder' : 'No unsaved changes';
+  });
+
+  /** Save-state disc click: saved → remove-from-Binder; dirty → save; clean is
+   *  disabled so it never fires. */
   onPin(): void {
-    if (this.pinAlive()) return;
-    this.pinMeal.emit();
-  }
-
-  /** Green "save me" bloom on the pin disc — a brief (3s) pulse fired when the
-   *  user adds a food (while editing) or renames this meal, nudging them to pin
-   *  it to the Binder. Auto-clears, so it draws attention without nagging. */
-  readonly saveHint = signal(false);
-  private hintTimer: ReturnType<typeof setTimeout> | null = null;
-  /** Last-seen item count, to detect a user-added food (a net increase). */
-  private prevItemsLen: number | null = null;
-
-  constructor() {
-    effect(
-      () => {
-        const len = this.items().length;
-        const editing = this.editing();
-        const prev = this.prevItemsLen;
-        this.prevItemsLen = len;
-        // Only while THIS meal is the active edit target and its food count
-        // grew — skips the initial slot-item stream-in on load.
-        if (prev !== null && len > prev && editing) this.flashSaveHint();
-      },
-      { allowSignalWrites: true },
-    );
-  }
-
-  private flashSaveHint(): void {
-    this.saveHint.set(true);
-    if (this.hintTimer) clearTimeout(this.hintTimer);
-    this.hintTimer = setTimeout(() => this.saveHint.set(false), 3000);
+    if (this.pinAlive()) {
+      this.removeFromBinder.emit();
+      return;
+    }
+    if (this.dirty()) this.pinMeal.emit();
   }
 
   /** ✎ on a food row — edit that item's serving (parent opens the popup). */
@@ -282,7 +276,6 @@ export class MealComponent {
     const name = value.trim();
     if (mealId == null || !name || name === this.title().trim()) return;
     this.renameMeal.emit({ mealId, name });
-    this.flashSaveHint();
   }
 
   // Header name = the MEAL's own name (so an edited name shows here), with the

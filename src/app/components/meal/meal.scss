@@ -118,31 +118,20 @@
   }
 }
 
-// "Save me" nudge — a brief green bloom + gentle pulse on the pin (fork/knife)
-// disc when the meal gains unsaved work (a food added or a rename). The class
-// is present ~3s (the component clears it), so it draws the eye then settles.
-// Green = the app's confirm hue; keyframes re-state the disc's raised shadow so
-// the button still reads as raised under the glow.
-.pin-disc.save-hint {
-  color: #5fe07a; // fork/knife glows green while the hint is up
-  animation: pin-save-pulse 1s ease-in-out infinite;
+// Save-state disc. Unsaved → a GREEN CHECK: dim/disabled when there's nothing
+// to save (clean), a standing green glow when there's unsaved work (dirty →
+// click to save). Saved → the YELLOW fork & knife (via .icon-disc-pinned).
+.pin-disc:not(.icon-disc-pinned) .mat-icon {
+  color: #43c13a;
 }
 
-@keyframes pin-save-pulse {
-  0%, 100% {
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12),
-      0 0 0 1px rgba(40, 201, 65, 0.55),
-      0 0 6px rgba(40, 201, 65, 0.5);
-  }
-  50% {
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12),
-      0 0 0 2px rgba(40, 201, 65, 0.95),
-      0 0 16px rgba(40, 201, 65, 0.9);
-  }
+.pin-disc.pin-dirty {
+  .mat-icon { color: #5fe07a; }
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(40, 201, 65, 0.6),
+    0 0 7px rgba(40, 201, 65, 0.55);
 }
 
 // Etched "Meal N" watermark, pinned to the card's LOWER-RIGHT corner (absolute

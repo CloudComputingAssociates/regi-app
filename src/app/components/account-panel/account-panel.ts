@@ -1,6 +1,13 @@
 // src/app/components/account-panel/account-panel.ts
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+//
+// Account is a small BLOOM overlay (like Settings / Bug / Mobile App), NOT a
+// full left-nav panel — no macros bar, no chat input. Limited to the "delete
+// account" danger zone for now. Opened from the profile menu (TabService.
+// accountOpen); closed by the red X disc or a backdrop click.
+import { Component, ChangeDetectionStrategy, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '@auth0/auth0-angular';
 import { TabService } from '../../services/tab.service';
 import { NotificationService } from '../../services/notification.service';
@@ -8,26 +15,39 @@ import { SubscriptionService, SubscriptionStatus } from '../../services/subscrip
 
 @Component({
   selector: 'app-account-panel',
-  imports: [CommonModule],
+  imports: [CommonModule, MatIconModule, MatTooltipModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="panel-container">
-      <div class="panel-content">
-        <!-- Danger Zone Section -->
-        <div class="danger-zone">
-          <h3 class="section-title">Danger Zone</h3>
-          <p class="section-description">
-            Permanently delete your account and all associated data.
-          </p>
-          <button
-            class="delete-account-btn"
-            (click)="showDeleteConfirmation()"
-            [disabled]="isDeleting()">
-            Delete Account
-          </button>
+    @if (tab.accountOpen()) {
+      <div class="acct-overlay" (click)="close()">
+        <div class="acct-dialog" (click)="$event.stopPropagation()">
+          <div class="dialog-discs">
+            <button
+              type="button"
+              class="dialog-disc dialog-disc-cancel"
+              matTooltip="Close"
+              (click)="close()"
+              aria-label="Close">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+          <h2 class="acct-title">Account</h2>
+
+          <div class="danger-zone">
+            <h3 class="section-title">Danger Zone</h3>
+            <p class="section-description">
+              Permanently delete your account and all associated data.
+            </p>
+            <button
+              class="delete-account-btn"
+              (click)="showDeleteConfirmation()"
+              [disabled]="isDeleting()">
+              Delete Account
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    }
 
     <!-- Delete Confirmation Modal -->
     @if (showConfirmModal()) {
@@ -87,8 +107,8 @@ import { SubscriptionService, SubscriptionStatus } from '../../services/subscrip
   `,
   styleUrls: ['./account-panel.scss']
 })
-export class AccountPanelComponent implements OnInit {
-  private tabService = inject(TabService);
+export class AccountPanelComponent {
+  readonly tab = inject(TabService);
   private notificationService = inject(NotificationService);
   private subscriptionService = inject(SubscriptionService);
   private auth = inject(AuthService);
@@ -96,12 +116,23 @@ export class AccountPanelComponent implements OnInit {
   showConfirmModal = signal(false);
   isDeleting = signal(false);
   subscriptionStatus = signal<SubscriptionStatus | null>(null);
+  private statusLoaded = false;
 
-  ngOnInit(): void {
-    // Load subscription status when panel opens
-    this.subscriptionService.checkSubscriptionStatus().subscribe(status => {
-      this.subscriptionStatus.set(status);
+  constructor() {
+    // Load subscription status the first time the overlay opens (drives the
+    // delete-confirmation copy).
+    effect(() => {
+      if (this.tab.accountOpen() && !this.statusLoaded) {
+        this.statusLoaded = true;
+        this.subscriptionService.checkSubscriptionStatus().subscribe((status) => {
+          this.subscriptionStatus.set(status);
+        });
+      }
     });
+  }
+
+  close(): void {
+    this.tab.closeAccount();
   }
 
   showDeleteConfirmation(): void {
@@ -116,15 +147,12 @@ export class AccountPanelComponent implements OnInit {
     this.isDeleting.set(true);
 
     this.subscriptionService.deactivateAccount().subscribe({
-      next: (response) => {
+      next: () => {
         this.isDeleting.set(false);
         this.showConfirmModal.set(false);
+        this.tab.closeAccount();
         this.notificationService.show('Account deleted successfully');
-
-        // Log the user out after deactivation
-        this.auth.logout({
-          logoutParams: { returnTo: window.location.origin }
-        });
+        this.auth.logout({ logoutParams: { returnTo: window.location.origin } });
       },
       error: (error) => {
         this.isDeleting.set(false);
@@ -136,7 +164,6 @@ export class AccountPanelComponent implements OnInit {
 
   formatExpiryDate(dateStr?: string): string {
     if (!dateStr) return 'the end of your billing period';
-
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',

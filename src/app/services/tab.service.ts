@@ -278,6 +278,12 @@ export class TabService {
   openMobileApp(): void { this.mobileAppOpen.set(true); }
   closeMobileApp(): void { this.mobileAppOpen.set(false); }
 
+  // Account — a small bloom overlay (limited to "delete account" for now), NOT
+  // a full left-nav-style panel. Profile menu's "Account" flips this.
+  readonly accountOpen = signal(false);
+  openAccount(): void { this.accountOpen.set(true); }
+  closeAccount(): void { this.accountOpen.set(false); }
+
   // In-app web viewer — opens an external page in a bloom iframe overlay instead
   // of a new browser tab (so the user never leaves the app). null = closed.
   readonly webViewUrl = signal<string | null>(null);

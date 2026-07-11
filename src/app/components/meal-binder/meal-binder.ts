@@ -57,7 +57,7 @@ import { Meal, Menu } from '../../models';
           <div class="rail-section">
             <button type="button" class="section-head" (click)="aiOpen.set(false)">
               <img src="images/AI-star.png" alt="" class="section-ai-logo" [class.spinning]="rotation.generating()" />
-              <span class="section-label">AI</span>
+              <span class="section-label">AI Nutrition Assistant</span>
               <mat-icon class="section-chevron">expand_less</mat-icon>
             </button>
             <div class="section-body ai-body">
@@ -69,8 +69,10 @@ import { Meal, Menu } from '../../models';
                 (click)="rotation.generateMeal()">
                 <img src="images/AI-star.png" alt="" class="btn-star" />Create Meal
               </button>
-              <span class="twist-label"><app-twist-icon /><span class="twist-word">Twist</span></span>
-              <div class="twist-combo">
+              <!-- Label + dropdown kept together so they never wrap apart. -->
+              <div class="twist-group">
+                <span class="twist-label"><app-twist-icon /><span class="twist-word">Twist</span></span>
+                <div class="twist-combo">
                 <input
                   #twistInput
                   type="text"
@@ -96,6 +98,7 @@ import { Meal, Menu } from '../../models';
                     }
                   </ul>
                 }
+                </div>
               </div>
             </div>
           </div>
@@ -104,7 +107,7 @@ import { Meal, Menu } from '../../models';
         <!-- Menus accordion (top-level; larger header). -->
         <div class="rail-section">
           <button type="button" class="section-head" (click)="binderMenusOpen.set(!binderMenusOpen())">
-            <mat-icon class="section-icon">description</mat-icon>
+            <mat-icon class="section-icon section-icon-binder">description</mat-icon>
             <span class="section-label">Menus</span>
             <span class="section-count">{{ rotation.binderMenus().length }}</span>
             <mat-icon class="section-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
@@ -123,12 +126,6 @@ import { Meal, Menu } from '../../models';
                   (mousedown)="onCardMouseDown()"
                   (click)="rotation.selectCard('menu', menu.id ?? -1)">
                   <div class="card-head">
-                    <button
-                      type="button"
-                      class="card-pin icon-disc icon-disc-pinned"
-                      matTooltip="In your Binder">
-                      <mat-icon>description</mat-icon>
-                    </button>
                     <span
                       class="binder-card-name"
                       [matTooltip]="menuDisplayName(menu)"
@@ -176,7 +173,7 @@ import { Meal, Menu } from '../../models';
         <!-- Meals accordion. -->
         <div class="rail-section">
           <button type="button" class="section-head" (click)="binderMealsOpen.set(!binderMealsOpen())">
-            <mat-icon class="section-icon">restaurant</mat-icon>
+            <mat-icon class="section-icon section-icon-binder">restaurant</mat-icon>
             <span class="section-label">Meals</span>
             <span class="section-count">{{ rotation.binderMeals().length }}</span>
             <mat-icon class="section-chevron">{{ binderMealsOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
@@ -195,13 +192,6 @@ import { Meal, Menu } from '../../models';
                   (click)="rotation.selectCard('meal', meal.id)"
                   (dblclick)="rotation.placeBinderMeal(meal.id)">
                   <div class="card-head">
-                    <button
-                      type="button"
-                      class="card-pin icon-disc icon-disc-pinned"
-                      matTooltip="In your Binder"
-                      (click)="$event.stopPropagation()">
-                      <mat-icon>restaurant</mat-icon>
-                    </button>
                     <span
                       class="binder-card-name"
                       [matTooltip]="meal.name"

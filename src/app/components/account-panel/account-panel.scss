@@ -1,80 +1,46 @@
 // src/app/components/account-panel/account-panel.scss
 
-:host {
+// Account is a bloom overlay, not a panel. :host draws nothing itself.
+:host { display: contents; }
+
+.acct-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
   display: flex;
-  height: 100%;
-  width: 100%;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
 }
 
-.panel-container {
+.acct-dialog {
   position: relative;
-  height: 100%;
-  width: 100%;
-  background-color: #3a3a3a;
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  padding: 22px 20px;
+  background: #2a2a2a;
+  border: 2px solid #ffd54f;
+  border-radius: 12px;
+  box-shadow:
+    0 0 16px rgba(255, 213, 79, 0.85),
+    0 0 32px rgba(255, 193, 7, 0.45),
+    0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
-// Action buttons - top right corner (uniform with other panels)
-.action-buttons {
+.dialog-discs {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 10;
+  top: 6px;
+  right: 6px;
   display: flex;
-  gap: 8px;
-
-  .icon-btn {
-    font-size: 18px;
-    font-weight: 700;
-    color: #ffffff;
-    background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.2s ease;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    border-top: 1px solid #6a6a6a;
-    border-left: 1px solid #5a5a5a;
-    border-right: 1px solid #5a5a5a;
-    border-bottom: 2px solid #1a1a1a;
-    outline: none;
-    font-family: inherit;
-    box-shadow:
-      0 3px 6px rgba(0, 0, 0, 0.4),
-      0 -1px 0 rgba(255, 255, 255, 0.2) inset,
-      0 1px 0 rgba(0, 0, 0, 0.3) inset;
-    padding: 0;
-
-    &:hover {
-      background: linear-gradient(180deg, #606060 0%, #454545 100%);
-      border-top-color: #757575;
-      border-left-color: #656565;
-      border-right-color: #656565;
-      border-bottom-color: #202020;
-      color: rgba(255, 255, 255, 0.9);
-    }
-
-    &:active {
-      background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
-      border-bottom-width: 1px;
-      transform: translateY(1px);
-    }
-  }
+  gap: 6px;
 }
 
-.panel-content {
-  flex: 1;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.acct-title {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
 }
 
 // Danger Zone Section
@@ -83,7 +49,6 @@
   border: 1px solid rgba(220, 53, 69, 0.3);
   border-radius: 8px;
   padding: 16px;
-  margin-top: auto;
 
   .section-title {
     color: #dc3545;

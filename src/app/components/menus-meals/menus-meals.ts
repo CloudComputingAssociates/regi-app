@@ -24,12 +24,14 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
             [editing]="isEditing(slot.slotOrder)"
             [resolvingItemId]="resolvingItemId()"
             [pinAlive]="pinAliveFor(slot.mealId)"
+            [dirty]="dirtyFor(slot.mealId)"
             [dropHighlight]="dropHighlightFor(slot.slotOrder)"
             (placeMeal)="onPlace($event)"
             (deleteMeal)="onDelete($event)"
             (toggleAdd)="onToggleAdd(slot)"
             (renameMeal)="rotation.updateMealName($event.mealId, $event.name)"
             (pinMeal)="onPinMeal(slot.mealId)"
+            (removeFromBinder)="onRemoveFromBinder(slot.mealId)"
             (removeItem)="onRemoveItem(slot.mealId, $event)"
             (editItem)="onEditItem(slot, $event)"
             (dropFood)="rotation.addFoodToEditingMeal($event.food, $event.serving)" />
@@ -76,10 +78,32 @@ export class MenusMealsComponent {
     return meal ? this.rotation.isPinAlive(meal) : false;
   }
 
-  /** Book icon on a slotted meal — pin it to the Binder. */
+  /** Green check → dirty state: the meal has unsaved work (created / renamed /
+   *  edited this session, or a diverged clone). */
+  dirtyFor(mealId: number | null | undefined): boolean {
+    if (mealId == null) return false;
+    const meal = this.rotation.getMeal(mealId);
+    return meal ? this.rotation.shouldTeachSave(meal) : false;
+  }
+
+  /** Green check clicked — save the (dirty) meal to the Binder. */
   onPinMeal(mealId: number | null | undefined): void {
     if (mealId == null) return;
     void this.rotation.pinMeal(mealId);
+  }
+
+  /** Yellow fork&knife clicked — remove the meal FROM the Binder (it stays
+   *  slotted). Confirm first, since the Binder copy is what's discarded. */
+  onRemoveFromBinder(mealId: number | null | undefined): void {
+    if (mealId == null) return;
+    this.dialog.open(WipeConfirmDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: {
+        message: 'You are removing the meal from your Binder, but it will remain slotted.',
+        confirmLabel: 'O.K.',
+        onConfirm: () => void this.rotation.removeMealFromBinder(mealId),
+      },
+    });
   }
 
   /** True when this menu's slot is the one being edited. */

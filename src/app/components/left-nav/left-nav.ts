@@ -13,6 +13,8 @@ interface MenuItem {
   label: string;
   icon?: string;  // Emoji icon
   iconImage?: string;  // Image path for logo
+  matIcon?: string;  // Material icon name (monochrome, tintable via `color`)
+  color?: string;    // Tint for the matIcon
   tabId: string;
 }
 
@@ -61,7 +63,9 @@ interface MenuItem {
               class="menu-item"
               [class.active]="isTabOpen(item.tabId)">
               <div class="menu-item-content">
-                @if (item.iconImage) {
+                @if (item.matIcon) {
+                  <mat-icon class="menu-mat-icon" [style.color]="item.color">{{ item.matIcon }}</mat-icon>
+                } @else if (item.iconImage) {
                   <img [src]="item.iconImage" [alt]="item.label" class="menu-icon-image" />
                 } @else {
                   <span class="menu-icon">{{ item.icon }}</span>
@@ -103,10 +107,10 @@ export class LeftNavComponent {
   );
 
   menuItems: MenuItem[] = [
-    { label: 'Chat', iconImage: 'images/AI-star.png', tabId: 'chat' },
+    { label: 'Chat', matIcon: 'forum', color: '#ff8c1a', tabId: 'chat' },
     { label: 'My Foods', iconImage: 'favicon.ico', tabId: 'foods' },
-    { label: 'Menus & Meals', icon: '🍴', tabId: 'menus' },
-    { label: 'Shopping List', icon: '🛒', tabId: 'shop' }
+    { label: 'Menus & Meals', matIcon: 'restaurant', color: '#43c13a', tabId: 'menus' },
+    { label: 'Shopping List', matIcon: 'shopping_cart', color: '#a53ee0', tabId: 'shop' }
   ];
 
   tabService = inject(TabService);
