@@ -118,13 +118,9 @@
   }
 }
 
-// Save-state disc. Unsaved → a GREEN CHECK: dim/disabled when there's nothing
-// to save (clean), a standing green glow when there's unsaved work (dirty →
-// click to save). Saved → the YELLOW fork & knife (via .icon-disc-pinned).
-.pin-disc:not(.icon-disc-pinned) .mat-icon {
-  color: #43c13a;
-}
-
+// Save-state disc (same .icon-disc circle throughout). CLEAN keeps the default
+// GREY fork & knife (disabled). SAVED uses .icon-disc-pinned (yellow). Only the
+// DIRTY state recolors: a GREEN check with a standing green glow → click to save.
 .pin-disc.pin-dirty {
   .mat-icon { color: #5fe07a; }
   box-shadow:

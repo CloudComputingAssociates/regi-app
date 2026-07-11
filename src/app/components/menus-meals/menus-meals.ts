@@ -78,12 +78,10 @@ export class MenusMealsComponent {
     return meal ? this.rotation.isPinAlive(meal) : false;
   }
 
-  /** Green check → dirty state: the meal has unsaved work (created / renamed /
-   *  edited this session, or a diverged clone). */
+  /** Green check → dirty state: unpinned + edited this session. A fresh or a
+   *  just-removed-from-Binder meal reads clean (grey fork & knife). */
   dirtyFor(mealId: number | null | undefined): boolean {
-    if (mealId == null) return false;
-    const meal = this.rotation.getMeal(mealId);
-    return meal ? this.rotation.shouldTeachSave(meal) : false;
+    return this.rotation.isMealDirty(mealId);
   }
 
   /** Green check clicked — save the (dirty) meal to the Binder. */

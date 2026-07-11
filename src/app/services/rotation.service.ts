@@ -161,6 +161,17 @@ export class RotationService {
     return diverged || (meal.id != null && this.sessionEditedMeals.has(meal.id));
   }
 
+  /** Green-check "dirty" state for a slotted meal's save disc: UNPINNED and
+   *  edited this session (renamed / food added or removed). Deliberately NARROWER
+   *  than shouldTeachSave (no diverged-clone clause) — a freshly placed meal, or
+   *  one just removed from the Binder, reads CLEAN (grey fork & knife), same as a
+   *  newly created one. */
+  isMealDirty(mealId: number | null | undefined): boolean {
+    if (mealId == null) return false;
+    const meal = this.getMeal(mealId);
+    return !!meal && meal.pinned !== true && this.sessionEditedMeals.has(mealId);
+  }
+
   /** Any teach-worthy meal in a menu's slots (drives the tile-clear teach line). */
   menuHasUnsavedWork(menuId: number): boolean {
     const menu = this.menusById().get(menuId);
@@ -623,8 +634,9 @@ export class RotationService {
         this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, body),
       );
       this.mealsById.update((m) => new Map(m).set(mealId, updated));
-      // It's now unsaved work again — mark it so the green check is enabled.
-      this.sessionEditedMeals.add(mealId);
+      // Back to a clean slotted meal — same as newly created (grey fork & knife),
+      // so drop any session-edited flag.
+      this.sessionEditedMeals.delete(mealId);
       await Promise.all([this.loadBinder(), this.loadFolder()]);
       this.notification.show('Removed from your Binder (still slotted)', 'success');
     } catch (err) {

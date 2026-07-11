@@ -30,10 +30,10 @@ interface SlotMacros {
              or "Meal N" for an empty slot; + and trash discs trail. All discs
              share the raised .icon-disc chrome and one size. -->
         @if (slot().mealId != null) {
-          <!-- Save-state indicator:
-               • saved (in Binder)  → yellow fork & knife  (click = remove w/ confirm)
-               • unsaved + dirty     → green check (enabled) (click = save to Binder)
-               • unsaved + clean     → green check (disabled) — nothing to save -->
+          <!-- Save-state disc (same .icon-disc circle throughout):
+               • clean, unsaved → GREY fork & knife (disabled — nothing to save)
+               • dirty (changed) → GREEN check inside the disc → click to save
+               • saved (Binder)  → YELLOW fork & knife → click to remove (confirm) -->
           <button
             type="button"
             class="icon-disc pin-disc"
@@ -43,7 +43,7 @@ interface SlotMacros {
             [matTooltip]="pinTooltip()"
             matTooltipPosition="above"
             (click)="onPin()">
-            <mat-icon>{{ pinAlive() ? 'restaurant' : 'check_circle' }}</mat-icon>
+            <mat-icon>{{ (!pinAlive() && dirty()) ? 'check' : 'restaurant' }}</mat-icon>
           </button>
         }
         <div class="header-name">
