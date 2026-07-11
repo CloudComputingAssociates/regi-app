@@ -55,17 +55,20 @@
     gap: 6px;
   }
 
-  // Rename box — the flexing middle of the top strip.
+  // Rename box — the flexing middle of the top strip. Flex row so the commit
+  // disc sits just OUTSIDE the box.
   .name-wrap {
-    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
     flex: 1 1 auto;
     min-width: 0;
   }
 
   // Field look comes from the global .regi-field; keep only layout + specials.
   .menu-name-box {
-    display: block;
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
     cursor: text;
     overflow: hidden;
 
@@ -75,18 +78,14 @@
       color: inherit;
     }
 
-    &.editing { padding-right: 26px; }
-
     &:focus { caret-color: #4da6ff; }
   }
 
-  // Green CR-LF (enter) arrow tucked INSIDE the box at the right edge.
+  // CR-LF (enter) arrow — a round disc just OUTSIDE the box (20×20, the canonical
+  // dialog-disc size). Always present; GREY at rest, standard confirm-green
+  // (.active) while the title is being edited. Tight padding, icon-only.
   .name-commit {
-    position: absolute;
-    top: 50%;
-    right: 3px;
-    z-index: 3;
-    transform: translateY(-50%);
+    flex: 0 0 auto;
     width: 20px;
     height: 20px;
     display: inline-flex;
@@ -94,18 +93,24 @@
     justify-content: center;
     padding: 0;
     border: none;
-    border-radius: 3px;
-    background: #28c941;
+    border-radius: 50%;
+    background: #5a5a5a;
     color: #ffffff;
     cursor: pointer;
+    transition: background 0.12s ease;
 
-    &:hover { background: #23b23a; }
+    &:hover { background: #6a6f75; }
+
+    &.active {
+      background: #28c941;
+      &:hover { background: #23b23a; }
+    }
 
     .mat-icon {
-      width: 15px;
-      height: 15px;
-      font-size: 15px;
-      line-height: 15px;
+      width: 14px;
+      height: 14px;
+      font-size: 14px;
+      line-height: 14px;
     }
   }
 
@@ -172,23 +177,15 @@
   }
 }
 
-// Foot row: running calories (blue text) + macro-chip chevron, with the etched
-// positional watermark pushed to the right — mirrors the Binder card head.
+// Summary foot: Protein + Fiber discs + the macro-chip chevron, then the etched
+// "Menu A" stamp; the copy/delete pair is pushed to the far right so it holds
+// still when the reveal opens/closes.
 .menu-foot {
   display: flex;
   align-items: center;
   gap: 6px;
 
-  // Calories as blue TEXT (not a disc), matching the Binder card's .card-cals.
-  .card-cals {
-    flex: 0 0 auto;
-    font-size: 13px;
-    font-weight: 400;
-    color: #4da6ff;
-    white-space: nowrap;
-  }
-
-  // Chevron that shows/hides the macro chips below.
+  // Chevron that shows/hides the full macro chips + cals below.
   .card-toggle {
     flex: 0 0 auto;
     display: inline-flex;
@@ -226,29 +223,28 @@
     .mat-icon { color: #7fbfff; }
     &:hover:not(:disabled) { color: #ffffff; }
   }
+}
 
-  // orig / copy tag — tiny uppercase pill, only rendered when a duplicate exists.
-  // Origin reads quiet blue; copy reads muted amber (matches the meal orig/clone).
-  .copy-badge {
-    flex: 0 0 auto;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    line-height: 1;
-    padding: 2px 5px;
-    border-radius: 8px;
-    color: #cfe4ff;
-    background: rgba(77, 166, 255, 0.18);
-    border: 1px solid rgba(77, 166, 255, 0.35);
-    white-space: nowrap;
-    user-select: none;
+// orig / copy tag — small pill in the chevron reveal, only rendered when a
+// duplicate exists. Origin reads quiet blue; copy reads neutral grey (matches the
+// meal orig/clone). Thin, clean type (no heavy/uppercase/letter-spacing blur).
+.copy-badge {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 8px;
+  color: #cfe4ff;
+  background: rgba(77, 166, 255, 0.18);
+  border: 1px solid rgba(77, 166, 255, 0.35);
+  white-space: nowrap;
+  user-select: none;
 
-    &.is-copy {
-      color: #ffe0a6;
-      background: rgba(255, 193, 84, 0.16);
-      border-color: rgba(255, 193, 84, 0.35);
-    }
+  &.is-copy {
+    color: #cfcfcf;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 }
 
@@ -266,24 +262,36 @@
   white-space: nowrap;
 }
 
-// Macro chips — same muted palette + P/C/F/F order as the Binder card, hidden
-// until the foot chevron is flipped.
+// Chevron reveal — full macro set (P/C/F/F) followed by cals + the orig/copy tag.
+// Defaults OPEN; collapsing hides this row (the summary discs stay up in the foot).
 .binder-chips {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 
-  .chip {
-    font-size: 11px;
-    font-weight: 500;
-    padding: 2px 7px;
-    border-radius: 10px;
-    color: rgba(255, 255, 255, 0.82);
-
-    &.protein { background: #34781a; }
-    &.carb { background: #a8541a; }
-    &.fat { background: #8a55ab; }
-    &.fiber { background: #5e4021; }
+  // Calories demoted into the reveal (we browse by protein/fiber up in the foot).
+  .menu-cals {
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 400;
+    color: #4da6ff;
+    white-space: nowrap;
   }
+}
+
+// Macro discs — shared by the summary foot + the reveal. Same muted palette +
+// P/C/F/F order as the Binder card.
+.chip {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.82);
+
+  &.protein { background: #34781a; }
+  &.carb { background: #a8541a; }
+  &.fat { background: #8a55ab; }
+  &.fiber { background: #5e4021; }
 }
 

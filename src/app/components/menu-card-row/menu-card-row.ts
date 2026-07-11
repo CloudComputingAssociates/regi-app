@@ -43,7 +43,6 @@ import { RotationService } from '../../services/rotation.service';
                   #nameBox
                   type="text"
                   class="menu-name-box regi-field"
-                  [class.editing]="showCommitFor(menu.menuId)"
                   [value]="displayName(menu, i)"
                   (focus)="onNameFocus(menu.menuId, nameBox)"
                   (input)="nameDraft.set(nameBox.value)"
@@ -51,32 +50,40 @@ import { RotationService } from '../../services/rotation.service';
                   (keydown.escape)="nameBox.value = displayName(menu, i); nameBox.blur()"
                   (blur)="onNameBlur(menu, i, nameBox.value)"
                   aria-label="Menu name" />
-                @if (showCommitFor(menu.menuId)) {
-                  <button
-                    type="button"
-                    class="name-commit"
-                    matTooltip="Save name"
-                    matTooltipPosition="above"
-                    (mousedown)="$event.preventDefault()"
-                    (click)="$event.stopPropagation(); nameBox.blur()">
-                    <mat-icon>keyboard_return</mat-icon>
-                  </button>
-                }
+                <!-- Enter-arrow disc: always present just OUTSIDE the box (round,
+                     tight). Grey at rest; turns confirm-green while editing. -->
+                <button
+                  type="button"
+                  class="name-commit"
+                  [class.active]="showCommitFor(menu.menuId)"
+                  matTooltip="Save name"
+                  matTooltipPosition="above"
+                  (mousedown)="$event.preventDefault()"
+                  (click)="$event.stopPropagation(); nameBox.blur()">
+                  <mat-icon>keyboard_return</mat-icon>
+                </button>
               </div>
             </div>
             <!-- Foot: running calories + macro-chip toggle on the left; the
                  Duplicate ("Copy") action + orig/copy tag + "Menu A" watermark on
                  the right. Duplicating a menu is uncommon, so it's a quiet button. -->
             <div class="menu-foot">
-              <span class="card-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
+              <!-- Summary: Protein + Fiber discs (we browse by those quantities,
+                   not calories) + the dropdown chevron. Cals is demoted into the
+                   reveal below. -->
+              <span class="chip protein">P {{ round(rotation.menuTotals(menu.menuId).proteinG) }}</span>
+              <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
               <button
                 type="button"
                 class="card-toggle"
-                [matTooltip]="isOpen(menu.menuId) ? 'Hide macros' : 'Show macros'"
+                [matTooltip]="isOpen(menu.menuId) ? 'Hide macros' : 'Show all macros'"
                 matTooltipPosition="above"
                 (click)="$event.stopPropagation(); toggleMacros(menu.menuId)">
                 <mat-icon>{{ isOpen(menu.menuId) ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
+              <!-- "Menu A" stamp sits right beside the dropdown chevron (left
+                   group); the copy/delete pair is pushed to the far right. -->
+              <span class="menu-watermark">Menu {{ letter(i) }}</span>
               <div class="foot-actions">
                 <!-- Copy offered only on an ORIGIN / standalone menu — a copy is
                      NOT re-copyable (avoids "(copy) (copy)" chains). Icon-only disc,
@@ -100,20 +107,22 @@ import { RotationService } from '../../services/rotation.service';
                   (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
                   <mat-icon>delete_outline</mat-icon>
                 </button>
-                <!-- orig/copy tag — ONLY when a duplicate is present (server names a
-                     copy "<name> (copy)"). Origin reads quiet blue; copy reads amber. -->
-                @if (copyRoleFor(menu); as role) {
-                  <span class="copy-badge" [class.is-copy]="role === 'copy'">{{ role }}</span>
-                }
               </div>
-              <span class="menu-watermark">Menu {{ letter(i) }}</span>
             </div>
+            <!-- Chevron reveal (default OPEN): repeats ALL discs followed by cals,
+                 plus the orig/copy tag. Toggling never shifts the foot buttons. -->
             @if (isOpen(menu.menuId)) {
               <div class="binder-chips">
                 <span class="chip protein">P {{ round(rotation.menuTotals(menu.menuId).proteinG) }}</span>
                 <span class="chip carb">C {{ round(rotation.menuTotals(menu.menuId).carbG) }}</span>
                 <span class="chip fat">F {{ round(rotation.menuTotals(menu.menuId).fatG) }}</span>
                 <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
+                <span class="menu-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
+                <!-- orig/copy tag — ONLY when a duplicate is present (server names a
+                     copy "<name> (copy)"). Origin reads quiet blue; copy reads grey. -->
+                @if (copyRoleFor(menu); as role) {
+                  <span class="copy-badge" [class.is-copy]="role === 'copy'">{{ role }}</span>
+                }
               </div>
             }
           </div>
@@ -162,16 +171,18 @@ export class MenuCardRowComponent {
   /** Live text in the focused name box. */
   readonly nameDraft = signal('');
 
-  /** Menu tiles whose macro-chip dropdown is expanded (keyed by menuId). Chips
-   *  are hidden by default; the calories line stays visible. */
-  private readonly openMenus = signal<Set<number>>(new Set());
+  /** Menu tiles whose macro-chip dropdown is COLLAPSED (keyed by menuId). The
+   *  reveal defaults OPEN — so meal + menu cards line up the same on load — hence
+   *  we track the collapsed exceptions. The Protein + Fiber summary discs stay
+   *  visible either way. */
+  private readonly collapsedMenus = signal<Set<number>>(new Set());
 
   isOpen(menuId: number): boolean {
-    return this.openMenus().has(menuId);
+    return !this.collapsedMenus().has(menuId);
   }
 
   toggleMacros(menuId: number): void {
-    this.openMenus.update((s) => {
+    this.collapsedMenus.update((s) => {
       const next = new Set(s);
       next.has(menuId) ? next.delete(menuId) : next.add(menuId);
       return next;

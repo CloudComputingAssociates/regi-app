@@ -56,10 +56,12 @@
     gap: 8px;
   }
 
-  // Fills the rest of the 2/3 after "Meal N". The green commit-arrow is
-  // absolutely positioned INSIDE the box's right edge.
+  // Fills the rest of the 2/3 after "Meal N". The commit-arrow disc is a flex
+  // sibling that sits just OUTSIDE the box's right edge.
   .name-wrap {
-    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
     flex: 1 1 0;
     min-width: 0;
   }
@@ -69,8 +71,8 @@
   // caret. Single line, no scrollbar — Home/End/arrows navigate long names.
   // Field look comes from the global .regi-field; keep only layout + specials.
   .meal-name-box {
-    display: block;
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
     cursor: text;
     overflow: hidden;
 
@@ -80,19 +82,14 @@
       color: inherit;
     }
 
-    // Reserve room for the commit-arrow so the text doesn't slide under it.
-    &.editing { padding-right: 26px; }
-
     &:focus { caret-color: #4da6ff; }
   }
 
-  // Green CR-LF (enter) arrow tucked INSIDE the box at the right edge.
+  // CR-LF (enter) arrow — a round disc just OUTSIDE the box (20×20, the canonical
+  // dialog-disc size). Always present; GREY at rest, standard confirm-green
+  // (.active) while the title is being edited. Tight padding, icon-only.
   .name-commit {
-    position: absolute;
-    top: 50%;
-    right: 3px;
-    z-index: 3;
-    transform: translateY(-50%);
+    flex: 0 0 auto;
     width: 20px;
     height: 20px;
     display: inline-flex;
@@ -100,18 +97,24 @@
     justify-content: center;
     padding: 0;
     border: none;
-    border-radius: 3px;
-    background: #28c941;
+    border-radius: 50%;
+    background: #5a5a5a;
     color: #ffffff;
     cursor: pointer;
+    transition: background 0.12s ease;
 
-    &:hover { background: #23b23a; }
+    &:hover { background: #6a6f75; }
+
+    &.active {
+      background: #28c941;
+      &:hover { background: #23b23a; }
+    }
 
     .mat-icon {
-      width: 15px;
-      height: 15px;
-      font-size: 15px;
-      line-height: 15px;
+      width: 14px;
+      height: 14px;
+      font-size: 14px;
+      line-height: 14px;
     }
   }
 
@@ -147,16 +150,14 @@
   &:hover:not(:disabled) { color: #ffffff; }
 }
 
-// orig / clone corner tag — tiny uppercase pill, only rendered when the meal is
-// repeated. Origin reads as a quiet blue "source"; clone reads as a muted amber
-// "copy". Small + low-contrast so it labels without shouting.
+// orig / clone tag — small pill, only rendered when the meal is repeated. Origin
+// reads as a quiet blue "source"; clone reads as a neutral grey. Thin, clean type
+// (no heavy/uppercase/letter-spacing blur) so it labels crisply without shouting.
 .repeat-badge {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 400;
   line-height: 1;
-  padding: 2px 5px;
+  padding: 2px 6px;
   border-radius: 8px;
   color: #cfe4ff;
   background: rgba(77, 166, 255, 0.18);
@@ -165,9 +166,9 @@
   user-select: none;
 
   &.is-clone {
-    color: #ffe0a6;
-    background: rgba(255, 193, 84, 0.16);
-    border-color: rgba(255, 193, 84, 0.35);
+    color: #cfcfcf;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 }
 
@@ -184,11 +185,12 @@
     0 0 7px rgba(40, 201, 65, 0.55);
 }
 
-// Etched "Meal N" stamp — now inline at the RIGHT of the macro-chips row (was an
-// absolute corner watermark that clipped on narrow laptop cards). Dim + sunken
-// (debossed) engraved look, same family as the menu-tile watermark.
+// Etched "Meal N" stamp — trailing the header disc pair (the name box's flex-grow
+// packs it to the right). In-flow (not an absolute corner) so it can't clip on a
+// narrow laptop card. Dim + sunken (debossed) engraved look, same family as the
+// menu-tile watermark.
 .meal-watermark {
-  margin-left: auto; // push right; chips + cals stay grouped on the left
+  flex: 0 0 auto;
   font-size: 14px;   // matched to the menu card's "Menu N" stamp (met in the middle)
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -199,43 +201,67 @@
   white-space: nowrap;
 }
 
+// Summary macro row (always visible): Protein + Fiber discs (browse-by values) +
+// the dropdown chevron. The + add disc is pushed to the far right so expand /
+// collapse of the reveal never nudges it — nothing jumps horizontally.
+.macro-summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .card-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #9aa0a6;
+    cursor: pointer;
+
+    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+    &:hover { color: #ffffff; }
+  }
+
+  // + add disc pinned right so opening/closing the reveal never moves it.
+  .add-affordance { margin-left: auto; }
+}
+
+// Chevron reveal — all four discs followed by cals, on their own row. Opening it
+// pushes the food rows down while the summary row above stays put.
 .macro-chips {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px; // tighter so chips + cals + Meal N fit one line on a 3-up card
+  gap: 4px;
 
-  // Meal total calories — sits right next to the chips (left group), NOT pushed
-  // to the far edge (the "Meal N" stamp takes the right).
+  // Meal total calories — trails the full disc set inside the reveal (we browse
+  // by protein/fiber, so calories is demoted into the dropdown).
   .meal-cals {
     font-size: 12px;
     font-weight: 400;
     color: #4da6ff;
     white-space: nowrap;
   }
+}
 
-  .chip {
-    font-size: 11px;
-    font-weight: 500; // lighter so the chips don't grab the eye off the food text
-    padding: 2px 6px;
-    border-radius: 10px;
-    color: rgba(255, 255, 255, 0.82); // softened white so it doesn't pop
+// Macro discs — shared by the summary + reveal rows. Muted palette so the chips
+// recede and the meal's food rows stay the focus.
+.chip {
+  font-size: 11px;
+  font-weight: 500; // lighter so the chips don't grab the eye off the food text
+  padding: 2px 6px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.82); // softened white so it doesn't pop
 
-    // Muted macro palette — luminance pulled down so the chips recede and the
-    // meal's food rows stay the focus.
-    &.protein {
-      background: #34781a; // green
-    }
-    &.carb {
-      background: #a8541a; // orange
-    }
-    &.fat {
-      background: #8a55ab; // purple
-    }
-    &.fiber {
-      background: #5e4021; // brown
-    }
-  }
+  &.protein { background: #34781a; } // green
+  &.carb { background: #a8541a; }    // orange
+  &.fat { background: #8a55ab; }     // purple
+  &.fiber { background: #5e4021; }   // brown
 }
 
 .slot-body {

@@ -62,7 +62,6 @@ interface SlotMacros {
                 #nameBox
                 type="text"
                 class="meal-name-box regi-field"
-                [class.editing]="showNameCommit()"
                 [value]="title()"
                 (focus)="onNameFocus(nameBox)"
                 (input)="nameDraft.set(nameBox.value)"
@@ -70,19 +69,19 @@ interface SlotMacros {
                 (keydown.escape)="nameBox.value = title(); nameBox.blur()"
                 (blur)="onNameBlur(nameBox.value)"
                 aria-label="Meal name" />
-              <!-- Green enter-arrow: visible the whole time you're editing the
-                   title; pressing it commits, same as Enter (no-op if unchanged). -->
-              @if (showNameCommit()) {
-                <button
-                  type="button"
-                  class="name-commit"
-                  matTooltip="Save name"
-                  matTooltipPosition="above"
-                  (mousedown)="$event.preventDefault()"
-                  (click)="nameBox.blur()">
-                  <mat-icon>keyboard_return</mat-icon>
-                </button>
-              }
+              <!-- Enter-arrow disc: always present just OUTSIDE the box (round,
+                   tight). Grey at rest; turns the standard confirm-green while
+                   the title is being edited. Pressing it commits, same as Enter. -->
+              <button
+                type="button"
+                class="name-commit"
+                [class.active]="showNameCommit()"
+                matTooltip="Save name"
+                matTooltipPosition="above"
+                (mousedown)="$event.preventDefault()"
+                (click)="nameBox.blur()">
+                <mat-icon>keyboard_return</mat-icon>
+              </button>
             </div>
           }
         </div>
@@ -110,6 +109,12 @@ interface SlotMacros {
             (click)="deleteMeal.emit(slot().slotOrder)">
             <mat-icon>delete_outline</mat-icon>
           </button>
+        }
+        <!-- "Meal N" positional stamp — up here in the header, trailing the disc
+             pair (was down in the chips row). Empty slots show it via .slot-title
+             instead, so only stamp filled/clone slots here. -->
+        @if (slot().mealId != null) {
+          <span class="meal-watermark">Meal {{ slot().slotOrder }}</span>
         }
       </div>
 
@@ -147,15 +152,20 @@ interface SlotMacros {
           [cdkDropListEnterPredicate]="foodDropPredicate"
           (cdkDropListDropped)="onDropFood($event)">
           @if (slot().mealId != null) {
-            <div class="macro-chips">
+            <!-- Summary macro row: Protein + Fiber discs (we browse meals by those
+                 quantities, not calories) + the dropdown chevron. The + add disc is
+                 pushed right so it holds still when the reveal opens/closes. -->
+            <div class="macro-summary">
               <span class="chip protein">P {{ round(macros().proteinG) }}</span>
-              <span class="chip carb">C {{ round(macros().carbG) }}</span>
-              <span class="chip fat">F {{ round(macros().fatG) }}</span>
               <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
-              <span class="meal-cals">{{ calories() }} cals</span>
-              <!-- + opens the food lookaside targeted at this meal, flipping to a
-                   green check while active. Sits beside the cals so it's not missed
-                   up in the header. Not offered on a read-only clone. -->
+              <button
+                type="button"
+                class="card-toggle"
+                [matTooltip]="macrosOpen() ? 'Hide macros' : 'Show all macros'"
+                matTooltipPosition="above"
+                (click)="toggleMacros()">
+                <mat-icon>{{ macrosOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </button>
               @if (!isClone()) {
                 <button
                   type="button"
@@ -167,15 +177,22 @@ interface SlotMacros {
                   <mat-icon>add</mat-icon>
                 </button>
               }
-              <!-- Small orig/clone tag — ONLY present when this meal is repeated
-                   (shared across slots). Sits by the "Meal N" stamp. -->
-              @if (repeatRole()) {
-                <span class="repeat-badge" [class.is-clone]="isClone()">{{ isClone() ? 'clone' : 'orig' }}</span>
-              }
-              <!-- "Meal N" pushed to the RIGHT of the chips + cals so it never
-                   clips the corner on a narrow (laptop) card. -->
-              <span class="meal-watermark">Meal {{ slot().slotOrder }}</span>
             </div>
+            <!-- Chevron reveal (default OPEN): repeats ALL discs followed by cals,
+                 plus the orig/clone tag. Expanding pushes the food rows down; the
+                 summary row + add disc above stay put. -->
+            @if (macrosOpen()) {
+              <div class="macro-chips">
+                <span class="chip protein">P {{ round(macros().proteinG) }}</span>
+                <span class="chip carb">C {{ round(macros().carbG) }}</span>
+                <span class="chip fat">F {{ round(macros().fatG) }}</span>
+                <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
+                <span class="meal-cals">{{ calories() }} cals</span>
+                @if (repeatRole()) {
+                  <span class="repeat-badge" [class.is-clone]="isClone()">{{ isClone() ? 'clone' : 'orig' }}</span>
+                }
+              </div>
+            }
           }
           <div class="food-rows">
             @for (item of items(); track item.id) {
@@ -286,6 +303,14 @@ export class MealComponent {
   readonly dropFood = output<{ food: Food; serving: number }>();
 
   readonly isEmpty = computed(() => !this.slot().isDiningOut && this.slot().mealId == null);
+
+  /** Macro reveal open state — defaults OPEN so meal + menu cards line up the
+   *  same on load. Collapsed shows just the Protein + Fiber summary discs. */
+  readonly macrosOpen = signal(true);
+
+  toggleMacros(): void {
+    this.macrosOpen.update((v) => !v);
+  }
 
   /** True while the name box has focus. */
   private readonly nameFocused = signal(false);
