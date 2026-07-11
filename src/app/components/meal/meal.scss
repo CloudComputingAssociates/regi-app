@@ -130,15 +130,12 @@
     0 0 7px rgba(40, 201, 65, 0.55);
 }
 
-// Etched "Meal N" watermark, pinned to the card's LOWER-RIGHT corner (absolute
-// to .slot-card), out of flow so it never affects the food rows. Dim + sunken
-// (debossed): a muted body with a hairline light rim below so it reads as carved
-// into the surface. Same engraved family as the menu-tile watermark.
+// Etched "Meal N" stamp — now inline at the RIGHT of the macro-chips row (was an
+// absolute corner watermark that clipped on narrow laptop cards). Dim + sunken
+// (debossed) engraved look, same family as the menu-tile watermark.
 .meal-watermark {
-  position: absolute;
-  right: 12px;
-  bottom: 8px;
-  font-size: 18px; // matches the menu-tile watermark for a consistent stamp
+  margin-left: auto; // push right; chips + cals stay grouped on the left
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.3px;
   color: #55585c;
@@ -149,16 +146,14 @@
 }
 
 .macro-chips {
-  position: relative; // anchor for the floating "Meal N" watermark
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 
-  // Meal total calories, pushed to the right edge across from the macro chips.
-  // Blue, not bold, so it reads as a summary rather than another chip.
+  // Meal total calories — sits right next to the chips (left group), NOT pushed
+  // to the far edge (the "Meal N" stamp takes the right).
   .meal-cals {
-    margin-left: auto;
     font-size: 13px;
     font-weight: 400;
     color: #4da6ff;

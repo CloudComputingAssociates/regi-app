@@ -145,6 +145,9 @@ interface SlotMacros {
               <span class="chip fat">F {{ round(macros().fatG) }}</span>
               <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
               <span class="meal-cals">{{ calories() }} cals</span>
+              <!-- "Meal N" pushed to the RIGHT of the chips + cals so it never
+                   clips the corner on a narrow (laptop) card. -->
+              <span class="meal-watermark">Meal {{ slot().slotOrder }}</span>
             </div>
           }
           <div class="food-rows">
@@ -162,10 +165,6 @@ interface SlotMacros {
         </div>
       }
 
-      <!-- Grey etched positional watermark in the card's LOWER-RIGHT corner. -->
-      @if (slot().mealId != null) {
-        <div class="meal-watermark">Meal {{ slot().slotOrder }}</div>
-      }
     </div>
   `,
   styleUrls: ['./meal.scss'],
