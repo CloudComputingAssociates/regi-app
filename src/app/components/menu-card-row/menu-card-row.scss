@@ -183,20 +183,22 @@
   }
 }
 
-// Summary foot: the dropdown chevron FIRST, then the Protein + Fiber discs. Cals
-// + carbs/fat are demoted into the reveal below.
+// The macro line (ONE row). Chevron leads; Protein follows, left-aligned with the
+// name box (chevron 24px + gap 5px == pin 24px + card-top gap 5px). Expanding
+// fills in Carbs, Fat, the orig/copy tag, and cals — cals trailing hard right.
 .menu-foot {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 
-  // Chevron that shows/hides the extra macros + cals below.
+  // Chevron that shows/hides the extra macros + cals.
   .card-toggle {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
+    width: 24px; // match the pin disc so Protein lines up under the name box
     height: 22px;
     padding: 0;
     border: none;
@@ -207,6 +209,17 @@
 
     .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
     &:hover { color: #ffffff; }
+  }
+
+  // Calories trail hard right (the orig/copy tag stays in the left cluster, just
+  // before this auto gap).
+  .menu-cals {
+    margin-left: auto;
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 400;
+    color: #4da6ff;
+    white-space: nowrap;
   }
 }
 
@@ -248,28 +261,8 @@
   }
 }
 
-// Chevron reveal — the extra macros (Carbs, Fat) followed by cals + the orig/copy
-// tag. Indented by the chevron's width so its discs line up under the summary's
-// Protein/Fiber discs (a lined-up array, not offset).
-.binder-chips {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding-left: 28px; // chevron (22) + gap (6) → C lines up under P
-
-  // Calories demoted into the reveal (we browse by protein/fiber up in the foot).
-  .menu-cals {
-    flex: 0 0 auto;
-    font-size: 12px;
-    font-weight: 400;
-    color: #4da6ff;
-    white-space: nowrap;
-  }
-}
-
-// Macro discs — shared by the summary foot + the reveal. Same muted palette +
-// P/C/F/F order as the Binder card.
+// Macro discs — shared by the menu foot line. Same muted palette + P/C/F/F order
+// as the Binder card.
 .chip {
   font-size: 11px;
   font-weight: 500;

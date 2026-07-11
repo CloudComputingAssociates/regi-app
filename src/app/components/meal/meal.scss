@@ -198,20 +198,21 @@
     0 0 7px rgba(40, 201, 65, 0.55);
 }
 
-// Summary macro row (always visible): the dropdown chevron FIRST, then the
-// Protein + Fiber discs (browse-by values). Copy + delete are pushed to the far
-// right so expand/collapse of the reveal never nudges them — nothing jumps.
+// The macro line (ONE row). Chevron leads; Protein follows, left-aligned with the
+// name box (chevron 24px + gap 5px == pin 24px + header gap 5px). Expanding fills
+// in Carbs, Fat, the orig/clone tag, and cals — cals trailing hard right.
 .macro-summary {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 
   .card-toggle {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
+    width: 24px; // match the pin disc so Protein lines up under the name box
     height: 22px;
     padding: 0;
     border: none;
@@ -223,21 +224,12 @@
     .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
     &:hover { color: #ffffff; }
   }
-}
 
-// Chevron reveal — the OTHER macros (Carbs, Fat) followed by cals, on their own
-// row. Indented by the chevron's width so its discs line up under the summary's
-// Protein/Fiber discs (a lined-up array, not offset). Opening pushes food down.
-.macro-chips {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  padding-left: 26px; // chevron (22) + gap (4) → C lines up under P
-
-  // Meal total calories — trails the disc set inside the reveal (we browse by
-  // protein/fiber, so calories is demoted into the dropdown).
+  // Meal total calories — trails hard right (the orig/clone tag stays in the left
+  // cluster, just before this auto gap).
   .meal-cals {
+    margin-left: auto;
+    flex: 0 0 auto;
     font-size: 12px;
     font-weight: 400;
     color: #4da6ff;

@@ -146,9 +146,10 @@ interface SlotMacros {
           [cdkDropListEnterPredicate]="foodDropPredicate"
           (cdkDropListDropped)="onDropFood($event)">
           @if (slot().mealId != null) {
-            <!-- Summary macro row: dropdown chevron FIRST, then the Protein +
-                 Fiber discs (we browse meals by those quantities, not calories).
-                 Copy + delete live up in the header corner. -->
+            <!-- Macro line (ONE row): chevron leads, then Protein (browse-by,
+                 left-aligned with the name box). Expanding fills in Carbs + Fat
+                 (order P C Fat Fiber), the orig/clone tag, and cals — cals trailing
+                 hard right. All on one line, so toggling never adds a row. -->
             <div class="macro-summary">
               <button
                 type="button"
@@ -159,21 +160,18 @@ interface SlotMacros {
                 <mat-icon>{{ macrosOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
               <span class="chip protein">P {{ round(macros().proteinG) }}</span>
-              <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
-            </div>
-            <!-- Chevron reveal (default OPEN): the OTHER macros — Carbs, Fat, Cals
-                 (Protein + Fiber already show in the summary, so no repeat) — plus
-                 the orig/clone tag. Expanding pushes the food rows down. -->
-            @if (macrosOpen()) {
-              <div class="macro-chips">
+              @if (macrosOpen()) {
                 <span class="chip carb">C {{ round(macros().carbG) }}</span>
                 <span class="chip fat">F {{ round(macros().fatG) }}</span>
-                <span class="meal-cals">{{ calories() }} cals</span>
+              }
+              <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
+              @if (macrosOpen()) {
                 @if (repeatRole()) {
                   <span class="repeat-badge" [class.is-clone]="isClone()">{{ isClone() ? 'clone' : 'orig' }}</span>
                 }
-              </div>
-            }
+                <span class="meal-cals">{{ calories() }} cals</span>
+              }
+            </div>
           }
           <!-- Foods area. The + add-food disc sits in line with the first food row
                (top-right of the foods), so "add food" reads as part of the foods. -->

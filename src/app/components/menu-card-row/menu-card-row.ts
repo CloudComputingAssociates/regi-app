@@ -84,9 +84,10 @@ import { RotationService } from '../../services/rotation.service';
                 <mat-icon>delete_outline</mat-icon>
               </button>
             </div>
-            <!-- Foot: the dropdown chevron FIRST, then the Protein + Fiber discs
-                 (we browse by those quantities, not calories). Cals + carbs/fat
-                 are demoted into the reveal below. -->
+            <!-- Macro line (ONE row): chevron leads, then Protein (browse-by,
+                 left-aligned with the name box). Expanding fills in Carbs + Fat
+                 (order P C Fat Fiber), the orig/copy tag, and cals — cals trailing
+                 hard right. All on one line, so toggling never adds a row. -->
             <div class="menu-foot">
               <button
                 type="button"
@@ -97,23 +98,20 @@ import { RotationService } from '../../services/rotation.service';
                 <mat-icon>{{ isOpen(menu.menuId) ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
               <span class="chip protein">P {{ round(rotation.menuTotals(menu.menuId).proteinG) }}</span>
-              <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
-            </div>
-            <!-- Chevron reveal (default OPEN): the OTHER macros — Carbs, Fat, Cals
-                 (Protein + Fiber already show in the summary) — plus the orig/copy
-                 tag. Toggling never shifts the foot buttons. -->
-            @if (isOpen(menu.menuId)) {
-              <div class="binder-chips">
+              @if (isOpen(menu.menuId)) {
                 <span class="chip carb">C {{ round(rotation.menuTotals(menu.menuId).carbG) }}</span>
                 <span class="chip fat">F {{ round(rotation.menuTotals(menu.menuId).fatG) }}</span>
-                <span class="menu-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
-                <!-- orig/copy tag — ONLY when a duplicate is present (server names a
-                     copy "<name> (copy)"). Origin reads quiet blue; copy reads grey. -->
+              }
+              <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
+              @if (isOpen(menu.menuId)) {
+                <!-- orig/copy tag to the LEFT of cals (server names a copy
+                     "<name> (copy)"). Origin reads quiet blue; copy reads grey. -->
                 @if (copyRoleFor(menu); as role) {
                   <span class="copy-badge" [class.is-copy]="role === 'copy'">{{ role }}</span>
                 }
-              </div>
-            }
+                <span class="menu-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
+              }
+            </div>
           </div>
         }
 
