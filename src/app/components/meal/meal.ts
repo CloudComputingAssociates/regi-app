@@ -128,10 +128,10 @@ interface SlotMacros {
             <button
               type="button"
               class="create-btn"
-              matTooltip="Add foods to build this meal"
+              matTooltip="Create meal from scratch"
               matTooltipPosition="above"
               (click)="toggleAdd.emit()">
-              + Add meal
+              + Create Meal
             </button>
           </div>
           <span class="pick-sub">or drag from <mat-icon class="inline-icon">restaurant</mat-icon> <span class="meals-word">Meals</span></span>
