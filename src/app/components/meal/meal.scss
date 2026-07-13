@@ -259,20 +259,9 @@
 }
 
 .food-rows {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 2px;
-
-  // + add-food disc — sits in line with the first food row (top-right of the
-  // foods area) so "add food" reads as part of the foods, not the macro row.
-  // The per-food edit/remove discs only appear on row hover, so this stays clear.
-  .add-affordance {
-    position: absolute;
-    top: 0;
-    right: 0;
-    z-index: 2;
-  }
 }
 
 // Editing an empty meal — a small dashed target so the card reads as droppable

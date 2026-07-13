@@ -15,6 +15,13 @@
       pointer-events: auto;
     }
   }
+
+  // Editable rows (resolved food) double-click to open the serving popup; hint it
+  // and stop the double-click from text-selecting the name.
+  &.editable {
+    cursor: pointer;
+    user-select: none;
+  }
 }
 
 // Name gets 2/3, serving 1/3 of the row minus the fixed-width actions; both
@@ -40,11 +47,15 @@
 }
 
 // Hover-revealed wrapper; the buttons themselves are the shared .icon-disc
-// (same size as the meal-card header discs).
+// (same size as the meal-card header discs). Reserve a fixed pencil+delete width
+// (right-aligned) so the serving column lines up whether or not a row offers the
+// pencil (AI/unresolved items have no pencil, only the trash).
 .food-actions {
   opacity: 0;
   pointer-events: none;
   flex: 0 0 auto;
+  min-width: 52px; // 24 (pencil) + 4 gap + 24 (trash)
+  justify-content: flex-end;
   display: inline-flex;
   align-items: center;
   gap: 4px;

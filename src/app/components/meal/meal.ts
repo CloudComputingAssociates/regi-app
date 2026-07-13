@@ -161,6 +161,19 @@ interface SlotMacros {
                 <span class="chip fat">F {{ round(macros().fatG) }}</span>
               }
               <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
+              <!-- + add-food disc sits IN LINE with the discs (not down in the food
+                   rows, where it covered the top row's delete). -->
+              @if (!isClone()) {
+                <button
+                  type="button"
+                  class="icon-disc add-affordance"
+                  [class.icon-disc-pressed]="editing()"
+                  [matTooltip]="editing() ? 'Adding foods (close from the food list)' : 'Add food to meal'"
+                  matTooltipPosition="above"
+                  (click)="toggleAdd.emit()">
+                  <mat-icon>add</mat-icon>
+                </button>
+              }
               @if (macrosOpen()) {
                 <span class="meal-cals">{{ calories() }} cals</span>
               }
@@ -174,20 +187,7 @@ interface SlotMacros {
               </button>
             </div>
           }
-          <!-- Foods area. The + add-food disc sits in line with the first food row
-               (top-right of the foods), so "add food" reads as part of the foods. -->
           <div class="food-rows">
-            @if (slot().mealId != null && !isClone()) {
-              <button
-                type="button"
-                class="icon-disc add-affordance"
-                [class.icon-disc-pressed]="editing()"
-                [matTooltip]="editing() ? 'Adding foods (close from the food list)' : 'Add food to meal'"
-                matTooltipPosition="above"
-                (click)="toggleAdd.emit()">
-                <mat-icon>add</mat-icon>
-              </button>
-            }
             @for (item of items(); track item.id) {
               <app-food
                 [item]="item"

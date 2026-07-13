@@ -14,7 +14,10 @@ import { MealItem } from '../../models';
   imports: [MatTooltipModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="food-row">
+    <div
+      class="food-row"
+      [class.editable]="!readonly() && canEditServing()"
+      (dblclick)="onDblClick()">
       <!-- Name first (2/3, clipped) then serving (1/3, clipped); the edit/remove
            actions sit outside this split and reveal on hover. Same discs as the
            meal-card header. -->
@@ -72,4 +75,11 @@ export class FoodComponent {
   /** Whether the edit-serving pencil is offered. Pending items carry no
    *  resolved food record (`food` is null), so there's nothing to price. */
   readonly canEditServing = computed<boolean>(() => this.item().food != null);
+
+  /** Double-click a row → same as the pencil (open the serving/nutrition popup).
+   *  No-op on read-only rows or unresolved items (nothing to price). */
+  onDblClick(): void {
+    if (this.readonly() || !this.canEditServing()) return;
+    this.editItem.emit(this.item());
+  }
 }
