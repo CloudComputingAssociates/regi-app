@@ -84,11 +84,26 @@ import { RotationService } from '../../services/rotation.service';
                 <mat-icon>delete_outline</mat-icon>
               </button>
             </div>
-            <!-- Macro line (ONE row): chevron leads, then Protein (browse-by,
-                 left-aligned with the name box). Expanding fills in Carbs + Fat
-                 (order P C Fat Fiber), the orig/copy tag, and cals — cals trailing
-                 hard right. All on one line, so toggling never adds a row. -->
+            <!-- Macro line (ONE row): orig/copy tag leads (swapped with the
+                 chevron); then Protein, Carbs, Fat, Fiber (order P C Fat Fiber),
+                 cals trailing, and the dropdown chevron back on the far RIGHT. -->
             <div class="menu-foot">
+              @if (isOpen(menu.menuId)) {
+                <!-- orig/copy tag on the LEFT (server names a copy "<name> (copy)").
+                     Origin reads quiet blue; copy reads grey. -->
+                @if (copyRoleFor(menu); as role) {
+                  <span class="copy-badge" [class.is-copy]="role === 'copy'">{{ role }}</span>
+                }
+              }
+              <span class="chip protein">P {{ round(rotation.menuTotals(menu.menuId).proteinG) }}</span>
+              @if (isOpen(menu.menuId)) {
+                <span class="chip carb">C {{ round(rotation.menuTotals(menu.menuId).carbG) }}</span>
+                <span class="chip fat">F {{ round(rotation.menuTotals(menu.menuId).fatG) }}</span>
+              }
+              <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
+              @if (isOpen(menu.menuId)) {
+                <span class="menu-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
+              }
               <button
                 type="button"
                 class="card-toggle"
@@ -97,20 +112,6 @@ import { RotationService } from '../../services/rotation.service';
                 (click)="$event.stopPropagation(); toggleMacros(menu.menuId)">
                 <mat-icon>{{ isOpen(menu.menuId) ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
-              <span class="chip protein">P {{ round(rotation.menuTotals(menu.menuId).proteinG) }}</span>
-              @if (isOpen(menu.menuId)) {
-                <span class="chip carb">C {{ round(rotation.menuTotals(menu.menuId).carbG) }}</span>
-                <span class="chip fat">F {{ round(rotation.menuTotals(menu.menuId).fatG) }}</span>
-              }
-              <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
-              @if (isOpen(menu.menuId)) {
-                <!-- orig/copy tag to the LEFT of cals (server names a copy
-                     "<name> (copy)"). Origin reads quiet blue; copy reads grey. -->
-                @if (copyRoleFor(menu); as role) {
-                  <span class="copy-badge" [class.is-copy]="role === 'copy'">{{ role }}</span>
-                }
-                <span class="menu-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
-              }
             </div>
           </div>
         }

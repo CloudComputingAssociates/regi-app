@@ -183,22 +183,22 @@
   }
 }
 
-// The macro line (ONE row). Chevron leads; Protein follows, left-aligned with the
-// name box (chevron 24px + gap 5px == pin 24px + card-top gap 5px). Expanding
-// fills in Carbs, Fat, the orig/copy tag, and cals — cals trailing hard right.
+// The macro line (ONE row). The orig/copy tag + Protein lead on the left; Carbs,
+// Fat, Fiber follow; cals + the dropdown chevron sit on the far RIGHT (cals's auto
+// margin pushes the pair over, the chevron trails as the right-most item).
 .menu-foot {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
   gap: 5px;
 
-  // Chevron that shows/hides the extra macros + cals.
+  // Chevron that shows/hides the extra macros + cals — sits on the far right.
   .card-toggle {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px; // match the pin disc so Protein lines up under the name box
+    width: 22px;
     height: 22px;
     padding: 0;
     border: none;

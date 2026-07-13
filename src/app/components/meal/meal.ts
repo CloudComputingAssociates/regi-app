@@ -146,11 +146,24 @@ interface SlotMacros {
           [cdkDropListEnterPredicate]="foodDropPredicate"
           (cdkDropListDropped)="onDropFood($event)">
           @if (slot().mealId != null) {
-            <!-- Macro line (ONE row): chevron leads, then Protein (browse-by,
-                 left-aligned with the name box). Expanding fills in Carbs + Fat
-                 (order P C Fat Fiber), the orig/clone tag, and cals — cals trailing
-                 hard right. All on one line, so toggling never adds a row. -->
+            <!-- Macro line (ONE row): orig/clone tag leads (swapped with the
+                 chevron); then Protein, Carbs, Fat, Fiber (order P C Fat Fiber),
+                 cals trailing, and the dropdown chevron back on the far RIGHT. -->
             <div class="macro-summary">
+              @if (macrosOpen()) {
+                @if (repeatRole()) {
+                  <span class="repeat-badge" [class.is-clone]="isClone()">{{ isClone() ? 'clone' : 'orig' }}</span>
+                }
+              }
+              <span class="chip protein">P {{ round(macros().proteinG) }}</span>
+              @if (macrosOpen()) {
+                <span class="chip carb">C {{ round(macros().carbG) }}</span>
+                <span class="chip fat">F {{ round(macros().fatG) }}</span>
+              }
+              <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
+              @if (macrosOpen()) {
+                <span class="meal-cals">{{ calories() }} cals</span>
+              }
               <button
                 type="button"
                 class="card-toggle"
@@ -159,18 +172,6 @@ interface SlotMacros {
                 (click)="toggleMacros()">
                 <mat-icon>{{ macrosOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
-              <span class="chip protein">P {{ round(macros().proteinG) }}</span>
-              @if (macrosOpen()) {
-                <span class="chip carb">C {{ round(macros().carbG) }}</span>
-                <span class="chip fat">F {{ round(macros().fatG) }}</span>
-              }
-              <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
-              @if (macrosOpen()) {
-                @if (repeatRole()) {
-                  <span class="repeat-badge" [class.is-clone]="isClone()">{{ isClone() ? 'clone' : 'orig' }}</span>
-                }
-                <span class="meal-cals">{{ calories() }} cals</span>
-              }
             </div>
           }
           <!-- Foods area. The + add-food disc sits in line with the first food row
