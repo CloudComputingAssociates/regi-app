@@ -123,11 +123,12 @@ import { RotationService } from '../../services/rotation.service';
           [cdkDropListEnterPredicate]="menuDropPredicate"
           (cdkDropListDropped)="onMenuDrop($event)"
           (click)="addMenu.emit()">+ Add menu</div>
-        <!-- Embossed area watermark filling the blank strip space: this row is the
-             rotation's MENUS. Same lowercase Fredoka face as the macro labels. -->
-        <span class="area-watermark">menus</span>
       </div>
     </div>
+    <!-- Embossed area watermark, pinned DEAD CENTER of the strip (fixed — it never
+         reflows with the cards; tiles simply overlay it as a one-time training cue).
+         Same lowercase Fredoka face as the macro labels. -->
+    <span class="area-watermark">menus</span>
   `,
   styleUrls: ['./menu-card-row.scss'],
 })

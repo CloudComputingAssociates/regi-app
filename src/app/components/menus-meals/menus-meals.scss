@@ -3,12 +3,15 @@
 // Flex-column host so the grid sits at the top and the area watermark fills the
 // blank space below it (inside the panel-body region).
 :host {
+  position: relative; // anchors the dead-center watermark
   display: flex;
   flex-direction: column;
   min-height: 100%;
 }
 
 .canvas-grid {
+  position: relative;
+  z-index: 1; // meal cards sit above the watermark
   flex: 0 0 auto;
   display: grid;
   // 280px floor (+ tighter gap/padding) lets 3 cards fit on a ~900px board
@@ -19,15 +22,16 @@
   align-content: start;
 }
 
-// Embossed (debossed) area watermark centered in the blank space below the meal
-// cards, labelling the grid as the selected menu's "meals". Lowercase Fredoka to
-// match the macro-bar labels; sunken gray so it reads as carved into the surface.
+// Embossed (debossed) area watermark pinned DEAD CENTER of the meal region (fixed
+// — vertically + horizontally centered so it lines up with the "menus" watermark
+// above; the meal tiles simply overlay it as a one-time training cue). Lowercase
+// Fredoka to match the macro-bar labels; sunken gray so it reads as carved in.
 .area-watermark {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 60px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
   font-family: 'Fredoka', sans-serif;
   font-size: 20px;
   font-weight: 500;

@@ -36,7 +36,7 @@ import { Meal, Menu } from '../../models';
       <!-- Title line: "Meals" + right-justified AI toggle (star + chevron). The
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
-        <span class="binder-title"><mat-icon class="binder-title-icon">menu_book</mat-icon>Binder</span>
+        <span class="binder-title"><mat-icon class="binder-title-icon">menu_book</mat-icon>Bindery</span>
         <!-- AI Meal Assistant — a static title now (was the dropdown toggle). The
              AI row below is always shown, sitting under this title. -->
         <span class="ai-title">
@@ -91,10 +91,14 @@ import { Meal, Menu } from '../../models';
               matTooltip="Meals from Foods you picked"
               [disabled]="rotation.generating()"
               (click)="rotation.generateMeal()">
-              <img src="images/AI-star.png" alt="" class="btn-star" />New Meal
+              <img src="images/AI-star.png" alt="" class="btn-star" />New meal
             </button>
           </div>
         </div>
+
+        <!-- Detached grey divider closing off the AI Meal Assistant area, inset the
+             same as the Menus/Meals rows for a clean break. -->
+        <div class="rail-divider"></div>
 
         <!-- Menus accordion (top-level; larger header). -->
         <div class="rail-section">

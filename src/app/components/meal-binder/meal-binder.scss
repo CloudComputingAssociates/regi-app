@@ -90,11 +90,12 @@
   &.spinning { animation: binder-spin 1s linear infinite; }
 }
 
-// AI accordion body — ONE compact row: ✦ Create + Twist + dropdown.
+// AI row — ONE line always: Twist (left) + New meal (right). No wrap; the Twist
+// dropdown shrinks instead of dropping to a second row.
 .section-body.ai-body {
   flex-direction: row;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
 }
 
@@ -154,20 +155,21 @@
   margin: 8px 14px 0;
 }
 
-// Twist label + dropdown as ONE unit on the LEFT of the AI row (the New Meal
-// button is pushed right); they wrap together, never apart.
+// Twist label + dropdown as ONE unit on the LEFT of the AI row (the New meal
+// button is pushed right). The group may shrink so it never wraps to two rows.
 .twist-group {
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
 .twist-label {
-  flex-shrink: 0;
+  flex-shrink: 0; // label stays intact; only the combo shrinks
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px; // tight space between the squiggle icon and the "Twist" word
 
   .twist-word {
     font-size: 14px;
@@ -178,8 +180,8 @@
 
 .twist-combo {
   position: relative;
-  flex: 0 0 auto;
-  width: 150px; // was full-width — too wide
+  flex: 0 1 150px; // 150px ideal, but shrinks (with the input) to stay on one row
+  min-width: 0;
   display: flex;
   align-items: stretch;
 
@@ -269,6 +271,15 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+// Detached grey divider — a thin inset line (same 14px inset as the section rows)
+// closing off the AI Meal Assistant area above the Menus / Meals sections.
+.rail-divider {
+  flex-shrink: 0;
+  height: 1px;
+  margin: 12px 14px 0;
+  background: #4a4a4a;
 }
 
 .section-head {

@@ -2,11 +2,14 @@
 
 // Pinned row: never shrink, never absorb the vertical scroll.
 :host {
+  position: relative; // anchors the dead-center watermark
   display: block;
   flex-shrink: 0;
 }
 
 .strip {
+  position: relative;
+  z-index: 1; // cards sit above the watermark (which may show through / be covered)
   display: flex;
   align-items: center;
   gap: 16px;
@@ -27,12 +30,11 @@
 // match the macro-bar labels; sunken gray so it reads as carved into the surface.
 // Shrinks away (min-width:0 + clip) once the cards fill the strip.
 .area-watermark {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0; // behind the cards; tiles may cover it
   font-family: 'Fredoka', sans-serif;
   font-size: 20px;
   font-weight: 500;
