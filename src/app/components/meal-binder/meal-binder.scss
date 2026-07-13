@@ -56,36 +56,29 @@
   }
 }
 
-// Right-justified AI toggle on the title line: star + chevron. Opens/closes the
-// AI accordion below (the whole thing collapses into this one control).
-.ai-toggle {
+// Right-justified AI Meal Assistant TITLE on the "Binder" line (was a dropdown
+// toggle). Static star + label, no chevron; the AI row below is always shown and
+// sits directly under this title.
+.ai-title {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 4px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
+  gap: 6px;
 
+  // The star is a raster PNG — mask it and fill blue so the symbol matches the
+  // blue heading (a plain <img> can't be recolored).
   .ai-logo {
     width: 18px;
     height: 18px;
-    object-fit: contain;
+    background-color: #4da6ff;
+    -webkit-mask: url('/images/AI-star.png') center / contain no-repeat;
+    mask: url('/images/AI-star.png') center / contain no-repeat;
     &.spinning { animation: binder-spin 1s linear infinite; }
   }
-  .ai-toggle-label {
-    font-size: 13px;
+  .ai-title-label {
+    font-size: 14px;
     font-weight: 600;
-    color: #d8d8d8;
+    color: #4da6ff; // reads as a title, matching Binder / the accordion labels
   }
-  &:hover .ai-toggle-label { color: #ffffff; }
-  .ai-toggle-chevron {
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
-    color: #9aa0a6;
-  }
-  &:hover .ai-toggle-chevron { color: #ffffff; }
 }
 
 // Star icon in the AI accordion header (peer to .section-icon on Menus/Meals).
@@ -118,6 +111,7 @@
 // domed; :active sinks them with an inset shadow.
 .genmeal-btn {
   flex-shrink: 0;
+  margin-left: auto; // right-justified in the AI row (Twist stays on the left)
   padding: 8px 12px;
   font-size: 13px;
   font-weight: 500;
@@ -160,11 +154,10 @@
   margin: 8px 14px 0;
 }
 
-// Twist label + dropdown as ONE unit, pushed flush-right (Create stays left);
-// they wrap together, never apart.
+// Twist label + dropdown as ONE unit on the LEFT of the AI row (the New Meal
+// button is pushed right); they wrap together, never apart.
 .twist-group {
   flex-shrink: 0;
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -458,8 +451,10 @@
 }
 
 // Macro discs — shared by the summary head + the reveal. Muted palette so the
-// chips recede.
+// chips recede. FIXED size: never shrink, never wrap the label.
 .chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
   font-size: 11px;
   font-weight: 500; // lighter so chips recede
   padding: 2px 7px;

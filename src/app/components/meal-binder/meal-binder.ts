@@ -37,15 +37,12 @@ import { Meal, Menu } from '../../models';
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
         <span class="binder-title"><mat-icon class="binder-title-icon">menu_book</mat-icon>Binder</span>
-        <button
-          type="button"
-          class="ai-toggle"
-          matTooltip="AI meal generation"
-          (click)="aiOpen.set(!aiOpen())">
-          <img src="images/AI-star.png" alt="" class="ai-logo" [class.spinning]="rotation.generating()" />
-          <span class="ai-toggle-label">AI Assist</span>
-          <mat-icon class="ai-toggle-chevron">{{ aiOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-        </button>
+        <!-- AI Meal Assistant — a static title now (was the dropdown toggle). The
+             AI row below is always shown, sitting under this title. -->
+        <span class="ai-title">
+          <span class="ai-logo" [class.spinning]="rotation.generating()" aria-hidden="true"></span>
+          <span class="ai-title-label">AI Meal Assistant</span>
+        </span>
       </div>
 
       <!-- One scrollbar for the whole rail. -->
@@ -53,56 +50,51 @@ import { Meal, Menu } from '../../models';
 
         <!-- AI accordion — revealed by the title toggle. Star icon in front (vs
              the fork/knife on Meals). Body is a single compact row. -->
-        @if (aiOpen()) {
-          <div class="rail-section">
-            <button type="button" class="section-head" (click)="aiOpen.set(false)">
-              <img src="images/AI-star.png" alt="" class="section-ai-logo" [class.spinning]="rotation.generating()" />
-              <span class="section-label">AI Nutrition Assistant</span>
-              <mat-icon class="section-chevron">expand_less</mat-icon>
-            </button>
-            <div class="section-body ai-body">
+        <!-- AI row — always shown now (the header toggle became a static title).
+             Twist on the LEFT; the New Meal button right-justified under the title. -->
+        <div class="rail-section">
+          <div class="section-body ai-body">
+            <!-- Label + dropdown kept together so they never wrap apart. -->
+            <div class="twist-group">
+              <span class="twist-label"><app-twist-icon /><span class="twist-word">Twist</span></span>
+              <div class="twist-combo">
+              <input
+                #twistInput
+                type="text"
+                class="twist-input"
+                [value]="twistValue()"
+                placeholder="none"
+                (input)="onTwistInput($any($event.target).value)"
+                (focus)="twistOpen.set(true)"
+                (blur)="onTwistBlur()"
+                (keydown.escape)="twistOpen.set(false)" />
               <button
                 type="button"
-                class="genmeal-btn"
-                matTooltip="Meals from Foods you picked"
-                [disabled]="rotation.generating()"
-                (click)="rotation.generateMeal()">
-                <img src="images/AI-star.png" alt="" class="btn-star" />Create Meal
-              </button>
-              <!-- Label + dropdown kept together so they never wrap apart. -->
-              <div class="twist-group">
-                <span class="twist-label"><app-twist-icon /><span class="twist-word">Twist</span></span>
-                <div class="twist-combo">
-                <input
-                  #twistInput
-                  type="text"
-                  class="twist-input"
-                  [value]="twistValue()"
-                  placeholder="none"
-                  (input)="onTwistInput($any($event.target).value)"
-                  (focus)="twistOpen.set(true)"
-                  (blur)="onTwistBlur()"
-                  (keydown.escape)="twistOpen.set(false)" />
-                <button
-                  type="button"
-                  class="twist-chevron"
-                  aria-label="Twist options"
-                  (mousedown)="onChevronMouseDown($event)">▾</button>
-                @if (twistOpen()) {
-                  <ul class="twist-menu">
-                    @for (opt of twistOptions; track opt) {
-                      <li
-                        class="twist-opt"
-                        [class.selected]="opt === twistValue()"
-                        (mousedown)="selectTwist(opt, $event)">{{ opt }}</li>
-                    }
-                  </ul>
-                }
-                </div>
+                class="twist-chevron"
+                aria-label="Twist options"
+                (mousedown)="onChevronMouseDown($event)">▾</button>
+              @if (twistOpen()) {
+                <ul class="twist-menu">
+                  @for (opt of twistOptions; track opt) {
+                    <li
+                      class="twist-opt"
+                      [class.selected]="opt === twistValue()"
+                      (mousedown)="selectTwist(opt, $event)">{{ opt }}</li>
+                  }
+                </ul>
+              }
               </div>
             </div>
+            <button
+              type="button"
+              class="genmeal-btn"
+              matTooltip="Meals from Foods you picked"
+              [disabled]="rotation.generating()"
+              (click)="rotation.generateMeal()">
+              <img src="images/AI-star.png" alt="" class="btn-star" />New Meal
+            </button>
           </div>
-        }
+        </div>
 
         <!-- Menus accordion (top-level; larger header). -->
         <div class="rail-section">
@@ -244,8 +236,6 @@ export class MealBinderComponent implements OnInit {
   private dialog = inject(MatDialog);
   private host = inject(ElementRef<HTMLElement>);
 
-  /** AI accordion (Create + Twist) — collapsed by default to save vertical room. */
-  readonly aiOpen = signal(false);
   /** Top-level accordion open state — both default open. */
   readonly binderMenusOpen = signal(true);
   readonly binderMealsOpen = signal(true);

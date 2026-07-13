@@ -22,6 +22,28 @@
   flex: 1 1 auto;
 }
 
+// Embossed (debossed) area watermark — fills the blank strip space to the right
+// of the cards, labelling the row as the rotation's "menus". Lowercase Fredoka to
+// match the macro-bar labels; sunken gray so it reads as carved into the surface.
+// Shrinks away (min-width:0 + clip) once the cards fill the strip.
+.area-watermark {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  text-transform: lowercase;
+  color: #55585c;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 .menu-card {
   position: relative;
   display: flex;
@@ -262,8 +284,10 @@
 }
 
 // Macro discs — shared by the menu foot line. Same muted palette + P/C/F/F order
-// as the Binder card.
+// as the Binder card. FIXED size: never shrink, never wrap the label.
 .chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
   font-size: 11px;
   font-weight: 500;
   padding: 2px 7px;

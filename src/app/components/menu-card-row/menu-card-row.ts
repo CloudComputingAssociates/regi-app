@@ -123,6 +123,9 @@ import { RotationService } from '../../services/rotation.service';
           [cdkDropListEnterPredicate]="menuDropPredicate"
           (cdkDropListDropped)="onMenuDrop($event)"
           (click)="addMenu.emit()">+ Add menu</div>
+        <!-- Embossed area watermark filling the blank strip space: this row is the
+             rotation's MENUS. Same lowercase Fredoka face as the macro labels. -->
+        <span class="area-watermark">menus</span>
       </div>
     </div>
   `,

@@ -1,11 +1,15 @@
 // src/app/components/menus-meals/menus-meals.scss
 
-// Block host so the grid lays out and scrolls inside the panel-body region.
+// Flex-column host so the grid sits at the top and the area watermark fills the
+// blank space below it (inside the panel-body region).
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 .canvas-grid {
+  flex: 0 0 auto;
   display: grid;
   // 280px floor (+ tighter gap/padding) lets 3 cards fit on a ~900px board
   // (laptop) while staying responsive — drops to 2 on a narrower window.
@@ -13,4 +17,23 @@
   gap: 10px;
   padding: 12px 14px;
   align-content: start;
+}
+
+// Embossed (debossed) area watermark centered in the blank space below the meal
+// cards, labelling the grid as the selected menu's "meals". Lowercase Fredoka to
+// match the macro-bar labels; sunken gray so it reads as carved into the surface.
+.area-watermark {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  text-transform: lowercase;
+  color: #55585c;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
+  user-select: none;
+  pointer-events: none;
 }

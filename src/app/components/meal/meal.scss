@@ -225,21 +225,29 @@
     &:hover { color: #ffffff; }
   }
 
-  // Meal total calories — trails hard right (the orig/clone tag stays in the left
-  // cluster, just before this auto gap).
+  // Meal total calories — sits in the left cluster right after the discs.
   .meal-cals {
-    margin-left: auto;
     flex: 0 0 auto;
     font-size: 12px;
     font-weight: 400;
     color: #4da6ff;
     white-space: nowrap;
   }
+
+  // + add-food disc — pushed hard to the right edge (under the header trash), set
+  // off by itself away from the disc + chevron cluster.
+  .add-affordance {
+    margin-left: auto;
+  }
 }
 
 // Macro discs — shared by the summary + reveal rows. Muted palette so the chips
-// recede and the meal's food rows stay the focus.
+// recede and the meal's food rows stay the focus. FIXED size: never flex-shrink
+// and never wrap the label ("P 59" stays on one line — the title box absorbs any
+// width squeeze instead of the discs resizing).
 .chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
   font-size: 11px;
   font-weight: 500; // lighter so the chips don't grab the eye off the food text
   padding: 2px 6px;

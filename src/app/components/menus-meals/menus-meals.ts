@@ -18,6 +18,7 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
     @if (menu(); as m) {
       <div class="canvas-grid">
         @for (slot of m.slots; track slot.slotOrder) {
+          <!-- meal card -->
           <app-meal
             [slot]="slot"
             [items]="itemsFor(slot.mealId)"
@@ -40,6 +41,9 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
             (dropFood)="rotation.addFoodToEditingMeal($event.food, $event.serving)" />
         }
       </div>
+      <!-- Embossed area watermark in the blank space below the cards: this grid is
+           the selected menu's MEALS. Same lowercase Fredoka face as the macros. -->
+      <div class="area-watermark">meals</div>
     }
   `,
   styleUrls: ['./menus-meals.scss'],
