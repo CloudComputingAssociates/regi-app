@@ -111,8 +111,7 @@
 // Lighter, raised, pressable buttons — top highlight + drop shadow read as
 // domed; :active sinks them with an inset shadow.
 .genmeal-btn {
-  flex-shrink: 0;
-  margin-left: auto; // right-justified in the AI row (Twist stays on the left)
+  flex-shrink: 0; // AI create button leads on the LEFT of the row
   padding: 8px 12px;
   font-size: 13px;
   font-weight: 500;
@@ -155,11 +154,12 @@
   margin: 8px 14px 0;
 }
 
-// Twist label + dropdown as ONE unit on the LEFT of the AI row (the New meal
-// button is pushed right). The group may shrink so it never wraps to two rows.
+// Twist label + dropdown as ONE unit, pushed to the RIGHT of the AI row (the AI
+// create button leads on the left). The group may shrink so it never wraps.
 .twist-group {
   flex: 0 1 auto;
   min-width: 0;
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;

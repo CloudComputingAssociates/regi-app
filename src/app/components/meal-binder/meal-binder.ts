@@ -54,6 +54,15 @@ import { Meal, Menu } from '../../models';
              Twist on the LEFT; the New Meal button right-justified under the title. -->
         <div class="rail-section">
           <div class="section-body ai-body">
+            <!-- AI create button first (left); Twist label + dropdown to its right. -->
+            <button
+              type="button"
+              class="genmeal-btn"
+              matTooltip="Meals from Foods you picked"
+              [disabled]="rotation.generating()"
+              (click)="rotation.generateMeal()">
+              <img src="images/AI-star.png" alt="" class="btn-star" />AI create
+            </button>
             <!-- Label + dropdown kept together so they never wrap apart. -->
             <div class="twist-group">
               <span class="twist-label"><app-twist-icon /><span class="twist-word">Twist</span></span>
@@ -85,14 +94,6 @@ import { Meal, Menu } from '../../models';
               }
               </div>
             </div>
-            <button
-              type="button"
-              class="genmeal-btn"
-              matTooltip="Meals from Foods you picked"
-              [disabled]="rotation.generating()"
-              (click)="rotation.generateMeal()">
-              <img src="images/AI-star.png" alt="" class="btn-star" />New meal
-            </button>
           </div>
         </div>
 
