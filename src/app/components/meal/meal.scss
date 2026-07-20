@@ -198,6 +198,68 @@
     0 0 7px rgba(40, 201, 65, 0.55);
 }
 
+// Source recipe link — a standing (permanently underlined) link on its own line
+// above the macro discs, pointing at the imported recipe PDF that seeded the meal.
+// Bare button styled as a link so it can drive the in-app viewer tab.
+.recipe-link {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: #4da6ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+
+  &:hover { color: #7fbfff; }
+}
+
+// Dynamic-ingredients accordion — a quiet, collapsed group under the main food
+// rows for recipe ingredients that aren't in MyFoods. Muted so it reads as
+// secondary to the meal's real foods.
+.dyn-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .dyn-head {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    border: none;
+    background: none;
+    color: #9aa0a6;
+    font-size: 12px;
+    cursor: pointer;
+
+    &:hover { color: #cfcfcf; }
+
+    .dyn-chevron {
+      flex: 0 0 auto;
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
+      line-height: 16px;
+    }
+
+    .dyn-label {
+      font-style: italic;
+    }
+
+    .dyn-count {
+      flex: 0 0 auto;
+      font-size: 11px;
+      color: #7a7f85;
+    }
+  }
+
+  .dyn-rows {
+    padding-left: 16px; // indent under the chevron so the group reads as nested
+  }
+}
+
 // The macro line (ONE row). The orig/clone tag + Protein lead on the left; Carbs,
 // Fat, Fiber follow; cals + the dropdown chevron sit on the far RIGHT (cals's auto
 // margin pushes the pair over, the chevron trails as the right-most item).

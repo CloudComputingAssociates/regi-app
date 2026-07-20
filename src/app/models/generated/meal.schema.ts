@@ -166,6 +166,10 @@ export interface MealItemFood {
    * Optional pre-baked purchase link (e.g., Amazon URL)
    */
   productPurchaseLink?: string | null;
+  /**
+   * True when this food is a dynamic recipe ingredient — a UserFoods row auto-created during recipe import for an unmatched ingredient line (not a curated MyFoods entry). Drives the meal display's 'Dynamic Ingredients added' accordion + icon. Absent/false for real MyFoods / REGI-approved foods.
+   */
+  dynamicIngredient?: boolean;
   [k: string]: unknown;
 }
 /**

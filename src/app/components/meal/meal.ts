@@ -4,13 +4,14 @@
 // ({slotLabel})" with a visual-only inline-edit affordance. Body shows
 // macro chips (P/C/F/Fi grams — never calories) and the food rows. Handles
 // three states: filled, empty (pick a meal), and dining-out.
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { MealItem, MenuSlot } from '../../models';
 import { Food } from '../../models/food.model';
 import { FoodComponent } from '../food/food';
+import { TabService } from '../../services/tab.service';
 
 interface SlotMacros {
   proteinG: number;
@@ -146,6 +147,17 @@ interface SlotMacros {
           [cdkDropListEnterPredicate]="foodDropPredicate"
           (cdkDropListDropped)="onDropFood($event)">
           @if (slot().mealId != null) {
+            <!-- Source recipe link — its own line ABOVE the macro discs. Permanent
+                 underline (not hover-only) so it reads as a standing link to the
+                 imported recipe PDF that seeded this meal. Only when a link exists. -->
+            @if (hasRecipeLink()) {
+              <button
+                type="button"
+                class="recipe-link"
+                matTooltip="Open the source recipe PDF"
+                matTooltipPosition="above"
+                (click)="openRecipe()">Recipe Link (.PDF)</button>
+            }
             <!-- Macro line (ONE row): orig/clone tag leads (swapped with the
                  chevron); then Protein, Carbs, Fat, Fiber (order P C Fat Fiber),
                  cals trailing, and the dropdown chevron back on the far RIGHT. -->
@@ -189,7 +201,7 @@ interface SlotMacros {
             </div>
           }
           <div class="food-rows">
-            @for (item of items(); track item.id) {
+            @for (item of mainItems(); track item.id) {
               <app-food
                 [item]="item"
                 [resolving]="resolvingItemId() === item.id"
@@ -198,6 +210,34 @@ interface SlotMacros {
                 (removeItem)="removeItem.emit($event)" />
             }
           </div>
+          <!-- Dynamic recipe ingredients — collapsed accordion below the main
+               rows (foods auto-added for the recipe, not in MyFoods). -->
+          @if (dynamicItems().length > 0) {
+            <div class="dyn-accordion">
+              <button
+                type="button"
+                class="dyn-head"
+                [matTooltip]="dynamicOpen() ? 'Hide recipe ingredients' : 'Show recipe ingredients not in MyFoods'"
+                matTooltipPosition="above"
+                (click)="toggleDynamic()">
+                <mat-icon class="dyn-chevron">{{ dynamicOpen() ? 'expand_more' : 'chevron_right' }}</mat-icon>
+                <span class="dyn-label">Dynamic Ingredients added</span>
+                <span class="dyn-count">{{ dynamicItems().length }}</span>
+              </button>
+              @if (dynamicOpen()) {
+                <div class="food-rows dyn-rows">
+                  @for (item of dynamicItems(); track item.id) {
+                    <app-food
+                      [item]="item"
+                      [resolving]="resolvingItemId() === item.id"
+                      [readonly]="isClone()"
+                      (editItem)="editItem.emit($event)"
+                      (removeItem)="removeItem.emit($event)" />
+                  }
+                </div>
+              }
+            </div>
+          }
           @if (editing() && items().length === 0) {
             <div class="edit-drop-hint">Click or drag a food to add</div>
           }
@@ -209,8 +249,15 @@ interface SlotMacros {
   styleUrls: ['./meal.scss'],
 })
 export class MealComponent {
+  private readonly tabs = inject(TabService);
+
   readonly slot = input.required<MenuSlot>();
   readonly items = input.required<MealItem[]>();
+
+  /** Source recipe URL (the imported recipe PDF in GCP that seeded this meal), or
+   *  empty/undefined when the meal has no recipe. Threaded down from the cached
+   *  Meal — MenuSlot doesn't carry it. Drives the "Recipe Link (.PDF)" line. */
+  readonly recipeLink = input<string | null | undefined>(null);
 
   /** True when this meal is the current lookaside "add" target — drives the
    *  accent border, the active + disc, and the card being a food drop target.
@@ -299,6 +346,41 @@ export class MealComponent {
   readonly dropFood = output<{ food: Food; serving: number }>();
 
   readonly isEmpty = computed(() => !this.slot().isDiningOut && this.slot().mealId == null);
+
+  /** A meal item is a "dynamic ingredient" when its resolved food was auto-created
+   *  during recipe import (not a curated MyFoods / REGI-approved food). */
+  private isDynamicItem(item: MealItem): boolean {
+    return item.food?.dynamicIngredient === true;
+  }
+
+  /** Real foods (MyFoods + REGI-approved) — listed first, as the meal's main rows.
+   *  Pending/unresolved items (food null) are NOT dynamic ingredients, so they
+   *  stay here too. */
+  readonly mainItems = computed<MealItem[]>(() =>
+    this.items().filter((i) => !this.isDynamicItem(i)),
+  );
+
+  /** Dynamic recipe ingredients — pushed below the main rows into a collapsed
+   *  "Dynamic Ingredients added" accordion. */
+  readonly dynamicItems = computed<MealItem[]>(() =>
+    this.items().filter((i) => this.isDynamicItem(i)),
+  );
+
+  /** Dynamic-ingredients accordion open state — starts COLLAPSED. */
+  readonly dynamicOpen = signal(false);
+
+  toggleDynamic(): void {
+    this.dynamicOpen.update((v) => !v);
+  }
+
+  /** True when there's a source recipe URL to link to. */
+  readonly hasRecipeLink = computed<boolean>(() => (this.recipeLink() ?? '').trim().length > 0);
+
+  /** Open the source recipe (imported PDF) in the in-app web viewer tab. */
+  openRecipe(): void {
+    const url = (this.recipeLink() ?? '').trim();
+    if (url) this.tabs.openWebViewer(url, 'Recipe (PDF)');
+  }
 
   /** Macro reveal open state — meals START CLOSED (just the Protein + Fiber
    *  summary discs); the chevron reveals Carbs/Fat/Cals below. */

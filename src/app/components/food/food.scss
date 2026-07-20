@@ -46,6 +46,25 @@
   white-space: nowrap;
 }
 
+// Dynamic-ingredient marker column — a fixed narrow slot after the serving, held
+// even when empty so the serving column aligns across dynamic / non-dynamic rows.
+// The icon is sized to the row font so it reads as an inline provenance marker.
+.food-dyn {
+  flex: 0 0 auto;
+  width: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  .dyn-icon {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    opacity: 0.85;
+    cursor: help;
+  }
+}
+
 // Hover-revealed wrapper; the buttons themselves are the shared .icon-disc
 // (same size as the meal-card header discs). Reserve a fixed pencil+delete width
 // (right-aligned) so the serving column lines up whether or not a row offers the

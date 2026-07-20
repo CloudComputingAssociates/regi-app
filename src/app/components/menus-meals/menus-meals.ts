@@ -22,6 +22,7 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
           <app-meal
             [slot]="slot"
             [items]="itemsFor(slot.mealId)"
+            [recipeLink]="recipeLinkFor(slot.mealId)"
             [editing]="isEditing(slot.slotOrder)"
             [resolvingItemId]="resolvingItemId()"
             [pinAlive]="pinAliveFor(slot.mealId)"
@@ -64,6 +65,13 @@ export class MenusMealsComponent {
 
   itemsFor(mealId: number | null | undefined): MealItem[] {
     return this.rotation.slotItems(mealId);
+  }
+
+  /** Source recipe URL for a slot's meal, from the cached Meal (MenuSlot doesn't
+   *  carry it). Null when the meal is unknown or has no recipe. */
+  recipeLinkFor(mealId: number | null | undefined): string | null {
+    if (mealId == null) return null;
+    return this.rotation.getMeal(mealId)?.recipeLink ?? null;
   }
 
   /** Should this empty slot "bloom" as a meal target? All empty slots light
