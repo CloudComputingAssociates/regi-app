@@ -65,7 +65,7 @@ import { Meal, Menu } from '../../models';
             </button>
             <!-- Label + dropdown kept together so they never wrap apart. -->
             <div class="twist-group">
-              <span class="twist-label"><app-twist-icon /><span class="twist-word">Twist</span></span>
+              <span class="twist-label"><span class="twist-word">Twist</span></span>
               <div class="twist-combo">
               <input
                 #twistInput
@@ -93,6 +93,14 @@ import { Meal, Menu } from '../../models';
                 </ul>
               }
               </div>
+              <!-- Twist mark — a reserved slot after the dropdown; the squiggle logo
+                   only appears once a twist is selected / a custom one is entered
+                   (the space is held either way, so nothing shifts). -->
+              <span class="twist-mark">
+                @if (twistValue() !== 'none' && twistValue().trim() !== '') {
+                  <app-twist-icon />
+                }
+              </span>
             </div>
           </div>
         </div>

@@ -178,6 +178,17 @@
   }
 }
 
+// Reserved slot after the dropdown for the Twist squiggle (SVG is 17px wide). The
+// width is held even when empty, so selecting or clearing a twist never shifts the
+// row; the logo only renders once a real twist is chosen.
+.twist-mark {
+  flex: 0 0 auto;
+  width: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .twist-combo {
   position: relative;
   flex: 0 1 150px; // 150px ideal, but shrinks (with the input) to stay on one row
