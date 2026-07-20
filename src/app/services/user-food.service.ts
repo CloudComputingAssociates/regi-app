@@ -38,6 +38,21 @@ export class UserFoodService {
     }
   }
 
+  /** Fetch a single UserFood by id (GET /api/userfoods/{id}). Caller-scoped on
+   *  the API (WHERE UserFoodID = @p1 AND UserID = @p2 → own-row-or-404, no share
+   *  gate), so a fresh dynamic ingredient (ShareCandidate=1, ShareApproved=0)
+   *  still returns. Used to resolve meal items backed by a userfood that isn't in
+   *  the allowed-foods curation set. Returns null on any error. */
+  async getUserFoodById(id: number): Promise<UserFood | null> {
+    try {
+      return await firstValueFrom(
+        this.http.get<UserFood>(`${this.baseUrl}/${id}`)
+      );
+    } catch {
+      return null;
+    }
+  }
+
   async createUserFood(req: CreateUserFoodRequest): Promise<UserFood | null> {
     try {
       const food = await firstValueFrom(

@@ -21,6 +21,7 @@ import { firstValueFrom } from 'rxjs';
 import { RotationService, TEACH_SAVE_LINE } from '../../services/rotation.service';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { FoodsService } from '../../services/foods.service';
+import { UserFoodService } from '../../services/user-food.service';
 import { NotificationService } from '../../services/notification.service';
 import { TabService } from '../../services/tab.service';
 import { MenuCardRowComponent } from '../menu-card-row/menu-card-row';
@@ -31,6 +32,7 @@ import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 import { MealItem } from '../../models';
 import { Food } from '../../models/food.model';
+import { UserFood } from '../../models/user-food.model';
 import { nutritionLabelScale, snapServing } from '../../models/food-display';
 
 @Component({
@@ -224,6 +226,7 @@ export class MenusPanelComponent implements OnInit {
   private dialog = inject(MatDialog);
   private preferencesService = inject(FoodPreferencesService);
   private foodsService = inject(FoodsService);
+  private userFoodService = inject(UserFoodService);
   private notification = inject(NotificationService);
   protected tabService = inject(TabService);
   private host = inject(ElementRef<HTMLElement>);
@@ -370,11 +373,14 @@ export class MenusPanelComponent implements OnInit {
   /** Resolve a meal item to a full Food (per-100g values). Key is
    *  (foodId, foodSource) with a missing foodSource normalized to 'food' — the
    *  same key the add path / in-meal dot use.
-   *    (a) the allowed-foods set (covers all userfoods + favorited foods),
-   *    (b) on miss, GET /api/foods/{id} for canonical 'food' items (e.g.
-   *        generated-meal foods never favorited), cached for repeat opens.
-   *  A 'userfood' miss can't be safely fetched by numeric id (that id keys the
-   *  UserFoods table, not Foods) so it returns null → toast. */
+   *    (a) the allowed-foods set (covers curated userfoods + favorited foods),
+   *    (b) on miss, fetch by id — 'userfood' via GET /api/userfoods/{id} (its id
+   *        keys the UserFoods table), 'food' via GET /api/foods/{id}. Both cached
+   *        for repeat opens.
+   *  Allowed-foods is a curation preference, not an identity lookup, so a
+   *  userfood outside it (e.g. a dynamic recipe ingredient) still resolves via
+   *  its own endpoint. Null only when the item has no food (pending/unresolved)
+   *  or the fetch fails / returns no id. */
   private async resolveItemFood(item: MealItem): Promise<Food | null> {
     // The food identity lives on the item's nested `food` record (null for
     // pending items — those have the pencil hidden already).
@@ -391,11 +397,19 @@ export class MenusPanelComponent implements OnInit {
     const cached = this.fetchedFoods().get(key);
     if (cached) return cached;
 
-    if (source !== 'food' || itemFood.foodId == null) return null;
+    if (itemFood.foodId == null) return null;
 
     this.resolvingItemId.set(item.id ?? null);
     try {
-      const food = await firstValueFrom(this.foodsService.getFoodById(itemFood.foodId));
+      // foodId is ALREADY the positive table id for its source (AllFoods:
+      // uf.UserFoodID AS FoodID) — pass it through unmodified (the negative-ID
+      // convention is blended /foods search results only). Userfoods key the
+      // UserFoods table, so fetch them via /userfoods/{id}; canonical foods via
+      // /foods/{id}.
+      const food =
+        source === 'userfood'
+          ? await this.resolveUserFood(itemFood.foodId)
+          : await firstValueFrom(this.foodsService.getFoodById(itemFood.foodId));
       if (!food?.id) return null;
       this.fetchedFoods.update((m) => new Map(m).set(key, food));
       return food;
@@ -404,6 +418,53 @@ export class MenusPanelComponent implements OnInit {
     } finally {
       this.resolvingItemId.set(null);
     }
+  }
+
+  /** Fetch a userfood by id and shape it into the Food the serving popup wants. */
+  private async resolveUserFood(foodId: number): Promise<Food | null> {
+    const uf = await this.userFoodService.getUserFoodById(foodId);
+    return uf ? this.userFoodToFood(uf) : null;
+  }
+
+  /** Map a UserFood (GET /api/userfoods/{id}) into the Food shape the serving
+   *  popup consumes. Nutrition mirrors the AllFoods userfood projection (same
+   *  UserNutritionFacts source), so the label scales identically to an in-set
+   *  userfood. An untracked dynamic ingredient carries NO nutrition — leave
+   *  nutritionFacts undefined so the label renders empty rather than NaN.
+   *  servingSize stays null (userfoods have none in AllFoods either); the popup's
+   *  initial quantity comes from the meal item's own quantity. */
+  private userFoodToFood(uf: UserFood): Food {
+    const nf = uf.nutritionFacts;
+    return {
+      id: uf.id,
+      foodSource: 'userfood',
+      description: uf.description,
+      shortDescription: uf.shortDescription,
+      servingSize: null,
+      servingUnit: uf.servingUnit,
+      servingGramsPerUnit: uf.servingGramsPerUnit,
+      nutritionFacts: nf
+        ? {
+            calories: nf.calories,
+            proteinG: nf.proteinG,
+            totalFatG: nf.totalFatG,
+            saturatedFatG: nf.saturatedFatG,
+            transFatG: nf.transFatG,
+            cholesterolMG: nf.cholesterolMG,
+            sodiumMG: nf.sodiumMG,
+            totalCarbohydrateG: nf.totalCarbohydrateG,
+            dietaryFiberG: nf.dietaryFiberG,
+            totalSugarsG: nf.totalSugarsG,
+            addedSugarsG: nf.addedSugarsG,
+            vitaminDMcg: nf.vitaminDMcg,
+            calciumMG: nf.calciumMG,
+            ironMG: nf.ironMG,
+            potassiumMG: nf.potassiumMG,
+            servingSizeG: nf.servingSizeG,
+            servingSizeHousehold: nf.servingSizeHousehold,
+          }
+        : undefined,
+    } as Food;
   }
 
   /** ▲ / ▼ stepper — ladder-snap the draft (shared SERVING_SIZE_LADDER). */
