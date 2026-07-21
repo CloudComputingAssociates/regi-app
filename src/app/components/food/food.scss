@@ -51,16 +51,20 @@
 // The icon is sized to the row font so it reads as an inline provenance marker.
 .food-dyn {
   flex: 0 0 auto;
-  width: 16px;
+  width: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
+  // Native mat-icon (not a PNG) so it stays crisp and, crucially, VISIBLE on the
+  // dark card — a muted amber that reads as "added for the recipe, not in MyFoods"
+  // without competing with the food name.
   .dyn-icon {
-    width: 14px;
-    height: 14px;
-    object-fit: contain;
-    opacity: 0.85;
+    width: 15px;
+    height: 15px;
+    font-size: 15px;
+    line-height: 15px;
+    color: #d0a95f;
     cursor: help;
   }
 }

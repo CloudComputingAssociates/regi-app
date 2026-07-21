@@ -29,12 +29,10 @@ import { MealItem } from '../../models';
            serving column lines up whether or not a row is dynamic. -->
       <span class="food-dyn">
         @if (isDynamic()) {
-          <img
-            src="images/RecipeDynamicIngredientIcon.png"
-            alt="Recipe ingredient"
+          <mat-icon
             class="dyn-icon"
             matTooltip="Food added for recipe, not in MyFoods"
-            matTooltipPosition="left" />
+            matTooltipPosition="left">restaurant_menu</mat-icon>
         }
       </span>
       <!-- Actions suppressed on a read-only (clone/phantom) row — the food is a
