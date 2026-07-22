@@ -340,10 +340,29 @@ export class MealBinderComponent implements OnInit {
     });
   }
 
-  /** Deleting a Binder meal — no confirm dialog (a single meal is cheap to
-   *  re-add; only the destructive menu mini-wipe warns). Deletes immediately. */
+  /** Deleting a Binder meal. A plain meal is cheap to re-add, so it deletes
+   *  immediately with no confirm. But only the ORIGINAL import-created meal
+   *  carries a recipeLink (copies/clones never do), so a non-empty link means
+   *  this meal is the last thing referencing that recipe — deleting it orphans
+   *  the recipe. In that case, confirm and offer to remove the recipe + its PDF
+   *  too (emphasis on deleting both, so no unreachable recipe is left behind). */
   onDeleteBinder(meal: Meal): void {
-    void this.rotation.deleteBinderMeal(meal.id);
+    if (!meal.recipeLink?.trim()) {
+      void this.rotation.deleteBinderMeal(meal.id);
+      return;
+    }
+    this.dialog.open(WipeConfirmDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: {
+        title: `Delete "${meal.name}"`,
+        message:
+          'This meal was created from an imported recipe. Delete the recipe and its PDF too? This permanently removes them and cannot be undone.',
+        confirmLabel: 'Delete meal & recipe',
+        onConfirm: () => void this.rotation.deleteBinderMeal(meal.id, true),
+        secondaryLabel: 'Delete meal only',
+        onSecondary: () => void this.rotation.deleteBinderMeal(meal.id, false),
+      },
+    });
   }
 
   round(n: number | null | undefined): number {

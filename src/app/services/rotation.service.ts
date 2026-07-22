@@ -1020,10 +1020,16 @@ export class RotationService {
 
   /** Explicitly delete a Binder (pinned) meal.
    *    DELETE /api/meal/{id}  (409 if the meal is still slotted in a menu)
-   *  Reload the Binder after. */
-  async deleteBinderMeal(mealId: number): Promise<void> {
+   *  When deleteRecipe is true, the server also removes the imported recipe + its
+   *  PDF the meal was created from (DELETE /api/meal/{id}?deleteRecipe=true). The
+   *  meal delete reports success even if that cleanup partially failed — we don't
+   *  surface partial-failure states. Reload the Binder after. */
+  async deleteBinderMeal(mealId: number, deleteRecipe = false): Promise<void> {
+    const url = deleteRecipe
+      ? `${this.baseUrl}/meal/${mealId}?deleteRecipe=true`
+      : `${this.baseUrl}/meal/${mealId}`;
     try {
-      await firstValueFrom(this.http.delete(`${this.baseUrl}/meal/${mealId}`));
+      await firstValueFrom(this.http.delete(url));
       await this.loadBinder();
     } catch (err) {
       this.notification.show(this.deleteErrMessage(err), 'error');
