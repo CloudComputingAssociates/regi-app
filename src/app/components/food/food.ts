@@ -23,18 +23,6 @@ import { MealItem } from '../../models';
            meal-card header. -->
       <span class="food-name">{{ item().food?.shortDescription?.trim() || item().foodName }}</span>
       <span class="food-qty">{{ item().quantity }} {{ item().unit }}</span>
-      <!-- Dynamic-ingredient marker: a fixed-width 2nd column after the serving.
-           Shows the recipe-ingredient icon ONLY for foods auto-created during
-           recipe import (not in MyFoods); the slot is always present so the
-           serving column lines up whether or not a row is dynamic. -->
-      <span class="food-dyn">
-        @if (isDynamic()) {
-          <mat-icon
-            class="dyn-icon"
-            matTooltip="Food added for recipe, not in MyFoods"
-            matTooltipPosition="left">restaurant_menu</mat-icon>
-        }
-      </span>
       <!-- Actions suppressed on a read-only (clone/phantom) row — the food is a
            pointer to the origin meal; edits belong on the origin only. -->
       @if (!readonly()) {
@@ -87,11 +75,6 @@ export class FoodComponent {
   /** Whether the edit-serving pencil is offered. Pending items carry no
    *  resolved food record (`food` is null), so there's nothing to price. */
   readonly canEditServing = computed<boolean>(() => this.item().food != null);
-
-  /** True when this item's food is a dynamic recipe ingredient (auto-created at
-   *  recipe import for an unmatched line, not a curated MyFoods entry). Drives the
-   *  recipe-ingredient icon. Undefined/false → treated as a normal food. */
-  readonly isDynamic = computed<boolean>(() => this.item().food?.dynamicIngredient === true);
 
   /** Double-click a row → same as the pencil (open the serving/nutrition popup).
    *  No-op on read-only rows or unresolved items (nothing to price). */
