@@ -31,6 +31,120 @@
     box-shadow: 0 0 0 1px #4da6ff, 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
+  // With a cover photo the card hosts a flip. The card's own padding moves onto
+  // the back face (so the photo fills edge-to-edge); overflow clips the photo to
+  // the rounded corners; perspective drives the 3D flip. No fixed position:fixed
+  // descendants live in this tree, so perspective's containing block is harmless.
+  &.has-cover {
+    padding: 0;
+    overflow: hidden;
+    perspective: 1200px;
+  }
+}
+
+// Flip viewport. The BACK face stays in normal flow so it defines the card's
+// height (unchanged from today — no reflow during the flip); the FRONT (photo)
+// is absolutely overlaid on top. Rotating the wrapper 180° swaps faces.
+.flip {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 250ms ease;
+  border-radius: inherit;
+
+  &.show-back {
+    transform: rotateY(180deg);
+  }
+}
+
+.flip-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: inherit;
+}
+
+// Back = the current card content, pre-rotated 180° so it reads correctly once
+// the wrapper is flipped. In normal flow → sets the card height. Re-applies the
+// card's original padding.
+.flip-back {
+  position: relative;
+  transform: rotateY(180deg);
+  padding: 12px 4px 12px 14px;
+  min-height: 100%;
+}
+
+// Front = the cover photo, overlaying the back's box.
+.flip-front {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+
+  .cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  // Bottom scrim so the title stays legible over any photo.
+  .cover-scrim {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 48%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0));
+    pointer-events: none;
+  }
+
+  .cover-title {
+    position: absolute;
+    left: 12px;
+    right: 44px; // clear the flip button
+    bottom: 10px;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// Flip button — same bottom-right anchor on BOTH faces (the back face is net-0
+// rotation when shown, so bottom-right lands identically). Same raised disc chrome
+// as the header icon-discs.
+.flip-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #262626;
+  border-top-color: #6a6a6a;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #4d4d4d 0%, #3a3a3a 100%);
+  color: #e8e8e8;
+  cursor: pointer;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
+  &:hover {
+    color: #ffffff;
+  }
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+  }
 }
 
 .slot-header {

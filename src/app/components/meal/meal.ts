@@ -5,6 +5,7 @@
 // macro chips (P/C/F/Fi grams — never calories) and the food rows. Handles
 // three states: filled, empty (pick a meal), and dining-out.
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
@@ -22,10 +23,15 @@ interface SlotMacros {
 
 @Component({
   selector: 'app-meal',
-  imports: [MatTooltipModule, MatIconModule, FoodComponent, DragDropModule],
+  imports: [MatTooltipModule, MatIconModule, FoodComponent, DragDropModule, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()" [class.clone]="isClone()">
+    <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()" [class.clone]="isClone()" [class.has-cover]="hasCover()">
+
+      <!-- The card interior (header + macros + food rows). Rendered directly when
+           there's no cover image, or as the flip's BACK face when there is — one
+           source of truth via ngTemplateOutlet, so the back content is UNCHANGED. -->
+      <ng-template #cardBody>
       <div class="slot-header">
         <!-- Pin disc leads; the meal NAME box is the primary title (filled slots)
              or "Meal N" for an empty slot. Copy + delete pin to the upper-right
@@ -243,6 +249,45 @@ interface SlotMacros {
           }
         </div>
       }
+      </ng-template>
+
+      @if (hasCover()) {
+        <!-- Flip card: cover photo (front) ⇄ card content (back). rotateY is safe
+             here — the card tree has no position:fixed and no in-card CDK overlays
+             (tooltips + drag previews portal out to <body>). -->
+        <div class="flip" [class.show-back]="showBack()">
+          <div class="flip-face flip-front">
+            <img class="cover-img" [src]="coverUrl()" alt="" (error)="onImageError()" />
+            <div class="cover-scrim"></div>
+            <span class="cover-title">{{ title() }}</span>
+            <button
+              type="button"
+              class="flip-btn"
+              aria-label="Show nutrition"
+              matTooltip="Show nutrition"
+              matTooltipPosition="left"
+              (mousedown)="swallow($event)"
+              (click)="flip($event)">
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+          <div class="flip-face flip-back">
+            <ng-container [ngTemplateOutlet]="cardBody" />
+            <button
+              type="button"
+              class="flip-btn"
+              aria-label="Show photo"
+              matTooltip="Show photo"
+              matTooltipPosition="left"
+              (mousedown)="swallow($event)"
+              (click)="flip($event)">
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+          </div>
+        </div>
+      } @else {
+        <ng-container [ngTemplateOutlet]="cardBody" />
+      }
 
     </div>
   `,
@@ -258,6 +303,46 @@ export class MealComponent {
    *  empty/undefined when the meal has no recipe. Threaded down from the cached
    *  Meal — MenuSlot doesn't carry it. Drives the "Recipe Link (.PDF)" line. */
   readonly recipeLink = input<string | null | undefined>(null);
+
+  /** Meal cover image URLs, threaded from the cached Meal (MenuSlot carries no
+   *  image). Thumbnail is preferred; the full image is the fallback. When neither
+   *  is set the card renders exactly as before — no cover, no flip. */
+  readonly mealImage = input<string | null | undefined>(null);
+  readonly mealThumbnail = input<string | null | undefined>(null);
+
+  /** Flip state — front (photo) is the default face when a cover exists; the back
+   *  is the card content. Component-local, not persisted; resets on re-render. */
+  readonly showBack = signal(false);
+
+  /** Set when the cover image fails to load — the card then behaves as imageless. */
+  private readonly imageError = signal(false);
+
+  /** Cover URL: thumbnail preferred, full image as fallback, '' when neither. */
+  readonly coverUrl = computed<string>(
+    () => this.mealThumbnail()?.trim() || this.mealImage()?.trim() || '',
+  );
+
+  /** Show the cover + flip only when a usable image is present and hasn't errored. */
+  readonly hasCover = computed<boolean>(() => !this.imageError() && this.coverUrl() !== '');
+
+  /** Flip button — toggle the face. Swallows the event so it never starts a drag,
+   *  selects the card, or opens it. */
+  flip(ev: Event): void {
+    ev.stopPropagation();
+    ev.preventDefault();
+    this.showBack.update((v) => !v);
+  }
+
+  /** mousedown guard on the flip button — a press must not begin a drag/select. */
+  swallow(ev: Event): void {
+    ev.stopPropagation();
+    ev.preventDefault();
+  }
+
+  /** Cover image failed to load — treat the card as having no image (Step 3). */
+  onImageError(): void {
+    this.imageError.set(true);
+  }
 
   /** True when this meal is the current lookaside "add" target — drives the
    *  accent border, the active + disc, and the card being a food drop target.
