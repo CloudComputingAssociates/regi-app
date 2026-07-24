@@ -59,6 +59,48 @@
 // Right-justified AI Meal Assistant TITLE on the "Binder" line (was a dropdown
 // toggle). Static star + label, no chevron; the AI row below is always shown and
 // sits directly under this title.
+// Recipe-import row directly under the header — a single "From recipe…" button.
+.binder-subhead {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  margin: 0 6px 4px;
+
+  .recipe-import-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border: 1px solid #4a4a4a;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
+    color: #d8d8d8;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.12s ease, color 0.12s ease, opacity 0.12s ease;
+
+    mat-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+      line-height: 18px;
+      color: #e06666; // PDF red accent
+    }
+
+    &:hover:not(:disabled) {
+      border-color: #4da6ff;
+      color: #4da6ff;
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+  }
+}
+
 .ai-title {
   display: inline-flex;
   align-items: center;

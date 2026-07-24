@@ -23,6 +23,8 @@ import { SettingsService } from './services/settings.service';
 import { TabService } from './services/tab.service';
 import { ChatService } from './services/chat.service';
 import { NotificationService } from './services/notification.service';
+import { RotationService } from './services/rotation.service';
+import { RecipeImportWatcher, RecipeImportEvent } from './services/recipe-import-watcher.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { NutritionTipService } from './services/nutrition-tip.service';
 
@@ -130,7 +132,10 @@ export class AppComponent implements OnInit, OnDestroy {
   tabService = inject(TabService);
   private chatService = inject(ChatService);
   private notification = inject(NotificationService);
+  private rotation = inject(RotationService);
+  private recipeWatcher = inject(RecipeImportWatcher);
   private errorSub?: Subscription;
+  private recipeSub?: Subscription;
 
   tipDismissed = signal(this.isTipDismissedToday());
 
@@ -203,10 +208,44 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.errorSub?.unsubscribe();
+    this.recipeSub?.unsubscribe();
     if (this.autoSavePanelTimer) clearTimeout(this.autoSavePanelTimer);
   }
 
+  /** Handle a recipe-import completion event (see RecipeImportWatcher).
+   *  - parsed:  ALWAYS refresh the Binder (same path as a successful pin), then
+   *             show the ingest toast unless the user suppressed it.
+   *  - failed:  ALWAYS toast the error (suppression never applies), no refresh.
+   *  - timeout: warn and refresh the Binder. */
+  private onRecipeEvent(ev: RecipeImportEvent): void {
+    if (ev.kind === 'parsed') {
+      void this.rotation.loadBinder();
+      if (!this.recipeWatcher.isToastSuppressed()) {
+        const name = ev.mealName?.trim() || 'your imported meal';
+        this.notification.showIngest(
+          `Recipe Ingested to Saved Meal, ${name}`,
+          dontShowAgain => {
+            if (dontShowAgain) this.recipeWatcher.setToastSuppressed();
+          },
+        );
+      }
+    } else if (ev.kind === 'failed') {
+      this.notification.show(`Recipe import failed — ${ev.parseError ?? 'unknown error'}`, 'error');
+    } else {
+      this.notification.show(
+        'Recipe import is taking longer than expected. Check back shortly.',
+        'warning',
+      );
+      void this.rotation.loadBinder();
+    }
+  }
+
   ngOnInit(): void {
+    // Recipe-import completions. The watcher self-resumes persisted imports once
+    // the auth0 sub is known, so subscribing here covers both live imports and
+    // ones resumed after a mid-import browser refresh.
+    this.recipeSub = this.recipeWatcher.events.subscribe(ev => this.onRecipeEvent(ev));
+
     // Listen for Auth0 errors (e.g. missing/expired refresh token) and auto-logout
     this.errorSub = this.auth.error$.subscribe(error => {
       console.error('[Auth0] Error:', error);

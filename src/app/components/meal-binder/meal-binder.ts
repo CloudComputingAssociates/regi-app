@@ -21,6 +21,9 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { RotationService } from '../../services/rotation.service';
+import { RecipeService } from '../../services/recipe.service';
+import { RecipeImportWatcher } from '../../services/recipe-import-watcher.service';
+import { NotificationService } from '../../services/notification.service';
 import { TwistIconComponent } from '../twist-icon/twist-icon';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 import { Meal, Menu } from '../../models';
@@ -43,6 +46,26 @@ import { Meal, Menu } from '../../models';
           <span class="ai-logo" [class.spinning]="rotation.generating()" aria-hidden="true"></span>
           <span class="ai-title-label">AI Meal Assistant</span>
         </span>
+      </div>
+
+      <!-- Recipe import entry point. A hidden PDF-only file picker; the button
+           kicks it off and stays disabled while an upload is in flight. -->
+      <div class="binder-subhead">
+        <button
+          type="button"
+          class="recipe-import-btn"
+          [disabled]="uploading()"
+          matTooltip="Import a recipe PDF into a saved meal"
+          matTooltipPosition="below"
+          (click)="recipeInput.click()">
+          <mat-icon>picture_as_pdf</mat-icon>{{ uploading() ? 'Importing…' : 'From recipe…' }}
+        </button>
+        <input
+          #recipeInput
+          type="file"
+          accept="application/pdf"
+          hidden
+          (change)="onRecipeFileSelected(recipeInput)" />
       </div>
 
       <!-- One scrollbar for the whole rail. -->
@@ -248,6 +271,36 @@ export class MealBinderComponent implements OnInit {
   readonly rotation = inject(RotationService);
   private dialog = inject(MatDialog);
   private host = inject(ElementRef<HTMLElement>);
+  private recipeService = inject(RecipeService);
+  private watcher = inject(RecipeImportWatcher);
+  private notification = inject(NotificationService);
+
+  /** True while a recipe PDF upload is in flight — disables the import button. */
+  readonly uploading = signal(false);
+
+  /** PDF chosen from the "From recipe…" picker — upload it, then watch the
+   *  import to completion. The 202 carries the recipeId to poll. */
+  onRecipeFileSelected(input: HTMLInputElement): void {
+    const file = input.files?.[0];
+    input.value = ''; // let the same file be re-picked after a failure
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      this.notification.show('Please choose a PDF recipe file.', 'error');
+      return;
+    }
+    this.uploading.set(true);
+    this.notification.show('Importing recipe…', 'info');
+    this.recipeService.importRecipe(file).subscribe({
+      next: (res) => {
+        this.uploading.set(false);
+        if (res?.recipeId != null) this.watcher.watch(res.recipeId);
+      },
+      error: () => {
+        this.uploading.set(false);
+        this.notification.show('Recipe import failed — could not upload the PDF.', 'error');
+      },
+    });
+  }
 
   /** Top-level accordion open state — both default open. */
   readonly binderMenusOpen = signal(true);

@@ -68,6 +68,43 @@
     display: block;
   }
 
+  // Ingest toast "Don't show this again" opt-out, sits under the message.
+  .ingest-optout {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+
+    input {
+      cursor: pointer;
+      margin: 0;
+    }
+  }
+
+  // Ingest toast single O.K. button (mirrors the .confirm-ok green pill).
+  .ingest-ok {
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 2px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    background-color: #4caf50;
+    color: #ffffff;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+      opacity: 0.85;
+    }
+  }
+
   .close-btn {
     background: none;
     border: none;
