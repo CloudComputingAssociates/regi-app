@@ -317,9 +317,10 @@ export class MealComponent {
   /** Set when the cover image fails to load — the card then behaves as imageless. */
   private readonly imageError = signal(false);
 
-  /** Cover URL: thumbnail preferred, full image as fallback, '' when neither. */
+  /** Cover URL: full image preferred (the cover fills a large card, so the small
+   *  thumbnail would upscale and blur), thumbnail as fallback, '' when neither. */
   readonly coverUrl = computed<string>(
-    () => this.mealThumbnail()?.trim() || this.mealImage()?.trim() || '',
+    () => this.mealImage()?.trim() || this.mealThumbnail()?.trim() || '',
   );
 
   /** Show the cover + flip only when a usable image is present and hasn't errored. */
