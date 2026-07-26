@@ -16,6 +16,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { firstValueFrom } from 'rxjs';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -275,12 +277,19 @@ export class MealBinderComponent implements OnInit {
   private watcher = inject(RecipeImportWatcher);
   private notification = inject(NotificationService);
 
-  /** True while a recipe PDF upload is in flight — disables the import button. */
+  /** Single-flight lock for the "From recipe…" button. Goes true on PDF select,
+   *  reads "Importing…" while true, and blocks a second import. Released in
+   *  EXACTLY two places, one per stage: the finally around the upload POST
+   *  (below), and the watcher.settled subscription (in the constructor) for the
+   *  background parse. No other code touches it — so it can't be stranded. */
   readonly uploading = signal(false);
 
-  /** PDF chosen from the "From recipe…" picker — upload it, then watch the
-   *  import to completion. The 202 carries the recipeId to poll. */
-  onRecipeFileSelected(input: HTMLInputElement): void {
+  /** PDF chosen from the "From recipe…" picker — upload it, then watch the import
+   *  to completion. The 202 carries the recipeId to poll. The finally releases
+   *  the lock for the upload stage on every path (including a failed/errored
+   *  upload that never starts a watch); the watcher.settled subscription releases
+   *  it for the parse stage. */
+  async onRecipeFileSelected(input: HTMLInputElement): Promise<void> {
     const file = input.files?.[0];
     input.value = ''; // let the same file be re-picked after a failure
     if (!file) return;
@@ -290,16 +299,14 @@ export class MealBinderComponent implements OnInit {
     }
     this.uploading.set(true);
     this.notification.show('Importing recipe…', 'info');
-    this.recipeService.importRecipe(file).subscribe({
-      next: (res) => {
-        this.uploading.set(false);
-        if (res?.recipeId != null) this.watcher.watch(res.recipeId);
-      },
-      error: () => {
-        this.uploading.set(false);
-        this.notification.show('Recipe import failed — could not upload the PDF.', 'error');
-      },
-    });
+    try {
+      const res = await firstValueFrom(this.recipeService.importRecipe(file));
+      if (res?.recipeId != null) this.watcher.watch(res.recipeId);
+    } catch {
+      this.notification.show('Recipe import failed — could not upload the PDF.', 'error');
+    } finally {
+      this.uploading.set(false);
+    }
   }
 
   /** Top-level accordion open state — both default open. */
@@ -345,6 +352,13 @@ export class MealBinderComponent implements OnInit {
   }
 
   constructor() {
+    // Parse-stage release of the import lock: the watcher's terminal signal fires
+    // once for EVERY import exit (parsed / failed / timeout / 404), so the button
+    // can never strand waiting on a branch that doesn't emit a toast event.
+    this.watcher.settled
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.uploading.set(false));
+
     // When a menu is pinned, the service sets revealBinderMenuId. Expand the
     // Menus accordion and scroll the new entry into view.
     effect(

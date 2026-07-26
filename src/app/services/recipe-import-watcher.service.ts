@@ -43,8 +43,16 @@ export class RecipeImportWatcher {
   private auth = inject(AuthService);
 
   private readonly events$ = new Subject<RecipeImportEvent>();
-  /** Completion stream: parsed / failed / timeout. */
+  /** Completion stream: parsed / failed / timeout (drives the toasts). */
   readonly events = this.events$.asObservable();
+
+  private readonly settled$ = new Subject<{ recipeId: number }>();
+  /** Terminal stream: fires ONCE on EVERY watch exit — parsed, failed, timeout,
+   *  AND the 404 silent-drop — meaning only "this import concluded, for any
+   *  reason." Emitted from drop() (the single watch-removal path) so no terminal
+   *  branch can miss it. Separate from `events`; the import button listens here
+   *  to release its single-flight lock without stranding. */
+  readonly settled = this.settled$.asObservable();
 
   private readonly watches = new Map<number, Watch>();
   private readonly inFlight = new Set<number>(); // getStatus calls currently open
@@ -151,9 +159,13 @@ export class RecipeImportWatcher {
   }
 
   private drop(recipeId: number): void {
+    if (!this.watches.has(recipeId)) return; // idempotent → exactly one settle per watch
     this.watches.delete(recipeId);
     this.persistPending();
     this.stopTimerIfIdle();
+    // Single terminal signal for EVERY exit path (parsed / failed / timeout /
+    // 404). Fired here, from the one place a watch is removed, so no branch misses it.
+    this.settled$.next({ recipeId });
   }
 
   // ---- Per-user persistence ---------------------------------------------

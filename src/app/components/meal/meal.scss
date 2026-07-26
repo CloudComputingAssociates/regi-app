@@ -42,11 +42,13 @@
   }
 }
 
-// Flip viewport. The BACK face stays in normal flow so it defines the card's
-// height (unchanged from today — no reflow during the flip); the FRONT (photo)
-// is absolutely overlaid on top. Rotating the wrapper 180° swaps faces.
+// Flip viewport. A FIXED 4:3 frame drives the tile size: aspect-ratio (not a
+// pixel height) means the height tracks the grid column width (minmax(280px,1fr)),
+// so every image-backed tile is identical regardless of the source photo's own
+// aspect ratio. Both faces absolutely fill this frame; rotating swaps them.
 .flip {
   position: relative;
+  aspect-ratio: 4 / 3;
   transform-style: preserve-3d;
   transition: transform 250ms ease;
   border-radius: inherit;
@@ -63,16 +65,18 @@
 }
 
 // Back = the current card content, pre-rotated 180° so it reads correctly once
-// the wrapper is flipped. In normal flow → sets the card height. Re-applies the
-// card's original padding.
+// the wrapper is flipped. Pinned to the SAME 4:3 frame as the cover (inset:0) so
+// flipping never reflows the board or resizes the tile; taller nutrition content
+// scrolls within the frame. Re-applies the card's original padding.
 .flip-back {
-  position: relative;
+  position: absolute;
+  inset: 0;
   transform: rotateY(180deg);
   padding: 12px 4px 12px 14px;
-  min-height: 100%;
+  overflow-y: auto;
 }
 
-// Front = the cover photo, overlaying the back's box.
+// Front = the cover photo, filling the 4:3 frame.
 .flip-front {
   position: absolute;
   inset: 0;
@@ -82,6 +86,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center; // crop to fill from the center — never stretch/letterbox
     display: block;
   }
 
