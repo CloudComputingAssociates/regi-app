@@ -44,8 +44,22 @@ const IDLE_MS = 30_000;
       <div class="wv-backdrop" (click)="close()">
         <div class="wv-window" [class.maximized]="maximized()" (click)="$event.stopPropagation()">
           <div class="wv-titlebar">
-            <span class="wv-host">{{ hostLabel(url) }}</span>
+            <!-- No host heading for a PDF (the raw GCP bucket host reads as noise);
+                 an empty flex spacer keeps the controls right-aligned. -->
+            <span class="wv-host">{{ isPdf() ? '' : hostLabel(url) }}</span>
             <div class="wv-controls">
+              <!-- Print (PDFs only): leftmost of the cluster. -->
+              @if (isPdf()) {
+                <button
+                  type="button"
+                  class="wv-disc wv-print"
+                  (click)="print()"
+                  matTooltip="Print"
+                  matTooltipPosition="below"
+                  aria-label="Print">
+                  <mat-icon>print</mat-icon>
+                </button>
+              }
               <!-- Restore (yellow −): back to the default ~2/3 size. -->
               <button
                 type="button"
@@ -153,6 +167,8 @@ const IDLE_MS = 30_000;
     .wv-min { background: #fff59d; }
     .wv-max { background: #28c941; }
     .wv-close { background: #ff5f57; }
+    .wv-print { background: #4da6ff; }
+    .wv-print mat-icon { width: 11px; height: 11px; font-size: 11px; line-height: 11px; color: #fff; }
     .wv-close mat-icon { width: 12px; height: 12px; font-size: 12px; line-height: 12px; color: #000; }
     .wv-iframe { flex: 1; width: 100%; border: 0; background: #ffffff; }
     .wv-foot {
@@ -217,6 +233,32 @@ export class WebViewOverlayComponent {
 
   onActivity(): void {
     if (this.tab.webViewUrl() && !this.isPdf()) this.armIdle();
+  }
+
+  /** Print the PDF itself (not the gview wrapper): fetch it, load into a hidden
+   *  iframe, and print that. Falls back to opening the file in a browser tab if
+   *  the fetch is blocked (e.g. CORS) — the browser's own viewer can print it. */
+  async print(): Promise<void> {
+    const url = this.tab.webViewUrl();
+    if (!url) return;
+    try {
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const frame = document.createElement('iframe');
+      frame.style.display = 'none';
+      frame.src = blobUrl;
+      document.body.appendChild(frame);
+      frame.onload = () => {
+        frame.contentWindow?.print();
+        setTimeout(() => {
+          document.body.removeChild(frame);
+          URL.revokeObjectURL(blobUrl);
+        }, 1000);
+      };
+    } catch {
+      window.open(url, '_blank');
+    }
   }
 
   close(): void {
