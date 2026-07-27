@@ -462,10 +462,12 @@ export class MealComponent {
   /** True when there's a source recipe URL to link to. */
   readonly hasRecipeLink = computed<boolean>(() => (this.recipeLink() ?? '').trim().length > 0);
 
-  /** Open the source recipe (imported PDF) in the in-app web viewer tab. */
+  /** Open the source recipe (imported PDF) in the bloom web-view OVERLAY — a
+   *  bordered, scrollable window with the traffic-light maximize/restore/close
+   *  discs. The overlay renders PDFs and skips its idle auto-close for them. */
   openRecipe(): void {
     const url = (this.recipeLink() ?? '').trim();
-    if (url) this.tabs.openWebViewer(url, 'Recipe (PDF)');
+    if (url) this.tabs.openWebView(url);
   }
 
   /** Macro reveal open state — meals START CLOSED (just the Protein + Fiber

@@ -78,7 +78,7 @@ const IDLE_MS = 30_000;
           </div>
           <iframe class="wv-iframe" [src]="safeUrl()" referrerpolicy="no-referrer"></iframe>
           <div class="wv-foot">
-            <span class="wv-idle">Closes itself after 30s idle</span>
+            <span class="wv-idle">{{ isPdf() ? 'Recipe PDF' : 'Closes itself after 30s idle' }}</span>
             <a class="wv-external" [href]="url" target="_blank" rel="noopener">Open in browser ↗</a>
           </div>
         </div>
@@ -178,18 +178,35 @@ export class WebViewOverlayComponent {
   readonly maximized = signal(false);
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /** True when the target is a PDF (path ends .pdf, query string ignored so GCP
+   *  signed URLs still match). PDFs render through Google's viewer and are exempt
+   *  from the idle auto-close. */
+  readonly isPdf = computed<boolean>(() => {
+    const url = this.tab.webViewUrl() ?? '';
+    return url.split('?')[0].toLowerCase().endsWith('.pdf');
+  });
+
   readonly safeUrl = computed<SafeResourceUrl | null>(() => {
     const url = this.tab.webViewUrl();
-    return url ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null;
+    if (!url) return null;
+    // PDFs go through Google's embedded viewer for reliable cross-origin display
+    // with scrollbars (same approach as the recipe viewer). Web pages frame raw.
+    const src = this.isPdf()
+      ? `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`
+      : url;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(src);
   });
 
   constructor() {
     // Re-arm the idle timer each time the viewer opens; disarm when it closes.
+    // PDFs (recipes) never auto-close — you read them at your own pace, and
+    // iframe-internal scrolling wouldn't reach the parent to reset the timer.
     effect(
       () => {
         if (this.tab.webViewUrl()) {
           this.maximized.set(false);
-          this.armIdle();
+          if (this.isPdf()) this.clearIdle();
+          else this.armIdle();
         } else {
           this.clearIdle();
         }
@@ -199,7 +216,7 @@ export class WebViewOverlayComponent {
   }
 
   onActivity(): void {
-    if (this.tab.webViewUrl()) this.armIdle();
+    if (this.tab.webViewUrl() && !this.isPdf()) this.armIdle();
   }
 
   close(): void {
