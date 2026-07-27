@@ -453,3 +453,62 @@ sup.sm {
       0 0 0 1px rgba(77, 166, 255, 0.5);
   }
 }
+
+// Drag preview for a Binder meal dragged toward a slot. CDK portals the preview
+// to <body>, so it lives here (global) rather than in a component's scoped CSS.
+// It shows the meal's PHOTO with the name over a scrim — a small preview of the
+// pictured meal it becomes when it lands in the slot.
+.drag-meal-preview {
+  position: relative;
+  width: 150px;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #4a4a4a;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55);
+  background: #3a3a3a;
+
+  .dmp-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .dmp-scrim {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 55%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0));
+  }
+
+  .dmp-name {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 6px;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // No picture → a plain named card, name centered (no scrim to sit over).
+  &.no-photo .dmp-name {
+    position: static;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0 10px;
+    text-shadow: none;
+    color: #f1f1f1;
+  }
+}

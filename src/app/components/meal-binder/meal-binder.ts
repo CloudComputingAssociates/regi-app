@@ -41,7 +41,7 @@ import { Meal, Menu } from '../../models';
       <!-- Title line: "Meals" + right-justified AI toggle (star + chevron). The
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
-        <span class="binder-title"><mat-icon class="binder-title-icon">menu_book</mat-icon>Bindery</span>
+        <span class="binder-title"><mat-icon class="binder-title-icon">menu_book</mat-icon>Binder</span>
         <!-- AI Meal Assistant — a static title now (was the dropdown toggle). The
              AI row below is always shown, sitting under this title. -->
         <span class="ai-title">
@@ -274,6 +274,18 @@ import { Meal, Menu } from '../../models';
                       <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
                     </div>
                   }
+                  <!-- Drag preview: the meal's PHOTO (name over a scrim), so the
+                       thing you drag reads as the pictured meal it'll become in the
+                       slot. Falls back to a named chip when the meal has no image. -->
+                  <ng-template cdkDragPreview>
+                    <div class="drag-meal-preview" [class.no-photo]="!mealThumb(meal)">
+                      @if (mealThumb(meal); as src) {
+                        <img [src]="src" alt="" class="dmp-img" />
+                        <div class="dmp-scrim"></div>
+                      }
+                      <span class="dmp-name">{{ meal.name }}</span>
+                    </div>
+                  </ng-template>
                 </div>
               } @empty {
                 <p class="binder-empty">No saved Meals.</p>
@@ -452,6 +464,12 @@ export class MealBinderComponent implements OnInit {
 
   round(n: number | null | undefined): number {
     return Math.round(n ?? 0);
+  }
+
+  /** Thumbnail URL for a Binder meal (thumbnail preferred, full image fallback),
+   *  '' when it has no picture. Drives the drag preview. */
+  mealThumb(meal: Meal): string {
+    return (meal.mealImageThumbnail ?? meal.mealImage ?? '').trim();
   }
 
   /** Inline binder rename — persist in place on blur/Enter. No-op when the name
