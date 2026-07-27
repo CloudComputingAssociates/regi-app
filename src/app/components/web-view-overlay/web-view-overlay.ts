@@ -48,16 +48,17 @@ const IDLE_MS = 30_000;
                  an empty flex spacer keeps the controls right-aligned. -->
             <span class="wv-host">{{ isPdf() ? '' : hostLabel(url) }}</span>
             <div class="wv-controls">
-              <!-- Print (PDFs only): leftmost of the cluster. -->
+              <!-- Save/Print (PDFs only): leftmost of the cluster. Hands the PDF
+                   to the browser's PDF viewer, where the user saves or prints. -->
               @if (isPdf()) {
                 <button
                   type="button"
                   class="wv-disc wv-print"
                   (click)="print()"
-                  matTooltip="Print"
+                  matTooltip="Save/Print with PDF viewer"
                   matTooltipPosition="below"
-                  aria-label="Print">
-                  <mat-icon>print</mat-icon>
+                  aria-label="Save or print with PDF viewer">
+                  <mat-icon>save</mat-icon>
                 </button>
               }
               <!-- Restore (yellow −): back to the default ~2/3 size. -->

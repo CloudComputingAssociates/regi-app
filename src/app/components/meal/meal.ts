@@ -26,7 +26,7 @@ interface SlotMacros {
   imports: [MatTooltipModule, MatIconModule, FoodComponent, DragDropModule, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()" [class.clone]="isClone()" [class.has-cover]="hasCover()">
+    <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()" [class.has-cover]="hasCover()">
 
       <!-- The card interior (header + macros + food rows). Rendered directly when
            there's no cover image, or as the flip's BACK face when there is — one
@@ -37,7 +37,7 @@ interface SlotMacros {
              or "Meal N" for an empty slot. Copy + delete pin to the upper-right
              corner; the + add sits in the foods area. All discs share the raised
              .icon-disc chrome + one size. -->
-        @if (slot().mealId != null && !isClone()) {
+        @if (slot().mealId != null) {
           <!-- Save-state disc (same .icon-disc circle throughout):
                • clean, unsaved → GREY fork & knife → click to save (always live)
                • dirty (changed) → GREEN check inside the disc → click to save
@@ -53,16 +53,12 @@ interface SlotMacros {
             [matTooltip]="pinTooltip()"
             matTooltipPosition="above"
             (click)="onPin()">
-            <mat-icon>{{ (!pinAlive() && dirty()) ? 'check' : 'restaurant' }}</mat-icon>
+            <mat-icon>save</mat-icon>
           </button>
         }
         <div class="header-name">
           @if (slot().mealId == null) {
             <span class="slot-title">Meal {{ slot().slotOrder }}</span>
-          } @else if (isClone()) {
-            <!-- Clone (phantom): read-only name — the origin meal is where edits
-                 happen; this slot is just a pointer that fills the day. -->
-            <span class="clone-name" [title]="title()">{{ title() }}</span>
           } @else {
             <div class="name-wrap">
               <input
@@ -76,42 +72,15 @@ interface SlotMacros {
                 (keydown.escape)="nameBox.value = title(); nameBox.blur()"
                 (blur)="onNameBlur(nameBox.value)"
                 aria-label="Meal name" />
-              <!-- Enter-arrow disc: always present just OUTSIDE the box (round,
-                   tight). Grey at rest; turns the standard confirm-green while
-                   the title is being edited. Pressing it commits, same as Enter. -->
-              <button
-                type="button"
-                class="name-commit"
-                [class.active]="showNameCommit()"
-                matTooltip="Save name"
-                matTooltipPosition="above"
-                (mousedown)="$event.preventDefault()"
-                (click)="nameBox.blur()">
-                <mat-icon>keyboard_return</mat-icon>
-              </button>
             </div>
           }
         </div>
-        <!-- Copy + delete pinned to the upper-right corner as a tight pair, hard
-             to the right edge. Copy is disabled-grey when the menu is full (no
-             empty slot for the "(copy)") — never hidden, so deleting a slot never
-             makes it pop in/out. The + add disc lives in the foods area. -->
-        @if (slot().mealId != null && !isClone()) {
-          <button
-            type="button"
-            class="icon-disc repeat-disc"
-            [disabled]="!canDuplicate()"
-            matTooltip="Duplicate this meal"
-            matTooltipPosition="above"
-            (click)="duplicateMeal.emit(slot().mealId!)">
-            <mat-icon>content_copy</mat-icon>
-          </button>
-        }
+        <!-- Delete pinned to the upper-right corner. -->
         @if (slot().mealId != null) {
           <button
             type="button"
             class="icon-disc icon-disc-danger"
-            [matTooltip]="isClone() ? 'Remove this repeat (frees the slot)' : 'Delete meal'"
+            matTooltip="Delete meal"
             matTooltipPosition="above"
             (click)="deleteMeal.emit(slot().slotOrder)">
             <mat-icon>delete_outline</mat-icon>
@@ -164,15 +133,9 @@ interface SlotMacros {
                 matTooltipPosition="above"
                 (click)="openRecipe()">Recipe Link (.PDF)</button>
             }
-            <!-- Macro line (ONE row): orig/clone tag leads (swapped with the
-                 chevron); then Protein, Carbs, Fat, Fiber (order P C Fat Fiber),
-                 cals trailing, and the dropdown chevron back on the far RIGHT. -->
+            <!-- Macro line (ONE row): Protein, Carbs, Fat, Fiber (order P C Fat
+                 Fiber), cals trailing, and the dropdown chevron on the far RIGHT. -->
             <div class="macro-summary">
-              @if (macrosOpen()) {
-                @if (repeatRole()) {
-                  <span class="repeat-badge" [class.is-clone]="isClone()">{{ isClone() ? 'clone' : 'orig' }}</span>
-                }
-              }
               <span class="chip protein">P {{ round(macros().proteinG) }}</span>
               @if (macrosOpen()) {
                 <span class="chip carb">C {{ round(macros().carbG) }}</span>
@@ -193,17 +156,15 @@ interface SlotMacros {
               <!-- + add-food disc: set off by itself on the far RIGHT (margin-left:
                    auto), sitting under the header trash — its own thing, apart from
                    the disc + chevron cluster on the left. -->
-              @if (!isClone()) {
-                <button
-                  type="button"
-                  class="icon-disc add-affordance"
-                  [class.icon-disc-pressed]="editing()"
-                  [matTooltip]="editing() ? 'Adding foods (close from the food list)' : 'Add food to meal'"
-                  matTooltipPosition="above"
-                  (click)="toggleAdd.emit()">
-                  <mat-icon>add</mat-icon>
-                </button>
-              }
+              <button
+                type="button"
+                class="icon-disc add-affordance"
+                [class.icon-disc-pressed]="editing()"
+                [matTooltip]="editing() ? 'Adding foods (close from the food list)' : 'Add food to meal'"
+                matTooltipPosition="above"
+                (click)="toggleAdd.emit()">
+                <mat-icon>add</mat-icon>
+              </button>
             </div>
           }
           <div class="food-rows">
@@ -211,7 +172,6 @@ interface SlotMacros {
               <app-food
                 [item]="item"
                 [resolving]="resolvingItemId() === item.id"
-                [readonly]="isClone()"
                 (editItem)="editItem.emit($event)"
                 (removeItem)="removeItem.emit($event)" />
             }
@@ -236,7 +196,6 @@ interface SlotMacros {
                     <app-food
                       [item]="item"
                       [resolving]="resolvingItemId() === item.id"
-                      [readonly]="isClone()"
                       (editItem)="editItem.emit($event)"
                       (removeItem)="removeItem.emit($event)" />
                   }
@@ -368,30 +327,12 @@ export class MealComponent {
    *  "blooms" a bright border to advertise it as a valid drop target. */
   readonly dropHighlight = input<boolean>(false);
 
-  /** Repeat role for this slot, inferred upstream from shared mealId across the
-   *  menu's slots: 'origin' = the editable master, 'clone' = a read-only phantom
-   *  pointer, null = not repeated (a plain, fully-editable meal). */
-  readonly repeatRole = input<'origin' | 'clone' | null>(null);
-
-  /** True when this meal can be duplicated — a non-clone meal with at least one
-   *  empty slot left in the menu for the "(copy)" to land in. Drives the Copy
-   *  button's presence. */
-  readonly canDuplicate = input<boolean>(false);
-
-  /** True when this slot is a read-only clone (phantom) of the origin meal. */
-  readonly isClone = computed<boolean>(() => this.repeatRole() === 'clone');
-
   /** Emitted when a binder meal is dropped on this (empty) slot. The parent
    *  supplies the menuId and calls the assign endpoint. */
   readonly placeMeal = output<{ slotOrder: number; mealId: number }>();
 
   /** Emitted (with this slot's slotOrder) when the trash is clicked. */
   readonly deleteMeal = output<number>();
-
-  /** Copy clicked — duplicate this meal (its mealId) as an independent "(copy)"
-   *  in the menu's next empty slot. The parent calls the duplicate on
-   *  RotationService. */
-  readonly duplicateMeal = output<number>();
 
   /** + — toggle this meal as the lookaside add target (parent begins/stops). */
   readonly toggleAdd = output<void>();

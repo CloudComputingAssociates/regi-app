@@ -3,7 +3,7 @@
 // The meals grid for the selected Menu: a responsive auto-fit grid of meal
 // cards (targets 2-up at laptop width). Resolves each slot's meal items from
 // RotationService and passes them down to the meal cards.
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Menu, MealItem, MenuSlot } from '../../models';
 import { RotationService, TEACH_SAVE_LINE } from '../../services/rotation.service';
@@ -30,15 +30,12 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
             [pinAlive]="pinAliveFor(slot.mealId)"
             [dirty]="dirtyFor(slot.mealId)"
             [dropHighlight]="dropHighlightFor(slot.slotOrder)"
-            [repeatRole]="repeatRoleFor(slot.slotOrder)"
-            [canDuplicate]="canDuplicateFor(slot)"
             (placeMeal)="onPlace($event)"
             (deleteMeal)="onDelete($event)"
             (toggleAdd)="onToggleAdd(slot)"
             (renameMeal)="rotation.updateMealName($event.mealId, $event.name)"
             (pinMeal)="onPinMeal(slot.mealId)"
             (removeFromBinder)="onRemoveFromBinder(slot.mealId)"
-            (duplicateMeal)="onDuplicateMeal($event)"
             (removeItem)="onRemoveItem(slot.mealId, $event)"
             (editItem)="onEditItem(slot, $event)"
             (dropFood)="rotation.addFoodToEditingMeal($event.food, $event.serving)" />
@@ -100,58 +97,6 @@ export class MenusMealsComponent {
     );
   }
 
-  /** Per-slot repeat role, inferred from shared mealId across the menu's slots:
-   *  a mealId in >1 slot → the lowest slotOrder is the 'origin' (editable
-   *  master), the rest are 'clone' (read-only phantoms). A mealId in exactly one
-   *  slot → null (a plain meal). Rebuilds whenever the menu signal changes. */
-  private readonly repeatRoles = computed<Map<number, 'origin' | 'clone'>>(() => {
-    const roles = new Map<number, 'origin' | 'clone'>();
-    const m = this.menu();
-    if (!m) return roles;
-    const byMeal = new Map<number, number[]>();
-    for (const s of m.slots) {
-      if (s.isDiningOut || s.mealId == null) continue;
-      const arr = byMeal.get(s.mealId) ?? [];
-      arr.push(s.slotOrder);
-      byMeal.set(s.mealId, arr);
-    }
-    for (const slotOrders of byMeal.values()) {
-      if (slotOrders.length < 2) continue; // single placement → not repeated
-      const sorted = [...slotOrders].sort((a, b) => a - b);
-      roles.set(sorted[0], 'origin');
-      for (let i = 1; i < sorted.length; i++) roles.set(sorted[i], 'clone');
-    }
-    return roles;
-  });
-
-  /** True when the selected menu has any empty, non-dining-out slot to fill. */
-  private readonly hasEmptySlot = computed<boolean>(() => {
-    const m = this.menu();
-    return !!m && m.slots.some((s) => !s.isDiningOut && s.mealId == null);
-  });
-
-  repeatRoleFor(slotOrder: number): 'origin' | 'clone' | null {
-    return this.repeatRoles().get(slotOrder) ?? null;
-  }
-
-  /** A meal can be duplicated when it holds a meal, isn't itself a clone, and the
-   *  menu still has an empty slot for the "(copy)" to land in. */
-  canDuplicateFor(slot: MenuSlot): boolean {
-    return (
-      slot.mealId != null &&
-      this.repeatRoleFor(slot.slotOrder) !== 'clone' &&
-      this.hasEmptySlot()
-    );
-  }
-
-  /** Copy clicked on a meal card — duplicate it into the menu's next empty slot
-   *  as an independent "(copy)". */
-  onDuplicateMeal(mealId: number): void {
-    const menuId = this.menu()?.id;
-    if (menuId == null) return;
-    void this.rotation.duplicateMealIntoSlot(menuId, mealId);
-  }
-
   /** Pin icon state for a slotted meal, resolved from the cached Meal. */
   pinAliveFor(mealId: number | null | undefined): boolean {
     if (mealId == null) return false;
@@ -165,10 +110,26 @@ export class MenusMealsComponent {
     return this.rotation.isMealDirty(mealId);
   }
 
-  /** Green check clicked — save the (dirty) meal to the Binder. */
+  /** Save disc clicked. A meal edited FROM a Binder meal (a fork) pushes its
+   *  changes back onto that original — it NEVER becomes a separate new meal. A
+   *  meal with no Binder source (a fresh/AI meal being saved for the first time)
+   *  saves straight to the Binder. */
   onPinMeal(mealId: number | null | undefined): void {
     if (mealId == null) return;
-    void this.rotation.pinMeal(mealId);
+    const sourceName = this.rotation.forkSourceName(mealId);
+    if (!sourceName) {
+      void this.rotation.pinMeal(mealId);
+      return;
+    }
+    this.dialog.open(WipeConfirmDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: {
+        title: 'Save changes',
+        message: `Save these changes to your Binder meal "${sourceName}"?`,
+        confirmLabel: 'Update binder meal',
+        onConfirm: () => void this.rotation.saveForkBackToBinder(mealId),
+      },
+    });
   }
 
   /** Yellow fork&knife clicked — remove the meal FROM the Binder (it stays

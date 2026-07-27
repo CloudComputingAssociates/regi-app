@@ -17,6 +17,7 @@ import {
   AssignMealToSlotRequest,
   CreateMealRequest,
   CreateRotationRequest,
+  FoodSource,
   GenerateMealRequest,
   ItemRole,
   Meal,
@@ -247,6 +248,11 @@ export class RotationService {
     return this.mealsById().get(mealId)?.items ?? [];
   }
 
+  /** fork → source Binder mealId, recorded at fork-on-edit time so a later save
+   *  can offer "update the Binder meal it came from." In-session only — a reload
+   *  loses it (the fork carries no persisted source link). */
+  private readonly forkSource = new Map<number, number>();
+
   /** The (menuId, slotOrder) of the slot being edited for a meal — the editing
    *  slot if it matches, else that meal's slot in the SELECTED menu. Targeted
    *  (not a global search) so fork-on-edit repoints the exact slot on screen. */
@@ -278,6 +284,9 @@ export class RotationService {
       );
       const forkId = stub.id;
       if (forkId == null) return { mealId, itemId };
+      // Remember which Binder meal this fork came from, so a later save can offer
+      // to push the edits back onto the original (in-session; a reload loses it).
+      this.forkSource.set(forkId, mealId);
       const assign: AssignMealToSlotRequest = { slotOrder: loc.slotOrder, mealId: forkId };
       await firstValueFrom(this.http.put(`${this.baseUrl}/menu/${loc.menuId}/slot`, assign));
       // Refresh the board menu + fork so the slot on screen now shows the fork
@@ -900,6 +909,74 @@ export class RotationService {
         this.menusById.update((m) => new Map(m).set(menuId, menu));
       }
       await this.loadMeal(editId);
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Name of the Binder meal a slotted fork descends from, or null when this meal
+   *  isn't a tracked fork. Drives the "update the original?" save prompt. */
+  forkSourceName(mealId: number | null | undefined): string | null {
+    if (mealId == null) return null;
+    const sourceId = this.forkSource.get(mealId);
+    if (sourceId == null) return null;
+    return this.getMeal(sourceId)?.name ?? null;
+  }
+
+  /** Push a fork's current composition back onto the Binder meal it came from —
+   *  sync the original's items to the fork's via the existing per-item endpoints
+   *  (add / update / remove), so the original updates IN PLACE and keeps its
+   *  identity and any other slot references. Client-orchestrated; no dedicated
+   *  server op. Items are matched by food identity (foodSource:foodId, or name
+   *  for pending). Refreshes the source meal + Binder after. */
+  async saveForkBackToBinder(forkId: number): Promise<void> {
+    const sourceId = this.forkSource.get(forkId);
+    if (sourceId == null) return;
+    try {
+      // Pull authoritative items for both sides (the cache may be partial).
+      const [fork, source] = await Promise.all([
+        firstValueFrom(this.http.get<Meal>(`${this.baseUrl}/meal/${forkId}`)),
+        firstValueFrom(this.http.get<Meal>(`${this.baseUrl}/meal/${sourceId}`)),
+      ]);
+      const key = (it: MealItem): string =>
+        it.food ? `${it.food.foodSource}:${it.food.foodId}` : `name:${it.foodName}`;
+      const sourceByKey = new Map<string, MealItem>();
+      for (const it of source.items ?? []) sourceByKey.set(key(it), it);
+      const seen = new Set<string>();
+      const calls: Promise<unknown>[] = [];
+
+      for (const f of fork.items ?? []) {
+        const k = key(f);
+        seen.add(k);
+        const s = sourceByKey.get(k);
+        if (!s) {
+          const body: AddMealItemRequest = {
+            foodId: f.food?.foodId ?? null,
+            foodSource: (f.food?.foodSource ?? 'pending') as FoodSource,
+            foodName: f.foodName,
+            itemRole: f.itemRole,
+            isTracked: f.isTracked,
+            quantity: f.quantity,
+            unit: f.unit,
+          };
+          calls.push(firstValueFrom(this.http.post(`${this.baseUrl}/meal/${sourceId}/items`, body)));
+        } else if (s.id != null && (s.quantity !== f.quantity || s.unit !== f.unit)) {
+          const body: UpdateMealItemRequest = { quantity: f.quantity, unit: f.unit };
+          calls.push(
+            firstValueFrom(this.http.put(`${this.baseUrl}/meal/${sourceId}/items/${s.id}`, body)),
+          );
+        }
+      }
+      // Remove source items the fork no longer has.
+      for (const [k, s] of sourceByKey) {
+        if (!seen.has(k) && s.id != null) {
+          calls.push(firstValueFrom(this.http.delete(`${this.baseUrl}/meal/${sourceId}/items/${s.id}`)));
+        }
+      }
+      await Promise.all(calls);
+      await this.loadMeal(sourceId);
+      await this.loadBinder();
+      this.notification.show('Binder meal updated with your changes.', 'success');
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }

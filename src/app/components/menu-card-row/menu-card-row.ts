@@ -26,18 +26,19 @@ import { RotationService } from '../../services/rotation.service';
             <!-- Top strip: pin leads, the rename box fills the middle, copy +
                  delete pin to the upper-right corner (tight pair). -->
             <div class="card-top">
+              <!-- Save (diskette): persist this menu to the Binder. Rename + save
+                   is all it takes to make the menu persistent — no copies, no fork. -->
               <button
                 type="button"
                 class="menu-pin icon-disc"
                 [class.icon-disc-pinned]="menu.pinned"
                 [class.save-hint]="isSaveHintMenu(menu.menuId) && !menu.pinned"
-                [matTooltip]="menu.pinned ? 'In your Binder' : 'Save to Binder'"
+                [matTooltip]="menu.pinned ? 'Saved to Binder' : 'Save to Binder'"
                 matTooltipPosition="above"
                 (click)="$event.stopPropagation(); onPin(menu)">
-                <mat-icon>description</mat-icon>
+                <mat-icon>save</mat-icon>
               </button>
-              <!-- Inline rename — same field/commit pattern as the meal name box.
-                   Committing writes the label only; the pin state is untouched. -->
+              <!-- Inline rename — edits in place; saves on blur or Enter. -->
               <div class="name-wrap">
                 <input
                   #nameBox
@@ -50,31 +51,7 @@ import { RotationService } from '../../services/rotation.service';
                   (keydown.escape)="nameBox.value = displayName(menu, i); nameBox.blur()"
                   (blur)="onNameBlur(menu, i, nameBox.value)"
                   aria-label="Menu name" />
-                <!-- Enter-arrow disc: always present just OUTSIDE the box (round,
-                     tight). Grey at rest; turns confirm-green while editing. -->
-                <button
-                  type="button"
-                  class="name-commit"
-                  [class.active]="showCommitFor(menu.menuId)"
-                  matTooltip="Save name"
-                  matTooltipPosition="above"
-                  (mousedown)="$event.preventDefault()"
-                  (click)="$event.stopPropagation(); nameBox.blur()">
-                  <mat-icon>keyboard_return</mat-icon>
-                </button>
               </div>
-              <!-- Copy + delete in the upper-right corner (tight pair). Copy is
-                   disabled-grey on a copy (a copy isn't re-copyable) — never
-                   hidden, so nothing pops in/out and the corner stays stable. -->
-              <button
-                type="button"
-                class="menu-copy icon-disc"
-                [disabled]="copyRoleFor(menu) === 'copy'"
-                matTooltip="Duplicate this menu"
-                matTooltipPosition="above"
-                (click)="$event.stopPropagation(); duplicateMenu.emit(menu.menuId)">
-                <mat-icon>content_copy</mat-icon>
-              </button>
               <button
                 type="button"
                 class="menu-delete icon-disc icon-disc-danger"
