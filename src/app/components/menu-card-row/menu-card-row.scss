@@ -105,6 +105,36 @@
     &:focus { caret-color: #4da6ff; }
   }
 
+  // Save = a BARE green check just right of the name box (no disc). Disabled +
+  // grey once the menu is saved to the Binder; bright green while unsaved.
+  .save-check {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: #28c941;
+    cursor: pointer;
+
+    .mat-icon {
+      width: 20px;
+      height: 20px;
+      font-size: 20px;
+      line-height: 20px;
+    }
+
+    &:hover:not(:disabled) { color: #34d651; }
+
+    &:disabled {
+      color: #5a5a5a;
+      cursor: default;
+    }
+  }
+
   // CR-LF (enter) arrow — a round disc just OUTSIDE the box, styled like the other
   // discs (same raised .icon-disc chrome) so it reads as one of the family. GREY
   // raised at rest; standard confirm-green (.active) while the title is edited.
@@ -150,29 +180,15 @@
 // (lined-sheet icon; yellow when pinned via .icon-disc-pinned); the Copy + trash
 // discs are grouped in the foot (.foot-actions carries margin-left:auto).
 
-// "Save me" nudge on the menu pin — a brief green bloom + pulse fired only when
-// the menu is RENAMED (not on meal-add). Mirrors the meal card's pin save-hint;
-// keyframes re-state the disc's raised shadow so it still reads as raised.
-.menu-pin.save-hint {
-  color: #5fe07a;
+// "Save me" nudge on the green check — a brief pulse fired only when the menu is
+// RENAMED while still unsaved, inviting the user to commit it to the Binder.
+.save-check.save-hint {
   animation: menu-save-pulse 1s ease-in-out infinite;
 }
 
 @keyframes menu-save-pulse {
-  0%, 100% {
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12),
-      0 0 0 1px rgba(40, 201, 65, 0.55),
-      0 0 6px rgba(40, 201, 65, 0.5);
-  }
-  50% {
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12),
-      0 0 0 2px rgba(40, 201, 65, 0.95),
-      0 0 16px rgba(40, 201, 65, 0.9);
-  }
+  0%, 100% { transform: scale(1); filter: none; }
+  50% { transform: scale(1.22); filter: drop-shadow(0 0 5px rgba(40, 201, 65, 0.9)); }
 }
 
 // Live "+ Add menu" — dashed area, white clickable text; also a drop target for

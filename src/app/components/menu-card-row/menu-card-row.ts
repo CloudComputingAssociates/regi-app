@@ -23,21 +23,9 @@ import { RotationService } from '../../services/rotation.service';
             class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
             (click)="select.emit(menu.menuId)">
-            <!-- Top strip: pin leads, the rename box fills the middle, copy +
-                 delete pin to the upper-right corner (tight pair). -->
+            <!-- Top strip: the rename box leads; a bare green check sits just to
+                 its RIGHT (save to Binder), delete pins to the upper-right. -->
             <div class="card-top">
-              <!-- Save (diskette): persist this menu to the Binder. Rename + save
-                   is all it takes to make the menu persistent — no copies, no fork. -->
-              <button
-                type="button"
-                class="menu-pin icon-disc"
-                [class.icon-disc-pinned]="menu.pinned"
-                [class.save-hint]="isSaveHintMenu(menu.menuId) && !menu.pinned"
-                [matTooltip]="menu.pinned ? 'Saved to Binder' : 'Save to Binder'"
-                matTooltipPosition="above"
-                (click)="$event.stopPropagation(); onPin(menu)">
-                <mat-icon>save</mat-icon>
-              </button>
               <!-- Inline rename — edits in place; saves on blur or Enter. -->
               <div class="name-wrap">
                 <input
@@ -51,6 +39,18 @@ import { RotationService } from '../../services/rotation.service';
                   (keydown.escape)="nameBox.value = displayName(menu, i); nameBox.blur()"
                   (blur)="onNameBlur(menu, i, nameBox.value)"
                   aria-label="Menu name" />
+                <!-- Save = bare green check (no disc). Disabled once the menu is
+                     saved (pinned) to the Binder; enabled while it's unsaved. -->
+                <button
+                  type="button"
+                  class="save-check"
+                  [class.save-hint]="isSaveHintMenu(menu.menuId) && !menu.pinned"
+                  [disabled]="menu.pinned"
+                  [matTooltip]="menu.pinned ? 'Saved to Binder' : 'Save to Binder'"
+                  matTooltipPosition="above"
+                  (click)="$event.stopPropagation(); onPin(menu)">
+                  <mat-icon>check</mat-icon>
+                </button>
               </div>
               <button
                 type="button"

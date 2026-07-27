@@ -33,29 +33,9 @@ interface SlotMacros {
            source of truth via ngTemplateOutlet, so the back content is UNCHANGED. -->
       <ng-template #cardBody>
       <div class="slot-header">
-        <!-- Pin disc leads; the meal NAME box is the primary title (filled slots)
-             or "Meal N" for an empty slot. Copy + delete pin to the upper-right
-             corner; the + add sits in the foods area. All discs share the raised
-             .icon-disc chrome + one size. -->
-        @if (slot().mealId != null) {
-          <!-- Save-state disc (same .icon-disc circle throughout):
-               • clean, unsaved → GREY fork & knife → click to save (always live)
-               • dirty (changed) → GREEN check inside the disc → click to save
-               • saved (Binder)  → YELLOW fork & knife → click to remove (confirm)
-               Never disabled while unpinned: a fresh or just-removed meal is
-               savable in one click (no dummy edit needed to re-save).
-               Hidden on a CLONE — the origin owns the shared meal's save state. -->
-          <button
-            type="button"
-            class="icon-disc pin-disc"
-            [class.icon-disc-pinned]="pinAlive()"
-            [class.pin-dirty]="!pinAlive() && dirty()"
-            [matTooltip]="pinTooltip()"
-            matTooltipPosition="above"
-            (click)="onPin()">
-            <mat-icon>save</mat-icon>
-          </button>
-        }
+        <!-- The meal NAME box is the primary title (filled slots) or "Meal N"
+             for an empty slot. A bare green check sits just RIGHT of the box —
+             enabled only once there's an unsaved edit; delete pins to the corner. -->
         <div class="header-name">
           @if (slot().mealId == null) {
             <span class="slot-title">Meal {{ slot().slotOrder }}</span>
@@ -72,6 +52,18 @@ interface SlotMacros {
                 (keydown.escape)="nameBox.value = title(); nameBox.blur()"
                 (blur)="onNameBlur(nameBox.value)"
                 aria-label="Meal name" />
+              <!-- Save = bare green check (no disc). Disabled until this meal has
+                   an unsaved edit; click saves (updates the Binder origin for a
+                   fork, or first-saves a fresh meal). -->
+              <button
+                type="button"
+                class="save-check"
+                [disabled]="!dirty()"
+                matTooltip="Save changes"
+                matTooltipPosition="above"
+                (click)="onPin()">
+                <mat-icon>check</mat-icon>
+              </button>
             </div>
           }
         </div>
@@ -353,13 +345,10 @@ export class MealComponent {
     return 'Save to Binder';
   });
 
-  /** Save-state disc click: saved → remove-from-Binder; otherwise (clean OR
-   *  dirty) → save. Unpinned is always savable in one click. */
+  /** Green-check click → save. Only reachable while dirty (the check is disabled
+   *  otherwise). The parent routes it: a fork updates its Binder origin; a fresh
+   *  meal saves to the Binder. Never creates a duplicate. */
   onPin(): void {
-    if (this.pinAlive()) {
-      this.removeFromBinder.emit();
-      return;
-    }
     this.pinMeal.emit();
   }
 

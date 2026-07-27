@@ -204,6 +204,36 @@
     &:focus { caret-color: #4da6ff; }
   }
 
+  // Save = a BARE green check just right of the name box (no disc). Greyed +
+  // inert until there's an unsaved edit, then bright green to invite the save.
+  .save-check {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: #28c941;
+    cursor: pointer;
+
+    .mat-icon {
+      width: 20px;
+      height: 20px;
+      font-size: 20px;
+      line-height: 20px;
+    }
+
+    &:hover:not(:disabled) { color: #34d651; }
+
+    &:disabled {
+      color: #5a5a5a;
+      cursor: default;
+    }
+  }
+
   // CR-LF (enter) arrow — a round disc just OUTSIDE the box, styled like the other
   // discs (same raised .icon-disc chrome) so it reads as one of the family. GREY
   // raised at rest; standard confirm-green (.active) while the title is edited.
