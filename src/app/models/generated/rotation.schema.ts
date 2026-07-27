@@ -171,7 +171,7 @@ export interface RotationMenuEntry {
   /**
    * Whether the referenced Menu is Pinned (in the Binder)
    */
-  pinned?: boolean;
+  pinned: boolean;
   /**
    * How many times this Menu appears in the rotation
    */
@@ -320,6 +320,21 @@ export interface MenuMacros {
   [k: string]: unknown;
 }
 /**
+ * One meal stacked in a slot (position 0–3), denormalized for display.
+ *
+ * This interface was referenced by `RotationSchema`'s JSON-Schema
+ * via the `definition` "MenuSlotMeal".
+ */
+export interface MenuSlotMeal {
+  position: number;
+  mealId: number;
+  mealName?: string | null;
+  mealType?: string | null;
+  mealImageThumbnail?: string | null;
+  macros?: MenuMacros;
+  [k: string]: unknown;
+}
+/**
  * One slot in a Menu. Slot order maps 1→A, 2→B, … 10→J via SlotOrderToLabel.
  *
  * This interface was referenced by `RotationSchema`'s JSON-Schema
@@ -339,22 +354,44 @@ export interface MenuSlot {
    */
   slotName?: string | null;
   /**
-   * Meal attached to this slot. Null when empty or dining-out.
-   */
-  mealId?: number | null;
-  /**
-   * Denormalized meal name for display. Null when no meal is attached.
-   */
-  mealName?: string | null;
-  /**
-   * Denormalized meal type for display. Null when no meal is attached.
-   */
-  mealType?: string | null;
-  /**
    * True when the user marked this slot as dining out — the slot is intentionally empty
    */
   isDiningOut: boolean;
-  macros?: MenuMacros;
+  /**
+   * Meals stacked in this slot (0–4), ordered by position. Empty when the slot is empty or dining-out.
+   */
+  meals: MenuSlotMeal[];
+  macros?: MenuMacros1;
+  [k: string]: unknown;
+}
+/**
+ * Aggregate macro totals for a menu or a slot
+ */
+export interface MenuMacros1 {
+  /**
+   * Total calories
+   */
+  calories: number;
+  /**
+   * Total protein in grams
+   */
+  proteinG: number;
+  /**
+   * Total carbohydrate in grams
+   */
+  carbG: number;
+  /**
+   * Total fat in grams
+   */
+  fatG: number;
+  /**
+   * Total fiber in grams
+   */
+  fiberG: number;
+  /**
+   * Total sodium in milligrams
+   */
+  sodiumMg: number;
   [k: string]: unknown;
 }
 /**
@@ -495,18 +532,14 @@ export interface UpdateMenuRequest {
   [k: string]: unknown;
 }
 /**
- * Request body for POST /api/menu/{id}/slots/{slotOrder}/meal — attaches an existing meal to a slot
+ * Request body for POST /api/menu/{id}/slot/{slotOrder}/meals — appends an existing meal to the slot at the next free position (0–3).
  *
  * This interface was referenced by `RotationSchema`'s JSON-Schema
- * via the `definition` "AssignMealToSlotRequest".
+ * via the `definition` "AddMealToSlotRequest".
  */
-export interface AssignMealToSlotRequest {
+export interface AddMealToSlotRequest {
   /**
-   * 1-based slot order within the menu (1–10)
-   */
-  slotOrder: number;
-  /**
-   * ID of the Meal to attach
+   * ID of the Meal to append to the slot
    */
   mealId: number;
   [k: string]: unknown;

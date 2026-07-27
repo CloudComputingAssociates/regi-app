@@ -210,7 +210,7 @@
           "readOnly": true
         }
       },
-      "required": ["menuId", "plannedCount", "consumedCount"]
+      "required": ["menuId", "plannedCount", "consumedCount", "pinned"]
     },
 
     "RotationDetail": {
@@ -334,6 +334,20 @@
       "required": ["calories", "proteinG", "carbG", "fatG", "fiberG", "sodiumMg"]
     },
 
+    "MenuSlotMeal": {
+      "type": "object",
+      "description": "One meal stacked in a slot (position 0–3), denormalized for display.",
+      "properties": {
+        "position": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "mealId": { "type": "integer" },
+        "mealName": { "type": ["string", "null"] },
+        "mealType": { "type": ["string", "null"] },
+        "mealImageThumbnail": { "type": ["string", "null"] },
+        "macros": { "$ref": "#/definitions/MenuMacros" }
+      },
+      "required": ["position", "mealId"]
+    },
+
     "MenuSlot": {
       "type": "object",
       "description": "One slot in a Menu. Slot order maps 1→A, 2→B, … 10→J via SlotOrderToLabel.",
@@ -353,27 +367,21 @@
           "type": ["string", "null"],
           "description": "Optional user-set label for the slot (e.g., 'breakfast', 'lunch'). Null when unnamed."
         },
-        "mealId": {
-          "type": ["integer", "null"],
-          "description": "Meal attached to this slot. Null when empty or dining-out."
-        },
-        "mealName": {
-          "type": ["string", "null"],
-          "description": "Denormalized meal name for display. Null when no meal is attached."
-        },
-        "mealType": {
-          "type": ["string", "null"],
-          "description": "Denormalized meal type for display. Null when no meal is attached."
-        },
         "isDiningOut": {
           "type": "boolean",
           "description": "True when the user marked this slot as dining out — the slot is intentionally empty"
         },
+        "meals": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/MenuSlotMeal" },
+          "description": "Meals stacked in this slot (0–4), ordered by position. Empty when the slot is empty or dining-out."
+        },
         "macros": {
-          "$ref": "#/definitions/MenuMacros"
+          "$ref": "#/definitions/MenuMacros",
+          "description": "Sum across meals[]."
         }
       },
-      "required": ["slotOrder", "slotLabel", "isDiningOut"]
+      "required": ["slotOrder", "slotLabel", "isDiningOut", "meals"]
     },
 
     "Menu": {
@@ -522,22 +530,16 @@
       }
     },
 
-    "AssignMealToSlotRequest": {
+    "AddMealToSlotRequest": {
       "type": "object",
-      "description": "Request body for POST /api/menu/{id}/slots/{slotOrder}/meal — attaches an existing meal to a slot",
+      "description": "Request body for POST /api/menu/{id}/slot/{slotOrder}/meals — appends an existing meal to the slot at the next free position (0–3).",
       "properties": {
-        "slotOrder": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 10,
-          "description": "1-based slot order within the menu (1–10)"
-        },
         "mealId": {
           "type": "integer",
-          "description": "ID of the Meal to attach"
+          "description": "ID of the Meal to append to the slot"
         }
       },
-      "required": ["slotOrder", "mealId"]
+      "required": ["mealId"]
     },
 
     "SetSlotNameRequest": {

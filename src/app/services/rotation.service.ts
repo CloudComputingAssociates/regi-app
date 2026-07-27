@@ -14,7 +14,7 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   AddMealItemRequest,
-  AssignMealToSlotRequest,
+  AddMealToSlotRequest,
   CreateMealRequest,
   CreateRotationRequest,
   FoodSource,
@@ -248,6 +248,50 @@ export class RotationService {
     return this.mealsById().get(mealId)?.items ?? [];
   }
 
+  /** Single-meal COMPAT: the API now returns `slot.meals[]` (0–4). The board is
+   *  still single-meal, so mirror the first stacked meal onto the legacy
+   *  slot.mealId/mealName/mealType fields. Remove once the quartered multi-meal
+   *  UI reads meals[] directly. */
+  private normalizeMenu(menu: Menu): Menu {
+    for (const slot of menu.slots ?? []) {
+      const first = slot.meals?.[0];
+      slot.mealId = first?.mealId ?? null;
+      slot.mealName = first?.mealName ?? null;
+      slot.mealType = first?.mealType ?? null;
+    }
+    return menu;
+  }
+
+  /** Cache a fetched Menu, normalized for single-meal compat. The one chokepoint
+   *  for slot state, so every board read sees the mirrored slot.mealId. */
+  private cacheMenu(id: number, menu: Menu): void {
+    this.menusById.update((m) => new Map(m).set(id, this.normalizeMenu(menu)));
+  }
+
+  /** Append a meal to a slot at its next free position.
+   *    POST /api/menu/{id}/slot/{slotOrder}/meals { mealId }  (409 if full/dining-out) */
+  private addMealToSlot(menuId: number, slotOrder: number, mealId: number): Promise<unknown> {
+    const body: AddMealToSlotRequest = { mealId };
+    return firstValueFrom(
+      this.http.post(`${this.baseUrl}/menu/${menuId}/slot/${slotOrder}/meals`, body),
+    );
+  }
+
+  /** Swap a slot's single occupant (single-meal compat): remove the old meal, add
+   *  the new one. Used by the fork repoints — the slot ends holding just newMealId.
+   *    DELETE .../slot/{slotOrder}/meals/{oldMealId} → POST .../slot/{slotOrder}/meals */
+  private async replaceSlotMeal(
+    menuId: number,
+    slotOrder: number,
+    oldMealId: number,
+    newMealId: number,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.delete(`${this.baseUrl}/menu/${menuId}/slot/${slotOrder}/meals/${oldMealId}`),
+    );
+    await this.addMealToSlot(menuId, slotOrder, newMealId);
+  }
+
   /** fork → source Binder mealId, recorded at fork-on-edit time so a later save
    *  can offer "update the Binder meal it came from." In-session only — a reload
    *  loses it (the fork carries no persisted source link). */
@@ -295,8 +339,7 @@ export class RotationService {
           this.http.put<Meal>(`${this.baseUrl}/meal/${forkId}`, { name: meal.name } as UpdateMealRequest),
         ).catch(() => undefined);
       }
-      const assign: AssignMealToSlotRequest = { slotOrder: loc.slotOrder, mealId: forkId };
-      await firstValueFrom(this.http.put(`${this.baseUrl}/menu/${loc.menuId}/slot`, assign));
+      await this.replaceSlotMeal(loc.menuId, loc.slotOrder, mealId, forkId);
       // Refresh the board menu + fork so the slot on screen now shows the fork
       // (unpinned → its pin flips to a "Save" button) before the edit lands.
       await this.refreshMenu(loc.menuId);
@@ -357,7 +400,7 @@ export class RotationService {
         const menu = await firstValueFrom(
           this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
         );
-        this.menusById.update((m) => new Map(m).set(menuId, menu));
+        this.cacheMenu(menuId, menu);
       } catch (err) {
         this.error.set(this.errMessage(err));
         return;
@@ -579,8 +622,7 @@ export class RotationService {
    *    PUT /menu/{menuId}/slot { slotOrder, mealId } */
   async placeMealInSlot(menuId: number, slotOrder: number, mealId: number): Promise<void> {
     try {
-      const body: AssignMealToSlotRequest = { slotOrder, mealId };
-      await firstValueFrom(this.http.put(`${this.baseUrl}/menu/${menuId}/slot`, body));
+      await this.addMealToSlot(menuId, slotOrder, mealId);
       await this.refreshMenu(menuId);
       await this.loadFolder();
     } catch (err) {
@@ -605,8 +647,7 @@ export class RotationService {
     if (targets.length === 0) return;
     try {
       for (const slotOrder of targets) {
-        const body: AssignMealToSlotRequest = { slotOrder, mealId };
-        await firstValueFrom(this.http.put(`${this.baseUrl}/menu/${menuId}/slot`, body));
+        await this.addMealToSlot(menuId, slotOrder, mealId);
       }
       await this.refreshMenu(menuId);
       await this.loadFolder();
@@ -657,7 +698,7 @@ export class RotationService {
    *  pins the menu + every slotted meal). */
   private async refreshMenu(menuId: number): Promise<void> {
     const menu = await firstValueFrom(this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`));
-    this.menusById.update((m) => new Map(m).set(menuId, menu));
+    this.cacheMenu(menuId, menu);
     // Keep the rotation's tile entry.pinned in lockstep with the menu's flag —
     // the tile derives its pin/ghost from entry.pinned, and pinning a menu (or
     // placing into a pinned one) flips it server-side.
@@ -736,15 +777,18 @@ export class RotationService {
       // the user saves the meals first, then the menu.
       const full = await firstValueFrom(this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`));
       const unsaved: string[] = [];
+      // Walk EVERY stacked meal in every slot (meals[] is the multi-meal wire shape).
       for (const slot of full.slots ?? []) {
-        if (slot.isDiningOut || slot.mealId == null) continue;
-        let meal = this.getMeal(slot.mealId);
-        if (meal == null) {
-          await this.loadMeal(slot.mealId);
-          meal = this.getMeal(slot.mealId);
-        }
-        if (meal?.pinned !== true) {
-          unsaved.push((slot.mealName ?? meal?.name ?? `Meal ${slot.slotOrder}`).replace(/\s*\(copy\)\s*$/i, ''));
+        if (slot.isDiningOut) continue;
+        for (const sm of slot.meals ?? []) {
+          let meal = this.getMeal(sm.mealId);
+          if (meal == null) {
+            await this.loadMeal(sm.mealId);
+            meal = this.getMeal(sm.mealId);
+          }
+          if (meal?.pinned !== true) {
+            unsaved.push((sm.mealName ?? meal?.name ?? `Meal ${slot.slotOrder}`).replace(/\s*\(copy\)\s*$/i, ''));
+          }
         }
       }
       if (unsaved.length > 0) {
@@ -841,12 +885,7 @@ export class RotationService {
           this.http.post<Meal>(`${this.baseUrl}/meal`, createBody),
         );
         mealId = meal.id;
-        await firstValueFrom(
-          this.http.put(`${this.baseUrl}/menu/${slot.menuId}/slot`, {
-            slotOrder: slot.slotOrder,
-            mealId,
-          }),
-        );
+        if (mealId != null) await this.addMealToSlot(slot.menuId, slot.slotOrder, mealId);
         this.editingSlot.set({ ...slot, mealId });
       } else {
         // Fork-on-edit: adding a food to a placed SAVED meal forks it first
@@ -886,7 +925,7 @@ export class RotationService {
       const menu = await firstValueFrom(
         this.http.get<Menu>(`${this.baseUrl}/menu/${slot.menuId}`),
       );
-      this.menusById.update((m) => new Map(m).set(slot.menuId, menu));
+      this.cacheMenu(slot.menuId, menu);
       await this.loadMeal(mealId);
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
@@ -911,7 +950,7 @@ export class RotationService {
         const menu = await firstValueFrom(
           this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
         );
-        this.menusById.update((m) => new Map(m).set(menuId, menu));
+        this.cacheMenu(menuId, menu);
       }
       await this.loadMeal(editId);
     } catch (err) {
@@ -939,7 +978,7 @@ export class RotationService {
         const menu = await firstValueFrom(
           this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
         );
-        this.menusById.update((m) => new Map(m).set(menuId, menu));
+        this.cacheMenu(menuId, menu);
       }
       await this.loadMeal(editId);
     } catch (err) {
@@ -1013,8 +1052,7 @@ export class RotationService {
       // one-off. This is also what lets the menu be saved (all-Binder rule).
       const loc = this.editingSlotOf(forkId);
       if (loc != null) {
-        const assign: AssignMealToSlotRequest = { slotOrder: loc.slotOrder, mealId: sourceId };
-        await firstValueFrom(this.http.put(`${this.baseUrl}/menu/${loc.menuId}/slot`, assign));
+        await this.replaceSlotMeal(loc.menuId, loc.slotOrder, forkId, sourceId);
         await this.refreshMenu(loc.menuId);
       }
       this.forkSource.delete(forkId);
@@ -1044,7 +1082,7 @@ export class RotationService {
         const menu = await firstValueFrom(
           this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
         );
-        this.menusById.update((m) => new Map(m).set(menuId, menu));
+        this.cacheMenu(menuId, menu);
       }
       await this.loadMeal(mealId);
       // Reflect the new name in the rail (a linked Binder meal shows there).
