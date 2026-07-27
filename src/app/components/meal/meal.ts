@@ -52,13 +52,14 @@ interface SlotMacros {
                 (keydown.escape)="nameBox.value = title(); nameBox.blur()"
                 (blur)="onNameBlur(nameBox.value)"
                 aria-label="Meal name" />
-              <!-- Save = bare green check (no disc). Disabled until this meal has
-                   an unsaved edit; click saves (updates the Binder origin for a
-                   fork, or first-saves a fresh meal). -->
+              <!-- Save = bare check (no disc). Always clickable so any meal can be
+                   persisted, but only bright GREEN when there's an actual edit —
+                   muted grey otherwise, so it never reads "actionable" with no
+                   changes. Click saves (fork → update origin; fresh → to Binder). -->
               <button
                 type="button"
                 class="save-check"
-                [disabled]="!dirty()"
+                [class.active]="dirty()"
                 matTooltip="Save changes"
                 matTooltipPosition="above"
                 (click)="onPin()">

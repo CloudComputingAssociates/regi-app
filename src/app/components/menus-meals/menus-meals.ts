@@ -7,6 +7,7 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from '@angu
 import { MatDialog } from '@angular/material/dialog';
 import { Menu, MealItem, MenuSlot } from '../../models';
 import { RotationService, TEACH_SAVE_LINE } from '../../services/rotation.service';
+import { NotificationService } from '../../services/notification.service';
 import { MealComponent } from '../meal/meal';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 
@@ -51,6 +52,7 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
 export class MenusMealsComponent {
   readonly rotation = inject(RotationService);
   private dialog = inject(MatDialog);
+  private notification = inject(NotificationService);
 
   readonly menu = input.required<Menu | undefined>();
 
@@ -118,6 +120,16 @@ export class MenusMealsComponent {
     if (mealId == null) return;
     const sourceName = this.rotation.forkSourceName(mealId);
     if (!sourceName) {
+      // A fresh meal must have a real name before it goes to the Binder — don't
+      // let a placeholder like "Meal 2" land there. Nudge instead of saving.
+      const name = (this.rotation.getMeal(mealId)?.name ?? '').trim();
+      if (name === '' || /^meal\s*\d+$/i.test(name)) {
+        this.notification.show(
+          'Give your meal a real name (not "Meal 2") before saving it to your Binder.',
+          'warning',
+        );
+        return;
+      }
       void this.rotation.pinMeal(mealId);
       return;
     }

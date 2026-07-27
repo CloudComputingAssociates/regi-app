@@ -287,6 +287,14 @@ export class RotationService {
       // Remember which Binder meal this fork came from, so a later save can offer
       // to push the edits back onto the original (in-session; a reload loses it).
       this.forkSource.set(forkId, mealId);
+      // The duplicate endpoint tacks " (copy)" onto the name. This fork is an
+      // internal copy-on-write working copy, NOT a user "copy" — restore the
+      // source's clean name so "(copy)" never appears. Non-fatal if it fails.
+      if (meal.name) {
+        await firstValueFrom(
+          this.http.put<Meal>(`${this.baseUrl}/meal/${forkId}`, { name: meal.name } as UpdateMealRequest),
+        ).catch(() => undefined);
+      }
       const assign: AssignMealToSlotRequest = { slotOrder: loc.slotOrder, mealId: forkId };
       await firstValueFrom(this.http.put(`${this.baseUrl}/menu/${loc.menuId}/slot`, assign));
       // Refresh the board menu + fork so the slot on screen now shows the fork
@@ -722,6 +730,31 @@ export class RotationService {
    *  refresh the Binder. (API registers PUT, not PATCH, for /menu/{id}.) */
   async pinMenu(menuId: number): Promise<void> {
     try {
+      // RULE: a menu can only be saved once EVERY meal in it is already a Binder
+      // meal. Otherwise the server's pin cascade would flip disposable one-offs
+      // (forks / unsaved meals) to pinned, spawning copies. Block + name them so
+      // the user saves the meals first, then the menu.
+      const full = await firstValueFrom(this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`));
+      const unsaved: string[] = [];
+      for (const slot of full.slots ?? []) {
+        if (slot.isDiningOut || slot.mealId == null) continue;
+        let meal = this.getMeal(slot.mealId);
+        if (meal == null) {
+          await this.loadMeal(slot.mealId);
+          meal = this.getMeal(slot.mealId);
+        }
+        if (meal?.pinned !== true) {
+          unsaved.push((slot.mealName ?? meal?.name ?? `Meal ${slot.slotOrder}`).replace(/\s*\(copy\)\s*$/i, ''));
+        }
+      }
+      if (unsaved.length > 0) {
+        this.notification.show(
+          `Save these meals to your Binder first, then save the menu: ${unsaved.join(', ')}`,
+          'error',
+        );
+        return;
+      }
+
       const body: UpdateMenuRequest = { pinned: true };
       await firstValueFrom(this.http.put(`${this.baseUrl}/menu/${menuId}`, body));
       await this.refreshMenu(menuId);
@@ -975,6 +1008,16 @@ export class RotationService {
       }
       await Promise.all(calls);
       await this.loadMeal(sourceId);
+      // Point the slot back at the (now-updated) Binder original and drop the
+      // disposable fork link — so the slot holds a real Binder meal, not a
+      // one-off. This is also what lets the menu be saved (all-Binder rule).
+      const loc = this.editingSlotOf(forkId);
+      if (loc != null) {
+        const assign: AssignMealToSlotRequest = { slotOrder: loc.slotOrder, mealId: sourceId };
+        await firstValueFrom(this.http.put(`${this.baseUrl}/menu/${loc.menuId}/slot`, assign));
+        await this.refreshMenu(loc.menuId);
+      }
+      this.forkSource.delete(forkId);
       await this.loadBinder();
       this.notification.show('Binder meal updated with your changes.', 'success');
     } catch (err) {

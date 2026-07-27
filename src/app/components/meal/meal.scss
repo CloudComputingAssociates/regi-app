@@ -204,8 +204,9 @@
     &:focus { caret-color: #4da6ff; }
   }
 
-  // Save = a BARE green check just right of the name box (no disc). Greyed +
-  // inert until there's an unsaved edit, then bright green to invite the save.
+  // Save = a BARE check just right of the name box (no disc). Always clickable,
+  // but muted grey until there's an actual edit — then .active turns it bright
+  // green so it only reads "actionable" when there's really something to save.
   .save-check {
     flex: 0 0 auto;
     display: inline-flex;
@@ -216,7 +217,7 @@
     padding: 0;
     border: none;
     background: none;
-    color: #28c941;
+    color: #6a6a6a;
     cursor: pointer;
 
     .mat-icon {
@@ -226,11 +227,11 @@
       line-height: 20px;
     }
 
-    &:hover:not(:disabled) { color: #34d651; }
+    &:hover { color: #8a8a8a; }
 
-    &:disabled {
-      color: #5a5a5a;
-      cursor: default;
+    &.active {
+      color: #28c941;
+      &:hover { color: #34d651; }
     }
   }
 
