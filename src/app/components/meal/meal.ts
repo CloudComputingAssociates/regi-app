@@ -446,7 +446,13 @@ export class MealComponent {
   // generator's trailing " meal" stripped. Falls back to the primary food's
   // short name only when the meal has no explicit name yet.
   readonly title = computed<string>(() => {
-    const mealName = (this.slot().mealName ?? '').replace(/\s+meal$/i, '').trim();
+    // Strip the generator's trailing " meal" and the server's " (copy)" suffix
+    // (the latter is added by the duplicate endpoint that backs copy-on-write
+    // fork-on-edit — it's an implementation detail, not part of the name).
+    const mealName = (this.slot().mealName ?? '')
+      .replace(/\s+meal$/i, '')
+      .replace(/(\s*\(copy\))+\s*$/i, '')
+      .trim();
     if (mealName) return mealName;
     const items = this.items();
     const primary = items.find((i) => i.itemRole === 'primary') ?? items[0];
