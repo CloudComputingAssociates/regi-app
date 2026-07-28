@@ -596,6 +596,23 @@ export class RotationService {
     }
   }
 
+  /** "Create from scratch" — begin a brand-new empty meal in the next open slot
+   *  (adding a menu if needed, same target the AI create uses) and open the food
+   *  picker so the user builds it up. The meal row is created server-side on the
+   *  first food add (addFoodToEditingMeal). */
+  async createScratchMeal(): Promise<void> {
+    const target = await this.findGenerateTargetSlot();
+    if (!target) {
+      this.notification.show('No open slot to create a meal in.', 'error');
+      return;
+    }
+    if (this.selectedMenuId() !== target.menuId) {
+      this.selectedMenuId.set(target.menuId);
+      await this.selectMenu(target.menuId);
+    }
+    this.beginEditingSlot(target.menuId, target.slotOrder, null);
+  }
+
   /** Names of meals the session already knows — meals placed in the selected
    *  menu — so the generator can avoid repeats. */
   private knownMealNames(): string[] {

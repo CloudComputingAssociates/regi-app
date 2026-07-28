@@ -134,11 +134,48 @@
 
 // AI row — ONE line always: Twist (left) + New meal (right). No wrap; the Twist
 // dropdown shrinks instead of dropping to a second row.
-.section-body.ai-body {
+// "Create new" body: stacked — the generate row (From picks + Cuisine) on top,
+// the Import-recipe button below.
+.create-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+// Generate row: From picks button + Cuisine dropdown, side by side.
+.ai-body {
+  display: flex;
   flex-direction: row;
   align-items: center;
   flex-wrap: nowrap;
   gap: 8px;
+}
+
+// Create-from-scratch shares the From-picks (genmeal) shading; full-width, with
+// "Create" over a smaller "from scratch" second line.
+.scratch-btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  line-height: 1.15;
+
+  .scratch-line2 {
+    font-size: 11px;
+    font-weight: 400;
+    opacity: 0.8;
+  }
+}
+
+// Import-recipe shares the From-picks (genmeal) shading; full-width, no icon,
+// centered label.
+.recipe-import-btn {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
 }
 
 // The ✦ star inside the Create button.

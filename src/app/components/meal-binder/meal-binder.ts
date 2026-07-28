@@ -42,96 +42,97 @@ import { Meal, Menu } from '../../models';
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
         <span class="binder-title"><mat-icon class="binder-title-icon">menu_book</mat-icon>Binder</span>
-        <!-- AI Meal Assistant — a static title now (was the dropdown toggle). The
-             AI row below is always shown, sitting under this title. -->
-        <span class="ai-title">
-          <span class="ai-logo" [class.spinning]="rotation.generating()" aria-hidden="true"></span>
-          <span class="ai-title-label">AI Meal Assistant</span>
-        </span>
-      </div>
-
-      <!-- Recipe import entry point. A hidden PDF-only file picker; the button
-           kicks it off and stays disabled while an upload is in flight. -->
-      <div class="binder-subhead">
-        <button
-          type="button"
-          class="recipe-import-btn"
-          [disabled]="uploading()"
-          matTooltip="Import a recipe PDF into a saved meal"
-          matTooltipPosition="below"
-          (click)="recipeInput.click()">
-          <mat-icon>picture_as_pdf</mat-icon>{{ uploading() ? 'Importing…' : 'From recipe…' }}
-        </button>
-        <input
-          #recipeInput
-          type="file"
-          accept="application/pdf"
-          hidden
-          (change)="onRecipeFileSelected(recipeInput)" />
       </div>
 
       <!-- One scrollbar for the whole rail. -->
       <div class="rail-scroll">
 
-        <!-- AI accordion — revealed by the title toggle. Star icon in front (vs
-             the fork/knife on Meals). Body is a single compact row. -->
-        <!-- AI row — always shown now (the header toggle became a static title).
-             Twist on the LEFT; the New Meal button right-justified under the title. -->
+        <!-- "Create new" — collapsible (starts collapsed). Holds the two ways to
+             create a meal (From picks / Import recipe) + the Cuisine modifier. -->
         <div class="rail-section">
-          <div class="section-body ai-body">
-            <!-- AI create button first (left); Twist label + dropdown to its right. -->
-            <button
-              type="button"
-              class="genmeal-btn"
-              matTooltip="Meals from Foods you picked"
-              [disabled]="rotation.generating()"
-              (click)="rotation.generateMeal()">
-              <img src="images/AI-star.png" alt="" class="btn-star" />AI create
-            </button>
-            <!-- Label + dropdown kept together so they never wrap apart. -->
-            <div class="twist-group">
-              <span class="twist-label"><span class="twist-word">Twist</span></span>
-              <div class="twist-combo">
-              <input
-                #twistInput
-                type="text"
-                class="twist-input"
-                [value]="twistValue()"
-                placeholder="none"
-                (input)="onTwistInput($any($event.target).value)"
-                (focus)="twistOpen.set(true)"
-                (blur)="onTwistBlur()"
-                (keydown.escape)="twistOpen.set(false)" />
+          <button type="button" class="section-head" (click)="createNewOpen.set(!createNewOpen())">
+            <mat-icon class="section-icon section-icon-binder">auto_awesome</mat-icon>
+            <span class="section-label">Create new</span>
+            <mat-icon class="section-chevron">{{ createNewOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
+          @if (createNewOpen()) {
+            <div class="section-body create-body">
+              <!-- Generate from the user's picks, with an optional Cuisine. -->
+              <div class="ai-body">
+                <button
+                  type="button"
+                  class="genmeal-btn"
+                  matTooltip="Meals from Foods you picked"
+                  [disabled]="rotation.generating()"
+                  (click)="rotation.generateMeal()">
+                  <img src="images/AI-star.png" alt="" class="btn-star" />From picks
+                </button>
+                <div class="twist-group">
+                  <span class="twist-label"><span class="twist-word">Cuisine</span></span>
+                  <div class="twist-combo">
+                    <input
+                      #twistInput
+                      type="text"
+                      class="twist-input"
+                      [value]="twistValue()"
+                      placeholder="none"
+                      (input)="onTwistInput($any($event.target).value)"
+                      (focus)="twistOpen.set(true)"
+                      (blur)="onTwistBlur()"
+                      (keydown.escape)="twistOpen.set(false)" />
+                    <button
+                      type="button"
+                      class="twist-chevron"
+                      aria-label="Cuisine options"
+                      (mousedown)="onChevronMouseDown($event)">▾</button>
+                    @if (twistOpen()) {
+                      <ul class="twist-menu">
+                        @for (opt of twistOptions; track opt) {
+                          <li
+                            class="twist-opt"
+                            [class.selected]="opt === twistValue()"
+                            (mousedown)="selectTwist(opt, $event)">{{ opt }}</li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                  <span class="twist-mark">
+                    @if (twistValue() !== 'none' && twistValue().trim() !== '') {
+                      <app-twist-icon />
+                    }
+                  </span>
+                </div>
+              </div>
+              <!-- Build a meal by hand — opens the food picker on a fresh slot. -->
               <button
                 type="button"
-                class="twist-chevron"
-                aria-label="Twist options"
-                (mousedown)="onChevronMouseDown($event)">▾</button>
-              @if (twistOpen()) {
-                <ul class="twist-menu">
-                  @for (opt of twistOptions; track opt) {
-                    <li
-                      class="twist-opt"
-                      [class.selected]="opt === twistValue()"
-                      (mousedown)="selectTwist(opt, $event)">{{ opt }}</li>
-                  }
-                </ul>
-              }
-              </div>
-              <!-- Twist mark — a reserved slot after the dropdown; the squiggle logo
-                   only appears once a twist is selected / a custom one is entered
-                   (the space is held either way, so nothing shifts). -->
-              <span class="twist-mark">
-                @if (twistValue() !== 'none' && twistValue().trim() !== '') {
-                  <app-twist-icon />
-                }
-              </span>
+                class="genmeal-btn scratch-btn"
+                matTooltip="Build a new meal by hand"
+                (click)="rotation.createScratchMeal()">
+                <span class="scratch-line1">Create</span>
+                <span class="scratch-line2">from scratch</span>
+              </button>
+              <!-- Import a recipe PDF. Same shading as From picks; no icon. -->
+              <button
+                type="button"
+                class="genmeal-btn recipe-import-btn"
+                [disabled]="uploading()"
+                matTooltip="Import a recipe PDF into a saved meal"
+                matTooltipPosition="below"
+                (click)="recipeInput.click()">
+                {{ uploading() ? 'Importing…' : 'Import recipe…' }}
+              </button>
+              <input
+                #recipeInput
+                type="file"
+                accept="application/pdf"
+                hidden
+                (change)="onRecipeFileSelected(recipeInput)" />
             </div>
-          </div>
+          }
         </div>
 
-        <!-- Detached grey divider closing off the AI Meal Assistant area, inset the
-             same as the Menus/Meals rows for a clean break. -->
+        <!-- Detached grey divider closing off the Create-new area. -->
         <div class="rail-divider"></div>
 
         <!-- Menus accordion (top-level; larger header). -->
@@ -324,6 +325,9 @@ export class MealBinderComponent implements OnInit {
       this.uploading.set(false);
     }
   }
+
+  /** "Create new" accordion — starts COLLAPSED. */
+  readonly createNewOpen = signal(false);
 
   /** Top-level accordion open state — both default open. */
   readonly binderMenusOpen = signal(true);

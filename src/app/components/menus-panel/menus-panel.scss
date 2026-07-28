@@ -99,12 +99,13 @@
     white-space: nowrap;
   }
 
-  // All the action buttons grouped together, equally spaced.
+  // All the action buttons grouped together, tight + equally spaced. The flex
+  // gap is the ONLY spacing (per-button margins were removed) so it stays even.
   .toolbar-buttons {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
   }
 
   // Planned-days tally — right-justified in the remaining space.
@@ -129,7 +130,6 @@
 // chrome + size (30×30, 18px glyph) as the Print / Wipe keys.
 .close-panel-btn {
   flex: 0 0 auto;
-  margin-left: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -162,7 +162,6 @@
 // Square Print key in front of Scale — same raised domed family as the steppers.
 .print-btn {
   flex: 0 0 auto;
-  margin-right: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -196,7 +195,6 @@
 // Same domed family as the steppers; a warm hover marks it as destructive.
 .wipe-menus-btn {
   flex: 0 0 auto;
-  margin-right: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

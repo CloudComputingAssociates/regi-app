@@ -87,21 +87,21 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               <span class="toolbar-title">
                 <mat-icon class="toolbar-title-icon">restaurant</mat-icon>Menus &amp; Meals
               </span>
-              <!-- All actions grouped together, equidistant (close joins them). -->
+              <!-- Actions grouped together, equidistant: print · remove all · close. -->
               <div class="toolbar-buttons">
-                <button
-                  type="button"
-                  class="wipe-menus-btn"
-                  matTooltip="Remove all from Menus and Meal slots. Saved Menus and Meals will remain available."
-                  (click)="onWipeMenus()">
-                  <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
-                </button>
                 <button
                   type="button"
                   class="print-btn"
                   matTooltip="Print / preview this plan"
                   (click)="onPrint()">
                   <mat-icon>print</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="wipe-menus-btn"
+                  matTooltip="Remove all"
+                  (click)="onWipeMenus()">
+                  <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
                 </button>
                 <button
                   type="button"
