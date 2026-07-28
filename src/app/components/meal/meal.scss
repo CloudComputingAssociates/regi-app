@@ -239,18 +239,12 @@
 
   .mat-icon { width: 15px; height: 15px; font-size: 15px; line-height: 15px; }
 }
-// Flip ">" — bottom-right corner (same on the front tiles AND the back).
+// Flip ">" — bottom-right corner (same on the front tiles AND the back). It's
+// the only control on the image tiles now; delete lives on the back title row.
 .tile-flip {
   top: auto;
   bottom: 5px;
   right: 5px;
-}
-// Delete — top-right corner, red (app danger). Separated from the flip so the
-// two can't be confused.
-.tile-remove {
-  right: 5px;
-  background: #ff5f57;
-  &:hover { background: #ff433a; }
 }
 
 // ---- BACK: one-meal detail ------------------------------------------------
@@ -301,6 +295,25 @@
   .mat-icon { width: 20px; height: 20px; font-size: 20px; line-height: 20px; }
   &:hover { color: #8a8a8a; }
   &.active { color: #28c941; &:hover { color: #34d651; } }
+}
+
+// Delete — right after the save check in the back title row. Bare red icon
+// (matches the app's danger discs), sized like the check.
+.back-delete {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #ff6b63;
+  cursor: pointer;
+
+  .mat-icon { width: 20px; height: 20px; font-size: 20px; line-height: 20px; }
+  &:hover { color: #ff5f57; }
 }
 
 // Recipe link — standing underline.

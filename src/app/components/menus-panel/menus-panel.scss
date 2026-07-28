@@ -75,6 +75,7 @@
   box-sizing: border-box;
   display: flex;
   align-items: center;
+  gap: 10px;
   padding: 0 14px;
   margin: 6px;
   // Match the macro bar: same flat shade, 1px chrome border, 8px rounding, so
@@ -82,6 +83,27 @@
   background: #3a3a3a;
   border: 1px solid #4a4a4a;
   border-radius: 8px;
+
+  // Surface title — same treatment as the Binder header (blue, 20px, 600).
+  .toolbar-title {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 4px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #4da6ff;
+    white-space: nowrap;
+  }
+  .toolbar-title-icon {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    line-height: 20px;
+    color: #4da6ff;
+  }
 }
 
 // Trailing spacer grows to absorb the rest of the row, so Scale is left-

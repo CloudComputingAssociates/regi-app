@@ -83,6 +83,11 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                  ~2/3 across; People (persisted) is right-justified against the
                  right edge, adjacent to the Meals binder. -->
             <div class="menus-toolbar">
+              <!-- Surface title — same blue/weight as the Binder header, leading
+                   the toolbar in front of the two buttons. -->
+              <span class="toolbar-title">
+                <mat-icon class="toolbar-title-icon">restaurant</mat-icon>Menus &amp; Meals
+              </span>
               <!-- Wipe (teardown) leads, immediately left of Print; both same height. -->
               <button
                 type="button"
@@ -213,8 +218,8 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
            held down (before motion), cleared once the drag moves or releases. -->
       @if (rotation.showDragHint()) {
         <div class="drag-encourager">
+          <mat-icon>arrow_back</mat-icon>
           <span class="drag-word">drag</span>
-          <mat-icon>arrow_forward</mat-icon>
         </div>
       }
     </div>

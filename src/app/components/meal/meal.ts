@@ -44,7 +44,7 @@ interface Macro {
       <!-- Header: slot letter, summed macro strip (stays visible without flipping),
            and the whole-slot clear (wipes ALL meals). -->
       <div class="slot-header">
-        <span class="slot-title">Meal {{ slot().slotOrder }}</span>
+        <span class="slot-title">Slot {{ slot().slotOrder }}</span>
         @if (!isEmpty() && !slot().isDiningOut) {
           <span class="chip protein">P {{ round(macros().proteinG) }}</span>
           <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
@@ -97,13 +97,6 @@ interface Macro {
                   <span class="tile-name">{{ clean(m.mealName) }}</span>
                   <button
                     type="button"
-                    class="tile-btn tile-remove"
-                    matTooltip="Remove this meal"
-                    (click)="removeMeal.emit({ slotOrder: slot().slotOrder, mealId: m.mealId })">
-                    <mat-icon>delete_outline</mat-icon>
-                  </button>
-                  <button
-                    type="button"
                     class="tile-btn tile-flip"
                     matTooltip="Open this meal"
                     (click)="flipTo(m.mealId, $event)">
@@ -144,6 +137,13 @@ interface Macro {
                     matTooltip="Save changes"
                     (click)="pinMeal.emit(fm.mealId)">
                     <mat-icon>check</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    class="back-delete"
+                    matTooltip="Remove this meal"
+                    (click)="removeMeal.emit({ slotOrder: slot().slotOrder, mealId: fm.mealId })">
+                    <mat-icon>delete_outline</mat-icon>
                   </button>
                 </div>
 

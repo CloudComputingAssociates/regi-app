@@ -97,7 +97,7 @@ export class MenusMealsComponent {
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',
       data: {
-        message: `Clear all meals from the Meal ${slotOrder} slot?`,
+        message: `Clear all meals from Slot ${slotOrder}?`,
         teachLine: teach ? TEACH_SAVE_LINE : undefined,
         confirmLabel: 'Clear',
         onConfirm: () => this.rotation.clearSlot(menuId, slotOrder),

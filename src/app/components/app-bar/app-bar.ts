@@ -69,6 +69,9 @@ export class AppBarComponent {
   activePanelLabel = computed(() => {
     const id = this.tabService.activeTabId();
     if (!id) return null;
+    // Menus & Meals shows its own title in the board toolbar, so don't duplicate
+    // it up here in the app bar.
+    if (id === 'menus') return null;
     return this.tabService.tabs().find(t => t.id === id)?.label ?? null;
   });
 

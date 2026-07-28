@@ -156,22 +156,15 @@ import { Meal, Menu } from '../../models';
                   (mousedown)="onCardMouseDown()"
                   (click)="rotation.selectCard('menu', menu.id ?? -1)">
                   <div class="card-head">
-                    <!-- Click-to-edit name: saves in place on blur or Enter, reverts
-                         on Escape. stopPropagation keeps the click/drag/select on the
-                         card from firing while you edit the title. -->
-                    <input
-                      #menuName
-                      type="text"
-                      class="binder-card-name binder-name-edit"
-                      [value]="menuDisplayName(menu)"
-                      (click)="$event.stopPropagation()"
-                      (dblclick)="$event.stopPropagation()"
-                      (mousedown)="$event.stopPropagation()"
-                      (focus)="menuName.select()"
-                      (keydown.enter)="menuName.blur()"
-                      (keydown.escape)="menuName.value = menuDisplayName(menu); menuName.blur()"
-                      (blur)="onBinderMenuRename(menu, menuName.value)"
-                      aria-label="Menu name" />
+                    <!-- Non-editable name so the whole card is easy to grab + drag.
+                         Rename happens on the board (menu strip) after placing. -->
+                    <span
+                      class="binder-card-name"
+                      [matTooltip]="menuDisplayName(menu)"
+                      [matTooltipDisabled]="!rotation.isCardSelected('menu', menu.id ?? -1)"
+                      matTooltipClass="binder-name-tip"
+                      matTooltipPosition="below"
+                      [matTooltipShowDelay]="300">{{ menuDisplayName(menu) }}</span>
                     <!-- Browse-by summary: the chevron in front of the Protein +
                          Fiber discs; carbs/fat/cals demoted into the reveal. -->
                     <button
@@ -230,22 +223,15 @@ import { Meal, Menu } from '../../models';
                   (click)="rotation.selectCard('meal', meal.id)"
                   (dblclick)="rotation.placeBinderMeal(meal.id)">
                   <div class="card-head">
-                    <!-- Click-to-edit name: saves in place on blur or Enter, reverts
-                         on Escape. stopPropagation keeps the card's click-select /
-                         double-click-place / drag from firing while you edit. -->
-                    <input
-                      #mealName
-                      type="text"
-                      class="binder-card-name binder-name-edit"
-                      [value]="meal.name"
-                      (click)="$event.stopPropagation()"
-                      (dblclick)="$event.stopPropagation()"
-                      (mousedown)="$event.stopPropagation()"
-                      (focus)="mealName.select()"
-                      (keydown.enter)="mealName.blur()"
-                      (keydown.escape)="mealName.value = meal.name; mealName.blur()"
-                      (blur)="onBinderMealRename(meal, mealName.value)"
-                      aria-label="Meal name" />
+                    <!-- Non-editable name so the whole card is easy to grab + drag.
+                         Rename happens on the board (flip the meal tile) after placing. -->
+                    <span
+                      class="binder-card-name"
+                      [matTooltip]="meal.name"
+                      [matTooltipDisabled]="!rotation.isCardSelected('meal', meal.id)"
+                      matTooltipClass="binder-name-tip"
+                      matTooltipPosition="below"
+                      [matTooltipShowDelay]="300">{{ meal.name }}</span>
                     <!-- Browse-by summary: the chevron in front of the Protein +
                          Fiber discs; carbs/fat/cals demoted into the reveal. -->
                     <button
@@ -470,20 +456,6 @@ export class MealBinderComponent implements OnInit {
    *  '' when it has no picture. Drives the drag preview. */
   mealThumb(meal: Meal): string {
     return (meal.mealImageThumbnail ?? meal.mealImage ?? '').trim();
-  }
-
-  /** Inline binder rename — persist in place on blur/Enter. No-op when the name
-   *  is empty or unchanged. Editing never copies; it edits the same meal/menu. */
-  onBinderMealRename(meal: Meal, value: string): void {
-    const name = value.trim();
-    if (!name || name === meal.name) return;
-    void this.rotation.updateMealName(meal.id, name);
-  }
-
-  onBinderMenuRename(menu: Menu, value: string): void {
-    const name = value.trim();
-    if (menu.id == null || !name || name === this.menuDisplayName(menu)) return;
-    void this.rotation.updateMenuName(menu.id, name);
   }
 
   /** Display name for a Binder menu — mirrors the board's menu-card lettering so

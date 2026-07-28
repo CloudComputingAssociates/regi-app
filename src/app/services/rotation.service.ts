@@ -280,10 +280,12 @@ export class RotationService {
     oldMealId: number,
     newMealId: number,
   ): Promise<void> {
+    // ADD first, then remove — so a half-failed swap never leaves the slot empty
+    // (worst case the old meal lingers, which is visible, not lost).
+    await this.addMealToSlot(menuId, slotOrder, newMealId);
     await firstValueFrom(
       this.http.delete(`${this.baseUrl}/menu/${menuId}/slot/${slotOrder}/meals/${oldMealId}`),
     );
-    await this.addMealToSlot(menuId, slotOrder, newMealId);
   }
 
   /** fork → source Binder mealId, recorded at fork-on-edit time so a later save
