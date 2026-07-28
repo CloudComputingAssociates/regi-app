@@ -9,7 +9,7 @@
 //   menus, selectedMenuId, selectMenu, selectedMenu, selectedMenuTotals,
 //   slotItems, getMeal — plus loading/error and the loaders below.
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
@@ -23,6 +23,7 @@ import {
   Meal,
   MealItem,
   Menu,
+  MenuSlot,
   Rotation,
   RotationDetail,
   UpdateMealItemRequest,
@@ -111,7 +112,7 @@ export class RotationService {
   readonly nextEmptySlotOrder = computed<number | null>(() => {
     const menu = this.selectedMenu();
     if (!menu) return null;
-    const empty = menu.slots.find((s) => !s.isDiningOut && s.mealId == null);
+    const empty = menu.slots.find((s) => !s.isDiningOut && this.slotEmpty(s));
     return empty?.slotOrder ?? null;
   });
 
@@ -177,10 +178,12 @@ export class RotationService {
   menuHasUnsavedWork(menuId: number): boolean {
     const menu = this.menusById().get(menuId);
     if (!menu) return false;
-    return menu.slots.some((s) => {
-      const meal = s.mealId != null ? this.getMeal(s.mealId) : null;
-      return meal ? this.shouldTeachSave(meal) : false;
-    });
+    return menu.slots.some((s) =>
+      (s.meals ?? []).some((m) => {
+        const meal = this.getMeal(m.mealId);
+        return meal ? this.shouldTeachSave(meal) : false;
+      }),
+    );
   }
 
   /** Any disposable (unpinned) menu in the rotation — its composition is lost on
@@ -248,24 +251,15 @@ export class RotationService {
     return this.mealsById().get(mealId)?.items ?? [];
   }
 
-  /** Single-meal COMPAT: the API now returns `slot.meals[]` (0–4). The board is
-   *  still single-meal, so mirror the first stacked meal onto the legacy
-   *  slot.mealId/mealName/mealType fields. Remove once the quartered multi-meal
-   *  UI reads meals[] directly. */
-  private normalizeMenu(menu: Menu): Menu {
-    for (const slot of menu.slots ?? []) {
-      const first = slot.meals?.[0];
-      slot.mealId = first?.mealId ?? null;
-      slot.mealName = first?.mealName ?? null;
-      slot.mealType = first?.mealType ?? null;
-    }
-    return menu;
+  /** Cache a fetched Menu. Single chokepoint for slot state so the board reads
+   *  stay consistent. Slots carry `meals[]` (0–4) directly now. */
+  private cacheMenu(id: number, menu: Menu): void {
+    this.menusById.update((m) => new Map(m).set(id, menu));
   }
 
-  /** Cache a fetched Menu, normalized for single-meal compat. The one chokepoint
-   *  for slot state, so every board read sees the mirrored slot.mealId. */
-  private cacheMenu(id: number, menu: Menu): void {
-    this.menusById.update((m) => new Map(m).set(id, this.normalizeMenu(menu)));
+  /** True when a slot holds no meals (and isn't dining-out). */
+  private slotEmpty(s: MenuSlot): boolean {
+    return (s.meals?.length ?? 0) === 0;
   }
 
   /** Append a meal to a slot at its next free position.
@@ -304,7 +298,7 @@ export class RotationService {
     const es = this.editingSlot();
     if (es?.mealId === mealId) return { menuId: es.menuId, slotOrder: es.slotOrder };
     const sel = this.selectedMenu();
-    const slot = sel?.slots.find((s) => s.mealId === mealId);
+    const slot = sel?.slots.find((s) => (s.meals ?? []).some((m) => m.mealId === mealId));
     if (sel?.id != null && slot != null) return { menuId: sel.id, slotOrder: slot.slotOrder };
     return null;
   }
@@ -411,10 +405,11 @@ export class RotationService {
     if (!menu) return;
     for (const slot of menu.slots) {
       if (slot.isDiningOut) continue;
-      const mealId = slot.mealId;
-      if (mealId == null || this.mealsById().has(mealId)) continue;
-      // Fire-and-forget: food rows appear as each meal resolves.
-      void this.loadMeal(mealId);
+      // Prefetch EVERY stacked meal so each tile's rows are cached before flip.
+      for (const m of slot.meals ?? []) {
+        if (this.mealsById().has(m.mealId)) continue;
+        void this.loadMeal(m.mealId); // fire-and-forget
+      }
     }
   }
 
@@ -569,7 +564,7 @@ export class RotationService {
    *  if the rotation has none) and use its first slot. Null if none can be made. */
   private async findGenerateTargetSlot(): Promise<{ menuId: number; slotOrder: number } | null> {
     const firstEmpty = (menu?: Menu): number | undefined =>
-      menu?.slots.find((s) => !s.isDiningOut && s.mealId == null)?.slotOrder;
+      menu?.slots.find((s) => !s.isDiningOut && this.slotEmpty(s))?.slotOrder;
 
     const sel = this.selectedMenu();
     const selEmpty = firstEmpty(sel);
@@ -606,7 +601,9 @@ export class RotationService {
     const menu = this.selectedMenu();
     if (menu) {
       for (const slot of menu.slots) {
-        if (slot.mealName) names.add(slot.mealName);
+        for (const m of slot.meals ?? []) {
+          if (m.mealName) names.add(m.mealName);
+        }
       }
     }
     return [...names];
@@ -626,8 +623,38 @@ export class RotationService {
       await this.refreshMenu(menuId);
       await this.loadFolder();
     } catch (err) {
+      // 409 = the slot rejected the append (full / duplicate / dining-out). Toast
+      // the specific reason; never trip the panel-wide error signal for a drop.
+      this.notification.show(this.slotConflictMessage(err), 'error');
+    }
+  }
+
+  /** Remove ONE meal from a slot (per-tile trash on the image grid).
+   *    DELETE /api/menu/{id}/slot/{slotOrder}/meals/{mealId}
+   *  Re-fetch the menu on success; toast + leave the board intact on failure. */
+  async removeMealFromSlot(menuId: number, slotOrder: number, mealId: number): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.baseUrl}/menu/${menuId}/slot/${slotOrder}/meals/${mealId}`),
+      );
+      await this.refreshMenu(menuId);
+      await this.loadFolder();
+    } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
+  }
+
+  /** Map a slot-append 409 to a specific, human message; fall back to the generic
+   *  error text for anything else. */
+  private slotConflictMessage(err: unknown): string {
+    if (err instanceof HttpErrorResponse && err.status === 409) {
+      const body = typeof err.error === 'string' ? err.error : (err.error?.message ?? '');
+      const text = String(body).toLowerCase();
+      if (text.includes('dining')) return 'This slot is set to dining out.';
+      if (text.includes('dup') || text.includes('already')) return 'That meal is already in this slot.';
+      return 'This slot is full (max 4 meals).';
+    }
+    return this.errMessage(err);
   }
 
   /** "Repeat" — fan one meal out as read-only clones into every empty,
@@ -642,7 +669,7 @@ export class RotationService {
     const menu = this.menusById().get(menuId);
     if (!menu) return;
     const targets = menu.slots
-      .filter((s) => !s.isDiningOut && s.mealId == null)
+      .filter((s) => !s.isDiningOut && this.slotEmpty(s))
       .map((s) => s.slotOrder);
     if (targets.length === 0) return;
     try {
@@ -667,7 +694,7 @@ export class RotationService {
   async duplicateMealIntoSlot(menuId: number, mealId: number): Promise<void> {
     const menu = this.menusById().get(menuId);
     if (!menu) return;
-    const slotOrder = menu.slots.find((s) => !s.isDiningOut && s.mealId == null)?.slotOrder;
+    const slotOrder = menu.slots.find((s) => !s.isDiningOut && this.slotEmpty(s))?.slotOrder;
     if (slotOrder == null) {
       this.notification.show('No empty slot for the copy.', 'error');
       return;
@@ -704,7 +731,7 @@ export class RotationService {
     // placing into a pinned one) flips it server-side.
     this.syncEntryPinned(menuId, menu.pinned === true);
     for (const slot of menu.slots) {
-      if (slot.mealId != null) await this.loadMeal(slot.mealId);
+      for (const m of slot.meals ?? []) await this.loadMeal(m.mealId);
     }
   }
 
@@ -1227,9 +1254,7 @@ export class RotationService {
         const detail = await firstValueFrom(
           this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
         );
-        const mealIds = (detail.slots ?? [])
-          .map((s) => s.mealId)
-          .filter((id): id is number => id != null);
+        const mealIds = (detail.slots ?? []).flatMap((s) => (s.meals ?? []).map((m) => m.mealId));
         // Surface failures (no allSettled) so a stuck delete isn't silent.
         await Promise.all(
           mealIds.map((id) => firstValueFrom(this.http.delete(`${this.baseUrl}/meal/${id}`))),
@@ -1282,7 +1307,7 @@ export class RotationService {
         this.menusById().get(menuId) ??
         (await firstValueFrom(this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`)));
       for (const slot of menu.slots) {
-        if (slot.mealId != null) {
+        if ((slot.meals?.length ?? 0) > 0) {
           await firstValueFrom(
             this.http.delete(`${this.baseUrl}/menu/${menuId}/slot/${slot.slotOrder}`),
           );

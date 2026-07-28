@@ -4,11 +4,11 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 4px 12px 14px; // tight RHS — delete rides near the right edge
+  gap: 8px;
+  padding: 10px 8px;
   border: 1px solid #4a4a4a;
   border-radius: 8px;
-  background: #3a3a3a; // match the macro bar shade for a uniform card family
+  background: #3a3a3a;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 
   &.empty {
@@ -16,341 +16,292 @@
     border-style: dashed;
   }
 
-  // Clone (phantom) slot — a read-only pointer to the origin meal. Slightly
-  // dimmer + a soft dashed left edge so it reads as "mirrored, not independent"
-  // without shouting. The origin card stays the bright, editable one.
-  &.clone {
-    background: #333;
-    border-left: 2px solid rgba(255, 193, 84, 0.4);
-  }
-
-  // Editing this slot — accent border (solid even when the slot is empty).
   &.editing {
     border-color: #4da6ff;
     border-style: solid;
     box-shadow: 0 0 0 1px #4da6ff, 0 2px 4px rgba(0, 0, 0, 0.3);
   }
-
-  // With a cover photo the card hosts a flip. The card's own padding moves onto
-  // the back face (so the photo fills edge-to-edge); overflow clips the photo to
-  // the rounded corners; perspective drives the 3D flip. No fixed position:fixed
-  // descendants live in this tree, so perspective's containing block is harmless.
-  &.has-cover {
-    padding: 0;
-    overflow: hidden;
-    perspective: 1200px;
-  }
 }
 
-// Flip viewport. A FIXED 4:3 frame drives the tile size: aspect-ratio (not a
-// pixel height) means the height tracks the grid column width (minmax(280px,1fr)),
-// so every image-backed tile is identical regardless of the source photo's own
-// aspect ratio. Both faces absolutely fill this frame; rotating swaps them.
-.flip {
-  position: relative;
-  aspect-ratio: 4 / 3;
-  transform-style: preserve-3d;
-  transition: transform 250ms ease;
-  border-radius: inherit;
-
-  &.show-back {
-    transform: rotateY(180deg);
-  }
-}
-
-.flip-face {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  border-radius: inherit;
-}
-
-// Back = the current card content, pre-rotated 180° so it reads correctly once
-// the wrapper is flipped. Pinned to the SAME 4:3 frame as the cover (inset:0) so
-// flipping never reflows the board or resizes the tile; taller nutrition content
-// scrolls within the frame. Re-applies the card's original padding.
-.flip-back {
-  position: absolute;
-  inset: 0;
-  transform: rotateY(180deg);
-  padding: 12px 4px 12px 14px;
-  overflow-y: auto;
-}
-
-// Front = the cover photo, filling the 4:3 frame.
-.flip-front {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-
-  .cover-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center; // crop to fill from the center — never stretch/letterbox
-    display: block;
-  }
-
-  // Bottom scrim so the title stays legible over any photo.
-  .cover-scrim {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 48%;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0));
-    pointer-events: none;
-  }
-
-  .cover-title {
-    position: absolute;
-    left: 12px;
-    right: 44px; // clear the flip button
-    bottom: 10px;
-    color: #ffffff;
-    font-size: 15px;
-    font-weight: 600;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-// Flip button — same bottom-right anchor on BOTH faces (the back face is net-0
-// rotation when shown, so bottom-right lands identically). Same raised disc chrome
-// as the header icon-discs.
-.flip-btn {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  z-index: 2;
-  width: 26px;
-  height: 26px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 1px solid #262626;
-  border-top-color: #6a6a6a;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #4d4d4d 0%, #3a3a3a 100%);
-  color: #e8e8e8;
-  cursor: pointer;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-
-  &:hover {
-    color: #ffffff;
-  }
-
-  .mat-icon {
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
-    line-height: 18px;
-  }
-}
-
+// ---- Header: title + summed macro strip + clear-all -----------------------
 .slot-header {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 5px; // tighter so the copy + delete pair reads as a unit in the corner
+  gap: 5px;
 
-  // "Meal N" for an EMPTY slot only (filled slots show the name box instead).
   .slot-title {
-    font-size: 14px;
+    flex: 0 0 auto;
+    font-size: 13px;
     font-weight: 600;
     color: #4da6ff;
     white-space: nowrap;
   }
 
-  // The name box fills the space between the leading pin disc and the trailing
-  // copy/trash discs (the + add disc moved down to the cals row, freeing width).
-  .header-name {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  // Fills the rest of the 2/3 after "Meal N". The commit-arrow disc is a flex
-  // sibling that sits just OUTSIDE the box's right edge.
-  .name-wrap {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex: 1 1 0;
-    min-width: 0;
-  }
-
-  // Always-visible name box. Reads as a recessed grey field (depth via the
-  // inset shadow, a deeper grey — not black); focusing turns on the accent
-  // caret. Single line, no scrollbar — Home/End/arrows navigate long names.
-  // Field look comes from the global .regi-field; keep only layout + specials.
-  .meal-name-box {
-    flex: 1 1 auto;
-    min-width: 0;
-    cursor: text;
-    overflow: hidden;
-
-    // Barely-there white full-select highlight (not the loud browser blue).
-    &::selection {
-      background: rgba(255, 255, 255, 0.16);
-      color: inherit;
-    }
-
-    &:focus { caret-color: #4da6ff; }
-  }
-
-  // Save = a BARE check just right of the name box (no disc). Always clickable,
-  // but muted grey until there's an actual edit — then .active turns it bright
-  // green so it only reads "actionable" when there's really something to save.
-  .save-check {
+  .slot-cals {
     flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    border: none;
-    background: none;
-    color: #6a6a6a;
-    cursor: pointer;
-
-    .mat-icon {
-      width: 20px;
-      height: 20px;
-      font-size: 20px;
-      line-height: 20px;
-    }
-
-    &:hover { color: #8a8a8a; }
-
-    &.active {
-      color: #28c941;
-      &:hover { color: #34d651; }
-    }
+    font-size: 12px;
+    color: #4da6ff;
+    white-space: nowrap;
   }
 
-  // CR-LF (enter) arrow — a round disc just OUTSIDE the box, styled like the other
-  // discs (same raised .icon-disc chrome) so it reads as one of the family. GREY
-  // raised at rest; standard confirm-green (.active) while the title is edited.
-  .name-commit {
-    flex: 0 0 auto;
-    width: 22px;
-    height: 22px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 1px solid #262626;
-    border-top-color: #6a6a6a;
-    border-radius: 50%;
-    background: linear-gradient(180deg, #4d4d4d 0%, #3a3a3a 100%);
-    color: #cfcfcf;
-    cursor: pointer;
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    transition: background 0.12s ease, color 0.12s ease;
-
-    &:hover { color: #ffffff; }
-
-    &.active {
-      border-color: #1f7a2e;
-      background: #28c941;
-      color: #ffffff;
-      &:hover { background: #23b23a; }
-    }
-
-    .mat-icon {
-      width: 14px;
-      height: 14px;
-      font-size: 14px;
-      line-height: 14px;
-    }
-  }
-
-  // All header discs use the shared global .icon-disc (one size, raised chrome):
-  // pin-disc leads, then copy, then trash. The name box (flex:1) fills the middle,
-  // so no explicit margins are needed to right-justify the copy/trash cluster.
-  .pin-disc {
-    flex: 0 0 auto;
-    // Unpinned pin uses the shared .icon-disc grey icon so it reads as the same
-    // raised/pearly button as the + and trash discs (a white icon washed out the
-    // top-lit shading). Pinned = yellow icon + white rim.
+  .clear-slot {
+    margin-left: auto;
   }
 }
 
-// Clone (phantom) read-only name — mirrors the name box's grey field look but
-// without the editable chrome (a clone points at the origin meal; its name isn't
-// separately editable). Single line, clipped.
-.clone-name {
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
+// Macro discs — shared by the header strip and the back macro row.
+.chip {
+  flex: 0 0 auto;
   white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: 13px;
-  color: #cfcfcf;
-  padding: 6px 12px;
-}
-
-// Repeat disc — same raised chrome as the others; the copy glyph reads "clone
-// into slots". Subtle blue tint to distinguish it from add/delete at a glance.
-.repeat-disc {
-  .mat-icon { color: #7fbfff; }
-  &:hover:not(:disabled) { color: #ffffff; }
-  // Disabled-grey when the menu is full (no empty slot for the "(copy)") — the
-  // button stays put rather than popping in/out as slots free up.
-  &:disabled {
-    opacity: 0.4;
-    cursor: default;
-    .mat-icon { color: #9aa0a6; }
-  }
-}
-
-// orig / clone tag — small pill, only rendered when the meal is repeated. Origin
-// reads as a quiet blue "source"; clone reads as a neutral grey. Thin, clean type
-// (no heavy/uppercase/letter-spacing blur) so it labels crisply without shouting.
-.repeat-badge {
-  font-size: 10px;
-  font-weight: 400;
-  line-height: 1;
+  font-size: 11px;
+  font-weight: 500;
   padding: 2px 6px;
-  border-radius: 8px;
-  color: #cfe4ff;
-  background: rgba(77, 166, 255, 0.18);
-  border: 1px solid rgba(77, 166, 255, 0.35);
-  white-space: nowrap;
-  user-select: none;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.82);
 
-  &.is-clone {
-    color: #cfcfcf;
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
+  &.protein { background: #34781a; }
+  &.carb { background: #a8541a; }
+  &.fat { background: #8a55ab; }
+  &.fiber { background: #5e4021; }
+}
+
+// ---- Placeholders ---------------------------------------------------------
+.slot-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 96px;
+  color: #9aa0a6;
+  font-size: 13px;
+  border-radius: 6px;
+
+  &.dining-out {
+    flex-direction: row;
+    .placeholder-icon { font-size: 18px; }
+  }
+
+  &.pick {
+    transition: box-shadow 0.12s ease, background 0.12s ease;
+
+    &.bloom {
+      background: rgba(255, 213, 79, 0.08);
+      box-shadow: 0 0 0 2px #ffd54f, 0 0 12px rgba(255, 213, 79, 0.55);
+    }
+  }
+
+  .pick-sub {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+
+    .inline-icon { width: 15px; height: 15px; font-size: 15px; line-height: 15px; color: #9aa0a6; }
+    .meals-word { color: #4da6ff; }
   }
 }
 
-// Save-state disc (same .icon-disc circle throughout). CLEAN keeps the default
-// GREY fork & knife (still click-to-save — never disabled). SAVED uses
-// .icon-disc-pinned (yellow). Only the DIRTY state recolors: a GREEN check with
-// a standing green glow → click to save.
-.pin-disc.pin-dirty {
-  .mat-icon { color: #5fe07a; }
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 0 0 1px rgba(40, 201, 65, 0.6),
-    0 0 7px rgba(40, 201, 65, 0.55);
+// ---- Flip card ------------------------------------------------------------
+// The card body is a fixed 4:3 frame so both faces occupy the same box and the
+// flip doesn't reflow the board. FRONT (image grid) and BACK (one-meal detail)
+// are absolutely stacked; rotating .flip-inner swaps them.
+.flip {
+  perspective: 1200px;
 }
 
-// Source recipe link — a standing (permanently underlined) link on its own line
-// above the macro discs, pointing at the imported recipe PDF that seeded the meal.
-// Bare button styled as a link so it can drive the in-app viewer tab.
+.flip-inner {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  transform-style: preserve-3d;
+  transition: transform 0.4s ease;
+}
+
+.flip.flipped .flip-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-front,
+.flip-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+// ---- FRONT: image grid ----------------------------------------------------
+.flip-front {
+  display: grid;
+  gap: 2px;
+  background: #1c1c1c;
+}
+.flip-front[data-count='1'] { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+.flip-front[data-count='2'] { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+.flip-front[data-count='3'],
+.flip-front[data-count='4'] { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+
+.flip-front.cdk-drop-list-receiving,
+.flip-front.cdk-drop-list-dragging {
+  outline: 2px solid #4da6ff;
+  outline-offset: -2px;
+}
+
+.meal-tile {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+  background: #333;
+
+  .tile-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+
+  .tile-noimg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    text-align: center;
+    color: #cfcfcf;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .tile-scrim {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 46%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0));
+    pointer-events: none;
+  }
+
+  .tile-name {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    bottom: 5px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &.tile-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2f2f2f;
+    border: 1px dashed #55585c;
+
+    span {
+      color: #7a7f85;
+      font-size: 11px;
+    }
+  }
+}
+
+// Tile corner buttons — flip (⤢) top-right, remove (🗑) top-left.
+.tile-btn {
+  position: absolute;
+  top: 5px;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.12s ease;
+
+  &:hover { background: rgba(0, 0, 0, 0.8); }
+
+  .mat-icon { width: 15px; height: 15px; font-size: 15px; line-height: 15px; }
+}
+.tile-flip { right: 5px; }
+.tile-remove {
+  left: 5px;
+  &:hover { background: #c0392b; }
+}
+
+// ---- BACK: one-meal detail ------------------------------------------------
+.flip-back {
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: #3a3a3a;
+  overflow-y: auto;
+
+  .back-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .back-return {
+      position: static;
+      flex: 0 0 auto;
+      background: #4d4d4d;
+      &:hover { background: #5a5a5a; }
+    }
+
+    .meal-name-box {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+
+  .macro-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 5px;
+
+    .add-affordance { margin-left: auto; }
+  }
+}
+
+// Bare green check (save) — muted until dirty.
+.save-check {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #6a6a6a;
+  cursor: pointer;
+
+  .mat-icon { width: 20px; height: 20px; font-size: 20px; line-height: 20px; }
+  &:hover { color: #8a8a8a; }
+  &.active { color: #28c941; &:hover { color: #34d651; } }
+}
+
+// Recipe link — standing underline.
 .recipe-link {
   align-self: flex-start;
   padding: 0;
@@ -361,13 +312,16 @@
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
-
   &:hover { color: #7fbfff; }
 }
 
-// Dynamic-ingredients accordion — a quiet, collapsed group under the main food
-// rows for recipe ingredients that aren't in MyFoods. Muted so it reads as
-// secondary to the meal's real foods.
+.food-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+// Dynamic-ingredients accordion (back).
 .dyn-accordion {
   display: flex;
   flex-direction: column;
@@ -383,203 +337,12 @@
     color: #9aa0a6;
     font-size: 12px;
     cursor: pointer;
-
     &:hover { color: #cfcfcf; }
 
-    .dyn-chevron {
-      flex: 0 0 auto;
-      width: 16px;
-      height: 16px;
-      font-size: 16px;
-      line-height: 16px;
-    }
-
-    .dyn-label {
-      font-style: italic;
-    }
-
-    .dyn-count {
-      flex: 0 0 auto;
-      font-size: 11px;
-      color: #7a7f85;
-    }
+    .dyn-chevron { flex: 0 0 auto; width: 16px; height: 16px; font-size: 16px; line-height: 16px; }
+    .dyn-label { font-style: italic; }
+    .dyn-count { flex: 0 0 auto; font-size: 11px; color: #7a7f85; }
   }
 
-  .dyn-rows {
-    padding-left: 16px; // indent under the chevron so the group reads as nested
-  }
-}
-
-// The macro line (ONE row). The orig/clone tag + Protein lead on the left; Carbs,
-// Fat, Fiber follow; cals + the dropdown chevron sit on the far RIGHT (cals's auto
-// margin pushes the pair over, the chevron trails as the right-most item).
-.macro-summary {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 5px;
-
-  .card-toggle {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    border: none;
-    border-radius: 4px;
-    background: transparent;
-    color: #9aa0a6;
-    cursor: pointer;
-
-    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
-    &:hover { color: #ffffff; }
-  }
-
-  // Meal total calories — sits in the left cluster right after the discs.
-  .meal-cals {
-    flex: 0 0 auto;
-    font-size: 12px;
-    font-weight: 400;
-    color: #4da6ff;
-    white-space: nowrap;
-  }
-
-  // + add-food disc — pushed hard to the right edge (under the header trash), set
-  // off by itself away from the disc + chevron cluster.
-  .add-affordance {
-    margin-left: auto;
-  }
-}
-
-// Macro discs — shared by the summary + reveal rows. Muted palette so the chips
-// recede and the meal's food rows stay the focus. FIXED size: never flex-shrink
-// and never wrap the label ("P 59" stays on one line — the title box absorbs any
-// width squeeze instead of the discs resizing).
-.chip {
-  flex: 0 0 auto;
-  white-space: nowrap;
-  font-size: 11px;
-  font-weight: 500; // lighter so the chips don't grab the eye off the food text
-  padding: 2px 6px;
-  border-radius: 10px;
-  color: rgba(255, 255, 255, 0.82); // softened white so it doesn't pop
-
-  &.protein { background: #34781a; } // green
-  &.carb { background: #a8541a; }    // orange
-  &.fat { background: #8a55ab; }     // purple
-  &.fiber { background: #5e4021; }   // brown
-}
-
-.slot-body {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.food-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-// Editing an empty meal — a small dashed target so the card reads as droppable
-// even before it has any rows.
-.edit-drop-hint {
-  padding: 10px;
-  border: 1px dashed #4da6ff;
-  border-radius: 6px;
-  text-align: center;
-  color: #9aa0a6;
-  font-size: 12px;
-}
-
-// CDK highlights the drop list the pointer is over.
-.slot-body.cdk-drop-list-receiving,
-.slot-body.cdk-drop-list-dragging {
-  outline: 1px dashed #4da6ff;
-  outline-offset: 2px;
-}
-
-.slot-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 72px;
-  color: #9aa0a6;
-  font-size: 13px;
-
-  &.dining-out {
-    flex-direction: row;
-    gap: 8px;
-
-    .placeholder-icon {
-      font-size: 18px;
-    }
-  }
-
-  // "[Create]" then "or drag a meal from Meals" beneath.
-  &.pick {
-    flex-direction: column;
-    gap: 8px;
-    border-radius: 6px;
-    transition: box-shadow 0.12s ease, background 0.12s ease;
-
-    // Bloom: while a Binder meal is selected/dragged, this empty slot advertises
-    // itself as a valid drop target with a bright YELLOW glow (matches the
-    // selected card + Add-menu target — yellow = "this is where it goes").
-    &.bloom {
-      background: rgba(255, 213, 79, 0.08);
-      box-shadow:
-        0 0 0 2px #ffd54f,
-        0 0 12px rgba(255, 213, 79, 0.55);
-    }
-  }
-
-  .pick-line {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .pick-sub {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    color: #9aa0a6;
-
-    // Match the binder's "Meals" header: grey fork/knife, blue word.
-    .inline-icon {
-      width: 15px;
-      height: 15px;
-      font-size: 15px;
-      line-height: 15px;
-      color: #9aa0a6;
-    }
-    .meals-word {
-      color: #4da6ff;
-      font-weight: 400; // un-embolden — bold read fuzzy at this size
-    }
-  }
-
-  // Create = the Add (+) action for an empty slot; a quiet button, not dashed.
-  .create-btn {
-    padding: 4px 12px;
-    border: 1px solid #4a4a4a;
-    border-radius: 6px;
-    background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
-    color: #d8d8d8;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: border-color 0.12s ease, color 0.12s ease;
-
-    &:hover {
-      border-color: #4da6ff;
-      color: #4da6ff;
-    }
-  }
+  .dyn-rows { padding-left: 16px; }
 }
