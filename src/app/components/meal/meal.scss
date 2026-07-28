@@ -239,9 +239,14 @@
 
   .mat-icon { width: 15px; height: 15px; font-size: 15px; line-height: 15px; }
 }
-.tile-flip { left: 5px; }
-// BACK flip: same control, same top-left corner, mirrored to face the other way.
-.back-flip .mat-icon { transform: scaleX(-1); }
+// Flip ">" — bottom-right corner (same on the front tiles AND the back).
+.tile-flip {
+  top: auto;
+  bottom: 5px;
+  right: 5px;
+}
+// Delete — top-right corner, red (app danger). Separated from the flip so the
+// two can't be confused.
 .tile-remove {
   right: 5px;
   background: #ff5f57;
@@ -262,7 +267,6 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding-left: 28px; // clear the top-left corner flip button
 
     .meal-name-box {
       flex: 1 1 auto;

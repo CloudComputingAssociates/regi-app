@@ -107,7 +107,7 @@ interface Macro {
                     class="tile-btn tile-flip"
                     matTooltip="Open this meal"
                     (click)="flipTo(m.mealId, $event)">
-                    <mat-icon>open_in_full</mat-icon>
+                    <mat-icon>chevron_right</mat-icon>
                   </button>
                 </div>
               }
@@ -119,14 +119,13 @@ interface Macro {
             <!-- BACK: the one flipped meal, full detail. -->
             <div class="flip-back">
               @if (flippedMeal(); as fm) {
-                <!-- Same tile flip control, same top-right corner as the FRONT
-                     tiles — just mirrored (left-facing) to read as "flip back". -->
+                <!-- Same ">" control, same bottom-right corner as the FRONT tiles. -->
                 <button
                   type="button"
-                  class="tile-btn tile-flip back-flip"
+                  class="tile-btn tile-flip"
                   matTooltip="Back to photos"
                   (click)="flipHome()">
-                  <mat-icon>open_in_full</mat-icon>
+                  <mat-icon>chevron_right</mat-icon>
                 </button>
                 <div class="back-head">
                   <input
