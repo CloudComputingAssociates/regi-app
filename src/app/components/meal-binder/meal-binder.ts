@@ -47,8 +47,155 @@ import { Meal, Menu } from '../../models';
       <!-- One scrollbar for the whole rail. -->
       <div class="rail-scroll">
 
-        <!-- "Create new" — collapsible (starts collapsed). Holds the two ways to
-             create a meal (From picks / Import recipe) + the Cuisine modifier. -->
+        <!-- Menus accordion (top-level; larger header). Starts COLLAPSED. -->
+        <div class="rail-section">
+          <button type="button" class="section-head" (click)="binderMenusOpen.set(!binderMenusOpen())">
+            <mat-icon class="section-icon section-icon-binder">description</mat-icon>
+            <span class="section-label">Menus</span>
+            <span class="section-count">{{ rotation.binderMenus().length }}</span>
+            <mat-icon class="section-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
+          @if (binderMenusOpen()) {
+            <div class="section-body" cdkDropList>
+              @for (menu of rotation.binderMenus(); track menu.id) {
+                <div
+                  class="binder-menu-card stacked-card"
+                  [class.selected]="rotation.isCardSelected('menu', menu.id ?? -1)"
+                  [attr.data-menu-id]="menu.id"
+                  cdkDrag
+                  [cdkDragData]="menu"
+                  (cdkDragStarted)="rotation.dragging.set('menu'); clearDragHint()"
+                  (cdkDragEnded)="rotation.dragging.set(null)"
+                  (mousedown)="onCardMouseDown()"
+                  (click)="rotation.selectCard('menu', menu.id ?? -1)">
+                  <div class="card-head">
+                    <!-- Non-editable name so the whole card is easy to grab + drag.
+                         Rename happens on the board (menu strip) after placing. -->
+                    <span
+                      class="binder-card-name"
+                      [matTooltip]="menuDisplayName(menu)"
+                      [matTooltipDisabled]="!rotation.isCardSelected('menu', menu.id ?? -1)"
+                      matTooltipClass="binder-name-tip"
+                      matTooltipPosition="below"
+                      [matTooltipShowDelay]="300">{{ menuDisplayName(menu) }}</span>
+                    <!-- Browse-by summary: the chevron in front of the Protein +
+                         Fiber discs; carbs/fat/cals demoted into the reveal. -->
+                    <button
+                      type="button"
+                      class="card-toggle"
+                      [matTooltip]="isCardOpen('menu-' + menu.id) ? 'Hide extra macros' : 'Show Calories, Carbs & Fats'"
+                      (click)="$event.stopPropagation(); toggleCard('menu-' + menu.id)">
+                      <mat-icon>{{ isCardOpen('menu-' + menu.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    </button>
+                    <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
+                    <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
+                    <button
+                      type="button"
+                      class="card-delete icon-disc icon-disc-danger"
+                      matTooltip="Delete this menu"
+                      (click)="$event.stopPropagation(); onDeleteBinderMenu(menu)">
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  </div>
+                  <!-- Reveal: the OTHER macros — Carbs, Fat, Cals — hidden until
+                       the chevron is flipped (Protein + Fiber show up above). -->
+                  @if (isCardOpen('menu-' + menu.id)) {
+                    <div class="binder-chips">
+                      <span class="chip carb">C {{ round(menu.totalCarbG) }}</span>
+                      <span class="chip fat">F {{ round(menu.totalFatG) }}</span>
+                      <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
+                    </div>
+                  }
+                </div>
+              } @empty {
+                <p class="binder-empty">No saved Menus.</p>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Meals — ALWAYS expanded (no collapse). A search box lands in the
+             Binder banner up top later. -->
+        <div class="rail-section">
+          <div class="section-head section-head-static">
+            <mat-icon class="section-icon section-icon-binder">restaurant</mat-icon>
+            <span class="section-label">Meals</span>
+            <span class="section-count">{{ rotation.binderMeals().length }}</span>
+          </div>
+          <div class="section-body" cdkDropList>
+              @for (meal of rotation.binderMeals(); track meal.id) {
+                <div
+                  class="binder-card"
+                  [class.selected]="rotation.isCardSelected('meal', meal.id)"
+                  cdkDrag
+                  [cdkDragData]="meal"
+                  (cdkDragStarted)="rotation.dragging.set('meal'); clearDragHint()"
+                  (cdkDragEnded)="rotation.dragging.set(null)"
+                  (mousedown)="onCardMouseDown()"
+                  (click)="rotation.selectCard('meal', meal.id)"
+                  (dblclick)="rotation.placeBinderMeal(meal.id)">
+                  <div class="card-head">
+                    <!-- Non-editable name so the whole card is easy to grab + drag.
+                         Rename happens on the board (flip the meal tile) after placing. -->
+                    <span
+                      class="binder-card-name"
+                      [matTooltip]="meal.name"
+                      [matTooltipDisabled]="!rotation.isCardSelected('meal', meal.id)"
+                      matTooltipClass="binder-name-tip"
+                      matTooltipPosition="below"
+                      [matTooltipShowDelay]="300">{{ meal.name }}</span>
+                    <!-- Browse-by summary: the chevron in front of the Protein +
+                         Fiber discs; carbs/fat/cals demoted into the reveal. -->
+                    <button
+                      type="button"
+                      class="card-toggle"
+                      [matTooltip]="isCardOpen('meal-' + meal.id) ? 'Hide extra macros' : 'Show Calories, Carbs & Fats'"
+                      (click)="$event.stopPropagation(); toggleCard('meal-' + meal.id)">
+                      <mat-icon>{{ isCardOpen('meal-' + meal.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    </button>
+                    <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
+                    <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
+                    <button
+                      type="button"
+                      class="card-delete icon-disc icon-disc-danger"
+                      matTooltip="Delete this meal"
+                      (click)="$event.stopPropagation(); onDeleteBinder(meal)">
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  </div>
+                  <!-- Reveal: the OTHER macros — Carbs, Fat, Cals — hidden until
+                       the chevron is flipped (Protein + Fiber show up above). -->
+                  @if (isCardOpen('meal-' + meal.id)) {
+                    <div class="binder-chips">
+                      <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
+                      <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
+                      <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
+                    </div>
+                  }
+                  <!-- Drag preview: the meal's PHOTO (name over a scrim), so the
+                       thing you drag reads as the pictured meal it'll become in the
+                       slot. Falls back to a named chip when the meal has no image. -->
+                  <ng-template cdkDragPreview>
+                    <div class="drag-meal-preview" [class.no-photo]="!mealThumb(meal)">
+                      @if (mealThumb(meal); as src) {
+                        <img [src]="src" alt="" class="dmp-img" />
+                        <div class="dmp-scrim"></div>
+                      }
+                      <span class="dmp-name">{{ meal.name }}</span>
+                    </div>
+                  </ng-template>
+                </div>
+              } @empty {
+                <p class="binder-empty">No saved Meals.</p>
+              }
+            </div>
+        </div>
+
+        <!-- Detached grey divider closing off the lists, above Create-new. -->
+        <div class="rail-divider"></div>
+
+        <!-- "Create new" — collapsible dropdown at the BOTTOM (starts collapsed).
+             Two ways to create a meal (From picks / Import recipe) + Cuisine. -->
         <div class="rail-section">
           <button type="button" class="section-head" (click)="createNewOpen.set(!createNewOpen())">
             <mat-icon class="section-icon section-icon-binder">auto_awesome</mat-icon>
@@ -132,155 +279,6 @@ import { Meal, Menu } from '../../models';
           }
         </div>
 
-        <!-- Detached grey divider closing off the Create-new area. -->
-        <div class="rail-divider"></div>
-
-        <!-- Menus accordion (top-level; larger header). -->
-        <div class="rail-section">
-          <button type="button" class="section-head" (click)="binderMenusOpen.set(!binderMenusOpen())">
-            <mat-icon class="section-icon section-icon-binder">description</mat-icon>
-            <span class="section-label">Menus</span>
-            <span class="section-count">{{ rotation.binderMenus().length }}</span>
-            <mat-icon class="section-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-          </button>
-          @if (binderMenusOpen()) {
-            <div class="section-body" cdkDropList>
-              @for (menu of rotation.binderMenus(); track menu.id) {
-                <div
-                  class="binder-menu-card stacked-card"
-                  [class.selected]="rotation.isCardSelected('menu', menu.id ?? -1)"
-                  [attr.data-menu-id]="menu.id"
-                  cdkDrag
-                  [cdkDragData]="menu"
-                  (cdkDragStarted)="rotation.dragging.set('menu'); clearDragHint()"
-                  (cdkDragEnded)="rotation.dragging.set(null)"
-                  (mousedown)="onCardMouseDown()"
-                  (click)="rotation.selectCard('menu', menu.id ?? -1)">
-                  <div class="card-head">
-                    <!-- Non-editable name so the whole card is easy to grab + drag.
-                         Rename happens on the board (menu strip) after placing. -->
-                    <span
-                      class="binder-card-name"
-                      [matTooltip]="menuDisplayName(menu)"
-                      [matTooltipDisabled]="!rotation.isCardSelected('menu', menu.id ?? -1)"
-                      matTooltipClass="binder-name-tip"
-                      matTooltipPosition="below"
-                      [matTooltipShowDelay]="300">{{ menuDisplayName(menu) }}</span>
-                    <!-- Browse-by summary: the chevron in front of the Protein +
-                         Fiber discs; carbs/fat/cals demoted into the reveal. -->
-                    <button
-                      type="button"
-                      class="card-toggle"
-                      [matTooltip]="isCardOpen('menu-' + menu.id) ? 'Hide extra macros' : 'Show Calories, Carbs & Fats'"
-                      (click)="$event.stopPropagation(); toggleCard('menu-' + menu.id)">
-                      <mat-icon>{{ isCardOpen('menu-' + menu.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
-                    </button>
-                    <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
-                    <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
-                    <button
-                      type="button"
-                      class="card-delete icon-disc icon-disc-danger"
-                      matTooltip="Delete this menu"
-                      (click)="$event.stopPropagation(); onDeleteBinderMenu(menu)">
-                      <mat-icon>delete_outline</mat-icon>
-                    </button>
-                  </div>
-                  <!-- Reveal: the OTHER macros — Carbs, Fat, Cals — hidden until
-                       the chevron is flipped (Protein + Fiber show up above). -->
-                  @if (isCardOpen('menu-' + menu.id)) {
-                    <div class="binder-chips">
-                      <span class="chip carb">C {{ round(menu.totalCarbG) }}</span>
-                      <span class="chip fat">F {{ round(menu.totalFatG) }}</span>
-                      <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
-                    </div>
-                  }
-                </div>
-              } @empty {
-                <p class="binder-empty">No saved Menus.</p>
-              }
-            </div>
-          }
-        </div>
-
-        <!-- Meals accordion. -->
-        <div class="rail-section">
-          <button type="button" class="section-head" (click)="binderMealsOpen.set(!binderMealsOpen())">
-            <mat-icon class="section-icon section-icon-binder">restaurant</mat-icon>
-            <span class="section-label">Meals</span>
-            <span class="section-count">{{ rotation.binderMeals().length }}</span>
-            <mat-icon class="section-chevron">{{ binderMealsOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-          </button>
-          @if (binderMealsOpen()) {
-            <div class="section-body" cdkDropList>
-              @for (meal of rotation.binderMeals(); track meal.id) {
-                <div
-                  class="binder-card"
-                  [class.selected]="rotation.isCardSelected('meal', meal.id)"
-                  cdkDrag
-                  [cdkDragData]="meal"
-                  (cdkDragStarted)="rotation.dragging.set('meal'); clearDragHint()"
-                  (cdkDragEnded)="rotation.dragging.set(null)"
-                  (mousedown)="onCardMouseDown()"
-                  (click)="rotation.selectCard('meal', meal.id)"
-                  (dblclick)="rotation.placeBinderMeal(meal.id)">
-                  <div class="card-head">
-                    <!-- Non-editable name so the whole card is easy to grab + drag.
-                         Rename happens on the board (flip the meal tile) after placing. -->
-                    <span
-                      class="binder-card-name"
-                      [matTooltip]="meal.name"
-                      [matTooltipDisabled]="!rotation.isCardSelected('meal', meal.id)"
-                      matTooltipClass="binder-name-tip"
-                      matTooltipPosition="below"
-                      [matTooltipShowDelay]="300">{{ meal.name }}</span>
-                    <!-- Browse-by summary: the chevron in front of the Protein +
-                         Fiber discs; carbs/fat/cals demoted into the reveal. -->
-                    <button
-                      type="button"
-                      class="card-toggle"
-                      [matTooltip]="isCardOpen('meal-' + meal.id) ? 'Hide extra macros' : 'Show Calories, Carbs & Fats'"
-                      (click)="$event.stopPropagation(); toggleCard('meal-' + meal.id)">
-                      <mat-icon>{{ isCardOpen('meal-' + meal.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
-                    </button>
-                    <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
-                    <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
-                    <button
-                      type="button"
-                      class="card-delete icon-disc icon-disc-danger"
-                      matTooltip="Delete this meal"
-                      (click)="$event.stopPropagation(); onDeleteBinder(meal)">
-                      <mat-icon>delete_outline</mat-icon>
-                    </button>
-                  </div>
-                  <!-- Reveal: the OTHER macros — Carbs, Fat, Cals — hidden until
-                       the chevron is flipped (Protein + Fiber show up above). -->
-                  @if (isCardOpen('meal-' + meal.id)) {
-                    <div class="binder-chips">
-                      <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
-                      <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
-                      <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
-                    </div>
-                  }
-                  <!-- Drag preview: the meal's PHOTO (name over a scrim), so the
-                       thing you drag reads as the pictured meal it'll become in the
-                       slot. Falls back to a named chip when the meal has no image. -->
-                  <ng-template cdkDragPreview>
-                    <div class="drag-meal-preview" [class.no-photo]="!mealThumb(meal)">
-                      @if (mealThumb(meal); as src) {
-                        <img [src]="src" alt="" class="dmp-img" />
-                        <div class="dmp-scrim"></div>
-                      }
-                      <span class="dmp-name">{{ meal.name }}</span>
-                    </div>
-                  </ng-template>
-                </div>
-              } @empty {
-                <p class="binder-empty">No saved Meals.</p>
-              }
-            </div>
-          }
-        </div>
-
       </div>
     </div>
   `,
@@ -330,8 +328,7 @@ export class MealBinderComponent implements OnInit {
   readonly createNewOpen = signal(false);
 
   /** Top-level accordion open state — both default open. */
-  readonly binderMenusOpen = signal(true);
-  readonly binderMealsOpen = signal(true);
+  readonly binderMenusOpen = signal(false);
 
   /** Per-card macro-chip expansion, keyed `menu-{id}` / `meal-{id}`. Chips are
    *  hidden by default (calories stay visible as text); a chevron reveals them. */
@@ -394,16 +391,6 @@ export class MealBinderComponent implements OnInit {
       },
       { allowSignalWrites: true },
     );
-
-    // Empty Binder sections collapse themselves — an empty accordion is just
-    // wasted vertical space (nothing but the "No saved …" line). Populated
-    // sections open; a manual collapse sticks until the count next changes.
-    effect(() => this.binderMenusOpen.set(this.rotation.binderMenus().length > 0), {
-      allowSignalWrites: true,
-    });
-    effect(() => this.binderMealsOpen.set(this.rotation.binderMeals().length > 0), {
-      allowSignalWrites: true,
-    });
   }
 
   ngOnInit(): void {

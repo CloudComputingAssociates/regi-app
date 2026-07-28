@@ -28,7 +28,8 @@
 // Fredoka to match the macro-bar labels; sunken gray so it reads as carved in.
 .area-watermark {
   position: absolute;
-  top: 50%;
+  // Sit in the LOWER third of the board area, not vertically centered.
+  top: 82%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 0;

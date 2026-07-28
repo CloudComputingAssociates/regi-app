@@ -24,6 +24,7 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
             [editing]="isEditing(slot.slotOrder)"
             [resolvingItemId]="resolvingItemId()"
             [dropHighlight]="dropHighlightFor(slot.slotOrder)"
+            (createHere)="onCreateHere(slot)"
             (placeMeal)="onPlace($event)"
             (removeMeal)="onRemoveMeal($event)"
             (deleteMeal)="onDelete($event)"
@@ -67,6 +68,15 @@ export class MenusMealsComponent {
   isEditing(slotOrder: number): boolean {
     const e = this.rotation.editingSlot();
     return e != null && e.menuId === this.menu()?.id && e.slotOrder === slotOrder;
+  }
+
+  /** "Create from scratch" on an empty slot — begin building a new meal here.
+   *  Sets the editing slot (mealId null), which swaps the Binder rail for the
+   *  food picker; the meal row is created on the first food add. */
+  onCreateHere(slot: MenuSlot): void {
+    const menuId = this.menu()?.id;
+    if (menuId == null) return;
+    this.rotation.beginEditingSlot(menuId, slot.slotOrder, null);
   }
 
   /** A binder meal was dropped on a slot (empty placeholder or front grid) —

@@ -100,6 +100,20 @@
     .inline-icon { width: 15px; height: 15px; font-size: 15px; line-height: 15px; color: #9aa0a6; }
     .meals-word { color: #4da6ff; }
   }
+
+  // "Create" — a white hyperlink on the second placeholder line.
+  .create-link {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: #ffffff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+
+    &:hover { color: #e6e6e6; }
+  }
 }
 
 // ---- Flip card ------------------------------------------------------------
@@ -220,31 +234,35 @@
 // the app's danger discs). The BACK flip sits in the same top-left spot, mirrored.
 .tile-btn {
   position: absolute;
-  top: 5px;
+  top: 6px;
   z-index: 2;
-  width: 22px;
-  height: 22px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.62);
   color: #fff;
   cursor: pointer;
+  // A light ring + drop shadow so it stays visible over black photos.
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.7),
+    0 0 0 1.5px rgba(255, 255, 255, 0.35);
   transition: background 0.12s ease;
 
-  &:hover { background: rgba(0, 0, 0, 0.8); }
+  &:hover { background: rgba(0, 0, 0, 0.85); }
 
-  .mat-icon { width: 15px; height: 15px; font-size: 15px; line-height: 15px; }
+  .mat-icon { width: 22px; height: 22px; font-size: 22px; line-height: 22px; }
 }
 // Flip ">" — bottom-right corner (same on the front tiles AND the back). It's
 // the only control on the image tiles now; delete lives on the back title row.
 .tile-flip {
   top: auto;
-  bottom: 5px;
-  right: 5px;
+  bottom: 6px;
+  right: 6px;
 }
 
 // ---- BACK: one-meal detail ------------------------------------------------

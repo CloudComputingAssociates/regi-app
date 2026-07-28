@@ -74,6 +74,7 @@ interface Macro {
           [cdkDropListEnterPredicate]="mealDropPredicate"
           (cdkDropListDropped)="onDropMeal($event)">
           <span class="pick-sub">drag from <mat-icon class="inline-icon">restaurant</mat-icon> <span class="meals-word">Meals</span></span>
+          <span class="pick-sub">or, <button type="button" class="create-link" (click)="$event.stopPropagation(); createHere.emit()">Create</button> from scratch</span>
         </div>
       } @else {
         <!-- Flip card: FRONT image grid ⇄ BACK single-meal detail. -->
@@ -100,7 +101,7 @@ interface Macro {
                     class="tile-btn tile-flip"
                     matTooltip="Open this meal"
                     (click)="flipTo(m.mealId, $event)">
-                    <mat-icon>chevron_right</mat-icon>
+                    <mat-icon>flip_camera_android</mat-icon>
                   </button>
                 </div>
               }
@@ -118,7 +119,7 @@ interface Macro {
                   class="tile-btn tile-flip"
                   matTooltip="Back to photos"
                   (click)="flipHome()">
-                  <mat-icon>chevron_right</mat-icon>
+                  <mat-icon>flip_camera_android</mat-icon>
                 </button>
                 <div class="back-head">
                   <input
@@ -226,6 +227,9 @@ export class MealComponent {
   readonly removeMeal = output<{ slotOrder: number; mealId: number }>();
   /** Header trash — clear the WHOLE slot (all meals). Emits slotOrder. */
   readonly deleteMeal = output<number>();
+  /** "Create from scratch" link on an empty slot — build a new meal here (opens
+   *  the food picker over the Binder). */
+  readonly createHere = output<void>();
   /** + on the back — begin adding food to this meal (emits its mealId). */
   readonly toggleAdd = output<number>();
   /** Inline name box committed. */

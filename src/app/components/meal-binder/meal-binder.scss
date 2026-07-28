@@ -386,6 +386,9 @@
   cursor: pointer;
   text-align: left;
 
+  // Always-expanded header (Meals) — a label, not a toggle.
+  &.section-head-static { cursor: default; }
+
   .section-icon {
     width: 18px;
     height: 18px;
