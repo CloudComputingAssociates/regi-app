@@ -216,7 +216,8 @@
   }
 }
 
-// Tile corner buttons — flip (⤢) top-right, remove (🗑) top-left.
+// Tile corner buttons — flip (⤢) top-LEFT, delete (🗑) top-RIGHT (red, matching
+// the app's danger discs). The BACK flip sits in the same top-left spot, mirrored.
 .tile-btn {
   position: absolute;
   top: 5px;
@@ -238,10 +239,13 @@
 
   .mat-icon { width: 15px; height: 15px; font-size: 15px; line-height: 15px; }
 }
-.tile-flip { right: 5px; }
+.tile-flip { left: 5px; }
+// BACK flip: same control, same top-left corner, mirrored to face the other way.
+.back-flip .mat-icon { transform: scaleX(-1); }
 .tile-remove {
-  left: 5px;
-  &:hover { background: #c0392b; }
+  right: 5px;
+  background: #ff5f57;
+  &:hover { background: #ff433a; }
 }
 
 // ---- BACK: one-meal detail ------------------------------------------------
@@ -258,13 +262,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-
-    .back-return {
-      position: static;
-      flex: 0 0 auto;
-      background: #4d4d4d;
-      &:hover { background: #5a5a5a; }
-    }
+    padding-left: 28px; // clear the top-left corner flip button
 
     .meal-name-box {
       flex: 1 1 auto;

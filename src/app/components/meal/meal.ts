@@ -88,8 +88,8 @@ interface Macro {
               (cdkDropListDropped)="onDropMeal($event)">
               @for (m of meals(); track m.mealId) {
                 <div class="meal-tile">
-                  @if (m.mealImageThumbnail) {
-                    <img class="tile-img" [src]="m.mealImageThumbnail" alt="" />
+                  @if (tileImage(m); as src) {
+                    <img class="tile-img" [src]="src" alt="" />
                   } @else {
                     <div class="tile-noimg"><span>{{ clean(m.mealName) }}</span></div>
                   }
@@ -119,14 +119,16 @@ interface Macro {
             <!-- BACK: the one flipped meal, full detail. -->
             <div class="flip-back">
               @if (flippedMeal(); as fm) {
+                <!-- Same tile flip control, same top-right corner as the FRONT
+                     tiles — just mirrored (left-facing) to read as "flip back". -->
+                <button
+                  type="button"
+                  class="tile-btn tile-flip back-flip"
+                  matTooltip="Back to photos"
+                  (click)="flipHome()">
+                  <mat-icon>open_in_full</mat-icon>
+                </button>
                 <div class="back-head">
-                  <button
-                    type="button"
-                    class="tile-btn back-return"
-                    matTooltip="Back to grid"
-                    (click)="flipHome()">
-                    <mat-icon>close_fullscreen</mat-icon>
-                  </button>
                   <input
                     #nameBox
                     type="text"
@@ -289,6 +291,14 @@ export class MealComponent {
   }
   dynamicItemsFor(mealId: number): MealItem[] {
     return this.rotation.slotItems(mealId).filter((i) => i.food?.dynamicIngredient === true);
+  }
+
+  /** Tile image: prefer the FULL image (from the cached Meal) — the tile is large,
+   *  so the small thumbnail upscales and blurs. Fall back to the slot's thumbnail
+   *  (before the full Meal has streamed in), then '' → neutral tile. */
+  tileImage(m: MenuSlotMeal): string {
+    const full = this.rotation.getMeal(m.mealId)?.mealImage?.trim();
+    return full || m.mealImageThumbnail?.trim() || '';
   }
 
   /** Source recipe URL for a stacked meal, from the cached full Meal. */
