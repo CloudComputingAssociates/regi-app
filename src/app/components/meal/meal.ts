@@ -73,7 +73,7 @@ interface Macro {
           cdkDropList
           [cdkDropListEnterPredicate]="mealDropPredicate"
           (cdkDropListDropped)="onDropMeal($event)">
-          <span class="pick-sub">drag a meal from <mat-icon class="inline-icon">restaurant</mat-icon> <span class="meals-word">Meals</span></span>
+          <span class="pick-sub">drag from <mat-icon class="inline-icon">restaurant</mat-icon> <span class="meals-word">Meals</span></span>
         </div>
       } @else {
         <!-- Flip card: FRONT image grid ⇄ BACK single-meal detail. -->

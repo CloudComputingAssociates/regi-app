@@ -83,49 +83,44 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                  ~2/3 across; People (persisted) is right-justified against the
                  right edge, adjacent to the Meals binder. -->
             <div class="menus-toolbar">
-              <!-- Surface title — same blue/weight as the Binder header, leading
-                   the toolbar in front of the two buttons. -->
+              <!-- Surface title — same blue/weight as the Binder header. -->
               <span class="toolbar-title">
                 <mat-icon class="toolbar-title-icon">restaurant</mat-icon>Menus &amp; Meals
               </span>
-              <!-- Wipe (teardown) leads, immediately left of Print; both same height. -->
-              <button
-                type="button"
-                class="wipe-menus-btn"
-                matTooltip="Remove all from Menus and Meal slots. Saved Menus and Meals will remain available."
-                (click)="onWipeMenus()">
-                <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
-              </button>
-
-              <button
-                type="button"
-                class="print-btn"
-                matTooltip="Print / preview this plan"
-                (click)="onPrint()">
-                <mat-icon>print</mat-icon>
-              </button>
-
-              <span class="toolbar-spacer"></span>
-
-              <!-- Planned-days tally, right-justified. Span comes from the
-                   Menu-Days setting (rotation.spanDays). -->
+              <!-- All actions grouped together, equidistant (close joins them). -->
+              <div class="toolbar-buttons">
+                <button
+                  type="button"
+                  class="wipe-menus-btn"
+                  matTooltip="Remove all from Menus and Meal slots. Saved Menus and Meals will remain available."
+                  (click)="onWipeMenus()">
+                  <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="print-btn"
+                  matTooltip="Print / preview this plan"
+                  (click)="onPrint()">
+                  <mat-icon>print</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="close-panel-btn"
+                  matTooltip="Close Menus &amp; Meals panel"
+                  matTooltipPosition="above"
+                  (click)="tabService.closePanel()">
+                  <mat-icon class="close-icon" aria-hidden="true">logout</mat-icon>
+                </button>
+              </div>
+              <!-- Planned-days tally, right-justified in the remaining space. -->
               <div
                 class="span-badge"
                 matTooltip="Days is set in the Settings › Menus [Menu-Days] entry — how many you plan at once."
                 matTooltipPosition="above"
                 [class.complete]="plannedDays() === rotation.rotation()!.spanDays">
                 <span class="check">✓</span>
-                {{ plannedDays() }} / {{ rotation.rotation()!.spanDays }} days
+                {{ plannedDays() }}/{{ rotation.rotation()!.spanDays }} menu-days
               </div>
-
-              <button
-                type="button"
-                class="close-panel-btn"
-                matTooltip="Close Menus &amp; Meals panel"
-                matTooltipPosition="above"
-                (click)="tabService.closePanel()">
-                <mat-icon class="close-icon" aria-hidden="true">logout</mat-icon>
-              </button>
             </div>
 
             <app-menu-card-row
@@ -133,7 +128,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               [selectedMenuId]="rotation.selectedMenuId() ?? -1"
               [spanDays]="rotation.rotation()!.spanDays"
               [menuTargetHot]="rotation.menuTargetHot()"
-              (select)="onSelectMenu($event)"
+              (menuSelect)="onSelectMenu($event)"
               (deleteMenu)="onDeleteMenu($event)"
               (pinMenu)="rotation.pinMenu($event)"
               (renameMenu)="rotation.updateMenuName($event.menuId, $event.name)"

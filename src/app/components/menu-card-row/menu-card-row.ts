@@ -22,7 +22,7 @@ import { RotationService } from '../../services/rotation.service';
           <div
             class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
-            (click)="select.emit(menu.menuId)">
+            (click)="menuSelect.emit(menu.menuId)">
             <!-- Top strip: the rename box leads; a bare green check sits just to
                  its RIGHT (save to Binder), delete pins to the upper-right. -->
             <div class="card-top">
@@ -120,7 +120,10 @@ export class MenuCardRowComponent {
    *  blooms to advertise it as the drop target. */
   readonly menuTargetHot = input<boolean>(false);
 
-  readonly select = output<number>();
+  /** A menu card was clicked — select it. NOT named `select`: that collides with
+   *  the native DOM `select` event the name <input> fires, which bubbled up and
+   *  called the handler with a DOM Event (→ GET /menu/[object Event], blank board). */
+  readonly menuSelect = output<number>();
   /** A Binder menu was dropped on +Add menu (emits its menuId to add it). */
   readonly dropMenu = output<number>();
   /** Trash on a menu tile (emits the menuId). */

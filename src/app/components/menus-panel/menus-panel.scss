@@ -84,17 +84,32 @@
   border: 1px solid #4a4a4a;
   border-radius: 8px;
 
-  // Surface title — same treatment as the Binder header (blue, 20px, 600).
+  // Surface title — same treatment as the Binder header (blue, 20px, 600), with
+  // breathing room from the left edge and the button group.
   .toolbar-title {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin-right: 4px;
+    margin-left: 10px;
+    margin-right: 14px;
     font-size: 20px;
     font-weight: 600;
     color: #4da6ff;
     white-space: nowrap;
+  }
+
+  // All the action buttons grouped together, equally spaced.
+  .toolbar-buttons {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  // Planned-days tally — right-justified in the remaining space.
+  .span-badge {
+    margin-left: auto;
   }
   .toolbar-title-icon {
     flex: 0 0 auto;
