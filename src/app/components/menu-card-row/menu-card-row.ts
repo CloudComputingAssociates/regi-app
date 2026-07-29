@@ -39,18 +39,22 @@ import { RotationService } from '../../services/rotation.service';
                   (keydown.escape)="nameBox.value = displayName(menu, i); nameBox.blur()"
                   (blur)="onNameBlur(menu, i, nameBox.value)"
                   aria-label="Menu name" />
-                <!-- Save = bare green check (no disc). Disabled once the menu is
-                     saved (pinned) to the Binder; enabled while it's unsaved. -->
-                <button
-                  type="button"
-                  class="save-check"
-                  [class.save-hint]="isSaveHintMenu(menu.menuId) && !menu.pinned"
-                  [disabled]="menu.pinned"
-                  [matTooltip]="menu.pinned ? 'Saved to Binder' : 'Save to Binder'"
-                  matTooltipPosition="above"
-                  (click)="$event.stopPropagation(); onPin(menu)">
-                  <mat-icon>check</mat-icon>
-                </button>
+                <!-- Save = bare green check (no disc). Present ONLY when there's
+                     something to save: (1) a pending name change, or (2) an
+                     unsaved menu still being built. A saved menu absorbs slot
+                     changes automatically, so no check is shown for it. -->
+                @if (showSaveCheck(menu, i)) {
+                  <button
+                    type="button"
+                    class="save-check"
+                    [class.save-hint]="isSaveHintMenu(menu.menuId) && !menu.pinned"
+                    matTooltip="Save to Binder"
+                    matTooltipPosition="above"
+                    (mousedown)="$event.preventDefault()"
+                    (click)="$event.stopPropagation(); onPin(menu)">
+                    <mat-icon>check</mat-icon>
+                  </button>
+                }
               </div>
               <button
                 type="button"
@@ -212,6 +216,20 @@ export class MenuCardRowComponent {
   /** Show the green commit arrow for the focused tile once it has text. */
   showCommitFor(menuId: number): boolean {
     return this.editingMenuId() === menuId && this.nameDraft().trim() !== '';
+  }
+
+  /** The green save-check appears on EXACTLY two conditions:
+   *   1) a pending name change in the box (draft differs from the shown name), or
+   *   2) an unsaved (unpinned) menu still being built.
+   *  A saved (pinned) menu shows no check — its slot changes save automatically. */
+  showSaveCheck(menu: RotationMenuEntry, index: number): boolean {
+    if (!menu.pinned) return true; // (2) unsaved menu
+    const draft = this.nameDraft().trim();
+    return (
+      this.editingMenuId() === menu.menuId &&
+      draft !== '' &&
+      draft !== this.displayName(menu, index)
+    ); // (1) pending rename on a saved menu
   }
 
   onNameFocus(menuId: number, el: HTMLInputElement): void {
