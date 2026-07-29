@@ -300,8 +300,10 @@ export class MealComponent {
    *  so the small thumbnail upscales and blurs. Fall back to the slot's thumbnail
    *  (before the full Meal has streamed in), then '' → neutral tile. */
   tileImage(m: MenuSlotMeal): string {
-    const full = this.rotation.getMeal(m.mealId)?.mealImage?.trim();
-    return full || m.mealImageThumbnail?.trim() || '';
+    // coverImageFor prefers the full image and, for an edit-fork with no image of
+    // its own, falls back to the fork source's image (so edits don't drop the
+    // photo). Thumbnail is the last resort before the neutral tile.
+    return this.rotation.coverImageFor(m.mealId) || m.mealImageThumbnail?.trim() || '';
   }
 
   /** Source recipe URL for a stacked meal, from the cached full Meal. */

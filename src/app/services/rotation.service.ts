@@ -246,6 +246,17 @@ export class RotationService {
     return this.mealsById().get(mealId) ?? null;
   }
 
+  /** A meal's cover image URL. A fork made on edit does NOT inherit the source's
+   *  image (the server's /meal/{id}/duplicate deliberately drops MealImage), so
+   *  fall back to the fork's source image so the tile keeps its photo. '' when
+   *  neither has one. */
+  coverImageFor(mealId: number): string {
+    const own = this.getMeal(mealId)?.mealImage?.trim();
+    if (own) return own;
+    const srcId = this.forkSource.get(mealId);
+    return (srcId != null ? this.getMeal(srcId)?.mealImage?.trim() : '') || '';
+  }
+
   slotItems(mealId: number | null | undefined): MealItem[] {
     if (mealId == null) return [];
     return this.mealsById().get(mealId)?.items ?? [];
