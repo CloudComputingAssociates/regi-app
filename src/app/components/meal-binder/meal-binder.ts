@@ -248,7 +248,7 @@ import { Meal, Menu } from '../../models';
                       <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
                       <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
-                      <span class="chip fiber">Fiber {{ round(meal.totalFiberG) }}</span>
+                      <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
                       <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
                       <button
                         type="button"

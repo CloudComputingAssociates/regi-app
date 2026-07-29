@@ -415,17 +415,19 @@
       0 2px 3px rgba(0, 0, 0, 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     color: #ffffff;
-    font: inherit;
+    font-family: inherit;
+    // Smaller than the section labels (15px) — a control, not a heading.
+    font-size: 12px;
     font-weight: 400;
     cursor: pointer;
     transition: background 0.12s ease, transform 0.05s ease;
 
     .create-word { color: #ffffff; }
     .create-chevron {
-      width: 18px;
-      height: 18px;
-      font-size: 18px;
-      line-height: 18px;
+      width: 15px;
+      height: 15px;
+      font-size: 15px;
+      line-height: 15px;
       color: #ffffff;
     }
 
@@ -650,10 +652,15 @@
 }
 
 // The Meals reveal row holds every macro in order (P, C, F, fiber, cals) then
-// the delete flush right. It may wrap in the narrow rail so nothing is clipped.
+// the delete flush right — all on ONE line (same as the Menus summary row).
+// Chips + gaps are tightened so the four discs, cals and the trash all fit.
 .card-reveal {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  gap: 4px;
   margin-top: 6px;
+
+  .chip { min-width: 38px; }
+  .binder-cals { margin-left: 2px; font-size: 11px; }
 }
 
 // Macro discs — shared by the summary head + the reveal. Muted palette so the
