@@ -389,6 +389,34 @@
   // Always-expanded header (Meals) — a label, not a toggle.
   &.section-head-static { cursor: default; }
 
+  // "Create" toggle — right-justified on the Meals header. White word (hidden
+  // once open, leaving just the reversed chevron); clicking the word OR the
+  // chevron toggles (they share one button).
+  .create-toggle {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 4px;
+    border: none;
+    background: none;
+    color: #ffffff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+
+    .create-word { color: #ffffff; }
+    .create-chevron {
+      width: 20px;
+      height: 20px;
+      font-size: 20px;
+      line-height: 20px;
+      color: #ffffff;
+    }
+
+    &:hover { color: #e6e6e6; .create-chevron { color: #e6e6e6; } }
+  }
+
   .section-icon {
     width: 18px;
     height: 18px;
