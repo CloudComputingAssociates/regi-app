@@ -78,8 +78,10 @@ import { Meal, Menu } from '../../models';
                       matTooltipClass="binder-name-tip"
                       matTooltipPosition="below"
                       [matTooltipShowDelay]="300">{{ menuDisplayName(menu) }}</span>
-                    <!-- Browse-by summary: the chevron in front of the Protein +
-                         Fiber discs; carbs/fat/cals demoted into the reveal. -->
+                    <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
+                    <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
+                    <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
+                    <!-- Dropdown chevron OUTSIDE the cals (far right of the head). -->
                     <button
                       type="button"
                       class="card-toggle"
@@ -87,9 +89,6 @@ import { Meal, Menu } from '../../models';
                       (click)="$event.stopPropagation(); toggleCard('menu-' + menu.id)">
                       <mat-icon>{{ isCardOpen('menu-' + menu.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
                     </button>
-                    <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
-                    <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
-                    <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
                   </div>
                   <!-- Reveal: Carbs + Fat, and the delete (flush right) — all hidden
                        until the chevron is dropped down (fewer trash cans up front). -->
@@ -221,8 +220,10 @@ import { Meal, Menu } from '../../models';
                       matTooltipClass="binder-name-tip"
                       matTooltipPosition="below"
                       [matTooltipShowDelay]="300">{{ meal.name }}</span>
-                    <!-- Browse-by summary: the chevron in front of the Protein +
-                         Fiber discs; carbs/fat/cals demoted into the reveal. -->
+                    <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
+                    <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
+                    <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
+                    <!-- Dropdown chevron OUTSIDE the cals (far right of the head). -->
                     <button
                       type="button"
                       class="card-toggle"
@@ -230,9 +231,6 @@ import { Meal, Menu } from '../../models';
                       (click)="$event.stopPropagation(); toggleCard('meal-' + meal.id)">
                       <mat-icon>{{ isCardOpen('meal-' + meal.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
                     </button>
-                    <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
-                    <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
-                    <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
                   </div>
                   <!-- Reveal: Carbs + Fat, and the delete (flush right) — all hidden
                        until the chevron is dropped down (fewer trash cans up front). -->

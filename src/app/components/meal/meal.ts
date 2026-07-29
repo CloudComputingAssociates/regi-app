@@ -149,6 +149,9 @@ interface Macro {
                 </div>
 
                 @if (recipeLinkFor(fm.mealId); as link) {
+                  <!-- Provenance — only shown when we KNOW it (a recipe import
+                       carries the source PDF link). -->
+                  <span class="meal-source">from recipe import</span>
                   <button
                     type="button"
                     class="recipe-link"

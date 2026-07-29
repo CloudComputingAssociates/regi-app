@@ -99,7 +99,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                 <button
                   type="button"
                   class="wipe-menus-btn"
-                  matTooltip="Remove all"
+                  matTooltip="Clear all, start over"
                   (click)="onWipeMenus()">
                   <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
                 </button>

@@ -334,6 +334,14 @@
   &:hover { color: #ff5f57; }
 }
 
+// Provenance line — white, non-bold, left-justified (only shown for imports).
+.meal-source {
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 400;
+  color: #ffffff;
+}
+
 // Recipe link — standing underline.
 .recipe-link {
   align-self: flex-start;
