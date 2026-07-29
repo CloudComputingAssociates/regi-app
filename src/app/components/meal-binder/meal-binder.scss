@@ -136,11 +136,20 @@
 // dropdown shrinks instead of dropping to a second row.
 // "Create new" body: stacked — the generate row (From picks + Cuisine) on top,
 // the Import-recipe button below.
+// The open Create area gets a blue BLOOM border so it reads as a distinct panel.
 .create-body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 8px;
+  gap: 10px;
+  margin: 4px 8px 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(77, 166, 255, 0.6);
+  background: rgba(77, 166, 255, 0.05);
+  box-shadow:
+    0 0 0 1px rgba(77, 166, 255, 0.35),
+    0 0 12px rgba(77, 166, 255, 0.4);
 }
 
 // Generate row: From picks button + Cuisine dropdown, side by side.
@@ -152,30 +161,41 @@
   gap: 8px;
 }
 
-// Create-from-scratch shares the From-picks (genmeal) shading; full-width, with
-// "Create" over a smaller "from scratch" second line.
-.scratch-btn {
-  width: 100%;
+// Import-recipe drop zone — dashed blue border; drag & drop a file or browse.
+.import-dropzone {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  line-height: 1.15;
-
-  .scratch-line2 {
-    font-size: 11px;
-    font-weight: 400;
-    opacity: 0.8;
-  }
-}
-
-// Import-recipe shares the From-picks (genmeal) shading; full-width, no icon,
-// centered label.
-.recipe-import-btn {
-  width: 100%;
-  justify-content: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border: 2px dashed #4da6ff;
+  border-radius: 8px;
+  background: rgba(77, 166, 255, 0.06);
   text-align: center;
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+
+  .dz-icon { width: 22px; height: 22px; font-size: 22px; line-height: 22px; color: #4da6ff; }
+  .dz-title { font-size: 13px; font-weight: 600; color: #e8e8e8; }
+  .dz-sub { font-size: 11px; color: #9aa0a6; }
+
+  .dz-link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: #4da6ff;
+    text-decoration: underline;
+    font: inherit;
+    cursor: pointer;
+    &:hover { color: #7fbfff; }
+  }
+
+  // Bloom while a file is dragged over it.
+  &.dragging {
+    background: rgba(77, 166, 255, 0.16);
+    box-shadow: 0 0 0 2px #4da6ff, 0 0 14px rgba(77, 166, 255, 0.6);
+  }
+  &.busy { opacity: 0.7; }
 }
 
 // The ✦ star inside the Create button.

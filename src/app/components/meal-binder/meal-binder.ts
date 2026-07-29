@@ -121,7 +121,7 @@ import { Meal, Menu } from '../../models';
             <mat-icon class="section-icon section-icon-binder">restaurant</mat-icon>
             <span class="section-label">Meals ({{ rotation.binderMeals().length }})</span>
             <button type="button" class="create-toggle" (click)="createNewOpen.set(!createNewOpen())">
-              @if (!createNewOpen()) { <span class="create-word">Create</span> }
+              <span class="create-word">Create</span>
               <mat-icon class="create-chevron">{{ createNewOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
             </button>
           </div>
@@ -173,29 +173,26 @@ import { Meal, Menu } from '../../models';
                   </span>
                 </div>
               </div>
-              <!-- Build a meal by hand — opens the food picker on a fresh slot. -->
-              <button
-                type="button"
-                class="genmeal-btn scratch-btn"
-                matTooltip="Build a new meal by hand"
-                (click)="rotation.createScratchMeal()">
-                <span class="scratch-line1">Create</span>
-                <span class="scratch-line2">from scratch</span>
-              </button>
-              <!-- Import a recipe PDF. Same shading as From picks; no icon. -->
-              <button
-                type="button"
-                class="genmeal-btn recipe-import-btn"
-                [disabled]="uploading()"
-                matTooltip="Import a recipe PDF into a saved meal"
-                matTooltipPosition="below"
-                (click)="recipeInput.click()">
-                {{ uploading() ? 'Importing…' : 'Import recipe…' }}
-              </button>
+              <!-- Import a recipe — drag & drop a file onto the zone, or browse.
+                   PDF / JPEG / PNG. -->
+              <div
+                class="import-dropzone"
+                [class.dragging]="dragOver()"
+                [class.busy]="uploading()"
+                (dragover)="onDragOver($event)"
+                (dragleave)="onDragLeave($event)"
+                (drop)="onDropFile($event)">
+                <mat-icon class="dz-icon">note_add</mat-icon>
+                <span class="dz-title">{{ uploading() ? 'Importing…' : 'Drag & drop a recipe' }}</span>
+                <span class="dz-sub">
+                  PDF, JPEG or PNG — or
+                  <button type="button" class="dz-link" (click)="recipeInput.click()">browse files</button>
+                </span>
+              </div>
               <input
                 #recipeInput
                 type="file"
-                accept="application/pdf"
+                accept="application/pdf,image/jpeg,image/png"
                 hidden
                 (change)="onRecipeFileSelected(recipeInput)" />
             </div>
@@ -294,12 +291,36 @@ export class MealBinderComponent implements OnInit {
    *  the lock for the upload stage on every path (including a failed/errored
    *  upload that never starts a watch); the watcher.settled subscription releases
    *  it for the parse stage. */
-  async onRecipeFileSelected(input: HTMLInputElement): Promise<void> {
-    const file = input.files?.[0];
+  /** True while a file is dragged over the import zone (drives the bloom border). */
+  readonly dragOver = signal(false);
+
+  onDragOver(ev: DragEvent): void {
+    ev.preventDefault();
+    this.dragOver.set(true);
+  }
+  onDragLeave(ev: DragEvent): void {
+    ev.preventDefault();
+    this.dragOver.set(false);
+  }
+  onDropFile(ev: DragEvent): void {
+    ev.preventDefault();
+    this.dragOver.set(false);
+    void this.importRecipeFile(ev.dataTransfer?.files?.[0] ?? null);
+  }
+
+  onRecipeFileSelected(input: HTMLInputElement): void {
+    const file = input.files?.[0] ?? null;
     input.value = ''; // let the same file be re-picked after a failure
+    void this.importRecipeFile(file);
+  }
+
+  /** Upload a chosen/dropped recipe file (PDF / JPEG / PNG), then watch the import
+   *  to completion. The finally releases the single-flight lock for the upload
+   *  stage; watcher.settled releases it for the background parse. */
+  private async importRecipeFile(file: File | null): Promise<void> {
     if (!file) return;
-    if (file.type !== 'application/pdf') {
-      this.notification.show('Please choose a PDF recipe file.', 'error');
+    if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
+      this.notification.show('Please choose a PDF, JPEG, or PNG recipe file.', 'error');
       return;
     }
     this.uploading.set(true);
@@ -308,7 +329,7 @@ export class MealBinderComponent implements OnInit {
       const res = await firstValueFrom(this.recipeService.importRecipe(file));
       if (res?.recipeId != null) this.watcher.watch(res.recipeId);
     } catch {
-      this.notification.show('Recipe import failed — could not upload the PDF.', 'error');
+      this.notification.show('Recipe import failed — could not upload the file.', 'error');
     } finally {
       this.uploading.set(false);
     }
