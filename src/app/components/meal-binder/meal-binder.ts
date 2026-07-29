@@ -51,7 +51,8 @@ import { Meal, Menu } from '../../models';
         <div class="rail-section">
           <button type="button" class="section-head" (click)="binderMenusOpen.set(!binderMenusOpen())">
             <mat-icon class="section-icon section-icon-binder">description</mat-icon>
-            <span class="section-label">Menus ({{ rotation.binderMenus().length }})</span>
+            <span class="section-label">Menus</span>
+            <span class="section-count">({{ rotation.binderMenus().length }})</span>
             <mat-icon class="section-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
           </button>
           @if (binderMenusOpen()) {
@@ -88,21 +89,21 @@ import { Meal, Menu } from '../../models';
                     </button>
                     <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
                     <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
-                    <button
-                      type="button"
-                      class="card-delete icon-disc icon-disc-danger"
-                      matTooltip="Delete this menu"
-                      (click)="$event.stopPropagation(); onDeleteBinderMenu(menu)">
-                      <mat-icon>delete_outline</mat-icon>
-                    </button>
+                    <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
                   </div>
-                  <!-- Reveal: the OTHER macros — Carbs, Fat, Cals — hidden until
-                       the chevron is flipped (Protein + Fiber show up above). -->
+                  <!-- Reveal: Carbs + Fat, and the delete (flush right) — all hidden
+                       until the chevron is dropped down (fewer trash cans up front). -->
                   @if (isCardOpen('menu-' + menu.id)) {
                     <div class="binder-chips">
                       <span class="chip carb">C {{ round(menu.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(menu.totalFatG) }}</span>
-                      <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
+                      <button
+                        type="button"
+                        class="card-delete icon-disc icon-disc-danger"
+                        matTooltip="Delete this menu"
+                        (click)="$event.stopPropagation(); onDeleteBinderMenu(menu)">
+                        <mat-icon>delete_outline</mat-icon>
+                      </button>
                     </div>
                   }
                 </div>
@@ -119,7 +120,8 @@ import { Meal, Menu } from '../../models';
         <div class="rail-section">
           <div class="section-head section-head-static section-head-meals">
             <mat-icon class="section-icon section-icon-binder">restaurant</mat-icon>
-            <span class="section-label">Meals ({{ rotation.binderMeals().length }})</span>
+            <span class="section-label">Meals</span>
+            <span class="section-count">({{ rotation.binderMeals().length }})</span>
             <button type="button" class="create-toggle" (click)="createNewOpen.set(!createNewOpen())">
               <span class="create-word">Create</span>
               <mat-icon class="create-chevron">{{ createNewOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
@@ -183,7 +185,7 @@ import { Meal, Menu } from '../../models';
                 (dragleave)="onDragLeave($event)"
                 (drop)="onDropFile($event)">
                 <mat-icon class="dz-icon">note_add</mat-icon>
-                <span class="dz-title">{{ uploading() ? 'Importing…' : 'Drag & drop a recipe' }}</span>
+                <span class="dz-title">{{ uploading() ? 'Importing…' : 'From a recipe, Drag & Drop' }}</span>
                 <span class="dz-sub">
                   PDF, JPEG or PNG — or
                   <button type="button" class="dz-link" (click)="recipeInput.click()">browse files</button>
@@ -230,21 +232,21 @@ import { Meal, Menu } from '../../models';
                     </button>
                     <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
                     <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
-                    <button
-                      type="button"
-                      class="card-delete icon-disc icon-disc-danger"
-                      matTooltip="Delete this meal"
-                      (click)="$event.stopPropagation(); onDeleteBinder(meal)">
-                      <mat-icon>delete_outline</mat-icon>
-                    </button>
+                    <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
                   </div>
-                  <!-- Reveal: the OTHER macros — Carbs, Fat, Cals — hidden until
-                       the chevron is flipped (Protein + Fiber show up above). -->
+                  <!-- Reveal: Carbs + Fat, and the delete (flush right) — all hidden
+                       until the chevron is dropped down (fewer trash cans up front). -->
                   @if (isCardOpen('meal-' + meal.id)) {
                     <div class="binder-chips">
                       <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
-                      <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
+                      <button
+                        type="button"
+                        class="card-delete icon-disc icon-disc-danger"
+                        matTooltip="Delete this meal"
+                        (click)="$event.stopPropagation(); onDeleteBinder(meal)">
+                        <mat-icon>delete_outline</mat-icon>
+                      </button>
                     </div>
                   }
                   <!-- Drag preview: the meal's PHOTO (name over a scrim), so the

@@ -99,7 +99,7 @@ interface Macro {
                   <button
                     type="button"
                     class="tile-btn tile-flip"
-                    matTooltip="Open this meal"
+                    matTooltip="Flip to ingredients"
                     (click)="flipTo(m.mealId, $event)">
                     <mat-icon>flip_camera_android</mat-icon>
                   </button>
@@ -117,7 +117,7 @@ interface Macro {
                 <button
                   type="button"
                   class="tile-btn tile-flip"
-                  matTooltip="Back to photos"
+                  matTooltip="Flip to photo"
                   (click)="flipHome()">
                   <mat-icon>flip_camera_android</mat-icon>
                 </button>

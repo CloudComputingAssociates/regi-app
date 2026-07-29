@@ -409,32 +409,42 @@
   // Always-expanded header (Meals) — a label, not a toggle.
   &.section-head-static { cursor: default; }
 
-  // "Create" toggle — right-justified on the Meals header. White word (hidden
-  // once open, leaving just the reversed chevron); clicking the word OR the
-  // chevron toggles (they share one button).
+  // "Create" toggle — right-justified on the Meals header. A raised button (same
+  // domed chrome as From picks) with the word + chevron; clicking the word OR the
+  // chevron toggles. Not bold, so the label stays crisp (not blurry).
   .create-toggle {
     margin-left: auto;
     display: inline-flex;
     align-items: center;
-    gap: 2px;
-    padding: 2px 4px;
-    border: none;
-    background: none;
+    gap: 3px;
+    padding: 4px 8px 4px 10px;
+    border: 1px solid #262626;
+    border-top-color: #7d7d7d;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+    box-shadow:
+      0 2px 3px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
     color: #ffffff;
     font: inherit;
-    font-weight: 600;
+    font-weight: 400;
     cursor: pointer;
+    transition: background 0.12s ease, transform 0.05s ease;
 
     .create-word { color: #ffffff; }
     .create-chevron {
-      width: 20px;
-      height: 20px;
-      font-size: 20px;
-      line-height: 20px;
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+      line-height: 18px;
       color: #ffffff;
     }
 
-    &:hover { color: #e6e6e6; .create-chevron { color: #e6e6e6; } }
+    &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); }
+    &:active {
+      transform: translateY(1px);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+    }
   }
 
   .section-icon {
@@ -471,8 +481,8 @@
   .section-count {
     flex: 0 0 auto;
     font-size: 11px;
-    font-weight: 600;
-    color: #7f858b;
+    font-weight: 400;
+    color: #e8e8e8;
   }
   .section-chevron {
     width: 18px;
@@ -585,20 +595,18 @@
   color: #9aa0a6;
 }
 
-// Reveal row: the extra macros (Carbs, Fat) followed by cals.
+// Reveal row: the extra macros (Carbs, Fat) + the delete, flush right — only
+// visible once the card is dropped down.
 .binder-chips {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 6px;
 
-  // Calories demoted into the reveal (we browse by protein/fiber up in the head).
-  .binder-cals {
+  // Delete lives here now (flush right), not up in the head — fewer trash cans.
+  .card-delete {
     flex: 0 0 auto;
-    font-size: 12px;
-    font-weight: 400;
-    color: #4da6ff;
-    white-space: nowrap;
+    margin-left: auto;
   }
 }
 
