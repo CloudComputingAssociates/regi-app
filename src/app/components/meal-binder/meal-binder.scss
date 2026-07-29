@@ -159,6 +159,13 @@
   align-items: center;
   flex-wrap: nowrap;
   gap: 8px;
+
+  // Locked out while a recipe import is in flight (the drop zone below shows
+  // the processing status) — dimmed + non-interactive.
+  &.area-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
 }
 
 // Import-recipe drop zone — dashed blue border; drag & drop a file or browse.

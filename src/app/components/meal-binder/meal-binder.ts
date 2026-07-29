@@ -130,8 +130,9 @@ import { Meal, Menu } from '../../models';
           </div>
           @if (createNewOpen()) {
             <div class="section-body create-body">
-              <!-- Generate from the user's picks, with an optional Cuisine. -->
-              <div class="ai-body">
+              <!-- Generate from the user's picks, with an optional Cuisine.
+                   Disabled while a recipe import is in flight. -->
+              <div class="ai-body" [class.area-disabled]="uploading()">
                 <span class="genmeal-label">
                   <img src="images/AI-star.png" alt="" class="btn-star" />AI from food picks
                 </span>
@@ -168,7 +169,7 @@ import { Meal, Menu } from '../../models';
                     type="button"
                     class="icon-disc icon-disc-confirm genmeal-go"
                     matTooltip="Meals from Foods you picked"
-                    [disabled]="rotation.generating()"
+                    [disabled]="rotation.generating() || uploading()"
                     (click)="rotation.generateMeal()">
                     <mat-icon>check</mat-icon>
                   </button>
@@ -185,7 +186,7 @@ import { Meal, Menu } from '../../models';
                 (drop)="onDropFile($event)">
                 @if (uploading()) {
                   <img src="images/AI-star.png" alt="" class="dz-ai-spin" />
-                  <span class="dz-title">AI processing…. will take a minute.</span>
+                  <span class="dz-title">{{ processingMessages[processingMsgIndex()] }}</span>
                 } @else {
                   <mat-icon class="dz-icon">note_add</mat-icon>
                   <span class="dz-title">From a recipe, Drag &amp; Drop</span>
@@ -297,6 +298,17 @@ export class MealBinderComponent implements OnInit {
    *  (below), and the watcher.settled subscription (in the constructor) for the
    *  background parse. No other code touches it — so it can't be stranded. */
   readonly uploading = signal(false);
+
+  /** Rotating status shown in the drop zone while a recipe is importing. Cycles
+   *  through the phases, then repeats, until the import settles. Purely a UI
+   *  animation — it does NOT reflect the real backend stage. */
+  readonly processingMessages = [
+    'AI importing… will take a few minutes',
+    'AI processing…',
+    'AI ingredient lookup…',
+  ];
+  readonly processingMsgIndex = signal(0);
+  private msgTimer: ReturnType<typeof setInterval> | null = null;
 
   /** PDF chosen from the "From recipe…" picker — upload it, then watch the import
    *  to completion. The 202 carries the recipeId to poll. The finally releases
@@ -411,6 +423,28 @@ export class MealBinderComponent implements OnInit {
     this.watcher.settled
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.uploading.set(false));
+
+    // Cycle the drop-zone status through its phases while an import is in
+    // flight; stop and reset when it settles. UI animation only.
+    effect(
+      () => {
+        if (this.uploading()) {
+          if (this.msgTimer == null) {
+            this.processingMsgIndex.set(0);
+            this.msgTimer = setInterval(() => {
+              this.processingMsgIndex.update(
+                (i) => (i + 1) % this.processingMessages.length,
+              );
+            }, 2500);
+          }
+        } else if (this.msgTimer != null) {
+          clearInterval(this.msgTimer);
+          this.msgTimer = null;
+          this.processingMsgIndex.set(0);
+        }
+      },
+      { allowSignalWrites: true },
+    );
 
     // When a menu is pinned, the service sets revealBinderMenuId. Expand the
     // Menus accordion and scroll the new entry into view.
