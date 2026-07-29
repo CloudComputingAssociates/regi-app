@@ -26,13 +26,12 @@ import { RotationService } from '../../services/rotation.service';
 import { RecipeService } from '../../services/recipe.service';
 import { RecipeImportWatcher } from '../../services/recipe-import-watcher.service';
 import { NotificationService } from '../../services/notification.service';
-import { TwistIconComponent } from '../twist-icon/twist-icon';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 import { Meal, Menu } from '../../models';
 
 @Component({
   selector: 'app-meal-binder',
-  imports: [DragDropModule, MatTooltipModule, MatIconModule, TwistIconComponent],
+  imports: [DragDropModule, MatTooltipModule, MatIconModule],
   // Releasing the mouse anywhere cancels the "drag" encourager hint.
   host: { '(document:mouseup)': 'clearDragHint()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -78,10 +77,7 @@ import { Meal, Menu } from '../../models';
                       matTooltipClass="binder-name-tip"
                       matTooltipPosition="below"
                       [matTooltipShowDelay]="300">{{ menuDisplayName(menu) }}</span>
-                    <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
-                    <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
-                    <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
-                    <!-- Dropdown chevron OUTSIDE the cals (far right of the head). -->
+                    <!-- Dropdown chevron on the far right of the name line. -->
                     <button
                       type="button"
                       class="card-toggle"
@@ -90,8 +86,14 @@ import { Meal, Menu } from '../../models';
                       <mat-icon>{{ isCardOpen('menu-' + menu.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
                     </button>
                   </div>
-                  <!-- Reveal: Carbs + Fat, and the delete (flush right) — all hidden
-                       until the chevron is dropped down (fewer trash cans up front). -->
+                  <!-- Always-visible macro row: P, Fiber, cals — left-aligned. -->
+                  <div class="binder-chips card-macros">
+                    <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
+                    <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
+                    <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
+                  </div>
+                  <!-- Reveal: Carbs + Fat align UNDER the row above (quadrant);
+                       the delete sits flush right, only visible when dropped down. -->
                   @if (isCardOpen('menu-' + menu.id)) {
                     <div class="binder-chips">
                       <span class="chip carb">C {{ round(menu.totalCarbG) }}</span>
@@ -130,23 +132,18 @@ import { Meal, Menu } from '../../models';
             <div class="section-body create-body">
               <!-- Generate from the user's picks, with an optional Cuisine. -->
               <div class="ai-body">
-                <button
-                  type="button"
-                  class="genmeal-btn"
-                  matTooltip="Meals from Foods you picked"
-                  [disabled]="rotation.generating()"
-                  (click)="rotation.generateMeal()">
-                  <img src="images/AI-star.png" alt="" class="btn-star" />From picks
-                </button>
+                <span class="genmeal-label">
+                  <img src="images/AI-star.png" alt="" class="btn-star" />AI from food picks
+                </span>
                 <div class="twist-group">
-                  <span class="twist-label"><span class="twist-word">Cuisine</span></span>
+                  <span class="twist-label"><span class="twist-word">cuisine</span></span>
                   <div class="twist-combo">
                     <input
                       #twistInput
                       type="text"
                       class="twist-input"
                       [value]="twistValue()"
-                      placeholder="none"
+                      placeholder=""
                       (input)="onTwistInput($any($event.target).value)"
                       (focus)="twistOpen.set(true)"
                       (blur)="onTwistBlur()"
@@ -167,11 +164,14 @@ import { Meal, Menu } from '../../models';
                       </ul>
                     }
                   </div>
-                  <span class="twist-mark">
-                    @if (twistValue() !== 'none' && twistValue().trim() !== '') {
-                      <app-twist-icon />
-                    }
-                  </span>
+                  <button
+                    type="button"
+                    class="icon-disc icon-disc-confirm genmeal-go"
+                    matTooltip="Meals from Foods you picked"
+                    [disabled]="rotation.generating()"
+                    (click)="rotation.generateMeal()">
+                    <mat-icon>check</mat-icon>
+                  </button>
                 </div>
               </div>
               <!-- Import a recipe — drag & drop a file onto the zone, or browse.
@@ -183,12 +183,17 @@ import { Meal, Menu } from '../../models';
                 (dragover)="onDragOver($event)"
                 (dragleave)="onDragLeave($event)"
                 (drop)="onDropFile($event)">
-                <mat-icon class="dz-icon">note_add</mat-icon>
-                <span class="dz-title">{{ uploading() ? 'Importing…' : 'From a recipe, Drag & Drop' }}</span>
-                <span class="dz-sub">
-                  PDF, JPEG or PNG — or
-                  <button type="button" class="dz-link" (click)="recipeInput.click()">browse files</button>
-                </span>
+                @if (uploading()) {
+                  <img src="images/AI-star.png" alt="" class="dz-ai-spin" />
+                  <span class="dz-title">AI processing…. will take a minute.</span>
+                } @else {
+                  <mat-icon class="dz-icon">note_add</mat-icon>
+                  <span class="dz-title">From a recipe, Drag &amp; Drop</span>
+                  <span class="dz-sub">
+                    PDF, JPEG or PNG — or
+                    <button type="button" class="dz-link" (click)="recipeInput.click()">browse files</button>
+                  </span>
+                }
               </div>
               <input
                 #recipeInput
@@ -211,6 +216,13 @@ import { Meal, Menu } from '../../models';
                   (click)="rotation.selectCard('meal', meal.id)"
                   (dblclick)="rotation.placeBinderMeal(meal.id)">
                   <div class="card-head">
+                    <!-- Collapsed row: square thumbnail, title, dropdown arrow.
+                         Everything else lives under the dropdown. -->
+                    @if (mealThumb(meal); as src) {
+                      <img [src]="src" alt="" class="card-thumb" />
+                    } @else {
+                      <span class="card-thumb card-thumb-empty"></span>
+                    }
                     <!-- Non-editable name so the whole card is easy to grab + drag.
                          Rename happens on the board (flip the meal tile) after placing. -->
                     <span
@@ -220,24 +232,24 @@ import { Meal, Menu } from '../../models';
                       matTooltipClass="binder-name-tip"
                       matTooltipPosition="below"
                       [matTooltipShowDelay]="300">{{ meal.name }}</span>
-                    <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
-                    <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
-                    <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
-                    <!-- Dropdown chevron OUTSIDE the cals (far right of the head). -->
+                    <!-- Dropdown chevron on the far right of the name line. -->
                     <button
                       type="button"
                       class="card-toggle"
-                      [matTooltip]="isCardOpen('meal-' + meal.id) ? 'Hide extra macros' : 'Show Calories, Carbs & Fats'"
+                      [matTooltip]="isCardOpen('meal-' + meal.id) ? 'Hide macros' : 'Show macros'"
                       (click)="$event.stopPropagation(); toggleCard('meal-' + meal.id)">
                       <mat-icon>{{ isCardOpen('meal-' + meal.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
                     </button>
                   </div>
-                  <!-- Reveal: Carbs + Fat, and the delete (flush right) — all hidden
-                       until the chevron is dropped down (fewer trash cans up front). -->
+                  <!-- Reveal: all macros in order P, C, F, fiber, cals, then the
+                       delete flush right — only visible when dropped down. -->
                   @if (isCardOpen('meal-' + meal.id)) {
-                    <div class="binder-chips">
+                    <div class="binder-chips card-reveal">
+                      <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
                       <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
+                      <span class="chip fiber">Fiber {{ round(meal.totalFiberG) }}</span>
+                      <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
                       <button
                         type="button"
                         class="card-delete icon-disc icon-disc-danger"
@@ -319,18 +331,31 @@ export class MealBinderComponent implements OnInit {
    *  stage; watcher.settled releases it for the background parse. */
   private async importRecipeFile(file: File | null): Promise<void> {
     if (!file) return;
+    // One recipe at a time — the lock stays held through the whole import
+    // (upload + background AI parse), so a second file is gated until the first
+    // concludes. The dropzone shows "AI processing…" for the duration.
+    if (this.uploading()) {
+      this.notification.show('One recipe at a time — please wait for the current import to finish.', 'info');
+      return;
+    }
     if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
       this.notification.show('Please choose a PDF, JPEG, or PNG recipe file.', 'error');
       return;
     }
     this.uploading.set(true);
-    this.notification.show('Importing recipe…', 'info');
     try {
       const res = await firstValueFrom(this.recipeService.importRecipe(file));
-      if (res?.recipeId != null) this.watcher.watch(res.recipeId);
+      if (res?.recipeId != null) {
+        // Keep the lock held: watcher.settled releases it when the background
+        // parse concludes (parsed / failed / timeout / 404), reverting the
+        // dropzone to its active "Drag & Drop" state.
+        this.watcher.watch(res.recipeId);
+      } else {
+        // Nothing to watch — release now.
+        this.uploading.set(false);
+      }
     } catch {
       this.notification.show('Recipe import failed — could not upload the file.', 'error');
-    } finally {
       this.uploading.set(false);
     }
   }
@@ -476,9 +501,9 @@ export class MealBinderComponent implements OnInit {
   // ----- Cuisine "Twist" combobox (unchanged) ------------------------------
   readonly twistOptions = ['none', 'Italian', 'Mexican', 'Mediterranean', 'American', 'Custom...'];
 
-  readonly twistValue = signal('none');
+  readonly twistValue = signal('');
   readonly twistOpen = signal(false);
-  private twistBeforeCustom = 'none';
+  private twistBeforeCustom = '';
   private twistInputRef = viewChild<ElementRef<HTMLInputElement>>('twistInput');
 
   onTwistInput(value: string): void {
@@ -494,7 +519,7 @@ export class MealBinderComponent implements OnInit {
   selectTwist(opt: string, ev: Event): void {
     ev.preventDefault();
     if (opt === 'Custom...') {
-      this.twistBeforeCustom = this.twistValue().trim() || 'none';
+      this.twistBeforeCustom = this.twistValue().trim();
       this.twistValue.set('');
       this.twistOpen.set(false);
       queueMicrotask(() => this.twistInputRef()?.nativeElement.focus());

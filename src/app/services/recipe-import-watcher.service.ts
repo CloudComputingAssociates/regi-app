@@ -3,7 +3,7 @@
 // Watches in-flight recipe imports to completion. ONE timer drives every active
 // watch (not a timer per recipe): a 1s master tick evaluates each watch against
 // its own schedule — poll every 3s for the first 60s, then every 6s, give up at
-// 10 minutes. Terminal states (parsed / failed / timeout / 404) drop the watch;
+// 4 minutes. Terminal states (parsed / failed / timeout / 404) drop the watch;
 // the timer stops when no watches remain.
 //
 // In-flight ids persist under regi.recipeImport.pending.{auth0 sub} so a browser
@@ -35,7 +35,7 @@ const TICK_MS = 1000;
 const FAST_MS = 3000;
 const SLOW_MS = 6000;
 const BACKOFF_AFTER_MS = 60_000;
-const GIVE_UP_MS = 10 * 60_000;
+const GIVE_UP_MS = 4 * 60_000;
 
 @Injectable({ providedIn: 'root' })
 export class RecipeImportWatcher {

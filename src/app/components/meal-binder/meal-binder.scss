@@ -176,6 +176,13 @@
   transition: background 0.12s ease, box-shadow 0.12s ease;
 
   .dz-icon { width: 22px; height: 22px; font-size: 22px; line-height: 22px; color: #4da6ff; }
+  // Spinning AI star shown while a recipe is processing ("AI processing…").
+  .dz-ai-spin {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    animation: binder-spin 1.15s linear infinite;
+  }
   .dz-title { font-size: 13px; font-weight: 600; color: #e8e8e8; }
   .dz-sub { font-size: 11px; color: #9aa0a6; }
 
@@ -195,7 +202,9 @@
     background: rgba(77, 166, 255, 0.16);
     box-shadow: 0 0 0 2px #4da6ff, 0 0 14px rgba(77, 166, 255, 0.6);
   }
-  &.busy { opacity: 0.7; }
+  // Processing: keep the zone bright (the spinning star carries the motion) and
+  // block the pointer so it reads as locked to one import at a time.
+  &.busy { cursor: default; }
 }
 
 // The ✦ star inside the Create button.
@@ -207,41 +216,21 @@
   vertical-align: middle;
 }
 
-// Lighter, raised, pressable buttons — top highlight + drop shadow read as
-// domed; :active sinks them with an inset shadow.
-.genmeal-btn {
-  flex-shrink: 0; // AI create button leads on the LEFT of the row
-  padding: 8px 12px;
+// "AI from food picks" text label leading the AI row. Generation now fires from
+// the raised green check disc (.genmeal-go) at the end of the twist group.
+.genmeal-label {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
   font-size: 13px;
   font-weight: 500;
   color: #f0f0f0;
-  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
-  border: 1px solid #262626;
-  border-top-color: #7d7d7d;
-  border-radius: 6px;
-  box-shadow:
-    0 2px 3px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.20);
-  cursor: pointer;
-  transition: background 0.12s ease, box-shadow 0.1s ease, transform 0.05s ease;
+  white-space: nowrap;
+}
 
-  &:hover:not(:disabled) {
-    background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%);
-    color: #ffffff;
-  }
-
-  &:active:not(:disabled) {
-    transform: translateY(1px);
-    background: linear-gradient(180deg, #4c4c4c 0%, #404040 100%);
-    box-shadow:
-      0 1px 1px rgba(0, 0, 0, 0.5),
-      inset 0 1px 2px rgba(0, 0, 0, 0.45);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
+// Raised green check that triggers meal generation — sits after the dropdown.
+.genmeal-go {
+  flex: 0 0 auto;
 }
 
 // ---- Second row: cuisine "Twist" combobox ----
@@ -556,6 +545,22 @@
   align-items: center;
   gap: 6px;
 
+  // Square thumbnail leading the collapsed row — sized to the row with tight
+  // padding. Empty variant is a muted placeholder square.
+  .card-thumb {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    object-fit: cover;
+    background: #2a2a2a;
+  }
+  .card-thumb-empty {
+    display: inline-block;
+    border: 1px solid #3a3a3a;
+    background: #2a2a2a;
+  }
+
   .binder-card-name {
     flex: 1 1 auto;
     min-width: 0;
@@ -607,19 +612,48 @@
   color: #9aa0a6;
 }
 
-// Reveal row: the extra macros (Carbs, Fat) + the delete, flush right — only
-// visible once the card is dropped down.
+// Macro rows (the always-visible P/Fiber/cals row + the Carb/Fat reveal). Both
+// left-aligned under the name so the discs stack into a uniform 2×2 quadrant.
 .binder-chips {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
   gap: 6px;
 
-  // Delete lives here now (flush right), not up in the head — fewer trash cans.
+  // Uniform disc width so "P 8" and "C 69" line up in columns.
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+  }
+
+  // Cals sits after the discs on the top macro row — small + blue.
+  .binder-cals {
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 400;
+    color: #4da6ff;
+    white-space: nowrap;
+  }
+
+  // Delete lives in the reveal (flush right), not up in the head — fewer trash cans.
   .card-delete {
     flex: 0 0 auto;
     margin-left: auto;
   }
+}
+
+// Menus cards still use the always-visible summary row just under the name.
+.card-macros {
+  margin-top: 2px;
+}
+
+// The Meals reveal row holds every macro in order (P, C, F, fiber, cals) then
+// the delete flush right. It may wrap in the narrow rail so nothing is clipped.
+.card-reveal {
+  flex-wrap: wrap;
+  margin-top: 6px;
 }
 
 // Macro discs — shared by the summary head + the reveal. Muted palette so the

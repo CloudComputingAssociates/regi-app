@@ -133,15 +133,15 @@ interface Macro {
                     aria-label="Meal name" />
                   <button
                     type="button"
-                    class="save-check"
-                    [class.active]="isDirty(fm.mealId)"
+                    class="icon-disc"
+                    [class.icon-disc-confirm]="isDirty(fm.mealId)"
                     matTooltip="Save changes"
                     (click)="pinMeal.emit(fm.mealId)">
                     <mat-icon>check</mat-icon>
                   </button>
                   <button
                     type="button"
-                    class="back-delete"
+                    class="icon-disc icon-disc-danger"
                     matTooltip="Remove this meal"
                     (click)="removeMeal.emit({ slotOrder: slot().slotOrder, mealId: fm.mealId })">
                     <mat-icon>delete_outline</mat-icon>
@@ -151,7 +151,7 @@ interface Macro {
                 @if (recipeLinkFor(fm.mealId); as link) {
                   <!-- Provenance — only shown when we KNOW it (a recipe import
                        carries the source PDF link). -->
-                  <span class="meal-source">from recipe import</span>
+                  <span class="meal-source">(from recipe import)</span>
                   <button
                     type="button"
                     class="recipe-link"

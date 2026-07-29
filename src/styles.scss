@@ -368,6 +368,19 @@ sup.sm {
     }
   }
 
+  // Save / confirm — a FILLED green raised disc with a white check (the save
+  // checks + the AI-generate go button). Same raised chrome as the family.
+  &.icon-disc-confirm {
+    background: linear-gradient(180deg, #34d651 0%, #22a63d 100%);
+    border-color: #1c7a2e;
+    border-top-color: #4fe06a;
+    color: #ffffff;
+    &:hover:not(:disabled) {
+      background: linear-gradient(180deg, #3ee05c 0%, #26b544 100%);
+      color: #ffffff;
+    }
+  }
+
   // Pinned (in the Binder) — grey raised disc with a bright-yellow icon, ringed
   // in a thin white border so the "saved" state pops against the dark card.
   &.icon-disc-pinned {

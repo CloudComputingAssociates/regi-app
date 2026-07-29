@@ -46,7 +46,7 @@ import { RotationService } from '../../services/rotation.service';
                 @if (showSaveCheck(menu, i)) {
                   <button
                     type="button"
-                    class="save-check"
+                    class="icon-disc icon-disc-confirm"
                     [class.save-hint]="isSaveHintMenu(menu.menuId) && !menu.pinned"
                     matTooltip="Save to Binder"
                     matTooltipPosition="above"

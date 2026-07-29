@@ -233,8 +233,8 @@ export class AppComponent implements OnInit, OnDestroy {
       this.notification.show(`Recipe import failed — ${ev.parseError ?? 'unknown error'}`, 'error');
     } else {
       this.notification.show(
-        'Recipe import is taking longer than expected. Check back shortly.',
-        'warning',
+        'Recipe import failed — it timed out after 4 minutes. Please try again.',
+        'error',
       );
       void this.rotation.loadBinder();
     }

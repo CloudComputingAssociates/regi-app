@@ -76,7 +76,7 @@ export class NotificationService {
     this.notificationSignal.set({
       message,
       type: 'success',
-      ingest: { checkboxLabel: "Don't show this again", okLabel: 'O.K.', onOk },
+      ingest: { checkboxLabel: "Don't show this again", okLabel: 'OK', onOk },
     });
     this.timeoutId = setTimeout(() => this.dismiss(), timeoutMs);
   }

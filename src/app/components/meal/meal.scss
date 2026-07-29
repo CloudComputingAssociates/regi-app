@@ -334,10 +334,11 @@
   &:hover { color: #ff5f57; }
 }
 
-// Provenance line — white, non-bold, left-justified (only shown for imports).
+// Provenance line — same size/family as the cals label but white, non-bold,
+// left-justified (only shown for imports).
 .meal-source {
   align-self: flex-start;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
   color: #ffffff;
 }
