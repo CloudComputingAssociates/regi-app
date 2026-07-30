@@ -125,11 +125,11 @@ import { Meal, Menu } from '../../models';
             <span class="section-label">Meals</span>
             <span class="section-count">({{ rotation.binderMeals().length }})</span>
             <div class="header-toggles">
-              <button type="button" class="create-toggle" (click)="createNewOpen.set(!createNewOpen())">
+              <button type="button" class="create-toggle" (click)="toggleCreatePanel()">
                 <span class="create-word">Create</span>
                 <mat-icon class="create-chevron">{{ createNewOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
-              <button type="button" class="create-toggle" (click)="filterOpen.set(!filterOpen())">
+              <button type="button" class="create-toggle" (click)="toggleFilterPanel()">
                 <span class="create-word">Filter</span>
                 <mat-icon class="create-chevron">{{ filterOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
@@ -212,36 +212,34 @@ import { Meal, Menu } from '../../models';
             </div>
           }
           @if (filterOpen()) {
+            <!-- One line: FILTER BY [search]  SORT ○ Protein ○ Fiber  [Clear].
+                 Search matches meal name + primary protein (all the list carries);
+                 the radios sort the whole list highest-first + auto-expand top 3. -->
             <div class="section-body filter-body">
-              <!-- Keyword search over the Binder list (meal name + primary
-                   protein — the only text the list payload carries). -->
+              <span class="filter-label">FILTER BY</span>
               <input
                 type="text"
                 class="filter-search"
-                placeholder="Enter ingredient or meal/recipe keyword"
+                placeholder="ingredient or meal/recipe keyword"
                 [value]="searchText()"
                 (input)="searchText.set($any($event.target).value)" />
-              <!-- Sort area, separate. Radios; always highest-first (descending).
-                   Picking one sorts the whole list and auto-expands the top 3. -->
-              <div class="sort-area">
-                <span class="sort-title">Sort — highest first</span>
-                <label class="sort-opt">
-                  <input
-                    type="radio"
-                    name="binderSort"
-                    [checked]="sortBy() === 'protein'"
-                    (change)="sortBy.set('protein')" />
-                  Protein
-                </label>
-                <label class="sort-opt">
-                  <input
-                    type="radio"
-                    name="binderSort"
-                    [checked]="sortBy() === 'fiber'"
-                    (change)="sortBy.set('fiber')" />
-                  Fiber
-                </label>
-              </div>
+              <span class="sort-title">SORT</span>
+              <label class="sort-opt">
+                <input
+                  type="radio"
+                  name="binderSort"
+                  [checked]="sortBy() === 'protein'"
+                  (change)="sortBy.set('protein')" />
+                Protein
+              </label>
+              <label class="sort-opt">
+                <input
+                  type="radio"
+                  name="binderSort"
+                  [checked]="sortBy() === 'fiber'"
+                  (change)="sortBy.set('fiber')" />
+                Fiber
+              </label>
               <button type="button" class="filter-clear" (click)="clearFilter()">Clear</button>
             </div>
           }
@@ -448,6 +446,16 @@ export class MealBinderComponent implements OnInit {
 
   /** "Filter" accordion — starts COLLAPSED. */
   readonly filterOpen = signal(false);
+
+  /** Create + Filter are mutually exclusive — opening one closes the other. */
+  toggleCreatePanel(): void {
+    this.createNewOpen.update((v) => !v);
+    if (this.createNewOpen()) this.filterOpen.set(false);
+  }
+  toggleFilterPanel(): void {
+    this.filterOpen.update((v) => !v);
+    if (this.filterOpen()) this.createNewOpen.set(false);
+  }
 
   // ----- Binder Meals filter + sort -----------------------------------------
   /** Keyword typed in the Filter search box (matches name + primary protein). */
