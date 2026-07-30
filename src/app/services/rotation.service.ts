@@ -549,22 +549,21 @@ export class RotationService {
   async generateMeal(): Promise<void> {
     this.generating.set(true);
     try {
-      const target = await this.findGenerateTargetSlot();
-      if (target == null) {
-        this.notification.show('No open meal slot to place the meal.', 'error');
-        return;
-      }
       const excludeMeals = this.knownMealNames();
       const body: GenerateMealRequest = { mealType: 'meal', excludeMeals };
       const meal = await firstValueFrom(
         this.http.post<Meal>(`${this.baseUrl}/meal/generate`, body),
       );
-      // Unpinned source → linked directly (no clone) into the empty slot.
-      await this.placeMealInSlot(target.menuId, target.slotOrder, meal.id);
-      if (this.selectedMenuId() !== target.menuId) {
-        this.selectedMenuId.set(target.menuId);
-        await this.selectMenu(target.menuId);
-      }
+      // Land the new meal in the Binder's Meals LIST (pin it) so the user drags
+      // it into a slot themselves — do NOT auto-place it into a slot.
+      const pinBody: UpdateMealRequest = { pinned: true };
+      const saved = await firstValueFrom(
+        this.http.put<Meal>(`${this.baseUrl}/meal/${meal.id}`, pinBody),
+      );
+      this.mealsById.update((m) => new Map(m).set(saved.id, saved));
+      await this.loadBinder();
+      const name = saved.name?.trim() || 'your new meal';
+      this.notification.showIngest(`Meal created and added to your Meals, ${name}`, () => {});
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     } finally {

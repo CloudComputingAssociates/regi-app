@@ -176,7 +176,11 @@ import { Meal, Menu } from '../../models';
                     matTooltip="Meals from Foods you picked"
                     [disabled]="rotation.generating() || uploading()"
                     (click)="rotation.generateMeal()">
-                    <mat-icon>check</mat-icon>
+                    @if (rotation.generating()) {
+                      <img src="images/AI-star.png" alt="" class="genmeal-spin" />
+                    } @else {
+                      <mat-icon>check</mat-icon>
+                    }
                   </button>
                 </div>
               </div>

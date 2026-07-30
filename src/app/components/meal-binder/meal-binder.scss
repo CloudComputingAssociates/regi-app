@@ -334,6 +334,14 @@
   flex: 0 0 auto;
 }
 
+// While generating, the check is swapped for a spinning AI star.
+.genmeal-spin {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  animation: binder-spin 1.15s linear infinite;
+}
+
 // ---- Second row: cuisine "Twist" combobox ----
 .twist-row {
   flex-shrink: 0;
@@ -348,7 +356,6 @@
 .twist-group {
   flex: 0 1 auto;
   min-width: 0;
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;

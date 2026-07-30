@@ -87,15 +87,8 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               <span class="toolbar-title">
                 <mat-icon class="toolbar-title-icon">restaurant</mat-icon>Menus &amp; Meals
               </span>
-              <!-- Actions grouped together, equidistant: print · remove all · close. -->
+              <!-- Actions grouped together, equidistant: remove all · close. -->
               <div class="toolbar-buttons">
-                <button
-                  type="button"
-                  class="print-btn"
-                  matTooltip="Print / preview this plan"
-                  (click)="onPrint()">
-                  <mat-icon>print</mat-icon>
-                </button>
                 <button
                   type="button"
                   class="wipe-menus-btn"
@@ -498,12 +491,6 @@ export class MenusPanelComponent implements OnInit {
     this.popupItem.set(null);
     this.popupFood.set(null);
     this.popupMealId.set(null);
-  }
-
-  /** Print the current plan. Basic hook (browser print) for now — a dedicated
-   *  restaurant-style print/preview view is a future enhancement. */
-  onPrint(): void {
-    window.print();
   }
 
   /** Trash on a menu tile — DELETE the menu (the tile does not stay behind as an
