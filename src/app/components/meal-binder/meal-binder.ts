@@ -126,6 +126,7 @@ import { Meal, Menu } from '../../models';
             <span class="section-count">({{ rotation.binderMeals().length }})</span>
             <div class="header-toggles">
               <button type="button" class="create-toggle" (click)="toggleCreatePanel()">
+                <img src="images/AI-star.png" alt="" class="btn-star" />
                 <span class="create-word">Create</span>
                 <mat-icon class="create-chevron">{{ createNewOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
@@ -140,18 +141,15 @@ import { Meal, Menu } from '../../models';
               <!-- Generate from the user's picks, with an optional Cuisine.
                    Disabled while a recipe import is in flight. -->
               <div class="ai-body" [class.area-disabled]="uploading()">
-                <span class="genmeal-label">
-                  <img src="images/AI-star.png" alt="" class="btn-star" />AI from food picks
-                </span>
+                <span class="genmeal-label">Create</span>
                 <div class="twist-group">
-                  <span class="twist-label"><span class="twist-word">cuisine</span></span>
                   <div class="twist-combo">
                     <input
                       #twistInput
                       type="text"
                       class="twist-input"
                       [value]="twistValue()"
-                      placeholder=""
+                      placeholder="cuisine"
                       (input)="onTwistInput($any($event.target).value)"
                       (focus)="twistOpen.set(true)"
                       (blur)="onTwistBlur()"
@@ -182,6 +180,7 @@ import { Meal, Menu } from '../../models';
                   </button>
                 </div>
               </div>
+              <div class="or-divider">-or-</div>
               <!-- Import a recipe — drag & drop a file onto the zone, or browse.
                    PDF / JPEG / PNG. -->
               <div
@@ -196,7 +195,7 @@ import { Meal, Menu } from '../../models';
                   <span class="dz-title">{{ processingMessages[processingMsgIndex()] }}</span>
                 } @else {
                   <mat-icon class="dz-icon">note_add</mat-icon>
-                  <span class="dz-title">From a recipe, Drag &amp; Drop</span>
+                  <span class="dz-title">Drag &amp; Drop a Recipe</span>
                   <span class="dz-sub">
                     PDF, JPEG or PNG — or
                     <button type="button" class="dz-link" (click)="recipeInput.click()">browse files</button>
@@ -612,7 +611,7 @@ export class MealBinderComponent implements OnInit {
               this.processingMsgIndex.update(
                 (i) => (i + 1) % this.processingMessages.length,
               );
-            }, 2500);
+            }, 6000);
           }
         } else if (this.msgTimer != null) {
           clearInterval(this.msgTimer);

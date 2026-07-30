@@ -237,6 +237,15 @@
   }
 }
 
+// Centered "-or-" between the Create row and the recipe drop zone.
+.or-divider {
+  align-self: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #9aa0a6;
+  letter-spacing: 0.04em;
+}
+
 // Generate row: From picks button + Cuisine dropdown, side by side.
 .ai-body {
   display: flex;
