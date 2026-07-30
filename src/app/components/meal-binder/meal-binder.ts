@@ -11,6 +11,7 @@ import {
   Component,
   OnInit,
   ElementRef,
+  computed,
   effect,
   inject,
   signal,
@@ -123,10 +124,16 @@ import { Meal, Menu } from '../../models';
             <mat-icon class="section-icon section-icon-binder">restaurant</mat-icon>
             <span class="section-label">Meals</span>
             <span class="section-count">({{ rotation.binderMeals().length }})</span>
-            <button type="button" class="create-toggle" (click)="createNewOpen.set(!createNewOpen())">
-              <span class="create-word">Create</span>
-              <mat-icon class="create-chevron">{{ createNewOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-            </button>
+            <div class="header-toggles">
+              <button type="button" class="create-toggle" (click)="createNewOpen.set(!createNewOpen())">
+                <span class="create-word">Create</span>
+                <mat-icon class="create-chevron">{{ createNewOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </button>
+              <button type="button" class="create-toggle" (click)="filterOpen.set(!filterOpen())">
+                <span class="create-word">Filter</span>
+                <mat-icon class="create-chevron">{{ filterOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </button>
+            </div>
           </div>
           @if (createNewOpen()) {
             <div class="section-body create-body">
@@ -204,8 +211,42 @@ import { Meal, Menu } from '../../models';
                 (change)="onRecipeFileSelected(recipeInput)" />
             </div>
           }
+          @if (filterOpen()) {
+            <div class="section-body filter-body">
+              <!-- Keyword search over the Binder list (meal name + primary
+                   protein — the only text the list payload carries). -->
+              <input
+                type="text"
+                class="filter-search"
+                placeholder="Enter ingredient or meal/recipe keyword"
+                [value]="searchText()"
+                (input)="searchText.set($any($event.target).value)" />
+              <!-- Sort area, separate. Radios; always highest-first (descending).
+                   Picking one sorts the whole list and auto-expands the top 3. -->
+              <div class="sort-area">
+                <span class="sort-title">Sort — highest first</span>
+                <label class="sort-opt">
+                  <input
+                    type="radio"
+                    name="binderSort"
+                    [checked]="sortBy() === 'protein'"
+                    (change)="sortBy.set('protein')" />
+                  Protein
+                </label>
+                <label class="sort-opt">
+                  <input
+                    type="radio"
+                    name="binderSort"
+                    [checked]="sortBy() === 'fiber'"
+                    (change)="sortBy.set('fiber')" />
+                  Fiber
+                </label>
+              </div>
+              <button type="button" class="filter-clear" (click)="clearFilter()">Clear</button>
+            </div>
+          }
           <div class="section-body" cdkDropList>
-              @for (meal of rotation.binderMeals(); track meal.id) {
+              @for (meal of displayMeals(); track meal.id; let i = $index) {
                 <div
                   class="binder-card"
                   [class.selected]="rotation.isCardSelected('meal', meal.id)"
@@ -224,27 +265,57 @@ import { Meal, Menu } from '../../models';
                     } @else {
                       <span class="card-thumb card-thumb-empty"></span>
                     }
-                    <!-- Non-editable name so the whole card is easy to grab + drag.
-                         Rename happens on the board (flip the meal tile) after placing. -->
-                    <span
-                      class="binder-card-name"
-                      [matTooltip]="meal.name"
-                      [matTooltipDisabled]="!rotation.isCardSelected('meal', meal.id)"
-                      matTooltipClass="binder-name-tip"
-                      matTooltipPosition="below"
-                      [matTooltipShowDelay]="300">{{ meal.name }}</span>
-                    <!-- Dropdown chevron on the far right of the name line. -->
-                    <button
-                      type="button"
-                      class="card-toggle"
-                      [matTooltip]="isCardOpen('meal-' + meal.id) ? 'Hide macros' : 'Show macros'"
-                      (click)="$event.stopPropagation(); toggleCard('meal-' + meal.id)">
-                      <mat-icon>{{ isCardOpen('meal-' + meal.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
-                    </button>
+                    @if (editingMealId() === meal.id) {
+                      <!-- Inline rename: title becomes editable; pencil → green
+                           confirm. Enter or the disc commits the new name. -->
+                      <input
+                        type="text"
+                        class="name-edit"
+                        [value]="editDraft()"
+                        (click)="$event.stopPropagation()"
+                        (mousedown)="$event.stopPropagation()"
+                        (input)="editDraft.set($any($event.target).value)"
+                        (keydown.enter)="$event.stopPropagation(); confirmRename(meal)"
+                        (keydown.escape)="cancelRename()" />
+                      <button
+                        type="button"
+                        class="icon-disc icon-disc-confirm rename-go"
+                        matTooltip="Save name"
+                        (click)="$event.stopPropagation(); confirmRename(meal)">
+                        <mat-icon>check</mat-icon>
+                      </button>
+                    } @else {
+                      <!-- Non-editable name so the whole card is easy to grab +
+                           drag. A pencil to rename appears only when expanded. -->
+                      <span
+                        class="binder-card-name"
+                        [matTooltip]="meal.name"
+                        [matTooltipDisabled]="!rotation.isCardSelected('meal', meal.id)"
+                        matTooltipClass="binder-name-tip"
+                        matTooltipPosition="below"
+                        [matTooltipShowDelay]="300">{{ meal.name }}</span>
+                      @if (isMealOpen(meal, i)) {
+                        <button
+                          type="button"
+                          class="rename-pencil icon-disc icon-disc-edit"
+                          matTooltip="Rename this meal"
+                          (click)="$event.stopPropagation(); startRename(meal)">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                      }
+                      <!-- Dropdown chevron on the far right of the name line. -->
+                      <button
+                        type="button"
+                        class="card-toggle"
+                        [matTooltip]="isMealOpen(meal, i) ? 'Hide macros' : 'Show macros'"
+                        (click)="$event.stopPropagation(); toggleCard('meal-' + meal.id)">
+                        <mat-icon>{{ isMealOpen(meal, i) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                      </button>
+                    }
                   </div>
                   <!-- Reveal: all macros in order P, C, F, fiber, cals, then the
                        delete flush right — only visible when dropped down. -->
-                  @if (isCardOpen('meal-' + meal.id)) {
+                  @if (isMealOpen(meal, i)) {
                     <div class="binder-chips card-reveal">
                       <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
                       <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
@@ -375,6 +446,69 @@ export class MealBinderComponent implements OnInit {
   /** "Create new" accordion — starts COLLAPSED. */
   readonly createNewOpen = signal(false);
 
+  /** "Filter" accordion — starts COLLAPSED. */
+  readonly filterOpen = signal(false);
+
+  // ----- Binder Meals filter + sort -----------------------------------------
+  /** Keyword typed in the Filter search box (matches name + primary protein). */
+  readonly searchText = signal('');
+  /** Active sort, or null for the default alphabetical order. Always descending. */
+  readonly sortBy = signal<'protein' | 'fiber' | null>(null);
+  /** How many top meals auto-expand when a sort is active. */
+  private readonly SORT_EXPAND_TOP = 3;
+
+  /** The Meals list as displayed: keyword-filtered, then either sorted by the
+   *  chosen macro (descending) or in the default order — default-named meals
+   *  ("Meal N") first in numeric order, then everything else alphabetical. */
+  readonly displayMeals = computed<Meal[]>(() => {
+    const q = this.searchText().trim().toLowerCase();
+    let list = this.rotation.binderMeals();
+    if (q) {
+      list = list.filter(
+        (m) =>
+          m.name?.toLowerCase().includes(q) ||
+          (m.primaryProteinName ?? '').toLowerCase().includes(q),
+      );
+    }
+    const sort = this.sortBy();
+    const sorted = [...list];
+    if (sort === 'protein') {
+      sorted.sort((a, b) => (b.totalProteinG ?? 0) - (a.totalProteinG ?? 0));
+    } else if (sort === 'fiber') {
+      sorted.sort((a, b) => (b.totalFiberG ?? 0) - (a.totalFiberG ?? 0));
+    } else {
+      sorted.sort((a, b) => this.defaultMealOrder(a, b));
+    }
+    return sorted;
+  });
+
+  /** Default order: unnamed "Meal N" first (numeric), then alphabetical by name. */
+  private defaultMealOrder(a: Meal, b: Meal): number {
+    const na = this.defaultMealNum(a.name);
+    const nb = this.defaultMealNum(b.name);
+    if (na != null && nb != null) return na - nb;
+    if (na != null) return -1;
+    if (nb != null) return 1;
+    return (a.name ?? '').localeCompare(b.name ?? '', undefined, { sensitivity: 'base' });
+  }
+
+  /** The N from a default "Meal N" name, or null if it's a real (renamed) name. */
+  private defaultMealNum(name: string | undefined): number | null {
+    const m = /^meal\s+(\d+)$/i.exec((name ?? '').trim());
+    return m ? Number(m[1]) : null;
+  }
+
+  /** Reset all filter/sort state and collapse every Meal card. */
+  clearFilter(): void {
+    this.searchText.set('');
+    this.sortBy.set(null);
+    this.expandedCards.update((s) => {
+      const next = new Set(s);
+      for (const key of next) if (key.startsWith('meal-')) next.delete(key);
+      return next;
+    });
+  }
+
   /** Top-level accordion open state — both default open. */
   readonly binderMenusOpen = signal(false);
 
@@ -384,6 +518,35 @@ export class MealBinderComponent implements OnInit {
 
   isCardOpen(key: string): boolean {
     return this.expandedCards().has(key);
+  }
+
+  /** A meal card is open if the user expanded it OR a sort is active and it's in
+   *  the auto-expanded top N of the sorted list. */
+  isMealOpen(meal: Meal, index: number): boolean {
+    if (this.expandedCards().has('meal-' + meal.id)) return true;
+    return this.sortBy() !== null && index < this.SORT_EXPAND_TOP;
+  }
+
+  // ----- Inline rename (pencil → green confirm) ------------------------------
+  readonly editingMealId = signal<number | null>(null);
+  readonly editDraft = signal('');
+
+  startRename(meal: Meal): void {
+    this.editDraft.set(meal.name ?? '');
+    this.editingMealId.set(meal.id);
+  }
+
+  cancelRename(): void {
+    this.editingMealId.set(null);
+    this.editDraft.set('');
+  }
+
+  async confirmRename(meal: Meal): Promise<void> {
+    const name = this.editDraft().trim();
+    if (name && name !== meal.name) {
+      await this.rotation.updateMealName(meal.id, name);
+    }
+    this.cancelRename();
   }
 
   // --- Drag "encourager": while a card is held down (before motion), a center-

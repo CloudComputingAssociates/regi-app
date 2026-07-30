@@ -152,6 +152,84 @@
     0 0 12px rgba(77, 166, 255, 0.4);
 }
 
+// Filter panel — same blue bloom border as the Create panel.
+.filter-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin: 4px 8px 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(77, 166, 255, 0.6);
+  background: rgba(77, 166, 255, 0.05);
+  box-shadow:
+    0 0 0 1px rgba(77, 166, 255, 0.35),
+    0 0 12px rgba(77, 166, 255, 0.4);
+
+  .filter-search {
+    padding: 7px 9px;
+    font-family: inherit;
+    font-size: 13px;
+    color: #f0f0f0;
+    background: linear-gradient(180deg, #565656 0%, #434343 100%);
+    border: 1px solid #262626;
+    border-top-color: #6f6f6f;
+    border-radius: 6px;
+    outline: none;
+    &::placeholder { color: #9aa0a6; }
+    &:focus { box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.6); }
+  }
+
+  // Sort block — visually separate from the search box.
+  .sort-area {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding-top: 8px;
+    border-top: 1px solid #4a4a4a;
+
+    .sort-title {
+      flex: 1 0 100%;
+      font-size: 11px;
+      font-weight: 600;
+      color: #4da6ff;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .sort-opt {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      color: #e0e0e0;
+      cursor: pointer;
+
+      input { accent-color: #4da6ff; cursor: pointer; }
+    }
+  }
+
+  .filter-clear {
+    align-self: flex-start;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #f0f0f0;
+    background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+    border: 1px solid #262626;
+    border-top-color: #7d7d7d;
+    border-radius: 6px;
+    box-shadow:
+      0 2px 3px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); }
+    &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45); }
+  }
+}
+
 // Generate row: From picks button + Cuisine dropdown, side by side.
 .ai-body {
   display: flex;
@@ -408,8 +486,15 @@
   // "Create" toggle — right-justified on the Meals header. A raised button (same
   // domed chrome as From picks) with the word + chevron; clicking the word OR the
   // chevron toggles. Not bold, so the label stays crisp (not blurry).
-  .create-toggle {
+  // The Create + Filter toggles cluster on the right of the Meals header.
+  .header-toggles {
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .create-toggle {
     display: inline-flex;
     align-items: center;
     gap: 3px;
@@ -579,6 +664,27 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  // Inline rename input — takes the title's place while editing.
+  .name-edit {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 3px 6px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: #f1f1f1;
+    background: #2a2a2a;
+    border: 1px solid #4da6ff;
+    border-radius: 4px;
+    outline: none;
+  }
+
+  // Rename pencil (only when a card is expanded) and its green confirm sibling.
+  .rename-pencil,
+  .rename-go {
+    flex: 0 0 auto;
   }
 
   // Calories on the head line — small + blue (NOT title-sized/white).
