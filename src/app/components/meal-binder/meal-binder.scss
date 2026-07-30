@@ -152,13 +152,14 @@
     0 0 12px rgba(77, 166, 255, 0.4);
 }
 
-// Filter panel — one row: FILTER BY [search] SORT ○ Protein ○ Fiber [Clear].
+// Filter panel — two left-justified rows:
+//   FILTER [search box]
+//   SORT   ○ Protein  ○ Fiber            [Clear]
 // Same blue bloom border as the Create panel.
 .filter-body {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: nowrap;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
   margin: 4px 8px 8px;
   padding: 8px 10px;
@@ -169,10 +170,17 @@
     0 0 0 1px rgba(77, 166, 255, 0.35),
     0 0 12px rgba(77, 166, 255, 0.4);
 
-  // "FILTER BY" and "SORT" labels — small, blue, uppercase.
-  .filter-label,
-  .sort-title {
-    flex: 0 0 auto;
+  .filter-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  // "FILTER" / "SORT" labels — small, blue, uppercase. Fixed width so the search
+  // box and the radios line up under each other.
+  .filter-label {
+    flex: 0 0 46px;
     font-size: 11px;
     font-weight: 600;
     color: #4da6ff;
@@ -183,7 +191,7 @@
 
   .filter-search {
     flex: 1 1 auto;
-    min-width: 0; // allow the input to shrink so the row never wraps
+    min-width: 0;
     padding: 6px 9px;
     font-family: inherit;
     font-size: 13px;
@@ -211,7 +219,7 @@
 
   .filter-clear {
     flex: 0 0 auto;
-    margin-left: auto; // pin to the far right of the row
+    margin-left: auto; // pin Clear to the far right of the SORT row
     padding: 5px 12px;
     font-size: 12px;
     font-weight: 500;

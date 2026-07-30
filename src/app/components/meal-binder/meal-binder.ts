@@ -212,35 +212,41 @@ import { Meal, Menu } from '../../models';
             </div>
           }
           @if (filterOpen()) {
-            <!-- One line: FILTER BY [search]  SORT ○ Protein ○ Fiber  [Clear].
+            <!-- Two lines, left-justified:
+                   FILTER [search box]
+                   SORT   ○ Protein  ○ Fiber            [Clear]
                  Search matches meal name + primary protein (all the list carries);
                  the radios sort the whole list highest-first + auto-expand top 3. -->
             <div class="section-body filter-body">
-              <span class="filter-label">FILTER BY</span>
-              <input
-                type="text"
-                class="filter-search"
-                placeholder="ingredient or meal/recipe keyword"
-                [value]="searchText()"
-                (input)="searchText.set($any($event.target).value)" />
-              <span class="sort-title">SORT</span>
-              <label class="sort-opt">
+              <div class="filter-row">
+                <span class="filter-label">FILTER</span>
                 <input
-                  type="radio"
-                  name="binderSort"
-                  [checked]="sortBy() === 'protein'"
-                  (change)="sortBy.set('protein')" />
-                Protein
-              </label>
-              <label class="sort-opt">
-                <input
-                  type="radio"
-                  name="binderSort"
-                  [checked]="sortBy() === 'fiber'"
-                  (change)="sortBy.set('fiber')" />
-                Fiber
-              </label>
-              <button type="button" class="filter-clear" (click)="clearFilter()">Clear</button>
+                  type="text"
+                  class="filter-search"
+                  placeholder="ingredient or meal keyword"
+                  [value]="searchText()"
+                  (input)="searchText.set($any($event.target).value)" />
+              </div>
+              <div class="filter-row">
+                <span class="filter-label">SORT</span>
+                <label class="sort-opt">
+                  <input
+                    type="radio"
+                    name="binderSort"
+                    [checked]="sortBy() === 'protein'"
+                    (change)="sortBy.set('protein')" />
+                  Protein
+                </label>
+                <label class="sort-opt">
+                  <input
+                    type="radio"
+                    name="binderSort"
+                    [checked]="sortBy() === 'fiber'"
+                    (change)="sortBy.set('fiber')" />
+                  Fiber
+                </label>
+                <button type="button" class="filter-clear" (click)="clearFilter()">Clear</button>
+              </div>
             </div>
           }
           <div class="section-body" cdkDropList>
