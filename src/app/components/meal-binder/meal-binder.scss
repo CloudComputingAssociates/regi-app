@@ -319,27 +319,41 @@
 
 // "AI from food picks" text label leading the AI row. Generation now fires from
 // the raised green check disc (.genmeal-go) at the end of the twist group.
+// "Create" and "Import" — blue section labels, left-aligned so they read as
+// "Create -or- Import" down the panel.
 .genmeal-label {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   font-size: 13px;
-  font-weight: 500;
-  color: #f0f0f0;
+  font-weight: 600;
+  color: #4da6ff;
   white-space: nowrap;
 }
 
-// Raised green check that triggers meal generation — sits after the dropdown.
-.genmeal-go {
-  flex: 0 0 auto;
+.import-label {
+  align-self: flex-start;
 }
 
-// While generating, the check is swapped for a spinning AI star.
+// Raised green check that triggers meal generation — sits after the dropdown.
+// While generating it drops the green and gives depth so the star can spin in 3D.
+.genmeal-go {
+  flex: 0 0 auto;
+  perspective: 60px;
+}
+
+// While generating, the check is swapped for the AI star spinning about its
+// VERTICAL axis (rotateY) — like the earth turning on its equator.
 .genmeal-spin {
   width: 15px;
   height: 15px;
   object-fit: contain;
-  animation: binder-spin 1.15s linear infinite;
+  animation: ai-globe-spin 1.4s linear infinite;
+}
+
+@keyframes ai-globe-spin {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
 }
 
 // ---- Second row: cuisine "Twist" combobox ----

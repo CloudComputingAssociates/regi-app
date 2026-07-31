@@ -172,7 +172,8 @@ import { Meal, Menu } from '../../models';
                   </div>
                   <button
                     type="button"
-                    class="icon-disc icon-disc-confirm genmeal-go"
+                    class="icon-disc genmeal-go"
+                    [class.icon-disc-confirm]="!rotation.generating()"
                     matTooltip="Meals from Foods you picked"
                     [disabled]="rotation.generating() || uploading()"
                     (click)="rotation.generateMeal()">
@@ -185,6 +186,7 @@ import { Meal, Menu } from '../../models';
                 </div>
               </div>
               <div class="or-divider">-or-</div>
+              <span class="genmeal-label import-label">Import</span>
               <!-- Import a recipe — drag & drop a file onto the zone, or browse.
                    PDF / JPEG / PNG. -->
               <div
