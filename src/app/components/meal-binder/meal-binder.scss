@@ -687,9 +687,19 @@
     background: #2a2a2a;
   }
   .card-thumb-empty {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border: 1px solid #3a3a3a;
     background: #2a2a2a;
+
+    .card-thumb-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+      line-height: 18px;
+      color: #7a7a7a;
+    }
   }
 
   .binder-card-name {

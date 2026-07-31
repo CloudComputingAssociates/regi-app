@@ -272,7 +272,11 @@ import { Meal, Menu } from '../../models';
                     @if (mealThumb(meal); as src) {
                       <img [src]="src" alt="" class="card-thumb" />
                     } @else {
-                      <span class="card-thumb card-thumb-empty"></span>
+                      <!-- No photo yet — fork & knife placeholder (mobile can add
+                           a pic later) rather than a blank square. -->
+                      <span class="card-thumb card-thumb-empty">
+                        <mat-icon class="card-thumb-icon">restaurant</mat-icon>
+                      </span>
                     }
                     @if (editingMealId() === meal.id) {
                       <!-- Inline rename: title becomes editable; pencil → green

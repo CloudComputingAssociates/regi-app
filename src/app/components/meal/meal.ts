@@ -311,7 +311,9 @@ export class MealComponent {
 
   /** Source recipe URL for a stacked meal, from the cached full Meal. */
   recipeLinkFor(mealId: number): string {
-    return (this.rotation.getMeal(mealId)?.recipeLink ?? '').trim();
+    // Delegates to the service, which falls back to the fork source's link (a
+    // forked/placed imported meal drops its own RecipeLink server-side).
+    return this.rotation.recipeLinkFor(mealId);
   }
 
   openRecipe(url: string): void {

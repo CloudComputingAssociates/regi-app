@@ -281,6 +281,17 @@ export class RotationService {
     return primary?.food?.foodImage?.trim() || primary?.food?.foodImageThumbnail?.trim() || '';
   }
 
+  /** A meal's recipe-link URL. The server's fork-on-place/edit deliberately does
+   *  NOT copy RecipeLink to the fork (one-recipe → one-meal invariant), so a
+   *  placed/edited imported meal loses its link. Fall back to the fork source's
+   *  recipe link so the "(from recipe import)" hyperlink survives in-session. */
+  recipeLinkFor(mealId: number): string {
+    const own = this.getMeal(mealId)?.recipeLink?.trim();
+    if (own) return own;
+    const srcId = this.forkSource.get(mealId);
+    return (srcId != null ? this.getMeal(srcId)?.recipeLink?.trim() : '') || '';
+  }
+
   slotItems(mealId: number | null | undefined): MealItem[] {
     if (mealId == null) return [];
     return this.mealsById().get(mealId)?.items ?? [];
