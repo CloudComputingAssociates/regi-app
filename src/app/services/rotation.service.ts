@@ -246,15 +246,39 @@ export class RotationService {
     return this.mealsById().get(mealId) ?? null;
   }
 
-  /** A meal's cover image URL. A fork made on edit does NOT inherit the source's
-   *  image (the server's /meal/{id}/duplicate deliberately drops MealImage), so
-   *  fall back to the fork's source image so the tile keeps its photo. '' when
-   *  neither has one. */
+  /** A meal's cover image URL, in preference order:
+   *   1. the meal's own MealImage (a real meal photo),
+   *   2. the fork source's MealImage (a fork made on edit does NOT inherit the
+   *      source's image — the server's /meal/{id}/duplicate deliberately drops
+   *      MealImage — so borrow it while we still have the source in-session),
+   *   3. the PRIMARY-PROTEIN food's image (so AI-generated / imageless meals show
+   *      the star ingredient's picture instead of a blank tile). Prefers the
+   *      full-resolution `foodImage`; falls back to the thumbnail until the API
+   *      enriches meal items with the full image. '' when nothing is available. */
   coverImageFor(mealId: number): string {
-    const own = this.getMeal(mealId)?.mealImage?.trim();
+    const meal = this.getMeal(mealId);
+    const own = meal?.mealImage?.trim();
     if (own) return own;
     const srcId = this.forkSource.get(mealId);
-    return (srcId != null ? this.getMeal(srcId)?.mealImage?.trim() : '') || '';
+    const src = srcId != null ? this.getMeal(srcId) : null;
+    const srcImg = src?.mealImage?.trim();
+    if (srcImg) return srcImg;
+    return this.primaryProteinImage(meal) || this.primaryProteinImage(src) || '';
+  }
+
+  /** The star ingredient's picture — the meal's primary-protein food image. Full
+   *  resolution when present, else its thumbnail. '' if the meal has no items
+   *  loaded or no protein image. */
+  private primaryProteinImage(meal: Meal | null | undefined): string {
+    if (!meal) return '';
+    const items = meal.items ?? [];
+    const primary =
+      (meal.primaryProteinFoodId != null
+        ? items.find((it) => it.food?.foodId === meal.primaryProteinFoodId)
+        : undefined) ??
+      items.find((it) => it.itemRole === 'primary') ??
+      items.find((it) => (it.food?.foodImage ?? it.food?.foodImageThumbnail ?? '').trim());
+    return primary?.food?.foodImage?.trim() || primary?.food?.foodImageThumbnail?.trim() || '';
   }
 
   slotItems(mealId: number | null | undefined): MealItem[] {
@@ -620,7 +644,46 @@ export class RotationService {
       this.selectedMenuId.set(target.menuId);
       await this.selectMenu(target.menuId);
     }
-    this.beginEditingSlot(target.menuId, target.slotOrder, null);
+    await this.createMealInSlot(target.menuId, target.slotOrder);
+  }
+
+  /** "Create from scratch" on a specific empty slot — immediately create a named
+   *  "Meal N" (next free number in this menu), place it in the slot so a tile
+   *  shows right away, then open it for editing (food picker) so the user builds
+   *  it up. The user renames it later (pencil) or pins it to the Binder. */
+  async createMealInSlot(menuId: number, slotOrder: number): Promise<void> {
+    try {
+      const createBody: CreateMealRequest = { name: this.nextMealName(menuId) };
+      const meal = await firstValueFrom(
+        this.http.post<Meal>(`${this.baseUrl}/meal`, createBody),
+      );
+      await this.addMealToSlot(menuId, slotOrder, meal.id);
+      this.mealsById.update((m) => new Map(m).set(meal.id, meal));
+      // Reload the menu so the new tile appears, then open it for editing.
+      const updated = await firstValueFrom(
+        this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
+      );
+      this.cacheMenu(menuId, updated);
+      this.editingSlot.set({ menuId, slotOrder, mealId: meal.id });
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** The next free "Meal N" name for a menu — the smallest positive integer not
+   *  already used by a "Meal N"-named meal in that menu's slots. */
+  private nextMealName(menuId: number): string {
+    const used = new Set<number>();
+    const menu = this.menusById().get(menuId);
+    for (const slot of menu?.slots ?? []) {
+      for (const sm of slot.meals ?? []) {
+        const m = /^meal\s+(\d+)$/i.exec((sm.mealName ?? '').trim());
+        if (m) used.add(Number(m[1]));
+      }
+    }
+    let n = 1;
+    while (used.has(n)) n++;
+    return `Meal ${n}`;
   }
 
   /** Names of meals the session already knows — meals placed in the selected

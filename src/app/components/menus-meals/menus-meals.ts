@@ -70,13 +70,12 @@ export class MenusMealsComponent {
     return e != null && e.menuId === this.menu()?.id && e.slotOrder === slotOrder;
   }
 
-  /** "Create from scratch" on an empty slot — begin building a new meal here.
-   *  Sets the editing slot (mealId null), which swaps the Binder rail for the
-   *  food picker; the meal row is created on the first food add. */
+  /** "Create from scratch" on an empty slot — create a named "Meal N" here right
+   *  away (so a tile appears) and open it for editing (food picker). */
   onCreateHere(slot: MenuSlot): void {
     const menuId = this.menu()?.id;
     if (menuId == null) return;
-    this.rotation.beginEditingSlot(menuId, slot.slotOrder, null);
+    void this.rotation.createMealInSlot(menuId, slot.slotOrder);
   }
 
   /** A binder meal was dropped on a slot (empty placeholder or front grid) —
