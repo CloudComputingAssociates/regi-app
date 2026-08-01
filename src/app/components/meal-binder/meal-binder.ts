@@ -50,7 +50,6 @@ import { Meal, Menu } from '../../models';
         <!-- Menus accordion (top-level; larger header). Starts COLLAPSED. -->
         <div class="rail-section">
           <button type="button" class="section-head" (click)="binderMenusOpen.set(!binderMenusOpen())">
-            <mat-icon class="section-icon section-icon-binder">description</mat-icon>
             <span class="section-label">Menus</span>
             <span class="section-count">({{ rotation.binderMenus().length }})</span>
             <mat-icon class="section-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
@@ -121,7 +120,6 @@ import { Meal, Menu } from '../../models';
              the space above the list. This is the ONLY create surface. -->
         <div class="rail-section">
           <div class="section-head section-head-static section-head-meals">
-            <mat-icon class="section-icon section-icon-binder">restaurant</mat-icon>
             <span class="section-label">Meals</span>
             <span class="section-count">({{ rotation.binderMeals().length }})</span>
             <div class="header-toggles">
@@ -245,7 +243,9 @@ import { Meal, Menu } from '../../models';
                       (change)="filterFromRecipe.set($any($event.target).checked)" />
                     from recipe
                   </label>
-                  <button type="button" class="filter-clear" (click)="clearFilter()">Clear</button>
+                  <button type="button" class="filter-clear" (click)="clearFilter()">
+                    <mat-icon>clear_all</mat-icon>Clear All
+                  </button>
                 </div>
               </fieldset>
               <div class="sort-row">

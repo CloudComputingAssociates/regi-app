@@ -238,20 +238,31 @@
     font-family: inherit;
     font-size: 13px;
     color: #f0f0f0;
-    background: linear-gradient(180deg, #565656 0%, #434343 100%);
+    background-color: #4a4a4a; // solid fallback so the popup list isn't white
+    background-image: linear-gradient(180deg, #565656 0%, #434343 100%);
     border: 1px solid #262626;
     border-top-color: #6f6f6f;
     border-radius: 6px;
     outline: none;
     cursor: pointer;
     &:focus { box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.6); }
+
+    // The open dropdown list is OS-drawn — force dark options so text is legible.
+    option {
+      background-color: #3a3a3a;
+      color: #f0f0f0;
+    }
   }
 
   .filter-clear {
     flex: 0 0 auto;
     margin-left: auto; // pin Clear to the far right of the checkbox row
-    padding: 5px 12px;
-    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap; // icon + label stay on one line
+    padding: 4px 8px;
+    font-size: 11px;
     font-weight: 500;
     color: #f0f0f0;
     background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
@@ -262,6 +273,9 @@
       0 2px 3px rgba(0, 0, 0, 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     cursor: pointer;
+
+    .mat-icon { width: 15px; height: 15px; font-size: 15px; line-height: 15px; }
+
     &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); }
     &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45); }
   }
