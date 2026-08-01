@@ -152,46 +152,36 @@
     0 0 12px rgba(77, 166, 255, 0.4);
 }
 
-// Filter panel — two left-justified rows:
-//   FILTER [search box]
-//   SORT   ○ Protein  ○ Fiber            [Clear]
-// Same blue bloom border as the Create panel.
+// Filter panel: a bordered "Filter" fieldset (search + checkboxes + Clear), then
+// a Sort dropdown BELOW it, outside the frame.
 .filter-body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
   margin: 4px 8px 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(77, 166, 255, 0.6);
-  background: rgba(77, 166, 255, 0.05);
-  box-shadow:
-    0 0 0 1px rgba(77, 166, 255, 0.35),
-    0 0 12px rgba(77, 166, 255, 0.4);
 
-  .filter-row {
+  // The bordered box with "Filter" sitting in the top border line.
+  .filter-fieldset {
+    margin: 0;
+    padding: 6px 10px 10px;
+    border: 1px solid rgba(77, 166, 255, 0.6);
+    border-radius: 8px;
     display: flex;
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column;
     gap: 8px;
-  }
 
-  // "FILTER" / "SORT" labels — small, blue, uppercase. Fixed width so the search
-  // box and the radios line up under each other.
-  .filter-label {
-    flex: 0 0 46px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #4da6ff;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
+    legend {
+      padding: 0 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #4da6ff;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
   }
 
   .filter-search {
-    flex: 1 1 auto;
-    min-width: 0;
     padding: 6px 9px;
     font-family: inherit;
     font-size: 13px;
@@ -205,11 +195,18 @@
     &:focus { box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.6); }
   }
 
-  .sort-opt {
-    flex: 0 0 auto;
+  // Checkbox row + Clear (Clear pinned right).
+  .filter-checks {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+  }
+
+  .check-opt {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     font-size: 13px;
     color: #e0e0e0;
     cursor: pointer;
@@ -217,9 +214,42 @@
     input { accent-color: #4da6ff; cursor: pointer; }
   }
 
+  // Sort row — below the fieldset, outside the frame.
+  .sort-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 2px;
+  }
+
+  .filter-label {
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #4da6ff;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .sort-select {
+    flex: 0 0 auto;
+    padding: 5px 8px;
+    font-family: inherit;
+    font-size: 13px;
+    color: #f0f0f0;
+    background: linear-gradient(180deg, #565656 0%, #434343 100%);
+    border: 1px solid #262626;
+    border-top-color: #6f6f6f;
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+    &:focus { box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.6); }
+  }
+
   .filter-clear {
     flex: 0 0 auto;
-    margin-left: auto; // pin Clear to the far right of the SORT row
+    margin-left: auto; // pin Clear to the far right of the checkbox row
     padding: 5px 12px;
     font-size: 12px;
     font-weight: 500;

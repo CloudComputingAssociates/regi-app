@@ -217,40 +217,47 @@ import { Meal, Menu } from '../../models';
             </div>
           }
           @if (filterOpen()) {
-            <!-- Two lines, left-justified:
-                   FILTER [search box]
-                   SORT   ○ Protein  ○ Fiber            [Clear]
+            <!-- Bordered "Filter" fieldset holds the keyword search, the two
+                 filter checkboxes, and Clear. Sort sits BELOW, outside the box.
                  Search matches meal name + primary protein (all the list carries);
-                 the radios sort the whole list highest-first + auto-expand top 3. -->
+                 the sort orders the whole list highest-first + auto-expands top 3. -->
             <div class="section-body filter-body">
-              <div class="filter-row">
-                <span class="filter-label">FILTER</span>
+              <fieldset class="filter-fieldset">
+                <legend>Filter</legend>
                 <input
                   type="text"
                   class="filter-search"
                   placeholder="ingredient or meal keyword"
                   [value]="searchText()"
                   (input)="searchText.set($any($event.target).value)" />
-              </div>
-              <div class="filter-row">
-                <span class="filter-label">SORT</span>
-                <label class="sort-opt">
-                  <input
-                    type="radio"
-                    name="binderSort"
-                    [checked]="sortBy() === 'protein'"
-                    (change)="sortBy.set('protein')" />
-                  Protein
-                </label>
-                <label class="sort-opt">
-                  <input
-                    type="radio"
-                    name="binderSort"
-                    [checked]="sortBy() === 'fiber'"
-                    (change)="sortBy.set('fiber')" />
-                  Fiber
-                </label>
-                <button type="button" class="filter-clear" (click)="clearFilter()">Clear</button>
+                <div class="filter-checks">
+                  <label class="check-opt">
+                    <input
+                      type="checkbox"
+                      [checked]="filterRegiApproved()"
+                      (change)="filterRegiApproved.set($any($event.target).checked)" />
+                    Regi-approved
+                  </label>
+                  <label class="check-opt">
+                    <input
+                      type="checkbox"
+                      [checked]="filterFromRecipe()"
+                      (change)="filterFromRecipe.set($any($event.target).checked)" />
+                    from recipe
+                  </label>
+                  <button type="button" class="filter-clear" (click)="clearFilter()">Clear</button>
+                </div>
+              </fieldset>
+              <div class="sort-row">
+                <span class="filter-label">Sort</span>
+                <select
+                  class="sort-select"
+                  [value]="sortBy() ?? 'none'"
+                  (change)="onSortChange($any($event.target).value)">
+                  <option value="none">None</option>
+                  <option value="protein">Protein</option>
+                  <option value="fiber">Fiber</option>
+                </select>
               </div>
             </div>
           }
@@ -475,14 +482,22 @@ export class MealBinderComponent implements OnInit {
   // ----- Binder Meals filter + sort -----------------------------------------
   /** Keyword typed in the Filter search box (matches name + primary protein). */
   readonly searchText = signal('');
+  /** Filter checkboxes — both default OFF. */
+  readonly filterRegiApproved = signal(false);
+  readonly filterFromRecipe = signal(false);
   /** Active sort, or null for the default alphabetical order. Always descending. */
   readonly sortBy = signal<'protein' | 'fiber' | null>(null);
   /** How many top meals auto-expand when a sort is active. */
   private readonly SORT_EXPAND_TOP = 3;
 
-  /** The Meals list as displayed: keyword-filtered, then either sorted by the
-   *  chosen macro (descending) or in the default order — default-named meals
-   *  ("Meal N") first in numeric order, then everything else alphabetical. */
+  /** Map the Sort dropdown value to the sort signal. */
+  onSortChange(value: string): void {
+    this.sortBy.set(value === 'protein' ? 'protein' : value === 'fiber' ? 'fiber' : null);
+  }
+
+  /** The Meals list as displayed: keyword- + checkbox-filtered, then either
+   *  sorted by the chosen macro (descending) or in the default order —
+   *  default-named meals ("Meal N") first in numeric order, then alphabetical. */
   readonly displayMeals = computed<Meal[]>(() => {
     const q = this.searchText().trim().toLowerCase();
     let list = this.rotation.binderMeals();
@@ -492,6 +507,12 @@ export class MealBinderComponent implements OnInit {
           m.name?.toLowerCase().includes(q) ||
           (m.primaryProteinName ?? '').toLowerCase().includes(q),
       );
+    }
+    if (this.filterRegiApproved()) {
+      list = list.filter((m) => m.isRegiApproved === true);
+    }
+    if (this.filterFromRecipe()) {
+      list = list.filter((m) => (m.recipeLink ?? '').trim() !== '');
     }
     const sort = this.sortBy();
     const sorted = [...list];
@@ -525,6 +546,8 @@ export class MealBinderComponent implements OnInit {
   clearFilter(): void {
     this.searchText.set('');
     this.sortBy.set(null);
+    this.filterRegiApproved.set(false);
+    this.filterFromRecipe.set(false);
     this.expandedCards.update((s) => {
       const next = new Set(s);
       for (const key of next) if (key.startsWith('meal-')) next.delete(key);
