@@ -225,7 +225,7 @@ import { Meal, Menu } from '../../models';
                 <input
                   type="text"
                   class="filter-search"
-                  placeholder="ingredient or meal keyword"
+                  placeholder="type ingredient or meal name"
                   [value]="searchText()"
                   (input)="searchText.set($any($event.target).value)" />
                 <div class="filter-checks">
@@ -243,8 +243,13 @@ import { Meal, Menu } from '../../models';
                       (change)="filterFromRecipe.set($any($event.target).checked)" />
                     from recipe
                   </label>
-                  <button type="button" class="filter-clear" (click)="clearFilter()">
-                    <mat-icon>clear_all</mat-icon>Clear All
+                  <button
+                    type="button"
+                    class="filter-clear"
+                    matTooltip="Clear all"
+                    matTooltipPosition="above"
+                    (click)="clearFilter()">
+                    <mat-icon>clear_all</mat-icon>
                   </button>
                 </div>
               </fieldset>
