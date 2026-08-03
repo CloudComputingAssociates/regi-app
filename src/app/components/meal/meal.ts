@@ -127,14 +127,15 @@ interface Macro {
                     type="text"
                     class="meal-name-box regi-field"
                     [value]="clean(fm.mealName)"
+                    (input)="onNameInput(fm.mealId, nameBox.value)"
                     (keydown.enter)="nameBox.blur()"
-                    (keydown.escape)="nameBox.value = clean(fm.mealName); nameBox.blur()"
+                    (keydown.escape)="nameBox.value = clean(fm.mealName); onNameInput(fm.mealId, nameBox.value); nameBox.blur()"
                     (blur)="commitName(fm, nameBox.value)"
                     aria-label="Meal name" />
                   <button
                     type="button"
                     class="icon-disc"
-                    [class.icon-disc-confirm]="isDirty(fm.mealId)"
+                    [class.icon-disc-confirm]="isDirty(fm.mealId) || nameDirty(fm)"
                     matTooltip="Save changes"
                     (click)="pinMeal.emit(fm.mealId)">
                     <mat-icon>check</mat-icon>
@@ -324,12 +325,28 @@ export class MealComponent {
     return this.rotation.isMealDirty(mealId);
   }
 
+  /** Live name-edit tracking so the green save-check lights while the typed name
+   *  differs from the saved one — independent of the pin/dirty state. */
+  readonly editingName = signal<{ id: number; val: string } | null>(null);
+
+  onNameInput(mealId: number, val: string): void {
+    this.editingName.set({ id: mealId, val });
+  }
+
+  nameDirty(fm: MenuSlotMeal): boolean {
+    const e = this.editingName();
+    if (!e || e.id !== fm.mealId) return false;
+    const v = e.val.trim();
+    return v !== '' && v !== this.clean(fm.mealName);
+  }
+
   /** Strip the server's trailing " (copy)" (from copy-on-write forks) for display. */
   clean(name: string | null | undefined): string {
     return (name ?? '').replace(/(\s*\(copy\))+\s*$/i, '').trim();
   }
 
   commitName(fm: MenuSlotMeal, value: string): void {
+    this.editingName.set(null);
     const name = value.trim();
     if (!name || name === this.clean(fm.mealName)) return;
     this.renameMeal.emit({ mealId: fm.mealId, name });
