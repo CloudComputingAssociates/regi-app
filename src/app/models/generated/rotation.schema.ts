@@ -331,6 +331,7 @@ export interface MenuSlotMeal {
   mealName?: string | null;
   mealType?: string | null;
   mealImageThumbnail?: string | null;
+  clonedFromMealId?: number | null;
   macros?: MenuMacros;
   [k: string]: unknown;
 }

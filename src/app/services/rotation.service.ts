@@ -246,11 +246,25 @@ export class RotationService {
     return this.mealsById().get(mealId) ?? null;
   }
 
+  /** The Binder original a fork descends from, resolved from the PERSISTED
+   *  `clonedFromMealId` back-pointer against the loaded Binder list. Fork sources
+   *  are always pinned Binder meals, so `binderMeals` reliably holds them with
+   *  their `mealImage`/`mealImageThumbnail` and `recipeLink` (the list select
+   *  carries those, though not items). null when the meal isn't a fork, or the
+   *  original isn't loaded (binder not yet fetched / unpinned / deleted) — callers
+   *  then fall through to their existing fallbacks. Survives reload (unlike the
+   *  old in-memory fork map), since the back-pointer is on the meal row. */
+  private forkOriginal(meal: Meal | null | undefined): Meal | null {
+    const srcId = meal?.clonedFromMealId;
+    if (srcId == null) return null;
+    return this.binderMeals().find((m) => m.id === srcId) ?? null;
+  }
+
   /** A meal's cover image URL, in preference order:
    *   1. the meal's own MealImage (a real meal photo),
-   *   2. the fork source's MealImage (a fork made on edit does NOT inherit the
-   *      source's image — the server's /meal/{id}/duplicate deliberately drops
-   *      MealImage — so borrow it while we still have the source in-session),
+   *   2. the fork ORIGINAL's MealImage, resolved via `clonedFromMealId` (a fork
+   *      does NOT inherit the source's image — /meal/{id}/duplicate deliberately
+   *      drops it — so borrow the original's from the Binder list),
    *   3. the PRIMARY-PROTEIN food's image (so AI-generated / imageless meals show
    *      the star ingredient's picture instead of a blank tile). Prefers the
    *      full-resolution `foodImage`; falls back to the thumbnail until the API
@@ -259,11 +273,9 @@ export class RotationService {
     const meal = this.getMeal(mealId);
     const own = meal?.mealImage?.trim();
     if (own) return own;
-    const srcId = this.forkSource.get(mealId);
-    const src = srcId != null ? this.getMeal(srcId) : null;
-    const srcImg = src?.mealImage?.trim();
+    const srcImg = this.forkOriginal(meal)?.mealImage?.trim();
     if (srcImg) return srcImg;
-    return this.primaryProteinImage(meal) || this.primaryProteinImage(src) || '';
+    return this.primaryProteinImage(meal) || '';
   }
 
   /** The star ingredient's picture — the meal's primary-protein food image. Full
@@ -283,13 +295,13 @@ export class RotationService {
 
   /** A meal's recipe-link URL. The server's fork-on-place/edit deliberately does
    *  NOT copy RecipeLink to the fork (one-recipe → one-meal invariant), so a
-   *  placed/edited imported meal loses its link. Fall back to the fork source's
-   *  recipe link so the "(from recipe import)" hyperlink survives in-session. */
+   *  placed/edited imported meal loses its link. Fall back to the fork ORIGINAL's
+   *  recipe link (resolved via `clonedFromMealId` against the Binder list) so the
+   *  "(from recipe import)" hyperlink survives — including across a reload. */
   recipeLinkFor(mealId: number): string {
     const own = this.getMeal(mealId)?.recipeLink?.trim();
     if (own) return own;
-    const srcId = this.forkSource.get(mealId);
-    return (srcId != null ? this.getMeal(srcId)?.recipeLink?.trim() : '') || '';
+    return this.forkOriginal(this.getMeal(mealId))?.recipeLink?.trim() || '';
   }
 
   slotItems(mealId: number | null | undefined): MealItem[] {

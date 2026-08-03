@@ -111,7 +111,11 @@ interface Macro {
             </div>
 
             <!-- BACK: the one flipped meal, full detail. -->
-            <div class="flip-back">
+            <div
+              class="flip-back"
+              cdkDropList
+              [cdkDropListEnterPredicate]="foodDropPredicate"
+              (cdkDropListDropped)="onDropMeal($event)">
               @if (flippedMeal(); as fm) {
                 <!-- Same ">" control, same bottom-right corner as the FRONT tiles. -->
                 <button
@@ -361,14 +365,34 @@ export class MealComponent {
     return !!d && typeof d === 'object' && 'id' in d && !('food' in d) && !('slots' in d);
   }
 
-  /** Empty-slot placeholder accepts a binder meal drag. */
-  readonly mealDropPredicate = (drag: CdkDrag): boolean => this.isMealDrag(drag.data);
+  /** A food dragged from the lookaside carries { food, serving }. */
+  private isFoodDrag(d: unknown): d is { food: Food; serving: number } {
+    return !!d && typeof d === 'object' && 'food' in d;
+  }
 
-  /** Front grid accepts an append only while the slot has room and isn't dining-out. */
+  /** Empty-slot placeholder accepts a binder meal drag; while this slot is being
+   *  edited it also accepts a food dragged from the lookaside. */
+  readonly mealDropPredicate = (drag: CdkDrag): boolean =>
+    this.isFoodDrag(drag.data) ? this.editing() : this.isMealDrag(drag.data);
+
+  /** Front grid accepts a meal append (room + not dining-out) OR, while editing,
+   *  a food dragged from the lookaside. */
   readonly appendPredicate = (drag: CdkDrag): boolean =>
-    !this.isFull() && !this.slot().isDiningOut && this.isMealDrag(drag.data);
+    this.isFoodDrag(drag.data)
+      ? this.editing()
+      : !this.isFull() && !this.slot().isDiningOut && this.isMealDrag(drag.data);
+
+  /** Back-face (ingredient list) accepts a food drop while editing. */
+  readonly foodDropPredicate = (drag: CdkDrag): boolean =>
+    this.isFoodDrag(drag.data) && this.editing();
 
   onDropMeal(event: CdkDragDrop<unknown>): void {
+    // A food dragged from the lookaside → add it to the editing meal.
+    if (this.isFoodDrag(event.item.data)) {
+      const { food, serving } = event.item.data;
+      this.dropFood.emit({ food, serving: serving ?? 1 });
+      return;
+    }
     const meal = event.item.data as { id?: number } | undefined;
     if (meal?.id == null) return;
     this.placeMeal.emit({ slotOrder: this.slot().slotOrder, mealId: meal.id });

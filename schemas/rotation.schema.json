@@ -343,6 +343,7 @@
         "mealName": { "type": ["string", "null"] },
         "mealType": { "type": ["string", "null"] },
         "mealImageThumbnail": { "type": ["string", "null"] },
+        "clonedFromMealId": { "type": ["integer", "null"] },
         "macros": { "$ref": "#/definitions/MenuMacros" }
       },
       "required": ["position", "mealId"]

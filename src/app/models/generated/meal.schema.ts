@@ -167,7 +167,7 @@ export interface MealItemFood {
    */
   productPurchaseLink?: string | null;
   /**
-   * True when this food is a dynamic recipe ingredient — a UserFoods row auto-created during recipe import for an unmatched ingredient line (not a curated MyFoods entry). Drives the meal display's 'Dynamic Ingredients added' accordion + icon. Absent/false for real MyFoods / REGI-approved foods.
+   * True for UserFoods rows auto-created during recipe import for an unmatched ingredient line; drives the app's Dynamic Ingredients accordion. False for curated MyFoods / REGI-approved foods.
    */
   dynamicIngredient?: boolean;
   [k: string]: unknown;
@@ -203,6 +203,10 @@ export interface Meal {
    * Set once at fork-on-place; immutable after. Divergence from the source is derived as updatedAt > createdAt
    */
   cloned: boolean;
+  /**
+   * Source meal id when this is a fork (fork-on-place/edit); null for originals. Back-pointer the client resolves for the original's recipeLink/image — RecipeLink itself is NOT copied, so one-recipe→one-meal cascade-delete is untouched
+   */
+  clonedFromMealId?: number | null;
   /**
    * User rating 1–5, or null
    */
