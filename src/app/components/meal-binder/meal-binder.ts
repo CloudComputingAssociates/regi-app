@@ -27,6 +27,7 @@ import { RotationService } from '../../services/rotation.service';
 import { RecipeService } from '../../services/recipe.service';
 import { RecipeImportWatcher } from '../../services/recipe-import-watcher.service';
 import { NotificationService } from '../../services/notification.service';
+import { PreferencesService } from '../../services/preferences.service';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 import { Meal, Menu } from '../../models';
 
@@ -234,14 +235,21 @@ import { Meal, Menu } from '../../models';
                       type="checkbox"
                       [checked]="filterRegiApproved()"
                       (change)="filterRegiApproved.set($any($event.target).checked)" />
-                    Regi-approved
+                    Regi
+                  </label>
+                  <label class="check-opt">
+                    <input
+                      type="checkbox"
+                      [checked]="filterCommunity()"
+                      (change)="filterCommunity.set($any($event.target).checked)" />
+                    Community
                   </label>
                   <label class="check-opt">
                     <input
                       type="checkbox"
                       [checked]="filterFromRecipe()"
                       (change)="filterFromRecipe.set($any($event.target).checked)" />
-                    from recipe
+                    from Recipe
                   </label>
                   <button
                     type="button"
@@ -387,6 +395,7 @@ export class MealBinderComponent implements OnInit {
   private recipeService = inject(RecipeService);
   private watcher = inject(RecipeImportWatcher);
   private notification = inject(NotificationService);
+  private preferences = inject(PreferencesService);
 
   /** Single-flight lock for the "From recipe…" button. Goes true on PDF select,
    *  reads "Importing…" while true, and blocks a second import. Released in
@@ -487,8 +496,9 @@ export class MealBinderComponent implements OnInit {
   // ----- Binder Meals filter + sort -----------------------------------------
   /** Keyword typed in the Filter search box (matches name + primary protein). */
   readonly searchText = signal('');
-  /** Filter checkboxes — both default OFF. */
+  /** Filter checkboxes — all default OFF. */
   readonly filterRegiApproved = signal(false);
+  readonly filterCommunity = signal(false);
   readonly filterFromRecipe = signal(false);
   /** Active sort, or null for the default alphabetical order. Always descending. */
   readonly sortBy = signal<'protein' | 'fiber' | null>(null);
@@ -506,6 +516,16 @@ export class MealBinderComponent implements OnInit {
   readonly displayMeals = computed<Meal[]>(() => {
     const q = this.searchText().trim().toLowerCase();
     let list = this.rotation.binderMeals();
+    // Settings-level gating (Menu settings → "Meals" row): drop meal categories
+    // the user has hidden from the Binder. Both default ON, so the default view
+    // is unchanged. A meal that is neither community nor Regi-approved (the
+    // user's own) is never gated out here.
+    if (!this.preferences.showCommunityMeals()) {
+      list = list.filter((m) => m.shareApproved !== true);
+    }
+    if (!this.preferences.showRegiApprovedMeals()) {
+      list = list.filter((m) => m.isRegiApproved !== true);
+    }
     if (q) {
       list = list.filter(
         (m) =>
@@ -515,6 +535,9 @@ export class MealBinderComponent implements OnInit {
     }
     if (this.filterRegiApproved()) {
       list = list.filter((m) => m.isRegiApproved === true);
+    }
+    if (this.filterCommunity()) {
+      list = list.filter((m) => m.shareApproved === true);
     }
     if (this.filterFromRecipe()) {
       list = list.filter((m) => (m.recipeLink ?? '').trim() !== '');
@@ -552,6 +575,7 @@ export class MealBinderComponent implements OnInit {
     this.searchText.set('');
     this.sortBy.set(null);
     this.filterRegiApproved.set(false);
+    this.filterCommunity.set(false);
     this.filterFromRecipe.set(false);
     this.expandedCards.update((s) => {
       const next = new Set(s);

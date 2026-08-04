@@ -911,6 +911,19 @@
       flex-shrink: 0;
     }
 
+    // "Meals" row checkboxes (Community / Regi-approved) — inline with the label.
+    .meal-source-opt {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #ffffff;
+      font-size: 12px;
+      white-space: nowrap;
+      cursor: pointer;
+
+      input { cursor: pointer; }
+    }
+
     // Compact numeric input (Meal Repeats) — small, since it holds one digit.
     .setting-number {
       width: 38px;

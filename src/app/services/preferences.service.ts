@@ -100,6 +100,25 @@ export class PreferencesService {
   // Display mode: true = show percentages, false = show grams/absolute values
   readonly showPercent = signal(false);
 
+  // Binder meal-source visibility (Menu settings → "Meals" row). Decide which
+  // admin/community meal categories appear in the Binder. Both default ON so
+  // existing behavior (show everything) is unchanged. Persisted to localStorage
+  // — mirrors the useImperial bridge — until the API's regiMenu settings gain
+  // matching fields; see the API handoff note. NOT sent over the wire, so the
+  // regiMenu PUT payload is untouched (no 400 risk on the existing save path).
+  readonly showCommunityMeals = signal(localStorage.getItem('regi_showCommunityMeals') !== 'false');
+  readonly showRegiApprovedMeals = signal(localStorage.getItem('regi_showRegiApprovedMeals') !== 'false');
+
+  setShowCommunityMeals(value: boolean): void {
+    this.showCommunityMeals.set(value);
+    localStorage.setItem('regi_showCommunityMeals', String(value));
+  }
+
+  setShowRegiApprovedMeals(value: boolean): void {
+    this.showRegiApprovedMeals.set(value);
+    localStorage.setItem('regi_showRegiApprovedMeals', String(value));
+  }
+
   readonly preferences = this.preferencesSignal.asReadonly();
   readonly isLoading = this.loadingSignal.asReadonly();
   readonly isLoaded = this.loadedSignal.asReadonly();
