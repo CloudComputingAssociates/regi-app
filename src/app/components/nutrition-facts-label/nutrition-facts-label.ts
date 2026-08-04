@@ -262,7 +262,10 @@ function dvPercent(actual: number | undefined | null, reference: number): number
     .nf-serving-size {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      // Left-packed: "Serving size" · steppers · value, all tight to the left.
+      // The value (and its recalculating "(130g)") grows RIGHTWARD into free
+      // space, so the steppers never shift as you press up/down.
+      justify-content: flex-start;
       gap: 6px;
       font-weight: 700;
       font-size: 13px;
@@ -271,13 +274,14 @@ function dvPercent(actual: number | undefined | null, reference: number): number
     // Up / down arrow pair, vertically stacked, sized small so they sit
     // between "Serving size" and the displayed quantity without inflating
     // the row height significantly. Pure CSS — no Material dep — so the
-    // label stays self-contained.
+    // label stays self-contained. Left-attached (no margin-left:auto) so the
+    // steppers hold their position regardless of the value's changing width.
     .nf-serving-steppers {
       display: inline-flex;
       flex-direction: column;
       align-items: center;
       gap: 1px;
-      margin-left: auto;
+      flex: 0 0 auto;
     }
 
     .nf-serving-step {
