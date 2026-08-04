@@ -45,14 +45,6 @@ interface Macro {
            and the whole-slot clear (wipes ALL meals). -->
       <div class="slot-header">
         <span class="slot-title">Slot {{ slot().slotOrder }}</span>
-        @if (hasUnsavedMeal()) {
-          <!-- This slot holds a meal that isn't a Binder meal yet, so it blocks
-               the menu save. Flip the tile and use its green check to save it. -->
-          <span
-            class="slot-unsaved"
-            matTooltip="Unsaved — save this meal to your Binder (flip the tile) before saving the menu"
-            matTooltipPosition="above">unsaved</span>
-        }
         @if (!isEmpty() && !slot().isDiningOut) {
           <span class="chip protein">P {{ round(macros().proteinG) }}</span>
           <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
@@ -100,10 +92,12 @@ interface Macro {
                   @if (tileImage(m); as src) {
                     <img class="tile-img" [src]="src" alt="" />
                   } @else {
-                    <div class="tile-noimg"><span>{{ clean(m.mealName) }}</span></div>
+                    <div class="tile-noimg"><span>{{ clean(m.mealName) }}{{ isMealModified(m) ? ' (modified)' : '' }}</span></div>
                   }
                   <div class="tile-scrim"></div>
-                  <span class="tile-name">{{ clean(m.mealName) }}</span>
+                  <!-- "(modified)" — same white title text — marks a meal that
+                       isn't a Binder meal yet (blocks the menu save until saved). -->
+                  <span class="tile-name">{{ clean(m.mealName) }}{{ isMealModified(m) ? ' (modified)' : '' }}</span>
                   <button
                     type="button"
                     class="tile-btn tile-flip"
@@ -266,16 +260,15 @@ export class MealComponent {
   readonly isEmpty = computed(() => !this.slot().isDiningOut && this.meals().length === 0);
   readonly isFull = computed(() => this.meals().length >= 4);
 
-  /** True when this slot holds a KNOWN unsaved meal (loaded + pinned !== true) —
-   *  i.e. one that blocks the menu save under the all-Binder rule. Unknown
-   *  (not-yet-loaded) meals are NOT flagged, to avoid a flash during prefetch;
-   *  the menu save gate (menuAllSlotsClean) treats unknown as not-savable. */
-  readonly hasUnsavedMeal = computed<boolean>(() =>
-    this.meals().some((m) => {
-      const meal = this.rotation.getMeal(m.mealId);
-      return meal != null && meal.pinned !== true;
-    }),
-  );
+  /** True when this specific tiled meal is KNOWN-modified (loaded + pinned !==
+   *  true) — not a Binder meal yet, so it blocks the menu save under the
+   *  all-Binder rule. Unknown (not-yet-loaded) meals are NOT flagged, to avoid a
+   *  flash during prefetch; the menu save gate (menuAllSlotsClean) still treats
+   *  unknown as not-savable. Drives the "(modified)" tag on the tile name. */
+  isMealModified(m: MenuSlotMeal): boolean {
+    const meal = this.rotation.getMeal(m.mealId);
+    return meal != null && meal.pinned !== true;
+  }
   /** Grid divisions: 1 (full), 2 (halves), 3–4 (quarters). */
   readonly gridCount = computed(() => Math.min(4, Math.max(this.meals().length, 1)));
 
