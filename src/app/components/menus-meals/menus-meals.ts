@@ -7,7 +7,6 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from '@angu
 import { MatDialog } from '@angular/material/dialog';
 import { Menu, MealItem, MenuSlot } from '../../models';
 import { RotationService, TEACH_SAVE_LINE } from '../../services/rotation.service';
-import { NotificationService } from '../../services/notification.service';
 import { MealComponent } from '../meal/meal';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 
@@ -44,7 +43,6 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
 export class MenusMealsComponent {
   readonly rotation = inject(RotationService);
   private dialog = inject(MatDialog);
-  private notification = inject(NotificationService);
 
   readonly menu = input.required<Menu | undefined>();
 
@@ -126,32 +124,12 @@ export class MenusMealsComponent {
     }
   }
 
-  /** Green check — save a stacked meal. A fork updates its Binder origin; a fresh
-   *  meal saves to the Binder (with a real-name nudge). Never a duplicate. */
+  /** Green check — save a slotted meal. The NAME decides: a copy still named like
+   *  its Binder original overwrites it in place; otherwise it's pinned as a new,
+   *  independent Binder meal. No dialog; the service owns the rule. */
   onPinMeal(mealId: number | null | undefined): void {
     if (mealId == null) return;
-    const sourceName = this.rotation.forkSourceName(mealId);
-    if (!sourceName) {
-      const name = (this.rotation.getMeal(mealId)?.name ?? '').trim();
-      if (name === '' || /^meal\s*\d+$/i.test(name)) {
-        this.notification.show(
-          'Give your meal a real name (not "Meal 2") before saving it to your Binder.',
-          'warning',
-        );
-        return;
-      }
-      void this.rotation.pinMeal(mealId);
-      return;
-    }
-    this.dialog.open(WipeConfirmDialogComponent, {
-      panelClass: 'wipe-dialog-panel',
-      data: {
-        title: 'Save changes',
-        message: `Save these changes to your Binder meal "${sourceName}"?`,
-        confirmLabel: 'Update binder meal',
-        onConfirm: () => void this.rotation.saveForkBackToBinder(mealId),
-      },
-    });
+    void this.rotation.saveSlottedCopy(mealId);
   }
 
   /** ✕ on a food row — remove that item from its meal. */

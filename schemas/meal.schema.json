@@ -213,6 +213,10 @@
         "recipeLink": {
           "type": "string",
           "description": "New recipe URL (empty string clears the link)"
+        },
+        "clearClonedFrom": {
+          "type": "boolean",
+          "description": "Clear-only: when true, sets clonedFromMealId to NULL so a copy pinned AS A NEW binder meal (renamed / from-scratch) becomes independent. Never sets a value — ClonedFromMealID stays server-owned (only DuplicateMeal writes it non-null)."
         }
       }
     },

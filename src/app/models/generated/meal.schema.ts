@@ -338,6 +338,10 @@ export interface UpdateMealRequest {
    * New recipe URL (empty string clears the link)
    */
   recipeLink?: string;
+  /**
+   * Clear-only: when true, sets clonedFromMealId to NULL so a copy pinned AS A NEW binder meal (renamed / from-scratch) becomes independent. Never sets a value — ClonedFromMealID stays server-owned (only DuplicateMeal writes it non-null).
+   */
+  clearClonedFrom?: boolean;
   [k: string]: unknown;
 }
 /**

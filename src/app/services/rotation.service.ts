@@ -346,11 +346,6 @@ export class RotationService {
     );
   }
 
-  /** fork → source Binder mealId, recorded at fork-on-edit time so a later save
-   *  can offer "update the Binder meal it came from." In-session only — a reload
-   *  loses it (the fork carries no persisted source link). */
-  private readonly forkSource = new Map<number, number>();
-
   /** The (menuId, slotOrder) of the slot being edited for a meal — the editing
    *  slot if it matches, else that meal's slot in the SELECTED menu. Targeted
    *  (not a global search) so fork-on-edit repoints the exact slot on screen. */
@@ -382,9 +377,8 @@ export class RotationService {
       );
       const forkId = stub.id;
       if (forkId == null) return { mealId, itemId };
-      // Remember which Binder meal this fork came from, so a later save can offer
-      // to push the edits back onto the original (in-session; a reload loses it).
-      this.forkSource.set(forkId, mealId);
+      // The fork's origin is the server-persisted clonedFromMealId (set by the
+      // duplicate endpoint) — no client-side bookkeeping needed.
       // The duplicate endpoint tacks " (copy)" onto the name. This fork is an
       // internal copy-on-write working copy, NOT a user "copy" — restore the
       // source's clean name so "(copy)" never appears. Non-fatal if it fails.
@@ -868,10 +862,14 @@ export class RotationService {
 
   /** Pin a meal to the Binder. PUT { pinned: true }. The server may postfix the
    *  name ("Salmon (1)") on a Binder-name collision — always adopt the RETURNED
-   *  meal. A pinned meal leaves the Folder, so refresh both lists. */
-  async pinMeal(mealId: number): Promise<void> {
+   *  meal. A pinned meal leaves the Folder, so refresh both lists.
+   *  `clearClonedFrom` (pin-AS-NEW path) also nulls the server's clonedFromMealId
+   *  so the new Binder meal is truly independent and stops borrowing the
+   *  original's image/recipe-link. */
+  async pinMeal(mealId: number, clearClonedFrom = false): Promise<void> {
     try {
       const body: UpdateMealRequest = { pinned: true };
+      if (clearClonedFrom) body.clearClonedFrom = true;
       const updated = await firstValueFrom(
         this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, body),
       );
@@ -1128,23 +1126,49 @@ export class RotationService {
     }
   }
 
-  /** Name of the Binder meal a slotted fork descends from, or null when this meal
-   *  isn't a tracked fork. Drives the "update the original?" save prompt. */
-  forkSourceName(mealId: number | null | undefined): string | null {
-    if (mealId == null) return null;
-    const sourceId = this.forkSource.get(mealId);
-    if (sourceId == null) return null;
-    return this.getMeal(sourceId)?.name ?? null;
+  /** Strip a trailing " (copy)" the duplicate endpoint may add, for name compares. */
+  private stripCopy(name: string | null | undefined): string {
+    return (name ?? '').replace(/(\s*\(copy\))+\s*$/i, '');
   }
 
-  /** Push a fork's current composition back onto the Binder meal it came from —
-   *  sync the original's items to the fork's via the existing per-item endpoints
-   *  (add / update / remove), so the original updates IN PLACE and keeps its
-   *  identity and any other slot references. Client-orchestrated; no dedicated
-   *  server op. Items are matched by food identity (foodSource:foodId, or name
-   *  for pending). Refreshes the source meal + Binder after. */
-  async saveForkBackToBinder(forkId: number): Promise<void> {
-    const sourceId = this.forkSource.get(forkId);
+  /** Save a slotted copy to the Binder — the NAME decides which of two things:
+   *   • it's a fork whose name still matches its Binder original → OVERWRITE the
+   *     original in place with this copy's contents.
+   *   • name changed, or it's built-from-scratch / has no resolvable original →
+   *     PIN AS NEW: it becomes its own Binder meal and severs the back-pointer
+   *     (clearClonedFrom) so it's fully independent.
+   *  No dialog; the button does exactly one of the two. */
+  async saveSlottedCopy(mealId: number): Promise<void> {
+    const meal = this.getMeal(mealId);
+    if (meal == null) return;
+    const original = this.forkOriginal(meal);
+    const namesMatch =
+      original != null &&
+      this.stripCopy(meal.name).trim() === this.stripCopy(original.name).trim();
+    if (namesMatch) {
+      await this.overwriteOriginal(mealId);
+      return;
+    }
+    // Pin as new — require a real name (not empty / "Meal 2").
+    const name = (meal.name ?? '').trim();
+    if (name === '' || /^meal\s*\d+$/i.test(name)) {
+      this.notification.show(
+        'Give your meal a real name (not "Meal 2") before saving it to your Binder.',
+        'warning',
+      );
+      return;
+    }
+    await this.pinMeal(mealId, true);
+  }
+
+  /** Overwrite a Binder original in place with a slotted copy's contents — sync
+   *  the original's items to the copy's via the per-item endpoints (add / update /
+   *  remove), matched by food identity (foodSource:foodId, or name for pending),
+   *  then repoint the slot to the original so it holds a real Binder meal (which
+   *  is what lets the menu be saved under the all-Binder rule). The source is the
+   *  copy's persisted `clonedFromMealId`. */
+  private async overwriteOriginal(forkId: number): Promise<void> {
+    const sourceId = this.getMeal(forkId)?.clonedFromMealId;
     if (sourceId == null) return;
     try {
       // Pull authoritative items for both sides (the cache may be partial).
@@ -1197,7 +1221,6 @@ export class RotationService {
         await this.replaceSlotMeal(loc.menuId, loc.slotOrder, forkId, sourceId);
         await this.refreshMenu(loc.menuId);
       }
-      this.forkSource.delete(forkId);
       await this.loadBinder();
       this.notification.show('Binder meal updated with your changes.', 'success');
     } catch (err) {
