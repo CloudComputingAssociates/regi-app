@@ -221,8 +221,13 @@ export class MenuCardRowComponent {
   /** The green save-check appears on EXACTLY two conditions:
    *   1) a pending name change in the box (draft differs from the shown name), or
    *   2) an unsaved (unpinned) menu still being built.
-   *  A saved (pinned) menu shows no check — its slot changes save automatically. */
+   *  A saved (pinned) menu shows no check — its slot changes save automatically.
+   *  In BOTH cases the check is withheld until every slot meal is a Binder meal
+   *  (rotation.menuAllSlotsClean) — a pre-click mirror of pinMenu's all-Binder
+   *  rule, so the click can't reach pinMenu just to fail on a toast. pinMenu keeps
+   *  its own check as the real backstop; this only hides the button early. */
   showSaveCheck(menu: RotationMenuEntry, index: number): boolean {
+    if (!this.rotation.menuAllSlotsClean(menu.menuId)) return false;
     if (!menu.pinned) return true; // (2) unsaved menu
     const draft = this.nameDraft().trim();
     return (

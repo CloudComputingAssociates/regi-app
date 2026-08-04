@@ -45,6 +45,22 @@
     white-space: nowrap;
   }
 
+  // Amber "unsaved" tag on a slot whose meal isn't a Binder meal yet — it's what
+  // blocks the menu save. Points the user to flip + save that meal.
+  .slot-unsaved {
+    flex: 0 0 auto;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #1a1200;
+    background: #ffb020;
+    padding: 1px 6px;
+    border-radius: 8px;
+    white-space: nowrap;
+    cursor: help;
+  }
+
   .clear-slot {
     margin-left: auto;
   }

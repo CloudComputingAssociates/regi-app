@@ -905,6 +905,27 @@ export class RotationService {
     }
   }
 
+  /** UI mirror of pinMenu's all-Binder save rule: true when EVERY slotted meal in
+   *  the menu resolves in the cache to `pinned === true`. Used to gate the menu
+   *  save control BEFORE the click (pinMenu keeps its own check as the backstop —
+   *  this only mirrors it, it does not enforce). Discriminator is `pinned` (same
+   *  as pinMenu), NOT clonedFromMealId. A slot meal not yet loaded in mealsById is
+   *  UNKNOWN → treated as not-clean (savable only once the board's prefetch
+   *  hydrates it); loaded-collection lookup only, never a per-slot fetch. Empty /
+   *  all-pinned menus are clean, matching pinMenu (which blocks only on an unsaved
+   *  meal). Returns false when the menu itself isn't cached yet. */
+  menuAllSlotsClean(menuId: number): boolean {
+    const menu = this.menusById().get(menuId);
+    if (menu == null) return false;
+    for (const slot of menu.slots ?? []) {
+      if (slot.isDiningOut) continue;
+      for (const sm of slot.meals ?? []) {
+        if (this.mealsById().get(sm.mealId)?.pinned !== true) return false;
+      }
+    }
+    return true;
+  }
+
   /** Pin a MENU to the Binder. PUT /menu/{id} { pinned: true } runs the server
    *  cascade — the menu AND every slotted meal flip pinned in one call — so we
    *  re-fetch the menu + its meals (every card's icon flips alive together) and
