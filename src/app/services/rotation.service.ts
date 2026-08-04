@@ -1260,6 +1260,17 @@ export class RotationService {
     // Binder meal (the rename then shows in the Binder too, since it's the same
     // meal). Editing foods is what spins off a private copy.
     const menuId = this.editingSlot()?.menuId ?? this.selectedMenuId();
+    // Optimistic cache write, applied SYNCHRONOUSLY before any await. When the
+    // green save-check is clicked in one gesture, the input's blur commits the
+    // rename HERE first, then the click's saveSlottedCopy reads getMeal(mealId).
+    // Updating the cached name now means that read sees the NEW name instead of
+    // the stale pre-rename one — which otherwise tripped a spurious "give your
+    // meal a name" on the FIRST save (it only worked on the second). Reverted in
+    // the catch so a failed PUT doesn't leave a phantom name.
+    const cached = this.getMeal(mealId);
+    if (cached) {
+      this.mealsById.update((m) => new Map(m).set(mealId, { ...cached, name: name.trim() }));
+    }
     try {
       const body: UpdateMealRequest = { name };
       await firstValueFrom(this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, body));
@@ -1274,6 +1285,7 @@ export class RotationService {
       // Reflect the new name in the rail (a linked Binder meal shows there).
       await Promise.all([this.loadBinder(), this.loadFolder()]);
     } catch (err) {
+      if (cached) this.mealsById.update((m) => new Map(m).set(mealId, cached));
       this.notification.show(this.errMessage(err), 'error');
     }
   }
