@@ -1526,6 +1526,71 @@
 }
 
 // ---- NF popup (lifted from food-carousel since we now own it) ----
+// "Edit…" button in the LHS carousel top bar — opens the Edit MyFoods overlay
+// (replaced the old rotational toggle). Compact blue-text key.
+.edit-open-btn {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #4da6ff;
+  background: linear-gradient(180deg, #3a3a3a 0%, #2f2f2f 100%);
+  border: 1px solid #555;
+  border-radius: 6px;
+  cursor: pointer;
+  &:hover { border-color: #4da6ff; color: #ffffff; }
+  &:active { transform: translateY(1px); }
+}
+
+// Edit MyFoods overlay — pops over the whole panel (consistent with the Meals
+// edit). Fixed backdrop dims the app; the panel is a centered flex-column modal
+// whose list scrolls inside. The Red X disc (top-right, dialog convention)
+// closes it back to the default Focus Foods view.
+.edit-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.edit-overlay-panel {
+  position: relative;
+  width: min(680px, 94vw);
+  height: min(80vh, 900px);
+  display: flex;
+  flex-direction: column;
+  background: #2f2f2f;
+  border: 1px solid #555;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.6);
+}
+
+.edit-overlay-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 9px 12px;
+  padding-right: 34px; // room for the red cancel disc in the corner
+  background: linear-gradient(180deg, #353535 0%, #2a2a2a 100%);
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.edit-overlay-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #4da6ff;
+}
+
 .nf-popup-overlay {
   position: fixed;
   top: 0;

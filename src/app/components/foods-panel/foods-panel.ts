@@ -151,15 +151,22 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <mat-icon>cancel</mat-icon>
                 </button>
               }
-              <!-- LHS top bar is intentionally lean now — no NF Label or
-                   Health Info button. Nutrition Facts is offered via a
-                   delayed "Click for Facts" bloom on RHS basket tiles
-                   (see .nf-bloom in foods-panel.scss). -->
+              <!-- Edit… opens the MyFoods edit overlay (replaces the old
+                   rotational toggle that used to live on the right-pane title). -->
+              <button
+                type="button"
+                class="edit-open-btn"
+                (click)="openEditOverlay()"
+                matTooltip="Edit MyFoods — favorite, restrict, or edit foods"
+                matTooltipPosition="below"
+                [matTooltipShowDelay]="350">
+                Edit…
+              </button>
               <span class="top-bar-spacer"></span>
               <span class="top-bar-total">Total ({{ carouselSpinnerFoods().length }})</span>
               <!-- Absolute-centered tagline lives OUTSIDE the flex flow so
                    its position is unaffected by the SEARCH / TOTAL widths. -->
-              <span class="top-bar-tagline">Curated Foods</span>
+              <span class="top-bar-tagline">My Foods</span>
             </div>
             <!-- Tile grid replaces the old spinning carousel. Tiles fill
                  left-to-right and wrap to the next row; the grid scrolls
@@ -214,53 +221,27 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                  that flips back to Baskets. The Curate LHS pill stays in
                  sync as the same toggle. -->
           <div class="section-title">
-            <!-- Edit toggle leads the title (same grey key as the LHS bar), so
-                 the button sits in front of "Picks" / "Edit" in both states. -->
+            <span class="section-title-text">
+              <span
+                matTooltip="You pick foods, as a baseline for Planning your menus"
+                matTooltipPosition="below"
+                [matTooltipShowDelay]="350">
+                Focus Foods
+              </span>
+            </span>
+            <!-- Clear-all-focus-foods key — empties all four baskets
+                 (auto-persists via persistThisWeek). -->
             <button
               type="button"
               class="bar-icon-btn"
-              [class.pressed]="addTo() === 'right'"
-              (click)="toggleEditMyFoods()"
-              matTooltip="Flip between Edit MyFoods and Picks (of the week)"
+              matTooltip="Clear all picks"
               matTooltipPosition="below"
-              [matTooltipShowDelay]="350"
-              aria-label="Edit Picks">
-              <mat-icon aria-hidden="true">autorenew</mat-icon>
+              (click)="clearAllPicks()"
+              aria-label="Clear all picks">
+              <mat-icon aria-hidden="true">clear_all</mat-icon>
             </button>
-            <span class="section-title-text">
-              @if (addTo() === 'left') {
-                <span
-                  matTooltip="You pick foods, as a baseline for Planning your menus"
-                  matTooltipPosition="below"
-                  [matTooltipShowDelay]="350">
-                  Picks
-                </span>
-              } @else {
-                <span
-                  matTooltip="Edit MyFoods — click 'star' to Favorite, 'circle-line' to Restrict. Double-click a row to edit it, single-press-and-hold the picture to zoom.">
-                  Edit
-                </span>
-                <span class="section-title-count">({{ bottomListLength() }})</span>
-              }
-            </span>
-            @if (addTo() === 'left') {
-              <!-- Clear-all-picks key — sits right after the "Picks" title,
-                   empties all four baskets (auto-persists via persistThisWeek). -->
-              <button
-                type="button"
-                class="bar-icon-btn"
-                matTooltip="Clear all picks"
-                matTooltipPosition="below"
-                (click)="clearAllPicks()"
-                aria-label="Clear all picks">
-                <mat-icon aria-hidden="true">clear_all</mat-icon>
-              </button>
-            }
             <div class="title-right">
-              <!-- Leave-panel key at the far right of the header — present in
-                   both Picks and Edit so the user can always exit the panel.
-                   (Exiting Edit back to Picks is the ⟳ toggle in front of the
-                   title.) -->
+              <!-- Leave-panel key — closes the whole My Foods panel. -->
               <button
                 type="button"
                 class="bar-icon-btn"
@@ -273,69 +254,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             </div>
           </div>
 
-          @if (addTo() === 'right') {
-            <!-- TYPE dropdown sits directly above the curated list — it
-                 predicates WHICH collection the user is curating. The Add
-                 Food (+) button on the right is gated by TYPE=MyFoods (only
-                 MyFoods can be added to). It's stubbed gray because the
-                 real Add flow lives in the phone app. -->
-            <div class="type-row">
-              <span class="type-row-label">LIST</span>
-              <select
-                class="spin-source-select regi-field"
-                [ngModel]="spinSource()"
-                (ngModelChange)="onSpinSourceChange($event)">
-                <!-- Curated lists first — Regi Approved is the default + top,
-                     then GLP-1 Friendly — a separator, then the user's own
-                     sources (My Foods, then Restricted). -->
-                @for (list of orderedLists(); track list.name) {
-                  <option [value]="list.name">{{ list.description }}</option>
-                }
-                <option disabled>──────────────</option>
-                <option value="myfoods">My Foods</option>
-                <option value="restricted">Restricted</option>
-              </select>
-              <!-- Add food (+) — flips to MyFoods, then opens the phone-app
-                   tether dialog (adding a MyFood runs in the mobile app; the
-                   web + is a QR/download nudge for now). Same key size as the
-                   Close-panel button. -->
-              <button
-                type="button"
-                class="bar-icon-btn"
-                matTooltip="Add a food (via the mobile app)"
-                matTooltipPosition="below"
-                (click)="onAddFood()"
-                aria-label="Add food">
-                <mat-icon aria-hidden="true">add</mat-icon>
-              </button>
-              <!-- Search foods box, right after the + button. -->
-              <input
-                type="text"
-                class="picker-search-input regi-field"
-                [value]="pickerSearchQuery()"
-                (input)="onPickerSearchInput($any($event.target).value)"
-                placeholder="Search foods…" />
-              @if (pickerSearchQuery()) {
-                <button
-                  type="button"
-                  class="picker-search-clear"
-                  (click)="pickerSearchQuery.set('')"
-                  matTooltip="Clear search"
-                  matTooltipPosition="below"
-                  aria-label="Clear search">
-                  ✕
-                </button>
-              }
-              <!-- Total right-aligned, padded off the list's scrollbar so it
-                   reads over the content column. -->
-              <span class="top-bar-total picker-search-total">Total ({{ bottomListLength() }})</span>
-            </div>
-          }
-
-          @if (addTo() === 'left') {
-            <!-- 4 baskets in a 2×2 grid wrapped in the same rounded card
-                 chrome as the carousel side, so the two panes feel balanced. -->
-            <div class="pane-card basket-card">
+          <!-- 4 baskets in a 2×2 grid — always shown; Edit is now an overlay. -->
+          <div class="pane-card basket-card">
             <div class="basket-grid">
               @for (key of basketKeys; track key) {
                 <div
@@ -452,7 +372,69 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               }
             </div>
             </div>
-          } @else {
+          @if (addTo() === 'right') {
+            <!-- Edit MyFoods overlay — pops over the panel (consistent with the
+                 Meals-area edit). Backdrop click or the Red X disc closes it,
+                 revealing Focus Foods again. position:fixed lifts it out of the
+                 pane flow to cover the whole panel. -->
+            <div class="edit-overlay" (click)="closeEditOverlay()">
+              <div class="edit-overlay-panel" (click)="$event.stopPropagation()">
+                <div class="edit-overlay-header">
+                  <span class="edit-overlay-title">Edit</span>
+                  <div class="dialog-discs">
+                    <button
+                      type="button"
+                      class="dialog-disc dialog-disc-cancel"
+                      (click)="closeEditOverlay()"
+                      matTooltip="Close Edit"
+                      matTooltipPosition="below"
+                      aria-label="Close Edit">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <!-- TYPE row: LIST · dropdown · + · Search · Total. -->
+                <div class="type-row">
+                  <span class="type-row-label">LIST</span>
+                  <select
+                    class="spin-source-select regi-field"
+                    [ngModel]="spinSource()"
+                    (ngModelChange)="onSpinSourceChange($event)">
+                    @for (list of orderedLists(); track list.name) {
+                      <option [value]="list.name">{{ list.description }}</option>
+                    }
+                    <option disabled>──────────────</option>
+                    <option value="myfoods">My Foods</option>
+                    <option value="restricted">Restricted</option>
+                  </select>
+                  <button
+                    type="button"
+                    class="bar-icon-btn"
+                    matTooltip="Add a food (via the mobile app)"
+                    matTooltipPosition="below"
+                    (click)="onAddFood()"
+                    aria-label="Add food">
+                    <mat-icon aria-hidden="true">add</mat-icon>
+                  </button>
+                  <input
+                    type="text"
+                    class="picker-search-input regi-field"
+                    [value]="pickerSearchQuery()"
+                    (input)="onPickerSearchInput($any($event.target).value)"
+                    placeholder="Search foods…" />
+                  @if (pickerSearchQuery()) {
+                    <button
+                      type="button"
+                      class="picker-search-clear"
+                      (click)="pickerSearchQuery.set('')"
+                      matTooltip="Clear search"
+                      matTooltipPosition="below"
+                      aria-label="Clear search">
+                      ✕
+                    </button>
+                  }
+                  <span class="top-bar-total picker-search-total">Total ({{ bottomListLength() }})</span>
+                </div>
             <div class="pane-card list-card">
             <div class="right-pane-list" #bottomList>
               @if (spinSource() === 'myfoods') {
@@ -606,6 +588,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               }
               }
             </div>
+            </div>
+              </div>
             </div>
           }
         </div>
@@ -1011,12 +995,15 @@ export class FoodsPanelComponent {
   /** Edit MyFoods toggle. Clears the picker search bar every time we *enter*
    *  Edit mode so the user isn't squinting at a list filtered by a query
    *  they left in there from the last session.  */
-  toggleEditMyFoods(): void {
-    const entering = this.addTo() !== 'right';
-    if (entering) {
-      this.pickerSearchQuery.set('');
-    }
-    this.addTo.set(entering ? 'right' : 'left');
+  /** Open the Edit MyFoods overlay (from the LHS "Edit…" button). */
+  openEditOverlay(): void {
+    this.pickerSearchQuery.set('');
+    this.addTo.set('right');
+  }
+
+  /** Close the Edit overlay back to the default Focus Foods view. */
+  closeEditOverlay(): void {
+    this.addTo.set('left');
   }
 
   /** Substring match against description + shortDescription, case-insensitive.
