@@ -181,6 +181,18 @@
   cursor: pointer;
 }
 
+// Category filters relocated beneath the carousel search, inside the card.
+// Lightweight row (no control-bar chrome) so it reads as part of the card, not
+// a floating bar above it.
+.carousel-filter-row {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 6px;
+}
+
 .category-radio-panel {
   display: flex;
   flex-wrap: wrap;

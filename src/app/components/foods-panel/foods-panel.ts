@@ -114,22 +114,27 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 carousel cards as a single visual unit, mirroring the basket-
                 card on the right pane. -->
         <div class="left-pane" [style.flex]="leftPaneWidthFraction()">
-          <!-- One control bar: Edit toggle (left), the category filters, then
-               the Close-panel key (right). The old "MyFoods" title is gone. -->
-          <div class="filter-bar">
-            <span class="filter-bar-label">FILTER</span>
-            <div class="category-radio-panel" role="group" aria-label="Category filter">
-              @for (group of filterGroups; track group.key) {
-                <button
-                  type="button"
-                  class="category-radio-btn"
-                  [class.pressed]="isFilterGroupActive(group)"
-                  [attr.aria-pressed]="isFilterGroupActive(group)"
-                  (click)="toggleFilterGroup(group)">
-                  {{ group.label }}
-                </button>
-              }
-            </div>
+          <!-- Left-pane header mirrors "Focus Foods" across the way: the
+               "My Foods" heading + the Edit… button share the section-title bar
+               so both pane headers sit on one baseline. -->
+          <div class="section-title">
+            <span class="section-title-text">
+              <span
+                matTooltip="Your food library — the foods Planning draws from"
+                matTooltipPosition="below"
+                [matTooltipShowDelay]="350">
+                My Foods
+              </span>
+            </span>
+            <button
+              type="button"
+              class="edit-open-btn"
+              (click)="openEditOverlay()"
+              matTooltip="Edit MyFoods — favorite, restrict, or edit foods"
+              matTooltipPosition="below"
+              [matTooltipShowDelay]="350">
+              Edit…
+            </button>
           </div>
 
           <div class="pane-card carousel-card">
@@ -151,22 +156,24 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <mat-icon>cancel</mat-icon>
                 </button>
               }
-              <!-- Edit… opens the MyFoods edit overlay (replaces the old
-                   rotational toggle that used to live on the right-pane title). -->
-              <button
-                type="button"
-                class="edit-open-btn"
-                (click)="openEditOverlay()"
-                matTooltip="Edit MyFoods — favorite, restrict, or edit foods"
-                matTooltipPosition="below"
-                [matTooltipShowDelay]="350">
-                Edit…
-              </button>
               <span class="top-bar-spacer"></span>
               <span class="top-bar-total">Total ({{ carouselSpinnerFoods().length }})</span>
-              <!-- Absolute-centered tagline lives OUTSIDE the flex flow so
-                   its position is unaffected by the SEARCH / TOTAL widths. -->
-              <span class="top-bar-tagline">My Foods</span>
+            </div>
+            <!-- Category filters — moved beneath the search, inside the card. -->
+            <div class="carousel-filter-row">
+              <span class="filter-bar-label">FILTER</span>
+              <div class="category-radio-panel" role="group" aria-label="Category filter">
+                @for (group of filterGroups; track group.key) {
+                  <button
+                    type="button"
+                    class="category-radio-btn"
+                    [class.pressed]="isFilterGroupActive(group)"
+                    [attr.aria-pressed]="isFilterGroupActive(group)"
+                    (click)="toggleFilterGroup(group)">
+                    {{ group.label }}
+                  </button>
+                }
+              </div>
             </div>
             <!-- Tile grid replaces the old spinning carousel. Tiles fill
                  left-to-right and wrap to the next row; the grid scrolls
@@ -1406,14 +1413,15 @@ export class FoodsPanelComponent {
   /** Single-click on a LHS food tile = "Pick this" → drops it straight into
    *  the appropriate basket. Idempotent: clicking a food that's already in
    *  its basket is a silent no-op (addFoodToBasket dedupes by id), so a
-   *  trailing double-click won't add the same food twice. If the right
-   *  pane is in Curate mode it flips back to Picks so the user sees where
-   *  the food landed. */
+   *  trailing double-click won't add the same food twice.
+   *
+   *  While the Edit overlay is open the Focus Foods baskets are hidden, so a
+   *  carousel click is view/select-only: it must NOT flip out of edit and must
+   *  NOT silently drop the food into a covered basket. The user picks foods
+   *  only from the default (non-edit) view. */
   onTileClick(food: Food): void {
     this.selectedFood.set(food);
-    if (this.addTo() === 'right') {
-      this.addTo.set('left');
-    }
+    if (this.addTo() === 'right') return;
     const basket = this.basketForFood(food);
     this.addFoodToBasket(food, basket);
   }

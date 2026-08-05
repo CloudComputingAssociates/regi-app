@@ -72,6 +72,9 @@ export class AppBarComponent {
     // Menus & Meals shows its own title in the board toolbar, so don't duplicate
     // it up here in the app bar.
     if (id === 'menus') return null;
+    // My Foods shows its own "My Foods" heading inside the panel now, so don't
+    // duplicate it in the app bar next to the RegiMenu mark.
+    if (id === 'foods') return null;
     return this.tabService.tabs().find(t => t.id === id)?.label ?? null;
   });
 
