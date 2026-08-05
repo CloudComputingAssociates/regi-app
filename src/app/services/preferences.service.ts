@@ -106,8 +106,14 @@ export class PreferencesService {
   // — mirrors the useImperial bridge — until the API's regiMenu settings gain
   // matching fields; see the API handoff note. NOT sent over the wire, so the
   // regiMenu PUT payload is untouched (no 400 risk on the existing save path).
+  readonly showMyMeals = signal(localStorage.getItem('regi_showMyMeals') !== 'false');
   readonly showCommunityMeals = signal(localStorage.getItem('regi_showCommunityMeals') !== 'false');
   readonly showRegiApprovedMeals = signal(localStorage.getItem('regi_showRegiApprovedMeals') !== 'false');
+
+  setShowMyMeals(value: boolean): void {
+    this.showMyMeals.set(value);
+    localStorage.setItem('regi_showMyMeals', String(value));
+  }
 
   setShowCommunityMeals(value: boolean): void {
     this.showCommunityMeals.set(value);

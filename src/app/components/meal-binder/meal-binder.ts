@@ -248,6 +248,13 @@ import { Meal, Menu } from '../../models';
                   <label class="check-opt">
                     <input
                       type="checkbox"
+                      [checked]="preferences.showMyMeals()"
+                      (change)="preferences.setShowMyMeals($any($event.target).checked)" />
+                    MyMeals
+                  </label>
+                  <label class="check-opt">
+                    <input
+                      type="checkbox"
                       [checked]="preferences.showRegiApprovedMeals()"
                       (change)="preferences.setShowRegiApprovedMeals($any($event.target).checked)" />
                     Regi
@@ -526,9 +533,13 @@ export class MealBinderComponent implements OnInit {
     const q = this.searchText().trim().toLowerCase();
     let list = this.rotation.binderMeals();
     // SHOW gating (Filter "SHOW" row + Menu settings "Meals" row — same persisted
-    // prefs): drop meal categories the user has hidden. Both default ON, so the
-    // default view shows everything. A meal that is neither community nor
-    // Regi-approved (the user's own) is never gated out here.
+    // prefs): drop meal categories the user has hidden. All default ON, so the
+    // default view shows everything. The three buckets are mutually exclusive:
+    // MyMeals = the user's own (neither flag), Regi = isRegiApproved, Community =
+    // shareApproved.
+    if (!this.preferences.showMyMeals()) {
+      list = list.filter((m) => m.isRegiApproved === true || m.shareApproved === true);
+    }
     if (!this.preferences.showCommunityMeals()) {
       list = list.filter((m) => m.shareApproved !== true);
     }

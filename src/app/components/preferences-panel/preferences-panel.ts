@@ -439,6 +439,12 @@ import { MatIconModule } from '@angular/material/icon';
                   <label class="setting-label">Meals</label>
                   <label class="meal-source-opt">
                     <input type="checkbox"
+                      [ngModel]="userSettingsService.showMyMeals()"
+                      (ngModelChange)="onShowMyMealsChange($event)" />
+                    MyMeals
+                  </label>
+                  <label class="meal-source-opt">
+                    <input type="checkbox"
                       [ngModel]="userSettingsService.showCommunityMeals()"
                       (ngModelChange)="onShowCommunityMealsChange($event)" />
                     Community
@@ -451,7 +457,7 @@ import { MatIconModule } from '@angular/material/icon';
                   </label>
                   <span class="info-icon"
                         #mealSourceTooltip="matTooltip"
-                        matTooltip="Show Community and/or Regi-Approved meals in your Binder"
+                        matTooltip="Which meals appear in your Binder: your own (MyMeals), Community, and/or Regi-Approved"
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
                         (click)="mealSourceTooltip.toggle()">&#9432;</span>
@@ -1489,6 +1495,10 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   /** "Meals" row toggles — gate which meal categories appear in the Binder.
    *  Persisted locally (localStorage) on change, so no Save-disc round-trip and
    *  the regiMenu PUT payload is untouched. */
+  onShowMyMealsChange(value: boolean): void {
+    this.userSettingsService.setShowMyMeals(value);
+  }
+
   onShowCommunityMealsChange(value: boolean): void {
     this.userSettingsService.setShowCommunityMeals(value);
   }
