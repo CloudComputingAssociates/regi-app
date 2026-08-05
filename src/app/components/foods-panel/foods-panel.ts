@@ -253,7 +253,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 matTooltipPosition="below"
                 (click)="clearAllPicks()"
                 aria-label="Clear all picks">
-                <mat-icon aria-hidden="true">delete</mat-icon>
+                <mat-icon aria-hidden="true">clear_all</mat-icon>
               </button>
             }
             <div class="title-right">
