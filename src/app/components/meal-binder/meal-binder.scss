@@ -181,7 +181,18 @@
     }
   }
 
+  // Search box + Clear-all on one line; the input grows, Clear sits at the far
+  // right with a comfortable gap between the two.
+  .filter-search-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
   .filter-search {
+    flex: 1 1 auto;
+    min-width: 0;
     padding: 6px 9px;
     font-family: inherit;
     font-size: 13px;
@@ -195,9 +206,19 @@
     &:focus { box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.6); }
   }
 
-  // Checkbox row + Clear — all on ONE line, vertically centered; Clear pinned
-  // right. nowrap + tight gaps so the two checkboxes and the square key fit the
-  // narrow rail without dropping to a second line.
+  // Blue "SHOW" key preceding the category toggles — matches the Sort label.
+  .show-label {
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #4da6ff;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  // SHOW row: the blue "SHOW" key + the two category toggles on one line.
+  // nowrap + tight gaps so they fit the narrow rail without wrapping.
   .filter-checks {
     display: flex;
     flex-wrap: nowrap;

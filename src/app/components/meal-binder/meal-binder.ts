@@ -216,41 +216,23 @@ import { Meal, Menu } from '../../models';
             </div>
           }
           @if (filterOpen()) {
-            <!-- Bordered "Filter" fieldset holds the keyword search, the two
-                 filter checkboxes, and Clear. Sort sits BELOW, outside the box.
-                 Search matches meal name + primary protein (all the list carries);
-                 the sort orders the whole list highest-first + auto-expands top 3. -->
+            <!-- Bordered "Filter" fieldset: search + Clear-all on one row, then a
+                 SHOW row of category toggles, then Sort — all inside the frame.
+                 SHOW toggles are the persisted "meals in your Binder" prefs
+                 (default ON = show everything; uncheck Regi/Community to see only
+                 your own). "Has recipe" sort bubbles recipe-linked meals up —
+                 the recipe is window dressing, not the meal, so it's a sort, not
+                 a filter. Search matches meal name + primary protein. -->
             <div class="section-body filter-body">
               <fieldset class="filter-fieldset">
                 <legend>Filter</legend>
-                <input
-                  type="text"
-                  class="filter-search"
-                  placeholder="type ingredient or meal name"
-                  [value]="searchText()"
-                  (input)="searchText.set($any($event.target).value)" />
-                <div class="filter-checks">
-                  <label class="check-opt">
-                    <input
-                      type="checkbox"
-                      [checked]="filterRegiApproved()"
-                      (change)="filterRegiApproved.set($any($event.target).checked)" />
-                    Regi
-                  </label>
-                  <label class="check-opt">
-                    <input
-                      type="checkbox"
-                      [checked]="filterCommunity()"
-                      (change)="filterCommunity.set($any($event.target).checked)" />
-                    Community
-                  </label>
-                  <label class="check-opt">
-                    <input
-                      type="checkbox"
-                      [checked]="filterFromRecipe()"
-                      (change)="filterFromRecipe.set($any($event.target).checked)" />
-                    from Recipe
-                  </label>
+                <div class="filter-search-row">
+                  <input
+                    type="text"
+                    class="filter-search"
+                    placeholder="type ingredient or meal name"
+                    [value]="searchText()"
+                    (input)="searchText.set($any($event.target).value)" />
                   <button
                     type="button"
                     class="filter-clear"
@@ -260,18 +242,36 @@ import { Meal, Menu } from '../../models';
                     <mat-icon>clear_all</mat-icon>
                   </button>
                 </div>
+                <div class="filter-checks">
+                  <span class="show-label">SHOW</span>
+                  <label class="check-opt">
+                    <input
+                      type="checkbox"
+                      [checked]="preferences.showRegiApprovedMeals()"
+                      (change)="preferences.setShowRegiApprovedMeals($any($event.target).checked)" />
+                    Regi
+                  </label>
+                  <label class="check-opt">
+                    <input
+                      type="checkbox"
+                      [checked]="preferences.showCommunityMeals()"
+                      (change)="preferences.setShowCommunityMeals($any($event.target).checked)" />
+                    Community
+                  </label>
+                </div>
+                <div class="sort-row">
+                  <span class="filter-label">Sort</span>
+                  <select
+                    class="sort-select"
+                    [value]="sortBy() ?? 'none'"
+                    (change)="onSortChange($any($event.target).value)">
+                    <option value="none">None</option>
+                    <option value="protein">Protein</option>
+                    <option value="fiber">Fiber</option>
+                    <option value="recipe">Has recipe</option>
+                  </select>
+                </div>
               </fieldset>
-              <div class="sort-row">
-                <span class="filter-label">Sort</span>
-                <select
-                  class="sort-select"
-                  [value]="sortBy() ?? 'none'"
-                  (change)="onSortChange($any($event.target).value)">
-                  <option value="none">None</option>
-                  <option value="protein">Protein</option>
-                  <option value="fiber">Fiber</option>
-                </select>
-              </div>
             </div>
           }
           <div class="section-body" cdkDropList>
@@ -395,7 +395,7 @@ export class MealBinderComponent implements OnInit {
   private recipeService = inject(RecipeService);
   private watcher = inject(RecipeImportWatcher);
   private notification = inject(NotificationService);
-  private preferences = inject(PreferencesService);
+  readonly preferences = inject(PreferencesService);
 
   /** Single-flight lock for the "From recipe…" button. Goes true on PDF select,
    *  reads "Importing…" while true, and blocks a second import. Released in
@@ -496,30 +496,30 @@ export class MealBinderComponent implements OnInit {
   // ----- Binder Meals filter + sort -----------------------------------------
   /** Keyword typed in the Filter search box (matches name + primary protein). */
   readonly searchText = signal('');
-  /** Filter checkboxes — all default OFF. */
-  readonly filterRegiApproved = signal(false);
-  readonly filterCommunity = signal(false);
-  readonly filterFromRecipe = signal(false);
   /** Active sort, or null for the default alphabetical order. Always descending. */
-  readonly sortBy = signal<'protein' | 'fiber' | null>(null);
+  readonly sortBy = signal<'protein' | 'fiber' | 'recipe' | null>(null);
   /** How many top meals auto-expand when a sort is active. */
   private readonly SORT_EXPAND_TOP = 3;
 
   /** Map the Sort dropdown value to the sort signal. */
   onSortChange(value: string): void {
-    this.sortBy.set(value === 'protein' ? 'protein' : value === 'fiber' ? 'fiber' : null);
+    this.sortBy.set(
+      value === 'protein' ? 'protein' :
+      value === 'fiber' ? 'fiber' :
+      value === 'recipe' ? 'recipe' : null,
+    );
   }
 
-  /** The Meals list as displayed: keyword- + checkbox-filtered, then either
-   *  sorted by the chosen macro (descending) or in the default order —
+  /** The Meals list as displayed: SHOW-gated + keyword-filtered, then either
+   *  sorted by the chosen macro / recipe (descending) or in the default order —
    *  default-named meals ("Meal N") first in numeric order, then alphabetical. */
   readonly displayMeals = computed<Meal[]>(() => {
     const q = this.searchText().trim().toLowerCase();
     let list = this.rotation.binderMeals();
-    // Settings-level gating (Menu settings → "Meals" row): drop meal categories
-    // the user has hidden from the Binder. Both default ON, so the default view
-    // is unchanged. A meal that is neither community nor Regi-approved (the
-    // user's own) is never gated out here.
+    // SHOW gating (Filter "SHOW" row + Menu settings "Meals" row — same persisted
+    // prefs): drop meal categories the user has hidden. Both default ON, so the
+    // default view shows everything. A meal that is neither community nor
+    // Regi-approved (the user's own) is never gated out here.
     if (!this.preferences.showCommunityMeals()) {
       list = list.filter((m) => m.shareApproved !== true);
     }
@@ -533,21 +533,19 @@ export class MealBinderComponent implements OnInit {
           (m.primaryProteinName ?? '').toLowerCase().includes(q),
       );
     }
-    if (this.filterRegiApproved()) {
-      list = list.filter((m) => m.isRegiApproved === true);
-    }
-    if (this.filterCommunity()) {
-      list = list.filter((m) => m.shareApproved === true);
-    }
-    if (this.filterFromRecipe()) {
-      list = list.filter((m) => (m.recipeLink ?? '').trim() !== '');
-    }
     const sort = this.sortBy();
     const sorted = [...list];
     if (sort === 'protein') {
       sorted.sort((a, b) => (b.totalProteinG ?? 0) - (a.totalProteinG ?? 0));
     } else if (sort === 'fiber') {
       sorted.sort((a, b) => (b.totalFiberG ?? 0) - (a.totalFiberG ?? 0));
+    } else if (sort === 'recipe') {
+      // Bubble recipe-linked meals to the top; ties fall back to default order.
+      sorted.sort((a, b) => {
+        const ra = (a.recipeLink ?? '').trim() !== '' ? 1 : 0;
+        const rb = (b.recipeLink ?? '').trim() !== '' ? 1 : 0;
+        return rb - ra || this.defaultMealOrder(a, b);
+      });
     } else {
       sorted.sort((a, b) => this.defaultMealOrder(a, b));
     }
@@ -570,13 +568,12 @@ export class MealBinderComponent implements OnInit {
     return m ? Number(m[1]) : null;
   }
 
-  /** Reset all filter/sort state and collapse every Meal card. */
+  /** Clear the transient search + sort and collapse every Meal card. Leaves the
+   *  SHOW toggles alone — they're persisted "meals in your Binder" preferences,
+   *  not a per-view filter to reset. */
   clearFilter(): void {
     this.searchText.set('');
     this.sortBy.set(null);
-    this.filterRegiApproved.set(false);
-    this.filterCommunity.set(false);
-    this.filterFromRecipe.set(false);
     this.expandedCards.update((s) => {
       const next = new Set(s);
       for (const key of next) if (key.startsWith('meal-')) next.delete(key);
