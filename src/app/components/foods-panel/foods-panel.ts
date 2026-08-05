@@ -1730,7 +1730,7 @@ export class FoodsPanelComponent {
       case 'Proteins': return 'Pick 6 or more proteins';
       case 'Fats':     return 'Add fats you use,\nand dairy will go here';
       case 'Carbs':    return 'Try for 8+ vegetables,\nand 2+ fruits';
-      case 'Other':    return 'Ban processed foods,\nadd ideas for seasonings';
+      case 'Other':    return 'Limit processed foods,\nadd ideas for seasonings';
     }
   }
 
