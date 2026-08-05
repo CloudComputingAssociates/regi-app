@@ -112,6 +112,7 @@
           "type": "array",
           "items": { "$ref": "#/definitions/MealItem" }
         },
+        "ingredientNames": { "type": "string", "description": "Space-joined, lowercased MealItems.foodName values for client-side ingredient search. Populated only on the list (scope=binder/folder) response; empty/absent when the meal has no items or on item-hydrated reads." },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
@@ -138,6 +139,7 @@
         "mealImageThumbnail": { "type": "string" },
         "servings": { "type": "integer" },
         "shareCandidate": { "type": "boolean" },
+        "shareApproved": { "type": "boolean", "description": "Approved community meal (distinguishes approved from merely-candidate in admin lists)" },
         "userName": { "type": "string" },
         "userEmail": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
@@ -217,6 +219,14 @@
         "clearClonedFrom": {
           "type": "boolean",
           "description": "Clear-only: when true, sets clonedFromMealId to NULL so a copy pinned AS A NEW binder meal (renamed / from-scratch) becomes independent. Never sets a value — ClonedFromMealID stays server-owned (only DuplicateMeal writes it non-null)."
+        },
+        "isRegiApproved": {
+          "type": "boolean",
+          "description": "Admin-only curation flag. Honored solely for callers with the Admin role; ignored otherwise. Setting it promotes/demotes the globally-visible REGI-approved catalog entry."
+        },
+        "shareCandidate": {
+          "type": "boolean",
+          "description": "Admin-only curation flag. Honored solely for callers with the Admin role; ignored otherwise. Marks/unmarks the meal as a community share candidate."
         }
       }
     },

@@ -235,7 +235,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   [matTooltipShowDelay]="350">
                   Picks
                 </span>
-                <span class="section-title-count">({{ thisWeekTotal() }})</span>
               } @else {
                 <span
                   matTooltip="Edit MyFoods — click 'star' to Favorite, 'circle-line' to Restrict. Double-click a row to edit it, single-press-and-hold the picture to zoom.">
@@ -244,6 +243,19 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 <span class="section-title-count">({{ bottomListLength() }})</span>
               }
             </span>
+            @if (addTo() === 'left') {
+              <!-- Clear-all-picks key — sits right after the "Picks" title,
+                   empties all four baskets (auto-persists via persistThisWeek). -->
+              <button
+                type="button"
+                class="bar-icon-btn"
+                matTooltip="Clear all picks"
+                matTooltipPosition="below"
+                (click)="clearAllPicks()"
+                aria-label="Clear all picks">
+                <mat-icon aria-hidden="true">delete</mat-icon>
+              </button>
+            }
             <div class="title-right">
               <!-- Leave-panel key at the far right of the header — present in
                    both Picks and Edit so the user can always exit the panel.
@@ -1793,6 +1805,13 @@ export class FoodsPanelComponent {
     queueMicrotask(() => {
       this.bottomListRef()?.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
     });
+  }
+
+  /** Empty all four Picks baskets at once. Drops the selection and resets to
+   *  empty baskets; the persistThisWeek effect saves the cleared state. */
+  clearAllPicks(): void {
+    this.selectedBasketFood.set(null);
+    this.thisWeekBaskets.set(emptyBaskets());
   }
 
   clearBasket(key: BasketKey): void {

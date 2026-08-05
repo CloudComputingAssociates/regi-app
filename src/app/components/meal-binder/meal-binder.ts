@@ -223,7 +223,7 @@ import { Meal, Menu } from '../../models';
                  your own) — they pick WHICH SOURCES appear. "Only with recipe" is
                  an orthogonal 2nd-level narrowing filter (recipe-ness is yes/no
                  and independent of source), default OFF. Search matches meal name
-                 + primary protein. -->
+                 + any ingredient. -->
             <div class="section-body filter-body">
               <fieldset class="filter-fieldset">
                 <legend>Filter</legend>
@@ -511,7 +511,7 @@ export class MealBinderComponent implements OnInit {
   }
 
   // ----- Binder Meals filter + sort -----------------------------------------
-  /** Keyword typed in the Filter search box (matches name + primary protein). */
+  /** Keyword typed in the Filter search box (matches meal name + any ingredient). */
   readonly searchText = signal('');
   /** 2nd-level narrowing filter — when ON, hide meals with no recipe link.
    *  Orthogonal to the SHOW source toggles; default OFF (transient per-view). */
@@ -547,9 +547,14 @@ export class MealBinderComponent implements OnInit {
       list = list.filter((m) => m.isRegiApproved !== true);
     }
     if (q) {
+      // Match meal name OR any ingredient. ingredientNames is a space-joined,
+      // already-lowercased string of the meal's item food names, populated by
+      // the list endpoint (scope=binder/folder). primaryProteinName is kept as a
+      // fallback for the rare row that arrives without ingredientNames.
       list = list.filter(
         (m) =>
           m.name?.toLowerCase().includes(q) ||
+          (m.ingredientNames ?? '').includes(q) ||
           (m.primaryProteinName ?? '').toLowerCase().includes(q),
       );
     }
