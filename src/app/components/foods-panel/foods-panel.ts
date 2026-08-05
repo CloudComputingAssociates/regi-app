@@ -180,7 +180,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 <div
                   class="food-tile"
                   [class.selected]="selectedFood()?.id === food.id"
-                  [draggable]="true"
+                  [draggable]="addTo() !== 'right'"
                   (click)="onTileClick(food)"
                   (dblclick)="onTileDblClick(food)"
                   (dragstart)="onTileDragStart(food, $event)">
@@ -223,7 +223,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
           <div class="section-title">
             <span class="section-title-text">
               <span
-                matTooltip="You pick foods, as a baseline for Planning your menus"
+                matTooltip="You pick 'Focus Foods', as a baseline for Planning your menus"
                 matTooltipPosition="below"
                 [matTooltipShowDelay]="350">
                 Focus Foods
@@ -377,8 +377,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                  Meals-area edit). Backdrop click or the Red X disc closes it,
                  revealing Focus Foods again. position:fixed lifts it out of the
                  pane flow to cover the whole panel. -->
-            <div class="edit-overlay" (click)="closeEditOverlay()">
-              <div class="edit-overlay-panel" (click)="$event.stopPropagation()">
+            <div class="edit-overlay">
+              <div class="edit-overlay-panel">
                 <div class="edit-overlay-header">
                   <span class="edit-overlay-title">Edit</span>
                   <div class="dialog-discs">

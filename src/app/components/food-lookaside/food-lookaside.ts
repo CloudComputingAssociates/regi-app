@@ -64,7 +64,7 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
               class="toggle-btn"
               [class.active]="effectivePane() === 'picks'"
               (click)="pane.set('picks')">
-              Picks
+              FocusFoods
             </button>
           </div>
         } @else {

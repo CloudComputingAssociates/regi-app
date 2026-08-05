@@ -405,6 +405,12 @@
   overflow: hidden;
 }
 
+// Right pane is the positioning context for the Edit overlay, which fills it
+// exactly (Focus Foods only — the left My Foods carousel stays visible).
+.right-pane {
+  position: relative;
+}
+
 // Vertical drag-handle between the two panes — 8 px wide, ew-resize cursor.
 .pane-splitter-v {
   width: 8px;
@@ -1555,33 +1561,28 @@
   &:active { transform: translateY(1px); box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.55); }
 }
 
-// Edit MyFoods overlay — pops over the whole panel (consistent with the Meals
-// edit). Fixed backdrop dims the app; the panel is a centered flex-column modal
-// whose list scrolls inside. The Red X disc (top-right, dialog convention)
-// closes it back to the default Focus Foods view.
+// Edit MyFoods overlay — covers ONLY the Focus Foods (right) pane, filling it
+// exactly and resizing with it. NOT a full-app modal: the left My Foods
+// carousel stays fully visible so the user never loses sight of their foods.
+// Opaque (no dim), anchored to all four pane edges → responsive. The Red X disc
+// (top-right, dialog convention) closes it back to Focus Foods.
 .edit-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 1100;
-  background: rgba(0, 0, 0, 0.6);
+  z-index: 20;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  box-sizing: border-box;
+  flex-direction: column;
 }
 
 .edit-overlay-panel {
   position: relative;
-  width: min(680px, 94vw);
-  height: min(80vh, 900px);
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   background: #2f2f2f;
-  border: 1px solid #555;
-  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.6);
 }
 
 .edit-overlay-header {
