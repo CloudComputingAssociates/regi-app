@@ -459,6 +459,9 @@
 
 .search-label {
   flex-shrink: 0;
+  // Shared label width with .filter-bar-label so the search box and the first
+  // filter button ("Proteins") line up on the same left edge.
+  min-width: 56px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -468,8 +471,8 @@
 
 // Look lives in the global .regi-field; this only sizes/places it.
 .carousel-search-input {
-  flex: 0 0 24%;
-  min-width: 90px;
+  flex: 0 0 48%;
+  min-width: 180px;
 }
 
 // Clear button for the LHS SEARCH input — Material `cancel` icon, only
@@ -831,7 +834,7 @@
   flex-wrap: wrap; // long category list can wrap to a second line if needed
 }
 
-.filter-bar-label { @extend %control-bar-label; }
+.filter-bar-label { @extend %control-bar-label; min-width: 56px; }
 
 // Square icon keys that flank the filter bar — Edit toggle (left) and Close
 // panel (right). Same raised domed-grey chrome as the Menus & Meals toolbar
@@ -1419,10 +1422,10 @@
   margin: 0;
   padding: 6px 8px 8px;
   display: flex;
-  // Bottom-up stack: first item lands at bottom-left, fills rightward, then
-  // wraps to a new row ABOVE. Older foods stay anchored at the bottom; newer
-  // foods grow the pile toward the top of the basket.
-  flex-wrap: wrap-reverse;
+  // Top-down fill: first item lands at top-left, fills rightward, then wraps to
+  // a new row BELOW. Older foods stay anchored at the top; newer foods grow the
+  // pile toward the bottom of the basket.
+  flex-wrap: wrap;
   align-content: flex-start;
   justify-content: flex-start;
   gap: 4px;

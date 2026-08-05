@@ -128,12 +128,13 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             </span>
             <button
               type="button"
-              class="edit-open-btn"
+              class="bar-icon-btn"
               (click)="openEditOverlay()"
               matTooltip="Edit MyFoods — favorite, restrict, or edit foods"
               matTooltipPosition="below"
-              [matTooltipShowDelay]="350">
-              Edit…
+              [matTooltipShowDelay]="350"
+              aria-label="Edit MyFoods">
+              <mat-icon aria-hidden="true">edit</mat-icon>
             </button>
           </div>
 
