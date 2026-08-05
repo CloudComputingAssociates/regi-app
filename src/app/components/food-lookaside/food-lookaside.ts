@@ -48,27 +48,27 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
       <!-- Tabs up top; the red X (same size as the meal card's green check)
            closes the lookaside. -->
       <div class="lookaside-header">
-        <!-- MyFoods is primary/default; Picks second. With no picks there's
-             nothing to toggle to — just show the MyFoods label. -->
+        <!-- Focus Foods is primary/default; My Foods second. With no picks
+             there's nothing to toggle to — just show the My Foods label. -->
         @if (hasPicks()) {
           <div class="pane-toggle" role="tablist">
             <button
               type="button"
               class="toggle-btn"
-              [class.active]="effectivePane() === 'myfoods'"
-              (click)="pane.set('myfoods')">
-              MyFoods
+              [class.active]="effectivePane() === 'picks'"
+              (click)="pane.set('picks')">
+              Focus Foods
             </button>
             <button
               type="button"
               class="toggle-btn"
-              [class.active]="effectivePane() === 'picks'"
-              (click)="pane.set('picks')">
-              FocusFoods
+              [class.active]="effectivePane() === 'myfoods'"
+              (click)="pane.set('myfoods')">
+              My Foods
             </button>
           </div>
         } @else {
-          <span class="lookaside-label">MyFoods</span>
+          <span class="lookaside-label">My Foods</span>
         }
         <button
           type="button"
@@ -128,8 +128,9 @@ export class FoodLookasideComponent {
   private preferencesService = inject(FoodPreferencesService);
   private settingsService = inject(SettingsService);
 
-  /** The tab the user picked. MyFoods is the default/primary. */
-  readonly pane = signal<LookasidePane>('myfoods');
+  /** The tab the user picked. Focus Foods is the default/primary (falls back to
+   *  My Foods via effectivePane when the user has no picks). */
+  readonly pane = signal<LookasidePane>('picks');
 
   /** MyFoods live substring filter. */
   readonly search = signal('');
