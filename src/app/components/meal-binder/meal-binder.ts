@@ -216,13 +216,14 @@ import { Meal, Menu } from '../../models';
             </div>
           }
           @if (filterOpen()) {
-            <!-- Bordered "Filter" fieldset: search + Clear-all on one row, then a
-                 SHOW row of category toggles, then Sort — all inside the frame.
+            <!-- Bordered "Filter" fieldset: search + Clear-all on one row, then
+                 SHOW / Only / Sort rows — all inside the frame.
                  SHOW toggles are the persisted "meals in your Binder" prefs
                  (default ON = show everything; uncheck Regi/Community to see only
-                 your own). "Has recipe" sort bubbles recipe-linked meals up —
-                 the recipe is window dressing, not the meal, so it's a sort, not
-                 a filter. Search matches meal name + primary protein. -->
+                 your own) — they pick WHICH SOURCES appear. "Only with recipe" is
+                 an orthogonal 2nd-level narrowing filter (recipe-ness is yes/no
+                 and independent of source), default OFF. Search matches meal name
+                 + primary protein. -->
             <div class="section-body filter-body">
               <fieldset class="filter-fieldset">
                 <legend>Filter</legend>
@@ -259,6 +260,16 @@ import { Meal, Menu } from '../../models';
                     Community
                   </label>
                 </div>
+                <div class="filter-checks">
+                  <span class="filter-label">Only</span>
+                  <label class="check-opt">
+                    <input
+                      type="checkbox"
+                      [checked]="onlyWithRecipe()"
+                      (change)="onlyWithRecipe.set($any($event.target).checked)" />
+                    with recipe
+                  </label>
+                </div>
                 <div class="sort-row">
                   <span class="filter-label">Sort</span>
                   <select
@@ -268,7 +279,6 @@ import { Meal, Menu } from '../../models';
                     <option value="none">None</option>
                     <option value="protein">Protein</option>
                     <option value="fiber">Fiber</option>
-                    <option value="recipe">Has recipe</option>
                   </select>
                 </div>
               </fieldset>
@@ -496,18 +506,17 @@ export class MealBinderComponent implements OnInit {
   // ----- Binder Meals filter + sort -----------------------------------------
   /** Keyword typed in the Filter search box (matches name + primary protein). */
   readonly searchText = signal('');
+  /** 2nd-level narrowing filter — when ON, hide meals with no recipe link.
+   *  Orthogonal to the SHOW source toggles; default OFF (transient per-view). */
+  readonly onlyWithRecipe = signal(false);
   /** Active sort, or null for the default alphabetical order. Always descending. */
-  readonly sortBy = signal<'protein' | 'fiber' | 'recipe' | null>(null);
+  readonly sortBy = signal<'protein' | 'fiber' | null>(null);
   /** How many top meals auto-expand when a sort is active. */
   private readonly SORT_EXPAND_TOP = 3;
 
   /** Map the Sort dropdown value to the sort signal. */
   onSortChange(value: string): void {
-    this.sortBy.set(
-      value === 'protein' ? 'protein' :
-      value === 'fiber' ? 'fiber' :
-      value === 'recipe' ? 'recipe' : null,
-    );
+    this.sortBy.set(value === 'protein' ? 'protein' : value === 'fiber' ? 'fiber' : null);
   }
 
   /** The Meals list as displayed: SHOW-gated + keyword-filtered, then either
@@ -533,19 +542,16 @@ export class MealBinderComponent implements OnInit {
           (m.primaryProteinName ?? '').toLowerCase().includes(q),
       );
     }
+    // 2nd-level refine: narrow to recipe-linked meals only (any source).
+    if (this.onlyWithRecipe()) {
+      list = list.filter((m) => (m.recipeLink ?? '').trim() !== '');
+    }
     const sort = this.sortBy();
     const sorted = [...list];
     if (sort === 'protein') {
       sorted.sort((a, b) => (b.totalProteinG ?? 0) - (a.totalProteinG ?? 0));
     } else if (sort === 'fiber') {
       sorted.sort((a, b) => (b.totalFiberG ?? 0) - (a.totalFiberG ?? 0));
-    } else if (sort === 'recipe') {
-      // Bubble recipe-linked meals to the top; ties fall back to default order.
-      sorted.sort((a, b) => {
-        const ra = (a.recipeLink ?? '').trim() !== '' ? 1 : 0;
-        const rb = (b.recipeLink ?? '').trim() !== '' ? 1 : 0;
-        return rb - ra || this.defaultMealOrder(a, b);
-      });
     } else {
       sorted.sort((a, b) => this.defaultMealOrder(a, b));
     }
@@ -573,6 +579,7 @@ export class MealBinderComponent implements OnInit {
    *  not a per-view filter to reset. */
   clearFilter(): void {
     this.searchText.set('');
+    this.onlyWithRecipe.set(false);
     this.sortBy.set(null);
     this.expandedCards.update((s) => {
       const next = new Set(s);
