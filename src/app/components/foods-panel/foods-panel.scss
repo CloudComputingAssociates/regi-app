@@ -207,23 +207,22 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  color: #e0e0e0;
-  background: linear-gradient(180deg, #808080 0%, #5a5a5a 100%);
-  border-top: 1px solid #969696;
-  border-left: 1px solid #6a6a6a;
-  border-right: 1px solid #6a6a6a;
-  border-bottom: 2px solid #2a2a2a;
-  border-radius: 4px;
+  // Same raised chrome as the "Edit…" key (.edit-open-btn / .bar-icon-btn).
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
+  border-radius: 5px;
   padding: 4px 9px;
   height: 28px;
   cursor: pointer;
   user-select: none;
   outline: none;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: background 0.05s ease, color 0.05s ease;
 
   &:hover:not(.pressed) {
-    background: linear-gradient(180deg, #8a8a8a 0%, #666666 100%);
+    background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%);
     color: #ffffff;
   }
 

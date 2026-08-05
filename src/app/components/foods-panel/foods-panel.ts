@@ -139,12 +139,13 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
 
           <div class="pane-card carousel-card">
             <div class="carousel-top-bar">
+              <span class="search-label">SEARCH</span>
               <input
                 type="text"
                 class="carousel-search-input regi-field"
                 [value]="searchQuery()"
                 (input)="onSearchInput($any($event.target).value)"
-                placeholder="Search foods…" />
+                placeholder="type food name…" />
               @if (searchQuery()) {
                 <button
                   type="button"
