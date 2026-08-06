@@ -194,8 +194,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   (dblclick)="onTileDblClick(food)"
                   (dragstart)="onTileDragStart(food, $event)">
                   <div class="food-tile-image">
-                    @if (food.foodImageThumbnail) {
-                      <img [src]="food.foodImageThumbnail" alt="" draggable="false" />
+                    @if (foodThumb(food); as src) {
+                      <img [src]="src" alt="" draggable="false" />
                     }
                   </div>
                   <div class="food-tile-label">
@@ -359,8 +359,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                             ✕
                           </button>
                           <div class="basket-mini-card-image">
-                            @if (food.foodImageThumbnail) {
-                              <img [src]="food.foodImageThumbnail" alt="" />
+                            @if (foodThumb(food); as src) {
+                              <img [src]="src" alt="" />
                             }
                           </div>
                           <!-- Meal-role overlay: hollow yellow-glow P/S over the
@@ -490,8 +490,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                            (touchstart)="onThumbHoldStart($event, food)"
                            (touchend)="onThumbHoldEnd()"
                            (touchcancel)="onThumbHoldEnd()">
-                        @if (food.foodImageThumbnail) {
-                          <img [src]="food.foodImageThumbnail" alt="" draggable="false" />
+                        @if (foodThumb(food); as src) {
+                          <img [src]="src" alt="" draggable="false" />
                         } @else {
                           <div class="selected-food-thumb-placeholder"></div>
                         }
@@ -565,8 +565,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   @for (food of group.foods; track food.id) {
                     <div class="selected-food-row">
                       <div class="selected-food-thumb">
-                        @if (food.foodImageThumbnail) {
-                          <img [src]="food.foodImageThumbnail" alt="" />
+                        @if (foodThumb(food); as src) {
+                          <img [src]="src" alt="" />
                         } @else {
                           <div class="selected-food-thumb-placeholder"></div>
                         }
@@ -1421,6 +1421,15 @@ export class FoodsPanelComponent {
    *  carousel click is view/select-only: it must NOT flip out of edit and must
    *  NOT silently drop the food into a covered basket. The user picks foods
    *  only from the default (non-edit) view. */
+  /** Image source for a food tile/row: prefer the small thumbnail, but fall
+   *  back to the full image when the thumbnail is missing. FoodImage and
+   *  FoodImageThumbnail are independent nullable columns server-side, so some
+   *  foods carry a picture with no generated thumbnail — without this fallback
+   *  those tiles render blank even though an image exists. */
+  protected foodThumb(food: Food): string | null | undefined {
+    return food.foodImageThumbnail || food.foodImage;
+  }
+
   onTileClick(food: Food): void {
     this.selectedFood.set(food);
     if (this.addTo() === 'right') return;
