@@ -284,6 +284,7 @@ import { Meal, Menu } from '../../models';
                     [value]="sortBy() ?? 'none'"
                     (change)="onSortChange($any($event.target).value)">
                     <option value="none">None</option>
+                    <option value="date">Date (newest)</option>
                     <option value="protein">Protein</option>
                     <option value="fiber">Fiber</option>
                   </select>
@@ -344,7 +345,7 @@ import { Meal, Menu } from '../../models';
                         matTooltipClass="binder-name-tip"
                         matTooltipPosition="below"
                         [matTooltipShowDelay]="300">{{ meal.name }}</span>
-                      @if (isMealOpen(meal, i)) {
+                      @if (isMealOpen(meal)) {
                         <button
                           type="button"
                           class="rename-pencil icon-disc icon-disc-edit"
@@ -357,15 +358,15 @@ import { Meal, Menu } from '../../models';
                       <button
                         type="button"
                         class="card-toggle"
-                        [matTooltip]="isMealOpen(meal, i) ? 'Hide macros' : 'Show macros'"
+                        [matTooltip]="isMealOpen(meal) ? 'Hide macros' : 'Show macros'"
                         (click)="$event.stopPropagation(); toggleCard('meal-' + meal.id)">
-                        <mat-icon>{{ isMealOpen(meal, i) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                        <mat-icon>{{ isMealOpen(meal) ? 'expand_less' : 'expand_more' }}</mat-icon>
                       </button>
                     }
                   </div>
                   <!-- Reveal: all macros in order P, C, F, fiber, cals, then the
                        delete flush right — only visible when dropped down. -->
-                  @if (isMealOpen(meal, i)) {
+                  @if (isMealOpen(meal)) {
                     <div class="binder-chips card-reveal">
                       <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
                       <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
@@ -516,14 +517,18 @@ export class MealBinderComponent implements OnInit {
   /** 2nd-level narrowing filter — when ON, hide meals with no recipe link.
    *  Orthogonal to the SHOW source toggles; default OFF (transient per-view). */
   readonly onlyWithRecipe = signal(false);
-  /** Active sort, or null for the default alphabetical order. Always descending. */
-  readonly sortBy = signal<'protein' | 'fiber' | null>(null);
-  /** How many top meals auto-expand when a sort is active. */
-  private readonly SORT_EXPAND_TOP = 3;
+  /** Active sort, or null for the default alphabetical order. Always descending.
+   *  'date' = newest created/modified first — auto-set when a new meal enters the
+   *  Binder so the fresh meal surfaces at the very top. */
+  readonly sortBy = signal<'protein' | 'fiber' | 'date' | null>(null);
 
   /** Map the Sort dropdown value to the sort signal. */
   onSortChange(value: string): void {
-    this.sortBy.set(value === 'protein' ? 'protein' : value === 'fiber' ? 'fiber' : null);
+    this.sortBy.set(
+      value === 'protein' ? 'protein' :
+      value === 'fiber' ? 'fiber' :
+      value === 'date' ? 'date' : null,
+    );
   }
 
   /** The Meals list as displayed: SHOW-gated + keyword-filtered, then either
@@ -568,6 +573,11 @@ export class MealBinderComponent implements OnInit {
       sorted.sort((a, b) => (b.totalProteinG ?? 0) - (a.totalProteinG ?? 0));
     } else if (sort === 'fiber') {
       sorted.sort((a, b) => (b.totalFiberG ?? 0) - (a.totalFiberG ?? 0));
+    } else if (sort === 'date') {
+      // Newest created OR modified first (max of the two timestamps).
+      const ts = (m: Meal) =>
+        Math.max(Date.parse(m.updatedAt ?? '') || 0, Date.parse(m.createdAt ?? '') || 0);
+      sorted.sort((a, b) => ts(b) - ts(a));
     } else {
       sorted.sort((a, b) => this.defaultMealOrder(a, b));
     }
@@ -611,15 +621,19 @@ export class MealBinderComponent implements OnInit {
    *  hidden by default (calories stay visible as text); a chevron reveals them. */
   private readonly expandedCards = signal<Set<string>>(new Set());
 
+  /** Baseline of Binder meal ids, seeded on first load. Null until seeded so the
+   *  initial population doesn't count as "new". Used to detect a freshly created
+   *  meal (import / AI / pin) entering the Binder and float it to the top. */
+  private knownBinderMealIds: Set<number> | null = null;
+
   isCardOpen(key: string): boolean {
     return this.expandedCards().has(key);
   }
 
-  /** A meal card is open if the user expanded it OR a sort is active and it's in
-   *  the auto-expanded top N of the sorted list. */
-  isMealOpen(meal: Meal, index: number): boolean {
-    if (this.expandedCards().has('meal-' + meal.id)) return true;
-    return this.sortBy() !== null && index < this.SORT_EXPAND_TOP;
+  /** A meal card is open only when the user has explicitly expanded it. No
+   *  sort-driven auto-expansion — it read as confusing. */
+  isMealOpen(meal: Meal): boolean {
+    return this.expandedCards().has('meal-' + meal.id);
   }
 
   // ----- Inline rename (pencil → green confirm) ------------------------------
@@ -716,6 +730,25 @@ export class MealBinderComponent implements OnInit {
           const el = this.host.nativeElement.querySelector(`[data-menu-id="${id}"]`);
           el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         });
+      },
+      { allowSignalWrites: true },
+    );
+
+    // When a freshly created meal enters the Binder — by recipe import, AI
+    // create, or pin — force the "Date (newest)" sort so it surfaces at the very
+    // top. We only set the sort signal (the Filter dropdown reflects it); we do
+    // NOT open the Filter panel. The first non-empty load is the baseline and
+    // does not reorder.
+    effect(
+      () => {
+        const meals = this.rotation.binderMeals();
+        if (this.knownBinderMealIds === null) {
+          if (meals.length > 0) this.knownBinderMealIds = new Set(meals.map((m) => m.id));
+          return;
+        }
+        const hasNew = meals.some((m) => !this.knownBinderMealIds!.has(m.id));
+        this.knownBinderMealIds = new Set(meals.map((m) => m.id));
+        if (hasNew) this.sortBy.set('date');
       },
       { allowSignalWrites: true },
     );
