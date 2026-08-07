@@ -10,14 +10,13 @@
 // Renders its OWN tether-prompt instance — independent of TabService. OnPush,
 // all reactive via signals.
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TetherService } from '../../services/tether.service';
 import { TetherPromptComponent, TetherPromptMode } from '../tether-prompt/tether-prompt';
 
 @Component({
   selector: 'app-tether-indicator',
-  imports: [MatIconModule, MatTooltipModule, TetherPromptComponent],
+  imports: [MatTooltipModule, TetherPromptComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button
@@ -28,13 +27,9 @@ import { TetherPromptComponent, TetherPromptMode } from '../tether-prompt/tether
       matTooltipPosition="below"
       (click)="onClick()"
       aria-label="Mobile tether status">
-      @if (tether.anyLive()) {
-        <!-- Connected: the green phone+signal asset. -->
-        <img src="/images/mobile-connected.png" alt="" class="ti-img" />
-      } @else {
-        <!-- Pre-connect: a clearly-visible plain grey phone. -->
-        <mat-icon class="ti-glyph">smartphone</mat-icon>
-      }
+      <!-- Same asset in both states (identical chunkiness): greyed to a visible
+           light grey when disconnected, full-colour green when connected. -->
+      <img src="/images/mobile-connected.png" alt="" class="ti-img" />
     </button>
 
     @if (promptMode(); as mode) {
