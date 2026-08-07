@@ -1,0 +1,71 @@
+// Chrome moved verbatim from the former mobile-app-dialog inline styles.
+// `.dialog-disc` / `.dialog-disc-cancel` are global (styles.scss); only the
+// `.dialog-discs` wrapper is positioned locally.
+.tp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.tp-dialog {
+  position: relative;
+  width: 300px;
+  box-sizing: border-box;
+  padding: 24px 20px;
+  text-align: center;
+  background: #2a2a2a;
+  border: 2px solid #ffd54f;
+  border-radius: 12px;
+  box-shadow:
+    0 0 16px rgba(255, 213, 79, 0.85),
+    0 0 32px rgba(255, 193, 7, 0.45),
+    0 8px 24px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.dialog-discs {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 6px;
+}
+
+.tp-icon {
+  font-size: 42px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.tp-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.tp-body {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #cfcfcf;
+}
+
+.tp-qr {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: #888;
+  background: #1a1a1a;
+  border: 1px dashed #555;
+  border-radius: 8px;
+}

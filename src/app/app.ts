@@ -14,7 +14,7 @@ import { PaywallComponent } from './components/paywall/paywall';
 import { LoadingOverlayComponent } from './components/loading-overlay/loading-overlay';
 import { SettingsOverlayComponent } from './components/settings-overlay/settings-overlay';
 import { BugOverlayComponent } from './components/bug-overlay/bug-overlay';
-import { MobileAppDialogComponent } from './components/mobile-app-dialog/mobile-app-dialog';
+import { TetherPromptComponent } from './components/tether-prompt/tether-prompt';
 import { WebViewOverlayComponent } from './components/web-view-overlay/web-view-overlay';
 import { AccountPanelComponent } from './components/account-panel/account-panel';
 import { NotificationComponent } from './components/notification/notification';
@@ -51,7 +51,7 @@ const LEFT_NAV_PANEL_IDS = new Set([
     LoadingOverlayComponent,
     SettingsOverlayComponent,
     BugOverlayComponent,
-    MobileAppDialogComponent,
+    TetherPromptComponent,
     WebViewOverlayComponent,
     AccountPanelComponent,
     NotificationComponent,
@@ -110,7 +110,11 @@ const LEFT_NAV_PANEL_IDS = new Set([
            open state lives on TabService so any UI element can flip it. -->
       <app-settings-overlay />
       <app-bug-overlay />
-      <app-mobile-app-dialog />
+      <!-- foods-panel's "add food" nudge routes through the shared tether prompt
+           (mode not-registered), gated on the existing TabService signal. -->
+      @if (tabService.mobileAppOpen()) {
+        <app-tether-prompt mode="not-registered" (close)="tabService.closeMobileApp()" />
+      }
       <app-web-view-overlay />
       <app-account-panel />
       <!-- Notification toast lives at the app root (not inside main-body)

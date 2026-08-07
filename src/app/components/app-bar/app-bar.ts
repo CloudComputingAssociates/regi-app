@@ -10,13 +10,14 @@ import { CommonModule, AsyncPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { ProfileMenuComponent } from '../profile-menu/profile-menu';
+import { TetherIndicatorComponent } from '../tether-indicator/tether-indicator';
 import { AuthService } from '@auth0/auth0-angular';
 import { TabService } from '../../services/tab.service';
 import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-app-bar',
-  imports: [CommonModule, AsyncPipe, MatIconModule, MatButtonModule, ProfileMenuComponent],
+  imports: [CommonModule, AsyncPipe, MatIconModule, MatButtonModule, ProfileMenuComponent, TetherIndicatorComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="app-bar">
@@ -43,6 +44,9 @@ import { map } from 'rxjs/operators';
           }
         </div>
 
+        @if (isAuthenticated()) {
+          <app-tether-indicator />
+        }
         <app-profile-menu />
       </div>
     </header>
