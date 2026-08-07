@@ -27,9 +27,10 @@ import { TetherPromptComponent, TetherPromptMode } from '../tether-prompt/tether
       matTooltipPosition="below"
       (click)="onClick()"
       aria-label="Mobile tether status">
-      <!-- Same asset in both states (identical chunkiness): greyed to a visible
-           light grey when disconnected, full-colour green when connected. -->
-      <img src="/images/mobile-connected.png" alt="" class="ti-img" />
+      <!-- The phone glyph is a CSS-masked shape: the transparent PNGs supply the
+           silhouette, the fill colour comes from code — light grey (not
+           connected) vs vibrant green (connected). See .scss. -->
+      <span class="ti-glyph" aria-hidden="true"></span>
     </button>
 
     @if (promptMode(); as mode) {

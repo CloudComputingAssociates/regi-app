@@ -19,21 +19,28 @@
   cursor: pointer;
 }
 
-// One asset, two states — same chunkiness always.
-//   Disconnected: grayscale kills the green (no amber tint) + brightness lifts
-//                 it to a clearly-visible light grey on the dark bar.
-//   Connected:    full-colour green, crisp.
-.ti-img {
-  width: 26px;
-  height: 26px;
-  object-fit: contain;
-  filter: grayscale(1) brightness(1.7);
-  transition: filter 0.15s ease;
+// Phone glyph = a CSS-masked shape. The transparent PNG (same 404x380 canvas
+// for both states) supplies the silhouette via the mask; the FILL colour is set
+// in code, so the same weight/chunkiness reads in both states.
+//   Not connected: plain phone, light grey.
+//   Connected:     phone + signal, vibrant green.
+.ti-glyph {
+  display: block;
+  width: 28px;
+  height: 28px;
+  background-color: #bcbcbc; // light grey — not connected
+  -webkit-mask: url('/images/mobile-not-connected.png') no-repeat center / contain;
+          mask: url('/images/mobile-not-connected.png') no-repeat center / contain;
+  transition: background-color 0.15s ease;
 }
-.ti-btn:hover .ti-img { filter: grayscale(1) brightness(2); }
+.ti-btn:hover .ti-glyph { background-color: #dcdcdc; }
 
-.ti-btn.live .ti-img { filter: none; }
-.ti-btn.live:hover .ti-img { filter: brightness(1.12); }
+.ti-btn.live .ti-glyph {
+  background-color: #2ecc40; // vibrant green — connected
+  -webkit-mask-image: url('/images/mobile-connected.png');
+          mask-image: url('/images/mobile-connected.png');
+}
+.ti-btn.live:hover .ti-glyph { background-color: #3ee055; }
 
 // Device popover — a small absolutely-positioned card under the icon.
 .ti-pop-backdrop {
