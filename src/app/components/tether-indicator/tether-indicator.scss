@@ -14,27 +14,23 @@
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #8a8a8a; // grey / disabled look when nothing is live
   cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-
-  .mat-icon {
-    font-size: 22px;
-    width: 22px;
-    height: 22px;
-    line-height: 22px;
-  }
-
-  &:hover { color: #b5b5b5; }
-
-  // Lit / connected — just the green phone glyph (signal-wave icon). No halo,
-  // no filled background — the colour + the icon shape carry the state.
-  &.live {
-    color: #58c858;
-
-    &:hover { color: #7bd67b; }
-  }
 }
+
+// Same asset in both states. Disconnected: desaturated + dimmed to a grey
+// "off" look. Connected: full-colour green, crisp — no halo, no fill.
+.ti-img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: grayscale(1) opacity(0.4);
+  transition: filter 0.15s ease;
+}
+
+.ti-btn:hover .ti-img { filter: grayscale(1) opacity(0.6); }
+
+.ti-btn.live .ti-img { filter: none; }
+.ti-btn.live:hover .ti-img { filter: brightness(1.12); }
 
 // Device popover — a small absolutely-positioned card under the icon.
 .ti-pop-backdrop {
