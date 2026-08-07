@@ -2,6 +2,8 @@
   position: relative;
   display: inline-flex;
   align-items: center;
+  // ~1/2 inch of breathing room so the phone doesn't crowd the profile icon.
+  margin-right: 48px;
 }
 
 .ti-btn {
@@ -17,20 +19,25 @@
   cursor: pointer;
 }
 
-// Same asset in both states. Disconnected: desaturated + dimmed to a grey
-// "off" look. Connected: full-colour green, crisp — no halo, no fill.
+// Connected: the full-colour green asset (only rendered when live).
 .ti-img {
   width: 24px;
   height: 24px;
   object-fit: contain;
-  filter: grayscale(1) opacity(0.4);
   transition: filter 0.15s ease;
 }
+.ti-btn:hover .ti-img { filter: brightness(1.12); }
 
-.ti-btn:hover .ti-img { filter: grayscale(1) opacity(0.6); }
-
-.ti-btn.live .ti-img { filter: none; }
-.ti-btn.live:hover .ti-img { filter: brightness(1.12); }
+// Pre-connect: a plain grey phone glyph — clearly visible on the dark bar.
+.ti-glyph {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  color: #b5b5b5;
+  transition: color 0.15s ease;
+}
+.ti-btn:hover .ti-glyph { color: #d8d8d8; }
 
 // Device popover — a small absolutely-positioned card under the icon.
 .ti-pop-backdrop {
