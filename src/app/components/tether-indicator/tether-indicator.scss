@@ -27,15 +27,12 @@
 
   &:hover { color: #b5b5b5; }
 
-  // Lit / connected — reuse the left-nav active-green family so it matches chrome.
+  // Lit / connected — just the green phone glyph (signal-wave icon). No halo,
+  // no filled background — the colour + the icon shape carry the state.
   &.live {
-    color: #a5eaa5;
-    background: linear-gradient(180deg, #3a6e3a 0%, #2d5a2d 100%);
-    box-shadow:
-      0 0 8px rgba(88, 200, 88, 0.55),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    color: #58c858;
 
-    &:hover { color: #c6f5c6; }
+    &:hover { color: #7bd67b; }
   }
 }
 

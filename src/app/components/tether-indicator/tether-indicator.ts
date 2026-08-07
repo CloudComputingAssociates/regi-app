@@ -28,7 +28,9 @@ import { TetherPromptComponent, TetherPromptMode } from '../tether-prompt/tether
       matTooltipPosition="below"
       (click)="onClick()"
       aria-label="Mobile tether status">
-      <mat-icon>phone_android</mat-icon>
+      <!-- Connected → phone with signal waves (phonelink_ring); disconnected →
+           plain phone. Shape + colour both distinguish the two states. -->
+      <mat-icon>{{ tether.anyLive() ? 'phonelink_ring' : 'phone_android' }}</mat-icon>
     </button>
 
     @if (promptMode(); as mode) {
