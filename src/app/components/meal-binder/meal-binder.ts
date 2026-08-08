@@ -188,25 +188,17 @@ import { Meal, Menu } from '../../models';
                     <mat-icon>clear_all</mat-icon>
                   </button>
                 </div>
-                <div class="filter-checks">
-                  <label class="check-opt">
-                    <input
-                      type="checkbox"
-                      [checked]="onlyWithRecipe()"
-                      (change)="onlyWithRecipe.set($any($event.target).checked)" />
-                    only meals with recipe
-                  </label>
-                </div>
                 <div class="sort-row">
                   <span class="filter-label">Sort</span>
                   <select
                     class="sort-select"
                     [value]="sortBy() ?? 'none'"
                     (change)="onSortChange($any($event.target).value)">
-                    <option value="none">None</option>
-                    <option value="date">Date (newest)</option>
+                    <option value="none">Off</option>
                     <option value="protein">Protein</option>
                     <option value="fiber">Fiber</option>
+                    <option value="recipes">Recipes Only</option>
+                    <option value="date">By Date</option>
                   </select>
                 </div>
               </fieldset>
@@ -347,19 +339,19 @@ export class MealBinderComponent implements OnInit {
   // ----- Binder Meals filter + sort -----------------------------------------
   /** Keyword typed in the Filter search box (matches meal name + any ingredient). */
   readonly searchText = signal('');
-  /** 2nd-level narrowing filter — when ON, hide meals with no recipe link.
-   *  Orthogonal to the SHOW source toggles; default OFF (transient per-view). */
-  readonly onlyWithRecipe = signal(false);
-  /** Active sort, or null for the default alphabetical order. Always descending.
+  /** Active sort/refine mode, or null for the default order. Always descending.
    *  'date' = newest created/modified first — auto-set when a new meal enters the
-   *  Binder so the fresh meal surfaces at the very top. */
-  readonly sortBy = signal<'protein' | 'fiber' | 'date' | null>(null);
+   *  Binder so the fresh meal surfaces at the very top. 'recipes' is really a
+   *  FILTER (narrow to recipe-linked meals) parked in the Sort control to save
+   *  vertical space; it doesn't reorder and composes with the SHOW toggles. */
+  readonly sortBy = signal<'protein' | 'fiber' | 'date' | 'recipes' | null>(null);
 
   /** Map the Sort dropdown value to the sort signal. */
   onSortChange(value: string): void {
     this.sortBy.set(
       value === 'protein' ? 'protein' :
       value === 'fiber' ? 'fiber' :
+      value === 'recipes' ? 'recipes' :
       value === 'date' ? 'date' : null,
     );
   }
@@ -396,11 +388,13 @@ export class MealBinderComponent implements OnInit {
           (m.primaryProteinName ?? '').toLowerCase().includes(q),
       );
     }
-    // 2nd-level refine: narrow to recipe-linked meals only (any source).
-    if (this.onlyWithRecipe()) {
+    const sort = this.sortBy();
+    // "Recipes Only" is a filter dressed as a Sort option: narrow to
+    // recipe-linked meals (any source). It doesn't reorder — the default order
+    // applies below — and it stacks on top of the SHOW toggles + search.
+    if (sort === 'recipes') {
       list = list.filter((m) => (m.recipeLink ?? '').trim() !== '');
     }
-    const sort = this.sortBy();
     const sorted = [...list];
     if (sort === 'protein') {
       sorted.sort((a, b) => (b.totalProteinG ?? 0) - (a.totalProteinG ?? 0));
@@ -438,7 +432,6 @@ export class MealBinderComponent implements OnInit {
    *  Community — persisted, so this writes through), and collapse every Meal card. */
   clearFilter(): void {
     this.searchText.set('');
-    this.onlyWithRecipe.set(false);
     this.sortBy.set(null);
     this.preferences.setShowMyMeals(true);
     this.preferences.setShowRegiApprovedMeals(true);
