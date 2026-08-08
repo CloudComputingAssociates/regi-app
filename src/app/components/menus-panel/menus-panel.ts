@@ -116,7 +116,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                 matTooltipPosition="above"
                 [class.complete]="plannedDays() === rotation.rotation()!.spanDays">
                 <span class="check">✓</span>
-                {{ plannedDays() }}/{{ rotation.rotation()!.spanDays }} menu-days
+                {{ plannedDays() }}/{{ rotation.rotation()!.spanDays }} menus
               </div>
             </div>
 
