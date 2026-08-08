@@ -30,7 +30,7 @@
   align-items: center;
   justify-content: space-between; // "Meals" left, AI toggle right
   padding: 0 14px;
-  margin: 6px;
+  margin: 1px 6px 6px; // top hugs the panel edge — matches the menus toolbar
   // Match the macro bar shade + rounded chrome (see menus-toolbar).
   background: #3a3a3a;
   border: 1px solid #4a4a4a;

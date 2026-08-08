@@ -13,7 +13,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 14px 20px;
+  padding: 1px 20px; // vertical black trimmed to a 1px sliver above/below the cards
   border-bottom: 1px solid #4a4a4a;
   overflow-x: auto;
 }
