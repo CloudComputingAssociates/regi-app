@@ -655,6 +655,12 @@
   // Filter key stays right-justified now that the toggle wrapper is gone.
   .filter-toggle { margin-left: auto; }
 
+  // "Filter (ON)" — a blue accent marks that a filter/refine is active.
+  .filter-toggle.filter-on {
+    border-color: rgba(77, 166, 255, 0.7);
+    .create-word { color: #7fbfff; }
+  }
+
   .create-toggle {
     display: inline-flex;
     align-items: center;

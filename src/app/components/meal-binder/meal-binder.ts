@@ -140,8 +140,8 @@ import { Meal, Menu } from '../../models';
               <mat-icon>add</mat-icon>
             </button>
             <!-- Filter stays right-justified. -->
-            <button type="button" class="create-toggle filter-toggle" (click)="toggleFilterPanel()">
-              <span class="create-word">Filter</span>
+            <button type="button" class="create-toggle filter-toggle" [class.filter-on]="filterActive()" (click)="toggleFilterPanel()">
+              <span class="create-word">Filter{{ filterActive() ? ' (ON)' : '' }}</span>
               <mat-icon class="create-chevron">{{ filterOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
             </button>
           </div>
@@ -355,6 +355,17 @@ export class MealBinderComponent implements OnInit {
       value === 'date' ? 'date' : null,
     );
   }
+
+  /** True when the filter is doing anything (not the cleared default): a search
+   *  term, an active Sort / Recipes-Only mode, or any SHOW source toggle turned
+   *  off. Drives the "Filter (ON)" label on the header button. */
+  readonly filterActive = computed<boolean>(() =>
+    this.searchText().trim() !== '' ||
+    this.sortBy() !== null ||
+    !this.preferences.showMyMeals() ||
+    !this.preferences.showRegiApprovedMeals() ||
+    !this.preferences.showCommunityMeals(),
+  );
 
   /** The Meals list as displayed: SHOW-gated + keyword-filtered, then either
    *  sorted by the chosen macro / recipe (descending) or in the default order —
