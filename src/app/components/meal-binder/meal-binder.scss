@@ -600,8 +600,8 @@
   gap: 8px;
   width: 100%;
   box-sizing: border-box;
-  margin: 12px 0 0;
-  padding: 6px 14px;
+  margin: 4px 0 0; // little black band above each category header
+  padding: 3px 14px;
   background: transparent;
   border: none;
   color: #d8d8d8;
@@ -750,11 +750,13 @@
 }
 
 // Section body sizes to content; the rail-scroll wrapper owns the scrollbar.
+// Tight vertical rhythm so more meal cards fit on screen — small inter-card gap,
+// minimal top/bottom padding.
 .section-body {
-  padding: 8px 14px;
+  padding: 3px 14px 5px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
 }
 
 // ---- Binder inner accordion groups (Menus / Meals) ----
@@ -764,8 +766,8 @@
 .binder-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px 4px 10px 12px; // tight RHS — trash rides near the right edge
+  gap: 6px;
+  padding: 4px 4px 4px 12px; // tight top/bottom around the thumbnail; tight RHS for the trash
   border: 1px solid #4a4a4a;
   border-radius: 8px;
   background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
