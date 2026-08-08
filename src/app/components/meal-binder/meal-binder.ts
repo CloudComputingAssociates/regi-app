@@ -433,13 +433,16 @@ export class MealBinderComponent implements OnInit {
     return m ? Number(m[1]) : null;
   }
 
-  /** Clear the transient search + sort and collapse every Meal card. Leaves the
-   *  SHOW toggles alone — they're persisted "meals in your Binder" preferences,
-   *  not a per-view filter to reset. */
+  /** Clear the filter back to its default "show everything" state: reset the
+   *  search + sort, re-check all three SHOW source toggles (MyMeals / Regi /
+   *  Community — persisted, so this writes through), and collapse every Meal card. */
   clearFilter(): void {
     this.searchText.set('');
     this.onlyWithRecipe.set(false);
     this.sortBy.set(null);
+    this.preferences.setShowMyMeals(true);
+    this.preferences.setShowRegiApprovedMeals(true);
+    this.preferences.setShowCommunityMeals(true);
     this.expandedCards.update((s) => {
       const next = new Set(s);
       for (const key of next) if (key.startsWith('meal-')) next.delete(key);
