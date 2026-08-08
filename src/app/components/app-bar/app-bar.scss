@@ -14,10 +14,10 @@
     align-items: center;
     justify-content: space-between;
     position: relative;
-    padding: 4px 8px 4px 4px;
+    padding: 3px 8px 3px 4px;  // top/bottom trimmed ~25% to reclaim vertical space
     max-width: 100%;
     margin: 0 auto;
-    min-height: 44px;  // grew a touch so the (slightly bigger) avatar is framed
+    min-height: 33px;  // ~25% shorter banner (was 44px)
   }
 
   .menu-button-placeholder {
@@ -97,8 +97,8 @@
     border: none;
     padding: 0;
     cursor: pointer;
-    width: 48px;
-    height: 48px;
+    width: 36px;   // ~25% smaller avatar (was 48px) to match the shorter banner
+    height: 36px;
     border-radius: 50%;
     overflow: hidden;
     transition: all 0.2s ease;

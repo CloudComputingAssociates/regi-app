@@ -9,7 +9,7 @@
 //   - a device is live         → a small popover listing live devices.
 // Renders its OWN tether-prompt instance — independent of TabService. OnPush,
 // all reactive via signals.
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, inject, signal } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TetherService } from '../../services/tether.service';
 import { TetherPromptComponent, TetherPromptMode } from '../tether-prompt/tether-prompt';
@@ -34,7 +34,7 @@ import { TetherPromptComponent, TetherPromptMode } from '../tether-prompt/tether
     </button>
 
     @if (promptMode(); as mode) {
-      <app-tether-prompt [mode]="mode" (close)="promptMode.set(null)" />
+      <app-tether-prompt [mode]="mode" (close)="closePrompt()" />
     }
 
     @if (devicePopoverOpen()) {
@@ -54,7 +54,7 @@ import { TetherPromptComponent, TetherPromptMode } from '../tether-prompt/tether
   `,
   styleUrls: ['./tether-indicator.scss'],
 })
-export class TetherIndicatorComponent {
+export class TetherIndicatorComponent implements OnDestroy {
   readonly tether = inject(TetherService);
 
   /** Only the live devices surface in the online popover. */
@@ -64,13 +64,59 @@ export class TetherIndicatorComponent {
   readonly promptMode = signal<TetherPromptMode | null>(null);
   readonly devicePopoverOpen = signal(false);
 
+  /** The "open your phone" nudge self-dismisses after this long. */
+  private static readonly PROMPT_AUTOCLOSE_MS = 10000;
+  private promptTimer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor() {
+    // If the phone goes live while a prompt is open, the nudge is resolved —
+    // close it automatically (covers both prompt modes).
+    effect(
+      () => {
+        if (this.tether.anyLive() && this.promptMode() !== null) {
+          this.closePrompt();
+        }
+      },
+      { allowSignalWrites: true },
+    );
+  }
+
   onClick(): void {
     if (!this.tether.registered()) {
-      this.promptMode.set('not-registered');
+      this.openPrompt('not-registered');
     } else if (!this.tether.anyLive()) {
-      this.promptMode.set('registered-offline');
+      this.openPrompt('registered-offline');
     } else {
       this.devicePopoverOpen.update((v) => !v);
     }
+  }
+
+  private openPrompt(mode: TetherPromptMode): void {
+    this.clearPromptTimer();
+    this.promptMode.set(mode);
+    // 10s auto-close for the "open your phone" nudge. Not applied to the
+    // not-registered QR flow — the user may need time to scan / download.
+    if (mode === 'registered-offline') {
+      this.promptTimer = setTimeout(
+        () => this.closePrompt(),
+        TetherIndicatorComponent.PROMPT_AUTOCLOSE_MS,
+      );
+    }
+  }
+
+  closePrompt(): void {
+    this.clearPromptTimer();
+    this.promptMode.set(null);
+  }
+
+  private clearPromptTimer(): void {
+    if (this.promptTimer) {
+      clearTimeout(this.promptTimer);
+      this.promptTimer = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.clearPromptTimer();
   }
 }

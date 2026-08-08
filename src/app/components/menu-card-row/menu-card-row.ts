@@ -64,36 +64,35 @@ import { RotationService } from '../../services/rotation.service';
                 (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
                 <mat-icon>delete_outline</mat-icon>
               </button>
-            </div>
-            <!-- Macro line (ONE row): orig/copy tag leads (swapped with the
-                 chevron); then Protein, Carbs, Fat, Fiber (order P C Fat Fiber),
-                 cals trailing, and the dropdown chevron back on the far RIGHT. -->
-            <div class="menu-foot">
-              @if (isOpen(menu.menuId)) {
-                <!-- orig/copy tag on the LEFT (server names a copy "<name> (copy)").
-                     Origin reads quiet blue; copy reads grey. -->
-                @if (copyRoleFor(menu); as role) {
-                  <span class="copy-badge" [class.is-copy]="role === 'copy'">{{ role }}</span>
-                }
-              }
-              <span class="chip protein">P {{ round(rotation.menuTotals(menu.menuId).proteinG) }}</span>
-              @if (isOpen(menu.menuId)) {
-                <span class="chip carb">C {{ round(rotation.menuTotals(menu.menuId).carbG) }}</span>
-                <span class="chip fat">F {{ round(rotation.menuTotals(menu.menuId).fatG) }}</span>
-              }
-              <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
-              @if (isOpen(menu.menuId)) {
-                <span class="menu-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
-              }
+              <!-- Chevron lives on the title row, far right (like the meal card).
+                   Collapsed shows NO macro chips at all — the card is a single row;
+                   expanding reveals the full macro line beneath it all at once. -->
               <button
                 type="button"
                 class="card-toggle"
-                [matTooltip]="isOpen(menu.menuId) ? 'Hide extra macros' : 'Show Calories, Carbs & Fats'"
+                [matTooltip]="isOpen(menu.menuId) ? 'Hide macros' : 'Show macros'"
                 matTooltipPosition="above"
                 (click)="$event.stopPropagation(); toggleMacros(menu.menuId)">
                 <mat-icon>{{ isOpen(menu.menuId) ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
             </div>
+            <!-- Macro line (ONE row) — rendered ONLY when expanded, so a collapsed
+                 menu costs a single row. orig/copy tag leads; then Protein, Carbs,
+                 Fat, Fiber (order P C Fat Fiber); cals trail hard right. -->
+            @if (isOpen(menu.menuId)) {
+              <div class="menu-foot">
+                <!-- orig/copy tag on the LEFT (server names a copy "<name> (copy)").
+                     Origin reads quiet blue; copy reads grey. -->
+                @if (copyRoleFor(menu); as role) {
+                  <span class="copy-badge" [class.is-copy]="role === 'copy'">{{ role }}</span>
+                }
+                <span class="chip protein">P {{ round(rotation.menuTotals(menu.menuId).proteinG) }}</span>
+                <span class="chip carb">C {{ round(rotation.menuTotals(menu.menuId).carbG) }}</span>
+                <span class="chip fat">F {{ round(rotation.menuTotals(menu.menuId).fatG) }}</span>
+                <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
+                <span class="menu-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
+              </div>
+            }
           </div>
         }
 

@@ -71,12 +71,32 @@
     border-color: #4da6ff;
   }
 
-  // Top strip: pin leads, the rename box flexes to fill the middle, copy + delete
-  // pin to the upper-right corner. Mirrors the meal card header.
+  // Top strip: the rename box flexes to fill the middle; delete + the dropdown
+  // chevron pin to the upper-right corner (chevron furthest right). Mirrors the
+  // meal card header — the name box shrinks to make room for the corner cluster.
   .card-top {
     display: flex;
     align-items: center;
-    gap: 5px; // tighter so the copy + delete pair reads as a unit in the corner
+    gap: 5px; // tighter so the delete + chevron pair reads as a unit in the corner
+  }
+
+  // Chevron that reveals/hides the macro line — sits on the title row's far right.
+  .card-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #9aa0a6;
+    cursor: pointer;
+
+    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+    &:hover { color: #ffffff; }
   }
 
   // Rename box — the flexing middle of the top strip. Flex row so the commit
@@ -223,33 +243,14 @@
   }
 }
 
-// The macro line (ONE row). The orig/copy tag + Protein lead on the left; Carbs,
-// Fat, Fiber follow; cals + the dropdown chevron sit on the far RIGHT (cals's auto
-// margin pushes the pair over, the chevron trails as the right-most item).
+// The macro line (ONE row), shown only when the card is expanded. The orig/copy
+// tag + Protein lead on the left; Carbs, Fat, Fiber follow; cals trail hard right
+// (its auto margin pushes it to the edge now that the chevron lives up top).
 .menu-foot {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
   gap: 5px;
-
-  // Chevron that shows/hides the extra macros + cals — sits on the far right.
-  .card-toggle {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    border: none;
-    border-radius: 4px;
-    background: transparent;
-    color: #9aa0a6;
-    cursor: pointer;
-
-    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
-    &:hover { color: #ffffff; }
-  }
 
   // Calories trail hard right (the orig/copy tag stays in the left cluster, just
   // before this auto gap).
