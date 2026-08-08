@@ -92,7 +92,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin-left: 10px;
+    // No extra left margin — the toolbar's 14px padding is the whole left inset,
+    // matching the Binder header's title (also just its 14px header padding).
     margin-right: 14px;
     font-size: 20px;
     font-weight: 600;
