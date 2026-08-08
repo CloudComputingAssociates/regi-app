@@ -51,8 +51,10 @@
   display: flex;
   flex-direction: column;
   gap: 3px; // drastically tighter — collapsed card is a single slim row
-  // Narrower than the meal card: the menu picker is a compact chip, not a tile.
-  min-width: 200px;
+  // ~90% of the meal card's 280px base — intentionally narrower so the menu
+  // strip reads as a separate set of things, not lined up with the meal grid.
+  width: 252px;
+  min-width: 252px;
   padding: 3px 4px 3px 8px; // tight RHS — delete rides near the right edge
   border: 2px solid #4a4a4a;
   border-radius: 8px;
