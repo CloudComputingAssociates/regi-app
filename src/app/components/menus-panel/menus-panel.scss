@@ -62,6 +62,14 @@
   display: flex;
   flex-direction: column;
   position: relative; // anchors the AI Create Meal bloom overlay to the board
+
+  // Macros bar sits at the top of the board column only (spans the Menus & Meals
+  // width, not the Binder). Fixed height; a small gap before the toolbar.
+  > app-macros {
+    flex-shrink: 0;
+    display: block;
+    margin-bottom: 4px;
+  }
 }
 
 // Thin raised toolbar pinned at the very top of the panel. flex-shrink:0 keeps

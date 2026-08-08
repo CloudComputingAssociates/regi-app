@@ -29,7 +29,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between; // "Meals" left, AI toggle right
-  padding: 0 14px;
+  padding: 0 12px 0 14px; // right trimmed 2px so the search grows toward the macros RHS
   margin: 1px 6px 6px; // top hugs the panel edge — matches the menus toolbar
   // Match the macro bar shade + rounded chrome (see menus-toolbar).
   background: #3a3a3a;
@@ -601,7 +601,7 @@
   width: 100%;
   box-sizing: border-box;
   margin: 4px 0 0; // little black band above each category header
-  padding: 3px 14px;
+  padding: 3px 8px; // tighter L/R so labels align with the (now wider) cards
   background: transparent;
   border: none;
   color: #d8d8d8;
@@ -761,7 +761,7 @@
 // Tight vertical rhythm so more meal cards fit on screen — small inter-card gap,
 // minimal top/bottom padding.
 .section-body {
-  padding: 3px 14px 5px;
+  padding: 3px 8px 5px; // tighter L/R to jive with the board meal cards' spacing
   display: flex;
   flex-direction: column;
   gap: 4px;

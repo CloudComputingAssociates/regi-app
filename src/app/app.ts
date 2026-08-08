@@ -143,12 +143,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
   tipDismissed = signal(this.isTipDismissedToday());
 
-  /** True when the active panel should render the macros bar above it.
-   *  False on splash, Foods (reclaims the vertical space), and Chat
-   *  (no macros context applies). */
+  /** True when the active panel should render the app-level (full-width) macros
+   *  bar above it. False on splash, Foods (reclaims the vertical space), Chat
+   *  (no macros context), and Menus — Menus renders its OWN macros bar INSIDE the
+   *  board column so it spans only the Menus & Meals width and the Binder grows
+   *  up beside it (the macros belong to Menus & Meals, not the Binder). */
   hasMacros = computed(() => {
     const id = this.tabService.activeTabId();
-    return id !== null && id !== 'foods' && id !== 'chat';
+    return id !== null && id !== 'foods' && id !== 'chat' && id !== 'menus';
   });
 
   /** True when the "bites" tip-of-the-day bar should render. Chat only. */

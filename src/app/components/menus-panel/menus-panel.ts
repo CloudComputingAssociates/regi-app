@@ -28,6 +28,7 @@ import { MenuCardRowComponent } from '../menu-card-row/menu-card-row';
 import { MenusMealsComponent } from '../menus-meals/menus-meals';
 import { MealBinderComponent } from '../meal-binder/meal-binder';
 import { AiCreateMealComponent } from '../ai-create-meal/ai-create-meal';
+import { MacrosComponent } from '../macros/macros';
 import { FoodLookasideComponent } from '../food-lookaside/food-lookaside';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
@@ -43,6 +44,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
     MenusMealsComponent,
     MealBinderComponent,
     AiCreateMealComponent,
+    MacrosComponent,
     FoodLookasideComponent,
     NutritionFactsLabelComponent,
     MatDialogModule,
@@ -81,6 +83,11 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
              draggable meal cards to the empty-slot drop targets in the board. -->
         <div class="menus-layout" [class.splitter-dragging]="splitterDragging" cdkDropListGroup>
           <div class="menus-main">
+            <!-- Macros bar lives INSIDE the board column so it spans only the
+                 Menus & Meals width (it reflects this menu's macros, not the
+                 Binder). The splitter + Binder stretch full-height beside it. -->
+            <app-macros />
+
             <!-- Thin raised toolbar, pinned above the menu-card row. Wipe sits
                  ~2/3 across; People (persisted) is right-justified against the
                  right edge, adjacent to the Meals binder. -->

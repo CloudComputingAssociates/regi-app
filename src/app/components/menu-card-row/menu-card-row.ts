@@ -4,7 +4,7 @@
 // menu name and its planned day count; the selected card gets a blue border.
 // A badge tallies planned days against the rotation span, and a disabled
 // "+ Add menu" stub marks the Phase-1 affordance.
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
@@ -151,6 +151,35 @@ export class MenuCardRowComponent {
    *  we track the collapsed exceptions. The Protein + Fiber summary discs stay
    *  visible either way. */
   private readonly collapsedMenus = signal<Set<number>>(new Set());
+
+  /** Baseline menu ids, seeded on the first non-empty load. Null until seeded so
+   *  the initial set keeps the default-open state; menus added AFTER start
+   *  collapsed (name only). */
+  private knownMenuIds: Set<number> | null = null;
+
+  constructor() {
+    // A menu added after the initial load appears COLLAPSED. The first non-empty
+    // menu set is the baseline (stays open); only later-added ids get collapsed.
+    effect(
+      () => {
+        const ids = this.menus().map((m) => m.menuId);
+        if (this.knownMenuIds === null) {
+          if (ids.length > 0) this.knownMenuIds = new Set(ids);
+          return;
+        }
+        const fresh = ids.filter((id) => !this.knownMenuIds!.has(id));
+        this.knownMenuIds = new Set(ids);
+        if (fresh.length) {
+          this.collapsedMenus.update((s) => {
+            const next = new Set(s);
+            for (const id of fresh) next.add(id);
+            return next;
+          });
+        }
+      },
+      { allowSignalWrites: true },
+    );
+  }
 
   isOpen(menuId: number): boolean {
     return !this.collapsedMenus().has(menuId);
