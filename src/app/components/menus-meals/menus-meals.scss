@@ -18,7 +18,7 @@
   // (laptop) while staying responsive — drops to 2 on a narrower window.
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 10px;
-  padding: 1px 6px 8px 4px; // flush left; 1px sliver above the meal cards
+  padding: 3px 6px 8px 4px; // flush left; a sliver above the cards so the strip separator shows
   align-content: start;
 }
 

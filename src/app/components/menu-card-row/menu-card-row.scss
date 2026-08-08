@@ -13,7 +13,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 1px 6px 1px 4px; // flush left (bring the first menu over); 1px above/below
+  padding: 1px 6px 4px 4px; // flush left; a touch of room below the selected card's blue border
   border-bottom: 1px solid #4a4a4a;
   overflow-x: auto;
 }
