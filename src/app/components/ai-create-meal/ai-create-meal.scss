@@ -12,8 +12,7 @@
   background: rgba(0, 0, 0, 0.45);
 }
 
-// The bloom card — blue glow, same family as the old Create panel but centered
-// and self-contained. Fixed comfortable width; never as tall as the meal list.
+// The bloom card — yellow glow, matching the app's established blooms.
 .ai-create-bloom {
   position: relative;
   width: 340px;
@@ -22,11 +21,9 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 12px;
+  gap: 10px;
   padding: 16px 16px 18px;
   border-radius: 10px;
-  // Yellow bloom — matches the app's established glow (NF popup, drag encourager).
-  // Blue washed out against the dark board; the amber halo reads clearly.
   border: 2px solid #ffd54f;
   background: #2f2f2f;
   box-shadow:
@@ -35,7 +32,7 @@
     0 12px 30px rgba(0, 0, 0, 0.55);
 }
 
-// Title row — blue, matching the Binder / section headers, with the AI star.
+// Title row — blue, with a fork & knife glyph.
 .bloom-title {
   display: inline-flex;
   align-items: center;
@@ -45,10 +42,13 @@
   font-weight: 600;
   color: #4da6ff;
 
-  .bloom-star {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
+  .bloom-title-icon {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    line-height: 20px;
+    color: #4da6ff;
   }
 }
 
@@ -63,158 +63,30 @@
   gap: 6px;
 }
 
-// Generate row: "Create" + "Cuisine spin:" + combo + green check.
-.ai-body {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-
-  &.area-disabled {
-    opacity: 0.45;
-    pointer-events: none;
-  }
-}
-
-.genmeal-label {
+// Blue section captions.
+.section-label {
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
+  align-self: flex-start;
   font-size: 13px;
   font-weight: 600;
   color: #4da6ff;
   white-space: nowrap;
 }
 
-.import-label {
-  align-self: flex-start;
-}
-
-// "Cuisine spin:" caption before the combo.
-.cuisine-label {
-  flex-shrink: 0;
-  font-size: 13px;
-  font-weight: 500;
-  color: #d8d8d8;
-  white-space: nowrap;
-}
-
-.twist-group {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.twist-combo {
-  position: relative;
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: stretch;
-  background: linear-gradient(180deg, #565656 0%, #434343 100%);
-  border: 1px solid #262626;
-  border-top-color: #6f6f6f;
-  border-radius: 6px;
-  box-shadow:
-    0 2px 3px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16);
-}
-
-.twist-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 6px 8px;
-  font-family: inherit;
-  font-size: 13px;
-  color: #f0f0f0;
-  background: transparent;
-  border: none;
-  border-radius: 6px 0 0 6px;
-  outline: none;
-  &::placeholder { color: #9aa0a6; }
-}
-
-.twist-chevron {
-  flex-shrink: 0;
-  width: 24px;
-  padding: 0;
-  font-size: 12px;
-  color: #d8d8d8;
-  background: transparent;
-  border: none;
-  border-left: 1px solid rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-  &:hover { color: #ffffff; }
-}
-
-.twist-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 40;
-  margin: 0;
-  padding: 4px;
-  list-style: none;
-  background: #3a3a3a;
-  border: 1px solid #1f1f1f;
-  border-radius: 6px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
-}
-
-.twist-opt {
-  padding: 5px 8px;
-  font-size: 13px;
-  color: #e0e0e0;
-  border-radius: 4px;
-  cursor: pointer;
-  &:hover { background: #4a4a4a; color: #ffffff; }
-  &.selected { color: #4da6ff; }
-}
-
-.genmeal-go {
-  flex: 0 0 auto;
-  perspective: 60px;
-}
-
-.genmeal-spin {
-  width: 15px;
-  height: 15px;
-  object-fit: contain;
-  animation: ai-globe-spin 1.4s linear infinite;
-}
-
-@keyframes ai-globe-spin {
-  from { transform: rotateY(0deg); }
-  to { transform: rotateY(360deg); }
-}
-
-.or-divider {
-  align-self: center;
-  font-size: 12px;
-  font-weight: 500;
-  color: #9aa0a6;
-  letter-spacing: 0.04em;
-}
-
-// Import drop zone — dashed blue border; drag & drop a file or browse.
+// Compact import drop zone — no big graphic, just the two lines of text.
 .import-dropzone {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 16px 12px;
+  gap: 2px;
+  padding: 10px 12px;
   border: 2px dashed #4da6ff;
   border-radius: 8px;
   background: rgba(77, 166, 255, 0.06);
   text-align: center;
   transition: background 0.12s ease, box-shadow 0.12s ease;
 
-  .dz-icon { width: 22px; height: 22px; font-size: 22px; line-height: 22px; color: #4da6ff; }
   .dz-title { font-size: 13px; font-weight: 600; color: #e8e8e8; }
   .dz-sub { font-size: 11px; color: #9aa0a6; }
 
@@ -233,4 +105,97 @@
     background: rgba(77, 166, 255, 0.16);
     box-shadow: 0 0 0 2px #4da6ff, 0 0 14px rgba(77, 166, 255, 0.6);
   }
+}
+
+// Glowing gold separator between Import and the Meal Sets upsell.
+.glow-divider {
+  height: 2px;
+  margin: 6px 2px 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #ffd54f 20%, #ffe58a 50%, #ffd54f 80%, transparent);
+  box-shadow:
+    0 0 8px rgba(255, 213, 79, 0.85),
+    0 0 16px rgba(255, 193, 7, 0.45);
+}
+
+// ---- Purchase Additional Meal Sets (upsell) --------------------------------
+.meal-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 8px;
+  // Warm, enticing panel — a subtle amber wash so it reads as "premium".
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(255, 213, 79, 0.12), transparent 60%),
+    #333030;
+  border: 1px solid rgba(255, 213, 79, 0.35);
+}
+
+.meal-sets-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  .meal-sets-icon {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    font-size: 22px;
+    line-height: 22px;
+    color: #ffd54f;
+  }
+  .meal-sets-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffe58a;
+  }
+}
+
+.meal-sets-price {
+  font-size: 13px;
+  color: #f1f1f1;
+  strong { color: #ffd54f; font-weight: 800; }
+}
+
+.meal-sets-desc {
+  font-size: 12px;
+  color: #d8d8d8;
+}
+
+.meal-sets-tags {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9fd0a0; // healthy green — GLP-1 / Keto / Carnivore hook
+}
+
+// Gold CTA button — gimmicky glow, opens meals.regimenu.com in a new tab.
+.meal-sets-cta {
+  margin-top: 6px;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffe07a 0%, #f4b400 100%);
+  color: #2a2419;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow:
+    0 2px 8px rgba(255, 193, 7, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: box-shadow 0.15s ease, transform 0.05s ease, filter 0.15s ease;
+
+  .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; }
+
+  &:hover {
+    filter: brightness(1.05);
+    box-shadow:
+      0 2px 12px rgba(255, 193, 7, 0.85),
+      0 0 18px rgba(255, 213, 79, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  &:active { transform: translateY(1px); }
 }

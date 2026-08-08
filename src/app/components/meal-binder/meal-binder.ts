@@ -134,7 +134,7 @@ import { Meal, Menu } from '../../models';
             <button
               type="button"
               class="create-icon-btn"
-              matTooltip="AI Create Meal"
+              matTooltip="Add meals to your Binder"
               matTooltipPosition="above"
               (click)="createMeal.emit()">
               <mat-icon>add</mat-icon>
