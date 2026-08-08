@@ -92,15 +92,14 @@ import { Meal, Menu } from '../../models';
                       <mat-icon>{{ isCardOpen('menu-' + menu.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
                     </button>
                   </div>
-                  <!-- Always-visible macro row: P, Fiber, cals — left-aligned. -->
-                  <div class="binder-chips card-macros">
-                    <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
-                    <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
-                    <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
-                  </div>
-                  <!-- Reveal: Carbs + Fat align UNDER the row above (quadrant);
-                       the delete sits flush right, only visible when dropped down. -->
+                  <!-- Collapsed = name only. Expanding reveals the macros: P /
+                       Fiber / cals, then Carbs + Fat + delete underneath. -->
                   @if (isCardOpen('menu-' + menu.id)) {
+                    <div class="binder-chips card-macros">
+                      <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
+                      <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
+                      <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
+                    </div>
                     <div class="binder-chips">
                       <span class="chip carb">C {{ round(menu.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(menu.totalFatG) }}</span>
