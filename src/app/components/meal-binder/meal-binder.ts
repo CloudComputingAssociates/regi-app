@@ -14,19 +14,14 @@ import {
   computed,
   effect,
   inject,
+  output,
   signal,
-  viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { firstValueFrom } from 'rxjs';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { RotationService } from '../../services/rotation.service';
-import { RecipeService } from '../../services/recipe.service';
-import { RecipeImportWatcher } from '../../services/recipe-import-watcher.service';
-import { NotificationService } from '../../services/notification.service';
 import { PreferencesService } from '../../services/preferences.service';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 import { Meal, Menu } from '../../models';
@@ -43,6 +38,16 @@ import { Meal, Menu } from '../../models';
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
         <span class="binder-title"><mat-icon class="binder-title-icon">menu_book</mat-icon>Binder</span>
+        <!-- Always-on meal search, right-justified with ample gap from the title.
+             Matches meal name + any ingredient (same signal the Filter used). -->
+        <input
+          type="text"
+          class="header-search"
+          placeholder="search meal..."
+          matTooltip="Search a meal by name, or type any ingredient"
+          matTooltipPosition="below"
+          [value]="searchText()"
+          (input)="searchText.set($any($event.target).value)" />
       </div>
 
       <!-- One scrollbar for the whole rail. -->
@@ -124,10 +129,17 @@ import { Meal, Menu } from '../../models';
             <span class="section-label">Meals</span>
             <span class="section-count">({{ rotation.binderMeals().length }})</span>
             <div class="header-toggles">
-              <button type="button" class="create-toggle" (click)="toggleCreatePanel()">
-                <img src="images/AI-star.png" alt="" class="btn-star" />
+              <!-- Create is now a material-style button: it blooms the AI Create
+                   Meal overlay over the board (see menus-panel) instead of
+                   pushing the meal list down with an inline accordion. -->
+              <button
+                type="button"
+                class="create-btn"
+                matTooltip="AI Create Meal"
+                matTooltipPosition="above"
+                (click)="createMeal.emit()">
+                <mat-icon class="create-plus">add</mat-icon>
                 <span class="create-word">Create</span>
-                <mat-icon class="create-chevron">{{ createNewOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
               <button type="button" class="create-toggle" (click)="toggleFilterPanel()">
                 <span class="create-word">Filter</span>
@@ -135,86 +147,6 @@ import { Meal, Menu } from '../../models';
               </button>
             </div>
           </div>
-          @if (createNewOpen()) {
-            <div class="section-body create-body">
-              <!-- Generate from the user's picks, with an optional Cuisine.
-                   Disabled while a recipe import is in flight. -->
-              <div class="ai-body" [class.area-disabled]="uploading()">
-                <span class="genmeal-label">Create</span>
-                <div class="twist-group">
-                  <div class="twist-combo">
-                    <input
-                      #twistInput
-                      type="text"
-                      class="twist-input"
-                      [value]="twistValue()"
-                      placeholder="cuisine"
-                      (input)="onTwistInput($any($event.target).value)"
-                      (focus)="twistOpen.set(true)"
-                      (blur)="onTwistBlur()"
-                      (keydown.escape)="twistOpen.set(false)" />
-                    <button
-                      type="button"
-                      class="twist-chevron"
-                      aria-label="Cuisine options"
-                      (mousedown)="onChevronMouseDown($event)">▾</button>
-                    @if (twistOpen()) {
-                      <ul class="twist-menu">
-                        @for (opt of twistOptions; track opt) {
-                          <li
-                            class="twist-opt"
-                            [class.selected]="opt === twistValue()"
-                            (mousedown)="selectTwist(opt, $event)">{{ opt }}</li>
-                        }
-                      </ul>
-                    }
-                  </div>
-                  <button
-                    type="button"
-                    class="icon-disc genmeal-go"
-                    [class.icon-disc-confirm]="!rotation.generating()"
-                    matTooltip="Meals from Foods you picked"
-                    [disabled]="rotation.generating() || uploading()"
-                    (click)="rotation.generateMeal()">
-                    @if (rotation.generating()) {
-                      <img src="images/AI-star.png" alt="" class="genmeal-spin" />
-                    } @else {
-                      <mat-icon>check</mat-icon>
-                    }
-                  </button>
-                </div>
-              </div>
-              <div class="or-divider">-or-</div>
-              <span class="genmeal-label import-label">Import</span>
-              <!-- Import a recipe — drag & drop a file onto the zone, or browse.
-                   PDF / JPEG / PNG. -->
-              <div
-                class="import-dropzone"
-                [class.dragging]="dragOver()"
-                [class.busy]="uploading()"
-                (dragover)="onDragOver($event)"
-                (dragleave)="onDragLeave($event)"
-                (drop)="onDropFile($event)">
-                @if (uploading()) {
-                  <img src="images/AI-star.png" alt="" class="dz-ai-spin" />
-                  <span class="dz-title">{{ processingMessages[processingMsgIndex()] }}</span>
-                } @else {
-                  <mat-icon class="dz-icon">note_add</mat-icon>
-                  <span class="dz-title">Drag &amp; Drop a Recipe</span>
-                  <span class="dz-sub">
-                    PDF, JPEG or PNG — or
-                    <button type="button" class="dz-link" (click)="recipeInput.click()">browse files</button>
-                  </span>
-                }
-              </div>
-              <input
-                #recipeInput
-                type="file"
-                accept="application/pdf,image/jpeg,image/png"
-                hidden
-                (change)="onRecipeFileSelected(recipeInput)" />
-            </div>
-          }
           @if (filterOpen()) {
             <!-- Bordered "Filter" fieldset: search + Clear-all on one row, then
                  SHOW / Only / Sort rows — all inside the frame.
@@ -410,105 +342,18 @@ export class MealBinderComponent implements OnInit {
   readonly rotation = inject(RotationService);
   private dialog = inject(MatDialog);
   private host = inject(ElementRef<HTMLElement>);
-  private recipeService = inject(RecipeService);
-  private watcher = inject(RecipeImportWatcher);
-  private notification = inject(NotificationService);
   readonly preferences = inject(PreferencesService);
 
-  /** Single-flight lock for the "From recipe…" button. Goes true on PDF select,
-   *  reads "Importing…" while true, and blocks a second import. Released in
-   *  EXACTLY two places, one per stage: the finally around the upload POST
-   *  (below), and the watcher.settled subscription (in the constructor) for the
-   *  background parse. No other code touches it — so it can't be stranded. */
-  readonly uploading = signal(false);
-
-  /** Rotating status shown in the drop zone while a recipe is importing. Cycles
-   *  through the phases, then repeats, until the import settles. Purely a UI
-   *  animation — it does NOT reflect the real backend stage. */
-  readonly processingMessages = [
-    'AI importing… will take a few minutes',
-    'AI processing…',
-    'AI ingredient lookup…',
-  ];
-  readonly processingMsgIndex = signal(0);
-  private msgTimer: ReturnType<typeof setInterval> | null = null;
-
-  /** PDF chosen from the "From recipe…" picker — upload it, then watch the import
-   *  to completion. The 202 carries the recipeId to poll. The finally releases
-   *  the lock for the upload stage on every path (including a failed/errored
-   *  upload that never starts a watch); the watcher.settled subscription releases
-   *  it for the parse stage. */
-  /** True while a file is dragged over the import zone (drives the bloom border). */
-  readonly dragOver = signal(false);
-
-  onDragOver(ev: DragEvent): void {
-    ev.preventDefault();
-    this.dragOver.set(true);
-  }
-  onDragLeave(ev: DragEvent): void {
-    ev.preventDefault();
-    this.dragOver.set(false);
-  }
-  onDropFile(ev: DragEvent): void {
-    ev.preventDefault();
-    this.dragOver.set(false);
-    void this.importRecipeFile(ev.dataTransfer?.files?.[0] ?? null);
-  }
-
-  onRecipeFileSelected(input: HTMLInputElement): void {
-    const file = input.files?.[0] ?? null;
-    input.value = ''; // let the same file be re-picked after a failure
-    void this.importRecipeFile(file);
-  }
-
-  /** Upload a chosen/dropped recipe file (PDF / JPEG / PNG), then watch the import
-   *  to completion. The finally releases the single-flight lock for the upload
-   *  stage; watcher.settled releases it for the background parse. */
-  private async importRecipeFile(file: File | null): Promise<void> {
-    if (!file) return;
-    // One recipe at a time — the lock stays held through the whole import
-    // (upload + background AI parse), so a second file is gated until the first
-    // concludes. The dropzone shows "AI processing…" for the duration.
-    if (this.uploading()) {
-      this.notification.show('One recipe at a time — please wait for the current import to finish.', 'info');
-      return;
-    }
-    if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
-      this.notification.show('Please choose a PDF, JPEG, or PNG recipe file.', 'error');
-      return;
-    }
-    this.uploading.set(true);
-    try {
-      const res = await firstValueFrom(this.recipeService.importRecipe(file));
-      if (res?.recipeId != null) {
-        // Keep the lock held: watcher.settled releases it when the background
-        // parse concludes (parsed / failed / timeout / 404), reverting the
-        // dropzone to its active "Drag & Drop" state.
-        this.watcher.watch(res.recipeId);
-      } else {
-        // Nothing to watch — release now.
-        this.uploading.set(false);
-      }
-    } catch {
-      this.notification.show('Recipe import failed — could not upload the file.', 'error');
-      this.uploading.set(false);
-    }
-  }
-
-  /** "Create new" accordion — starts COLLAPSED. */
-  readonly createNewOpen = signal(false);
+  /** Header "Create" button — asks the panel to bloom the AI Create Meal overlay
+   *  over the board (the create controls no longer live inline in the rail). */
+  readonly createMeal = output<void>();
 
   /** "Filter" accordion — starts COLLAPSED. */
   readonly filterOpen = signal(false);
 
-  /** Create + Filter are mutually exclusive — opening one closes the other. */
-  toggleCreatePanel(): void {
-    this.createNewOpen.update((v) => !v);
-    if (this.createNewOpen()) this.filterOpen.set(false);
-  }
+  /** Toggle the Filter accordion. */
   toggleFilterPanel(): void {
     this.filterOpen.update((v) => !v);
-    if (this.filterOpen()) this.createNewOpen.set(false);
   }
 
   // ----- Binder Meals filter + sort -----------------------------------------
@@ -689,35 +534,6 @@ export class MealBinderComponent implements OnInit {
   }
 
   constructor() {
-    // Parse-stage release of the import lock: the watcher's terminal signal fires
-    // once for EVERY import exit (parsed / failed / timeout / 404), so the button
-    // can never strand waiting on a branch that doesn't emit a toast event.
-    this.watcher.settled
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => this.uploading.set(false));
-
-    // Cycle the drop-zone status through its phases while an import is in
-    // flight; stop and reset when it settles. UI animation only.
-    effect(
-      () => {
-        if (this.uploading()) {
-          if (this.msgTimer == null) {
-            this.processingMsgIndex.set(0);
-            this.msgTimer = setInterval(() => {
-              this.processingMsgIndex.update(
-                (i) => (i + 1) % this.processingMessages.length,
-              );
-            }, 6000);
-          }
-        } else if (this.msgTimer != null) {
-          clearInterval(this.msgTimer);
-          this.msgTimer = null;
-          this.processingMsgIndex.set(0);
-        }
-      },
-      { allowSignalWrites: true },
-    );
-
     // When a menu is pinned, the service sets revealBinderMenuId. Expand the
     // Menus accordion and scroll the new entry into view.
     effect(
@@ -821,43 +637,5 @@ export class MealBinderComponent implements OnInit {
     const idx = this.rotation.menus().findIndex((e) => e.menuId === menu.id);
     if (idx >= 0) return `Menu ${String.fromCharCode(65 + idx)}`;
     return name || 'Menu';
-  }
-
-  // ----- Cuisine "Twist" combobox (unchanged) ------------------------------
-  readonly twistOptions = ['none', 'Italian', 'Mexican', 'Mediterranean', 'American', 'Custom...'];
-
-  readonly twistValue = signal('');
-  readonly twistOpen = signal(false);
-  private twistBeforeCustom = '';
-  private twistInputRef = viewChild<ElementRef<HTMLInputElement>>('twistInput');
-
-  onTwistInput(value: string): void {
-    this.twistValue.set(value);
-  }
-
-  onChevronMouseDown(ev: Event): void {
-    ev.preventDefault();
-    this.twistOpen.update((v) => !v);
-    this.twistInputRef()?.nativeElement.focus();
-  }
-
-  selectTwist(opt: string, ev: Event): void {
-    ev.preventDefault();
-    if (opt === 'Custom...') {
-      this.twistBeforeCustom = this.twistValue().trim();
-      this.twistValue.set('');
-      this.twistOpen.set(false);
-      queueMicrotask(() => this.twistInputRef()?.nativeElement.focus());
-      return;
-    }
-    this.twistValue.set(opt);
-    this.twistOpen.set(false);
-  }
-
-  onTwistBlur(): void {
-    this.twistOpen.set(false);
-    if (this.twistValue().trim() === '') {
-      this.twistValue.set(this.twistBeforeCustom);
-    }
   }
 }

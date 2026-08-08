@@ -27,6 +27,7 @@ import { TabService } from '../../services/tab.service';
 import { MenuCardRowComponent } from '../menu-card-row/menu-card-row';
 import { MenusMealsComponent } from '../menus-meals/menus-meals';
 import { MealBinderComponent } from '../meal-binder/meal-binder';
+import { AiCreateMealComponent } from '../ai-create-meal/ai-create-meal';
 import { FoodLookasideComponent } from '../food-lookaside/food-lookaside';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
@@ -41,6 +42,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
     MenuCardRowComponent,
     MenusMealsComponent,
     MealBinderComponent,
+    AiCreateMealComponent,
     FoodLookasideComponent,
     NutritionFactsLabelComponent,
     MatDialogModule,
@@ -129,12 +131,19 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               (addMenu)="rotation.addMenu()"
               (duplicateMenu)="rotation.addMenuToRotation($event)" />
 
+
             <div class="panel-body">
               <app-menus-meals
                 [menu]="rotation.selectedMenu()"
                 [resolvingItemId]="resolvingItemId()"
                 (editItem)="onEditItem($event)" />
             </div>
+
+            <!-- AI Create Meal bloom — centered over the board (not the rail), so
+                 it never pushes the meal list / meals grid off-screen. -->
+            @if (createOpen()) {
+              <app-ai-create-meal (close)="createOpen.set(false)" />
+            }
           </div>
 
           @if (rotation.editingSlot() === null) {
@@ -144,7 +153,9 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               class="rail-splitter"
               [class.dragging]="splitterDragging"
               (mousedown)="onSplitterDown($event)"></div>
-            <app-meal-binder [style.flex-basis]="railBasis()" />
+            <app-meal-binder
+              [style.flex-basis]="railBasis()"
+              (createMeal)="createOpen.set(true)" />
           } @else {
             <app-food-lookaside />
           }
@@ -230,6 +241,10 @@ export class MenusPanelComponent implements OnInit {
   // always uniform; the custom width is preserved for the Menus & Meals rail.
   private readonly railBasisPx = signal<number | null>(null);
   splitterDragging = false;
+
+  /** AI Create Meal bloom visibility — opened by the Binder's Create button,
+   *  closed on cancel / after generate or a recipe drop kicks off. */
+  readonly createOpen = signal(false);
 
   readonly railBasis = computed<string>(() => {
     const px = this.railBasisPx();

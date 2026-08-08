@@ -603,8 +603,15 @@ export class RotationService {
       );
       this.mealsById.update((m) => new Map(m).set(saved.id, saved));
       await this.loadBinder();
+      // Cuisine-spin (green check) result: surface the new meal by NAME and its
+      // protein focus so the notification is meaningful at a glance. The meal has
+      // already floated to the top of the Binder Meals list (date-sort).
       const name = saved.name?.trim() || 'your new meal';
-      this.notification.showIngest(`Meal created and added to your Meals, ${name}`, () => {});
+      const protein = saved.primaryProteinName?.trim();
+      const msg = protein
+        ? `Meal created: "${name}" — protein focus: ${protein}`
+        : `Meal created and added to your Meals, ${name}`;
+      this.notification.showIngest(msg, () => {});
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     } finally {

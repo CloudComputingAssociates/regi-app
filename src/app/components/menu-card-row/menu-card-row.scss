@@ -13,7 +13,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 1px 20px; // vertical black trimmed to a 1px sliver above/below the cards
+  padding: 1px 6px 1px 4px; // flush left (bring the first menu over); 1px above/below
   border-bottom: 1px solid #4a4a4a;
   overflow-x: auto;
 }
@@ -50,11 +50,10 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  // Match the meal card's minimum width so menu + meal cards read the same size;
-  // the strip has its own horizontal scroll to absorb the width.
-  min-width: 280px;
-  padding: 10px 4px 10px 12px; // tight RHS — delete rides near the right edge
+  gap: 3px; // drastically tighter — collapsed card is a single slim row
+  // Narrower than the meal card: the menu picker is a compact chip, not a tile.
+  min-width: 200px;
+  padding: 3px 4px 3px 8px; // tight RHS — delete rides near the right edge
   border: 2px solid #4a4a4a;
   border-radius: 8px;
   background: #3a3a3a; // match the macro bar shade for a uniform card family
@@ -115,6 +114,9 @@
     min-width: 0;
     cursor: text;
     overflow: hidden;
+    // Compact the field so the collapsed menu card is a slim single row.
+    padding: 2px 8px;
+    font-size: 12px;
 
     // Barely-there white full-select highlight (not the loud browser blue).
     &::selection {
