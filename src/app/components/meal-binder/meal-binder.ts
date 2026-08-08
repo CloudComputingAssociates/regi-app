@@ -128,24 +128,23 @@ import { Meal, Menu } from '../../models';
           <div class="section-head section-head-static section-head-meals">
             <span class="section-label">Meals</span>
             <span class="section-count">({{ rotation.binderMeals().length }})</span>
-            <div class="header-toggles">
-              <!-- Create is now a material-style button: it blooms the AI Create
-                   Meal overlay over the board (see menus-panel) instead of
-                   pushing the meal list down with an inline accordion. -->
-              <button
-                type="button"
-                class="create-btn"
-                matTooltip="AI Create Meal"
-                matTooltipPosition="above"
-                (click)="createMeal.emit()">
-                <mat-icon class="create-plus">add</mat-icon>
-                <span class="create-word">Create</span>
-              </button>
-              <button type="button" class="create-toggle" (click)="toggleFilterPanel()">
-                <span class="create-word">Filter</span>
-                <mat-icon class="create-chevron">{{ filterOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-              </button>
-            </div>
+            <!-- Create: a Material + (add) icon key, same size/shading as the
+                 board toolbar keys, sitting right after "Meals (n)" with the same
+                 gap the Menus & Meals title has before its keys. Blooms the AI
+                 Create Meal overlay over the board. -->
+            <button
+              type="button"
+              class="create-icon-btn"
+              matTooltip="AI Create Meal"
+              matTooltipPosition="above"
+              (click)="createMeal.emit()">
+              <mat-icon>add</mat-icon>
+            </button>
+            <!-- Filter stays right-justified. -->
+            <button type="button" class="create-toggle filter-toggle" (click)="toggleFilterPanel()">
+              <span class="create-word">Filter</span>
+              <mat-icon class="create-chevron">{{ filterOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
           </div>
           @if (filterOpen()) {
             <!-- Bordered "Filter" fieldset: search + Clear-all on one row, then

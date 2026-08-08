@@ -48,10 +48,10 @@ import { RotationService } from '../../services/rotation.service';
                     type="button"
                     class="icon-disc icon-disc-confirm"
                     [class.save-hint]="isSaveHintMenu(menu.menuId) && !menu.pinned"
-                    matTooltip="Save to Binder"
+                    [matTooltip]="menu.pinned ? 'Save name' : 'Save to Binder'"
                     matTooltipPosition="above"
                     (mousedown)="$event.preventDefault()"
-                    (click)="$event.stopPropagation(); onPin(menu)">
+                    (click)="$event.stopPropagation(); onSaveCheck(menu, i)">
                     <mat-icon>check</mat-icon>
                   </button>
                 }
@@ -226,14 +226,34 @@ export class MenuCardRowComponent {
    *  rule, so the click can't reach pinMenu just to fail on a toast. pinMenu keeps
    *  its own check as the real backstop; this only hides the button early. */
   showSaveCheck(menu: RotationMenuEntry, index: number): boolean {
-    if (!this.rotation.menuAllSlotsClean(menu.menuId)) return false;
-    if (!menu.pinned) return true; // (2) unsaved menu
+    // (1) A pending name change ALWAYS offers the green check — regardless of pin
+    // state or slot cleanliness — so ANY edit to the name is immediately
+    // committable by pressing it.
     const draft = this.nameDraft().trim();
-    return (
+    if (
       this.editingMenuId() === menu.menuId &&
       draft !== '' &&
       draft !== this.displayName(menu, index)
-    ); // (1) pending rename on a saved menu
+    ) {
+      return true;
+    }
+    // (2) A brand-new unsaved menu (no rename in progress) still shows the check
+    // to commit it to the Binder, once every slot meal is a Binder meal.
+    if (!menu.pinned) return this.rotation.menuAllSlotsClean(menu.menuId);
+    return false;
+  }
+
+  /** Green check pressed. It fires on mousedown-preventDefault (the name box keeps
+   *  focus, so no blur), so it commits the work itself: persist a pending name
+   *  change, and for an unsaved menu also save it to the Binder. */
+  onSaveCheck(menu: RotationMenuEntry, index: number): void {
+    const draft = this.nameDraft().trim();
+    if (draft !== '' && draft !== this.displayName(menu, index)) {
+      this.renameMenu.emit({ menuId: menu.menuId, name: draft });
+      this.flashSaveHint(menu.menuId);
+    }
+    if (!menu.pinned) this.onPin(menu);
+    this.editingMenuId.set(null);
   }
 
   onNameFocus(menuId: number, el: HTMLInputElement): void {
