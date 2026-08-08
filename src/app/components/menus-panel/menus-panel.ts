@@ -83,14 +83,9 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
              draggable meal cards to the empty-slot drop targets in the board. -->
         <div class="menus-layout" [class.splitter-dragging]="splitterDragging" cdkDropListGroup>
           <div class="menus-main">
-            <!-- Macros bar lives INSIDE the board column so it spans only the
-                 Menus & Meals width (it reflects this menu's macros, not the
-                 Binder). The splitter + Binder stretch full-height beside it. -->
-            <app-macros />
-
-            <!-- Thin raised toolbar, pinned above the menu-card row. Wipe sits
-                 ~2/3 across; People (persisted) is right-justified against the
-                 right edge, adjacent to the Meals binder. -->
+            <!-- Thin raised toolbar, pinned at the very top of the board column.
+                 Wipe sits ~2/3 across; People (persisted) is right-justified
+                 against the right edge, adjacent to the Meals binder. -->
             <div class="menus-toolbar">
               <!-- Surface title — same blue/weight as the Binder header. -->
               <span class="toolbar-title">
@@ -124,6 +119,11 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                 {{ plannedDays() }}/{{ rotation.rotation()!.spanDays }} menu-days
               </div>
             </div>
+
+            <!-- Macros bar sits BELOW the Menus & Meals toolbar, inside the board
+                 column, so it spans only the Menus & Meals width (it reflects this
+                 menu's macros, not the Binder). Splitter + Binder stretch beside. -->
+            <app-macros />
 
             <app-menu-card-row
               [menus]="rotation.menus()"

@@ -43,7 +43,7 @@ import { Meal, Menu } from '../../models';
         <input
           type="text"
           class="header-search"
-          placeholder="search meal..."
+          placeholder="Search meals..."
           matTooltip="Search a meal by name, or type any ingredient"
           matTooltipPosition="below"
           [value]="searchText()"
