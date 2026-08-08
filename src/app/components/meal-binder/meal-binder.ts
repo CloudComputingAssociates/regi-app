@@ -159,24 +159,7 @@ import { Meal, Menu } from '../../models';
             <div class="section-body filter-body">
               <fieldset class="filter-fieldset">
                 <legend>Filter</legend>
-                <div class="filter-search-row">
-                  <input
-                    type="text"
-                    class="filter-search"
-                    placeholder="type ingredient or meal name"
-                    [value]="searchText()"
-                    (input)="searchText.set($any($event.target).value)" />
-                  <button
-                    type="button"
-                    class="filter-clear"
-                    matTooltip="Clear all"
-                    matTooltipPosition="above"
-                    (click)="clearFilter()">
-                    <mat-icon>clear_all</mat-icon>
-                  </button>
-                </div>
                 <div class="filter-checks">
-                  <span class="show-label">SHOW</span>
                   <label class="check-opt">
                     <input
                       type="checkbox"
@@ -198,15 +181,22 @@ import { Meal, Menu } from '../../models';
                       (change)="preferences.setShowCommunityMeals($any($event.target).checked)" />
                     Community
                   </label>
+                  <button
+                    type="button"
+                    class="filter-clear"
+                    matTooltip="Clear all"
+                    matTooltipPosition="above"
+                    (click)="clearFilter()">
+                    <mat-icon>clear_all</mat-icon>
+                  </button>
                 </div>
                 <div class="filter-checks">
-                  <span class="filter-label">Only</span>
                   <label class="check-opt">
                     <input
                       type="checkbox"
                       [checked]="onlyWithRecipe()"
                       (change)="onlyWithRecipe.set($any($event.target).checked)" />
-                    with recipe
+                    only meals with recipe
                   </label>
                 </div>
                 <div class="sort-row">

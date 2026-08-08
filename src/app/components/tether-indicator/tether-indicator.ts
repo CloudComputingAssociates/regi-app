@@ -23,7 +23,7 @@ import { TetherPromptComponent, TetherPromptMode } from '../tether-prompt/tether
       type="button"
       class="ti-btn"
       [class.live]="tether.anyLive()"
-      [matTooltip]="tether.anyLive() ? 'Connected' : 'Not Connected'"
+      [matTooltip]="tether.anyLive() ? 'Mobile app connected' : 'Mobile app not connected'"
       matTooltipPosition="below"
       (click)="onClick()"
       aria-label="Mobile tether status">
