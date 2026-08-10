@@ -73,7 +73,7 @@ interface Macro {
           cdkDropList
           [cdkDropListEnterPredicate]="mealDropPredicate"
           (cdkDropListDropped)="onDropMeal($event)">
-          <span class="pick-sub">drag from <mat-icon class="inline-icon">restaurant</mat-icon> <span class="meals-word">Meals</span></span>
+          <span class="pick-sub">Drag from <button type="button" class="binder-link" (click)="$event.stopPropagation(); rotation.showBinder()">Binder</button></span>
           <span class="pick-sub">or, <button type="button" class="create-link" (click)="$event.stopPropagation(); createHere.emit()">Create</button> from scratch</span>
         </div>
       } @else {
@@ -223,7 +223,7 @@ interface Macro {
   styleUrls: ['./meal.scss'],
 })
 export class MealComponent {
-  private readonly rotation = inject(RotationService);
+  protected readonly rotation = inject(RotationService);
   private readonly tabs = inject(TabService);
 
   readonly slot = input.required<MenuSlot>();

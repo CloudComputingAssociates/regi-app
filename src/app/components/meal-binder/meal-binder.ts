@@ -62,7 +62,9 @@ import { Meal, Menu, MealSetSummary } from '../../models';
               <span class="section-label">Menus</span>
               <span class="section-count">({{ rotation.binderMenus().length }})</span>
             </span>
-            <mat-icon class="section-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            @if (rotation.binderMenus().length) {
+              <mat-icon class="section-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            }
           </button>
           @if (binderMenusOpen()) {
             <div class="section-body" cdkDropList>

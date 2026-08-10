@@ -148,13 +148,26 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
           </div>
 
           @if (rotation.editingSlot() === null) {
-            <!-- Draggable splitter — resize the Menus & Meals rail. Not shown for
-                 the food picker (that's a fixed 25% overlay). -->
+            <!-- Splitter doubles as the Binder toggle: DRAG to resize, or press the
+                 arrow to slide the notebook off to the right (→) / bring it back
+                 (←). A long vertical line with the arrow on the page's edge. -->
             <div
               class="rail-splitter"
               [class.dragging]="splitterDragging"
-              (mousedown)="onSplitterDown($event)"></div>
+              [class.binder-hidden]="rotation.binderCollapsed()"
+              (mousedown)="onSplitterDown($event)">
+              <button
+                type="button"
+                class="rail-toggle"
+                [matTooltip]="rotation.binderCollapsed() ? 'Show Binder' : 'Hide Binder'"
+                matTooltipPosition="left"
+                (mousedown)="$event.stopPropagation()"
+                (click)="rotation.toggleBinderCollapsed()">
+                <mat-icon>{{ rotation.binderCollapsed() ? 'chevron_left' : 'chevron_right' }}</mat-icon>
+              </button>
+            </div>
             <app-meal-binder
+              [class.binder-collapsed]="rotation.binderCollapsed()"
               [style.flex-basis]="railBasis()"
               (createMeal)="createOpen.set(true)" />
           } @else {
@@ -248,6 +261,7 @@ export class MenusPanelComponent implements OnInit {
   readonly createOpen = signal(false);
 
   readonly railBasis = computed<string>(() => {
+    if (this.rotation.binderCollapsed()) return '0'; // slid off to the right
     const px = this.railBasisPx();
     return px != null ? `${px}px` : '25%';
   });
@@ -285,6 +299,7 @@ export class MenusPanelComponent implements OnInit {
   private autoStarting = false;
 
   onSplitterDown(e: MouseEvent): void {
+    if (this.rotation.binderCollapsed()) return; // collapsed → only the arrow acts
     e.preventDefault();
     this.splitterDragging = true;
   }

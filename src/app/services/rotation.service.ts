@@ -63,6 +63,14 @@ export class RotationService {
 
   readonly selectedMenuId = signal<number | null>(null);
 
+  /** Binder rail collapsed (slid off to the right)? Like a chef tossing the
+   *  spiral notebook off the counter — the Menus & Meals board opens full-width.
+   *  Toggled from the splitter arrow; reopened via the splitter or the empty
+   *  slot's "Drag from Binder" link. */
+  readonly binderCollapsed = signal(false);
+  toggleBinderCollapsed(): void { this.binderCollapsed.update((v) => !v); }
+  showBinder(): void { this.binderCollapsed.set(false); }
+
   /** The user's Binder meals (pinned) — server truth via GET /meal?scope=binder. */
   readonly binderMeals = signal<Meal[]>([]);
 

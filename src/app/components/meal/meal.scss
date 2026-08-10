@@ -114,6 +114,21 @@
 
     &:hover { color: #e6e6e6; }
   }
+
+  // "Binder" — blue hyperlink that reopens the Binder notebook when it's hidden.
+  .binder-link {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    color: #4da6ff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+
+    &:hover { color: #7fbfff; }
+  }
 }
 
 // ---- Flip card ------------------------------------------------------------

@@ -17,6 +17,15 @@
   background-repeat: repeat-y;
   background-size: 100% auto;
   background-position: top left;
+  // Animate the slide-off / slide-back-in of the whole notebook.
+  overflow: hidden;
+  transition: flex-basis 0.32s ease;
+}
+
+// Collapsed = slid off to the right (flex-basis is driven to 0 inline); allow it
+// to shrink past its min-width so it fully disappears.
+:host(.binder-collapsed) {
+  min-width: 0;
 }
 
 .binder {
@@ -24,6 +33,15 @@
   flex-direction: column;
   min-height: 0;
   flex: 1;
+  // Extra left gutter clears the spiral binding so the coils show; the right
+  // side is trimmed tight to keep the content width.
+  padding: 0 2px 0 22px;
+  // One clean, crisp typeface for the whole Binder + antialiased smoothing so
+  // text over the paper/translucent cards renders sharp (not fuzzy).
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 // Matches the menus toolbar + lookaside header: one 44px raised bar, content
@@ -35,8 +53,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between; // "Meals" left, AI toggle right
-  padding: 0 12px 0 6px; // pulled left — "Binder" hugs the paper's left margin
-  margin: 1px 6px 6px; // top hugs the panel edge — matches the menus toolbar
+  padding: 0 12px 0 0; // .binder's left gutter handles the spiral clearance
+  margin: 14px 4px 2px 0; // down for the top holes; tight bottom to the Menus tab
   // No chrome — the header sits directly ON the ruled paper.
   background: transparent;
   border: none;
@@ -606,6 +624,7 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden; // never a horizontal scrollbar in the Binder
 }
 
 .rail-section {
@@ -613,7 +632,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  margin: 8px 6px 0;
+  margin: 2px 4px 0 0; // tight to the header above; no left margin (spiral gutter)
   // A faint translucent "page" so the cards sit on a defined sheet (the ruled
   // paper still shows through), outlined so each section reads as its own area
   // instead of floating.
@@ -638,7 +657,7 @@
   gap: 8px;
   width: 100%;
   box-sizing: border-box;
-  margin: 6px 0 2px; // sits at the top of the section's page panel
+  margin: 3px 0 2px; // sits at the top of the section's page panel
   padding: 0 8px; // the tab carries its own padding
   background: transparent;
   border: none;
@@ -695,8 +714,8 @@
     height: 28px;
     padding: 0 10px;
     color: #1a1a1a;
-    background: rgba(80, 80, 80, 0.22);
-    border: 1px solid rgba(60, 60, 60, 0.55);
+    background: #ffffff; // solid white — not see-through
+    border: 1px solid rgba(60, 60, 60, 0.6);
     border-radius: 7px;
     cursor: pointer;
     transition: background 0.12s ease, transform 0.05s ease;
@@ -704,20 +723,20 @@
     .create-word { font-size: 12px; font-weight: 600; color: #1a1a1a; }
     .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; color: #1a1a1a; }
 
-    &:hover { background: rgba(80, 80, 80, 0.32); }
+    &:hover { background: #f0f0f0; }
     &:active { transform: translateY(1px); }
   }
 
   // Filter key stays right-justified now that the toggle wrapper is gone.
   .filter-toggle { margin-left: auto; }
 
-  // "Filter (ON)" — a bolder outline marks that a filter/refine is active.
+  // "Filter (ON)" — a bolder outline + light-grey fill marks it active.
   .filter-toggle.filter-on {
-    border-color: rgba(30, 30, 30, 0.8);
-    background: rgba(80, 80, 80, 0.34);
+    border-color: rgba(20, 20, 20, 0.85);
+    background: #e6e6e6;
   }
 
-  // Filter — same faint translucent/outlined "tab" look, black text.
+  // Filter — solid white key with a grey outline, black text (matches Add +).
   .create-toggle {
     display: inline-flex;
     align-items: center;
@@ -725,9 +744,9 @@
     height: 28px; // match the Add + key height
     box-sizing: border-box;
     padding: 0 8px 0 10px;
-    border: 1px solid rgba(60, 60, 60, 0.55);
+    border: 1px solid rgba(60, 60, 60, 0.6);
     border-radius: 7px;
-    background: rgba(80, 80, 80, 0.22);
+    background: #ffffff;
     color: #1a1a1a;
     font-family: inherit;
     // Smaller than the section labels (15px) — a control, not a heading.
@@ -745,7 +764,7 @@
       color: #1a1a1a;
     }
 
-    &:hover { background: rgba(80, 80, 80, 0.32); }
+    &:hover { background: #f0f0f0; }
     &:active {
       transform: translateY(1px);
     }
@@ -803,7 +822,7 @@
     font-size: 16px;
     line-height: 16px;
     color: #ffffff;
-    background: #1a1a1a;
+    background: #3a3a3a; // grey, matching the macros component background
     border-radius: 50%;
   }
 
@@ -833,7 +852,7 @@
   padding: 4px 4px 4px 12px; // tight top/bottom around the thumbnail; tight RHS for the trash
   border: 1px solid #000000; // 1px black outline
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.5); // see-through white over the paper
+  background: rgba(255, 255, 255, 0.75); // see-through white, opaque enough to keep text crisp
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
@@ -941,12 +960,12 @@
     flex: 0 0 auto;
   }
 
-  // Calories on the head line — small + blue (NOT title-sized/white).
+  // Calories on the head line — small + black.
   .binder-cals {
     flex: 0 0 auto;
     font-size: 12px;
-    font-weight: 400;
-    color: #4da6ff;
+    font-weight: 600;
+    color: #1a1a1a;
     white-space: nowrap;
   }
 
@@ -962,12 +981,12 @@
     padding: 0;
     border: none;
     border-radius: 50%;
-    background: #1a1a1a;
+    background: #3a3a3a; // grey, matching the macros component background
     color: #ffffff;
     cursor: pointer;
 
     .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; color: #ffffff; }
-    &:hover { background: #000000; }
+    &:hover { background: #4a4a4a; }
   }
 
   // Extra breathing room before the trash so a user aiming for the chevron
@@ -990,20 +1009,21 @@
   align-items: center;
   gap: 6px;
 
-  // Uniform disc width so "P 8" and "C 69" line up in columns.
+  // Responsive discs — size to their own text (no uniform min-width) so they
+  // don't push the cals out of the cell.
   .chip {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 44px;
+    min-width: 0;
   }
 
-  // Cals sits after the discs on the top macro row — small + blue.
+  // Cals sits after the discs on the macro row — small + black.
   .binder-cals {
     flex: 0 0 auto;
     font-size: 12px;
-    font-weight: 400;
-    color: #4da6ff;
+    font-weight: 600;
+    color: #1a1a1a;
     white-space: nowrap;
   }
 
@@ -1023,11 +1043,11 @@
 // the delete flush right — all on ONE line (same as the Menus summary row).
 // Chips + gaps are tightened so the four discs, cals and the trash all fit.
 .card-reveal {
-  flex-wrap: nowrap;
+  flex-wrap: wrap; // never overflow the cell — wrap before a horizontal scrollbar
   gap: 4px;
   margin-top: 6px;
 
-  .chip { min-width: 38px; }
+  .chip { min-width: 0; }
   .binder-cals { margin-left: 2px; font-size: 11px; }
 }
 

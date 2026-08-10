@@ -34,22 +34,59 @@
   }
 }
 
-// Draggable splitter — a thin grab zone straddling the rail's divider. The
-// rail's own border-left is the visual line; this highlights on hover/drag.
+// Splitter — a long vertical line down the page edge; drag to resize, and the
+// centred arrow tab slides the Binder notebook off (→) / back (←).
 .rail-splitter {
   flex: 0 0 auto;
-  width: 6px;
-  margin-right: -1px; // straddle the rail's 1px left border
+  width: 10px;
   align-self: stretch;
   cursor: col-resize;
   background: transparent;
   position: relative;
-  z-index: 5;
-  transition: background 0.12s ease;
+  z-index: 6;
 
-  &:hover,
-  &.dragging {
-    background: rgba(77, 166, 255, 0.3);
+  // The long vertical line.
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: #5a5a5a;
+    transition: background 0.12s ease;
+  }
+  &:hover::before,
+  &.dragging::before { background: #4da6ff; }
+
+  // When the Binder is hidden the splitter only toggles (no resize drag).
+  &.binder-hidden { cursor: pointer; }
+
+  // The arrow tab, centred vertically on the line — a raised pill on the edge.
+  .rail-toggle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 7;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 44px;
+    padding: 0;
+    color: #f0f0f0;
+    background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+    border: 1px solid #262626;
+    border-top-color: #7d7d7d;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    cursor: pointer;
+    transition: background 0.12s ease;
+
+    .mat-icon { width: 20px; height: 20px; font-size: 20px; line-height: 20px; }
+    &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #fff; }
   }
 }
 
