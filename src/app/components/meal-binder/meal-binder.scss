@@ -10,10 +10,9 @@
   flex-direction: column;
   min-height: 0;
   border-left: 1px solid #4a4a4a;
-  // Ruled legal-pad paper across the whole Binder — it reads as an actual binder
-  // page; the cards float on it. Dark fallback while the image loads.
-  background-color: #2a2a2a;
-  background-image: url('/images/PaperLegalRuledYellow.png');
+  // White ruled paper across the whole Binder — reads as a real notebook page.
+  background-color: #ececec;
+  background-image: url('/images/White-Ruled-Paper.jpg');
   background-repeat: repeat-y;
   background-size: 100% auto;
   background-position: top center;
@@ -35,30 +34,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between; // "Meals" left, AI toggle right
-  padding: 0 12px 0 14px; // right trimmed 2px so the search grows toward the macros RHS
+  padding: 0 12px 0 6px; // pulled left — "Binder" hugs the paper's left margin
   margin: 1px 6px 6px; // top hugs the panel edge — matches the menus toolbar
-  // No chrome — the header sits directly ON the ruled paper (like a printed
-  // masthead on a legal pad).
+  // No chrome — the header sits directly ON the ruled paper.
   background: transparent;
   border: none;
 
   .binder-title {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
     font-size: 20px; // match the macro-bar labels ("fiber")
     font-weight: 700;
-    color: #1a1a1a; // black ink on the yellow pad
-  }
-
-  // Black open-book glyph in front of "Binder" (ink on paper).
-  .binder-title-icon {
-    flex: 0 0 auto;
-    width: 20px;
-    height: 20px;
-    font-size: 20px;
-    line-height: 20px;
-    color: #1a1a1a;
+    color: #1a1a1a; // black ink on the white page
   }
 
   // Always-on meal search — right-justified in the header (space-between gives
@@ -625,6 +612,14 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  margin: 8px 6px 0;
+  // A faint translucent "page" so the cards sit on a defined sheet (the ruled
+  // paper still shows through), outlined so each section reads as its own area
+  // instead of floating.
+  background: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(90, 90, 90, 0.28);
+  border-radius: 8px;
+  padding-bottom: 4px;
 }
 
 // Detached grey divider — a thin inset line (same 14px inset as the section rows)
@@ -638,11 +633,11 @@
 
 .section-head {
   display: flex;
-  align-items: flex-end; // tabs sit on the paper, controls align to their base
+  align-items: flex-end; // tabs sit at the top of the page, controls at their base
   gap: 8px;
   width: 100%;
   box-sizing: border-box;
-  margin: 8px 0 0; // room above so the tab reads as a divider
+  margin: 6px 0 2px; // sits at the top of the section's page panel
   padding: 0 8px; // the tab carries its own padding
   background: transparent;
   border: none;
@@ -650,20 +645,23 @@
   cursor: pointer;
   text-align: left;
 
-  // Menus / Meals label styled as a binder index-tab sitting on the ruled paper:
-  // a dark, rounded-top chip so each section reads as a labeled divider.
+  // Menus / Meals label as a binder index-tab: mostly TRANSPARENT (the ruled
+  // paper shows through) with a faint grey scrim and a defined outline rule, so
+  // it reads as a shape rather than a solid block. White label — no blue.
   .section-tab {
     display: inline-flex;
     align-items: baseline;
     gap: 4px;
     padding: 5px 16px 6px;
-    background: linear-gradient(180deg, #4c4c4c 0%, #363636 100%);
-    border: 1px solid #1c1c1c;
-    border-bottom: none;
-    border-radius: 11px 11px 0 0;
-    box-shadow:
-      0 2px 5px rgba(0, 0, 0, 0.45),
-      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    background: rgba(80, 80, 80, 0.22); // very faint grey scrim over the paper
+    border: 1px solid rgba(60, 60, 60, 0.55); // the outline rule around the tab
+    border-radius: 10px 10px 0 0;
+
+    .section-label,
+    .section-count {
+      color: #ffffff; // lose the blue — white ink
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); // keep legible over the faint tab
+    }
   }
 
   // Always-expanded header (Meals) — a label, not a toggle.
