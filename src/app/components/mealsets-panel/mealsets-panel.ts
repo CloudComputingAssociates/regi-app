@@ -106,7 +106,7 @@ interface SetDraft {
               (input)="profileBio.set($any($event.target).value)"></textarea>
           </label>
           <label class="msp-field">
-            <span class="msp-label">Credentials (optional)</span>
+            <span class="msp-label">Credentials <span class="msp-opt">(optional)</span></span>
             <textarea
               class="msp-input msp-textarea"
               rows="2"
