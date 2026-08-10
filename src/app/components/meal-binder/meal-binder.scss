@@ -10,9 +10,9 @@
   flex-direction: column;
   min-height: 0;
   border-left: 1px solid #4a4a4a;
-  // White ruled paper across the whole Binder — reads as a real notebook page.
+  // Spiral-bound notebook paper across the whole Binder.
   background-color: #ececec;
-  background-image: url('/images/White-Ruled-Paper.jpg');
+  background-image: url('/images/paper-spiral-bound.jpg');
   background-repeat: repeat-y;
   background-size: 100% auto;
   background-position: top center;
@@ -659,8 +659,8 @@
 
     .section-label,
     .section-count {
-      color: #ffffff; // lose the blue — white ink
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); // keep legible over the faint tab
+      color: #1a1a1a; // black ink on the paper — no blue, no white
+      text-shadow: none;
     }
   }
 
@@ -682,6 +682,8 @@
   // 18px glyph, radius 5) as the board toolbar keys (.wipe-menus-btn /
   // .close-panel-btn). Sits just after "Meals (n)" — the 6px flex gap + this 8px
   // margin ≈ the 14px the Menus & Meals title leaves before its own keys.
+  // Add + — same faint translucent/outlined "tab" look as the section tabs, with
+  // black text (no dark raised chrome).
   .create-icon-btn {
     flex: 0 0 auto;
     margin-left: 8px;
@@ -689,70 +691,62 @@
     align-items: center;
     justify-content: center;
     gap: 3px;
-    height: 30px;
-    padding: 0 9px;
-    color: #f0f0f0;
-    background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
-    border: 1px solid #262626;
-    border-top-color: #7d7d7d;
-    border-radius: 5px;
-    box-shadow:
-      0 2px 3px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    height: 28px;
+    padding: 0 10px;
+    color: #1a1a1a;
+    background: rgba(80, 80, 80, 0.22);
+    border: 1px solid rgba(60, 60, 60, 0.55);
+    border-radius: 7px;
     cursor: pointer;
     transition: background 0.12s ease, transform 0.05s ease;
 
-    .create-word { font-size: 12px; font-weight: 500; color: #ffffff; }
-    .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; }
+    .create-word { font-size: 12px; font-weight: 600; color: #1a1a1a; }
+    .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; color: #1a1a1a; }
 
-    &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
-    &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45); }
+    &:hover { background: rgba(80, 80, 80, 0.32); }
+    &:active { transform: translateY(1px); }
   }
 
   // Filter key stays right-justified now that the toggle wrapper is gone.
   .filter-toggle { margin-left: auto; }
 
-  // "Filter (ON)" — a blue accent marks that a filter/refine is active.
+  // "Filter (ON)" — a bolder outline marks that a filter/refine is active.
   .filter-toggle.filter-on {
-    border-color: rgba(77, 166, 255, 0.7);
-    .create-word { color: #7fbfff; }
+    border-color: rgba(30, 30, 30, 0.8);
+    background: rgba(80, 80, 80, 0.34);
   }
 
+  // Filter — same faint translucent/outlined "tab" look, black text.
   .create-toggle {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    height: 30px; // match the Create "+" key height exactly
+    height: 28px; // match the Add + key height
     box-sizing: border-box;
     padding: 0 8px 0 10px;
-    border: 1px solid #262626;
-    border-top-color: #7d7d7d;
-    border-radius: 6px;
-    background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
-    box-shadow:
-      0 2px 3px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    color: #ffffff;
+    border: 1px solid rgba(60, 60, 60, 0.55);
+    border-radius: 7px;
+    background: rgba(80, 80, 80, 0.22);
+    color: #1a1a1a;
     font-family: inherit;
     // Smaller than the section labels (15px) — a control, not a heading.
     font-size: 12px;
-    font-weight: 400;
+    font-weight: 600;
     cursor: pointer;
     transition: background 0.12s ease, transform 0.05s ease;
 
-    .create-word { color: #ffffff; }
+    .create-word { color: #1a1a1a; }
     .create-chevron {
       width: 15px;
       height: 15px;
       font-size: 15px;
       line-height: 15px;
-      color: #ffffff;
+      color: #1a1a1a;
     }
 
-    &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); }
+    &:hover { background: rgba(80, 80, 80, 0.32); }
     &:active {
       transform: translateY(1px);
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
     }
   }
 
@@ -835,7 +829,7 @@
   padding: 4px 4px 4px 12px; // tight top/bottom around the thumbnail; tight RHS for the trash
   border: 1px solid #4a4a4a;
   border-radius: 8px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
+  background: #3a3a3a; // lightened to match the macros bar grey (flat, no gradient)
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
