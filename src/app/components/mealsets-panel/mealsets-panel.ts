@@ -212,7 +212,7 @@ interface SetDraft {
         @if (draft(); as d) {
           <section class="msp-card msp-editor">
             <div class="msp-editor-head">
-              <h3 class="msp-card-title">{{ d.mealSetId ? 'Edit set' : 'New set' }}</h3>
+              <h3 class="msp-card-title">{{ d.mealSetId ? 'Edit MealSet' : 'New MealSet' }}</h3>
               <span class="msp-editor-hint">Enter Marketing info for Website promotion and display</span>
             </div>
             <label class="msp-field">
@@ -262,7 +262,7 @@ interface SetDraft {
                  and use the ▶ / ◀ arrows. Membership is staged locally and saved
                  with the set when you press OK (no separate assign step). -->
             <div class="msp-picker">
-              <h4 class="msp-subtitle">Meals in this set</h4>
+              <h4 class="msp-subtitle">Meals in this MealSet</h4>
               <div class="msp-transfer" cdkDropListGroup>
                 <div class="msp-transfer-col">
                   <div class="msp-transfer-head">Your meals</div>
@@ -301,7 +301,7 @@ interface SetDraft {
                 </div>
 
                 <div class="msp-transfer-col">
-                  <div class="msp-transfer-head">In this set</div>
+                  <div class="msp-transfer-head">In this MealSet</div>
                   <div
                     class="msp-transfer-list"
                     cdkDropList
@@ -586,9 +586,9 @@ export class MealsetsPanelComponent implements OnInit {
       await this.commitMembership(saved.mealSetId);
       await this.loadAuthored();
       this.editSet(saved); // re-open the saved set with a fresh membership baseline
-      this.notification.show('Meal set saved.', 'success');
+      this.notification.show('MealSet saved.', 'success');
     } catch {
-      this.notification.show('Could not save the meal set.', 'error');
+      this.notification.show('Could not save the MealSet.', 'error');
     } finally {
       this.savingSet.set(false);
     }
@@ -612,7 +612,8 @@ export class MealsetsPanelComponent implements OnInit {
         }),
       );
       this.profileComplete.set(!!(this.profileBio().trim() && this.profilePic()));
-      this.profileSaved.set(true); // profile now collapsible on this + future visits
+      this.profileSaved.set(true); // profile now collapsible
+      this.profileCollapsed.set(true); // shrink it right away on save
       this.notification.show('Author profile saved.', 'success');
     } catch {
       this.notification.show('Could not save the author profile.', 'error');

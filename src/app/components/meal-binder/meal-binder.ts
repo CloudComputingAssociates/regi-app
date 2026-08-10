@@ -157,7 +157,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
               <fieldset class="filter-fieldset">
                 <legend>Filter</legend>
                 <div class="mealset-row">
-                  <label class="filter-label">Meal set(s)</label>
+                  <label class="filter-label">MealSet(s)</label>
                   @if (entitledSets().length) {
                     <select
                       class="mealset-select"
@@ -171,7 +171,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       }
                     </select>
                   } @else {
-                    <span class="mealset-empty">No meal sets available</span>
+                    <span class="mealset-empty">No MealSets available</span>
                   }
                   <button
                     type="button"

@@ -76,7 +76,7 @@ import { NotificationService } from '../../services/notification.service';
         <div class="meal-sets">
           <div class="meal-sets-head">
             <mat-icon class="meal-sets-icon">restaurant_menu</mat-icon>
-            <span class="meal-sets-title">Purchase Additional Meal Sets</span>
+            <span class="meal-sets-title">Purchase Additional MealSets</span>
           </div>
           <div class="meal-sets-price">
             as low as <strong>$4.99</strong> for <strong>20 meals</strong>
@@ -88,7 +88,7 @@ import { NotificationService } from '../../services/notification.service';
             href="https://meals.regimenu.com"
             target="_blank"
             rel="noopener">
-            <mat-icon>open_in_new</mat-icon>Browse Meal Sets
+            <mat-icon>open_in_new</mat-icon>Browse MealSets
           </a>
         </div>
       </div>
