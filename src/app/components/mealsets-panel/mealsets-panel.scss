@@ -92,6 +92,18 @@
   gap: 10px;
 }
 
+// Whole-card disabled: greyed + inert (title, (i) tooltip and button all dead)
+// until the gate condition clears. pointer-events:none also kills the tooltip.
+.msp-card.msp-disabled {
+  opacity: 0.5;
+  filter: grayscale(0.9);
+  pointer-events: none;
+  user-select: none;
+
+  // Don't double-dim the button — the card already greys everything uniformly.
+  .msp-btn:disabled { opacity: 1; filter: none; }
+}
+
 .msp-card-head {
   display: flex;
   align-items: center;

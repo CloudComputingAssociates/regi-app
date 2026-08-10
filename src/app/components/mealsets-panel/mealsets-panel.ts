@@ -72,7 +72,7 @@ interface SetDraft {
             <h3 class="msp-card-title">Author profile
               <span
                 class="msp-info"
-                matTooltip="Fill in required fields, and save before you can add MealSets. Information is displayed in the MealSet Gallery"
+                matTooltip="Fill in required fields, and save before you can add MealSets. Information is displayed in the MealSet Gallery on RegiMenu's Website — the area for purchasing MealSets."
                 matTooltipPosition="right">&#9432;</span>
             </h3>
             @if (profileSaved()) {
@@ -119,12 +119,10 @@ interface SetDraft {
           </div>
 
           <label class="msp-field">
-            <span class="msp-label">Backlink URL <span class="msp-opt">(optional)</span>
-              <span
+            <span class="msp-label">Backlink URL<span
                 class="msp-info"
                 matTooltip="Use Backlink to your Amazon book, your services website, your YouTube channel"
-                matTooltipPosition="right">&#9432;</span>
-            </span>
+                matTooltipPosition="right">&#9432;</span> <span class="msp-opt">(optional)</span></span>
             <input
               class="msp-input"
               type="url"
@@ -167,7 +165,9 @@ interface SetDraft {
         }
 
         <!-- ============ My Sets ============ -->
-        <section class="msp-card">
+        <!-- Whole section greyed + inert until a complete profile is saved (the
+             title, (i) tooltip and button are ALL disabled, not just the button). -->
+        <section class="msp-card" [class.msp-disabled]="!profileComplete()">
           <div class="msp-card-head">
             <h3 class="msp-card-title">My MealSets
               <span
