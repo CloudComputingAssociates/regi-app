@@ -208,9 +208,12 @@
     right: 6px;
     bottom: 5px;
     color: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+    font-size: 14px;      // bumped from 12px
+    font-weight: 500;     // de-emboldened from 600 — crisper over the photo
+    letter-spacing: 0.2px;
+    // Tighter, higher-contrast shadow so edges read sharp (the soft 3px blur
+    // read as fuzzy over a busy photo).
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 1px rgba(0, 0, 0, 0.9);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -16,12 +16,16 @@ import {
   signal,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { AuthService } from '@auth0/auth0-angular';
 import { TabService } from '../../services/tab.service';
 import { NotificationService } from '../../services/notification.service';
 import { MealSetService } from '../../services/mealset.service';
+import { ImageDropComponent } from '../image-drop/image-drop';
 import {
   MealSet,
   MealSetContractView,
@@ -45,7 +49,7 @@ interface SetDraft {
 
 @Component({
   selector: 'app-mealsets-panel',
-  imports: [MatIconModule, MatTooltipModule, DragDropModule],
+  imports: [MatIconModule, MatTooltipModule, DragDropModule, ImageDropComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="msp">
@@ -72,6 +76,15 @@ interface SetDraft {
               matTooltipPosition="left">&#9432;</span>
           </div>
           <label class="msp-field">
+            <span class="msp-label">Author name <span class="msp-opt">(defaults to your account name)</span></span>
+            <input
+              class="msp-input"
+              type="text"
+              [placeholder]="accountName() || 'Your display name'"
+              [value]="profileAuthorName()"
+              (input)="profileAuthorName.set($any($event.target).value)" />
+          </label>
+          <label class="msp-field">
             <span class="msp-label">Bio <span class="msp-req">* required</span></span>
             <textarea
               class="msp-input msp-textarea"
@@ -89,19 +102,23 @@ interface SetDraft {
           </label>
           <div class="msp-field">
             <span class="msp-label">Author photo <span class="msp-req">* required</span></span>
-            <div class="msp-pic-slot">
-              @if (profilePic()) {
-                <img [src]="profilePic()" alt="" class="msp-pic-thumb" />
-              } @else {
-                <span class="msp-pic-empty"><mat-icon>person</mat-icon></span>
-              }
-              <button type="button" class="msp-btn" [disabled]="uploadingProfilePic()" (click)="profilePicInput.click()">
-                {{ uploadingProfilePic() ? 'Uploading…' : 'Upload' }}
-              </button>
-              <input #profilePicInput type="file" accept="image/jpeg,image/png" hidden
-                (change)="onProfilePic(profilePicInput)" />
-            </div>
+            <app-image-drop name="author" [value]="profilePic()" (valueChange)="profilePic.set($event)" />
           </div>
+
+          <label class="msp-field">
+            <span class="msp-label">Backlink URL <span class="msp-opt">(optional)</span></span>
+            <input
+              class="msp-input"
+              type="url"
+              placeholder="https://your-site-or-social"
+              [value]="backLink()"
+              (input)="backLink.set($any($event.target).value)" />
+          </label>
+          <div class="msp-field">
+            <span class="msp-label">Backlink photo <span class="msp-opt">(optional)</span></span>
+            <app-image-drop name="backlink" [value]="backLinkPhoto()" (valueChange)="backLinkPhoto.set($event)" />
+          </div>
+
           <div class="msp-actions">
             <button type="button" class="msp-btn primary" [disabled]="savingProfile()" (click)="saveProfile()">
               {{ savingProfile() ? 'Saving…' : 'Save profile' }}
@@ -201,17 +218,7 @@ interface SetDraft {
               <span class="msp-label">Marketing Promo Photos (up to 4)</span>
               <div class="msp-pic-grid">
                 @for (i of [0, 1, 2, 3]; track i) {
-                  <div class="msp-pic-slot">
-                    @if (d.pics[i]) {
-                      <img [src]="d.pics[i]" alt="" class="msp-pic-thumb" />
-                    } @else {
-                      <span class="msp-pic-empty"><mat-icon>add_photo_alternate</mat-icon></span>
-                    }
-                    <button type="button" class="msp-btn small" [disabled]="uploadingPic() === i" (click)="picInput.click()">
-                      {{ uploadingPic() === i ? '…' : (d.pics[i] ? 'Replace' : 'Upload') }}
-                    </button>
-                    <input #picInput type="file" accept="image/jpeg,image/png" hidden (change)="onPic(i, picInput)" />
-                  </div>
+                  <app-image-drop name="mealset" [value]="d.pics[i]" (valueChange)="setPic(i, $event)" />
                 }
               </div>
             </div>
@@ -310,12 +317,27 @@ export class MealsetsPanelComponent implements OnInit {
   protected tabService = inject(TabService);
   private mealSetService = inject(MealSetService);
   private notification = inject(NotificationService);
+  private auth = inject(AuthService);
+
+  /** The name on the user's account (Auth0 profile) — the default author name. */
+  readonly accountName = toSignal(this.auth.user$.pipe(map((u) => u?.name ?? '')), {
+    initialValue: '',
+  });
 
   // ---- Authored sets + editor ----------------------------------------------
   readonly authoredSets = signal<MealSet[]>([]);
   readonly draft = signal<SetDraft | null>(null);
   readonly savingSet = signal(false);
-  readonly uploadingPic = signal<number | null>(null);
+
+  /** Store a returned CDN url into one of the set's 4 promo photo slots. */
+  setPic(index: number, url: string): void {
+    this.draft.update((d) => {
+      if (!d) return d;
+      const pics = [...d.pics] as SetDraft['pics'];
+      pics[index] = url;
+      return { ...d, pics };
+    });
+  }
 
   // ---- Meal picker (dual-list transfer, staged locally) ---------------------
   /** The author's own meals — the whole pool for the two lists. */
@@ -406,11 +428,15 @@ export class MealsetsPanelComponent implements OnInit {
   }
 
   // ---- Owner profile --------------------------------------------------------
+  /** Author display name override; blank = flow through the account name. */
+  readonly profileAuthorName = signal('');
   readonly profileBio = signal('');
   readonly profileCredentials = signal('');
   readonly profilePic = signal('');
+  /** Optional single marketing backlink + its optional image (upload or paste). */
+  readonly backLink = signal('');
+  readonly backLinkPhoto = signal('');
   readonly savingProfile = signal(false);
-  readonly uploadingProfilePic = signal(false);
   /** True once a SAVED profile has both a Bio and an Author photo — gates the
    *  "+ New MealSet" button so every author's catalog card carries their info. */
   readonly profileComplete = signal(false);
@@ -444,9 +470,12 @@ export class MealsetsPanelComponent implements OnInit {
   private async loadProfile(): Promise<void> {
     try {
       const p = await firstValueFrom(this.mealSetService.getOwnerProfile());
+      this.profileAuthorName.set(p?.authorName ?? '');
       this.profileBio.set(p?.authorBio ?? '');
       this.profileCredentials.set(p?.authorCredentials ?? '');
       this.profilePic.set(p?.authorPic ?? '');
+      this.backLink.set(p?.backLink ?? '');
+      this.backLinkPhoto.set(p?.backLinkPhoto ?? '');
       this.profileComplete.set(!!(p?.authorBio?.trim() && p?.authorPic));
     } catch {
       // No profile yet — start blank (incomplete → New MealSet stays disabled).
@@ -530,45 +559,6 @@ export class MealsetsPanelComponent implements OnInit {
     }
   }
 
-  // ---- Pic uploads ----------------------------------------------------------
-  onPic(index: number, input: HTMLInputElement): void {
-    const file = input.files?.[0] ?? null;
-    input.value = '';
-    if (!file) return;
-    this.uploadingPic.set(index);
-    void this.uploadInto(file, (url) => {
-      this.draft.update((d) => {
-        if (!d) return d;
-        const pics = [...d.pics] as SetDraft['pics'];
-        pics[index] = url;
-        return { ...d, pics };
-      });
-    }).finally(() => this.uploadingPic.set(null));
-  }
-
-  onProfilePic(input: HTMLInputElement): void {
-    const file = input.files?.[0] ?? null;
-    input.value = '';
-    if (!file) return;
-    this.uploadingProfilePic.set(true);
-    void this.uploadInto(file, (url) => this.profilePic.set(url)).finally(() =>
-      this.uploadingProfilePic.set(false),
-    );
-  }
-
-  private async uploadInto(file: File, store: (url: string) => void): Promise<void> {
-    try {
-      const res = await firstValueFrom(this.mealSetService.uploadImage(file));
-      if (res?.cdn_url) {
-        store(res.cdn_url);
-      } else {
-        this.notification.show('Upload failed — no URL returned.', 'error');
-      }
-    } catch {
-      this.notification.show('Image upload failed.', 'error');
-    }
-  }
-
   // ---- Owner profile save ---------------------------------------------------
   async saveProfile(): Promise<void> {
     if (this.savingProfile()) return;
@@ -576,9 +566,14 @@ export class MealsetsPanelComponent implements OnInit {
     try {
       await firstValueFrom(
         this.mealSetService.updateOwnerProfile({
+          // Blank name flows through the account name (still stored on the row,
+          // so an author can later diverge from their Auth0 signup name).
+          authorName: this.profileAuthorName().trim() || this.accountName() || null,
           authorBio: this.profileBio().trim() || null,
           authorCredentials: this.profileCredentials().trim() || null,
           authorPic: this.profilePic() || null,
+          backLink: this.backLink().trim() || null,
+          backLinkPhoto: this.backLinkPhoto().trim() || null,
         }),
       );
       this.profileComplete.set(!!(this.profileBio().trim() && this.profilePic()));

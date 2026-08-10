@@ -40,10 +40,7 @@ interface MenuItem {
               class="drawer-profile-image" />
             <div class="user-details">
               <h3 class="user-name">RegiMenu<sup class="sm">SM</sup></h3>
-              <p class="user-subtitle">
-                <img src="images/AI-star-blue.png" alt="" class="subtitle-ai-icon" />
-                AI-driven Nutrition Planner
-              </p>
+              <p class="user-subtitle">Stop tracking, start planning</p>
             </div>
           </div>
           <button

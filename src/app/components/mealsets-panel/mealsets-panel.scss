@@ -153,6 +153,16 @@
   letter-spacing: 0;
 }
 
+// Muted "(optional)" / helper note on a field label.
+.msp-opt {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #7f858b;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 // (i) info bubble — non-interactive hint carrier (tooltip on hover).
 .msp-info {
   display: inline-flex;

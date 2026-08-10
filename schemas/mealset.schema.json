@@ -77,9 +77,12 @@
       "description": "Authoring identity shown on catalog cards. One row per owner.",
       "properties": {
         "ownerUserId": { "type": "integer" },
+        "authorName": { "type": ["string", "null"], "description": "Display name shown on catalog cards. Defaults (client-side) to the account name, but stored separately so an author can market under a different name than their Auth0 signup name." },
         "authorBio": { "type": ["string", "null"] },
         "authorCredentials": { "type": ["string", "null"] },
         "authorPic": { "type": ["string", "null"] },
+        "backLink": { "type": ["string", "null"], "description": "Optional single marketing URL (author's site / social)." },
+        "backLinkPhoto": { "type": ["string", "null"], "description": "Optional image for the backlink (logo / avatar) — a CDN url from the mealset image upload, or a pasted url." },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
@@ -145,9 +148,12 @@
       "type": "object",
       "description": "PUT /api/mealsetownerprofile — upsert the caller's authoring identity.",
       "properties": {
+        "authorName": { "type": ["string", "null"] },
         "authorBio": { "type": ["string", "null"] },
         "authorCredentials": { "type": ["string", "null"] },
-        "authorPic": { "type": ["string", "null"] }
+        "authorPic": { "type": ["string", "null"] },
+        "backLink": { "type": ["string", "null"] },
+        "backLinkPhoto": { "type": ["string", "null"] }
       }
     }
   }

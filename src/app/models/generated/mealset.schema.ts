@@ -117,9 +117,21 @@ export interface MealSetCatalogResponse {
  */
 export interface MealSetOwnerProfile {
   ownerUserId: number;
+  /**
+   * Display name shown on catalog cards. Defaults (client-side) to the account name, but stored separately so an author can market under a different name than their Auth0 signup name.
+   */
+  authorName?: string | null;
   authorBio?: string | null;
   authorCredentials?: string | null;
   authorPic?: string | null;
+  /**
+   * Optional single marketing URL (author's site / social).
+   */
+  backLink?: string | null;
+  /**
+   * Optional image for the backlink (logo / avatar) — a CDN url from the mealset image upload, or a pasted url.
+   */
+  backLinkPhoto?: string | null;
   createdAt?: string;
   updatedAt?: string;
   [k: string]: unknown;
@@ -194,8 +206,11 @@ export interface AddMealSetMealRequest {
  * via the `definition` "UpdateMealSetOwnerProfileRequest".
  */
 export interface UpdateMealSetOwnerProfileRequest {
+  authorName?: string | null;
   authorBio?: string | null;
   authorCredentials?: string | null;
   authorPic?: string | null;
+  backLink?: string | null;
+  backLinkPhoto?: string | null;
   [k: string]: unknown;
 }

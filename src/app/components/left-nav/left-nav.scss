@@ -57,20 +57,12 @@
 
       .user-subtitle {
         margin: 3px 0 0;
-        font-size: 11px;
-        opacity: 0.9;
+        font-size: 14px;  // bumped from 11px — the tagline reads as a tagline
+        font-weight: 600;
+        opacity: 0.95;
         line-height: 1.2;
         color: #4da6ff;  // Blue - label
-        display: flex;
-        align-items: center;
-        gap: 3px;
         white-space: nowrap;
-
-        .subtitle-ai-icon {
-          height: 14px;
-          width: auto;
-          flex-shrink: 0;
-        }
       }
     }
 
