@@ -1,0 +1,154 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.youeatinghealthy.com/schemas/mealset.schema.json",
+  "title": "Meal Set Subsystem Schema",
+  "description": "MealSets are curated, sellable collections of Meals authored by MealSetOwner users. A MealSetPurchases row IS entitlement — it is the only access path. Backed by dbo.MealSets, dbo.MealSetMeals, dbo.MealSetContracts, dbo.MealSetPurchases, dbo.MealSetOwnerProfiles (all in the regi database).",
+  "type": "object",
+  "definitions": {
+    "MealSet": {
+      "type": "object",
+      "description": "Full MealSet row — the author's own view of a set they own.",
+      "properties": {
+        "mealSetId": { "type": "integer", "description": "Server-assigned primary key" },
+        "name": { "type": "string" },
+        "description": { "type": ["string", "null"] },
+        "genre": { "type": ["string", "null"], "description": "Marketing genre / facet (exact-match filter in the catalog)" },
+        "ownerUserId": { "type": "integer", "description": "dbo.Users.id of the authoring MealSetOwner" },
+        "contractId": { "type": ["integer", "null"], "description": "FK to MealSetContracts; null when no contract is attached" },
+        "price": { "type": "number", "description": "Sale price. 0 = free (acquirable now); >0 = paid (processor not integrated)" },
+        "grantAtSignup": { "type": "boolean", "description": "Admin-only: auto-granted to every new user at signup when Active" },
+        "active": { "type": "boolean", "description": "Admin-only: visible in catalog / acquirable when true" },
+        "mealSetPic1": { "type": ["string", "null"] },
+        "mealSetPic2": { "type": ["string", "null"] },
+        "mealSetPic3": { "type": ["string", "null"] },
+        "mealSetPic4": { "type": ["string", "null"] },
+        "mealSetVideo1": { "type": ["string", "null"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["mealSetId", "name", "ownerUserId", "price", "grantAtSignup", "active"]
+    },
+
+    "MealSetSummary": {
+      "type": "object",
+      "description": "Lightweight set info for the app dropdown of entitled sets.",
+      "properties": {
+        "mealSetId": { "type": "integer" },
+        "name": { "type": "string" },
+        "genre": { "type": ["string", "null"] }
+      },
+      "required": ["mealSetId", "name"]
+    },
+
+    "MealSetCatalogEntry": {
+      "type": "object",
+      "description": "Public marketing card for an active set, joined to the owner's author profile.",
+      "properties": {
+        "mealSetId": { "type": "integer" },
+        "name": { "type": "string" },
+        "description": { "type": ["string", "null"] },
+        "genre": { "type": ["string", "null"] },
+        "price": { "type": "number" },
+        "mealSetPic1": { "type": ["string", "null"] },
+        "mealSetPic2": { "type": ["string", "null"] },
+        "mealSetPic3": { "type": ["string", "null"] },
+        "mealSetPic4": { "type": ["string", "null"] },
+        "mealSetVideo1": { "type": ["string", "null"] },
+        "authorName": { "type": ["string", "null"], "description": "Owner display name from dbo.Users" },
+        "authorBio": { "type": ["string", "null"] },
+        "authorCredentials": { "type": ["string", "null"] },
+        "authorPic": { "type": ["string", "null"] }
+      },
+      "required": ["mealSetId", "name", "price"]
+    },
+
+    "MealSetCatalogResponse": {
+      "type": "object",
+      "description": "Public catalog payload: marketing cards plus the distinct-genre facet list for website rendering.",
+      "properties": {
+        "entries": { "type": "array", "items": { "$ref": "#/definitions/MealSetCatalogEntry" } },
+        "genres": { "type": "array", "items": { "type": "string" }, "description": "SELECT DISTINCT Genre FROM MealSets WHERE Active = 1 AND Genre IS NOT NULL" }
+      },
+      "required": ["entries", "genres"]
+    },
+
+    "MealSetOwnerProfile": {
+      "type": "object",
+      "description": "Authoring identity shown on catalog cards. One row per owner.",
+      "properties": {
+        "ownerUserId": { "type": "integer" },
+        "authorBio": { "type": ["string", "null"] },
+        "authorCredentials": { "type": ["string", "null"] },
+        "authorPic": { "type": ["string", "null"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUserId"]
+    },
+
+    "MealSetContractView": {
+      "type": "object",
+      "description": "Read-only author view of their revenue-share contract. Sensitive fields (doc url, notes) are intentionally excluded.",
+      "properties": {
+        "contractId": { "type": "integer" },
+        "revSharePercent": { "type": ["number", "null"] },
+        "pricingTerms": { "type": ["string", "null"] },
+        "status": { "type": ["string", "null"] },
+        "effectiveDate": { "type": ["string", "null"], "format": "date-time" },
+        "endDate": { "type": ["string", "null"], "format": "date-time" }
+      },
+      "required": ["contractId"]
+    },
+
+    "CreateMealSetRequest": {
+      "type": "object",
+      "description": "POST /api/mealset. Author-writable fields only — Price, GrantAtSignup, Active, ContractID are admin-owned and not settable here.",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": ["string", "null"] },
+        "genre": { "type": ["string", "null"] },
+        "mealSetPic1": { "type": ["string", "null"] },
+        "mealSetPic2": { "type": ["string", "null"] },
+        "mealSetPic3": { "type": ["string", "null"] },
+        "mealSetPic4": { "type": ["string", "null"] },
+        "mealSetVideo1": { "type": ["string", "null"] }
+      },
+      "required": ["name"]
+    },
+
+    "UpdateMealSetRequest": {
+      "type": "object",
+      "description": "PATCH /api/mealset/{id}. All fields optional; only provided fields are updated. Same author-writable set as create.",
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "description": { "type": ["string", "null"] },
+        "genre": { "type": ["string", "null"] },
+        "mealSetPic1": { "type": ["string", "null"] },
+        "mealSetPic2": { "type": ["string", "null"] },
+        "mealSetPic3": { "type": ["string", "null"] },
+        "mealSetPic4": { "type": ["string", "null"] },
+        "mealSetVideo1": { "type": ["string", "null"] }
+      }
+    },
+
+    "AddMealSetMealRequest": {
+      "type": "object",
+      "description": "POST /api/mealset/{id}/meals — junction a caller-owned meal into a caller-owned set.",
+      "properties": {
+        "mealId": { "type": "integer" },
+        "sortOrder": { "type": "integer", "description": "Position within the set; defaults to 0" }
+      },
+      "required": ["mealId"]
+    },
+
+    "UpdateMealSetOwnerProfileRequest": {
+      "type": "object",
+      "description": "PUT /api/mealsetownerprofile — upsert the caller's authoring identity.",
+      "properties": {
+        "authorBio": { "type": ["string", "null"] },
+        "authorCredentials": { "type": ["string", "null"] },
+        "authorPic": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

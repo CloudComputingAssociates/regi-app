@@ -192,10 +192,6 @@ export interface Meal {
    */
   primaryProteinName?: string | null;
   /**
-   * True when this is an admin-curated, REGI-approved meal visible to all users
-   */
-  isRegiApproved: boolean;
-  /**
    * Binder flag — 1 = in the user's Binder (survives context teardown; only explicit delete kills it), 0 = disposable (dies with its context)
    */
   pinned: boolean;
@@ -225,13 +221,19 @@ export interface Meal {
    * How many servings this meal yields
    */
   servings: number;
-  shareCandidate: boolean;
-  shareApproved: boolean;
   items?: MealItem[];
   /**
    * Space-joined, lowercased MealItems.foodName values for client-side ingredient search. Populated only on the list (scope=binder/folder) response; empty/absent when the meal has no items or on item-hydrated reads.
    */
   ingredientNames?: string;
+  /**
+   * Set this meal was sourced from in a set-filtered list (mealSetIds); absent for caller-owned meals
+   */
+  mealSetId?: number | null;
+  /**
+   * Name of the source meal set; paired with mealSetId
+   */
+  mealSetName?: string | null;
   createdAt: string;
   updatedAt: string;
   [k: string]: unknown;
@@ -248,7 +250,6 @@ export interface MealSummary {
   mealSeqNum: number;
   primaryProteinFoodId?: number | null;
   primaryProteinName?: string | null;
-  isRegiApproved: boolean;
   pinned?: boolean;
   totalCalories?: number;
   totalProteinG?: number;
@@ -258,11 +259,14 @@ export interface MealSummary {
   totalSodiumMg?: number;
   mealImageThumbnail?: string;
   servings: number;
-  shareCandidate: boolean;
   /**
-   * Approved community meal (distinguishes approved from merely-candidate in admin lists)
+   * Set this meal was sourced from in a set-filtered list; absent for caller-owned meals
    */
-  shareApproved?: boolean;
+  mealSetId?: number | null;
+  /**
+   * Name of the source meal set; paired with mealSetId
+   */
+  mealSetName?: string | null;
   userName?: string;
   userEmail?: string;
   createdAt: string;
@@ -280,9 +284,9 @@ export interface ListMealsRequest {
    */
   scope?: "folder" | "binder";
   /**
-   * Include admin-curated YEH meals
+   * CSV in the query string. Union the caller's own meals with meals junctioned into these sets; unentitled set ids are silently dropped
    */
-  includeYeh?: boolean;
+  mealSetIds?: number[];
   /**
    * Max results (default 20, max 100)
    */
@@ -350,14 +354,6 @@ export interface UpdateMealRequest {
    * Clear-only: when true, sets clonedFromMealId to NULL so a copy pinned AS A NEW binder meal (renamed / from-scratch) becomes independent. Never sets a value — ClonedFromMealID stays server-owned (only DuplicateMeal writes it non-null).
    */
   clearClonedFrom?: boolean;
-  /**
-   * Admin-only curation flag. Honored solely for callers with the Admin role; ignored otherwise. Setting it promotes/demotes the globally-visible REGI-approved catalog entry.
-   */
-  isRegiApproved?: boolean;
-  /**
-   * Admin-only curation flag. Honored solely for callers with the Admin role; ignored otherwise. Marks/unmarks the meal as a community share candidate.
-   */
-  shareCandidate?: boolean;
   [k: string]: unknown;
 }
 /**

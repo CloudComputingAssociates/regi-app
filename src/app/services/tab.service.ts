@@ -95,7 +95,7 @@ export class TabService {
   // Define menu order - this determines tab insertion order
   // Left nav: chat, menus (Menus), foods (Food Preferences), shop (Shopping List)
   // Right nav (profile menu): account, preferences (Settings), help
-  private menuOrder = ['chat', 'menus', 'foods', 'shop', 'video-viewer', 'web-viewer', 'issue', 'preferences', 'account', 'help'];
+  private menuOrder = ['chat', 'menus', 'foods', 'shop', 'mealsets', 'video-viewer', 'web-viewer', 'issue', 'preferences', 'account', 'help'];
 
   /** URL for the video-viewer tab (set before opening the tab) */
   videoViewerUrl: WritableSignal<string> = signal('');
@@ -411,6 +411,7 @@ export class TabService {
       'menus': 'Menus & Meals',
       'shop': 'Shopping List',
       'foods': 'My Foods',
+      'mealsets': 'MealSets',
       'preferences': 'Settings',
       'account': 'Account',
       'help': 'Help',

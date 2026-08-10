@@ -36,6 +36,7 @@ const LEFT_NAV_PANEL_IDS = new Set([
   'menus',
   'foods',
   'shop',
+  'mealsets',
 ]);
 
 @Component({

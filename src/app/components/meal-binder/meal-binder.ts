@@ -17,14 +17,16 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
+import { AuthService } from '@auth0/auth0-angular';
 import { RotationService } from '../../services/rotation.service';
-import { PreferencesService } from '../../services/preferences.service';
+import { MealSetService } from '../../services/mealset.service';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
-import { Meal, Menu } from '../../models';
+import { Meal, Menu, MealSetSummary } from '../../models';
 
 @Component({
   selector: 'app-meal-binder',
@@ -146,43 +148,35 @@ import { Meal, Menu } from '../../models';
             </button>
           </div>
           @if (filterOpen()) {
-            <!-- Bordered "Filter" fieldset: search + Clear-all on one row, then
-                 SHOW / Only / Sort rows — all inside the frame.
-                 SHOW toggles are the persisted "meals in your Binder" prefs
-                 (default ON = show everything; uncheck Regi/Community to see only
-                 your own) — they pick WHICH SOURCES appear. "Only with recipe" is
-                 an orthogonal 2nd-level narrowing filter (recipe-ness is yes/no
-                 and independent of source), default OFF. Search matches meal name
-                 + any ingredient. -->
+            <!-- Bordered "Filter" fieldset. My Meals are ALWAYS shown; the
+                 multi-select mixes in meals from any of the user's entitled Meal
+                 Sets (CTRL-click for multiples — the listbox stays expanded).
+                 Clear-all resets to My Meals only. Sort applies to the merged
+                 list; search matches meal name + any ingredient. -->
             <div class="section-body filter-body">
               <fieldset class="filter-fieldset">
                 <legend>Filter</legend>
-                <div class="filter-checks">
-                  <label class="check-opt">
-                    <input
-                      type="checkbox"
-                      [checked]="preferences.showMyMeals()"
-                      (change)="preferences.setShowMyMeals($any($event.target).checked)" />
-                    MyMeals
-                  </label>
-                  <label class="check-opt">
-                    <input
-                      type="checkbox"
-                      [checked]="preferences.showRegiApprovedMeals()"
-                      (change)="preferences.setShowRegiApprovedMeals($any($event.target).checked)" />
-                    Regi
-                  </label>
-                  <label class="check-opt">
-                    <input
-                      type="checkbox"
-                      [checked]="preferences.showCommunityMeals()"
-                      (change)="preferences.setShowCommunityMeals($any($event.target).checked)" />
-                    Community
-                  </label>
+                <div class="mealset-row">
+                  <label class="filter-label">Meal set(s)</label>
+                  @if (entitledSets().length) {
+                    <select
+                      class="mealset-select"
+                      multiple
+                      size="4"
+                      (change)="onMealSetsChange($any($event.target))">
+                      @for (set of entitledSets(); track set.mealSetId) {
+                        <option [value]="set.mealSetId" [selected]="isSetSelected(set.mealSetId)">
+                          {{ setLabel(set) }}
+                        </option>
+                      }
+                    </select>
+                  } @else {
+                    <span class="mealset-empty">No meal sets available</span>
+                  }
                   <button
                     type="button"
                     class="filter-clear"
-                    matTooltip="Clear all"
+                    matTooltip="Clear all — My Meals only"
                     matTooltipPosition="above"
                     (click)="clearFilter()">
                     <mat-icon>clear_all</mat-icon>
@@ -257,7 +251,13 @@ import { Meal, Menu } from '../../models';
                         matTooltipClass="binder-name-tip"
                         matTooltipPosition="below"
                         [matTooltipShowDelay]="300">{{ meal.name }}</span>
-                      @if (isMealOpen(meal)) {
+                      <!-- Set-sourced meals carry a set badge and are READ-ONLY
+                           in place (no rename / delete) — opening + saving one
+                           clones it to My Meals via the existing flow. -->
+                      @if (meal.mealSetName) {
+                        <span class="set-badge" [matTooltip]="'From ' + meal.mealSetName">{{ meal.mealSetName }}</span>
+                      }
+                      @if (isMealOpen(meal) && !meal.mealSetId) {
                         <button
                           type="button"
                           class="rename-pencil icon-disc icon-disc-edit"
@@ -285,13 +285,15 @@ import { Meal, Menu } from '../../models';
                       <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
                       <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
                       <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
-                      <button
-                        type="button"
-                        class="card-delete icon-disc icon-disc-danger"
-                        matTooltip="Delete this meal"
-                        (click)="$event.stopPropagation(); onDeleteBinder(meal)">
-                        <mat-icon>delete_outline</mat-icon>
-                      </button>
+                      @if (!meal.mealSetId) {
+                        <button
+                          type="button"
+                          class="card-delete icon-disc icon-disc-danger"
+                          matTooltip="Delete this meal"
+                          (click)="$event.stopPropagation(); onDeleteBinder(meal)">
+                          <mat-icon>delete_outline</mat-icon>
+                        </button>
+                      }
                     </div>
                   }
                   <!-- Drag preview: the meal's PHOTO (name over a scrim), so the
@@ -322,7 +324,8 @@ export class MealBinderComponent implements OnInit {
   readonly rotation = inject(RotationService);
   private dialog = inject(MatDialog);
   private host = inject(ElementRef<HTMLElement>);
-  readonly preferences = inject(PreferencesService);
+  private mealSetService = inject(MealSetService);
+  private auth = inject(AuthService);
 
   /** Header "Create" button — asks the panel to bloom the AI Create Meal overlay
    *  over the board (the create controls no longer live inline in the rail). */
@@ -330,6 +333,74 @@ export class MealBinderComponent implements OnInit {
 
   /** "Filter" accordion — starts COLLAPSED. */
   readonly filterOpen = signal(false);
+
+  // ----- MealSets: mix entitled sets into the (always-shown) My Meals list ----
+  /** The caller's entitled Meal Sets (GET /api/mealset) — the dropdown options. */
+  readonly entitledSets = signal<MealSetSummary[]>([]);
+  /** Currently chosen set ids; drives mealSetIds on the Binder meal load. */
+  readonly selectedSetIds = signal<number[]>([]);
+
+  /** auth0 sub for the per-user selection key; null until resolved. */
+  private sub: string | null = null;
+  /** Guards a single restore once BOTH the sub and the entitled list are ready. */
+  private entitledLoaded = false;
+  private selectionRestored = false;
+
+  /** Dropdown label: "Name — genre" when a genre is present, else just the name. */
+  setLabel(set: MealSetSummary): string {
+    return set.genre ? `${set.name} — ${set.genre}` : set.name;
+  }
+
+  isSetSelected(id: number): boolean {
+    return this.selectedSetIds().includes(id);
+  }
+
+  /** Native multi-select change — CTRL-click keeps the listbox open. Reloads the
+   *  Binder as the union of My Meals + the chosen sets, and persists the choice. */
+  onMealSetsChange(select: HTMLSelectElement): void {
+    const ids = Array.from(select.selectedOptions)
+      .map((o) => Number(o.value))
+      .filter((n) => !Number.isNaN(n));
+    this.selectedSetIds.set(ids);
+    this.persistSelected(ids);
+    void this.rotation.loadBinder(ids);
+  }
+
+  // ---- Per-user persistence of the set selection ----------------------------
+  private selectedKey(): string | null {
+    return this.sub ? `regi.mealsets.selected.${this.sub}` : null;
+  }
+
+  private readSelected(): number[] {
+    const key = this.selectedKey();
+    if (!key) return [];
+    try {
+      const raw = localStorage.getItem(key);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.filter((n) => typeof n === 'number') : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private persistSelected(ids: number[]): void {
+    const key = this.selectedKey();
+    if (!key) return;
+    if (ids.length) localStorage.setItem(key, JSON.stringify(ids));
+    else localStorage.removeItem(key);
+  }
+
+  /** Restore the persisted selection ONCE both the sub and entitled list are
+   *  known — pruning ids no longer entitled, then reloading if any survive. */
+  private maybeRestoreSelection(): void {
+    if (this.selectionRestored || this.sub === null || !this.entitledLoaded) return;
+    this.selectionRestored = true;
+    const entitled = new Set(this.entitledSets().map((s) => s.mealSetId));
+    const pruned = this.readSelected().filter((id) => entitled.has(id));
+    this.selectedSetIds.set(pruned);
+    this.persistSelected(pruned); // write back the pruned list
+    if (pruned.length) void this.rotation.loadBinder(pruned);
+  }
 
   /** Toggle the Filter accordion. */
   toggleFilterPanel(): void {
@@ -357,36 +428,21 @@ export class MealBinderComponent implements OnInit {
   }
 
   /** True when the filter is doing anything (not the cleared default): a search
-   *  term, an active Sort / Recipes-Only mode, or any SHOW source toggle turned
-   *  off. Drives the "Filter (ON)" label on the header button. */
+   *  term, an active Sort / Recipes-Only mode, or one or more Meal Sets mixed in.
+   *  Drives the "Filter (ON)" label on the header button. */
   readonly filterActive = computed<boolean>(() =>
     this.searchText().trim() !== '' ||
     this.sortBy() !== null ||
-    !this.preferences.showMyMeals() ||
-    !this.preferences.showRegiApprovedMeals() ||
-    !this.preferences.showCommunityMeals(),
+    this.selectedSetIds().length > 0,
   );
 
-  /** The Meals list as displayed: SHOW-gated + keyword-filtered, then either
-   *  sorted by the chosen macro / recipe (descending) or in the default order —
-   *  default-named meals ("Meal N") first in numeric order, then alphabetical. */
+  /** The Meals list as displayed (My Meals + any mixed-in set meals, straight
+   *  from the server), keyword-filtered, then either sorted by the chosen macro /
+   *  recipe (descending) or in the default order — default-named meals ("Meal N")
+   *  first in numeric order, then alphabetical. */
   readonly displayMeals = computed<Meal[]>(() => {
     const q = this.searchText().trim().toLowerCase();
     let list = this.rotation.binderMeals();
-    // SHOW gating (Filter "SHOW" row + Menu settings "Meals" row — same persisted
-    // prefs): drop meal categories the user has hidden. All default ON, so the
-    // default view shows everything. The three buckets are mutually exclusive:
-    // MyMeals = the user's own (neither flag), Regi = isRegiApproved, Community =
-    // shareApproved.
-    if (!this.preferences.showMyMeals()) {
-      list = list.filter((m) => m.isRegiApproved === true || m.shareApproved === true);
-    }
-    if (!this.preferences.showCommunityMeals()) {
-      list = list.filter((m) => m.shareApproved !== true);
-    }
-    if (!this.preferences.showRegiApprovedMeals()) {
-      list = list.filter((m) => m.isRegiApproved !== true);
-    }
     if (q) {
       // Match meal name OR any ingredient. ingredientNames is a space-joined,
       // already-lowercased string of the meal's item food names, populated by
@@ -438,15 +494,14 @@ export class MealBinderComponent implements OnInit {
     return m ? Number(m[1]) : null;
   }
 
-  /** Clear the filter back to its default "show everything" state: reset the
-   *  search + sort, re-check all three SHOW source toggles (MyMeals / Regi /
-   *  Community — persisted, so this writes through), and collapse every Meal card. */
+  /** Clear the filter back to its default state: reset search + sort, drop all
+   *  Meal Set selections (→ My Meals only, reloaded), and collapse every card. */
   clearFilter(): void {
     this.searchText.set('');
     this.sortBy.set(null);
-    this.preferences.setShowMyMeals(true);
-    this.preferences.setShowRegiApprovedMeals(true);
-    this.preferences.setShowCommunityMeals(true);
+    this.selectedSetIds.set([]);
+    this.persistSelected([]);
+    void this.rotation.loadBinder([]);
     this.expandedCards.update((s) => {
       const next = new Set(s);
       for (const key of next) if (key.startsWith('meal-')) next.delete(key);
@@ -563,11 +618,32 @@ export class MealBinderComponent implements OnInit {
       },
       { allowSignalWrites: true },
     );
+
+    // Resolve the auth0 sub for the per-user MealSet selection key, then restore
+    // the saved selection once the entitled list has also loaded.
+    this.auth.user$.pipe(takeUntilDestroyed()).subscribe((u) => {
+      this.sub = u?.sub ?? null;
+      this.maybeRestoreSelection();
+    });
   }
 
   ngOnInit(): void {
     this.rotation.loadBinder();
     this.rotation.loadBinderMenus();
+    // Entitled Meal Sets drive the filter dropdown; restore the saved selection
+    // once loaded (guarded so it runs after the sub is also known).
+    this.mealSetService.getEntitled().subscribe({
+      next: (sets) => {
+        this.entitledSets.set(sets ?? []);
+        this.entitledLoaded = true;
+        this.maybeRestoreSelection();
+      },
+      error: () => {
+        this.entitledSets.set([]);
+        this.entitledLoaded = true;
+        this.maybeRestoreSelection();
+      },
+    });
   }
 
   /** Deleting a Binder menu is a fully destructive mini-wipe — the menu AND all

@@ -14,6 +14,7 @@ import { ShoppingPanelComponent } from '../shopping-panel/shopping-panel';
 import { FoodsPanelComponent } from '../foods-panel/foods-panel';
 import { VideoViewerComponent } from '../video-viewer/video-viewer';
 import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
+import { MealsetsPanelComponent } from '../mealsets-panel/mealsets-panel';
 
 @Component({
   selector: 'app-main-body',
@@ -25,7 +26,8 @@ import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
     ShoppingPanelComponent,
     FoodsPanelComponent,
     VideoViewerComponent,
-    RecipeViewerComponent
+    RecipeViewerComponent,
+    MealsetsPanelComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -39,6 +41,7 @@ import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
         @case ('menus') { <app-menus-panel /> }
         @case ('foods') { <app-foods-panel /> }
         @case ('shop') { <app-shopping-panel /> }
+        @case ('mealsets') { <app-mealsets-panel /> }
         @case ('video-viewer') { <app-video-viewer /> }
         @case ('web-viewer') { <app-recipe-viewer /> }
         @default {

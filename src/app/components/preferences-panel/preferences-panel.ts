@@ -436,33 +436,6 @@ import { MatIconModule } from '@angular/material/icon';
 
               <div class="regimenu-column">
                 <div class="setting-row">
-                  <label class="setting-label">Meals</label>
-                  <label class="meal-source-opt">
-                    <input type="checkbox"
-                      [ngModel]="userSettingsService.showMyMeals()"
-                      (ngModelChange)="onShowMyMealsChange($event)" />
-                    MyMeals
-                  </label>
-                  <label class="meal-source-opt">
-                    <input type="checkbox"
-                      [ngModel]="userSettingsService.showCommunityMeals()"
-                      (ngModelChange)="onShowCommunityMealsChange($event)" />
-                    Community
-                  </label>
-                  <label class="meal-source-opt">
-                    <input type="checkbox"
-                      [ngModel]="userSettingsService.showRegiApprovedMeals()"
-                      (ngModelChange)="onShowRegiApprovedMealsChange($event)" />
-                    Regi-approved
-                  </label>
-                  <span class="info-icon"
-                        #mealSourceTooltip="matTooltip"
-                        matTooltip="Which meals appear in your Binder: your own (MyMeals), Community, and/or Regi-Approved"
-                        matTooltipPosition="above"
-                        [matTooltipShowDelay]="0"
-                        (click)="mealSourceTooltip.toggle()">&#9432;</span>
-                </div>
-                <div class="setting-row">
                   <label class="setting-label">Foods from</label>
                   <select
                     class="setting-select"
@@ -1490,21 +1463,6 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   onFoodListSourceChange(value: FoodListSource): void {
     this.userSettingsService.setFoodListSource(value);
     this.settingsChanged.set(true);
-  }
-
-  /** "Meals" row toggles — gate which meal categories appear in the Binder.
-   *  Persisted locally (localStorage) on change, so no Save-disc round-trip and
-   *  the regiMenu PUT payload is untouched. */
-  onShowMyMealsChange(value: boolean): void {
-    this.userSettingsService.setShowMyMeals(value);
-  }
-
-  onShowCommunityMealsChange(value: boolean): void {
-    this.userSettingsService.setShowCommunityMeals(value);
-  }
-
-  onShowRegiApprovedMealsChange(value: boolean): void {
-    this.userSettingsService.setShowRegiApprovedMeals(value);
   }
 
   onGlp1EnabledChange(value: boolean): void {

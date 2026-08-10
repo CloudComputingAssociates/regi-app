@@ -258,6 +258,37 @@
     input { flex: 0 0 auto; margin: 0; accent-color: #4da6ff; cursor: pointer; }
   }
 
+  // MealSet multi-select row: "Meal set(s)" label, a native expanded listbox,
+  // and the Clear-all key (pinned right via its own margin-left:auto).
+  .mealset-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .mealset-select {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 4px;
+    font-family: inherit;
+    font-size: 13px;
+    color: #f0f0f0;
+    background-color: #3a3a3a;
+    border: 1px solid #262626;
+    border-top-color: #6f6f6f;
+    border-radius: 6px;
+    outline: none;
+    &:focus { box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.6); }
+    option { padding: 3px 4px; border-radius: 4px; }
+    option:checked { background: #4da6ff; color: #ffffff; }
+  }
+  .mealset-empty {
+    flex: 1 1 auto;
+    align-self: center;
+    font-size: 12px;
+    font-style: italic;
+    color: #9aa0a6;
+  }
+
   // Sort row — below the fieldset, outside the frame. Tight vertical rhythm so
   // the "Sort" label + dropdown don't add dead space above/below.
   .sort-row {
@@ -843,6 +874,23 @@
     font-size: 14px;
     font-weight: 500;
     color: #f1f1f1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // Set-source badge on a set-sourced meal card (read-only meal from a Meal Set).
+  .set-badge {
+    flex: 0 0 auto;
+    max-width: 96px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 8px;
+    color: #cfe4ff;
+    background: rgba(77, 166, 255, 0.18);
+    border: 1px solid rgba(77, 166, 255, 0.35);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

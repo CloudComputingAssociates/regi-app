@@ -90,7 +90,6 @@
         "mealSeqNum": { "type": "integer", "description": "Per-user counter since signup" },
         "primaryProteinFoodId": { "type": ["integer", "null"] },
         "primaryProteinName": { "type": ["string", "null"], "description": "Denormalized for UI" },
-        "isRegiApproved": { "type": "boolean", "description": "True when this is an admin-curated, REGI-approved meal visible to all users" },
         "pinned": { "type": "boolean", "description": "Binder flag — 1 = in the user's Binder (survives context teardown; only explicit delete kills it), 0 = disposable (dies with its context)" },
         "cloned": { "type": "boolean", "description": "Set once at fork-on-place; immutable after. Divergence from the source is derived as updatedAt > createdAt" },
         "clonedFromMealId": { "type": ["integer", "null"], "description": "Source meal id when this is a fork (fork-on-place/edit); null for originals. Back-pointer the client resolves for the original's recipeLink/image — RecipeLink itself is NOT copied, so one-recipe→one-meal cascade-delete is untouched" },
@@ -106,17 +105,17 @@
         "mealImage": { "type": "string" },
         "mealImageThumbnail": { "type": "string" },
         "servings": { "type": "integer", "description": "How many servings this meal yields" },
-        "shareCandidate": { "type": "boolean" },
-        "shareApproved": { "type": "boolean" },
         "items": {
           "type": "array",
           "items": { "$ref": "#/definitions/MealItem" }
         },
         "ingredientNames": { "type": "string", "description": "Space-joined, lowercased MealItems.foodName values for client-side ingredient search. Populated only on the list (scope=binder/folder) response; empty/absent when the meal has no items or on item-hydrated reads." },
+        "mealSetId": { "type": ["integer", "null"], "description": "Set this meal was sourced from in a set-filtered list (mealSetIds); absent for caller-owned meals" },
+        "mealSetName": { "type": ["string", "null"], "description": "Name of the source meal set; paired with mealSetId" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "mealType", "mealSeqNum", "isRegiApproved", "pinned", "cloned", "servings", "shareCandidate", "shareApproved", "createdAt", "updatedAt"]
+      "required": ["id", "name", "mealType", "mealSeqNum", "pinned", "cloned", "servings", "createdAt", "updatedAt"]
     },
 
     "MealSummary": {
@@ -128,7 +127,6 @@
         "mealSeqNum": { "type": "integer" },
         "primaryProteinFoodId": { "type": ["integer", "null"] },
         "primaryProteinName": { "type": ["string", "null"] },
-        "isRegiApproved": { "type": "boolean" },
         "pinned": { "type": "boolean" },
         "totalCalories": { "type": "integer" },
         "totalProteinG": { "type": "number" },
@@ -138,13 +136,13 @@
         "totalSodiumMg": { "type": "integer" },
         "mealImageThumbnail": { "type": "string" },
         "servings": { "type": "integer" },
-        "shareCandidate": { "type": "boolean" },
-        "shareApproved": { "type": "boolean", "description": "Approved community meal (distinguishes approved from merely-candidate in admin lists)" },
+        "mealSetId": { "type": ["integer", "null"], "description": "Set this meal was sourced from in a set-filtered list; absent for caller-owned meals" },
+        "mealSetName": { "type": ["string", "null"], "description": "Name of the source meal set; paired with mealSetId" },
         "userName": { "type": "string" },
         "userEmail": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "mealSeqNum", "isRegiApproved", "servings", "shareCandidate", "createdAt"]
+      "required": ["id", "name", "mealSeqNum", "servings", "createdAt"]
     },
 
     "ListMealsRequest": {
@@ -152,7 +150,7 @@
       "description": "Query parameters for GET /api/meal",
       "properties": {
         "scope": { "type": "string", "enum": ["folder", "binder"], "description": "folder = disposable, unplaced meals (Pinned=0, not in any menu); binder = pinned meals (Pinned=1); omitted = current behavior" },
-        "includeYeh": { "type": "boolean", "description": "Include admin-curated YEH meals" },
+        "mealSetIds": { "type": "array", "items": { "type": "integer" }, "description": "CSV in the query string. Union the caller's own meals with meals junctioned into these sets; unentitled set ids are silently dropped" },
         "limit": { "type": "integer", "description": "Max results (default 20, max 100)" },
         "offset": { "type": "integer", "description": "Results offset for pagination" }
       }
@@ -219,14 +217,6 @@
         "clearClonedFrom": {
           "type": "boolean",
           "description": "Clear-only: when true, sets clonedFromMealId to NULL so a copy pinned AS A NEW binder meal (renamed / from-scratch) becomes independent. Never sets a value — ClonedFromMealID stays server-owned (only DuplicateMeal writes it non-null)."
-        },
-        "isRegiApproved": {
-          "type": "boolean",
-          "description": "Admin-only curation flag. Honored solely for callers with the Admin role; ignored otherwise. Setting it promotes/demotes the globally-visible REGI-approved catalog entry."
-        },
-        "shareCandidate": {
-          "type": "boolean",
-          "description": "Admin-only curation flag. Honored solely for callers with the Admin role; ignored otherwise. Marks/unmarks the meal as a community share candidate."
         }
       }
     },

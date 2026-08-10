@@ -530,17 +530,25 @@ export class RotationService {
    *  unplaced; binder = pinned). The list endpoint is paginated (default 20,
    *  ORDER BY Name ASC), so we pull all pages: page size = MaxListLimit (100),
    *  stop on a short page, with a safety cap so a runaway library can't loop. */
-  private async loadMealsByScope(scope: 'folder' | 'binder'): Promise<Meal[]> {
+  private async loadMealsByScope(
+    scope: 'folder' | 'binder',
+    mealSetIds: number[] = [],
+  ): Promise<Meal[]> {
     const PAGE = 100;
     const MAX_PAGES = 20; // 2000 meals — a sane ceiling for the read loop
     const all: Meal[] = [];
     for (let page = 0; page < MAX_PAGES; page++) {
+      // When set ids are chosen, the server returns the union of the caller's own
+      // meals + meals junctioned into those (entitled) sets. Own meals omit the
+      // mealSetId/mealSetName tags; set-sourced entries carry them.
+      const params: Record<string, string> = {
+        scope,
+        limit: String(PAGE),
+        offset: String(page * PAGE),
+      };
+      if (mealSetIds.length) params['mealSetIds'] = mealSetIds.join(',');
       const batch =
-        (await firstValueFrom(
-          this.http.get<Meal[]>(`${this.baseUrl}/meal`, {
-            params: { scope, limit: String(PAGE), offset: String(page * PAGE) },
-          }),
-        )) ?? [];
+        (await firstValueFrom(this.http.get<Meal[]>(`${this.baseUrl}/meal`, { params }))) ?? [];
       all.push(...batch);
       if (batch.length < PAGE) break;
     }
@@ -556,10 +564,18 @@ export class RotationService {
     }
   }
 
-  /** Load the Binder (pinned meals). Server truth. */
-  async loadBinder(): Promise<void> {
+  /** The MealSet ids currently mixed into the Binder list (empty = My Meals
+   *  only). Remembered so external reloads (pin / import / delete) preserve the
+   *  user's set selection instead of dropping back to own-meals-only. */
+  private binderMealSetIds: number[] = [];
+
+  /** Load the Binder (pinned meals), optionally unioned with entitled MealSets.
+   *  Passing mealSetIds updates the remembered selection; omit it to reuse the
+   *  last selection (so unrelated reloads keep the sets visible). */
+  async loadBinder(mealSetIds?: number[]): Promise<void> {
+    if (mealSetIds !== undefined) this.binderMealSetIds = mealSetIds;
     try {
-      this.binderMeals.set(await this.loadMealsByScope('binder'));
+      this.binderMeals.set(await this.loadMealsByScope('binder', this.binderMealSetIds));
     } catch {
       this.binderMeals.set([]);
     }
