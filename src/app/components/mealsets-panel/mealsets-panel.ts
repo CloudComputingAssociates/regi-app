@@ -69,14 +69,15 @@ interface SetDraft {
         <!-- ============ Author profile ============ -->
         <section class="msp-card">
           <div class="msp-card-head">
-            <h3 class="msp-card-title">Author profile</h3>
-            <span
-              class="msp-info"
-              matTooltip="Bio and Author photo are required (credentials optional). Save a complete profile before creating a MealSet — it's shown on your catalog cards."
-              matTooltipPosition="left">&#9432;</span>
+            <h3 class="msp-card-title">Author profile
+              <span
+                class="msp-info"
+                matTooltip="Fill in required fields, and save before you can add MealSets. Information is displayed in the MealSet Gallery"
+                matTooltipPosition="right">&#9432;</span>
+            </h3>
           </div>
           <label class="msp-field">
-            <span class="msp-label">Author name <span class="msp-opt">(defaults to your account name)</span></span>
+            <span class="msp-label">Author name <span class="msp-req">* required</span></span>
             <input
               class="msp-input"
               type="text"
@@ -106,7 +107,12 @@ interface SetDraft {
           </div>
 
           <label class="msp-field">
-            <span class="msp-label">Backlink URL <span class="msp-opt">(optional)</span></span>
+            <span class="msp-label">Backlink URL <span class="msp-opt">(optional)</span>
+              <span
+                class="msp-info"
+                matTooltip="Use Backlink to your Amazon book, your services website, your YouTube channel"
+                matTooltipPosition="right">&#9432;</span>
+            </span>
             <input
               class="msp-input"
               type="url"
