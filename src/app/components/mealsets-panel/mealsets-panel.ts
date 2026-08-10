@@ -121,7 +121,7 @@ interface SetDraft {
           <label class="msp-field">
             <span class="msp-label">Backlink URL<span
                 class="msp-info"
-                matTooltip="Use Backlink to your Amazon book, your services website, your YouTube channel"
+                matTooltip="Use Backlink to your Amazon book, your services website, or your YouTube channel"
                 matTooltipPosition="right">&#9432;</span> <span class="msp-opt">(optional)</span></span>
             <input
               class="msp-input"
