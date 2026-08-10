@@ -247,25 +247,25 @@
   }
 }
 
-// The macro line (ONE row), shown only when the card is expanded. The orig/copy
-// tag + Protein lead on the left; Carbs, Fat, Fiber follow; cals trail hard right
-// (its auto margin pushes it to the edge now that the chevron lives up top).
+// The macro line (ONE row), shown only when the card is expanded — orig/copy tag
+// then P/C/F/F chips, all on a single row (cals live up on the name line now).
 .menu-foot {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+}
 
-  // Calories trail hard right (the orig/copy tag stays in the left cluster, just
-  // before this auto gap).
-  .menu-cals {
-    margin-left: auto;
-    flex: 0 0 auto;
-    font-size: 12px;
-    font-weight: 400;
-    color: #4da6ff;
-    white-space: nowrap;
-  }
+// Calories sit on the menu (name) line — .name-wrap's flex:1 pushes the trailing
+// cluster (delete · cals · chevron) to the right, so cals reads right-justified
+// just before the expand chevron.
+.menu-cals {
+  flex: 0 0 auto;
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #4da6ff;
+  white-space: nowrap;
 }
 
 // Duplicate — icon-only disc (shared raised .icon-disc chrome), blue-tinted copy
@@ -307,14 +307,14 @@
 }
 
 // Macro discs — shared by the menu foot line. Same muted palette + P/C/F/F order
-// as the Binder card. FIXED size: never shrink, never wrap the label.
+// as the Binder card. Compact so P/C/F/F fit on one row.
 .chip {
   flex: 0 0 auto;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
-  padding: 2px 7px;
-  border-radius: 10px;
+  padding: 1px 5px;
+  border-radius: 8px;
   color: rgba(255, 255, 255, 0.82);
 
   &.protein { background: #34781a; }

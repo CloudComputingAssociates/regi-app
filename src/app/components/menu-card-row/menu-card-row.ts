@@ -64,9 +64,12 @@ import { RotationService } from '../../services/rotation.service';
                 (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
                 <mat-icon>delete_outline</mat-icon>
               </button>
+              <!-- Calories live on the menu (name) line, right-justified, just
+                   before the expand chevron. -->
+              <span class="menu-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
               <!-- Chevron lives on the title row, far right (like the meal card).
-                   Collapsed shows NO macro chips at all — the card is a single row;
-                   expanding reveals the full macro line beneath it all at once. -->
+                   Collapsed shows NO macro chips — expanding reveals the macro
+                   line (P/C/F/F) beneath it, all on one row. -->
               <button
                 type="button"
                 class="card-toggle"
@@ -76,13 +79,11 @@ import { RotationService } from '../../services/rotation.service';
                 <mat-icon>{{ isOpen(menu.menuId) ? 'expand_less' : 'expand_more' }}</mat-icon>
               </button>
             </div>
-            <!-- Macro line (ONE row) — rendered ONLY when expanded, so a collapsed
-                 menu costs a single row. orig/copy tag leads; then Protein, Carbs,
-                 Fat, Fiber (order P C Fat Fiber); cals trail hard right. -->
+            <!-- Macro line (ONE row) — rendered ONLY when expanded. orig/copy tag
+                 leads; then Protein, Carbs, Fat, Fiber (cals live up on the name
+                 line now). -->
             @if (isOpen(menu.menuId)) {
               <div class="menu-foot">
-                <!-- orig/copy tag on the LEFT (server names a copy "<name> (copy)").
-                     Origin reads quiet blue; copy reads grey. -->
                 @if (copyRoleFor(menu); as role) {
                   <span class="copy-badge" [class.is-copy]="role === 'copy'">{{ role }}</span>
                 }
@@ -90,7 +91,6 @@ import { RotationService } from '../../services/rotation.service';
                 <span class="chip carb">C {{ round(rotation.menuTotals(menu.menuId).carbG) }}</span>
                 <span class="chip fat">F {{ round(rotation.menuTotals(menu.menuId).fatG) }}</span>
                 <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
-                <span class="menu-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
               </div>
             }
           </div>

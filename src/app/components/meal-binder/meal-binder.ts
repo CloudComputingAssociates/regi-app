@@ -139,6 +139,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
               matTooltip="Add meals to your Binder"
               matTooltipPosition="above"
               (click)="createMeal.emit()">
+              <span class="create-word">Add</span>
               <mat-icon>add</mat-icon>
             </button>
             <!-- Filter stays right-justified. -->
