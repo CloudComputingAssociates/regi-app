@@ -37,28 +37,28 @@
   justify-content: space-between; // "Meals" left, AI toggle right
   padding: 0 12px 0 14px; // right trimmed 2px so the search grows toward the macros RHS
   margin: 1px 6px 6px; // top hugs the panel edge — matches the menus toolbar
-  // Match the macro bar shade + rounded chrome (see menus-toolbar).
-  background: #3a3a3a;
-  border: 1px solid #4a4a4a;
-  border-radius: 8px;
+  // No chrome — the header sits directly ON the ruled paper (like a printed
+  // masthead on a legal pad).
+  background: transparent;
+  border: none;
 
   .binder-title {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     font-size: 20px; // match the macro-bar labels ("fiber")
-    font-weight: 600;
-    color: #4da6ff; // blue, matching the Menus / Meals accordion labels
+    font-weight: 700;
+    color: #1a1a1a; // black ink on the yellow pad
   }
 
-  // Blue open-book glyph in front of "Binder".
+  // Black open-book glyph in front of "Binder" (ink on paper).
   .binder-title-icon {
     flex: 0 0 auto;
     width: 20px;
     height: 20px;
     font-size: 20px;
     line-height: 20px;
-    color: #4da6ff;
+    color: #1a1a1a;
   }
 
   // Always-on meal search — right-justified in the header (space-between gives
@@ -638,17 +638,33 @@
 
 .section-head {
   display: flex;
-  align-items: center;
+  align-items: flex-end; // tabs sit on the paper, controls align to their base
   gap: 8px;
   width: 100%;
   box-sizing: border-box;
-  margin: 4px 0 0; // little black band above each category header
-  padding: 3px 8px; // tighter L/R so labels align with the (now wider) cards
+  margin: 8px 0 0; // room above so the tab reads as a divider
+  padding: 0 8px; // the tab carries its own padding
   background: transparent;
   border: none;
   color: #d8d8d8;
   cursor: pointer;
   text-align: left;
+
+  // Menus / Meals label styled as a binder index-tab sitting on the ruled paper:
+  // a dark, rounded-top chip so each section reads as a labeled divider.
+  .section-tab {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    padding: 5px 16px 6px;
+    background: linear-gradient(180deg, #4c4c4c 0%, #363636 100%);
+    border: 1px solid #1c1c1c;
+    border-bottom: none;
+    border-radius: 11px 11px 0 0;
+    box-shadow:
+      0 2px 5px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
 
   // Always-expanded header (Meals) — a label, not a toggle.
   &.section-head-static { cursor: default; }

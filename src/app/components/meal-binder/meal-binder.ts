@@ -58,8 +58,10 @@ import { Meal, Menu, MealSetSummary } from '../../models';
         <!-- Menus accordion (top-level; larger header). Starts COLLAPSED. -->
         <div class="rail-section">
           <button type="button" class="section-head" (click)="binderMenusOpen.set(!binderMenusOpen())">
-            <span class="section-label">Menus</span>
-            <span class="section-count">({{ rotation.binderMenus().length }})</span>
+            <span class="section-tab">
+              <span class="section-label">Menus</span>
+              <span class="section-count">({{ rotation.binderMenus().length }})</span>
+            </span>
             <mat-icon class="section-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
           </button>
           @if (binderMenusOpen()) {
@@ -126,8 +128,10 @@ import { Meal, Menu, MealSetSummary } from '../../models';
              the space above the list. This is the ONLY create surface. -->
         <div class="rail-section">
           <div class="section-head section-head-static section-head-meals">
-            <span class="section-label">Meals</span>
-            <span class="section-count">({{ rotation.binderMeals().length }})</span>
+            <span class="section-tab">
+              <span class="section-label">Meals</span>
+              <span class="section-count">({{ rotation.binderMeals().length }})</span>
+            </span>
             <!-- Create: a Material + (add) icon key, same size/shading as the
                  board toolbar keys, sitting right after "Meals (n)" with the same
                  gap the Menus & Meals title has before its keys. Blooms the AI
