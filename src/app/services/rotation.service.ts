@@ -67,7 +67,7 @@ export class RotationService {
    *  spiral notebook off the counter — the Menus & Meals board opens full-width.
    *  Toggled from the splitter arrow; reopened via the splitter or the empty
    *  slot's "Drag from Binder" link. */
-  readonly binderCollapsed = signal(false);
+  readonly binderCollapsed = signal(true); // starts closed — open it when needed
   toggleBinderCollapsed(): void { this.binderCollapsed.update((v) => !v); }
   showBinder(): void { this.binderCollapsed.set(false); }
 

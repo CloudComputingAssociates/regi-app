@@ -149,7 +149,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
             </button>
             <!-- Filter stays right-justified. -->
             <button type="button" class="create-toggle filter-toggle" [class.filter-on]="filterActive()" (click)="toggleFilterPanel()">
-              <span class="create-word">Filter{{ filterActive() ? ' (ON)' : '' }}</span>
+              <span class="create-word">Filter{{ filterActive() ? ' on' : '' }}</span>
               <mat-icon class="create-chevron">{{ filterOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
             </button>
           </div>
@@ -316,7 +316,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                   </ng-template>
                 </div>
               } @empty {
-                <p class="binder-empty">No saved Meals.</p>
+                <p class="binder-empty">{{ rotation.binderMeals().length ? 'No filtered results.' : 'No saved Meals.' }}</p>
               }
             </div>
         </div>
