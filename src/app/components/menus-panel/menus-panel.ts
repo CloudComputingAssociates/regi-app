@@ -109,15 +109,8 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                   <mat-icon class="close-icon" aria-hidden="true">logout</mat-icon>
                 </button>
               </div>
-              <!-- Planned-days tally, right-justified in the remaining space. -->
-              <div
-                class="span-badge"
-                matTooltip="Days is set in the Settings › Menus [Menu-Days] entry — how many you plan at once."
-                matTooltipPosition="above"
-                [class.complete]="plannedDays() === rotation.rotation()!.spanDays">
-                <span class="check">✓</span>
-                {{ plannedDays() }}/{{ rotation.rotation()!.spanDays }} menus
-              </div>
+              <!-- Planned-days tally moved DOWN into the menu-strip area (see
+                   app-menu-card-row), bottom-aligned with the "menus" watermark. -->
             </div>
 
             <!-- Macros bar sits BELOW the Menus & Meals toolbar, inside the board
@@ -321,11 +314,6 @@ export class MenusPanelComponent implements OnInit {
 
   /** Save disc appears only when the draft differs from the opened value. */
   readonly canSave = computed<boolean>(() => this.draft() !== this.original());
-
-  /** Total planned days across all menus (for the toolbar tally badge). */
-  readonly plannedDays = computed<number>(() =>
-    this.rotation.menus().reduce((sum, m) => sum + (m.plannedCount ?? 0), 0),
-  );
 
   /** Label scale: per-100g × (draft × gramsPerUnit)/100 — same math as the
    *  foods-panel popup, keyed on the ITEM's draft quantity. */

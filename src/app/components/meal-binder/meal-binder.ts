@@ -85,26 +85,25 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       matTooltipClass="binder-name-tip"
                       matTooltipPosition="below"
                       [matTooltipShowDelay]="300">{{ menuDisplayName(menu) }}</span>
+                    <!-- Calories on the name line, right-justified before the chevron. -->
+                    <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
                     <!-- Dropdown chevron on the far right of the name line. -->
                     <button
                       type="button"
                       class="card-toggle"
-                      [matTooltip]="isCardOpen('menu-' + menu.id) ? 'Hide extra macros' : 'Show Calories, Carbs & Fats'"
+                      [matTooltip]="isCardOpen('menu-' + menu.id) ? 'Hide macros' : 'Show macros'"
                       (click)="$event.stopPropagation(); toggleCard('menu-' + menu.id)">
                       <mat-icon>{{ isCardOpen('menu-' + menu.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
                     </button>
                   </div>
-                  <!-- Collapsed = name only. Expanding reveals the macros: P /
-                       Fiber / cals, then Carbs + Fat + delete underneath. -->
+                  <!-- Collapsed = name only. Expanding reveals all macros (P C F F)
+                       and the delete, on ONE aligned row. -->
                   @if (isCardOpen('menu-' + menu.id)) {
-                    <div class="binder-chips card-macros">
+                    <div class="binder-chips card-reveal">
                       <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
-                      <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
-                      <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
-                    </div>
-                    <div class="binder-chips">
                       <span class="chip carb">C {{ round(menu.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(menu.totalFatG) }}</span>
+                      <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
                       <button
                         type="button"
                         class="card-delete icon-disc icon-disc-danger"

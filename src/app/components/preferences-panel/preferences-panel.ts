@@ -392,13 +392,13 @@ import { MatIconModule } from '@angular/material/icon';
             <div class="settings-section bottom-row">
               <div class="plan-column">
                 <div class="setting-row">
-                  <label class="setting-label">Days</label>
+                  <label class="setting-label">Menu-days</label>
                   <input type="number" min="2" max="10" class="setting-number"
                     [ngModel]="userSettingsService.menuDays()"
                     (input)="onMenuDaysChange($event)" />
                   <span class="info-icon"
                         #menuDaysTooltip="matTooltip"
-                        matTooltip="Number of Menus (days) to plan at once"
+                        matTooltip="Set up # menus, for your week. Consider leftovers, and travel or other events."
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
                         (click)="menuDaysTooltip.toggle()">&#9432;</span>

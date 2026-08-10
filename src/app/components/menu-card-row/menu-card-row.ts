@@ -109,6 +109,15 @@ import { RotationService } from '../../services/rotation.service';
          reflows with the cards; tiles simply overlay it as a one-time training cue).
          Same lowercase Fredoka face as the macro labels. -->
     <span class="area-watermark">menus</span>
+    <!-- Planned-days tally — right-justified in the strip, bottom-aligned with the
+         "menus" watermark (moved here from the toolbar). -->
+    <div
+      class="span-badge"
+      [class.complete]="plannedDays() === spanDays()"
+      matTooltip="You set the # of menus, in User Settings by Menu-Days"
+      matTooltipPosition="above">
+      <span class="check">✓</span>{{ plannedDays() }}/{{ spanDays() }} menus
+    </div>
   `,
   styleUrls: ['./menu-card-row.scss'],
 })
@@ -151,6 +160,11 @@ export class MenuCardRowComponent {
    *  we track the collapsed exceptions. The Protein + Fiber summary discs stay
    *  visible either way. */
   private readonly collapsedMenus = signal<Set<number>>(new Set());
+
+  /** Total planned days across all menus — drives the "N/M menus" tally badge. */
+  readonly plannedDays = computed<number>(() =>
+    this.menus().reduce((sum, m) => sum + (m.plannedCount ?? 0), 0),
+  );
 
   /** Baseline menu ids, seeded on the first non-empty load. Null until seeded so
    *  the initial set keeps the default-open state; menus added AFTER start

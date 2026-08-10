@@ -14,7 +14,7 @@
   align-items: center;
   gap: 16px;
   padding: 1px 6px 4px 4px; // flush left; a touch of room below the selected card's blue border
-  border-bottom: 1px solid #4a4a4a;
+  border-bottom: 3px solid #9a9ea3; // thicker + whiter divider between Menus and Meals
   overflow-x: auto;
 }
 
@@ -29,6 +29,32 @@
 // of the cards, labelling the row as the rotation's "menus". Lowercase Fredoka to
 // match the macro-bar labels; sunken gray so it reads as carved into the surface.
 // Shrinks away (min-width:0 + clip) once the cards fill the strip.
+// Planned-days tally — pinned to the strip's bottom-right (bottom-aligned with
+// the "menus" watermark), moved down from the toolbar.
+.span-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px;
+  border: 1px solid #4a4a4a;
+  border-radius: 14px;
+  background: #333;
+  color: #9aa0a6;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  .check { color: #6a6f75; }
+  &.complete {
+    color: #f1f1f1;
+    .check { color: #41ac17; }
+  }
+}
+
 .area-watermark {
   position: absolute;
   top: 50%;
