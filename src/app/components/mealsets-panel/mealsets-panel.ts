@@ -64,9 +64,15 @@ interface SetDraft {
       <div class="msp-body">
         <!-- ============ Author profile ============ -->
         <section class="msp-card">
-          <h3 class="msp-card-title">Author profile</h3>
+          <div class="msp-card-head">
+            <h3 class="msp-card-title">Author profile</h3>
+            <span
+              class="msp-info"
+              matTooltip="Bio and Author photo are required (credentials optional). Save a complete profile before creating a MealSet — it's shown on your catalog cards."
+              matTooltipPosition="left">&#9432;</span>
+          </div>
           <label class="msp-field">
-            <span class="msp-label">Bio</span>
+            <span class="msp-label">Bio <span class="msp-req">* required</span></span>
             <textarea
               class="msp-input msp-textarea"
               rows="2"
@@ -74,7 +80,7 @@ interface SetDraft {
               (input)="profileBio.set($any($event.target).value)"></textarea>
           </label>
           <label class="msp-field">
-            <span class="msp-label">Credentials</span>
+            <span class="msp-label">Credentials (optional)</span>
             <textarea
               class="msp-input msp-textarea"
               rows="2"
@@ -82,7 +88,7 @@ interface SetDraft {
               (input)="profileCredentials.set($any($event.target).value)"></textarea>
           </label>
           <div class="msp-field">
-            <span class="msp-label">Author photo</span>
+            <span class="msp-label">Author photo <span class="msp-req">* required</span></span>
             <div class="msp-pic-slot">
               @if (profilePic()) {
                 <img [src]="profilePic()" alt="" class="msp-pic-thumb" />
@@ -128,7 +134,21 @@ interface SetDraft {
         <section class="msp-card">
           <div class="msp-card-head">
             <h3 class="msp-card-title">My Sets</h3>
-            <button type="button" class="msp-btn primary" (click)="startCreate()">+ New MealSet</button>
+            <div class="msp-newset">
+              @if (!profileComplete()) {
+                <span
+                  class="msp-info"
+                  matTooltip="Complete and save your Author profile first — Bio and Author photo are required (credentials optional)."
+                  matTooltipPosition="left">&#9432;</span>
+              }
+              <button
+                type="button"
+                class="msp-btn primary"
+                [disabled]="!profileComplete()"
+                [matTooltip]="profileComplete() ? '' : 'Save a complete Author profile (Bio + photo) to create a MealSet'"
+                matTooltipPosition="above"
+                (click)="startCreate()">+ New MealSet</button>
+            </div>
           </div>
           @if (authoredSets().length) {
             <ul class="msp-set-list">
@@ -391,6 +411,9 @@ export class MealsetsPanelComponent implements OnInit {
   readonly profilePic = signal('');
   readonly savingProfile = signal(false);
   readonly uploadingProfilePic = signal(false);
+  /** True once a SAVED profile has both a Bio and an Author photo — gates the
+   *  "+ New MealSet" button so every author's catalog card carries their info. */
+  readonly profileComplete = signal(false);
 
   // ---- Read-only contract ---------------------------------------------------
   readonly contract = signal<MealSetContractView | null>(null);
@@ -424,8 +447,10 @@ export class MealsetsPanelComponent implements OnInit {
       this.profileBio.set(p?.authorBio ?? '');
       this.profileCredentials.set(p?.authorCredentials ?? '');
       this.profilePic.set(p?.authorPic ?? '');
+      this.profileComplete.set(!!(p?.authorBio?.trim() && p?.authorPic));
     } catch {
-      // No profile yet — start blank.
+      // No profile yet — start blank (incomplete → New MealSet stays disabled).
+      this.profileComplete.set(false);
     }
   }
 
@@ -556,6 +581,7 @@ export class MealsetsPanelComponent implements OnInit {
           authorPic: this.profilePic() || null,
         }),
       );
+      this.profileComplete.set(!!(this.profileBio().trim() && this.profilePic()));
       this.notification.show('Author profile saved.', 'success');
     } catch {
       this.notification.show('Could not save the author profile.', 'error');

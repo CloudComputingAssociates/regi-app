@@ -161,7 +161,7 @@ export class AppComponent implements OnInit, OnDestroy {
    *  False on splash, Foods (reclaims the vertical space), and Menus. */
   hasChatInput = computed(() => {
     const id = this.tabService.activeTabId();
-    return id !== null && id !== 'foods' && id !== 'menus';
+    return id !== null && id !== 'foods' && id !== 'menus' && id !== 'mealsets';
   });
 
   // ------------------------------------------------------------------
