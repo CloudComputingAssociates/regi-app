@@ -411,7 +411,7 @@ export class TabService {
       'menus': 'Menus & Meals',
       'shop': 'Shopping List',
       'foods': 'My Foods',
-      'mealsets': 'MealSets',
+      'mealsets': 'MealSets Studio',
       'preferences': 'Settings',
       'account': 'Account',
       'help': 'Help',

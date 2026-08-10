@@ -50,7 +50,7 @@ interface SetDraft {
   template: `
     <div class="msp">
       <header class="msp-header">
-        <span class="msp-title"><mat-icon class="msp-title-icon">restaurant_menu</mat-icon>MealSets</span>
+        <span class="msp-title"><mat-icon class="msp-title-icon">restaurant_menu</mat-icon>MealSets Author Studio</span>
         <button
           type="button"
           class="msp-close"

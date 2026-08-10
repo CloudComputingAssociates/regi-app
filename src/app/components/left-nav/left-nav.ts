@@ -120,7 +120,7 @@ export class LeftNavComponent {
    *  (cosmetic; the server enforces the role on every owner endpoint). */
   readonly menuItems = computed<MenuItem[]>(() =>
     this.roleService.hasRole('MealSetOwner')
-      ? [...this.baseMenuItems, { label: 'MealSets', matIcon: 'restaurant_menu', color: '#ffd54f', tabId: 'mealsets' }]
+      ? [...this.baseMenuItems, { label: 'MealSets Studio', matIcon: 'restaurant_menu', color: '#ffd54f', tabId: 'mealsets' }]
       : this.baseMenuItems
   );
 
