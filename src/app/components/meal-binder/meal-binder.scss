@@ -10,7 +10,13 @@
   flex-direction: column;
   min-height: 0;
   border-left: 1px solid #4a4a4a;
-  background: #2a2a2a;
+  // Ruled legal-pad paper across the whole Binder — it reads as an actual binder
+  // page; the cards float on it. Dark fallback while the image loads.
+  background-color: #2a2a2a;
+  background-image: url('/images/PaperLegalRuledYellow.png');
+  background-repeat: repeat-y;
+  background-size: 100% auto;
+  background-position: top center;
 }
 
 .binder {

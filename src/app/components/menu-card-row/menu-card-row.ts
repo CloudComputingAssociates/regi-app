@@ -161,9 +161,13 @@ export class MenuCardRowComponent {
    *  visible either way. */
   private readonly collapsedMenus = signal<Set<number>>(new Set());
 
-  /** Total planned days across all menus — drives the "N/M menus" tally badge. */
+  /** Total planned menu-days — a menu counts ONLY once it holds at least one
+   *  meal (an empty menu isn't a planned menu-day yet). Drives the tally badge. */
   readonly plannedDays = computed<number>(() =>
-    this.menus().reduce((sum, m) => sum + (m.plannedCount ?? 0), 0),
+    this.menus().reduce(
+      (sum, m) => sum + (this.rotation.menuHasMeals(m.menuId) ? (m.plannedCount ?? 0) : 0),
+      0,
+    ),
   );
 
   /** Baseline menu ids, seeded on the first non-empty load. Null until seeded so
@@ -260,30 +264,23 @@ export class MenuCardRowComponent {
     return this.editingMenuId() === menuId && this.nameDraft().trim() !== '';
   }
 
-  /** The green save-check appears on EXACTLY two conditions:
-   *   1) a pending name change in the box (draft differs from the shown name), or
-   *   2) an unsaved (unpinned) menu still being built.
-   *  A saved (pinned) menu shows no check — its slot changes save automatically.
-   *  In BOTH cases the check is withheld until every slot meal is a Binder meal
-   *  (rotation.menuAllSlotsClean) — a pre-click mirror of pinMenu's all-Binder
-   *  rule, so the click can't reach pinMenu just to fail on a toast. pinMenu keeps
-   *  its own check as the real backstop; this only hides the button early. */
+  /** The green save-check is ONLY for saving a menu to the Binder as a "Named
+   *  Menu" — so it appears solely once the user has given the menu a REAL custom
+   *  name (not the positional default "Menu A" / a bare "Menu N"). Slot/meal edits
+   *  autosave on their own (write-through), so a default-named menu needs no check.
+   *  Shows when that named menu isn't yet saved (unpinned), or when a saved menu's
+   *  name was just changed in the box. */
   showSaveCheck(menu: RotationMenuEntry, index: number): boolean {
-    // (1) A pending name change ALWAYS offers the green check — regardless of pin
-    // state or slot cleanliness — so ANY edit to the name is immediately
-    // committable by pressing it.
+    const editing = this.editingMenuId() === menu.menuId;
     const draft = this.nameDraft().trim();
-    if (
-      this.editingMenuId() === menu.menuId &&
-      draft !== '' &&
-      draft !== this.displayName(menu, index)
-    ) {
-      return true;
-    }
-    // (2) A brand-new unsaved menu (no rename in progress) still shows the check
-    // to commit it to the Binder, once every slot meal is a Binder meal.
-    if (!menu.pinned) return this.rotation.menuAllSlotsClean(menu.menuId);
-    return false;
+    const defaultName = `Menu ${this.letter(index)}`;
+    // The name the user has given: the live draft while editing, else the shown name.
+    const typed = editing && draft !== '' ? draft : this.displayName(menu, index);
+    const hasCustomName = typed !== defaultName && !/^menu\s+\d+$/i.test(typed);
+    if (!hasCustomName) return false;
+    if (!menu.pinned) return true; // named, not yet saved to the Binder
+    // Saved menu whose name was just changed → offer the check to re-save.
+    return editing && draft !== '' && draft !== this.displayName(menu, index);
   }
 
   /** Green check pressed. It fires on mousedown-preventDefault (the name box keeps

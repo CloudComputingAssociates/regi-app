@@ -73,9 +73,10 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
           <button type="button" class="state-btn" (click)="rotation.loadCurrentRotation()">Retry</button>
         </div>
       } @else if (rotation.rotation() === null) {
+        <!-- No plan → auto-start one (see the effect below); show the spinner
+             while it stands up the default empty board. -->
         <div class="state-center">
-          <p class="state-msg">No plan yet</p>
-          <button type="button" class="state-btn" (click)="rotation.startEmptyPlan()">Start a plan</button>
+          <div class="spinner" aria-label="Starting your plan"></div>
         </div>
       } @else {
         <!-- Flex row: board (toolbar + menu-card-row + meals) on the left,
@@ -261,7 +262,27 @@ export class MenusPanelComponent implements OnInit {
       },
       { allowSignalWrites: true },
     );
+
+    // No "Start a plan" button — when there's no rotation (fresh user, or right
+    // after a Clear-all wipe) and we're not loading/errored, auto-stand-up the
+    // default empty board. The flag prevents re-entry while it's creating.
+    effect(
+      () => {
+        const noPlan = this.rotation.rotation() === null;
+        if (this.rotation.loading() || this.rotation.error() || !noPlan) {
+          this.autoStarting = false;
+          return;
+        }
+        if (this.autoStarting) return;
+        this.autoStarting = true;
+        void this.rotation.startEmptyPlan();
+      },
+      { allowSignalWrites: true },
+    );
   }
+
+  /** Guards the auto-start effect so it fires once per "no plan" episode. */
+  private autoStarting = false;
 
   onSplitterDown(e: MouseEvent): void {
     e.preventDefault();
@@ -503,16 +524,17 @@ export class MenusPanelComponent implements OnInit {
     this.popupMealId.set(null);
   }
 
-  /** Trash on a menu tile — DELETE the menu (the tile does not stay behind as an
-   *  empty header). Its disposable meals go; pinned meals stay in the Binder.
+  /** Trash on a menu tile — CLEAR the menu from this week's plan (unlinks it and
+   *  its meal slots off the board). A saved (pinned) menu and its meals survive in
+   *  the Binder; only a disposable (unpinned) menu is fully removed.
    *  Teach line appended when a slot holds diverged/session-edited work. */
   onDeleteMenu(menuId: number): void {
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',
       data: {
-        message: 'Delete this menu?',
+        message: 'Clear this menu from your plan?',
         teachLine: this.rotation.menuHasUnsavedWork(menuId) ? TEACH_SAVE_LINE : undefined,
-        confirmLabel: 'Delete',
+        confirmLabel: 'Clear',
         onConfirm: () => void this.rotation.deleteMenu(menuId),
       },
     });

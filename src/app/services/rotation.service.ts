@@ -246,6 +246,15 @@ export class RotationService {
     return this.mealsById().get(mealId) ?? null;
   }
 
+  /** True when a menu holds at least one meal in any (non-dining-out) slot — a
+   *  menu isn't a "planned" menu-day until a meal lands in it, so this gates the
+   *  menu-days tally. Reads the loaded menu detail (menusById); reactive. */
+  menuHasMeals(menuId: number): boolean {
+    const menu = this.menusById().get(menuId);
+    if (!menu) return false;
+    return (menu.slots ?? []).some((s) => !s.isDiningOut && (s.meals?.length ?? 0) > 0);
+  }
+
   /** The Binder original a fork descends from, resolved from the PERSISTED
    *  `clonedFromMealId` back-pointer against the loaded Binder list. Fork sources
    *  are always pinned Binder meals, so `binderMeals` reliably holds them with
@@ -1415,20 +1424,28 @@ export class RotationService {
     }
   }
 
-  /** Delete a menu from the board (the menu-tile trash). The menu is linked into
-   *  the rotation, and the server's DELETE /menu/{id} does a raw DELETE that
-   *  trips the RotationMenus foreign key — so we UNLINK it from the rotation
-   *  first (best-effort), THEN delete the menu. Deleting drops its disposable
-   *  meals but KEEPS pinned ones (they survive in the Binder). Reload after. */
+  /** Clear a menu from the board (the menu-tile trash). This UNLINKS it from the
+   *  rotation — removing it (and its meal slots) from the week's plan — but does
+   *  NOT touch the Binder: a PINNED/saved menu (and its meals) survives there.
+   *  Only a DISPOSABLE (unpinned) menu is additionally hard-deleted, since it
+   *  isn't saved anywhere and would otherwise orphan. Reload after. */
   async deleteMenu(menuId: number): Promise<void> {
     const rot = this.rotation();
+    const pinned = this.menus().find((m) => m.menuId === menuId)?.pinned === true;
     try {
+      // Always unlink from the rotation (clears the menu + its meal slots off the
+      // board). The server's DELETE /menu/{id} would trip the RotationMenus FK, so
+      // this must come first regardless.
       if (rot?.id != null) {
         await firstValueFrom(
           this.http.delete(`${this.baseUrl}/rotation/${rot.id}/menus/${menuId}`),
         ).catch(() => undefined); // ignore: menu may not be linked
       }
-      await firstValueFrom(this.http.delete(`${this.baseUrl}/menu/${menuId}`));
+      // Hard-delete ONLY a disposable (unpinned) menu. A pinned menu is saved in
+      // the Binder — clearing it from the plan must NOT delete it there.
+      if (!pinned) {
+        await firstValueFrom(this.http.delete(`${this.baseUrl}/menu/${menuId}`));
+      }
       await Promise.all([this.loadCurrentRotation(), this.loadBinder(), this.loadBinderMenus()]);
     } catch (err) {
       this.notification.show(this.deleteErrMessage(err), 'error');
@@ -1582,12 +1599,10 @@ export class RotationService {
     if (!rot?.id) return;
     try {
       await firstValueFrom(this.http.delete(`${this.baseUrl}/rotation/${rot.id}`));
-      await Promise.all([
-        this.loadCurrentRotation(),
-        this.loadFolder(),
-        this.loadBinder(),
-        this.loadBinderMenus(),
-      ]);
+      await Promise.all([this.loadFolder(), this.loadBinder(), this.loadBinderMenus()]);
+      // Stand a fresh empty plan back up immediately (empty slots), so the user
+      // lands on a usable board rather than a "Start a plan" prompt.
+      await this.startEmptyPlan();
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
