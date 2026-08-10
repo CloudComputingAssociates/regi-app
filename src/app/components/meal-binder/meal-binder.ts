@@ -156,8 +156,29 @@ import { Meal, Menu, MealSetSummary } from '../../models';
             <div class="section-body filter-body">
               <fieldset class="filter-fieldset">
                 <legend>Filter</legend>
+                <div class="sort-row">
+                  <span class="filter-label">Sort</span>
+                  <select
+                    class="sort-select"
+                    [value]="sortBy() ?? 'none'"
+                    (change)="onSortChange($any($event.target).value)">
+                    <option value="none">Off</option>
+                    <option value="protein">Protein</option>
+                    <option value="fiber">Fiber</option>
+                    <option value="recipes">Recipes Only</option>
+                    <option value="date">By Date</option>
+                  </select>
+                  <button
+                    type="button"
+                    class="filter-clear"
+                    matTooltip="Remove filters"
+                    matTooltipPosition="above"
+                    (click)="clearFilter()">
+                    <mat-icon>clear_all</mat-icon>
+                  </button>
+                </div>
                 <div class="mealset-row">
-                  <label class="filter-label">MealSet(s)</label>
+                  <label class="filter-label">MealSet</label>
                   @if (entitledSets().length) {
                     <select
                       class="mealset-select"
@@ -173,27 +194,6 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                   } @else {
                     <span class="mealset-empty">No MealSets available</span>
                   }
-                  <button
-                    type="button"
-                    class="filter-clear"
-                    matTooltip="Clear all — My Meals only"
-                    matTooltipPosition="above"
-                    (click)="clearFilter()">
-                    <mat-icon>clear_all</mat-icon>
-                  </button>
-                </div>
-                <div class="sort-row">
-                  <span class="filter-label">Sort</span>
-                  <select
-                    class="sort-select"
-                    [value]="sortBy() ?? 'none'"
-                    (change)="onSortChange($any($event.target).value)">
-                    <option value="none">Off</option>
-                    <option value="protein">Protein</option>
-                    <option value="fiber">Fiber</option>
-                    <option value="recipes">Recipes Only</option>
-                    <option value="date">By Date</option>
-                  </select>
                 </div>
               </fieldset>
             </div>
@@ -402,9 +402,12 @@ export class MealBinderComponent implements OnInit {
     if (pruned.length) void this.rotation.loadBinder(pruned);
   }
 
-  /** Toggle the Filter accordion. */
+  /** Toggle the Filter accordion. Filters only apply while the box is visible —
+   *  collapsing it (the up-arrow) removes them (same as "Remove filters"). */
   toggleFilterPanel(): void {
-    this.filterOpen.update((v) => !v);
+    const willOpen = !this.filterOpen();
+    this.filterOpen.set(willOpen);
+    if (!willOpen) this.clearFilter();
   }
 
   // ----- Binder Meals filter + sort -----------------------------------------
