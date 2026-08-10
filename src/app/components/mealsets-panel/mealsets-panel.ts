@@ -16,6 +16,7 @@ import {
   signal,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TabService } from '../../services/tab.service';
@@ -44,7 +45,7 @@ interface SetDraft {
 
 @Component({
   selector: 'app-mealsets-panel',
-  imports: [MatIconModule, MatTooltipModule],
+  imports: [MatIconModule, MatTooltipModule, DragDropModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="msp">
@@ -74,11 +75,11 @@ interface SetDraft {
           </label>
           <label class="msp-field">
             <span class="msp-label">Credentials</span>
-            <input
-              class="msp-input"
-              type="text"
+            <textarea
+              class="msp-input msp-textarea"
+              rows="2"
               [value]="profileCredentials()"
-              (input)="profileCredentials.set($any($event.target).value)" />
+              (input)="profileCredentials.set($any($event.target).value)"></textarea>
           </label>
           <div class="msp-field">
             <span class="msp-label">Author photo</span>
@@ -127,7 +128,7 @@ interface SetDraft {
         <section class="msp-card">
           <div class="msp-card-head">
             <h3 class="msp-card-title">My Sets</h3>
-            <button type="button" class="msp-btn primary" (click)="startCreate()">+ New set</button>
+            <button type="button" class="msp-btn primary" (click)="startCreate()">+ New MealSet</button>
           </div>
           @if (authoredSets().length) {
             <ul class="msp-set-list">
@@ -139,7 +140,12 @@ interface SetDraft {
                   <span class="msp-set-name">{{ s.name }}</span>
                   @if (s.genre) { <span class="msp-set-genre">{{ s.genre }}</span> }
                   <span class="msp-set-flags">
-                    {{ s.active ? 'Active' : 'Inactive' }} · {{ s.price > 0 ? ('$' + s.price) : 'Free' }}
+                    <span
+                      class="msp-flag"
+                      [class.on]="s.active"
+                      matTooltip="Active status is admin-set (catalog visibility)"
+                      matTooltipPosition="above">{{ s.active ? 'Active' : 'Inactive' }}</span>
+                    <span class="msp-flag price">{{ s.price > 0 ? ('$' + s.price) : 'Free' }}</span>
                   </span>
                 </li>
               }
@@ -152,10 +158,13 @@ interface SetDraft {
         <!-- ============ Set editor ============ -->
         @if (draft(); as d) {
           <section class="msp-card msp-editor">
-            <h3 class="msp-card-title">{{ d.mealSetId ? 'Edit set' : 'New set' }}</h3>
+            <div class="msp-editor-head">
+              <h3 class="msp-card-title">{{ d.mealSetId ? 'Edit set' : 'New set' }}</h3>
+              <span class="msp-editor-hint">Enter Marketing info for Website promotion and display</span>
+            </div>
             <label class="msp-field">
               <span class="msp-label">Name</span>
-              <input class="msp-input" type="text" [value]="d.name" (input)="setField('name', $any($event.target).value)" />
+              <input class="msp-input" type="text" placeholder="e.g. Keto-friendly, high-protein" [value]="d.name" (input)="setField('name', $any($event.target).value)" />
             </label>
             <label class="msp-field">
               <span class="msp-label">Description</span>
@@ -169,7 +178,7 @@ interface SetDraft {
             </label>
 
             <div class="msp-field">
-              <span class="msp-label">Photos (up to 4)</span>
+              <span class="msp-label">Marketing Promo Photos (up to 4)</span>
               <div class="msp-pic-grid">
                 @for (i of [0, 1, 2, 3]; track i) {
                   <div class="msp-pic-slot">
@@ -188,7 +197,7 @@ interface SetDraft {
             </div>
 
             <label class="msp-field">
-              <span class="msp-label">Video URL</span>
+              <span class="msp-label">Video URL (optional)</span>
               <input class="msp-input" type="url" placeholder="https://…" [value]="d.video1"
                 (input)="setField('video1', $any($event.target).value)" />
             </label>
@@ -201,33 +210,75 @@ interface SetDraft {
 
             <div class="msp-actions">
               <button type="button" class="msp-btn primary" [disabled]="savingSet() || !d.name.trim()" (click)="saveSet()">
-                {{ savingSet() ? 'Saving…' : (d.mealSetId ? 'Save set' : 'Create set') }}
+                {{ savingSet() ? 'Saving…' : 'OK' }}
               </button>
               <button type="button" class="msp-btn" (click)="draft.set(null)">Cancel</button>
             </div>
 
-            <!-- Meal picker — only for a saved set (needs an id to junction). -->
-            @if (d.mealSetId) {
-              <div class="msp-picker">
-                <h4 class="msp-subtitle">Meals in this set</h4>
-                @if (ownMeals().length) {
-                  <ul class="msp-meal-list">
-                    @for (m of ownMeals(); track m.id) {
-                      <li class="msp-meal-item">
-                        <label class="msp-meal-opt">
-                          <input type="checkbox" [checked]="isAssigned(m.id)"
-                            [disabled]="pendingMeal() === m.id"
-                            (change)="toggleMeal(m, $any($event.target).checked)" />
-                          <span class="msp-meal-name">{{ m.name }}</span>
-                        </label>
-                      </li>
+            <!-- Meal picker: two lists side by side. Drag a meal across, or select
+                 and use the ▶ / ◀ arrows. Membership is staged locally and saved
+                 with the set when you press OK (no separate assign step). -->
+            <div class="msp-picker">
+              <h4 class="msp-subtitle">Meals in this set</h4>
+              <div class="msp-transfer" cdkDropListGroup>
+                <div class="msp-transfer-col">
+                  <div class="msp-transfer-head">Your meals</div>
+                  <div
+                    class="msp-transfer-list"
+                    cdkDropList
+                    [cdkDropListData]="'available'"
+                    (cdkDropListDropped)="onTransferDrop($event)">
+                    @for (m of availableMeals(); track m.id) {
+                      <div
+                        class="msp-transfer-item"
+                        [class.sel]="selectedAvailable().has(m.id)"
+                        cdkDrag
+                        [cdkDragData]="m.id"
+                        (click)="toggleSelect('available', m.id)"
+                        (dblclick)="assign(m.id)">{{ m.name }}</div>
+                    } @empty {
+                      <div class="msp-transfer-empty">No meals</div>
                     }
-                  </ul>
-                } @else {
-                  <p class="msp-empty">You have no saved meals to assign yet.</p>
-                }
+                  </div>
+                </div>
+
+                <div class="msp-transfer-arrows">
+                  <button
+                    type="button"
+                    class="msp-arrow"
+                    matTooltip="Add to set"
+                    [disabled]="!selectedAvailable().size"
+                    (click)="assignSelected()">&#9654;</button>
+                  <button
+                    type="button"
+                    class="msp-arrow"
+                    matTooltip="Remove from set"
+                    [disabled]="!selectedInSet().size"
+                    (click)="unassignSelected()">&#9664;</button>
+                </div>
+
+                <div class="msp-transfer-col">
+                  <div class="msp-transfer-head">In this set</div>
+                  <div
+                    class="msp-transfer-list"
+                    cdkDropList
+                    [cdkDropListData]="'assigned'"
+                    (cdkDropListDropped)="onTransferDrop($event)">
+                    @for (m of assignedMeals(); track m.id) {
+                      <div
+                        class="msp-transfer-item"
+                        [class.sel]="selectedInSet().has(m.id)"
+                        cdkDrag
+                        [cdkDragData]="m.id"
+                        (click)="toggleSelect('assigned', m.id)"
+                        (dblclick)="unassign(m.id)">{{ m.name }}</div>
+                    } @empty {
+                      <div class="msp-transfer-empty">Drag or ▶ meals here</div>
+                    }
+                  </div>
+                </div>
               </div>
-            }
+            </div>
           </section>
         }
       </div>
@@ -246,13 +297,92 @@ export class MealsetsPanelComponent implements OnInit {
   readonly savingSet = signal(false);
   readonly uploadingPic = signal<number | null>(null);
 
-  // ---- Meal picker ----------------------------------------------------------
+  // ---- Meal picker (dual-list transfer, staged locally) ---------------------
+  /** The author's own meals — the whole pool for the two lists. */
   readonly ownMeals = signal<Meal[]>([]);
+  /** Staged membership for the OPEN set; committed (diffed vs the baseline) on OK. */
   private readonly assignedIds = signal<Set<number>>(new Set());
-  readonly pendingMeal = signal<number | null>(null);
+  /** Baseline membership loaded from the server, for diffing adds/removes on save. */
+  private originalAssignedIds = new Set<number>();
+  /** Row selection in each list (drives the ▶ / ◀ arrows). */
+  readonly selectedAvailable = signal<Set<number>>(new Set());
+  readonly selectedInSet = signal<Set<number>>(new Set());
 
-  isAssigned(id: number): boolean {
-    return this.assignedIds().has(id);
+  /** Left list: own meals NOT yet in the set. */
+  readonly availableMeals = computed<Meal[]>(() =>
+    this.ownMeals().filter((m) => !this.assignedIds().has(m.id)),
+  );
+  /** Right list: own meals currently staged into the set. */
+  readonly assignedMeals = computed<Meal[]>(() =>
+    this.ownMeals().filter((m) => this.assignedIds().has(m.id)),
+  );
+
+  toggleSelect(list: 'available' | 'assigned', id: number): void {
+    const sig = list === 'available' ? this.selectedAvailable : this.selectedInSet;
+    sig.update((s) => {
+      const next = new Set(s);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  /** Move one meal into the set (drag-drop target / double-click). */
+  assign(id: number): void {
+    this.assignedIds.update((s) => new Set(s).add(id));
+    this.dropSelection(id);
+  }
+
+  /** Move one meal out of the set (drag-drop target / double-click). */
+  unassign(id: number): void {
+    this.assignedIds.update((s) => {
+      const next = new Set(s);
+      next.delete(id);
+      return next;
+    });
+    this.dropSelection(id);
+  }
+
+  /** ▶ — move every selected available meal into the set. */
+  assignSelected(): void {
+    this.assignedIds.update((s) => {
+      const next = new Set(s);
+      for (const id of this.selectedAvailable()) next.add(id);
+      return next;
+    });
+    this.selectedAvailable.set(new Set());
+  }
+
+  /** ◀ — move every selected in-set meal back to the pool. */
+  unassignSelected(): void {
+    this.assignedIds.update((s) => {
+      const next = new Set(s);
+      for (const id of this.selectedInSet()) next.delete(id);
+      return next;
+    });
+    this.selectedInSet.set(new Set());
+  }
+
+  /** Drag between the two lists: direction is decided by the drop container. */
+  onTransferDrop(event: CdkDragDrop<string>): void {
+    if (event.previousContainer === event.container) return; // reorder within a list — ignore
+    const id = event.item.data as number;
+    if (event.container.data === 'assigned') this.assign(id);
+    else this.unassign(id);
+  }
+
+  private dropSelection(id: number): void {
+    this.selectedAvailable.update((s) => {
+      if (!s.has(id)) return s;
+      const next = new Set(s);
+      next.delete(id);
+      return next;
+    });
+    this.selectedInSet.update((s) => {
+      if (!s.has(id)) return s;
+      const next = new Set(s);
+      next.delete(id);
+      return next;
+    });
   }
 
   // ---- Owner profile --------------------------------------------------------
@@ -310,7 +440,7 @@ export class MealsetsPanelComponent implements OnInit {
 
   // ---- Editor: create / edit / save ----------------------------------------
   startCreate(): void {
-    this.assignedIds.set(new Set());
+    this.resetPicker(new Set());
     this.draft.set({
       mealSetId: null,
       name: '',
@@ -363,8 +493,10 @@ export class MealsetsPanelComponent implements OnInit {
       const saved = d.mealSetId
         ? await firstValueFrom(this.mealSetService.updateSet(d.mealSetId, this.draftToBody()))
         : await firstValueFrom(this.mealSetService.createSet(this.draftToBody()));
+      // Commit staged meal membership now that the set has an id.
+      await this.commitMembership(saved.mealSetId);
       await this.loadAuthored();
-      this.editSet(saved); // re-open the saved set (now with an id → meal picker)
+      this.editSet(saved); // re-open the saved set with a fresh membership baseline
       this.notification.show('Meal set saved.', 'success');
     } catch {
       this.notification.show('Could not save the meal set.', 'error');
@@ -433,39 +565,37 @@ export class MealsetsPanelComponent implements OnInit {
   }
 
   // ---- Meal picker junctions ------------------------------------------------
+  /** Seed the picker's staged + baseline membership (and clear selections). */
+  private resetPicker(ids: Set<number>): void {
+    this.assignedIds.set(new Set(ids));
+    this.originalAssignedIds = new Set(ids);
+    this.selectedAvailable.set(new Set());
+    this.selectedInSet.set(new Set());
+  }
+
   private async loadAssigned(setId: number): Promise<void> {
     try {
       const meals = (await firstValueFrom(this.mealSetService.getSetMeals(setId))) ?? [];
       // Set-sourced entries carry mealSetId === this set; those are the assigned.
       const ids = meals.filter((m) => m.mealSetId === setId).map((m) => m.id);
-      this.assignedIds.set(new Set(ids));
+      this.resetPicker(new Set(ids));
     } catch {
-      this.assignedIds.set(new Set());
+      this.resetPicker(new Set());
     }
   }
 
-  async toggleMeal(meal: Meal, checked: boolean): Promise<void> {
-    const d = this.draft();
-    if (!d?.mealSetId || this.pendingMeal() === meal.id) return;
-    this.pendingMeal.set(meal.id);
-    try {
-      if (checked) {
-        await firstValueFrom(
-          this.mealSetService.addMeal(d.mealSetId, { mealId: meal.id, sortOrder: this.assignedIds().size }),
-        );
-        this.assignedIds.update((s) => new Set(s).add(meal.id));
-      } else {
-        await firstValueFrom(this.mealSetService.removeMeal(d.mealSetId, meal.id));
-        this.assignedIds.update((s) => {
-          const next = new Set(s);
-          next.delete(meal.id);
-          return next;
-        });
-      }
-    } catch {
-      this.notification.show('Could not update the set membership.', 'error');
-    } finally {
-      this.pendingMeal.set(null);
+  /** Commit staged membership changes: junction the adds, unjunction the removes,
+   *  diffed against the baseline loaded when the set was opened. */
+  private async commitMembership(setId: number): Promise<void> {
+    const target = this.assignedIds();
+    const adds = [...target].filter((id) => !this.originalAssignedIds.has(id));
+    const removes = [...this.originalAssignedIds].filter((id) => !target.has(id));
+    let order = this.originalAssignedIds.size;
+    for (const id of adds) {
+      await firstValueFrom(this.mealSetService.addMeal(setId, { mealId: id, sortOrder: order++ }));
+    }
+    for (const id of removes) {
+      await firstValueFrom(this.mealSetService.removeMeal(setId, id));
     }
   }
 }

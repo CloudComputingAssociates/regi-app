@@ -98,6 +98,22 @@
   justify-content: space-between;
 }
 
+// Set-editor header: title left, blue marketing hint right-justified.
+.msp-editor-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.msp-editor-hint {
+  flex: 0 1 auto;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4da6ff;
+}
+
 .msp-card-title {
   margin: 0;
   font-size: 15px;
@@ -282,7 +298,30 @@
   border-radius: 8px;
   padding: 2px 6px;
 }
-.msp-set-flags { margin-left: auto; font-size: 12px; color: #9aa0a6; white-space: nowrap; }
+.msp-set-flags { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+// Status / price pills in the My Sets rows. Active = green, Inactive = muted.
+.msp-flag {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 8px;
+  border-radius: 10px;
+  color: #cfcfcf;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  &.on {
+    color: #b6f0b8;
+    background: rgba(65, 172, 23, 0.22);
+    border-color: rgba(65, 172, 23, 0.5);
+  }
+  &.price {
+    color: #ffd54f;
+    background: rgba(255, 213, 79, 0.14);
+    border-color: rgba(255, 213, 79, 0.35);
+  }
+}
 
 .msp-empty {
   margin: 0;
@@ -304,34 +343,97 @@
 .msp-readonly { font-size: 12px; color: #d8d8d8; strong { color: #f1f1f1; } }
 .msp-readonly-note { font-size: 11px; color: #7a7a7a; font-style: italic; }
 
-// ---- Meal picker ----
+// ---- Meal picker: dual-list transfer (drag across, or ▶ / ◀ arrows) ----
 .msp-picker {
   margin-top: 6px;
   border-top: 1px solid #4a4a4a;
   padding-top: 8px;
 }
 
-.msp-meal-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.msp-transfer {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.msp-transfer-col {
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+}
+
+.msp-transfer-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #9aa0a6;
+}
+
+.msp-transfer-list {
+  flex: 1 1 auto;
+  min-height: 150px;
   max-height: 260px;
   overflow-y: auto;
-}
-
-.msp-meal-opt {
+  padding: 4px;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 4px;
-  font-size: 13px;
-  color: #e0e0e0;
-  cursor: pointer;
-
-  input { accent-color: #4da6ff; cursor: pointer; }
+  flex-direction: column;
+  gap: 3px;
+  background: #2a2a2a;
+  border: 1px solid #262626;
+  border-radius: 6px;
 }
 
-.msp-meal-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msp-transfer-item {
+  padding: 5px 8px;
+  font-size: 13px;
+  color: #e8e8e8;
+  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
+  border: 1px solid #4a4a4a;
+  border-radius: 5px;
+  cursor: grab;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+
+  &:hover { border-color: #6a6f75; }
+  &.sel { border-color: #4da6ff; box-shadow: 0 0 0 1px #4da6ff; }
+  &.cdk-drag-placeholder { opacity: 0.35; }
+  &:active { cursor: grabbing; }
+}
+
+.msp-transfer-empty {
+  padding: 8px;
+  font-size: 12px;
+  font-style: italic;
+  color: #7a7a7a;
+  text-align: center;
+}
+
+.msp-transfer-arrows {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.msp-arrow {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #e8e8e8;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
+  border-radius: 6px;
+  cursor: pointer;
+  &:hover:not(:disabled) { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #fff; }
+  &:disabled { opacity: 0.4; cursor: default; }
+}

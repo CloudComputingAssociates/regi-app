@@ -79,6 +79,8 @@ export class AppBarComponent {
     // My Foods shows its own "My Foods" heading inside the panel now, so don't
     // duplicate it in the app bar next to the RegiMenu mark.
     if (id === 'foods') return null;
+    // MealSets has its own "MealSets" header inside the panel — don't repeat it.
+    if (id === 'mealsets') return null;
     return this.tabService.tabs().find(t => t.id === id)?.label ?? null;
   });
 
