@@ -75,7 +75,19 @@ interface SetDraft {
                 matTooltip="Fill in required fields, and save before you can add MealSets. Information is displayed in the MealSet Gallery"
                 matTooltipPosition="right">&#9432;</span>
             </h3>
+            @if (profileSaved()) {
+              <button
+                type="button"
+                class="msp-collapse"
+                [matTooltip]="profileCollapsed() ? 'Expand profile' : 'Collapse profile'"
+                (click)="profileCollapsed.set(!profileCollapsed())">
+                <mat-icon>{{ profileCollapsed() ? 'expand_more' : 'expand_less' }}</mat-icon>
+              </button>
+            }
           </div>
+          @if (profileCollapsed()) {
+            <div class="msp-collapsed-summary">{{ profileAuthorName() || accountName() || 'Your profile' }}</div>
+          } @else {
           <label class="msp-field">
             <span class="msp-label">Author name <span class="msp-req">* required</span></span>
             <input
@@ -130,6 +142,7 @@ interface SetDraft {
               {{ savingProfile() ? 'Saving…' : 'Save profile' }}
             </button>
           </div>
+          }
         </section>
 
         <!-- ============ Read-only deal (hidden with no contract) ============ -->
@@ -156,22 +169,19 @@ interface SetDraft {
         <!-- ============ My Sets ============ -->
         <section class="msp-card">
           <div class="msp-card-head">
-            <h3 class="msp-card-title">My Sets</h3>
-            <div class="msp-newset">
-              @if (!profileComplete()) {
-                <span
-                  class="msp-info"
-                  matTooltip="Complete and save your Author profile first — Bio and Author photo are required (credentials optional)."
-                  matTooltipPosition="left">&#9432;</span>
-              }
-              <button
-                type="button"
-                class="msp-btn primary"
-                [disabled]="!profileComplete()"
-                [matTooltip]="profileComplete() ? '' : 'Save a complete Author profile (Bio + photo) to create a MealSet'"
-                matTooltipPosition="above"
-                (click)="startCreate()">+ New MealSet</button>
-            </div>
+            <h3 class="msp-card-title">My MealSets
+              <span
+                class="msp-info"
+                matTooltip="MealSets require you to have created meals already. If you haven't, go to Menus & Meals and import from recipes or composite your meals first."
+                matTooltipPosition="right">&#9432;</span>
+            </h3>
+            <button
+              type="button"
+              class="msp-btn primary"
+              [disabled]="!profileComplete()"
+              [matTooltip]="profileComplete() ? '' : 'Save a complete Author profile (Bio + photo) to create a MealSet'"
+              matTooltipPosition="above"
+              (click)="startCreate()">+ New MealSet</button>
           </div>
           @if (authoredSets().length) {
             <ul class="msp-set-list">
@@ -446,6 +456,12 @@ export class MealsetsPanelComponent implements OnInit {
   /** True once a SAVED profile has both a Bio and an Author photo — gates the
    *  "+ New MealSet" button so every author's catalog card carries their info. */
   readonly profileComplete = signal(false);
+  /** True once a profile row exists (has any saved content, or was just saved).
+   *  Only then does the profile card become collapsible. */
+  readonly profileSaved = signal(false);
+  /** Collapsed state of the Author-profile card — defaults collapsed for a
+   *  returning author (a profile already exists) so they land near My MealSets. */
+  readonly profileCollapsed = signal(false);
 
   // ---- Read-only contract ---------------------------------------------------
   readonly contract = signal<MealSetContractView | null>(null);
@@ -483,9 +499,22 @@ export class MealsetsPanelComponent implements OnInit {
       this.backLink.set(p?.backLink ?? '');
       this.backLinkPhoto.set(p?.backLinkPhoto ?? '');
       this.profileComplete.set(!!(p?.authorBio?.trim() && p?.authorPic));
+      // A saved profile row = any author content present. Returning authors land
+      // with it collapsed so they don't scroll past it to reach My MealSets.
+      const hasContent = !!(
+        p?.authorBio?.trim() ||
+        p?.authorPic ||
+        p?.authorName?.trim() ||
+        p?.authorCredentials?.trim() ||
+        p?.backLink?.trim()
+      );
+      this.profileSaved.set(hasContent);
+      this.profileCollapsed.set(hasContent);
     } catch {
-      // No profile yet — start blank (incomplete → New MealSet stays disabled).
+      // No profile yet — start blank + expanded (New MealSet stays disabled).
       this.profileComplete.set(false);
+      this.profileSaved.set(false);
+      this.profileCollapsed.set(false);
     }
   }
 
@@ -583,6 +612,7 @@ export class MealsetsPanelComponent implements OnInit {
         }),
       );
       this.profileComplete.set(!!(this.profileBio().trim() && this.profilePic()));
+      this.profileSaved.set(true); // profile now collapsible on this + future visits
       this.notification.show('Author profile saved.', 'success');
     } catch {
       this.notification.show('Could not save the author profile.', 'error');

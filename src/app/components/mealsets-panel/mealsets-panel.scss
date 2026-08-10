@@ -121,6 +121,30 @@
   color: #4da6ff;
 }
 
+// Collapse/expand chevron on the Author-profile card header.
+.msp-collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: #9aa0a6;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  .mat-icon { width: 20px; height: 20px; font-size: 20px; line-height: 20px; }
+  &:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+}
+
+// One-line summary shown when the Author profile is collapsed.
+.msp-collapsed-summary {
+  font-size: 13px;
+  color: #d8d8d8;
+  font-weight: 500;
+}
+
 .msp-subtitle {
   margin: 8px 0 4px;
   font-size: 13px;
@@ -221,15 +245,18 @@
   transition: background 0.12s ease, filter 0.12s ease;
 
   &:hover:not(:disabled) { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #fff; }
-  &:disabled { opacity: 0.5; cursor: default; }
+  // Clearly dimmed when disabled — obviously non-actionable next to the
+  // full-brightness titles/text around it.
+  &:disabled { opacity: 0.32; filter: grayscale(0.6); cursor: not-allowed; }
 
+  // Actionable = white raised button (matches the app's white action buttons).
   &.primary {
-    color: #10233a;
-    background: linear-gradient(180deg, #7fbfff 0%, #4da6ff 100%);
-    border-color: #2b6db3;
-    border-top-color: #a9d5ff;
+    color: #1a1a1a;
+    background: linear-gradient(180deg, #ffffff 0%, #e4e4e4 100%);
+    border-color: #b6b6b6;
+    border-top-color: #ffffff;
     font-weight: 700;
-    &:hover:not(:disabled) { filter: brightness(1.05); background: linear-gradient(180deg, #7fbfff 0%, #4da6ff 100%); }
+    &:hover:not(:disabled) { filter: brightness(1.03); background: linear-gradient(180deg, #ffffff 0%, #ededed 100%); }
   }
 
   &.small { padding: 3px 8px; font-size: 12px; }
