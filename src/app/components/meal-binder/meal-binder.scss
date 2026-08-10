@@ -9,13 +9,14 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-left: 1px solid #4a4a4a;
+  // No left border — the paper (and its spiral binding) runs flush to the very
+  // left edge with nothing over it.
   // Spiral-bound notebook paper across the whole Binder.
   background-color: #ececec;
   background-image: url('/images/paper-spiral-bound.jpg');
   background-repeat: repeat-y;
   background-size: 100% auto;
-  background-position: top center;
+  background-position: top left;
 }
 
 .binder {
@@ -653,13 +654,13 @@
     align-items: baseline;
     gap: 4px;
     padding: 5px 16px 6px;
-    background: rgba(80, 80, 80, 0.22); // very faint grey scrim over the paper
-    border: 1px solid rgba(60, 60, 60, 0.55); // the outline rule around the tab
+    background: #ffffff; // hard, solid white (no opacity)
+    border: 1px solid #000000; // 1px black outline
     border-radius: 10px 10px 0 0;
 
     .section-label,
     .section-count {
-      color: #1a1a1a; // black ink on the paper — no blue, no white
+      color: #1a1a1a; // black ink
       text-shadow: none;
     }
   }
@@ -790,21 +791,24 @@
     font-weight: 400;
     color: #4da6ff;
   }
+  // Menus accordion chevron — a black disk with a white arrow (like the cards).
   .section-chevron {
     margin-left: auto; // pushed to the far right; the count stays by the title
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
-    color: #9aa0a6;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    font-size: 16px;
+    line-height: 16px;
+    color: #ffffff;
+    background: #1a1a1a;
+    border-radius: 50%;
   }
 
   &:hover {
-    color: #ffffff;
-    // The Binder indicator keeps its yellow — only the plain icons/chevron dim.
-    .section-icon:not(.section-icon-binder),
-    .section-chevron {
-      color: #c8c8c8;
-    }
+    .section-icon:not(.section-icon-binder) { color: #c8c8c8; }
   }
 }
 
@@ -827,10 +831,10 @@
   flex-direction: column;
   gap: 6px;
   padding: 4px 4px 4px 12px; // tight top/bottom around the thumbnail; tight RHS for the trash
-  border: 1px solid #4a4a4a;
+  border: 1px solid #000000; // 1px black outline
   border-radius: 8px;
-  background: #3a3a3a; // lightened to match the macros bar grey (flat, no gradient)
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.5); // see-through white over the paper
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 .binder-card {
@@ -892,8 +896,8 @@
     flex: 1 1 auto;
     min-width: 0;
     font-size: 14px;
-    font-weight: 500;
-    color: #f1f1f1;
+    font-weight: 600;
+    color: #1a1a1a; // black text on the see-through white card
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -946,7 +950,8 @@
     white-space: nowrap;
   }
 
-  // Chevron that shows/hides the extra macros — leads the summary discs.
+  // Chevron that shows/hides the extra macros — a black disk with a white arrow
+  // so it reads clearly on any card background.
   .card-toggle {
     flex: 0 0 auto;
     display: inline-flex;
@@ -956,13 +961,13 @@
     height: 22px;
     padding: 0;
     border: none;
-    border-radius: 4px;
-    background: transparent;
-    color: #9aa0a6;
+    border-radius: 50%;
+    background: #1a1a1a;
+    color: #ffffff;
     cursor: pointer;
 
-    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
-    &:hover { color: #ffffff; }
+    .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; color: #ffffff; }
+    &:hover { background: #000000; }
   }
 
   // Extra breathing room before the trash so a user aiming for the chevron

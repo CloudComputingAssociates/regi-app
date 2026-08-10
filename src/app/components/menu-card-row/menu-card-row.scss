@@ -29,12 +29,12 @@
 // of the cards, labelling the row as the rotation's "menus". Lowercase Fredoka to
 // match the macro-bar labels; sunken gray so it reads as carved into the surface.
 // Shrinks away (min-width:0 + clip) once the cards fill the strip.
-// Planned-days tally — pinned to the strip's bottom-right (bottom-aligned with
-// the "menus" watermark), moved down from the toolbar.
+// Planned-days tally — pinned to the strip's TOP-right so it reads as belonging
+// to the Menus area (not the meals grouping below).
 .span-badge {
   position: absolute;
   right: 12px;
-  bottom: 6px;
+  top: 6px;
   z-index: 2;
   display: inline-flex;
   align-items: center;
