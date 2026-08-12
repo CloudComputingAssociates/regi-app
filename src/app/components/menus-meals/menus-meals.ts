@@ -127,7 +127,13 @@ export class MenusMealsComponent {
     if (menuId == null) return;
     const el = document.elementFromPoint(e.point.x, e.point.y) as HTMLElement | null;
 
-    if (el?.closest('.add-menu-link')) {
+    // Dropped on an EXISTING menu tile in the strip → no-op (moving between
+    // menus this way isn't in scope).
+    if (el?.closest('.menu-card')) return;
+    // The "+ Add menu" tile OR anywhere in the menu strip → start a new menu with
+    // this meal. (The strip is a small target, so accept the whole row, not just
+    // the dashed tile.)
+    if (el?.closest('.add-menu-link') || el?.closest('app-menu-card-row')) {
       void this.rotation.moveMealToNewMenu(menuId, e.slotOrder, e.mealId);
       return;
     }

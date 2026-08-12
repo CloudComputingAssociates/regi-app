@@ -310,11 +310,17 @@ export class MealComponent {
   }
 
   /** The slot photo drag ended — clear the drag affordance and bubble the release
-   *  point up so the parent can route the outcome (move / new menu / clear). */
+   *  point up so the parent can route the outcome (move / new menu / clear). Use
+   *  the native event's VIEWPORT (client) coordinates so they line up with the
+   *  parent's document.elementFromPoint hit-test (dropPoint can be page-space and
+   *  drift under scroll). */
   onTileDragEnded(mealId: number, event: CdkDragEnd): void {
     this.rotation.dragging.set(null);
-    const p = event.dropPoint;
-    this.slotDragEnded.emit({ slotOrder: this.slot().slotOrder, mealId, point: { x: p.x, y: p.y } });
+    const native = event.event as MouseEvent & Partial<TouchEvent>;
+    const touch = native.changedTouches?.[0];
+    const x = touch?.clientX ?? (native as MouseEvent).clientX ?? event.dropPoint.x;
+    const y = touch?.clientY ?? (native as MouseEvent).clientY ?? event.dropPoint.y;
+    this.slotDragEnded.emit({ slotOrder: this.slot().slotOrder, mealId, point: { x, y } });
   }
 
   /** Summed slot macros (front strip). */
