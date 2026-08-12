@@ -21,6 +21,44 @@
     border-style: solid;
     box-shadow: 0 0 0 1px #4da6ff, 0 2px 4px rgba(0, 0, 0, 0.3);
   }
+
+  // Filled slot: the photo fills the whole frame — no header, no padding — and
+  // the Clear key + flip button overlay the picture.
+  &.filled {
+    padding: 0;
+    gap: 0;
+    overflow: hidden; // clip the photo to the rounded corners
+    border-color: #1c1c1c;
+
+    .flip { width: 100%; }
+    .flip-front,
+    .flip-back { border-radius: 0; }
+  }
+}
+
+// Square "Clear" key over the photo, top-left — same white / thin-grey-line /
+// squared look as the Binder filter's clear-all key.
+.slot-clear-overlay {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: #1a1a1a;
+  background: #ffffff;
+  border: 1px solid #9a9ea3;
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+  &:hover { background: #f0f0f0; }
+  &:active { transform: translateY(1px); }
 }
 
 // ---- Header: title + summed macro strip + clear-all -----------------------
@@ -275,11 +313,16 @@
 
   .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; }
 }
-// Flip ">" — bottom-right corner (same on the front tiles AND the back). It's
-// the only control on the image tiles now; delete lives on the back title row.
+// Flip ⟳ — the BACK "flip to photo" key stays bottom-right; the FRONT tiles put
+// it in the upper-RIGHT corner (per request). Delete lives on the back title row.
 .tile-flip {
   top: auto;
   bottom: 6px;
+  right: 6px;
+}
+.meal-tile .tile-flip {
+  top: 6px;
+  bottom: auto;
   right: 6px;
 }
 

@@ -778,6 +778,13 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
+// Menu cards carry the .stacked-card charcoal backing (::before). At 75% opacity
+// that dark edge bled through the whole face and greyed the card out; give the
+// menu face an OPAQUE white so only the intended 4px bottom-right edge peeks.
+.binder-menu-card {
+  background: #ffffff;
+}
+
 .binder-card {
   cursor: grab;
   &:active { cursor: grabbing; }

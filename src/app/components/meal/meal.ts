@@ -40,33 +40,18 @@ interface Macro {
   imports: [MatTooltipModule, MatIconModule, FoodComponent, DragDropModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="slot-card" [class.empty]="isEmpty()" [class.editing]="editing()">
-      <!-- Header: slot letter, summed macro strip (stays visible without flipping),
-           and the whole-slot clear (wipes ALL meals). -->
-      <div class="slot-header">
-        <span class="slot-title">Slot {{ slot().slotOrder }}</span>
-        @if (!isEmpty() && !slot().isDiningOut) {
-          <span class="chip protein">P {{ round(macros().proteinG) }}</span>
-          <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
-          <span class="chip carb">C {{ round(macros().carbG) }}</span>
-          <span class="chip fat">F {{ round(macros().fatG) }}</span>
-          <span class="slot-cals">{{ round(macros().calories) }} cals</span>
-          <button
-            type="button"
-            class="icon-disc icon-disc-danger clear-slot"
-            matTooltip="Clear this slot (all meals)"
-            matTooltipPosition="above"
-            (click)="deleteMeal.emit(slot().slotOrder)">
-            <mat-icon>delete_outline</mat-icon>
-          </button>
-        }
-      </div>
-
+    <div
+      class="slot-card"
+      [class.empty]="isEmpty()"
+      [class.editing]="editing()"
+      [class.filled]="!isEmpty() && !slot().isDiningOut">
       @if (slot().isDiningOut) {
+        <div class="slot-header"><span class="slot-title">Slot {{ slot().slotOrder }}</span></div>
         <div class="slot-placeholder dining-out">
           <span class="placeholder-icon">🍽️</span><span>Dining out</span>
         </div>
       } @else if (isEmpty()) {
+        <div class="slot-header"><span class="slot-title">Slot {{ slot().slotOrder }}</span></div>
         <div
           class="slot-placeholder pick"
           [class.bloom]="dropHighlight()"
@@ -217,6 +202,20 @@ interface Macro {
             </div>
           </div>
         </div>
+        <!-- Front-photo overlay: the square Clear key (top-left); the per-tile
+             flip sits top-right. No "Slot N" label here — the slot number shows
+             only on the empty slot, before a meal is dragged in. Hidden on the
+             back (detail) face, which carries its own controls. -->
+        @if (flippedMeal() == null) {
+          <button
+            type="button"
+            class="slot-clear-overlay"
+            matTooltip="Clear this slot (all meals)"
+            matTooltipPosition="above"
+            (click)="deleteMeal.emit(slot().slotOrder)">
+            <mat-icon>clear_all</mat-icon>
+          </button>
+        }
       }
     </div>
   `,
