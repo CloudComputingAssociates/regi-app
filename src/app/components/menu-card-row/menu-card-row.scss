@@ -81,8 +81,8 @@
   // strip reads as a separate set of things, not lined up with the meal grid.
   width: 252px;
   min-width: 252px;
-  min-height: 56px; // taller again — a bigger, more navigable drag-drop target
-  padding: 10px; // roomier so the drop zone is easy to hit
+  min-height: 42px; // 3/4 of the taller drop-target height — roomy but not huge
+  padding: 7px 8px;
   border: 2px solid #4a4a4a;
   border-radius: 8px;
   background: #3a3a3a; // match the macro bar shade for a uniform card family
@@ -109,7 +109,7 @@
   // Blue "Menu" caption leading the row.
   .menu-label {
     flex: 0 0 auto;
-    font-size: 12px;
+    font-size: 14px; // uniform readable size (matches meal names)
     font-weight: 600;
     color: #4da6ff;
   }
@@ -123,7 +123,7 @@
     box-sizing: border-box;
     padding: 2px 8px;
     font-family: inherit;
-    font-size: 12px;
+    font-size: 14px; // uniform readable size
     color: #1a1a1a;
     background: #ffffff;
     border: 1px solid #9a9ea3;

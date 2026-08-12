@@ -36,9 +36,10 @@
   // Extra left gutter clears the spiral binding so the coils show; the right
   // side is trimmed tight to keep the content width.
   padding: 0 2px 0 28px;
-  // One clean, crisp typeface for the whole Binder + antialiased smoothing so
-  // text over the paper/translucent cards renders sharp (not fuzzy).
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  // SERIF body for the Binder — Menus / Meals names read like a real recipe book.
+  // Georgia is the most readable system serif on screen (no webfont / CSP issue).
+  // The tabs, the "Binder" title, and the controls override this back to sans.
+  font-family: Georgia, 'Times New Roman', Times, serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -53,7 +54,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between; // "Meals" left, AI toggle right
-  padding: 0 12px 0 8px; // 8px left aligns "Binder" with the tabs/cards below it
+  padding: 0 4px 0 8px; // less right padding so the search sits nearer the edge
   margin: 14px 4px 2px 0; // down for the top holes; tight bottom to the Menus tab
   // No chrome — the header sits directly ON the ruled paper.
   background: transparent;
@@ -78,13 +79,14 @@
   // baseline (so the title no longer reads as its label), thin line, tight
   // vertical padding.
   .header-search {
-    flex: 0 1 170px; // smaller, right-justified box (doesn't grow to fill)
+    flex: 0 1 128px; // 1/4 smaller than before (was 170px)
     min-width: 0;
     margin-left: 16px; // breathing room even on a narrow rail
     align-self: flex-end; // sit lower than the "Binder" title
     margin-bottom: 5px;
     padding: 3px 8px; // reduced top/bottom padding
-    font-family: inherit;
+    // Controls stay sans even though the Binder body is serif.
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
     font-size: 13px;
     color: #1a1a1a;
     background: #ffffff;
@@ -204,6 +206,7 @@
   flex-direction: column;
   align-items: stretch;
   margin: 4px 8px 10px;
+  font-family: Roboto, 'Helvetica Neue', sans-serif; // filter is a control — stay sans
 
   .filter-fieldset {
     margin: 0;
@@ -605,6 +608,7 @@
     border-radius: 12px 12px 0 0;
     margin-bottom: -1px; // overlap the sheet's top edge → reads as "attached"
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.06);
+    font-family: Roboto, 'Helvetica Neue', sans-serif; // tabs stay SANS
 
     &.menus { background: #3b7de0; } // blue = Menus
     &.meals { background: #5a9e4f; } // green = Meals
@@ -643,69 +647,56 @@
   // Add / Filter are lightweight GHOST controls — no box, no outline — so they
   // stay subordinate to the outlined white section tabs. Black text + icon on the
   // paper; a faint pill appears only on hover / when active.
-  // Add — a quiet SOLID button (white face, hairline border) so it reads as the
-  // primary action without competing with the green tab.
-  .create-icon-btn {
-    flex: 0 0 auto;
-    margin-left: 8px;
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    height: 26px;
-    padding: 0 10px;
-    color: #1a1a1a;
-    background: #ffffff;
-    border: 1px solid #d5d8dd;
-    border-radius: 8px;
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
-    cursor: pointer;
-    transition: background 0.12s ease, border-color 0.12s ease;
+  // Add + Filter are a CLUSTER pinned to the right — raised, OPAQUE keys with a
+  // little depth (no ruled lines showing through). Add pushes the pair right;
+  // Filter sits snug against it.
+  .create-icon-btn { margin-left: auto; }
+  .create-toggle.filter-toggle { margin-left: 6px; }
 
-    .create-word { font-size: 12px; font-weight: 600; color: #1a1a1a; }
-    .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; color: #1a1a1a; }
-
-    &:hover { background: #f4f5f7; border-color: #c3c7cd; }
-    &:active { transform: translateY(1px); }
-  }
-
-  // Filter stays right-justified — a lighter OUTLINED utility (quieter than Add).
-  .filter-toggle { margin-left: auto; }
-
-  // "Filter (ON)" — a soft tint marks it active.
-  .filter-toggle.filter-on {
-    background: #eef1f5;
-    border-color: #c3c7cd;
-    .create-word { text-decoration: underline; text-underline-offset: 2px; }
-  }
-
+  .create-icon-btn,
   .create-toggle {
+    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    height: 26px;
+    height: 28px;
     box-sizing: border-box;
-    padding: 0 10px;
-    border: 1px solid #d5d8dd;
-    border-radius: 8px;
-    background: transparent;
-    color: #3a3f45;
-    font-family: inherit;
+    padding: 0 11px;
+    color: #1a1a1a;
+    font-family: Roboto, 'Helvetica Neue', sans-serif; // controls stay SANS
     font-size: 12px;
     font-weight: 600;
+    // Opaque top-lit gradient + rim + inner highlight = a raised physical key.
+    background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
+    border: 1px solid #b7bcc4;
+    border-radius: 8px;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
     cursor: pointer;
-    transition: background 0.12s ease, border-color 0.12s ease;
+    transition: background 0.12s ease, box-shadow 0.1s ease, transform 0.05s ease;
 
-    .create-word { color: #3a3f45; white-space: nowrap; }
+    .create-word { color: #1a1a1a; white-space: nowrap; }
+    .mat-icon,
     .create-chevron {
-      width: 15px;
-      height: 15px;
-      font-size: 15px;
-      line-height: 15px;
-      color: #6a6f75;
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
+      line-height: 16px;
+      color: #3a3f45;
     }
 
-    &:hover { background: #f4f5f7; border-color: #c3c7cd; }
-    &:active { transform: translateY(1px); }
+    &:hover { background: linear-gradient(180deg, #ffffff 0%, #dde1e7 100%); }
+    &:active {
+      transform: translateY(1px);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  // "Filter (ON)" — a soft tint + underline marks it active.
+  .filter-toggle.filter-on {
+    background: linear-gradient(180deg, #eef1f5 0%, #d7dde5 100%);
+    .create-word { text-decoration: underline; text-underline-offset: 2px; }
   }
 
 
@@ -790,7 +781,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px 2px;
+  padding: 4px 2px; // 50% tighter row spacing
   background: transparent;
   border: none;
   border-radius: 0;
