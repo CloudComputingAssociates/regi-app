@@ -24,76 +24,49 @@ import { RotationService } from '../../services/rotation.service';
             [class.selected]="menu.menuId === selectedMenuId()"
             [attr.data-menu-id]="menu.menuId"
             (click)="menuSelect.emit(menu.menuId)">
-            <!-- Top strip: the rename box leads; a bare green check sits just to
-                 its RIGHT (save to Binder), delete pins to the upper-right. -->
+            <!-- Single centered row: "Menu" label · white name box · square Clear
+                 key · permanent save check (green only when the name is real). No
+                 calories / macro chips / dropdown — this is a slim name+save row. -->
             <div class="card-top">
+              <span class="menu-label">Menu</span>
               <!-- Inline rename — edits in place; saves on blur or Enter. -->
-              <div class="name-wrap">
-                <input
-                  #nameBox
-                  type="text"
-                  class="menu-name-box regi-field"
-                  [value]="displayName(menu, i)"
-                  (focus)="onNameFocus(menu.menuId, nameBox)"
-                  (input)="nameDraft.set(nameBox.value)"
-                  (keydown.enter)="nameBox.blur()"
-                  (keydown.escape)="nameBox.value = displayName(menu, i); nameBox.blur()"
-                  (blur)="onNameBlur(menu, i, nameBox.value)"
-                  aria-label="Menu name" />
-                <!-- Save = bare green check (no disc). Present ONLY when there's
-                     something to save: (1) a pending name change, or (2) an
-                     unsaved menu still being built. A saved menu absorbs slot
-                     changes automatically, so no check is shown for it. -->
-                @if (showSaveCheck(menu, i)) {
-                  <button
-                    type="button"
-                    class="icon-disc icon-disc-confirm"
-                    [class.save-hint]="isSaveHintMenu(menu.menuId) && !menu.pinned"
-                    [matTooltip]="menu.pinned ? 'Save name' : 'Save to Binder'"
-                    matTooltipPosition="above"
-                    (mousedown)="$event.preventDefault()"
-                    (click)="$event.stopPropagation(); onSaveCheck(menu, i)">
-                    <mat-icon>check</mat-icon>
-                  </button>
-                }
-              </div>
+              <input
+                #nameBox
+                type="text"
+                class="menu-name-box"
+                [value]="displayName(menu, i)"
+                (focus)="onNameFocus(menu.menuId, nameBox)"
+                (input)="nameDraft.set(nameBox.value)"
+                (keydown.enter)="nameBox.blur()"
+                (keydown.escape)="nameBox.value = displayName(menu, i); nameBox.blur()"
+                (blur)="onNameBlur(menu, i, nameBox.value)"
+                aria-label="Menu name" />
+              <!-- Square Clear key — removes this menu from the plan. -->
               <button
                 type="button"
-                class="menu-delete icon-disc icon-disc-danger"
-                matTooltip="Delete this Menu"
+                class="menu-clear"
+                matTooltip="Clear this Menu"
                 matTooltipPosition="above"
                 (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
-                <mat-icon>delete_outline</mat-icon>
+                <mat-icon>clear_all</mat-icon>
               </button>
-              <!-- Calories live on the menu (name) line, right-justified, just
-                   before the expand chevron. -->
-              <span class="menu-cals">{{ round(rotation.menuTotals(menu.menuId).calories) }} cals</span>
-              <!-- Chevron lives on the title row, far right (like the meal card).
-                   Collapsed shows NO macro chips — expanding reveals the macro
-                   line (P/C/F/F) beneath it, all on one row. -->
+              <!-- Permanent save check: GREEN + clickable only when the box holds a
+                   REAL name (Binder saves happen for named menus only); grey + inert
+                   for the "Menu N" seed, so an errant char that's backspaced away
+                   never saves. -->
               <button
                 type="button"
-                class="card-toggle"
-                [matTooltip]="isOpen(menu.menuId) ? 'Hide macros' : 'Show macros'"
+                class="menu-save"
+                [class.active]="showSaveCheck(menu, i)"
+                [class.save-hint]="isSaveHintMenu(menu.menuId) && !menu.pinned && showSaveCheck(menu, i)"
+                [disabled]="!showSaveCheck(menu, i)"
+                [matTooltip]="menu.pinned ? 'Save name' : 'Save to Binder'"
                 matTooltipPosition="above"
-                (click)="$event.stopPropagation(); toggleMacros(menu.menuId)">
-                <mat-icon>{{ isOpen(menu.menuId) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                (mousedown)="$event.preventDefault()"
+                (click)="$event.stopPropagation(); onSaveCheck(menu, i)">
+                <mat-icon>check</mat-icon>
               </button>
             </div>
-            <!-- Macro line (ONE row) — rendered ONLY when expanded. orig/copy tag
-                 leads; then Protein, Carbs, Fat, Fiber (cals live up on the name
-                 line now). -->
-            @if (isOpen(menu.menuId)) {
-              <div class="menu-foot">
-                @if (copyRoleFor(menu); as role) {
-                  <span class="copy-badge" [class.is-copy]="role === 'copy'">{{ role }}</span>
-                }
-                <span class="chip protein">P {{ round(rotation.menuTotals(menu.menuId).proteinG) }}</span>
-                <span class="chip carb">C {{ round(rotation.menuTotals(menu.menuId).carbG) }}</span>
-                <span class="chip fat">F {{ round(rotation.menuTotals(menu.menuId).fatG) }}</span>
-                <span class="chip fiber">F {{ round(rotation.menuTotals(menu.menuId).fiberG) }}</span>
-              </div>
-            }
           </div>
         }
 

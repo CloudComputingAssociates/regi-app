@@ -486,9 +486,23 @@
   color: #ffffff;
 }
 
-// Recipe link — white standing underline, sits right under the macro discs.
+// Foods section header: blue "My Foods" label (left) + recipe link (right).
+.foods-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .foods-label {
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 600;
+    color: #4da6ff;
+  }
+}
+
+// Recipe link — white standing underline, right-justified in the foods header.
 .recipe-link {
-  align-self: flex-start;
+  margin-left: auto;
   padding: 0;
   border: none;
   background: none;

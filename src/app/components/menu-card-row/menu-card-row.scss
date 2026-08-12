@@ -98,13 +98,79 @@
     border-color: #4da6ff;
   }
 
-  // Top strip: the rename box flexes to fill the middle; delete + the dropdown
-  // chevron pin to the upper-right corner (chevron furthest right). Mirrors the
-  // meal card header — the name box shrinks to make room for the corner cluster.
+  // Single centered row: [Menu label][name box (grows)][clear][save].
   .card-top {
     display: flex;
     align-items: center;
-    gap: 5px; // tighter so the delete + chevron pair reads as a unit in the corner
+    gap: 6px;
+  }
+
+  // Blue "Menu" caption leading the row.
+  .menu-label {
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 600;
+    color: #4da6ff;
+  }
+
+  // Name box — a clearly-visible WHITE field (dark ink) so the typed name reads
+  // sharp on the dark card. Grows to fill the row.
+  .menu-name-box {
+    flex: 1 1 auto;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 3px 8px;
+    font-family: inherit;
+    font-size: 13px;
+    color: #1a1a1a;
+    background: #ffffff;
+    border: 1px solid #9a9ea3;
+    border-radius: 3px;
+    outline: none;
+    cursor: text;
+    &::selection { background: rgba(77, 166, 255, 0.28); }
+    &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.35); }
+  }
+
+  // Square Clear key — grey, matching the meal card's clear key family.
+  .menu-clear {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 24px;
+    padding: 0;
+    color: #e0e0e0;
+    background: #555555;
+    border: 1px solid #6a6a6a;
+    border-radius: 2px;
+    cursor: pointer;
+
+    .mat-icon { width: 17px; height: 17px; font-size: 17px; line-height: 17px; }
+    &:hover { background: #616161; color: #ffffff; }
+    &:active { transform: translateY(1px); }
+  }
+
+  // Permanent save check — grey + inert by default; green + clickable only when
+  // .active (the name is real). A bare check (no disc), sized to the row.
+  .menu-save {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: #5a5a5a; // grey at rest / disabled
+    cursor: pointer;
+
+    .mat-icon { width: 20px; height: 20px; font-size: 20px; line-height: 20px; }
+
+    &.active { color: #28c941; &:hover { color: #34d651; } }
+    &:disabled { cursor: default; }
   }
 
   // Chevron that reveals/hides the macro line — sits on the title row's far right.
@@ -134,55 +200,6 @@
     gap: 4px;
     flex: 1 1 auto;
     min-width: 0;
-  }
-
-  // Field look comes from the global .regi-field; keep only layout + specials.
-  .menu-name-box {
-    flex: 1 1 auto;
-    min-width: 0;
-    cursor: text;
-    overflow: hidden;
-    // Compact the field so the collapsed menu card is a slim single row.
-    padding: 2px 8px;
-    font-size: 12px;
-
-    // Barely-there white full-select highlight (not the loud browser blue).
-    &::selection {
-      background: rgba(255, 255, 255, 0.16);
-      color: inherit;
-    }
-
-    &:focus { caret-color: #4da6ff; }
-  }
-
-  // Save = a BARE green check just right of the name box (no disc). Disabled +
-  // grey once the menu is saved to the Binder; bright green while unsaved.
-  .save-check {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    border: none;
-    background: none;
-    color: #28c941;
-    cursor: pointer;
-
-    .mat-icon {
-      width: 20px;
-      height: 20px;
-      font-size: 20px;
-      line-height: 20px;
-    }
-
-    &:hover:not(:disabled) { color: #34d651; }
-
-    &:disabled {
-      color: #5a5a5a;
-      cursor: default;
-    }
   }
 
   // CR-LF (enter) arrow — a round disc just OUTSIDE the box, styled like the other
@@ -232,7 +249,7 @@
 
 // "Save me" nudge on the green check — a brief pulse fired only when the menu is
 // RENAMED while still unsaved, inviting the user to commit it to the Binder.
-.save-check.save-hint {
+.menu-save.save-hint {
   animation: menu-save-pulse 1s ease-in-out infinite;
 }
 

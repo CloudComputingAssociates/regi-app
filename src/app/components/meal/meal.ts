@@ -133,7 +133,7 @@ interface Macro {
                   <mat-icon>flip_camera_android</mat-icon>
                 </button>
                 <div class="back-head">
-                  <span class="name-label">Name</span>
+                  <span class="name-label">Meal</span>
                   <input
                     #nameBox
                     type="text"
@@ -182,15 +182,18 @@ interface Macro {
                   </button>
                 </div>
 
-                @if (recipeLinkFor(fm.mealId); as link) {
-                  <!-- White recipe link — shown only when the meal carries a
-                       source PDF (recipe import). -->
-                  <button
-                    type="button"
-                    class="recipe-link"
-                    matTooltip="Open the source recipe PDF"
-                    (click)="openRecipe(link)">Click here for recipe (PDF)</button>
-                }
+                <!-- Foods section header: "My Foods" label left; the recipe link
+                     (when the meal has a source PDF) right-justified. -->
+                <div class="foods-head">
+                  <span class="foods-label">My Foods</span>
+                  @if (recipeLinkFor(fm.mealId); as link) {
+                    <button
+                      type="button"
+                      class="recipe-link"
+                      matTooltip="Open the source recipe PDF"
+                      (click)="openRecipe(link)">Click here for recipe (PDF)</button>
+                  }
+                </div>
 
                 <div class="food-rows">
                   @for (item of mainItemsFor(fm.mealId); track item.id) {
