@@ -46,12 +46,12 @@ interface Macro {
       [class.editing]="editing()"
       [class.filled]="!isEmpty() && !slot().isDiningOut">
       @if (slot().isDiningOut) {
-        <div class="slot-header"><span class="slot-title">Slot {{ slot().slotOrder }}</span></div>
+        <div class="slot-header"><span class="slot-title">Meal Slot {{ slot().slotOrder }}</span></div>
         <div class="slot-placeholder dining-out">
           <span class="placeholder-icon">🍽️</span><span>Dining out</span>
         </div>
       } @else if (isEmpty()) {
-        <div class="slot-header"><span class="slot-title">Slot {{ slot().slotOrder }}</span></div>
+        <div class="slot-header"><span class="slot-title">Meal Slot {{ slot().slotOrder }}</span></div>
         <div
           class="slot-placeholder pick"
           [class.bloom]="dropHighlight()"
@@ -124,20 +124,25 @@ interface Macro {
                     (keydown.escape)="nameBox.value = clean(fm.mealName); onNameInput(fm.mealId, nameBox.value); nameBox.blur()"
                     (blur)="commitName(fm, nameBox.value)"
                     aria-label="Meal name" />
+                  <!-- Save disc is actionable ONLY when there are unsaved FOOD
+                       changes; a rename auto-saves to the Binder on its own, so it
+                       does not light this. Clicking prompts to persist food changes
+                       to the Binder. -->
                   <button
                     type="button"
-                    class="icon-disc"
-                    [class.icon-disc-confirm]="isDirty(fm.mealId) || nameDirty(fm)"
-                    matTooltip="Save changes"
+                    class="icon-disc save-disc"
+                    [class.icon-disc-confirm]="rotation.hasUnsavedFoodChanges(fm.mealId)"
+                    [disabled]="!rotation.hasUnsavedFoodChanges(fm.mealId)"
+                    matTooltip="Save food changes to your Binder"
                     (click)="pinMeal.emit(fm.mealId)">
                     <mat-icon>check</mat-icon>
                   </button>
                   <button
                     type="button"
                     class="back-clear-btn"
-                    matTooltip="Remove this meal"
+                    [matTooltip]="'Clear meal from Slot ' + slot().slotOrder"
                     (click)="removeMeal.emit({ slotOrder: slot().slotOrder, mealId: fm.mealId })">
-                    <mat-icon>delete</mat-icon>
+                    <mat-icon>clear_all</mat-icon>
                   </button>
                 </div>
 
@@ -149,9 +154,10 @@ interface Macro {
                   <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
                   <button
                     type="button"
-                    class="icon-disc add-affordance"
+                    class="add-food-btn add-affordance"
                     matTooltip="Add food to this meal"
                     (click)="toggleAdd.emit(fm.mealId)">
+                    <span>Add food</span>
                     <mat-icon>add</mat-icon>
                   </button>
                 </div>

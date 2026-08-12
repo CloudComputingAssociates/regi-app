@@ -145,6 +145,34 @@ export class RotationService {
     this.sessionEditedMeals.add(mealId);
   }
 
+  /** Meal ids carrying unsaved FOOD changes this session (item add / remove /
+   *  quantity) that have NOT been pushed to the Binder. Distinct from
+   *  sessionEditedMeals: a pure RENAME does not set this (renames auto-persist to
+   *  the Binder). This is the ONLY thing that makes the back-face save disc
+   *  actionable — it prompts "save food changes to Binder?". A reactive signal so
+   *  the disc lights/dims on OnPush. Cleared once the change is saved to the
+   *  Binder, or the meal leaves it. */
+  private readonly foodEditedMeals = signal<Set<number>>(new Set());
+
+  private markFoodEdited(mealId: number): void {
+    this.foodEditedMeals.update((s) => (s.has(mealId) ? s : new Set(s).add(mealId)));
+  }
+
+  private clearFoodEdited(mealId: number): void {
+    this.foodEditedMeals.update((s) => {
+      if (!s.has(mealId)) return s;
+      const next = new Set(s);
+      next.delete(mealId);
+      return next;
+    });
+  }
+
+  /** True when the meal has food changes not yet saved to the Binder — gates the
+   *  back-face save disc (enabled + green only then). */
+  hasUnsavedFoodChanges(mealId: number | null | undefined): boolean {
+    return mealId != null && this.foodEditedMeals().has(mealId);
+  }
+
   /** A meal's Binder pin icon is ALIVE when it's pinned, OR it's a still-verbatim
    *  clone (cloned && not yet diverged — updatedAt === createdAt to the second).
    *  Grey otherwise ("you'd lose this"). */
@@ -914,6 +942,7 @@ export class RotationService {
         this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, body),
       );
       this.mealsById.update((m) => new Map(m).set(mealId, updated));
+      this.clearFoodEdited(mealId); // now saved to the Binder → disc goes clean
       await Promise.all([this.loadBinder(), this.loadFolder()]);
       // Saving a meal you were building closes the food picker so the rail
       // returns to the Binder.
@@ -938,6 +967,7 @@ export class RotationService {
       // Back to a clean slotted meal — same as newly created (grey fork & knife),
       // so drop any session-edited flag.
       this.sessionEditedMeals.delete(mealId);
+      this.clearFoodEdited(mealId);
       await Promise.all([this.loadBinder(), this.loadFolder()]);
       this.notification.show('Removed from your Binder (still slotted)', 'success');
     } catch (err) {
@@ -1128,6 +1158,8 @@ export class RotationService {
       );
       this.cacheMenu(slot.menuId, menu);
       await this.loadMeal(mealId);
+      // Adding a food is an unsaved food change → light the back-face save disc.
+      this.markFoodEdited(mealId);
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
@@ -1147,6 +1179,7 @@ export class RotationService {
         this.http.delete(`${this.baseUrl}/meal/${editId}/items/${editItemId}`),
       );
       this.markSessionEdited(editId);
+      this.markFoodEdited(editId);
       if (menuId != null) {
         const menu = await firstValueFrom(
           this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
@@ -1175,6 +1208,7 @@ export class RotationService {
         this.http.put<MealItem>(`${this.baseUrl}/meal/${editId}/items/${editItemId}`, body),
       );
       this.markSessionEdited(editId);
+      this.markFoodEdited(editId);
       if (menuId != null) {
         const menu = await firstValueFrom(
           this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
@@ -1283,6 +1317,8 @@ export class RotationService {
         await this.refreshMenu(loc.menuId);
       }
       await this.loadBinder();
+      // The fork's food changes now live in the Binder original → disc goes clean.
+      this.clearFoodEdited(forkId);
       this.notification.show('Binder meal updated with your changes.', 'success');
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');

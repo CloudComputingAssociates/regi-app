@@ -124,12 +124,23 @@ export class MenusMealsComponent {
     }
   }
 
-  /** Green check — save a slotted meal. The NAME decides: a copy still named like
-   *  its Binder original overwrites it in place; otherwise it's pinned as a new,
-   *  independent Binder meal. No dialog; the service owns the rule. */
+  /** Save disc — the meal's FOOD changes are already saved to the slot instance
+   *  (write-through). Confirm whether to ALSO push them to the Binder permanently.
+   *  Confirm → saveSlottedCopy (NAME decides: overwrite the original in place, or
+   *  pin as a new independent Binder meal). Cancel → leave the change on the slot
+   *  instance only (the meal stays "modified"). A rename never reaches here — it
+   *  auto-saves to the Binder on blur without a prompt. */
   onPinMeal(mealId: number | null | undefined): void {
     if (mealId == null) return;
-    void this.rotation.saveSlottedCopy(mealId);
+    this.dialog.open(WipeConfirmDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: {
+        message:
+          'Changes saved to slot instance. Would you like to save food changes to Binder, permanently?',
+        confirmLabel: 'Save to Binder',
+        onConfirm: () => void this.rotation.saveSlottedCopy(mealId),
+      },
+    });
   }
 
   /** ✕ on a food row — remove that item from its meal. */

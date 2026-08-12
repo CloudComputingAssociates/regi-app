@@ -332,9 +332,10 @@
     align-items: center;
     gap: 6px;
 
-    // Blue "Name" caption sitting in front of the name box.
+    // Blue "Name" caption sitting in front of the name box. Fixed width so the
+    // macro row below can indent to line its discs up with the text box.
     .name-label {
-      flex: 0 0 auto;
+      flex: 0 0 38px;
       font-size: 12px;
       font-weight: 600;
       color: #4da6ff;
@@ -344,6 +345,12 @@
       flex: 1 1 auto;
       min-width: 0;
     }
+
+    // Save disc dims + goes inert when there are no unsaved food changes.
+    .save-disc:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
   }
 
   .macro-row {
@@ -351,8 +358,44 @@
     align-items: center;
     flex-wrap: nowrap;
     gap: 5px;
+    padding-left: 44px; // indent the discs to line up under the name text box
+
+    // Calories readout — blue, reads as a label (not a value chip).
+    .slot-cals {
+      color: #4da6ff;
+      font-size: 12px;
+      white-space: nowrap;
+    }
 
     .add-affordance { margin-left: auto; }
+  }
+
+  // "Add food +" — a round-cornered balloon (pill) button, right-pinned on the
+  // macro row. Label + a trailing plus glyph.
+  .add-food-btn {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 24px;
+    padding: 0 6px 0 11px;
+    color: #cfcfcf;
+    background: linear-gradient(180deg, #4d4d4d 0%, #3a3a3a 100%);
+    border: 1px solid #262626;
+    border-top-color: #6a6a6a;
+    border-radius: 12px; // pill / balloon
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    transition: color 0.12s ease, background 0.12s ease;
+
+    .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; }
+    &:hover { color: #ffffff; background: linear-gradient(180deg, #585858 0%, #444444 100%); }
+    &:active { transform: translateY(1px); }
   }
 }
 
@@ -417,11 +460,19 @@
   &:hover { color: #e6e6e6; }
 }
 
-// Ingredient list — tight interline rhythm (rows keep their own 3px padding).
+// Ingredient list — tight interline rhythm. Zero inter-row gap, and shave a pixel
+// off each row's own vertical padding (3px → 2px) so the list packs tighter.
+// Scoped to the back face so other food lists (lookaside / search) keep their
+// standard row height.
 .food-rows {
   display: flex;
   flex-direction: column;
   gap: 0;
+
+  ::ng-deep .food-row {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
 }
 
 // Dynamic-ingredients accordion (back).
