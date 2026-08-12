@@ -821,6 +821,73 @@ export class RotationService {
     }
   }
 
+  /** MOVE a slotted meal to another EMPTY slot in the SAME menu (drag a slot's
+   *  photo onto an empty slot). Add to the target FIRST, then detach from the
+   *  source — a half-failure never loses the meal (worst case it's briefly in
+   *  both). One refresh at the end. No-op if the target is the source slot. */
+  async moveMealToEmptySlot(
+    menuId: number,
+    fromSlotOrder: number,
+    toSlotOrder: number,
+    mealId: number,
+  ): Promise<void> {
+    if (fromSlotOrder === toSlotOrder) return;
+    try {
+      await this.addMealToSlot(menuId, toSlotOrder, mealId);
+      await firstValueFrom(
+        this.http.delete(`${this.baseUrl}/menu/${menuId}/slot/${fromSlotOrder}/meals/${mealId}`),
+      );
+      await this.refreshMenu(menuId);
+      await this.loadFolder();
+    } catch (err) {
+      this.notification.show(this.slotConflictMessage(err), 'error');
+      await this.refreshMenu(menuId); // resync the board to server truth
+    }
+  }
+
+  /** MOVE a slotted meal into a BRAND-NEW menu (drag a slot's photo onto the
+   *  "+ Add menu" tile). Mirrors addMenu's create+link, then places the meal in
+   *  the new menu's first slot and detaches it from the source slot, and selects
+   *  the new menu. */
+  async moveMealToNewMenu(
+    sourceMenuId: number,
+    sourceSlotOrder: number,
+    mealId: number,
+  ): Promise<void> {
+    const rot = this.rotation();
+    if (!rot?.id) return;
+    try {
+      const slotCount = this.settingsService.allSettings()?.regiMenu?.mealsPerDay ?? 4;
+      const menu = await firstValueFrom(
+        this.http.post<Menu>(`${this.baseUrl}/menu`, { slotCount }),
+      );
+      if (menu.id == null) return;
+      await firstValueFrom(
+        this.http.post(`${this.baseUrl}/rotation/${rot.id}/menus`, {
+          menuId: menu.id,
+          plannedCount: this.repeatBaseline(rot.spanDays),
+        }),
+      );
+      const firstSlot = menu.slots?.[0]?.slotOrder ?? 1;
+      await this.addMealToSlot(menu.id, firstSlot, mealId);
+      await firstValueFrom(
+        this.http.delete(
+          `${this.baseUrl}/menu/${sourceMenuId}/slot/${sourceSlotOrder}/meals/${mealId}`,
+        ),
+      );
+      const detail = await firstValueFrom(
+        this.http.get<RotationDetail>(`${this.baseUrl}/rotation/${rot.id}`),
+      );
+      this.rotation.set(detail);
+      await this.refreshMenu(sourceMenuId); // source lost a meal
+      this.selectedMenuId.set(menu.id);
+      await this.selectMenu(menu.id);
+      await this.loadFolder();
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
   /** Map a slot-append 409 to a specific, human message; fall back to the generic
    *  error text for anything else. */
   private slotConflictMessage(err: unknown): string {

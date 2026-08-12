@@ -32,6 +32,7 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
             (pinMeal)="onPinMeal($event)"
             (editItem)="onEditItem($event)"
             (removeItem)="onRemoveItem($event)"
+            (slotDragEnded)="onSlotDragEnded($event)"
             (dropFood)="rotation.addFoodToEditingMeal($event.food, $event.serving)" />
         }
       </div>
@@ -110,6 +111,42 @@ export class MenusMealsComponent {
         onConfirm: () => this.rotation.clearSlot(menuId, slotOrder),
       },
     });
+  }
+
+  /** A slot photo was dragged and released. Route geometrically by what's under
+   *  the release point (the slot-meal drag is rejected by every drop-list
+   *  predicate, so nothing else consumes it):
+   *    • "+ Add menu" tile   → move it into a brand-new menu
+   *    • an EMPTY slot        → move it there (source slot clears)
+   *    • the same/occupied slot → no-op
+   *    • the Binder rail / a dialog → no-op (guard against accidental clears)
+   *    • anything else (macro bar / dead board space) → CLEAR the source slot
+   *  Clear keeps the Binder copy — same as the back-face clear key. */
+  onSlotDragEnded(e: { slotOrder: number; mealId: number; point: { x: number; y: number } }): void {
+    const menuId = this.menu()?.id;
+    if (menuId == null) return;
+    const el = document.elementFromPoint(e.point.x, e.point.y) as HTMLElement | null;
+
+    if (el?.closest('.add-menu-link')) {
+      void this.rotation.moveMealToNewMenu(menuId, e.slotOrder, e.mealId);
+      return;
+    }
+
+    const slotEl = el?.closest('.slot-card') as HTMLElement | null;
+    if (slotEl) {
+      const targetOrder = Number(slotEl.getAttribute('data-slot-order'));
+      const targetEmpty = slotEl.getAttribute('data-slot-empty') === 'true';
+      // Same slot, an occupied slot, or an unreadable target → no-op.
+      if (Number.isNaN(targetOrder) || targetOrder === e.slotOrder || !targetEmpty) return;
+      void this.rotation.moveMealToEmptySlot(menuId, e.slotOrder, targetOrder, e.mealId);
+      return;
+    }
+
+    // Released over the Binder or an open dialog → snap back, don't clear.
+    if (el?.closest('app-meal-binder') || el?.closest('.cdk-overlay-container')) return;
+
+    // Out of the slot area entirely → clear this slot (keep the Binder copy).
+    void this.rotation.removeMealFromSlot(menuId, e.slotOrder, e.mealId);
   }
 
   /** + on a meal (back face) — toggle it as the lookaside food-add target. */

@@ -20,7 +20,7 @@ import {
 } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
-import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
+import { CdkDrag, CdkDragDrop, CdkDragEnd, DragDropModule } from '@angular/cdk/drag-drop';
 import { MealItem, MenuSlot, MenuSlotMeal } from '../../models';
 import { Food } from '../../models/food.model';
 import { FoodComponent } from '../food/food';
@@ -44,7 +44,9 @@ interface Macro {
       class="slot-card"
       [class.empty]="isEmpty()"
       [class.editing]="editing()"
-      [class.filled]="!isEmpty() && !slot().isDiningOut">
+      [class.filled]="!isEmpty() && !slot().isDiningOut"
+      [attr.data-slot-order]="slot().slotOrder"
+      [attr.data-slot-empty]="isEmpty()">
       @if (slot().isDiningOut) {
         <div class="slot-header"><span class="slot-title">Meal Slot {{ slot().slotOrder }}</span></div>
         <div class="slot-placeholder dining-out">
@@ -73,7 +75,17 @@ interface Macro {
               [cdkDropListEnterPredicate]="appendPredicate"
               (cdkDropListDropped)="onDropMeal($event)">
               @for (m of meals(); track m.mealId) {
-                <div class="meal-tile">
+                <!-- The photo is draggable: drop it on an EMPTY slot to move it,
+                     on "+ Add menu" to start a new menu with it, or out of the
+                     slot area (macro bar / dead space) to clear the slot. A drop
+                     on the same/occupied slot is a no-op. Routing is geometric in
+                     onTileDragEnded — no drop list consumes this drag. -->
+                <div
+                  class="meal-tile"
+                  cdkDrag
+                  [cdkDragData]="{ fromSlot: true, slotOrder: slot().slotOrder, mealId: m.mealId }"
+                  (cdkDragStarted)="rotation.dragging.set('meal')"
+                  (cdkDragEnded)="onTileDragEnded(m.mealId, $event)">
                   @if (tileImage(m); as src) {
                     <img class="tile-img" [src]="src" alt="" />
                   } @else {
@@ -90,6 +102,14 @@ interface Macro {
                     (click)="flipTo(m.mealId, $event)">
                     <mat-icon>flip_camera_android</mat-icon>
                   </button>
+                  <!-- Drag cursor shows the meal photo (name over a scrim). -->
+                  <div class="drag-tile-preview" *cdkDragPreview>
+                    @if (tileImage(m); as src) {
+                      <img [src]="src" alt="" class="dtp-img" />
+                      <div class="dtp-scrim"></div>
+                    }
+                    <span class="dtp-name">{{ clean(m.mealName) }}</span>
+                  </div>
                 </div>
               }
               @if (meals().length === 3) {
@@ -243,6 +263,10 @@ export class MealComponent {
   readonly removeItem = output<{ mealId: number; item: MealItem }>();
   /** A lookaside food dropped on this meal (kept for the editing food-add flow). */
   readonly dropFood = output<{ food: Food; serving: number }>();
+  /** The slot photo was dragged and released — the parent (which owns the menu
+   *  id + rotation ops) geometrically routes it: move to an empty slot, start a
+   *  new menu, clear the slot, or no-op. `point` is the release position. */
+  readonly slotDragEnded = output<{ slotOrder: number; mealId: number; point: { x: number; y: number } }>();
 
   /** Stacked meals, ordered by position. */
   readonly meals = computed<MenuSlotMeal[]>(() =>
@@ -283,6 +307,14 @@ export class MealComponent {
 
   flipHome(): void {
     this.flippedMealId.set(null);
+  }
+
+  /** The slot photo drag ended — clear the drag affordance and bubble the release
+   *  point up so the parent can route the outcome (move / new menu / clear). */
+  onTileDragEnded(mealId: number, event: CdkDragEnd): void {
+    this.rotation.dragging.set(null);
+    const p = event.dropPoint;
+    this.slotDragEnded.emit({ slotOrder: this.slot().slotOrder, mealId, point: { x: p.x, y: p.y } });
   }
 
   /** Summed slot macros (front strip). */
