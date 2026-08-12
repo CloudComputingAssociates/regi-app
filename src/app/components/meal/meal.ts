@@ -113,6 +113,7 @@ interface Macro {
                   <mat-icon>flip_camera_android</mat-icon>
                 </button>
                 <div class="back-head">
+                  <span class="name-label">Name</span>
                   <input
                     #nameBox
                     type="text"
@@ -133,23 +134,12 @@ interface Macro {
                   </button>
                   <button
                     type="button"
-                    class="icon-disc icon-disc-danger"
+                    class="back-clear-btn"
                     matTooltip="Remove this meal"
                     (click)="removeMeal.emit({ slotOrder: slot().slotOrder, mealId: fm.mealId })">
-                    <mat-icon>delete_outline</mat-icon>
+                    <mat-icon>delete</mat-icon>
                   </button>
                 </div>
-
-                @if (recipeLinkFor(fm.mealId); as link) {
-                  <!-- Provenance — only shown when we KNOW it (a recipe import
-                       carries the source PDF link). -->
-                  <span class="meal-source">(from recipe import)</span>
-                  <button
-                    type="button"
-                    class="recipe-link"
-                    matTooltip="Open the source recipe PDF"
-                    (click)="openRecipe(link)">Recipe Link (.PDF)</button>
-                }
 
                 <div class="macro-row">
                   <span class="chip protein">P {{ round(mac(fm.macros).proteinG) }}</span>
@@ -165,6 +155,16 @@ interface Macro {
                     <mat-icon>add</mat-icon>
                   </button>
                 </div>
+
+                @if (recipeLinkFor(fm.mealId); as link) {
+                  <!-- White recipe link — shown only when the meal carries a
+                       source PDF (recipe import). -->
+                  <button
+                    type="button"
+                    class="recipe-link"
+                    matTooltip="Open the source recipe PDF"
+                    (click)="openRecipe(link)">Click here for recipe (PDF)</button>
+                }
 
                 <div class="food-rows">
                   @for (item of mainItemsFor(fm.mealId); track item.id) {
@@ -202,20 +202,6 @@ interface Macro {
             </div>
           </div>
         </div>
-        <!-- Front-photo overlay: the square Clear key (top-left); the per-tile
-             flip sits top-right. No "Slot N" label here — the slot number shows
-             only on the empty slot, before a meal is dragged in. Hidden on the
-             back (detail) face, which carries its own controls. -->
-        @if (flippedMeal() == null) {
-          <button
-            type="button"
-            class="slot-clear-overlay"
-            matTooltip="Clear this slot (all meals)"
-            matTooltipPosition="above"
-            (click)="deleteMeal.emit(slot().slotOrder)">
-            <mat-icon>clear_all</mat-icon>
-          </button>
-        }
       }
     </div>
   `,

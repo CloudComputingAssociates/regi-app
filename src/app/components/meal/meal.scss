@@ -36,28 +36,24 @@
   }
 }
 
-// Square "Clear" key over the photo, top-left — same white / thin-grey-line /
-// squared look as the Binder filter's clear-all key.
-.slot-clear-overlay {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  z-index: 3;
+// Grey square "remove this meal" key — the destructive control lives ONLY on the
+// back (detail) face, top-right of its title row. Replaces the old red disc.
+.back-clear-btn {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 26px;
   height: 26px;
   padding: 0;
-  color: #1a1a1a;
-  background: #ffffff;
-  border: 1px solid #9a9ea3;
+  color: #e0e0e0;
+  background: #555555;
+  border: 1px solid #6a6a6a;
   border-radius: 2px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   cursor: pointer;
 
-  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
-  &:hover { background: #f0f0f0; }
+  .mat-icon { width: 17px; height: 17px; font-size: 17px; line-height: 17px; }
+  &:hover { background: #616161; color: #ffffff; }
   &:active { transform: translateY(1px); }
 }
 
@@ -313,16 +309,11 @@
 
   .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; }
 }
-// Flip ⟳ — the BACK "flip to photo" key stays bottom-right; the FRONT tiles put
-// it in the upper-RIGHT corner (per request). Delete lives on the back title row.
+// Flip ⟳ — bottom-right corner on BOTH faces (front tiles + the back), so the two
+// flip keys line up. All edits (remove/save) live on the back title row.
 .tile-flip {
   top: auto;
   bottom: 6px;
-  right: 6px;
-}
-.meal-tile .tile-flip {
-  top: 6px;
-  bottom: auto;
   right: 6px;
 }
 
@@ -340,6 +331,14 @@
     display: flex;
     align-items: center;
     gap: 6px;
+
+    // Blue "Name" caption sitting in front of the name box.
+    .name-label {
+      flex: 0 0 auto;
+      font-size: 12px;
+      font-weight: 600;
+      color: #4da6ff;
+    }
 
     .meal-name-box {
       flex: 1 1 auto;
@@ -404,24 +403,25 @@
   color: #ffffff;
 }
 
-// Recipe link — standing underline.
+// Recipe link — white standing underline, sits right under the macro discs.
 .recipe-link {
   align-self: flex-start;
   padding: 0;
   border: none;
   background: none;
   font-size: 12px;
-  color: #4da6ff;
+  color: #ffffff;
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
-  &:hover { color: #7fbfff; }
+  &:hover { color: #e6e6e6; }
 }
 
+// Ingredient list — tight interline rhythm (rows keep their own 3px padding).
 .food-rows {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
 }
 
 // Dynamic-ingredients accordion (back).
