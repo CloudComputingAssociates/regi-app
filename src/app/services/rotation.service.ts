@@ -888,6 +888,43 @@ export class RotationService {
     }
   }
 
+  /** MOVE a slotted meal into ANOTHER existing menu (drag a slot's photo onto a
+   *  menu tile in the strip). Fetches the target menu to find its first empty,
+   *  non-dining slot, places the meal there, then detaches it from the source.
+   *  The source menu stays selected (the meal simply leaves it). Both menus'
+   *  caches refresh so the strip tallies update. No empty slot → toast + no-op. */
+  async moveMealToMenu(
+    sourceMenuId: number,
+    sourceSlotOrder: number,
+    mealId: number,
+    targetMenuId: number,
+  ): Promise<void> {
+    if (targetMenuId === sourceMenuId) return;
+    try {
+      const target = await firstValueFrom(
+        this.http.get<Menu>(`${this.baseUrl}/menu/${targetMenuId}`),
+      );
+      const slot = target.slots?.find((s) => !s.isDiningOut && this.slotEmpty(s));
+      if (slot == null) {
+        this.notification.show(`"${target.name ?? 'That menu'}" has no empty slot.`, 'error');
+        return;
+      }
+      await this.addMealToSlot(targetMenuId, slot.slotOrder, mealId);
+      await firstValueFrom(
+        this.http.delete(
+          `${this.baseUrl}/menu/${sourceMenuId}/slot/${sourceSlotOrder}/meals/${mealId}`,
+        ),
+      );
+      await this.refreshMenu(sourceMenuId);
+      await this.refreshMenu(targetMenuId);
+      await this.loadFolder();
+      this.notification.show(`Moved to "${target.name ?? 'menu'}"`, 'success');
+    } catch (err) {
+      this.notification.show(this.slotConflictMessage(err), 'error');
+      await this.refreshMenu(sourceMenuId); // resync the board to server truth
+    }
+  }
+
   /** Map a slot-append 409 to a specific, human message; fall back to the generic
    *  error text for anything else. */
   private slotConflictMessage(err: unknown): string {

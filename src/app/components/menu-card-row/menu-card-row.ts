@@ -22,6 +22,7 @@ import { RotationService } from '../../services/rotation.service';
           <div
             class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
+            [attr.data-menu-id]="menu.menuId"
             (click)="menuSelect.emit(menu.menuId)">
             <!-- Top strip: the rename box leads; a bare green check sits just to
                  its RIGHT (save to Binder), delete pins to the upper-right. -->
