@@ -578,33 +578,43 @@
 
 .section-head {
   display: flex;
-  align-items: flex-end; // tabs sit at the top of the page, controls at their base
+  align-items: flex-end; // the tab sits on top of its sheet; controls align to its base
   gap: 8px;
   width: 100%;
   box-sizing: border-box;
-  margin: 3px 0 2px; // sits at the top of the section's page panel
-  padding: 0 8px; // the tab carries its own padding
+  margin: 0;
+  padding: 0; // the tab bleeds to the left content edge, flush with its sheet
   background: transparent;
   border: none;
-  color: #d8d8d8;
+  color: #3a3f45;
   cursor: pointer;
   text-align: left;
 
-  // Menus / Meals label as a binder index-tab: mostly TRANSPARENT (the ruled
-  // paper shows through) with a faint grey scrim and a defined outline rule, so
-  // it reads as a shape rather than a solid block. White label — no blue.
+  // Menus / Meals as a real binder tab: a solid COLOURED tab (blue = Menus,
+  // green = Meals) with a rounded top, sitting flush on top of its list sheet
+  // (1px overlap) so the sheet reads as beginning underneath it.
   .section-tab {
     display: inline-flex;
     align-items: baseline;
-    gap: 4px;
-    padding: 5px 16px 6px;
-    background: #ffffff; // hard, solid white (no opacity)
-    border: 1px solid #000000; // 1px black outline
-    border-radius: 10px 10px 0 0;
+    gap: 5px;
+    padding: 7px 16px 8px;
+    border: none;
+    border-radius: 12px 12px 0 0;
+    margin-bottom: -1px; // overlap the sheet's top edge → reads as "attached"
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.06);
 
-    .section-label,
+    &.menus { background: #3b7de0; } // blue = Menus
+    &.meals { background: #5a9e4f; } // green = Meals
+
+    .section-label {
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 700;
+      text-shadow: none;
+    }
     .section-count {
-      color: #1a1a1a; // black ink
+      color: rgba(255, 255, 255, 0.82);
+      font-weight: 600;
       text-shadow: none;
     }
   }
@@ -630,65 +640,68 @@
   // Add / Filter are lightweight GHOST controls — no box, no outline — so they
   // stay subordinate to the outlined white section tabs. Black text + icon on the
   // paper; a faint pill appears only on hover / when active.
+  // Add — a quiet SOLID button (white face, hairline border) so it reads as the
+  // primary action without competing with the green tab.
   .create-icon-btn {
     flex: 0 0 auto;
     margin-left: 8px;
     display: inline-flex;
     align-items: center;
-    gap: 2px;
+    gap: 3px;
     height: 26px;
-    padding: 0 7px;
+    padding: 0 10px;
     color: #1a1a1a;
-    background: transparent;
-    border: none;
-    border-radius: 6px;
+    background: #ffffff;
+    border: 1px solid #d5d8dd;
+    border-radius: 8px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
     cursor: pointer;
-    transition: background 0.12s ease;
+    transition: background 0.12s ease, border-color 0.12s ease;
 
     .create-word { font-size: 12px; font-weight: 600; color: #1a1a1a; }
     .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; color: #1a1a1a; }
 
-    &:hover { background: rgba(0, 0, 0, 0.08); }
+    &:hover { background: #f4f5f7; border-color: #c3c7cd; }
     &:active { transform: translateY(1px); }
   }
 
-  // Filter stays right-justified.
+  // Filter stays right-justified — a lighter OUTLINED utility (quieter than Add).
   .filter-toggle { margin-left: auto; }
 
-  // "Filter (ON)" — a persistent faint pill + underline marks it active.
+  // "Filter (ON)" — a soft tint marks it active.
   .filter-toggle.filter-on {
-    background: rgba(0, 0, 0, 0.1);
+    background: #eef1f5;
+    border-color: #c3c7cd;
     .create-word { text-decoration: underline; text-underline-offset: 2px; }
   }
 
-  // Filter — same ghost treatment as Add.
   .create-toggle {
     display: inline-flex;
     align-items: center;
-    gap: 2px;
+    gap: 3px;
     height: 26px;
     box-sizing: border-box;
-    padding: 0 7px;
-    border: none;
-    border-radius: 6px;
+    padding: 0 10px;
+    border: 1px solid #d5d8dd;
+    border-radius: 8px;
     background: transparent;
-    color: #1a1a1a;
+    color: #3a3f45;
     font-family: inherit;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.12s ease;
+    transition: background 0.12s ease, border-color 0.12s ease;
 
-    .create-word { color: #1a1a1a; white-space: nowrap; }
+    .create-word { color: #3a3f45; white-space: nowrap; }
     .create-chevron {
       width: 15px;
       height: 15px;
       font-size: 15px;
       line-height: 15px;
-      color: #1a1a1a;
+      color: #6a6f75;
     }
 
-    &:hover { background: rgba(0, 0, 0, 0.08); }
+    &:hover { background: #f4f5f7; border-color: #c3c7cd; }
     &:active { transform: translateY(1px); }
   }
 
@@ -732,20 +745,21 @@
     font-weight: 400;
     color: #4da6ff;
   }
-  // Menus accordion chevron — a black disk with a white arrow (like the cards).
+  // Menus accordion chevron — a quiet grey glyph on the paper (no dark disc).
   .section-chevron {
     margin-left: auto; // pushed to the far right; the count stays by the title
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
-    font-size: 16px;
-    line-height: 16px;
-    color: #ffffff;
-    background: #3a3a3a; // grey, matching the macros component background
+    width: 24px;
+    height: 24px;
+    font-size: 18px;
+    line-height: 18px;
+    color: #6a6f75;
+    background: transparent;
     border-radius: 50%;
+    &:hover { background: rgba(0, 0, 0, 0.06); color: #333; }
   }
 
   &:hover {
@@ -753,42 +767,38 @@
   }
 }
 
-// Section body sizes to content; the rail-scroll wrapper owns the scrollbar.
-// Tight vertical rhythm so more meal cards fit on screen — small inter-card gap,
-// minimal top/bottom padding.
+// The list is ONE white sheet sitting on the page; the tab tucks under its
+// top-left corner. Rows live INSIDE it (hairline dividers), not as floating cards.
 .section-body {
-  padding: 3px 8px 5px; // tighter L/R to jive with the board meal cards' spacing
+  background: #ffffff;
+  border: 1px solid #e3e5ea;
+  border-radius: 0 12px 12px 12px; // top-left square so the tab meets it cleanly
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 6px 16px rgba(0, 0, 0, 0.06);
+  padding: 2px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
 }
 
-// ---- Binder inner accordion groups (Menus / Meals) ----
-// Binder cards (menu + meal) share one box + head-row layout. The menu variant
-// additionally carries the global .stacked-card silhouette.
+// ---- Rows inside the sheet (Menus / Meals) ----
+// Flat rows — no per-row box/outline/shadow; a hairline divider separates them.
 .binder-menu-card,
 .binder-card {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 4px 4px 4px 12px; // tight top/bottom around the thumbnail; tight RHS for the trash
-  border: 1px solid #000000; // 1px black outline
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.75); // see-through white, opaque enough to keep text crisp
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  padding: 8px 2px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 1px solid #eceef1; // hairline divider between rows
+  &:last-child { border-bottom: none; }
 }
 
-// The global .stacked-card ::before paints its dark charcoal slab OVER this card's
-// OWN background — a z-index:-1 pseudo-element paints above the parent's background
-// (only below the parent's text), so `background:#ffffff` never covered it and the
-// black card text was sitting on a dark face (unreadable). Kill the pseudo-element
-// here and fake the "stack" edge with an offset shadow that never covers the face.
-.binder-menu-card {
-  background: #ffffff;
-  box-shadow:
-    4px 5px 0 -1px #4a4a4a, // dark "card behind" peeking at bottom-right
-    0 1px 3px rgba(0, 0, 0, 0.3);
-}
+// The .stacked-card dark slab has no place in the flat sheet — remove it.
 .binder-menu-card.stacked-card::before,
 .binder-menu-card.selected::before {
   content: none;
@@ -799,21 +809,11 @@
   &:active { cursor: grabbing; }
 }
 
-// Single-select: yellow "bloom" border on the clicked card.
+// Single-select: a soft amber ROW tint (no glow box) — calm, sheet-native.
 .binder-menu-card.selected,
 .binder-card.selected {
-  border-color: #ffd54f;
-  box-shadow:
-    0 0 0 1px #ffd54f,
-    0 0 12px rgba(255, 213, 79, 0.5);
-}
-
-// A menu card's stacked-card silhouette (::before) is a dark edge that peeks
-// bottom-right — on selection it would cut through the yellow glow. Tint the
-// peeking edge yellow so the selection reads as one clean stacked outline.
-.binder-menu-card.selected::before {
-  border-color: #ffd54f;
-  background: linear-gradient(180deg, #5a5220 0%, #3e3a18 100%);
+  background: rgba(255, 213, 79, 0.18);
+  border-radius: 6px;
 }
 
 // One row: [name (grows)][chevron][P][Fiber][trash]. The chevron leads the
@@ -898,33 +898,32 @@
     flex: 0 0 auto;
   }
 
-  // Calories on the head line — small + black.
+  // Calories on the head line — small + muted (metadata).
   .binder-cals {
     flex: 0 0 auto;
     font-size: 12px;
-    font-weight: 600;
-    color: #1a1a1a;
+    font-weight: 500;
+    color: #6a6f75;
     white-space: nowrap;
   }
 
-  // Chevron that shows/hides the extra macros — a black disk with a white arrow
-  // so it reads clearly on any card background.
+  // Chevron that shows/hides the extra macros — a quiet grey glyph (no dark disc).
   .card-toggle {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: none;
     border-radius: 50%;
-    background: #3a3a3a; // grey, matching the macros component background
-    color: #ffffff;
+    background: transparent;
+    color: #6a6f75;
     cursor: pointer;
 
-    .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; color: #ffffff; }
-    &:hover { background: #4a4a4a; }
+    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; color: #6a6f75; }
+    &:hover { background: #f0f1f3; color: #333333; }
   }
 
   // Extra breathing room before the trash so a user aiming for the chevron

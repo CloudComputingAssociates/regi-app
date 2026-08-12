@@ -58,7 +58,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
         <!-- Menus accordion (top-level; larger header). Starts COLLAPSED. -->
         <div class="rail-section">
           <button type="button" class="section-head" (click)="binderMenusOpen.set(!binderMenusOpen())">
-            <span class="section-tab">
+            <span class="section-tab menus">
               <span class="section-label">Menus</span>
               <span class="section-count">({{ rotation.binderMenus().length }})</span>
             </span>
@@ -130,7 +130,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
              the space above the list. This is the ONLY create surface. -->
         <div class="rail-section">
           <div class="section-head section-head-static section-head-meals">
-            <span class="section-tab">
+            <span class="section-tab meals">
               <span class="section-label">Meals</span>
               <span class="section-count">({{ rotation.binderMeals().length }})</span>
             </span>

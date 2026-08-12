@@ -41,15 +41,6 @@ import { RotationService } from '../../services/rotation.service';
                 (keydown.escape)="nameBox.value = displayName(menu, i); nameBox.blur()"
                 (blur)="onNameBlur(menu, i, nameBox.value)"
                 aria-label="Menu name" />
-              <!-- Square Clear key — removes this menu from the plan. -->
-              <button
-                type="button"
-                class="menu-clear"
-                matTooltip="Clear this Menu"
-                matTooltipPosition="above"
-                (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
-                <mat-icon>clear_all</mat-icon>
-              </button>
               <!-- Permanent save check: GREEN + clickable only when the box holds a
                    REAL name (Binder saves happen for named menus only); grey + inert
                    for the "Menu N" seed, so an errant char that's backspaced away
@@ -65,6 +56,15 @@ import { RotationService } from '../../services/rotation.service';
                 (mousedown)="$event.preventDefault()"
                 (click)="$event.stopPropagation(); onSaveCheck(menu, i)">
                 <mat-icon>check</mat-icon>
+              </button>
+              <!-- Square Clear key — removes this menu from the plan. -->
+              <button
+                type="button"
+                class="menu-clear"
+                matTooltip="Clear this Menu"
+                matTooltipPosition="above"
+                (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
+                <mat-icon>clear_all</mat-icon>
               </button>
             </div>
           </div>

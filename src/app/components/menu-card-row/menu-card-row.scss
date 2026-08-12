@@ -114,14 +114,15 @@
   }
 
   // Name box — a clearly-visible WHITE field (dark ink) so the typed name reads
-  // sharp on the dark card. Grows to fill the row.
+  // sharp on the dark card. Grows to fill the row. Slim padding/size to keep the
+  // card's original single-row height.
   .menu-name-box {
     flex: 1 1 auto;
     min-width: 0;
     box-sizing: border-box;
-    padding: 3px 8px;
+    padding: 2px 8px;
     font-family: inherit;
-    font-size: 13px;
+    font-size: 12px;
     color: #1a1a1a;
     background: #ffffff;
     border: 1px solid #9a9ea3;
@@ -132,45 +133,46 @@
     &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.35); }
   }
 
-  // Square Clear key — grey, matching the meal card's clear key family.
+  // Save + Clear share the same square-button family. Check (save) leads; Clear
+  // follows. Both 22px tall so the row keeps its original slim height.
+  .menu-save,
   .menu-clear {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 26px;
-    height: 24px;
+    height: 22px;
     padding: 0;
-    color: #e0e0e0;
-    background: #555555;
     border: 1px solid #6a6a6a;
     border-radius: 2px;
     cursor: pointer;
 
-    .mat-icon { width: 17px; height: 17px; font-size: 17px; line-height: 17px; }
-    &:hover { background: #616161; color: #ffffff; }
+    .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; }
     &:active { transform: translateY(1px); }
   }
 
-  // Permanent save check — grey + inert by default; green + clickable only when
-  // .active (the name is real). A bare check (no disc), sized to the row.
+  // Clear — grey square.
+  .menu-clear {
+    color: #e0e0e0;
+    background: #555555;
+    &:hover { background: #616161; color: #ffffff; }
+  }
+
+  // Save — a grey square BUTTON at rest, turning solid green only when .active
+  // (the box holds a real name); inert/disabled otherwise.
   .menu-save {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    border: none;
-    background: none;
-    color: #5a5a5a; // grey at rest / disabled
-    cursor: pointer;
+    color: #cfcfcf;
+    background: #555555;
+    &:hover { background: #616161; }
 
-    .mat-icon { width: 20px; height: 20px; font-size: 20px; line-height: 20px; }
-
-    &.active { color: #28c941; &:hover { color: #34d651; } }
-    &:disabled { cursor: default; }
+    &.active {
+      color: #ffffff;
+      background: #28c941;
+      border-color: #1f7a2e;
+      &:hover { background: #23b23a; }
+    }
+    &:disabled { opacity: 0.5; cursor: default; }
   }
 
   // Chevron that reveals/hides the macro line — sits on the title row's far right.
