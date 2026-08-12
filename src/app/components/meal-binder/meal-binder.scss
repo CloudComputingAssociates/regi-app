@@ -62,9 +62,12 @@
   .binder-title {
     display: inline-flex;
     align-items: center;
-    font-size: 20px; // match the "Menus & Meals" toolbar title exactly
-    font-weight: 600; // ...same weight too
-    color: #1a1a1a; // black ink on the white page
+    // Match the "Menus & Meals" toolbar title EXACTLY: same size + weight, and the
+    // same Roboto face (override the Binder's Inter so the two headings are twins).
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a; // black ink on the white page (blue on the board is intentional)
   }
 
   // Always-on meal search — right-justified in the header (space-between gives
@@ -767,16 +770,14 @@
   }
 }
 
-// The list is ONE white sheet sitting on the page; the tab tucks under its
-// top-left corner. Rows live INSIDE it (hairline dividers), not as floating cards.
+// TRANSLUCENT list — the ruled notebook paper shows THROUGH (a solid white sheet
+// read as pasted-on, not part of the page). No fill / border / shadow; rows are
+// transparent and separated by faint hairlines, only a selected row tints.
 .section-body {
-  background: #ffffff;
-  border: 1px solid #e3e5ea;
-  border-radius: 0 12px 12px 12px; // top-left square so the tab meets it cleanly
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 6px 16px rgba(0, 0, 0, 0.06);
-  padding: 2px 12px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 2px 10px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -794,7 +795,7 @@
   border: none;
   border-radius: 0;
   box-shadow: none;
-  border-bottom: 1px solid #eceef1; // hairline divider between rows
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08); // faint hairline over the paper
   &:last-child { border-bottom: none; }
 }
 
@@ -809,10 +810,11 @@
   &:active { cursor: grabbing; }
 }
 
-// Single-select: a soft amber ROW tint (no glow box) — calm, sheet-native.
+// Single-select: a translucent amber ROW tint (30%) — the ruled lines still read
+// through it, staying cohesive with the paper.
 .binder-menu-card.selected,
 .binder-card.selected {
-  background: rgba(255, 213, 79, 0.18);
+  background: rgba(255, 213, 79, 0.3);
   border-radius: 6px;
 }
 

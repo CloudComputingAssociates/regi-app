@@ -76,12 +76,13 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 3px; // drastically tighter — collapsed card is a single slim row
+  justify-content: center; // vertically center the row in the taller card
   // ~90% of the meal card's 280px base — intentionally narrower so the menu
   // strip reads as a separate set of things, not lined up with the meal grid.
   width: 252px;
   min-width: 252px;
-  padding: 3px 4px 3px 8px; // tight RHS — delete rides near the right edge
+  min-height: 56px; // taller again — a bigger, more navigable drag-drop target
+  padding: 10px; // roomier so the drop zone is easy to hit
   border: 2px solid #4a4a4a;
   border-radius: 8px;
   background: #3a3a3a; // match the macro bar shade for a uniform card family
