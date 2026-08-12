@@ -778,11 +778,20 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
-// Menu cards carry the .stacked-card charcoal backing (::before). At 75% opacity
-// that dark edge bled through the whole face and greyed the card out; give the
-// menu face an OPAQUE white so only the intended 4px bottom-right edge peeks.
+// The global .stacked-card ::before paints its dark charcoal slab OVER this card's
+// OWN background — a z-index:-1 pseudo-element paints above the parent's background
+// (only below the parent's text), so `background:#ffffff` never covered it and the
+// black card text was sitting on a dark face (unreadable). Kill the pseudo-element
+// here and fake the "stack" edge with an offset shadow that never covers the face.
 .binder-menu-card {
   background: #ffffff;
+  box-shadow:
+    4px 5px 0 -1px #4a4a4a, // dark "card behind" peeking at bottom-right
+    0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.binder-menu-card.stacked-card::before,
+.binder-menu-card.selected::before {
+  content: none;
 }
 
 .binder-card {
