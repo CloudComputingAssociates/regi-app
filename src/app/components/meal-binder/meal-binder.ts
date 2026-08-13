@@ -40,25 +40,15 @@ import { Meal, Menu, MealSetSummary } from '../../models';
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
         <span class="binder-title">binder</span>
-        <!-- Right cluster: the always-on meal search + a Collapse-all key. -->
-        <div class="header-right">
-          <input
-            type="text"
-            class="header-search"
-            placeholder="Search meals..."
-            matTooltip="Search a meal by name, or type any ingredient"
-            matTooltipPosition="below"
-            [value]="searchText()"
-            (input)="searchText.set($any($event.target).value)" />
-          <button
-            type="button"
-            class="collapse-all-btn"
-            matTooltip="Collapse all"
-            matTooltipPosition="below"
-            (click)="collapseAll()">
-            <mat-icon>unfold_less</mat-icon>
-          </button>
-        </div>
+        <!-- Collapse-all key pinned to the top-right corner. -->
+        <button
+          type="button"
+          class="collapse-all-btn"
+          matTooltip="Collapse all"
+          matTooltipPosition="below"
+          (click)="collapseAll()">
+          <mat-icon>unfold_less</mat-icon>
+        </button>
       </div>
 
       <!-- One scrollbar for the whole rail. -->
@@ -146,19 +136,24 @@ import { Meal, Menu, MealSetSummary } from '../../models';
               <span class="section-label">meals</span>
               <span class="section-count">({{ rotation.binderMeals().length }})</span>
             </span>
-            <!-- Create: a Material + (add) icon key, same size/shading as the
-                 board toolbar keys, sitting right after "Meals (n)" with the same
-                 gap the Menus & Meals title has before its keys. Blooms the AI
-                 Create Meal overlay over the board. -->
+            <!-- [+] square Add key — blooms the AI Create Meal overlay. -->
             <button
               type="button"
               class="create-icon-btn"
               matTooltip="Add meals to your Binder"
               matTooltipPosition="above"
               (click)="createMeal.emit()">
-              <span class="create-word">Add</span>
               <mat-icon>add</mat-icon>
             </button>
+            <!-- Search fills between Add and Filter. -->
+            <input
+              type="text"
+              class="header-search"
+              placeholder="Search meals..."
+              matTooltip="Search a meal by name, or type any ingredient"
+              matTooltipPosition="above"
+              [value]="searchText()"
+              (input)="searchText.set($any($event.target).value)" />
             <!-- Filter stays right-justified. -->
             <button type="button" class="create-toggle filter-toggle" [class.filter-on]="filterActive()" (click)="toggleFilterPanel()">
               <span class="create-word">Filter{{ filterActive() ? ' on' : '' }}</span>

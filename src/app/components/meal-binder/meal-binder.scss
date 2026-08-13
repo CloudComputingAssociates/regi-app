@@ -56,71 +56,36 @@
 // Matches the menus toolbar + lookaside header: one 44px raised bar, content
 // vertically centered so "Meals" lines up with "Scale" and swaps don't jump.
 .binder-header {
+  position: relative; // anchor the collapse-all corner
   flex-shrink: 0;
   box-sizing: border-box;
   display: flex;
-  flex-direction: column; // "binder" centered on top; search row below
-  align-items: stretch;
+  justify-content: center; // "binder" centered at the top
   padding: 0 4px;
-  margin: 16px 4px 2px 0; // top room (binder is centered now, clear of the hole)
-  // No chrome — the header sits directly ON the ruled paper.
+  margin: 8px 4px 2px 0; // slid up
   background: transparent;
   border: none;
 
   .binder-title {
     display: inline-flex;
     align-items: center;
-    align-self: center; // centered at the top of the page
-    margin: 0 0 4px 0;
-    font-family: Roboto, 'Helvetica Neue', sans-serif; // back to the previous font
-    font-size: 28px; // one size down from 30
-    font-weight: 400; // not bold
-    color: #1a1a1a; // black ink on the white page (blue on the board is intentional)
-  }
-
-  // Always-on meal search — right-justified in the header (space-between gives
-  // ample gap from the "Binder" title). Same raised field family as the filters.
-  // Search is a headline Binder feature — a light, clearly-recessed field that
-  // stands out against the dark header (not another grey-on-grey control).
-  // A plain, squared-off data-entry field — dropped down off the "Binder"
-  // baseline (so the title no longer reads as its label), thin line, tight
-  // vertical padding.
-  // Search + collapse-all cluster — its own row below the centered title, right-aligned.
-  .header-right {
-    align-self: flex-end;
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-  }
-
-  .header-search {
-    flex: 0 1 150px; // a bit bigger; the collapse key to its right nudges it left
-    min-width: 0;
-    padding: 4px 9px; // slightly taller
-    // Controls stay sans even though the Binder body is serif.
+    margin: 0;
     font-family: Roboto, 'Helvetica Neue', sans-serif;
-    font-size: 14px;
+    font-size: 28px;
+    font-weight: 400; // not bold
     color: #1a1a1a;
-    background: #ffffff;
-    border: 1px solid #9a9ea3; // thin, light line
-    border-radius: 2px; // squared corners
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.16); // light inset only
-    outline: none;
-    &::placeholder { color: #8a8f94; font-style: italic; }
-    &:focus {
-      border-color: #4da6ff;
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 2px rgba(77, 166, 255, 0.35);
-    }
   }
 
-  // Collapse-all key — same raised white treatment as Add / Filter.
+  // Collapse-all key — pinned to the top-RIGHT corner.
   .collapse-all-btn {
-    flex: 0 0 auto;
+    position: absolute;
+    top: 0;
+    right: 4px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 30px;
+    width: 30px;
+    height: 26px;
     padding: 0;
     color: #3a3f45;
     background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
@@ -133,9 +98,33 @@
     cursor: pointer;
     transition: background 0.12s ease, box-shadow 0.1s ease, transform 0.05s ease;
 
-    .mat-icon { width: 20px; height: 20px; font-size: 20px; line-height: 20px; }
+    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
     &:hover { background: linear-gradient(180deg, #ffffff 0%, #dde1e7 100%); }
     &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2); }
+  }
+}
+
+// Meal search — now lives on the meals-tab line; GROWS to fill between the tab and
+// the Add/Filter keys, shrinks on narrow rails.
+.header-search {
+  flex: 1 1 60px;
+  min-width: 0;
+  align-self: flex-end; // bottom-align with the tab + Add/Filter keys
+  height: 26px;
+  box-sizing: border-box;
+  padding: 3px 8px;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  font-size: 13px;
+  color: #1a1a1a;
+  background: #ffffff;
+  border: 1px solid #9a9ea3;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.16);
+  outline: none;
+  &::placeholder { color: #8a8f94; font-style: italic; }
+  &:focus {
+    border-color: #4da6ff;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 2px rgba(77, 166, 255, 0.35);
   }
 }
 
@@ -639,10 +628,9 @@
   .section-tab {
     display: inline-flex;
     align-items: center;
-    justify-content: center; // center the label so both tabs read uniform
-    gap: 5px;
-    min-width: 96px; // both tabs the SAME size
-    padding: 6px 16px 7px;
+    justify-content: center; // center the label
+    gap: 4px;
+    padding: 5px 10px 6px; // less L/R padding — slimmer tabs
     box-sizing: border-box;
     border: none;
     border-radius: 12px 12px 0 0;
@@ -695,18 +683,17 @@
   // Add + Filter are a CLUSTER pinned to the right — raised, OPAQUE keys with a
   // little depth (no ruled lines showing through). Add pushes the pair right;
   // Filter sits snug against it.
-  .create-icon-btn { margin-left: auto; }
-  .create-toggle.filter-toggle { margin-left: 6px; }
-
+  // Layout: [tab] [+] [search grows] [Filter]. Search fills the gap, so no
+  // margin-left auto.
   .create-icon-btn,
   .create-toggle {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    height: 28px;
+    height: 26px;
     box-sizing: border-box;
-    padding: 0 11px;
+    padding: 0 8px;
     color: #1a1a1a;
     font-family: Roboto, 'Helvetica Neue', sans-serif; // controls stay SANS
     font-size: 12px;
@@ -737,6 +724,13 @@
       transform: translateY(1px);
       box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
     }
+  }
+
+  // Add — a compact SQUARE [+] key (just the icon).
+  .create-icon-btn {
+    width: 26px;
+    padding: 0;
+    justify-content: center;
   }
 
   // "Filter (ON)" — a soft tint + underline marks it active.
