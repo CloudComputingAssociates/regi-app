@@ -58,7 +58,7 @@
   display: flex;
   align-items: flex-end; // "Binder" + search both sit on the same (blue) baseline
   justify-content: space-between; // "Meals" left, AI toggle right
-  padding: 0 4px 0 8px; // less right padding so the search sits nearer the edge
+  padding: 0 4px 0 2px; // left ~aligns "my binder" with the tabs below it
   margin: 14px 4px 2px 0; // down for the top holes; tight bottom to the Menus tab
   // No chrome — the header sits directly ON the ruled paper.
   background: transparent;
@@ -72,7 +72,7 @@
     // same Roboto face (override the Binder's Inter so the two headings are twins).
     font-family: Roboto, 'Helvetica Neue', sans-serif;
     font-size: 22px; // one step up from the "Menus & Meals" toolbar title
-    font-weight: 600;
+    font-weight: 400; // not bold
     color: #1a1a1a; // black ink on the white page (blue on the board is intentional)
   }
 
@@ -611,11 +611,13 @@
     border: none;
     border-radius: 12px 12px 0 0;
     margin-bottom: -1px; // overlap the sheet's top edge → reads as "attached"
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.06);
+    box-shadow:
+      0 2px 5px rgba(0, 0, 0, 0.32), // drop shadow for depth
+      0 -1px 2px rgba(0, 0, 0, 0.06);
     font-family: Roboto, 'Helvetica Neue', sans-serif; // tabs stay SANS
 
-    &.menus { background: #3b7de0; } // blue = Menus
-    &.meals { background: #5a9e4f; } // green = Meals
+    &.menus { background: rgba(59, 125, 224, 0.8); } // blue = Menus, 80% solid
+    &.meals { background: rgba(90, 158, 79, 0.8); } // green = Meals, 80% solid
 
     // De-emboldened (was 700) + integer line-height so the white label / number
     // render crisp on the saturated tab (heavy-white-on-colour read blurry).
@@ -841,13 +843,13 @@
 .menu-grip {
   flex: 0 0 auto;
   box-sizing: border-box;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px; // glyph sits inside the box
-  line-height: 22px;
+  font-size: 28px; // glyph sits inside the box
+  line-height: 28px;
   color: #3b7de0; // the Menus-tab blue
   border: 2px solid #3b7de0;
   border-radius: 4px;
@@ -867,8 +869,8 @@
   // padding. Empty variant is a muted placeholder square.
   .card-thumb {
     flex: 0 0 auto;
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     box-sizing: border-box;
     border-radius: 4px;
     border: 2px solid #3b7de0; // blue frame at rest (turns yellow on press/select)
