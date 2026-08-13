@@ -57,13 +57,12 @@
 // vertically centered so "Meals" lines up with "Scale" and swaps don't jump.
 .binder-header {
   flex-shrink: 0;
-  height: 44px;
   box-sizing: border-box;
   display: flex;
-  align-items: flex-end; // "Binder" + search both sit on the same (blue) baseline
-  justify-content: space-between; // "Meals" left, AI toggle right
-  padding: 0 4px 0 2px; // left ~aligns "my binder" with the tabs below it
-  margin: 36px 4px 2px 0; // more top room so "my binder" clears the top hole
+  flex-direction: column; // "binder" centered on top; search row below
+  align-items: stretch;
+  padding: 0 4px;
+  margin: 16px 4px 2px 0; // top room (binder is centered now, clear of the hole)
   // No chrome — the header sits directly ON the ruled paper.
   background: transparent;
   border: none;
@@ -71,8 +70,8 @@
   .binder-title {
     display: inline-flex;
     align-items: center;
-    align-self: flex-start; // sit ABOVE the blue line (search stays on the line)
-    margin-left: 14px; // to the RIGHT of the red margin line
+    align-self: center; // centered at the top of the page
+    margin: 0 0 4px 0;
     font-family: Roboto, 'Helvetica Neue', sans-serif; // back to the previous font
     font-size: 28px; // one size down from 30
     font-weight: 400; // not bold
@@ -86,12 +85,12 @@
   // A plain, squared-off data-entry field — dropped down off the "Binder"
   // baseline (so the title no longer reads as its label), thin line, tight
   // vertical padding.
-  // Right cluster: search + collapse-all, sitting on the blue line.
+  // Search + collapse-all cluster — its own row below the centered title, right-aligned.
   .header-right {
+    align-self: flex-end;
     display: flex;
     align-items: flex-end;
     gap: 8px;
-    margin-bottom: 6px; // sit on the same blue line as the "binder" title
   }
 
   .header-search {
@@ -609,11 +608,6 @@
   border: 1px solid rgba(90, 90, 90, 0.28);
   border-radius: 8px;
   padding-bottom: 4px;
-}
-
-// Menus page tinted the same blue (and opacity) as the "menus" tab.
-.rail-section-menus {
-  background: rgba(59, 125, 224, 0.6);
 }
 
 // Detached grey divider — a thin inset line (same 14px inset as the section rows)
