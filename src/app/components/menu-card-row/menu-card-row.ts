@@ -18,7 +18,7 @@ import { RotationService } from '../../services/rotation.service';
   template: `
     <div class="strip">
       <div class="cards">
-        @for (menu of menus(); track menu.menuId; let i = $index) {
+        @for (menu of sortedMenus(); track menu.menuId; let i = $index) {
           <div
             class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
@@ -39,7 +39,7 @@ import { RotationService } from '../../services/rotation.service';
                 (input)="nameDraft.set(nameBox.value)"
                 (keydown.enter)="nameBox.blur()"
                 (keydown.escape)="nameBox.value = displayName(menu, i); nameBox.blur()"
-                (blur)="onNameBlur(menu, i, nameBox.value)"
+                (blur)="onNameBlur(menu, i, nameBox)"
                 aria-label="Menu name" />
               <!-- Permanent save check: GREEN + clickable only when the box holds a
                    REAL name (Binder saves happen for named menus only); grey + inert
@@ -142,6 +142,27 @@ export class MenuCardRowComponent {
       (sum, m) => sum + (this.rotation.menuHasMeals(m.menuId) ? (m.plannedCount ?? 0) : 0),
       0,
     ),
+  );
+
+  /** Unnamed = still on the server default ("Menu N") or blank — no real custom
+   *  name yet. Drives sort-to-front so the user sees which menus still need naming. */
+  private isUnnamedMenu(m: RotationMenuEntry): boolean {
+    const base = (m.menuName?.trim() ?? '').replace(/(\s*\(copy\))+\s*$/i, '').trim();
+    return !base || /^menu\s+\d+$/i.test(base);
+  }
+
+  /** Display order: UNNAMED (default) menus FIRST — kept in their existing order so
+   *  they letter cleanly as Menu A / B / C — so it's obvious they need a name; then
+   *  the named menus, alphabetically. Purely cosmetic (letters are display-only);
+   *  selection / drag use menuId, so reordering is safe. */
+  readonly sortedMenus = computed<RotationMenuEntry[]>(() =>
+    [...this.menus()].sort((a, b) => {
+      const ua = this.isUnnamedMenu(a);
+      const ub = this.isUnnamedMenu(b);
+      if (ua !== ub) return ua ? -1 : 1; // unnamed first
+      if (ua && ub) return 0; // stable — keep add order among the unnamed
+      return (a.menuName ?? '').localeCompare(b.menuName ?? '', undefined, { sensitivity: 'base' });
+    }),
   );
 
   /** Baseline menu ids, seeded on the first non-empty load. Null until seeded so
@@ -279,11 +300,16 @@ export class MenuCardRowComponent {
     setTimeout(() => el.select());
   }
 
-  onNameBlur(menu: RotationMenuEntry, index: number, value: string): void {
+  onNameBlur(menu: RotationMenuEntry, index: number, el: HTMLInputElement): void {
     this.editingMenuId.set(null);
-    const name = value.trim();
-    // No-op on empty or unchanged (the fallback "Menu A" is not a real name).
-    if (!name || name === this.displayName(menu, index)) return;
+    const name = el.value.trim();
+    // A menu is ALWAYS named: if the box was cleared, restore the default name in
+    // it (never leave it blank). Nothing persists, so the save arrow stays grey.
+    if (!name) {
+      el.value = this.displayName(menu, index);
+      return;
+    }
+    if (name === this.displayName(menu, index)) return; // unchanged default → no-op
     this.renameMenu.emit({ menuId: menu.menuId, name });
     this.flashSaveHint(menu.menuId);
   }

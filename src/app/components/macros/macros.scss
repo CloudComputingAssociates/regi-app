@@ -140,7 +140,8 @@
       }
 
       .bar-label {
-        font-family: 'Fredoka', sans-serif;
+        // Uniform with the rest of the board (Meal Slot titles, etc.) — was Fredoka.
+        font-family: Roboto, 'Helvetica Neue', sans-serif;
         font-size: 14px;
         font-weight: 500;
         line-height: 1;
