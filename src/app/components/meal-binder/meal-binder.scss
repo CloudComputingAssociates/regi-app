@@ -888,7 +888,7 @@
   .binder-card-name {
     flex: 1 1 auto;
     min-width: 0;
-    font-size: 14px;
+    font-size: 16px; // one size bigger
     font-weight: 400; // NOT bold — Calisto reads elegant at regular weight
     color: #1a1a1a; // black text on the see-through white card
     // Blue hyperlink-style underline (standard blue) — reads as a grabbable link.

@@ -14,7 +14,7 @@
   align-items: center;
   gap: 16px;
   padding: 1px 6px 4px 4px; // flush left; a touch of room below the selected card's blue border
-  border-bottom: 2px solid #4da6ff; // divider between Menus and Meals — standard blue
+  border-bottom: none; // no divider — the blue line got lost in the ruled paper
   overflow-x: auto;
 }
 
