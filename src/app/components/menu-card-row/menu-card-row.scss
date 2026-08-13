@@ -14,7 +14,7 @@
   align-items: center;
   gap: 16px;
   padding: 1px 6px 4px 4px; // flush left; a touch of room below the selected card's blue border
-  border-bottom: 3px solid #9a9ea3; // thicker + whiter divider between Menus and Meals
+  border-bottom: 2px solid #4da6ff; // divider between Menus and Meals — standard blue
   overflow-x: auto;
 }
 
@@ -121,7 +121,7 @@
     flex: 1 1 auto;
     min-width: 0;
     box-sizing: border-box;
-    padding: 2px 8px;
+    padding: 2px 8px 2px 4px; // less left padding so the name starts near the edge
     font-family: inherit;
     font-size: 14px; // uniform readable size
     color: #1a1a1a;
@@ -134,46 +134,44 @@
     &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.35); }
   }
 
-  // Save + Clear share the same square-button family. Check (save) leads; Clear
-  // follows. Both 22px tall so the row keeps its original slim height.
+  // Save + Clear — the same raised DOMED key family as the board toolbar keys
+  // (wipe / close): square, grey top-lit gradient, rim + inner highlight, drop
+  // shadow, radius 5. Check (save) leads; Clear follows.
   .menu-save,
   .menu-clear {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 22px;
+    width: 28px;
+    height: 28px;
     padding: 0;
-    border: 1px solid #6a6a6a;
-    border-radius: 2px;
+    color: #f0f0f0;
+    background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+    border: 1px solid #262626;
+    border-top-color: #7d7d7d;
+    border-radius: 5px;
+    box-shadow:
+      0 2px 3px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
     cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
 
-    .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; }
-    &:active { transform: translateY(1px); }
+    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+    &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
+    &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45); }
   }
 
-  // Clear — grey square.
-  .menu-clear {
-    color: #e0e0e0;
-    background: #555555;
-    &:hover { background: #616161; color: #ffffff; }
-  }
-
-  // Save — a grey square BUTTON at rest, turning solid green only when .active
-  // (the box holds a real name); inert/disabled otherwise.
+  // Save — the domed key turns GREEN (still domed) when active; inert when disabled.
   .menu-save {
-    color: #cfcfcf;
-    background: #555555;
-    &:hover { background: #616161; }
-
     &.active {
       color: #ffffff;
-      background: #28c941;
+      background: linear-gradient(180deg, #34d651 0%, #23b23a 100%);
       border-color: #1f7a2e;
-      &:hover { background: #23b23a; }
+      border-top-color: #57e06e;
+      &:hover { background: linear-gradient(180deg, #3fe05b 0%, #28c941 100%); }
     }
-    &:disabled { opacity: 0.5; cursor: default; }
+    &:disabled { opacity: 0.45; cursor: default; }
   }
 
   // Chevron that reveals/hides the macro line — sits on the title row's far right.
