@@ -268,11 +268,13 @@
   align-items: center;
   justify-content: center;
   min-width: 120px;
+  min-height: 42px; // SAME fixed height as the menu cards — it IS a drop zone
+  box-sizing: border-box;
   border: 2px dashed #5a5a5a;
   border-radius: 8px;
   background: transparent;
   color: #f1f1f1;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
@@ -282,10 +284,11 @@
     color: #4da6ff;
   }
 
-  // Bloom: a Binder menu is selected/dragged — this is where it drops.
+  // Bloom: a menu is being dragged — this is where it drops. Gold, but kept
+  // DASHED so it still reads as a drop zone (not a solid filled tile).
   &.bloom {
     border-color: #ffd54f;
-    border-style: solid;
+    border-style: dashed;
     color: #ffd54f;
     box-shadow:
       0 0 0 1px #ffd54f,

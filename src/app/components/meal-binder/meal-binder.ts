@@ -80,6 +80,8 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                   (mousedown)="onCardMouseDown()"
                   (click)="rotation.selectCard('menu', menu.id ?? -1)">
                   <div class="card-head">
+                    <!-- Open-book "menu" glyph — a visible grab handle for the drag. -->
+                    <mat-icon class="menu-grip" aria-hidden="true">menu_book</mat-icon>
                     <!-- Non-editable name so the whole card is easy to grab + drag.
                          Rename happens on the board (menu strip) after placing. -->
                     <span

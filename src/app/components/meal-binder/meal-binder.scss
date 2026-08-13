@@ -797,17 +797,33 @@
   content: none;
 }
 
+.binder-menu-card,
 .binder-card {
   cursor: grab;
-  &:active { cursor: grabbing; }
 }
 
-// Single-select: a translucent amber ROW tint (30%) — the ruled lines still read
-// through it, staying cohesive with the paper.
+// Translucent amber tint (30%, so the ruled lines still read through) shown BOTH
+// the instant you press down (:active) AND while the row is selected — for menu +
+// meal rows alike. So the highlight appears on down-click, not only after release.
+.binder-menu-card:active,
+.binder-card:active,
 .binder-menu-card.selected,
 .binder-card.selected {
   background: rgba(255, 213, 79, 0.3);
   border-radius: 6px;
+}
+.binder-menu-card:active,
+.binder-card:active { cursor: grabbing; }
+
+// Open-book "menu" glyph — the grab handle leading a menu card.
+.menu-grip {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  font-size: 22px;
+  line-height: 22px;
+  color: #7a7f85;
+  cursor: grab;
 }
 
 // One row: [name (grows)][chevron][P][Fiber][trash]. The chevron leads the
