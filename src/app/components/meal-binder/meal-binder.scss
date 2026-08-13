@@ -6,9 +6,10 @@
 :host {
   flex: 0 0 30%;
   min-width: 300px;
-  // Thumbnail / menu-icon size GROWS responsively: 40px at ~1024px wide (our
-  // baseline), scaling up with the viewport to a 64px ceiling.
-  --thumb: clamp(40px, 3.9vw, 64px);
+  // Thumbnail / menu-icon size GROWS responsively: 30px at ~1024px wide (our
+  // baseline), scaling up with the viewport to a 48px ceiling. (25% smaller than
+  // before — shorter rows so they sit closer together.)
+  --thumb: clamp(30px, 2.9vw, 48px);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -72,7 +73,7 @@
     align-items: center;
     margin-bottom: 6px; // drop it down to sit on the blue line with the search
     font-family: Roboto, 'Helvetica Neue', sans-serif; // back to the previous font
-    font-size: 22px;
+    font-size: 26px; // bigger
     font-weight: 400; // not bold
     color: #1a1a1a; // black ink on the white page (blue on the board is intentional)
   }
@@ -618,8 +619,8 @@
     box-shadow: none; // no depth — the drop shadow made the tab read odd-shaped
     font-family: Roboto, 'Helvetica Neue', sans-serif; // back to sans
 
-    &.menus { background: rgba(59, 125, 224, 0.8); } // blue = Menus, 80% solid
-    &.meals { background: rgba(90, 158, 79, 0.8); } // green = Meals, 80% solid
+    &.menus { background: rgba(59, 125, 224, 0.6); } // blue = Menus, 60% solid
+    &.meals { background: rgba(90, 158, 79, 0.6); } // green = Meals, 60% solid
 
     // De-emboldened (was 700) + integer line-height so the white label / number
     // render crisp on the saturated tab (heavy-white-on-colour read blurry).
@@ -632,7 +633,7 @@
     }
     .section-count {
       color: rgba(255, 255, 255, 0.9);
-      font-size: 12px;
+      font-size: 10px; // smaller than the label
       font-weight: 400;
       line-height: 20px;
       text-shadow: none;
@@ -831,10 +832,15 @@
 // The grab frame (menu icon box / meal thumbnail) is blue at rest and goes YELLOW
 // on press + while selected — tying the frame to the drag/selection.
 .binder-menu-card:active .menu-grip,
-.binder-menu-card.selected .menu-grip,
+.binder-menu-card.selected .menu-grip {
+  border-color: #ffd54f;
+}
+// Thumbnail has no rest border — show the yellow as an inset OUTLINE on select so
+// there's no frame at rest and no size shift.
 .binder-card:active .card-thumb,
 .binder-card.selected .card-thumb {
-  border-color: #ffd54f;
+  outline: 2px solid #ffd54f;
+  outline-offset: -2px;
 }
 
 // Open-book "menu" glyph in a blue BOX — a clear 30px grab target that mirrors
@@ -853,7 +859,6 @@
   color: #6a6f75; // neutral grey (blue removed)
   border: 2px solid transparent; // no frame at rest; turns yellow on press/select
   border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); // same lift as the thumbnails
   margin-right: 6px; // gap after the icon so the red margin line reads as a divider
   cursor: grab;
 }
@@ -873,11 +878,10 @@
     height: var(--thumb);
     box-sizing: border-box;
     border-radius: 4px;
-    border: 2px solid transparent; // no frame at rest; turns yellow on press/select
     object-fit: cover;
-    background: transparent; // no black ring behind the photo
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); // lift the photo off the page
+    background: transparent;
     margin-right: 6px; // gap after the pic so the red margin line reads as a divider
+    // No border / shadow at rest — clean photo; yellow ring appears on select.
   }
   .card-thumb-empty {
     display: inline-flex;
