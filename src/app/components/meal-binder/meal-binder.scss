@@ -36,8 +36,9 @@
   min-height: 0;
   flex: 1;
   // Extra left gutter clears the spiral binding so the coils show; the right
-  // side is trimmed tight to keep the content width.
-  padding: 0 2px 0 28px;
+  // side is trimmed tight to keep the content width. +3px so tabs/cards don't
+  // touch the spiral.
+  padding: 0 2px 0 31px;
   // SERIF body for the Binder — Calisto MT (elegant transitional serif on Windows/
   // Office), with graceful Palatino/Georgia fallbacks elsewhere. No webfont (CSP-
   // safe). Tabs, the "Binder" title, and the controls override this back to sans.

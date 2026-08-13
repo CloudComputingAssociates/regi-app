@@ -59,6 +59,9 @@ export interface MacroDisplayData {
                     <span class="bar-label" [style.color]="getLabelColor(macro.name)">{{ macro.name }}</span>
                     @if ($last) {
                       <div class="mode-toggle-container">
+                        @if (context() === 'menu') {
+                          <span class="macro-cals">{{ totalCals() }} cals</span>
+                        }
                         <button
                           type="button"
                           class="unit-toggle"
@@ -171,6 +174,12 @@ export class MacrosComponent implements OnInit {
       timePeriod: 'day'
     };
   });
+
+  /** Total calories for the cals pill — the selected menu's rolled-up total. Shown
+   *  in the macros bar just left of the %/g toggle (menu context). */
+  readonly totalCals = computed<number>(() =>
+    Math.round(this.rotationService.selectedMenuTotals().calories),
+  );
 
   // Signal for subscription-based display data (non-preferences contexts)
   private subscriptionData = signal<MacroDisplayData>({ macros: [], timePeriod: 'day' });

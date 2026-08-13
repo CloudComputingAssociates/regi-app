@@ -180,6 +180,23 @@
     right: 3px;
     display: flex;
     align-items: center;
+    gap: 6px; // space between the cals pill and the %/g toggle
+
+    // Total-cals pill — same grey as the %/g toggle, sits just to its left.
+    .macro-cals {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      height: 19px;
+      padding: 0 9px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #ffffff;
+      background: #999999; // same grey as the %/g toggle
+      border: 1px solid #333333;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
 
     .unit-toggle {
       display: flex;
@@ -191,7 +208,7 @@
       cursor: pointer;
       background: #999999;
       position: relative;
-      width: 50px;
+      width: 40px; // shrunk — the %/g switch was wider than it needed to be
       outline: none;
       transition: background 0.2s ease;
 
@@ -233,7 +250,7 @@
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 
         &.right {
-          left: 31px;
+          left: 21px; // flush-right in the 40px-wide toggle (was 31px at 50px)
         }
       }
     }
