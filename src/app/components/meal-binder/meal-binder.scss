@@ -11,8 +11,10 @@
   min-height: 0;
   // No left border — the paper (and its spiral binding) runs flush to the very
   // left edge with nothing over it.
-  // Spiral-bound notebook paper across the whole Binder.
-  background-color: #ececec;
+  // Spiral-bound notebook paper across the whole Binder. Fill behind the PNG's
+  // translucent spiral region is the macros/title-bar grey (#3a3a3a) so the metal
+  // coils read against it (pure black/dark board would swallow them).
+  background-color: #3a3a3a;
   background-image: url('/images/paper-spiral-bound.png');
   background-repeat: repeat-y;
   background-size: 100% auto;
