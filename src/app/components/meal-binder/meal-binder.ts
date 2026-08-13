@@ -91,8 +91,8 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       matTooltipClass="binder-name-tip"
                       matTooltipPosition="below"
                       [matTooltipShowDelay]="300">{{ menuDisplayName(menu) }}</span>
-                    <!-- Calories on the name line, right-justified before the chevron. -->
-                    <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
+                    <!-- Cals moved DOWN into the reveal (next to the discs), matching
+                         the meal card. -->
                     <!-- Dropdown chevron on the far right of the name line. -->
                     <button
                       type="button"
@@ -110,6 +110,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       <span class="chip carb">C {{ round(menu.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(menu.totalFatG) }}</span>
                       <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
+                      <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
                       <button
                         type="button"
                         class="card-delete icon-disc icon-disc-danger"

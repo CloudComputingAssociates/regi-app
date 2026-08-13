@@ -618,14 +618,14 @@
     .section-label {
       color: #ffffff;
       font-size: 15px;
-      font-weight: 600;
+      font-weight: 500; // lighter still — heavy white on colour was bleeding
       line-height: 20px;
       text-shadow: none;
     }
     .section-count {
       color: rgba(255, 255, 255, 0.9);
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 400;
       line-height: 20px;
       text-shadow: none;
     }
@@ -820,15 +820,23 @@
 .binder-menu-card:active,
 .binder-card:active { cursor: grabbing; }
 
-// Open-book "menu" glyph — the grab handle leading a menu card. Sized to match
-// the meal thumbnail (30px) so menu + meal rows line up, in our standard blue.
+// Open-book "menu" glyph in a blue BOX — a clear 30px grab target that mirrors
+// the meal thumbnails (same 30px box, blue frame instead of green), so menu + meal
+// rows line up and the box reads as the grab handle.
 .menu-grip {
   flex: 0 0 auto;
+  box-sizing: border-box;
   width: 30px;
   height: 30px;
-  font-size: 28px;
-  line-height: 30px;
-  color: #3b7de0; // the Menus-tab blue (not the app's #4da6ff)
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px; // glyph sits inside the box
+  line-height: 20px;
+  color: #3b7de0; // the Menus-tab blue
+  border: 2px solid #3b7de0;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); // same lift as the thumbnails
   cursor: grab;
 }
 
@@ -872,7 +880,7 @@
     flex: 1 1 auto;
     min-width: 0;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 400; // NOT bold — Calisto reads elegant at regular weight
     color: #1a1a1a; // black text on the see-through white card
     white-space: nowrap;
     overflow: hidden;
