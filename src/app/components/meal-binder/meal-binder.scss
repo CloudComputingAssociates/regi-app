@@ -66,7 +66,7 @@
     // Match the "Menus & Meals" toolbar title EXACTLY: same size + weight, and the
     // same Roboto face (override the Binder's Inter so the two headings are twins).
     font-family: Roboto, 'Helvetica Neue', sans-serif;
-    font-size: 20px;
+    font-size: 22px; // one step up from the "Menus & Meals" toolbar title
     font-weight: 600;
     color: #1a1a1a; // black ink on the white page (blue on the board is intentional)
   }
@@ -891,6 +891,11 @@
     font-size: 14px;
     font-weight: 400; // NOT bold — Calisto reads elegant at regular weight
     color: #1a1a1a; // black text on the see-through white card
+    // Blue hyperlink-style underline (standard blue) — reads as a grabbable link.
+    text-decoration: underline;
+    text-decoration-color: #4da6ff;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -934,15 +939,15 @@
     flex: 0 0 auto;
   }
 
-  // Calories on the head line — a small light-grey oblong pill, white sans text.
-  // Kept small so it doesn't outshine the menu/meal title.
+  // Calories on the head line — a small dark-grey oblong pill (macros-component
+  // grey), white non-bold sans text. Kept small so it doesn't outshine the title.
   .binder-cals {
     flex: 0 0 auto;
     font-family: Roboto, 'Helvetica Neue', sans-serif;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 400;
     color: #ffffff;
-    background: #a3a7ac; // light grey fill
+    background: #3a3a3a; // matches the macros component background
     padding: 1px 7px;
     border-radius: 999px; // oblong bubble
     white-space: nowrap;
@@ -996,14 +1001,14 @@
     min-width: 0;
   }
 
-  // Cals on the meal reveal row — same small grey pill as the menu head cals.
+  // Cals on the meal reveal row — same small dark-grey pill as the menu head cals.
   .binder-cals {
     flex: 0 0 auto;
     font-family: Roboto, 'Helvetica Neue', sans-serif;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 400;
     color: #ffffff;
-    background: #a3a7ac;
+    background: #3a3a3a; // matches the macros component background
     padding: 1px 7px;
     border-radius: 999px;
     white-space: nowrap;
