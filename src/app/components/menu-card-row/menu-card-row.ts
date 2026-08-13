@@ -268,7 +268,7 @@ export class MenuCardRowComponent {
   showSaveCheck(menu: RotationMenuEntry, index: number): boolean {
     const editing = this.editingMenuId() === menu.menuId;
     const draft = this.nameDraft().trim();
-    const defaultName = this.letter(index); // box seed is just the letter now
+    const defaultName = `Menu ${this.letter(index)}`; // box seed is the full "Menu A"
     // The name the user has given: the live draft while editing, else the shown name.
     const typed = editing && draft !== '' ? draft : this.displayName(menu, index);
     const hasCustomName = typed !== defaultName && !/^menu\s+\d+$/i.test(typed);
@@ -351,9 +351,9 @@ export class MenuCardRowComponent {
     const raw = menu.menuName?.trim() ?? '';
     const base = raw.replace(/(\s*\(copy\))+\s*$/i, '').trim(); // drop copy chain
     if (base && !/^menu\s+\d+$/i.test(base)) return base;
-    // Default menus show just the LETTER in the box — the "Menu" label in front of
-    // it already supplies the word, so it reads "Menu A / Menu B" (not "Menu Menu A").
-    return this.letter(index);
+    // Default menus show the FULL "Menu A" / "Menu B" in the box (redundant with the
+    // "Menu" label, but per request the box holds the whole default name).
+    return `Menu ${this.letter(index)}`;
   }
 
   /** Display label by position: 0→A, 1→B, … Menus are lettered (Menu A/B/C);

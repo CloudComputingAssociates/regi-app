@@ -28,7 +28,7 @@ export class TetherService {
 
   /** Pre-first-response default cadence. Client hardcodes ONLY this default;
    *  after the first success it honors response.pollIntervalSeconds. */
-  private static readonly DEFAULT_POLL_MS = 8000;
+  private static readonly DEFAULT_POLL_MS = 30000;
 
   private presenceSignal = signal<TetherPresenceResponse | null>(null);
   readonly presence = this.presenceSignal.asReadonly();
