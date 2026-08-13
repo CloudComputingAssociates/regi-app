@@ -820,6 +820,15 @@
 .binder-menu-card:active,
 .binder-card:active { cursor: grabbing; }
 
+// The grab frame (menu icon box / meal thumbnail) is blue at rest and goes YELLOW
+// on press + while selected — tying the frame to the drag/selection.
+.binder-menu-card:active .menu-grip,
+.binder-menu-card.selected .menu-grip,
+.binder-card:active .card-thumb,
+.binder-card.selected .card-thumb {
+  border-color: #ffd54f;
+}
+
 // Open-book "menu" glyph in a blue BOX — a clear 30px grab target that mirrors
 // the meal thumbnails (same 30px box, blue frame instead of green), so menu + meal
 // rows line up and the box reads as the grab handle.
@@ -855,7 +864,7 @@
     height: 30px;
     box-sizing: border-box;
     border-radius: 4px;
-    border: 2px solid #5a9e4f; // Meals-tab green frame
+    border: 2px solid #3b7de0; // blue frame at rest (turns yellow on press/select)
     object-fit: cover;
     background: #2a2a2a;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); // lift the photo off the page

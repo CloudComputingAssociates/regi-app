@@ -129,6 +129,16 @@ export class MenuCardRowComponent {
   /** Live text in the focused name box. */
   readonly nameDraft = signal('');
 
+  /** Menu ids the user has RENAMED this session — the green save lights for these
+   *  (until they're saved to the Binder). A drag-in / duplicate does NOT set this,
+   *  so a freshly dragged menu never falsely offers a save (which had created a
+   *  duplicate Binder menu). */
+  private readonly renamedMenus = signal<Set<number>>(new Set());
+
+  private markRenamed(menuId: number): void {
+    this.renamedMenus.update((s) => (s.has(menuId) ? s : new Set(s).add(menuId)));
+  }
+
   /** Menu tiles whose macro-chip dropdown is COLLAPSED (keyed by menuId). The
    *  reveal defaults OPEN — so meal + menu cards line up the same on load — hence
    *  we track the collapsed exceptions. The Protein + Fiber summary discs stay
@@ -266,22 +276,16 @@ export class MenuCardRowComponent {
    *  Shows when that named menu isn't yet saved (unpinned), or when a saved menu's
    *  name was just changed in the box. */
   showSaveCheck(menu: RotationMenuEntry, index: number): boolean {
-    const editing = this.editingMenuId() === menu.menuId;
-    const draft = this.nameDraft().trim();
-    const defaultName = `Menu ${this.letter(index)}`; // box seed is the full "Menu A"
-    // The name the user has given: the live draft while editing, else the shown name.
-    const typed = editing && draft !== '' ? draft : this.displayName(menu, index);
-    const hasCustomName = typed !== defaultName && !/^menu\s+\d+$/i.test(typed);
-    if (!hasCustomName) return false;
-    // Already in the Binder (e.g. just dragged / duplicated from it) → there's
-    // nothing to save, so the check stays GREY and can't create a duplicate. Match
-    // by copy-stripped name against the Binder menus.
-    const norm = (n: string | null | undefined) =>
-      (n ?? '').replace(/(\s*\(copy\))+\s*$/i, '').trim().toLowerCase();
-    if (this.rotation.binderMenus().some((b) => norm(b.name) === norm(typed))) return false;
-    if (!menu.pinned) return true; // a user-named menu not yet saved to the Binder
-    // Saved menu whose name was just changed → offer the check to re-save.
-    return editing && draft !== '' && draft !== this.displayName(menu, index);
+    const shown = this.displayName(menu, index);
+    // While editing: a real, CHANGED name in the box lights the check immediately.
+    if (this.editingMenuId() === menu.menuId) {
+      const draft = this.nameDraft().trim();
+      return draft !== '' && draft !== shown && !/^menu\s+\d+$/i.test(draft);
+    }
+    // Otherwise only a menu the user RENAMED this session (and hasn't saved to the
+    // Binder yet) is savable. A freshly dragged / duplicated menu is NOT — so it
+    // can never offer a save that would create a duplicate.
+    return this.renamedMenus().has(menu.menuId) && !menu.pinned;
   }
 
   /** Green check pressed. It fires on mousedown-preventDefault (the name box keeps
@@ -291,6 +295,7 @@ export class MenuCardRowComponent {
     const draft = this.nameDraft().trim();
     if (draft !== '' && draft !== this.displayName(menu, index)) {
       this.renameMenu.emit({ menuId: menu.menuId, name: draft });
+      this.markRenamed(menu.menuId);
       this.flashSaveHint(menu.menuId);
     }
     if (!menu.pinned) this.onPin(menu);
@@ -317,6 +322,7 @@ export class MenuCardRowComponent {
     }
     if (name === this.displayName(menu, index)) return; // unchanged default → no-op
     this.renameMenu.emit({ menuId: menu.menuId, name });
+    this.markRenamed(menu.menuId); // keeps the save check lit until saved to Binder
     this.flashSaveHint(menu.menuId);
   }
 
@@ -356,7 +362,12 @@ export class MenuCardRowComponent {
   displayName(menu: RotationMenuEntry, index: number): string {
     const raw = menu.menuName?.trim() ?? '';
     const base = raw.replace(/(\s*\(copy\))+\s*$/i, '').trim(); // drop copy chain
-    if (base && !/^menu\s+\d+$/i.test(base)) return base;
+    const isCopy = /\(copy\)\s*$/i.test(raw);
+    if (base && !/^menu\s+\d+$/i.test(base)) {
+      // Keep the "(copy)" suffix VISIBLE on a real-named duplicate so the user sees
+      // it's a copy and can rename it. (Default "Menu N" copies still show a letter.)
+      return isCopy ? `${base} (copy)` : base;
+    }
     // Default menus show the FULL "Menu A" / "Menu B" in the box (redundant with the
     // "Menu" label, but per request the box holds the whole default name).
     return `Menu ${this.letter(index)}`;
