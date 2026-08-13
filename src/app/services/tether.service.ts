@@ -26,8 +26,8 @@ export class TetherService {
   private auth = inject(AuthService);
   private baseUrl = environment.apiUrl; // already ends in /api
 
-  /** Pre-first-response default cadence. Client hardcodes ONLY this default;
-   *  after the first success it honors response.pollIntervalSeconds. */
+  /** Poll cadence FLOOR + pre-first-response default. After the first success the
+   *  client uses response.pollIntervalSeconds, but never faster than this (30s). */
   private static readonly DEFAULT_POLL_MS = 30000;
 
   private presenceSignal = signal<TetherPresenceResponse | null>(null);
@@ -84,6 +84,9 @@ export class TetherService {
       this.presenceSignal.set(res);
       const secs = res?.pollIntervalSeconds;
       if (typeof secs === 'number' && secs > 0) nextMs = secs * 1000;
+      // Client floor: never poll faster than DEFAULT_POLL_MS, even if the server
+      // asks for a shorter interval (presence isn't worth a sub-30s heartbeat).
+      nextMs = Math.max(nextMs, TetherService.DEFAULT_POLL_MS);
     } catch {
       // Silent: leave the last state, back off to the default interval, keep
       // trying. If auth dropped mid-flight, the auth effect already called

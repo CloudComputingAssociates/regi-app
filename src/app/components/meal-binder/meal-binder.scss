@@ -36,10 +36,10 @@
   // Extra left gutter clears the spiral binding so the coils show; the right
   // side is trimmed tight to keep the content width.
   padding: 0 2px 0 28px;
-  // SERIF body for the Binder — a modern, elegant on-screen serif (Constantia /
-  // Cambria are Windows' contemporary screen serifs; Iowan/Charter cover macOS).
-  // No webfont (CSP-safe). Tabs, the "Binder" title, and controls override to sans.
-  font-family: Constantia, 'Iowan Old Style', Charter, 'Cambria', 'Palatino Linotype', Georgia, serif;
+  // SERIF body for the Binder — Calisto MT (elegant transitional serif on Windows/
+  // Office), with graceful Palatino/Georgia fallbacks elsewhere. No webfont (CSP-
+  // safe). Tabs, the "Binder" title, and the controls override this back to sans.
+  font-family: 'Calisto MT', Calisto, 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -815,14 +815,15 @@
 .binder-menu-card:active,
 .binder-card:active { cursor: grabbing; }
 
-// Open-book "menu" glyph — the grab handle leading a menu card.
+// Open-book "menu" glyph — the grab handle leading a menu card. Sized to match
+// the meal thumbnail (30px) so menu + meal rows line up, in our standard blue.
 .menu-grip {
   flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
-  font-size: 22px;
-  line-height: 22px;
-  color: #7a7f85;
+  width: 30px;
+  height: 30px;
+  font-size: 28px;
+  line-height: 30px;
+  color: #4da6ff;
   cursor: grab;
 }
 
@@ -839,7 +840,9 @@
     flex: 0 0 auto;
     width: 30px;
     height: 30px;
+    box-sizing: border-box;
     border-radius: 4px;
+    border: 1px solid #5a9e4f; // Meals-tab green frame
     object-fit: cover;
     background: #2a2a2a;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); // lift the photo off the page
@@ -909,12 +912,16 @@
     flex: 0 0 auto;
   }
 
-  // Calories on the head line — small + muted (metadata).
+  // Calories on the head line — a light-grey oblong pill with white sans text.
   .binder-cals {
     flex: 0 0 auto;
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
     font-size: 12px;
     font-weight: 500;
-    color: #6a6f75;
+    color: #ffffff;
+    background: #a3a7ac; // light grey fill
+    padding: 1px 9px;
+    border-radius: 999px; // oblong bubble
     white-space: nowrap;
   }
 
@@ -966,9 +973,10 @@
     min-width: 0;
   }
 
-  // Cals sits after the discs on the macro row — small + black.
+  // Cals sits after the discs on the macro row — small + black. Sans (not serif).
   .binder-cals {
     flex: 0 0 auto;
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
     font-size: 12px;
     font-weight: 600;
     color: #1a1a1a;

@@ -273,26 +273,24 @@
   border: 2px dashed #5a5a5a;
   border-radius: 8px;
   background: transparent;
-  color: #f1f1f1;
-  font-size: 14px;
-  font-weight: 500;
+  color: #4da6ff; // blue label — matches the meal drag-area instructions
+  font-size: 13px; // smaller
+  font-weight: 400; // not bold
   cursor: pointer;
   transition: border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
 
   &:hover {
     border-color: #4da6ff;
-    color: #4da6ff;
+    color: #7fbfff;
   }
 
-  // Bloom: a menu is being dragged — this is where it drops. Gold, but kept
-  // DASHED so it still reads as a drop zone (not a solid filled tile).
+  // Bloom — SAME as the meal drop zone (bottom): a solid gold glow ring + faint
+  // gold wash; the border stays dashed grey (no dashed-gold border), for consistency.
   &.bloom {
-    border-color: #ffd54f;
-    border-style: dashed;
-    color: #ffd54f;
+    background: rgba(255, 213, 79, 0.08);
     box-shadow:
-      0 0 0 1px #ffd54f,
-      0 0 12px rgba(255, 213, 79, 0.5);
+      0 0 0 2px #ffd54f,
+      0 0 12px rgba(255, 213, 79, 0.55);
   }
 }
 
