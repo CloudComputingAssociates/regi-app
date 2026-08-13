@@ -65,7 +65,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
       <div class="rail-scroll">
 
         <!-- Menus accordion (top-level; larger header). Starts COLLAPSED. -->
-        <div class="rail-section">
+        <div class="rail-section rail-section-menus">
           <button type="button" class="section-head" (click)="binderMenusOpen.set(!binderMenusOpen())">
             <span class="section-tab menus">
               <span class="section-label">menus</span>

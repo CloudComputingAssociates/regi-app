@@ -6,10 +6,10 @@
 :host {
   flex: 0 0 30%;
   min-width: 300px;
-  // Thumbnail / menu-icon size GROWS responsively: 30px at ~1024px wide (our
-  // baseline), scaling up with the viewport to a 48px ceiling. (25% smaller than
-  // before — shorter rows so they sit closer together.)
-  --thumb: clamp(30px, 2.9vw, 48px);
+  // Thumbnail / menu-icon size GROWS responsively: ~22px at ~1024px wide (our
+  // baseline), scaling up with the viewport to a 36px ceiling. (Another 25%
+  // smaller — shorter rows, less vertical padding.)
+  --thumb: clamp(22px, 2.2vw, 36px);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -71,9 +71,10 @@
   .binder-title {
     display: inline-flex;
     align-items: center;
-    margin-bottom: 6px; // drop it down to sit on the blue line with the search
+    align-self: flex-start; // sit ABOVE the blue line (search stays on the line)
+    margin-left: 14px; // to the RIGHT of the red margin line
     font-family: Roboto, 'Helvetica Neue', sans-serif; // back to the previous font
-    font-size: 30px; // bigger (two sizes up)
+    font-size: 28px; // one size down from 30
     font-weight: 400; // not bold
     color: #1a1a1a; // black ink on the white page (blue on the board is intentional)
   }
@@ -610,6 +611,11 @@
   padding-bottom: 4px;
 }
 
+// Menus page tinted the same blue (and opacity) as the "menus" tab.
+.rail-section-menus {
+  background: rgba(59, 125, 224, 0.6);
+}
+
 // Detached grey divider — a thin inset line (same 14px inset as the section rows)
 // closing off the AI Meal Assistant area above the Menus / Meals sections.
 .rail-divider {
@@ -894,15 +900,15 @@
   cursor: grab;
 }
 
-// Binder action discs (delete / edit / save) — lighter grey instead of the global
-// dark disc chrome, matching the cals pills. The coloured glyphs still read on it.
+// Binder action discs (delete / edit / save) — WHITE instead of the global dark
+// disc chrome. The coloured glyphs (red trash, green check/pencil) read on white.
 .binder .icon-disc {
-  background: #999999;
-  border-color: #808080;
-  border-top-color: #b4b4b4;
+  background: #ffffff;
+  border-color: #c3c7cd;
+  border-top-color: #d5d8dd;
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 // One row: [name (grows)][chevron][P][Fiber][trash]. The chevron leads the
