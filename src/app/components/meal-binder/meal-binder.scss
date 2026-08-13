@@ -62,7 +62,7 @@
   display: flex;
   justify-content: center; // "binder" centered at the top
   padding: 0 4px;
-  margin: 8px 4px 2px 0; // slid up
+  margin: 12px 4px 8px 0; // "binder" a touch lower; more room below before menus
   background: transparent;
   border: none;
 
@@ -79,7 +79,7 @@
   // Collapse-all key — pinned to the top-RIGHT corner.
   .collapse-all-btn {
     position: absolute;
-    top: 0;
+    top: -8px; // way up in the top-right corner (above the "binder" baseline)
     right: 4px;
     display: inline-flex;
     align-items: center;
