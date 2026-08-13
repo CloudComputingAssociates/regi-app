@@ -68,10 +68,8 @@
     display: inline-flex;
     align-items: center;
     margin-bottom: 6px; // drop it down to sit on the blue line with the search
-    // Match the "Menus & Meals" toolbar title EXACTLY: same size + weight, and the
-    // same Roboto face (override the Binder's Inter so the two headings are twins).
-    font-family: Roboto, 'Helvetica Neue', sans-serif;
-    font-size: 22px; // one step up from the "Menus & Meals" toolbar title
+    font-family: inherit; // serif (Calisto) — same face as the meal names
+    font-size: 22px;
     font-weight: 400; // not bold
     color: #1a1a1a; // black ink on the white page (blue on the board is intentional)
   }
@@ -611,10 +609,8 @@
     border: none;
     border-radius: 12px 12px 0 0;
     margin-bottom: -1px; // overlap the sheet's top edge → reads as "attached"
-    box-shadow:
-      0 2px 5px rgba(0, 0, 0, 0.32), // drop shadow for depth
-      0 -1px 2px rgba(0, 0, 0, 0.06);
-    font-family: Roboto, 'Helvetica Neue', sans-serif; // tabs stay SANS
+    box-shadow: none; // no depth — the drop shadow made the tab read odd-shaped
+    font-family: inherit; // serif (Calisto) — matches "my binder" + the meal names
 
     &.menus { background: rgba(59, 125, 224, 0.8); } // blue = Menus, 80% solid
     &.meals { background: rgba(90, 158, 79, 0.8); } // green = Meals, 80% solid
@@ -780,9 +776,9 @@
   background: transparent;
   border: none;
   box-shadow: none;
-  // Extra TOP room so the first row clears the tab; tighter LEFT so the pic/icon
-  // pulls toward the red margin line (the gap after it is added on the pic itself).
-  padding: 12px 10px 2px 4px;
+  // Extra TOP room so the first row clears the tab; zero LEFT so the pic/icon
+  // aligns with the tabs' left edge (the gap after it is added on the pic itself).
+  padding: 12px 10px 2px 0;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -795,13 +791,11 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 4px 2px; // 50% tighter row spacing
+  padding: 1px 2px 1px 0; // very tight rows — thumbnails almost touch (~2px gap)
   background: transparent;
   border: none;
   border-radius: 0;
   box-shadow: none;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08); // faint hairline over the paper
-  &:last-child { border-bottom: none; }
 }
 
 // The .stacked-card dark slab has no place in the flat sheet — remove it.
@@ -850,8 +844,8 @@
   justify-content: center;
   font-size: 28px; // glyph sits inside the box
   line-height: 28px;
-  color: #3b7de0; // the Menus-tab blue
-  border: 2px solid #3b7de0;
+  color: #6a6f75; // neutral grey (blue removed)
+  border: 2px solid transparent; // no frame at rest; turns yellow on press/select
   border-radius: 4px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); // same lift as the thumbnails
   margin-right: 6px; // gap after the icon so the red margin line reads as a divider
@@ -873,7 +867,7 @@
     height: 40px;
     box-sizing: border-box;
     border-radius: 4px;
-    border: 2px solid #3b7de0; // blue frame at rest (turns yellow on press/select)
+    border: 2px solid transparent; // no frame at rest; turns yellow on press/select
     object-fit: cover;
     background: #2a2a2a;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); // lift the photo off the page
