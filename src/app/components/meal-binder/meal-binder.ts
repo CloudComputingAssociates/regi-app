@@ -39,7 +39,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
       <!-- Title line: "Meals" + right-justified AI toggle (star + chevron). The
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
-        <span class="binder-title">Binder</span>
+        <span class="binder-title">My binder</span>
         <!-- Always-on meal search, right-justified with ample gap from the title.
              Matches meal name + any ingredient (same signal the Filter used). -->
         <input

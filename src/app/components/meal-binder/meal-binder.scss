@@ -35,10 +35,11 @@
   flex-direction: column;
   min-height: 0;
   flex: 1;
-  // Extra left gutter clears the spiral binding so the coils show; the right
-  // side is trimmed tight to keep the content width. +3px so tabs/cards don't
-  // touch the spiral.
-  padding: 0 2px 0 34px;
+  // Left gutter is a PERCENTAGE so it scales with the spiral: the spiral-paper PNG
+  // stretches to the rail width (background-size: 100% 100%), so its coils + red
+  // margin line grow proportionally — a fixed px gutter drifted off them at wide
+  // sizes. 13% keeps the content clear of the spiral at any width.
+  padding: 0 2px 0 13%;
   // SERIF body for the Binder — Calisto MT (elegant transitional serif on Windows/
   // Office), with graceful Palatino/Georgia fallbacks elsewhere. No webfont (CSP-
   // safe). Tabs, the "Binder" title, and the controls override this back to sans.
