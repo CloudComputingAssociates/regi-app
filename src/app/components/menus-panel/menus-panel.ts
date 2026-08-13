@@ -263,7 +263,7 @@ export class MenusPanelComponent implements OnInit {
   readonly railBasis = computed<string>(() => {
     if (this.rotation.binderCollapsed()) return '0'; // slid off to the right
     const px = this.railBasisPx();
-    return px != null ? `${px}px` : '25%';
+    return px != null ? `${px}px` : '30%';
   });
 
   constructor() {

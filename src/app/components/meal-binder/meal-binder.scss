@@ -4,7 +4,7 @@
 // so menu/meal names stay readable), with its own vertical scroll. Holds a
 // sensible minimum on narrow viewports. Chrome-grey left divider.
 :host {
-  flex: 0 0 25%;
+  flex: 0 0 30%;
   min-width: 300px;
   display: flex;
   flex-direction: column;
@@ -16,8 +16,8 @@
   // the left, and the same shade fills any transparent gap on the right edge.
   background-color: #c4c8cc;
   background-image: url('/images/paper-spiral-bound.png');
-  background-repeat: repeat-y;
-  background-size: 100% auto;
+  background-repeat: no-repeat; // one notebook, no tiling seam
+  background-size: 100% 100%; // grow to fill the rail height
   background-position: top left;
   // Animate the slide-off / slide-back-in of the whole notebook.
   overflow: hidden;
@@ -54,7 +54,7 @@
   height: 44px;
   box-sizing: border-box;
   display: flex;
-  align-items: center;
+  align-items: flex-end; // "Binder" + search both sit on the same (blue) baseline
   justify-content: space-between; // "Meals" left, AI toggle right
   padding: 0 4px 0 8px; // less right padding so the search sits nearer the edge
   margin: 14px 4px 2px 0; // down for the top holes; tight bottom to the Menus tab
@@ -65,6 +65,7 @@
   .binder-title {
     display: inline-flex;
     align-items: center;
+    margin-bottom: 6px; // drop it down to sit on the blue line with the search
     // Match the "Menus & Meals" toolbar title EXACTLY: same size + weight, and the
     // same Roboto face (override the Binder's Inter so the two headings are twins).
     font-family: Roboto, 'Helvetica Neue', sans-serif;
@@ -84,8 +85,7 @@
     flex: 0 1 128px; // 1/4 smaller than before (was 170px)
     min-width: 0;
     margin-left: 16px; // breathing room even on a narrow rail
-    align-self: flex-end; // sit lower than the "Binder" title
-    margin-bottom: 5px;
+    margin-bottom: 6px; // sit on the same blue line as the "Binder" title
     padding: 3px 8px; // reduced top/bottom padding
     // Controls stay sans even though the Binder body is serif.
     font-family: Roboto, 'Helvetica Neue', sans-serif;

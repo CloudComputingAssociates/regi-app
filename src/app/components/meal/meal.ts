@@ -144,16 +144,15 @@ interface Macro {
                     (keydown.escape)="nameBox.value = clean(fm.mealName); onNameInput(fm.mealId, nameBox.value); nameBox.blur()"
                     (blur)="commitName(fm, nameBox.value)"
                     aria-label="Meal name" />
-                  <!-- Save disc is actionable ONLY when there are unsaved FOOD
-                       changes; a rename auto-saves to the Binder on its own, so it
-                       does not light this. Clicking prompts to persist food changes
-                       to the Binder. -->
+                  <!-- Save disc lights on unsaved FOOD changes OR a pending name
+                       edit, so naming a meal shows there's something to save.
+                       Clicking persists the meal (name + food) to the Binder. -->
                   <button
                     type="button"
                     class="icon-disc save-disc"
-                    [class.icon-disc-confirm]="rotation.hasUnsavedFoodChanges(fm.mealId)"
-                    [disabled]="!rotation.hasUnsavedFoodChanges(fm.mealId)"
-                    matTooltip="Save food changes to your Binder"
+                    [class.icon-disc-confirm]="rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm)"
+                    [disabled]="!(rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm))"
+                    matTooltip="Save changes to your Binder"
                     (click)="pinMeal.emit(fm.mealId)">
                     <mat-icon>check</mat-icon>
                   </button>
