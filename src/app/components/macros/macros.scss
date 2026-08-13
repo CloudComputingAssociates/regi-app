@@ -142,7 +142,7 @@
       .bar-label {
         // Uniform with the rest of the board (Meal Slot titles, etc.) — was Fredoka.
         font-family: Roboto, 'Helvetica Neue', sans-serif;
-        font-size: 14px;
+        font-size: 16px; // one size up (line-height:1 keeps the row from growing)
         font-weight: 500;
         line-height: 1;
         white-space: nowrap;
@@ -302,7 +302,7 @@
     .macro-item {
       .custom-progress-container {
         .bar-label {
-          font-size: 14px;
+          font-size: 16px;
           margin-top: 2px;
         }
       }

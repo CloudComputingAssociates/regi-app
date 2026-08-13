@@ -282,13 +282,22 @@
     color: #7fbfff;
   }
 
-  // Bloom — SAME as the meal drop zone (bottom): a solid gold glow ring + faint
-  // gold wash; the border stays dashed grey (no dashed-gold border), for consistency.
+  // Bloom — solid gold glow ring + faint gold wash; the drop prompt is small,
+  // light, WHITE and two lines.
   &.bloom {
+    color: #ffffff;
     background: rgba(255, 213, 79, 0.08);
     box-shadow:
       0 0 0 2px #ffd54f,
       0 0 12px rgba(255, 213, 79, 0.55);
+  }
+
+  // Two-line drop prompt — smaller + lighter than the "+ Add menu" label.
+  .dnd-text {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 300;
+    line-height: 1.25;
   }
 }
 

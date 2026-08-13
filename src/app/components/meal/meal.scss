@@ -400,10 +400,13 @@
     gap: 5px;
     padding-left: 44px; // indent the discs to line up under the name text box
 
-    // Calories readout — blue, reads as a label (not a value chip).
+    // Calories readout — grey pill (same as the Binder cals pills).
     .slot-cals {
-      color: #4da6ff;
-      font-size: 12px;
+      color: #ffffff;
+      background: #999999;
+      font-size: 11px;
+      padding: 1px 7px;
+      border-radius: 999px;
       white-space: nowrap;
     }
 

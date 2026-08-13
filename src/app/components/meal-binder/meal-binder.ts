@@ -40,16 +40,25 @@ import { Meal, Menu, MealSetSummary } from '../../models';
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
         <span class="binder-title">binder</span>
-        <!-- Always-on meal search, right-justified with ample gap from the title.
-             Matches meal name + any ingredient (same signal the Filter used). -->
-        <input
-          type="text"
-          class="header-search"
-          placeholder="Search meals..."
-          matTooltip="Search a meal by name, or type any ingredient"
-          matTooltipPosition="below"
-          [value]="searchText()"
-          (input)="searchText.set($any($event.target).value)" />
+        <!-- Right cluster: the always-on meal search + a Collapse-all key. -->
+        <div class="header-right">
+          <input
+            type="text"
+            class="header-search"
+            placeholder="Search meals..."
+            matTooltip="Search a meal by name, or type any ingredient"
+            matTooltipPosition="below"
+            [value]="searchText()"
+            (input)="searchText.set($any($event.target).value)" />
+          <button
+            type="button"
+            class="collapse-all-btn"
+            matTooltip="Collapse all"
+            matTooltipPosition="below"
+            (click)="collapseAll()">
+            <mat-icon>unfold_less</mat-icon>
+          </button>
+        </div>
       </div>
 
       <!-- One scrollbar for the whole rail. -->
@@ -535,6 +544,11 @@ export class MealBinderComponent implements OnInit {
 
   isCardOpen(key: string): boolean {
     return this.expandedCards().has(key);
+  }
+
+  /** Collapse every expanded menu/meal card (clears all macro-reveals). */
+  collapseAll(): void {
+    this.expandedCards.set(new Set());
   }
 
   /** A meal card is open only when the user has explicitly expanded it. No

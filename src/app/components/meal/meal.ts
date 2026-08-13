@@ -181,18 +181,17 @@ interface Macro {
                   </button>
                 </div>
 
-                <!-- Foods section header: "My Foods" label left; the recipe link
-                     (when the meal has a source PDF) right-justified. -->
-                <div class="foods-head">
-                  <span class="foods-label">My Foods</span>
-                  @if (recipeLinkFor(fm.mealId); as link) {
+                <!-- Recipe link (when the meal has a source PDF), right-justified.
+                     "My Foods" label removed — not needed. -->
+                @if (recipeLinkFor(fm.mealId); as link) {
+                  <div class="foods-head">
                     <button
                       type="button"
                       class="recipe-link"
                       matTooltip="Open the source recipe PDF"
                       (click)="openRecipe(link)">Click here for recipe (PDF)</button>
-                  }
-                </div>
+                  </div>
+                }
 
                 <div class="food-rows">
                   @for (item of mainItemsFor(fm.mealId); track item.id) {

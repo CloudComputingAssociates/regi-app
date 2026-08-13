@@ -76,7 +76,7 @@ import { RotationService } from '../../services/rotation.service';
           cdkDropList
           [cdkDropListEnterPredicate]="menuDropPredicate"
           (cdkDropListDropped)="onMenuDrop($event)"
-          (click)="addMenu.emit()">{{ menuTargetHot() ? 'Drag & Drop Menu' : '+ Add menu' }}</div>
+          (click)="addMenu.emit()">@if (menuTargetHot()) {<span class="dnd-text">Drag &amp; drop<br />a menu here</span>} @else {+ Add menu}</div>
       </div>
     </div>
     <!-- Embossed area watermark, pinned DEAD CENTER of the strip (fixed — it never
