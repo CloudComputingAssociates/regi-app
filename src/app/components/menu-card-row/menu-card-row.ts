@@ -273,7 +273,13 @@ export class MenuCardRowComponent {
     const typed = editing && draft !== '' ? draft : this.displayName(menu, index);
     const hasCustomName = typed !== defaultName && !/^menu\s+\d+$/i.test(typed);
     if (!hasCustomName) return false;
-    if (!menu.pinned) return true; // named, not yet saved to the Binder
+    // Already in the Binder (e.g. just dragged / duplicated from it) → there's
+    // nothing to save, so the check stays GREY and can't create a duplicate. Match
+    // by copy-stripped name against the Binder menus.
+    const norm = (n: string | null | undefined) =>
+      (n ?? '').replace(/(\s*\(copy\))+\s*$/i, '').trim().toLowerCase();
+    if (this.rotation.binderMenus().some((b) => norm(b.name) === norm(typed))) return false;
+    if (!menu.pinned) return true; // a user-named menu not yet saved to the Binder
     // Saved menu whose name was just changed → offer the check to re-save.
     return editing && draft !== '' && draft !== this.displayName(menu, index);
   }
