@@ -13,7 +13,7 @@
   // left edge with nothing over it.
   // Spiral-bound notebook paper across the whole Binder.
   background-color: #ececec;
-  background-image: url('/images/paper-spiral-bound.jpg');
+  background-image: url('/images/paper-spiral-bound.png');
   background-repeat: repeat-y;
   background-size: 100% auto;
   background-position: top left;
@@ -774,7 +774,9 @@
   background: transparent;
   border: none;
   box-shadow: none;
-  padding: 12px 10px 2px; // extra TOP room so the first row clears the tab
+  // Extra TOP room so the first row clears the tab; tighter LEFT so the pic/icon
+  // pulls toward the red margin line (the gap after it is added on the pic itself).
+  padding: 12px 10px 2px 4px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -846,6 +848,7 @@
   border: 2px solid #3b7de0;
   border-radius: 4px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); // same lift as the thumbnails
+  margin-right: 6px; // gap after the icon so the red margin line reads as a divider
   cursor: grab;
 }
 
@@ -868,6 +871,7 @@
     object-fit: cover;
     background: #2a2a2a;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); // lift the photo off the page
+    margin-right: 6px; // gap after the pic so the red margin line reads as a divider
   }
   .card-thumb-empty {
     display: inline-flex;
