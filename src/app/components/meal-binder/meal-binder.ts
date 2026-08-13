@@ -541,9 +541,11 @@ export class MealBinderComponent implements OnInit {
     return this.expandedCards().has(key);
   }
 
-  /** Collapse every expanded menu/meal card (clears all macro-reveals). */
+  /** Collapse everything: every expanded menu/meal card's macro-reveal AND the
+   *  whole Menus accordion. */
   collapseAll(): void {
     this.expandedCards.set(new Set());
+    this.binderMenusOpen.set(false);
   }
 
   /** A meal card is open only when the user has explicitly expanded it. No
