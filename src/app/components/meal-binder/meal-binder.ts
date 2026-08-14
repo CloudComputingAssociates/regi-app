@@ -39,7 +39,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
       <!-- Title line: "Meals" + right-justified AI toggle (star + chevron). The
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
-        <span class="binder-title">notebook</span>
+        <span class="binder-title">{{ notebookTitle() }}</span>
         <!-- Collapse-all key pinned to the top-right corner. -->
         <button
           type="button"
@@ -646,9 +646,18 @@ export class MealBinderComponent implements OnInit {
     // the saved selection once the entitled list has also loaded.
     this.auth.user$.pipe(takeUntilDestroyed()).subscribe((u) => {
       this.sub = u?.sub ?? null;
+      this.displayName.set(u?.name?.trim() ?? '');
       this.maybeRestoreSelection();
     });
   }
+
+  /** The user's display name for the notebook title ("{name} notebook"). Empty
+   *  until auth resolves — the title falls back to plain "notebook". */
+  readonly displayName = signal<string>('');
+  readonly notebookTitle = computed<string>(() => {
+    const name = this.displayName();
+    return name ? `${name} notebook` : 'notebook';
+  });
 
   ngOnInit(): void {
     this.rotation.loadBinder();

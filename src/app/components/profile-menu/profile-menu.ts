@@ -21,12 +21,8 @@ import { RoleService } from '../../services/role.service';
       <!-- While Auth0 is loading, show nothing to avoid flicker -->
       <div class="auth-loading"></div>
     } @else if (auth.isAuthenticated$ | async) {
-      <!-- Avatar (Apple logo) + the user's NAME — BOTH open the menu. -->
+      <!-- Just the avatar (the logo) opens the menu — name + pawn removed. -->
       <div class="profile-trigger">
-        <button class="profile-name-btn" [matMenuTriggerFor]="menu">
-          <mat-icon class="profile-name-icon">person</mat-icon>
-          <span class="profile-name-text">{{ (auth.user$ | async)?.name || 'Account' }}</span>
-        </button>
         <button class="profile-btn" [matMenuTriggerFor]="menu" aria-label="Open menu">
           <img [src]="defaultImage" alt="Profile" class="profile-img" />
         </button>

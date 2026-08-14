@@ -23,9 +23,8 @@
   // Macros bar hosted in the banner (menus tab). Pushed toward the right so it sits
   // in the space before the tether / user name, laying directly on the black banner.
   .app-bar-macros {
-    flex: 0 1 560px;
+    flex: 0 1 760px;     // wider — use the space to the LEFT of the bars
     min-width: 0;
-    margin-left: auto;   // slide into the space on the right
     margin-right: 16px;  // gap before the tether / user name
     align-self: center;
 
@@ -40,8 +39,6 @@
         &::before { display: none; } // drop the sheen / backlight glow
       }
       .custom-progress-track { background: #3a3a3a; } // grey track shows on black
-      .macro-cals,
-      .unit-toggle { background: #3a3a3a; } // darker grey for cals + %/g button
       .macro-row { padding: 2px 8px; }      // compact for the banner
     }
   }
