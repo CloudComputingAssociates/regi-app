@@ -63,14 +63,16 @@
       // which was cutting off the dropped pills — let them show.
       .mat-mdc-card,
       .mat-mdc-card-content { overflow: visible; }
-      // The pills are anchored bottom:3px of .macro-row (their positioned
-      // ancestor). Push them BELOW the bar row into the padded space.
-      .mode-toggle-container { bottom: -12px; }
+      // The cals pill + %/g toggle are anchored bottom:3px of .macro-row (their
+      // positioned ancestor). Push them BELOW the bar row into the padded space.
+      .mode-toggle-container,
+      .macro-cals { bottom: -12px; }
       .custom-progress-track { background: #3a3a3a; } // grey track shows on black
       .macro-row { padding: 2px 8px; }      // compact for the banner
-      // The cals + %/g pills sit absolutely at the last bar's right — shorten that
-      // bar's track so there's padding between the fiber indicator and the pills.
-      .macro-item:last-child .custom-progress-track { margin-right: 112px; }
+      // Only the %/g toggle sits at the far right now (cals moved between the
+      // fats/fiber bars) — reserve just enough for it, so the fiber bar isn't
+      // awkwardly short.
+      .macro-item:last-child .custom-progress-track { margin-right: 46px; }
     }
   }
 
