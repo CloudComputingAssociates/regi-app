@@ -166,11 +166,11 @@ interface Macro {
                 </div>
 
                 <div class="macro-row">
+                  <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
                   <span class="chip protein">P {{ round(mac(fm.macros).proteinG) }}</span>
                   <span class="chip fiber">F {{ round(mac(fm.macros).fiberG) }}</span>
                   <span class="chip fat">F {{ round(mac(fm.macros).fatG) }}</span>
                   <span class="chip carb">C {{ round(mac(fm.macros).carbG) }}</span>
-                  <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
                   <button
                     type="button"
                     class="add-food-btn add-affordance"

@@ -105,11 +105,11 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                        and the delete, on ONE aligned row. -->
                   @if (isCardOpen('menu-' + menu.id)) {
                     <div class="binder-chips card-reveal">
+                      <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
                       <span class="chip protein">P {{ round(menu.totalProteinG) }}</span>
                       <span class="chip carb">C {{ round(menu.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(menu.totalFatG) }}</span>
                       <span class="chip fiber">F {{ round(menu.totalFiberG) }}</span>
-                      <span class="binder-cals">{{ round(menu.totalCalories) }} cals</span>
                       <button
                         type="button"
                         class="card-delete icon-disc icon-disc-danger"
@@ -293,11 +293,11 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                        delete flush right — only visible when dropped down. -->
                   @if (isMealOpen(meal)) {
                     <div class="binder-chips card-reveal">
+                      <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
                       <span class="chip protein">P {{ round(meal.totalProteinG) }}</span>
                       <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
                       <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
-                      <span class="binder-cals">{{ round(meal.totalCalories) }} cals</span>
                       @if (!meal.mealSetId) {
                         <button
                           type="button"
