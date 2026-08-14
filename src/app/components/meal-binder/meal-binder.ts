@@ -39,7 +39,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
       <!-- Title line: "Meals" + right-justified AI toggle (star + chevron). The
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
-        <span class="binder-title">binder</span>
+        <span class="binder-title">notebook</span>
         <!-- Collapse-all key pinned to the top-right corner. -->
         <button
           type="button"
@@ -140,7 +140,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
             <button
               type="button"
               class="create-icon-btn"
-              matTooltip="Add meals to your Binder"
+              matTooltip="Add meals to your notebook"
               matTooltipPosition="above"
               (click)="createMeal.emit()">
               <mat-icon>add</mat-icon>

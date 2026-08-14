@@ -60,7 +60,7 @@ interface Macro {
           cdkDropList
           [cdkDropListEnterPredicate]="mealDropPredicate"
           (cdkDropListDropped)="onDropMeal($event)">
-          <span class="pick-sub">Drag from <button type="button" class="binder-link" (click)="$event.stopPropagation(); rotation.showBinder()">Binder</button></span>
+          <span class="pick-sub">Drag from <button type="button" class="binder-link" (click)="$event.stopPropagation(); rotation.showBinder()">notebook</button></span>
           <span class="pick-sub">or, <button type="button" class="create-link" (click)="$event.stopPropagation(); createHere.emit()">Create</button> from scratch</span>
         </div>
       } @else {
@@ -152,7 +152,7 @@ interface Macro {
                     class="icon-disc save-disc"
                     [class.icon-disc-confirm]="rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm)"
                     [disabled]="!(rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm))"
-                    matTooltip="Save changes to your Binder"
+                    matTooltip="Save changes to your notebook"
                     (click)="pinMeal.emit(fm.mealId)">
                     <mat-icon>check</mat-icon>
                   </button>

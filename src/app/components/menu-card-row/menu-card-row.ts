@@ -51,7 +51,7 @@ import { RotationService } from '../../services/rotation.service';
                 [class.active]="showSaveCheck(menu, i)"
                 [class.save-hint]="isSaveHintMenu(menu.menuId) && !menu.pinned && showSaveCheck(menu, i)"
                 [disabled]="!showSaveCheck(menu, i)"
-                [matTooltip]="menu.pinned ? 'Save name' : 'Save to Binder'"
+                [matTooltip]="menu.pinned ? 'Save name' : 'Save to notebook'"
                 matTooltipPosition="above"
                 (mousedown)="$event.preventDefault()"
                 (click)="$event.stopPropagation(); onSaveCheck(menu, i)">

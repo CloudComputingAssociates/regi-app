@@ -92,8 +92,16 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               <span class="toolbar-title">
                 <mat-icon class="toolbar-title-icon">restaurant</mat-icon>Menus &amp; Meals
               </span>
-              <!-- Actions grouped together, equidistant: remove all · close. -->
+              <!-- Actions grouped together, equidistant: macros toggle · remove all · close. -->
               <div class="toolbar-buttons">
+                <button
+                  type="button"
+                  class="macros-toggle-btn"
+                  [matTooltip]="tabService.macrosVisible() ? 'Hide macros' : 'Show macros'"
+                  matTooltipPosition="above"
+                  (click)="tabService.toggleMacros()">
+                  {{ tabService.macrosVisible() ? 'Hide macros' : 'Show macros' }}
+                </button>
                 <button
                   type="button"
                   class="wipe-menus-btn"
@@ -114,10 +122,8 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                    app-menu-card-row), bottom-aligned with the "menus" watermark. -->
             </div>
 
-            <!-- Macros bar sits BELOW the Menus & Meals toolbar, inside the board
-                 column, so it spans only the Menus & Meals width (it reflects this
-                 menu's macros, not the Binder). Splitter + Binder stretch beside. -->
-            <app-macros />
+            <!-- Macros bar moved UP into the app-bar (banner). Toggled by the
+                 "Hide/Show macros" key in the toolbar above. -->
 
             <app-menu-card-row
               [menus]="rotation.menus()"
@@ -564,7 +570,7 @@ export class MenusPanelComponent implements OnInit {
       data: {
         title: 'Wipe Menus',
         message: "You will lose your work for this week's menus. OK to proceed?",
-        teachLine: 'All menus will be wiped. Meal slots all cleared.\nMeals saved to Binder will be retained.',
+        teachLine: 'All menus will be wiped. Meal slots all cleared.\nMeals saved to notebook will be retained.',
         confirmLabel: 'Proceed',
         onConfirm: () => void this.rotation.wipeMenus(),
       },

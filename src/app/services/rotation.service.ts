@@ -38,7 +38,7 @@ import { NotificationService } from './notification.service';
 /** Step-9 teach line, appended to a destroy confirm when the meal has unsaved
  *  work (diverged clone or edited this session). */
 export const TEACH_SAVE_LINE =
-  'You changed this meal — save it to your Binder first to keep your version.';
+  'You changed this meal — save it to your notebook first to keep your version.';
 
 /** Aggregate macro totals for a menu (grams + calories). */
 export interface MenuTotals {
@@ -1051,7 +1051,7 @@ export class RotationService {
       // Saving a meal you were building closes the food picker so the rail
       // returns to the Binder.
       this.stopEditing();
-      this.notification.show('Saved to your Binder', 'success');
+      this.notification.show('Saved to your notebook', 'success');
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
@@ -1073,7 +1073,7 @@ export class RotationService {
       this.sessionEditedMeals.delete(mealId);
       this.clearFoodEdited(mealId);
       await Promise.all([this.loadBinder(), this.loadFolder()]);
-      this.notification.show('Removed from your Binder (still slotted)', 'success');
+      this.notification.show('Removed from your notebook (still slotted)', 'success');
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
@@ -1141,7 +1141,7 @@ export class RotationService {
       await Promise.all([this.loadBinder(), this.loadBinderMenus()]);
       // Ask the Binder rail to reveal the newly pinned menu (expand + scroll).
       this.revealBinderMenuId.set(menuId);
-      this.notification.show('Saved to your Binder', 'success');
+      this.notification.show('Saved to your notebook', 'success');
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
@@ -1352,7 +1352,7 @@ export class RotationService {
     const name = (meal.name ?? '').trim();
     if (name === '' || /^meal\s*\d+$/i.test(name)) {
       this.notification.show(
-        'Give your meal a real name (not "Meal 2") before saving it to your Binder.',
+        'Give your meal a real name (not "Meal 2") before saving it to your notebook.',
         'warning',
       );
       return;
@@ -1423,7 +1423,7 @@ export class RotationService {
       await this.loadBinder();
       // The fork's food changes now live in the Binder original → disc goes clean.
       this.clearFoodEdited(forkId);
-      this.notification.show('Binder meal updated with your changes.', 'success');
+      this.notification.show('notebook meal updated with your changes.', 'success');
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }

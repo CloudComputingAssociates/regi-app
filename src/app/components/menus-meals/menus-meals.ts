@@ -185,8 +185,8 @@ export class MenusMealsComponent {
       panelClass: 'wipe-dialog-panel',
       data: {
         message:
-          'Changes saved to slot instance. Would you like to save food changes to Binder, permanently?',
-        confirmLabel: 'Save to Binder',
+          'Changes saved to slot instance. Would you like to save food changes to notebook, permanently?',
+        confirmLabel: 'Save to notebook',
         onConfirm: () => void this.rotation.saveSlottedCopy(mealId),
       },
     });

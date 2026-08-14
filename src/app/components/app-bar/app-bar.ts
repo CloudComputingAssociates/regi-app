@@ -11,13 +11,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { ProfileMenuComponent } from '../profile-menu/profile-menu';
 import { TetherIndicatorComponent } from '../tether-indicator/tether-indicator';
+import { MacrosComponent } from '../macros/macros';
 import { AuthService } from '@auth0/auth0-angular';
 import { TabService } from '../../services/tab.service';
 import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-app-bar',
-  imports: [CommonModule, AsyncPipe, MatIconModule, MatButtonModule, ProfileMenuComponent, TetherIndicatorComponent],
+  imports: [CommonModule, AsyncPipe, MatIconModule, MatButtonModule, ProfileMenuComponent, TetherIndicatorComponent, MacrosComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="app-bar">
@@ -44,6 +45,12 @@ import { map } from 'rxjs/operators';
           }
         </div>
 
+        <!-- Macros bar now lives IN the banner (menus tab only), pushed toward the
+             right so it sits in the space before the tether / user name. -->
+        @if (isAuthenticated() && activeTabId() === 'menus' && tabService.macrosVisible()) {
+          <div class="app-bar-macros"><app-macros /></div>
+        }
+
         @if (isAuthenticated()) {
           <app-tether-indicator />
         }
@@ -57,9 +64,12 @@ export class AppBarComponent {
   @Output() menuClick = new EventEmitter<void>();
 
   private auth = inject(AuthService);
-  private tabService = inject(TabService);
+  protected tabService = inject(TabService);
 
   isAuthenticated = toSignal(this.auth.isAuthenticated$, { initialValue: false });
+
+  /** Active tab id — drives whether the banner hosts the macros bar (menus only). */
+  readonly activeTabId = this.tabService.activeTabId;
 
   // Always render the branded "RegiMenu^SM" mark — logged-in and logged-out
   // states share the same logo treatment so the title strip doesn't shift
