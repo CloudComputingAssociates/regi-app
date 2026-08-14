@@ -77,10 +77,10 @@
   display: flex;
   flex-direction: column;
   justify-content: center; // vertically center the row in the taller card
-  // Match the meal slot's 280px base width so the menu card lines up with the
-  // meal grid column below it.
-  width: 280px;
-  min-width: 280px;
+  // ~90% of the meal card's 280px base — intentionally narrower so the menu
+  // strip reads as a separate set of things, not lined up with the meal grid.
+  width: 252px;
+  min-width: 252px;
   min-height: 42px; // 3/4 of the taller drop-target height — roomy but not huge
   padding: 7px 8px;
   border: 2px solid #4a4a4a;
