@@ -124,14 +124,19 @@
     padding: 2px 8px 2px 4px; // less left padding so the name starts near the edge
     font-family: inherit;
     font-size: 14px; // uniform readable size
-    color: #1a1a1a;
-    background: #ffffff;
-    border: 1px solid #9a9ea3;
+    color: #f0f0f0; // white text — reversed out on grey
+    background: #3a3a3a; // the macros grey
+    border: 1px solid #1c1c1c;
+    border-top-color: #4a4a4a;
     border-radius: 3px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.55); // recessed / inset
     outline: none;
     cursor: text;
-    &::selection { background: rgba(77, 166, 255, 0.28); }
-    &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.35); }
+    &::selection { background: rgba(77, 166, 255, 0.4); }
+    &:focus {
+      border-color: #4da6ff;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.55), 0 0 0 2px rgba(77, 166, 255, 0.4);
+    }
   }
 
   // Save + Clear — the same raised DOMED key family as the board toolbar keys

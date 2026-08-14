@@ -384,6 +384,11 @@
     .meal-name-box {
       flex: 1 1 auto;
       min-width: 0;
+      // Lighter grey inset (the cals-pill grey), white text; the name was starting
+      // too far in — trim the left padding (regi-field is 12px).
+      padding: 6px 10px 6px 6px;
+      background: #999999;
+      color: #ffffff;
     }
 
     // Save disc dims + goes inert when there are no unsaved food changes.
