@@ -23,9 +23,10 @@
   // Macros bar hosted in the banner (menus tab). Pushed toward the right so it sits
   // in the space before the tether / user name, laying directly on the black banner.
   .app-bar-macros {
-    flex: 0 1 760px;     // wider — use the space to the LEFT of the bars
+    flex: 0 1 760px;
     min-width: 0;
-    margin-right: 16px;  // gap before the tether / user name
+    margin-left: 24px;   // small gap after the RegiMenu title
+    margin-right: auto;  // push the bars LEFT — kill the black gap on their left
     align-self: center;
 
     // Restyle the macros to lay on black: no component chrome, grey per-bar tracks

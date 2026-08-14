@@ -92,16 +92,8 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               <span class="toolbar-title">
                 <mat-icon class="toolbar-title-icon">restaurant</mat-icon>Menus &amp; Meals
               </span>
-              <!-- Actions grouped together, equidistant: macros toggle · remove all · close. -->
+              <!-- Clear · macros (an AM-radio push key: depressed = shown). -->
               <div class="toolbar-buttons">
-                <button
-                  type="button"
-                  class="macros-toggle-btn"
-                  [matTooltip]="tabService.macrosVisible() ? 'Hide macros' : 'Show macros'"
-                  matTooltipPosition="above"
-                  (click)="tabService.toggleMacros()">
-                  {{ tabService.macrosVisible() ? 'Hide macros' : 'Show macros' }}
-                </button>
                 <button
                   type="button"
                   class="wipe-menus-btn"
@@ -111,13 +103,23 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                 </button>
                 <button
                   type="button"
-                  class="close-panel-btn"
-                  matTooltip="Close Menus &amp; Meals panel"
+                  class="macros-toggle-btn"
+                  [class.depressed]="tabService.macrosVisible()"
+                  [matTooltip]="tabService.macrosVisible() ? 'Hide macros' : 'Show macros'"
                   matTooltipPosition="above"
-                  (click)="tabService.closePanel()">
-                  <mat-icon class="close-icon" aria-hidden="true">logout</mat-icon>
+                  (click)="tabService.toggleMacros()">
+                  macros
                 </button>
               </div>
+              <!-- Exit — far right of the toolbar. -->
+              <button
+                type="button"
+                class="close-panel-btn"
+                matTooltip="Close Menus &amp; Meals panel"
+                matTooltipPosition="above"
+                (click)="tabService.closePanel()">
+                <mat-icon class="close-icon" aria-hidden="true">logout</mat-icon>
+              </button>
               <!-- Planned-days tally moved DOWN into the menu-strip area (see
                    app-menu-card-row), bottom-aligned with the "menus" watermark. -->
             </div>
