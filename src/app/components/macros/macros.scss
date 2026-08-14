@@ -182,7 +182,9 @@
     align-items: center;
     gap: 6px; // space between the cals pill and the %/g toggle
 
-    // Total-cals pill — button-face grey, text CENTERED, INSET (recessed).
+    // Total-cals pill — DARKER grey (calories rank below macros), sat in the dark
+    // band to the LEFT of the %/g toggle. The margin-right pushes it off the
+    // toggle so it has its own space (toggle stays pinned to the right edge).
     .macro-cals {
       flex: 0 0 auto;
       display: inline-flex;
@@ -191,13 +193,14 @@
       text-align: center;
       height: 19px;
       padding: 0 10px;
+      margin-right: 22px; // separation from the %/g toggle
       font-size: 11px;
       font-weight: 500;
       color: #ffffff;
-      background: #999999; // lighter grey — matches the meal card cals, reads clear of the brown fiber
-      border: 1px solid #7a7a7a;
+      background: #4e4e4e; // darker button-face grey
+      border: 1px solid #2a2a2a;
       border-radius: 10px;
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3); // subtle recess, not so dark it muddies
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5); // recessed
       white-space: nowrap;
     }
 
@@ -210,7 +213,9 @@
       border-top-color: #6a6a6a; // lighter rim = RAISED
       padding: 0;
       cursor: pointer;
-      background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%); // raised, domed
+      // Accent RED (the %/g "% background" color) — the ONE control we colour
+      // over grey, because macros rank above calories. Raised/domed, not inset.
+      background: linear-gradient(180deg, #9e1229 0%, #740415 100%);
       box-shadow:
         0 1px 2px rgba(0, 0, 0, 0.45),
         inset 0 1px 0 rgba(255, 255, 255, 0.14);
@@ -220,11 +225,11 @@
       transition: background 0.2s ease;
 
       &:hover {
-        background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%);
+        background: linear-gradient(180deg, #b01a33 0%, #82101f 100%);
       }
 
       &:active {
-        background: linear-gradient(180deg, #4a4a4a 0%, #3c3c3c 100%);
+        background: linear-gradient(180deg, #7a0f22 0%, #5e0313 100%);
       }
 
       .unit-label {
@@ -249,12 +254,12 @@
         width: 17px;
         height: 17px;
         border-radius: 50%;
-        background: #83051a;
-        border: 1px solid #333333;
+        background: #f2f2f2; // light knob — reads against the red track
+        border: 1px solid #5a0410;
         left: 0;
         top: 0;
         transition: left 0.2s ease;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 
         &.right {
           left: 21px; // flush-right in the 40px-wide toggle (was 31px at 50px)

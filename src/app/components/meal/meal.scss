@@ -422,31 +422,24 @@
     .add-affordance { margin-left: auto; }
   }
 
-  // "Add food +" — a round-cornered balloon (pill) button, right-pinned on the
-  // macro row. Label + a trailing plus glyph.
+  // "Add food" — square [+] key, right-pinned on the macro row. Deliberately
+  // matches the Clear Meal key (.back-clear-btn) so the two align visually.
   .add-food-btn {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    gap: 2px;
-    height: 24px;
-    padding: 0 6px 0 11px;
-    color: #cfcfcf;
-    background: linear-gradient(180deg, #4d4d4d 0%, #3a3a3a 100%);
-    border: 1px solid #262626;
-    border-top-color: #6a6a6a;
-    border-radius: 12px; // pill / balloon
-    font-size: 12px;
-    font-weight: 500;
-    white-space: nowrap;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    color: #e0e0e0;
+    background: #555555;
+    border: 1px solid #6a6a6a;
+    border-radius: 2px;
     cursor: pointer;
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    transition: color 0.12s ease, background 0.12s ease;
 
-    .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; }
-    &:hover { color: #ffffff; background: linear-gradient(180deg, #585858 0%, #444444 100%); }
+    .mat-icon { width: 17px; height: 17px; font-size: 17px; line-height: 17px; }
+    &:hover { background: #616161; color: #ffffff; }
     &:active { transform: translateY(1px); }
   }
 }
@@ -519,11 +512,12 @@
   border: none;
   background: none;
   font-size: 12px;
-  color: #ffffff;
+  color: #4da6ff; // standard hyperlink blue — reads as a clickable link
   text-decoration: underline;
+  text-decoration-color: #4da6ff;
   text-underline-offset: 2px;
   cursor: pointer;
-  &:hover { color: #e6e6e6; }
+  &:hover { color: #7ac0ff; text-decoration-color: #7ac0ff; } // brighten on hover
 }
 
 // Ingredient list — tight interline rhythm. Zero inter-row gap, and shave a pixel

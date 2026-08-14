@@ -174,9 +174,8 @@ interface Macro {
                   <button
                     type="button"
                     class="add-food-btn add-affordance"
-                    matTooltip="Add food to this meal"
+                    matTooltip="Add food to meal"
                     (click)="toggleAdd.emit(fm.mealId)">
-                    <span>Add food</span>
                     <mat-icon>add</mat-icon>
                   </button>
                 </div>
@@ -189,7 +188,7 @@ interface Macro {
                       type="button"
                       class="recipe-link"
                       matTooltip="Open the source recipe PDF"
-                      (click)="openRecipe(link)">Click here for recipe (PDF)</button>
+                      (click)="openRecipe(link)">Recipe (PDF)</button>
                   </div>
                 }
 
