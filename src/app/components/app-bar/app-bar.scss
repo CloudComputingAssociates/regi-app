@@ -12,7 +12,10 @@
   .app-bar-content {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    // Pack left so RegiMenu stays pinned next to the hamburger. The right zone
+    // is pushed over with margin-left:auto — NOT space-between, which would
+    // center the title whenever the macros bar is absent (closed / other tabs).
+    justify-content: flex-start;
     position: relative;
     padding: 3px 8px 3px 4px;  // top/bottom trimmed ~25% to reclaim vertical space
     max-width: 100%;
@@ -26,6 +29,7 @@
   // the macros to its left ends at the notebook's left edge.
   .app-bar-right {
     flex: 0 0 22%; // reserve a wider right band so the macros isn't quite so wide
+    margin-left: auto; // pin to the far right; keeps title left when macros is absent
     min-width: 0;
     display: flex;
     align-items: center;

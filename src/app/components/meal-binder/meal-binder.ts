@@ -659,7 +659,7 @@ export class MealBinderComponent implements OnInit {
   readonly displayName = signal<string>('');
   readonly notebookTitle = computed<string>(() => {
     const name = this.displayName();
-    return name ? `${name} notebook` : 'notebook';
+    return name ? `${name} Notebook` : 'Notebook';
   });
 
   ngOnInit(): void {
