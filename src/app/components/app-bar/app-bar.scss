@@ -25,7 +25,7 @@
   // Right zone ≈ the notebook rail (30%), tether + logo right-aligned in it — so
   // the macros to its left ends at the notebook's left edge.
   .app-bar-right {
-    flex: 0 0 16%; // happy medium: reserve a smaller right band (30% was too tight, auto too wide)
+    flex: 0 0 22%; // reserve a wider right band so the macros isn't quite so wide
     min-width: 0;
     display: flex;
     align-items: center;
@@ -49,15 +49,19 @@
         border-radius: 0;
         box-shadow: none;
         // Top padding pushes the bars DOWN off the banner ceiling; bottom padding
-        // gives the dropped cals + %/g pills room — black reads balanced above/below.
+        // gives the dropped cals + %/g pills just enough room (not too much black).
         padding-top: 14px;
-        padding-bottom: 22px;
+        padding-bottom: 14px;
         overflow: visible;
         &::before { display: none; } // drop the sheen / backlight glow
       }
+      // Macros clips its own overflow (mat-card + card-content overflow:hidden),
+      // which was cutting off the dropped pills — let them show.
+      .mat-mdc-card,
+      .mat-mdc-card-content { overflow: visible; }
       // The pills are anchored bottom:3px of .macro-row (their positioned
       // ancestor). Push them BELOW the bar row into the padded space.
-      .mode-toggle-container { bottom: -16px; }
+      .mode-toggle-container { bottom: -12px; }
       .custom-progress-track { background: #3a3a3a; } // grey track shows on black
       .macro-row { padding: 2px 8px; }      // compact for the banner
       // The cals + %/g pills sit absolutely at the last bar's right — shorten that
