@@ -48,12 +48,12 @@ interface Macro {
       [attr.data-slot-order]="slot().slotOrder"
       [attr.data-slot-empty]="isEmpty()">
       @if (slot().isDiningOut) {
-        <div class="slot-header"><span class="slot-title">Meal Slot {{ slot().slotOrder }}</span></div>
+        <div class="slot-header"><span class="slot-title">Meal slot {{ slot().slotOrder }}</span></div>
         <div class="slot-placeholder dining-out">
           <span class="placeholder-icon">🍽️</span><span>Dining out</span>
         </div>
       } @else if (isEmpty()) {
-        <div class="slot-header"><span class="slot-title">Meal Slot {{ slot().slotOrder }}</span></div>
+        <div class="slot-header"><span class="slot-title">Meal slot {{ slot().slotOrder }}</span></div>
         <div
           class="slot-placeholder pick"
           [class.bloom]="dropHighlight()"

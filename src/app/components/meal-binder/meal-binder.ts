@@ -216,6 +216,9 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                 <div
                   class="binder-card"
                   [class.selected]="rotation.isCardSelected('meal', meal.id)"
+                  matTooltip="Drag a meal to a meal slot, or double-click"
+                  matTooltipPosition="above"
+                  [matTooltipShowDelay]="400"
                   cdkDrag
                   [cdkDragData]="meal"
                   (cdkDragStarted)="rotation.dragging.set('meal'); clearDragHint()"
@@ -259,11 +262,11 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                            drag. A pencil to rename appears only when expanded. -->
                       <span
                         class="binder-card-name"
-                        [matTooltip]="meal.name"
+                        [matTooltip]="capName(meal.name)"
                         [matTooltipDisabled]="!rotation.isCardSelected('meal', meal.id)"
                         matTooltipClass="binder-name-tip"
                         matTooltipPosition="below"
-                        [matTooltipShowDelay]="300">{{ meal.name }}</span>
+                        [matTooltipShowDelay]="300">{{ capName(meal.name) }}</span>
                       <!-- Set-sourced meals carry a set badge and are READ-ONLY
                            in place (no rename / delete) — opening + saving one
                            clones it to My Meals via the existing flow. -->
@@ -721,6 +724,15 @@ export class MealBinderComponent implements OnInit {
 
   round(n: number | null | undefined): number {
     return Math.round(n ?? 0);
+  }
+
+  /** Display an ALL-CAPS name in Initial Caps (title case); leave mixed-case as-is. */
+  capName(name: string | null | undefined): string {
+    const n = (name ?? '').trim();
+    if (n && !/[a-z]/.test(n) && /[A-Z]/.test(n)) {
+      return n.toLowerCase().replace(/\b([a-z])/g, (_m, c: string) => c.toUpperCase());
+    }
+    return name ?? '';
   }
 
   /** Thumbnail URL for a Binder meal (thumbnail preferred, full image fallback),

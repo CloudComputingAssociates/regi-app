@@ -23,10 +23,10 @@
   // Macros bar hosted in the banner (menus tab). Pushed toward the right so it sits
   // in the space before the tether / user name, laying directly on the black banner.
   .app-bar-macros {
-    flex: 0 1 760px;
+    flex: 1 1 auto;      // GROW to fill from the title toward the tether/user
     min-width: 0;
     margin-left: 24px;   // small gap after the RegiMenu title
-    margin-right: auto;  // push the bars LEFT — kill the black gap on their left
+    margin-right: 16px;  // gap before the tether / user name
     align-self: center;
 
     // Restyle the macros to lay on black: no component chrome, grey per-bar tracks
@@ -41,6 +41,9 @@
       }
       .custom-progress-track { background: #3a3a3a; } // grey track shows on black
       .macro-row { padding: 2px 8px; }      // compact for the banner
+      // The cals + %/g pills sit absolutely at the last bar's right — shorten that
+      // bar's track so there's padding between the fiber indicator and the pills.
+      .macro-item:last-child .custom-progress-track { margin-right: 112px; }
     }
   }
 
@@ -70,7 +73,7 @@
   // breathing room. Active panel name renders in the same font and size
   // as the logo (per spec) so it reads as a sibling, not a subtitle.
   .title-area {
-    flex: 1;
+    flex: 0 1 auto; // don't GROW — was flex:1, which ate the space and shoved macros right
     display: flex;
     flex-direction: row;
     align-items: baseline;
