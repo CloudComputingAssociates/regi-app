@@ -612,7 +612,7 @@
 .section-head {
   display: flex;
   align-items: flex-end; // the tab sits on top of its sheet; controls align to its base
-  gap: 8px;
+  gap: 4px; // squeezed — frees space for the search field's default width
   width: 100%;
   box-sizing: border-box;
   margin: 0;
@@ -631,7 +631,8 @@
     align-items: center;
     justify-content: center; // center the label
     gap: 4px;
-    padding: 5px 10px 6px; // less L/R padding — slimmer tabs
+    min-width: 84px; // both tabs the SAME size
+    padding: 8px 9px 2px; // more top / less bottom → the label sits LOWER in the tab
     box-sizing: border-box;
     border: none;
     border-radius: 12px 12px 0 0;
