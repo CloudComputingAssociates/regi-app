@@ -51,10 +51,14 @@ import { map } from 'rxjs/operators';
           <div class="app-bar-macros"><app-macros /></div>
         }
 
-        @if (isAuthenticated()) {
-          <app-tether-indicator />
-        }
-        <app-profile-menu />
+        <!-- Right zone ≈ the notebook rail width, so the macros ends at the
+             notebook's left edge; tether + logo sit above the notebook. -->
+        <div class="app-bar-right">
+          @if (isAuthenticated()) {
+            <app-tether-indicator />
+          }
+          <app-profile-menu />
+        </div>
       </div>
     </header>
   `,

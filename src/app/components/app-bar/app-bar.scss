@@ -22,11 +22,22 @@
 
   // Macros bar hosted in the banner (menus tab). Pushed toward the right so it sits
   // in the space before the tether / user name, laying directly on the black banner.
+  // Right zone ≈ the notebook rail (30%), tether + logo right-aligned in it — so
+  // the macros to its left ends at the notebook's left edge.
+  .app-bar-right {
+    flex: 0 0 30%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
   .app-bar-macros {
-    flex: 1 1 auto;      // GROW to fill from the title toward the tether/user
+    flex: 1 1 auto;      // fill from the title to the right zone (notebook edge)
     min-width: 0;
     margin-left: 24px;   // small gap after the RegiMenu title
-    margin-right: 16px;  // gap before the tether / user name
+    margin-right: 12px;
     align-self: center;
 
     // Restyle the macros to lay on black: no component chrome, grey per-bar tracks
