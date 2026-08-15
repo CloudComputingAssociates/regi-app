@@ -67,12 +67,14 @@
       // positioned ancestor). Push them BELOW the bar row into the padded space.
       .mode-toggle-container,
       .macro-cals { bottom: -12px; }
+      // Slide the %/g toggle LEFT off the macros' right edge so it sits above the
+      // board's "Close Menus & Meals panel" exit button (which is inset from the
+      // notebook, not at the far right).
+      .mode-toggle-container { right: 11%; }
       .custom-progress-track { background: #3a3a3a; } // grey track shows on black
       .macro-row { padding: 2px 8px; }      // compact for the banner
-      // Only the %/g toggle sits at the far right now (cals moved between the
-      // fats/fiber bars) — reserve just enough for it, so the fiber bar isn't
-      // awkwardly short.
-      .macro-item:last-child .custom-progress-track { margin-right: 46px; }
+      // End the fiber bar just before the toggle's new position.
+      .macro-item:last-child .custom-progress-track { margin-right: 17%; }
     }
   }
 
