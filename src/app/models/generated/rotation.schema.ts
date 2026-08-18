@@ -431,6 +431,10 @@ export interface Menu {
    */
   pinned: boolean;
   /**
+   * Back-pointer set on copies minted by POST /menu/{id}/duplicate to the source menu id; null on originals. Read-only / server-owned.
+   */
+  clonedFromMenuId?: number | null;
+  /**
    * Cached total calories across all slots
    */
   totalCalories?: number | null;
@@ -466,6 +470,16 @@ export interface Menu {
    * When the menu was last modified
    */
   updatedAt?: string;
+  [k: string]: unknown;
+}
+/**
+ * 409 body of PUT /api/menu/{id}/save-to-original — the copy can't overwrite its
+ * original because one or more slotted meals aren't saved to the binder yet.
+ * `unsavedMeals` lists their names for the user prompt.
+ */
+export interface SaveMenuToOriginalConflict {
+  error: string;
+  unsavedMeals: string[];
   [k: string]: unknown;
 }
 /**

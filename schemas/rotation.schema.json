@@ -421,6 +421,11 @@
           "type": "boolean",
           "description": "Binder flag — 1 = pinned menu (survives rotation teardown; only explicit delete kills it), 0 = disposable"
         },
+        "clonedFromMenuId": {
+          "type": ["integer", "null"],
+          "description": "Back-pointer set on copies minted by POST /menu/{id}/duplicate to the source menu id; null on originals. Read-only / server-owned.",
+          "readOnly": true
+        },
         "totalCalories": {
           "type": ["number", "null"],
           "description": "Cached total calories across all slots"
@@ -464,6 +469,16 @@
         }
       },
       "required": ["name", "slotCount", "isYeh", "isFavorite", "pinned", "slots"]
+    },
+
+    "SaveMenuToOriginalConflict": {
+      "type": "object",
+      "description": "409 body of PUT /api/menu/{id}/save-to-original — the copy can't overwrite its original because one or more slotted meals aren't saved to the binder yet. unsavedMeals lists their names for the user prompt.",
+      "properties": {
+        "error": { "type": "string" },
+        "unsavedMeals": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["error", "unsavedMeals"]
     },
 
     "MenuSummary": {

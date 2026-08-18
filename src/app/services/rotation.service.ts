@@ -26,6 +26,7 @@ import {
   MenuSlot,
   Rotation,
   RotationDetail,
+  SaveMenuToOriginalConflict,
   UpdateMealItemRequest,
   UpdateMealRequest,
   UpdateMenuRequest,
@@ -197,6 +198,13 @@ export class RotationService {
    *  menu save-check for committed menus — the card decides pinned/named gating). */
   menuCompositionChanged(menuId: number): boolean {
     return this.menuCompositionEdited().has(menuId);
+  }
+
+  /** The ORIGINAL (source) menu id a placed copy was minted from, or null for an
+   *  original / a menu not yet cached. Gates the "Save to original" affordance —
+   *  present only on copies that carry the server-owned clonedFromMenuId link. */
+  menuClonedFromMenuId(menuId: number): number | null {
+    return this.menusById().get(menuId)?.clonedFromMenuId ?? null;
   }
 
   /** A meal's Binder pin icon is ALIVE when it's pinned, OR it's a still-verbatim
@@ -1150,6 +1158,45 @@ export class RotationService {
     }
     await this.refreshMenu(menuId);
     this.clearMenuComposition(menuId); // composition change acknowledged / saved
+  }
+
+  /** Save a PLACED copy's slot composition back onto its notebook ORIGINAL.
+   *    PUT /api/menu/{copyId}/save-to-original  (no body)
+   *  The copy is linked to its source via clonedFromMenuId (server-owned); the
+   *  endpoint overwrites the original's slots from the copy and returns the
+   *  updated ORIGINAL (slots fully expanded). Name + pinned on both are untouched.
+   *    • 200 → merge the original into menusById so an open view of it refreshes.
+   *    • 409 → SaveMenuToOriginalConflict: some slotted meals aren't in the binder
+   *            yet; name them so the user saves those first.
+   *    • 404 → the original is gone; drop the copy's back-pointer locally so the
+   *            "Save to original" affordance disappears without a refetch. */
+  async saveMenuToOriginal(copyId: number): Promise<void> {
+    try {
+      const original = await firstValueFrom(
+        this.http.put<Menu>(`${this.baseUrl}/menu/${copyId}/save-to-original`, null),
+      );
+      if (original.id != null) this.cacheMenu(original.id, original);
+      this.clearMenuComposition(copyId); // the copy's changes are now on the original
+      this.notification.show('Saved to the original in your notebook', 'success');
+    } catch (err) {
+      if (err instanceof HttpErrorResponse && err.status === 409) {
+        const conflict = err.error as SaveMenuToOriginalConflict | null;
+        const names = conflict?.unsavedMeals?.join(', ') ?? '';
+        this.notification.show(`Save these meals to your binder first: ${names}`, 'error');
+        return;
+      }
+      if (err instanceof HttpErrorResponse && err.status === 404) {
+        this.notification.show('The original menu no longer exists.', 'error');
+        // Drop the stale back-pointer so the affordance disappears without a refetch.
+        this.menusById.update((m) => {
+          const copy = m.get(copyId);
+          if (copy == null) return m;
+          return new Map(m).set(copyId, { ...copy, clonedFromMenuId: null });
+        });
+        return;
+      }
+      this.notification.show(this.errMessage(err), 'error');
+    }
   }
 
   /** Pin a MENU to the Binder. PUT /menu/{id} { pinned: true } runs the server

@@ -57,6 +57,19 @@ import { RotationService } from '../../services/rotation.service';
                 (click)="$event.stopPropagation(); onSaveCheck(menu, i)">
                 <mat-icon>check</mat-icon>
               </button>
+              <!-- Save-to-original key — only on a PLACED COPY (carries the
+                   server-owned clonedFromMenuId). Pushes this menu's slots back
+                   onto its notebook original. -->
+              @if (showSaveToOriginal(menu)) {
+                <button
+                  type="button"
+                  class="menu-save-original"
+                  matTooltip="Save changes to the original menu"
+                  matTooltipPosition="above"
+                  (click)="$event.stopPropagation(); saveToOriginal.emit(menu.menuId)">
+                  <mat-icon>save</mat-icon>
+                </button>
+              }
               <!-- Square Clear key — removes this menu from the plan. -->
               <button
                 type="button"
@@ -120,6 +133,9 @@ export class MenuCardRowComponent {
   readonly renameMenu = output<{ menuId: number; name: string }>();
   /** "+ Add menu" clicked. */
   readonly addMenu = output<void>();
+  /** Save-to-original key on a placed copy — push its slots back onto the notebook
+   *  original (emits the copy's menuId; the parent confirms + calls the service). */
+  readonly saveToOriginal = output<number>();
   /** Foot "Copy" clicked — duplicate this menu into a new card (emits the menuId).
    *  The parent duplicates it server-side and links the copy into the rotation. */
   readonly duplicateMenu = output<number>();
@@ -244,6 +260,12 @@ export class MenuCardRowComponent {
 
   copyRoleFor(menu: RotationMenuEntry): 'orig' | 'copy' | null {
     return this.copyRoles().get(menu.menuId) ?? null;
+  }
+
+  /** Show the "Save to original" key only for a placed COPY — one the server
+   *  linked back to a source menu via clonedFromMenuId. */
+  showSaveToOriginal(menu: RotationMenuEntry): boolean {
+    return this.rotation.menuClonedFromMenuId(menu.menuId) != null;
   }
 
   /** Tile pin icon — emit pin unless the entry is already pinned. */

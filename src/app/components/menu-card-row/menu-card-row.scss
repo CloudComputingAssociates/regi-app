@@ -143,6 +143,7 @@
   // (wipe / close): square, grey top-lit gradient, rim + inner highlight, drop
   // shadow, radius 5. Check (save) leads; Clear follows.
   .menu-save,
+  .menu-save-original,
   .menu-clear {
     flex: 0 0 auto;
     display: inline-flex;

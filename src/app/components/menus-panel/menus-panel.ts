@@ -135,6 +135,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               (menuSelect)="onSelectMenu($event)"
               (deleteMenu)="onDeleteMenu($event)"
               (pinMenu)="onSaveMenu($event)"
+              (saveToOriginal)="onSaveToOriginal($event)"
               (renameMenu)="rotation.updateMenuName($event.menuId, $event.name)"
               (dropMenu)="rotation.addMenuToRotation($event)"
               (addMenu)="rotation.addMenu()"
@@ -568,6 +569,21 @@ export class MenusPanelComponent implements OnInit {
       return;
     }
     void this.rotation.pinMenu(menuId);
+  }
+
+  /** Save-to-original pressed on a placed copy. Confirm, then overwrite the
+   *  notebook original's slots with this copy's current meals (name + pinned
+   *  status on both menus are left untouched). */
+  onSaveToOriginal(copyId: number): void {
+    this.dialog.open(WipeConfirmDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: {
+        message:
+          "Overwrite the original menu's slots with this menu's current meals? Name and pinned status are not changed.",
+        confirmLabel: 'Save to original',
+        onConfirm: () => void this.rotation.saveMenuToOriginal(copyId),
+      },
+    });
   }
 
   onDeleteMenu(menuId: number): void {
