@@ -234,6 +234,14 @@ export interface Meal {
    * Name of the source meal set; paired with mealSetId
    */
   mealSetName?: string | null;
+  /**
+   * MealSet this meal was materialized from at purchase; null for non-set meals. Presence gates "Restore original". Read-only / server-owned. NOTE: distinct from mealSetId (catalog set-filtered provenance).
+   */
+  sourceMealSetId?: number | null;
+  /**
+   * Name of the MealSet this meal was materialized from — a query-time decoration paired with sourceMealSetId. Read-only / server-owned.
+   */
+  sourceMealSetName?: string | null;
   createdAt: string;
   updatedAt: string;
   [k: string]: unknown;

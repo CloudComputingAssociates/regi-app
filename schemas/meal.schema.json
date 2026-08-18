@@ -112,6 +112,8 @@
         "ingredientNames": { "type": "string", "description": "Space-joined, lowercased MealItems.foodName values for client-side ingredient search. Populated only on the list (scope=binder/folder) response; empty/absent when the meal has no items or on item-hydrated reads." },
         "mealSetId": { "type": ["integer", "null"], "description": "Set this meal was sourced from in a set-filtered list (mealSetIds); absent for caller-owned meals" },
         "mealSetName": { "type": ["string", "null"], "description": "Name of the source meal set; paired with mealSetId" },
+        "sourceMealSetId": { "type": ["integer", "null"], "description": "MealSet this meal was materialized from at purchase; null for non-set meals. Presence gates 'Restore original'. Read-only / server-owned. NOTE: distinct from mealSetId (catalog set-filtered provenance).", "readOnly": true },
+        "sourceMealSetName": { "type": ["string", "null"], "description": "Name of the MealSet this meal was materialized from — a query-time decoration paired with sourceMealSetId. Read-only / server-owned.", "readOnly": true },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },

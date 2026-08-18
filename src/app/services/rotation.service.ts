@@ -1673,6 +1673,53 @@ export class RotationService {
     }
   }
 
+  /** Replace one meal in binderMeals + the mealsById cache with a fresh copy,
+   *  immutably (the 200 body from restore/detach is the refresh — no reload). */
+  private replaceBinderMeal(meal: Meal): void {
+    if (meal.id == null) return;
+    const id = meal.id;
+    this.binderMeals.update((list) => list.map((m) => (m.id === id ? meal : m)));
+    this.mealsById.update((m) => new Map(m).set(id, meal));
+  }
+
+  /** Restore a set-materialized meal to its MealSet original (discards the user's
+   *  edits). POST /meal/{id}/restore → the restored Meal (with items). 409 when
+   *  the meal isn't from a set. */
+  async restoreMeal(mealId: number): Promise<void> {
+    try {
+      const meal = await firstValueFrom(
+        this.http.post<Meal>(`${this.baseUrl}/meal/${mealId}/restore`, null),
+      );
+      this.replaceBinderMeal(meal);
+      this.notification.show('Restored to original.', 'success');
+    } catch (err) {
+      if (err instanceof HttpErrorResponse && err.status === 409) {
+        this.notification.show("This meal isn't from a MealSet.", 'error');
+        return;
+      }
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Detach a set-materialized meal from its MealSet — it becomes an ordinary
+   *  owned meal (nulls sourceMealSetId/Name, so the badge + Restore disappear).
+   *  POST /meal/{id}/detach → the updated Meal. 409 when already detached. */
+  async detachMeal(mealId: number): Promise<void> {
+    try {
+      const meal = await firstValueFrom(
+        this.http.post<Meal>(`${this.baseUrl}/meal/${mealId}/detach`, null),
+      );
+      this.replaceBinderMeal(meal);
+      this.notification.show('Detached from set.', 'success');
+    } catch (err) {
+      if (err instanceof HttpErrorResponse && err.status === 409) {
+        this.notification.show('This meal is already detached.', 'error');
+        return;
+      }
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
   /** Clear a menu from the board (the menu-tile trash). This UNLINKS it from the
    *  rotation — removing it (and its meal slots) from the week's plan — but does
    *  NOT touch the Binder: a PINNED/saved menu (and its meals) survives there.

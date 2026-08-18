@@ -180,6 +180,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                     <option value="fiber">Fiber</option>
                     <option value="recipes">Recipes Only</option>
                     <option value="date">By Date</option>
+                    <option value="newest">Newest</option>
                   </select>
                   <button
                     type="button"
@@ -208,6 +209,23 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                     <span class="mealset-empty">No MealSets available</span>
                   }
                 </div>
+                <!-- Provenance filter — owned meals materialized FROM a set.
+                     Distinct from the entitled-sets row above; shown only when
+                     loaded meals carry a sourceMealSetId. -->
+                @if (sourceSetOptions().length) {
+                  <div class="mealset-row">
+                    <label class="filter-label">From MealSet</label>
+                    <select
+                      class="sort-select"
+                      [value]="sourceSetFilter()"
+                      (change)="onSourceSetChange($any($event.target).value)">
+                      <option value="all">All</option>
+                      @for (opt of sourceSetOptions(); track opt.id) {
+                        <option [value]="opt.id">{{ opt.name }}</option>
+                      }
+                    </select>
+                  </div>
+                }
               </fieldset>
             </div>
           }
@@ -273,6 +291,11 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       @if (meal.mealSetName) {
                         <span class="set-badge" [matTooltip]="'From ' + meal.mealSetName">{{ meal.mealSetName }}</span>
                       }
+                      <!-- Provenance badge: this OWNED meal was materialized from a
+                           MealSet (sourceMealSetId). Reuses the set-badge chip. -->
+                      @if (meal.sourceMealSetId != null) {
+                        <span class="set-badge" [matTooltip]="'From MealSet: ' + meal.sourceMealSetName">{{ meal.sourceMealSetName }}</span>
+                      }
                       @if (isMealOpen(meal) && !meal.mealSetId) {
                         <button
                           type="button"
@@ -301,6 +324,24 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
                       <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
+                      <!-- Set-materialized meal: restore to the original (primary)
+                           or detach from the set (secondary). Gated on provenance. -->
+                      @if (meal.sourceMealSetId != null) {
+                        <button
+                          type="button"
+                          class="card-restore icon-disc icon-disc-edit"
+                          matTooltip="Restore to the MealSet original"
+                          (click)="$event.stopPropagation(); onRestoreMeal(meal)">
+                          <mat-icon>restore</mat-icon>
+                        </button>
+                        <button
+                          type="button"
+                          class="card-detach icon-disc"
+                          matTooltip="Detach from the MealSet"
+                          (click)="$event.stopPropagation(); onDetachMeal(meal)">
+                          <mat-icon>link_off</mat-icon>
+                        </button>
+                      }
                       @if (!meal.mealSetId) {
                         <button
                           type="button"
@@ -434,7 +475,7 @@ export class MealBinderComponent implements OnInit {
    *  Binder so the fresh meal surfaces at the very top. 'recipes' is really a
    *  FILTER (narrow to recipe-linked meals) parked in the Sort control to save
    *  vertical space; it doesn't reorder and composes with the SHOW toggles. */
-  readonly sortBy = signal<'protein' | 'fiber' | 'date' | 'recipes' | null>(null);
+  readonly sortBy = signal<'protein' | 'fiber' | 'date' | 'newest' | 'recipes' | null>(null);
 
   /** Map the Sort dropdown value to the sort signal. */
   onSortChange(value: string): void {
@@ -442,8 +483,35 @@ export class MealBinderComponent implements OnInit {
       value === 'protein' ? 'protein' :
       value === 'fiber' ? 'fiber' :
       value === 'recipes' ? 'recipes' :
-      value === 'date' ? 'date' : null,
+      value === 'date' ? 'date' :
+      value === 'newest' ? 'newest' : null,
     );
+  }
+
+  // ----- MealSet PROVENANCE filter (owned meals materialized FROM a set) ------
+  /** Selected source-MealSet id, or 'all' (default). DISTINCT from the entitled-
+   *  sets multi-select above: that mixes catalog set meals in via the server;
+   *  THIS narrows the loaded list to owned meals whose sourceMealSetId matches. */
+  readonly sourceSetFilter = signal<number | 'all'>('all');
+
+  /** Distinct (id, name) source-MealSets across the loaded binder meals, sorted
+   *  by name. Empty when no loaded meal carries sourceMealSetId — the row is then
+   *  not shown (the entitled-sets row keeps its "No MealSets available" state). */
+  readonly sourceSetOptions = computed<{ id: number; name: string }[]>(() => {
+    const seen = new Map<number, string>();
+    for (const m of this.rotation.binderMeals()) {
+      if (m.sourceMealSetId != null && !seen.has(m.sourceMealSetId)) {
+        seen.set(m.sourceMealSetId, m.sourceMealSetName ?? `Set ${m.sourceMealSetId}`);
+      }
+    }
+    return [...seen.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  });
+
+  /** Map the "From MealSet" dropdown value to the provenance filter signal. */
+  onSourceSetChange(value: string): void {
+    this.sourceSetFilter.set(value === 'all' ? 'all' : Number(value));
   }
 
   /** True when the filter is doing anything (not the cleared default): a search
@@ -452,7 +520,8 @@ export class MealBinderComponent implements OnInit {
   readonly filterActive = computed<boolean>(() =>
     this.searchText().trim() !== '' ||
     this.sortBy() !== null ||
-    this.selectedSetIds().length > 0,
+    this.selectedSetIds().length > 0 ||
+    this.sourceSetFilter() !== 'all',
   );
 
   /** The Meals list as displayed (My Meals + any mixed-in set meals, straight
@@ -474,6 +543,11 @@ export class MealBinderComponent implements OnInit {
           (m.primaryProteinName ?? '').toLowerCase().includes(q),
       );
     }
+    // Provenance filter: narrow to owned meals materialized from the chosen set.
+    const setSel = this.sourceSetFilter();
+    if (setSel !== 'all') {
+      list = list.filter((m) => m.sourceMealSetId === setSel);
+    }
     const sort = this.sortBy();
     // "Recipes Only" is a filter dressed as a Sort option: narrow to
     // recipe-linked meals (any source). It doesn't reorder — the default order
@@ -491,6 +565,10 @@ export class MealBinderComponent implements OnInit {
       const ts = (m: Meal) =>
         Math.max(Date.parse(m.updatedAt ?? '') || 0, Date.parse(m.createdAt ?? '') || 0);
       sorted.sort((a, b) => ts(b) - ts(a));
+    } else if (sort === 'newest') {
+      // Strictly createdAt descending; a missing createdAt (0) sorts LAST.
+      const ct = (m: Meal) => Date.parse(m.createdAt ?? '') || 0;
+      sorted.sort((a, b) => ct(b) - ct(a));
     } else {
       sorted.sort((a, b) => this.defaultMealOrder(a, b));
     }
@@ -518,6 +596,7 @@ export class MealBinderComponent implements OnInit {
   clearFilter(): void {
     this.searchText.set('');
     this.sortBy.set(null);
+    this.sourceSetFilter.set('all');
     this.selectedSetIds.set([]);
     this.persistSelected([]);
     void this.rotation.loadBinder([]);
@@ -525,6 +604,36 @@ export class MealBinderComponent implements OnInit {
       const next = new Set(s);
       for (const key of next) if (key.startsWith('meal-')) next.delete(key);
       return next;
+    });
+  }
+
+  /** Restore a set-materialized meal to its MealSet original — confirm first, the
+   *  edits are discarded. The service's 200 merge refreshes the card. */
+  onRestoreMeal(meal: Meal): void {
+    if (meal.id == null) return;
+    const id = meal.id;
+    this.dialog.open(WipeConfirmDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: {
+        message: `Restore this meal to the original from ${meal.sourceMealSetName}? Your changes to it will be lost.`,
+        confirmLabel: 'Restore original',
+        onConfirm: () => void this.rotation.restoreMeal(id),
+      },
+    });
+  }
+
+  /** Detach a set-materialized meal from its set — confirm first; afterwards the
+   *  badge + Restore disappear (the response nulls the source fields). */
+  onDetachMeal(meal: Meal): void {
+    if (meal.id == null) return;
+    const id = meal.id;
+    this.dialog.open(WipeConfirmDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: {
+        message: `Detach this meal from ${meal.sourceMealSetName}? Restore original will no longer be available.`,
+        confirmLabel: 'Detach',
+        onConfirm: () => void this.rotation.detachMeal(id),
+      },
     });
   }
 
