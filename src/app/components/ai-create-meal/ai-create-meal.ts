@@ -141,14 +141,16 @@ export class AiCreateMealComponent {
       this.notification.show('Please choose a PDF, JPEG, or PNG recipe file.', 'error');
       return false;
     }
-    // A valid file is queued — reassure the user (auto-closes after 5s; the close
-    // button is always available). The real completion notification arrives later
-    // from the background watcher.
-    this.notification.show(
-      "Queued for processing, we'll take it from here. Notification will be sent when finished importing and AI processing.",
-      'info',
-      5000,
-    );
+    // A dropped/browsed PDF is queued — reassure the user (yellow, auto-closes
+    // after 10s; the close button is always available). The real completion
+    // notification arrives later from the background watcher. PDF-only per request.
+    if (file.type === 'application/pdf') {
+      this.notification.show(
+        "Queued for processing, we'll take it from here. Notification will be sent when finished importing and AI processing.",
+        'warning',
+        10000,
+      );
+    }
     void this.uploadAndWatch(file);
     return true;
   }

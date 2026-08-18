@@ -632,7 +632,7 @@
     justify-content: center; // center the label
     gap: 4px;
     flex: 0 0 92px; // FIXED width, no grow/shrink → both tabs identical size
-    padding: 8px 9px 2px; // more top / less bottom → the label sits LOWER in the tab
+    padding: 6px 9px 4px; // nudged the label UP ~2px (was 8/2) — sat too low
     box-sizing: border-box;
     border: none;
     border-radius: 12px 12px 0 0;
