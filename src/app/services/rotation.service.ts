@@ -1156,8 +1156,12 @@ export class RotationService {
     for (const mealId of dirty) {
       await this.saveSlottedCopy(mealId);
     }
-    await this.refreshMenu(menuId);
-    this.clearMenuComposition(menuId); // composition change acknowledged / saved
+    // Pin the menu so it actually lands in the Binder Menus list (the server
+    // cascade locks it + its meals in). The dirty meals are saved above, so
+    // pinMenu's all-Binder guard now passes. pinMenu also refreshes the menu and
+    // both Binder groups, so no separate refresh is needed.
+    await this.pinMenu(menuId);
+    this.clearMenuComposition(menuId); // composition change saved
   }
 
   /** Save a PLACED copy's slot composition back onto its notebook ORIGINAL.
