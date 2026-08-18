@@ -280,12 +280,18 @@ export class MenuCardRowComponent {
     // While editing: a real, CHANGED name in the box lights the check immediately.
     if (this.editingMenuId() === menu.menuId) {
       const draft = this.nameDraft().trim();
-      return draft !== '' && draft !== shown && !/^menu\s+\d+$/i.test(draft);
+      if (draft !== '' && draft !== shown && !/^menu\s+\d+$/i.test(draft)) return true;
     }
-    // Otherwise only a menu the user RENAMED this session (and hasn't saved to the
-    // Binder yet) is savable. A freshly dragged / duplicated menu is NOT — so it
-    // can never offer a save that would create a duplicate.
-    return this.renamedMenus().has(menu.menuId) && !menu.pinned;
+    // A menu the user RENAMED this session (and hasn't saved to the Binder yet).
+    if (this.renamedMenus().has(menu.menuId) && !menu.pinned) return true;
+    // OR a menu whose slotted meals hold unsaved edits (a food added, a portion
+    // changed) — the menu now differs from its saved state and can be saved back.
+    if (this.rotation.menuHasUnsavedWork(menu.menuId)) return true;
+    // OR the user changed a COMMITTED menu's composition (added / removed a meal).
+    // Only for a menu already saved (pinned) or real-named — on a fresh unnamed
+    // menu, filling slots is just building it, so no save-check yet.
+    const committed = menu.pinned || !this.isUnnamedMenu(menu);
+    return committed && this.rotation.menuCompositionChanged(menu.menuId);
   }
 
   /** Green check pressed. It fires on mousedown-preventDefault (the name box keeps
@@ -298,7 +304,16 @@ export class MenuCardRowComponent {
       this.markRenamed(menu.menuId);
       this.flashSaveHint(menu.menuId);
     }
-    if (!menu.pinned) this.onPin(menu);
+    // Fire the save when the menu is unsaved OR its meals hold unsaved edits OR its
+    // composition changed. Emit directly (not via onPin, which no-ops on an
+    // already-pinned menu) so a saved menu with modifications still offers a save.
+    if (
+      !menu.pinned ||
+      this.rotation.menuHasUnsavedWork(menu.menuId) ||
+      this.rotation.menuCompositionChanged(menu.menuId)
+    ) {
+      this.pinMenu.emit(menu.menuId);
+    }
     this.editingMenuId.set(null);
   }
 
@@ -362,11 +377,11 @@ export class MenuCardRowComponent {
   displayName(menu: RotationMenuEntry, index: number): string {
     const raw = menu.menuName?.trim() ?? '';
     const base = raw.replace(/(\s*\(copy\))+\s*$/i, '').trim(); // drop copy chain
-    const isCopy = /\(copy\)\s*$/i.test(raw);
     if (base && !/^menu\s+\d+$/i.test(base)) {
-      // Keep the "(copy)" suffix VISIBLE on a real-named duplicate so the user sees
-      // it's a copy and can rename it. (Default "Menu N" copies still show a letter.)
-      return isCopy ? `${base} (copy)` : base;
+      // Show just the real name — NEVER the server's "(copy)" suffix. Placing a
+      // named menu forks it to "<name> (copy)" server-side; the user shouldn't see
+      // that noise (the amber badge marks a copy, not the name).
+      return base;
     }
     // Default menus show the FULL "Menu A" / "Menu B" in the box (redundant with the
     // "Menu" label, but per request the box holds the whole default name).

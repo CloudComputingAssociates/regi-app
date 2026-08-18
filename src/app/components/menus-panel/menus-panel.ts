@@ -134,7 +134,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               [menuTargetHot]="rotation.menuTargetHot()"
               (menuSelect)="onSelectMenu($event)"
               (deleteMenu)="onDeleteMenu($event)"
-              (pinMenu)="rotation.pinMenu($event)"
+              (pinMenu)="onSaveMenu($event)"
               (renameMenu)="rotation.updateMenuName($event.menuId, $event.name)"
               (dropMenu)="rotation.addMenuToRotation($event)"
               (addMenu)="rotation.addMenu()"
@@ -551,6 +551,25 @@ export class MenusPanelComponent implements OnInit {
    *  its meal slots off the board). A saved (pinned) menu and its meals survive in
    *  the Binder; only a disposable (unpinned) menu is fully removed.
    *  Teach line appended when a slot holds diverged/session-edited work. */
+  /** Menu save-check pressed. If the menu holds unsaved MEAL edits (a food added,
+   *  a portion changed), the changes live on the slot instances — confirm pushing
+   *  them back to the notebook (each meal overwrites its Binder original). A plain
+   *  unsaved menu (name only) pins directly, as before. */
+  onSaveMenu(menuId: number): void {
+    if (this.rotation.menuHasUnsavedWork(menuId) || this.rotation.menuCompositionChanged(menuId)) {
+      this.dialog.open(WipeConfirmDialogComponent, {
+        panelClass: 'wipe-dialog-panel',
+        data: {
+          message: 'Save these menu changes back into your notebook, permanently?',
+          confirmLabel: 'Save to notebook',
+          onConfirm: () => void this.rotation.saveMenuMealChanges(menuId),
+        },
+      });
+      return;
+    }
+    void this.rotation.pinMenu(menuId);
+  }
+
   onDeleteMenu(menuId: number): void {
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',

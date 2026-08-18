@@ -173,6 +173,32 @@ export class RotationService {
     return mealId != null && this.foodEditedMeals().has(mealId);
   }
 
+  /** Menu ids whose SLOT COMPOSITION changed this session (a meal added / removed
+   *  / created in a slot). For a menu the user has already committed to — one
+   *  that's SAVED (pinned) or REAL-NAMED — this is an unsaved change to offer back
+   *  to the notebook (the menu save-check lights). On a fresh unnamed menu it's
+   *  just building, so the card gates it out. Cleared once saved back. */
+  private readonly menuCompositionEdited = signal<Set<number>>(new Set());
+
+  private markMenuComposition(menuId: number): void {
+    this.menuCompositionEdited.update((s) => (s.has(menuId) ? s : new Set(s).add(menuId)));
+  }
+
+  private clearMenuComposition(menuId: number): void {
+    this.menuCompositionEdited.update((s) => {
+      if (!s.has(menuId)) return s;
+      const next = new Set(s);
+      next.delete(menuId);
+      return next;
+    });
+  }
+
+  /** True when this menu's slot composition was changed this session (drives the
+   *  menu save-check for committed menus — the card decides pinned/named gating). */
+  menuCompositionChanged(menuId: number): boolean {
+    return this.menuCompositionEdited().has(menuId);
+  }
+
   /** A meal's Binder pin icon is ALIVE when it's pinned, OR it's a still-verbatim
    *  clone (cloned && not yet diverged — updatedAt === createdAt to the second).
    *  Grey otherwise ("you'd lose this"). */
@@ -750,6 +776,7 @@ export class RotationService {
       );
       this.cacheMenu(menuId, updated);
       this.editingSlot.set({ menuId, slotOrder, mealId: meal.id });
+      this.markMenuComposition(menuId); // slot composition changed → savable back
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
@@ -799,6 +826,7 @@ export class RotationService {
       await this.addMealToSlot(menuId, slotOrder, mealId);
       await this.refreshMenu(menuId);
       await this.loadFolder();
+      this.markMenuComposition(menuId); // slot composition changed → savable back
     } catch (err) {
       // 409 = the slot rejected the append (full / duplicate / dining-out). Toast
       // the specific reason; never trip the panel-wide error signal for a drop.
@@ -816,6 +844,7 @@ export class RotationService {
       );
       await this.refreshMenu(menuId);
       await this.loadFolder();
+      this.markMenuComposition(menuId); // slot composition changed → savable back
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
@@ -1100,6 +1129,29 @@ export class RotationService {
     return true;
   }
 
+  /** Save the unsaved MEAL edits inside a placed menu back to the notebook: run
+   *  each dirty slotted meal through saveSlottedCopy — which overwrites its Binder
+   *  original in place (or pins it as new by name). Because slotted meals reference
+   *  shared Binder meals, overwriting the original carries the change back into the
+   *  notebook's copy of the menu too. The menu ENTITY isn't re-pinned here (that
+   *  would risk spawning a "(copy)" menu); only the meal contents are pushed. */
+  async saveMenuMealChanges(menuId: number): Promise<void> {
+    const menu = this.menusById().get(menuId);
+    if (menu == null) return;
+    const dirty: number[] = [];
+    for (const slot of menu.slots ?? []) {
+      for (const sm of slot.meals ?? []) {
+        const meal = this.getMeal(sm.mealId);
+        if (meal && this.shouldTeachSave(meal)) dirty.push(sm.mealId);
+      }
+    }
+    for (const mealId of dirty) {
+      await this.saveSlottedCopy(mealId);
+    }
+    await this.refreshMenu(menuId);
+    this.clearMenuComposition(menuId); // composition change acknowledged / saved
+  }
+
   /** Pin a MENU to the Binder. PUT /menu/{id} { pinned: true } runs the server
    *  cascade — the menu AND every slotted meal flip pinned in one call — so we
    *  re-fetch the menu + its meals (every card's icon flips alive together) and
@@ -1222,6 +1274,8 @@ export class RotationService {
         mealId = meal.id;
         if (mealId != null) await this.addMealToSlot(slot.menuId, slot.slotOrder, mealId);
         this.editingSlot.set({ ...slot, mealId });
+        this.markMenuComposition(slot.menuId); // new meal filled an empty slot
+
       } else {
         // Fork-on-edit: adding a food to a placed SAVED meal forks it first
         // (repoints the slot + updates editingSlot to the fork).
