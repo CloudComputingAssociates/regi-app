@@ -28,6 +28,7 @@ import {
   RotationDetail,
   SaveMenuToOriginalConflict,
   UpdateMealItemRequest,
+  WipeFromBinderResponse,
   UpdateMealRequest,
   UpdateMenuRequest,
   UpdateRotationRequest,
@@ -1718,6 +1719,36 @@ export class RotationService {
     } catch (err) {
       if (err instanceof HttpErrorResponse && err.status === 409) {
         this.notification.show('This meal is already detached.', 'error');
+        return;
+      }
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Wipe every binder meal the caller materialized from a MealSet.
+   *    POST /api/mealset/{setId}/wipe-from-binder → { deletedCount }
+   *  Placements clear + edits are lost, but ownership is untouched (the set stays
+   *  re-downloadable). On 200, drop those meals from binderMeals + the cache
+   *  (immutable); 404 = the caller has no purchase for the set. */
+  async wipeMealSet(setId: number): Promise<void> {
+    try {
+      const res = await firstValueFrom(
+        this.http.post<WipeFromBinderResponse>(`${this.baseUrl}/mealset/${setId}/wipe-from-binder`, null),
+      );
+      this.binderMeals.update((list) => list.filter((m) => m.sourceMealSetId !== setId));
+      this.mealsById.update((m) => {
+        const next = new Map(m);
+        for (const [id, meal] of next) if (meal.sourceMealSetId === setId) next.delete(id);
+        return next;
+      });
+      const n = res?.deletedCount ?? 0;
+      this.notification.show(
+        `${n} meals removed. Re-download anytime from the MealSets marketplace.`,
+        'success',
+      );
+    } catch (err) {
+      if (err instanceof HttpErrorResponse && err.status === 404) {
+        this.notification.show('You have no purchase for this MealSet.', 'error');
         return;
       }
       this.notification.show(this.errMessage(err), 'error');

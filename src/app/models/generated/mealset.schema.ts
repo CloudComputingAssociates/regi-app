@@ -214,3 +214,11 @@ export interface UpdateMealSetOwnerProfileRequest {
   backLinkPhoto?: string | null;
   [k: string]: unknown;
 }
+/**
+ * 200 body of POST /api/mealset/{id}/wipe-from-binder — how many of the caller's
+ * binder meals materialized from that set were deleted.
+ */
+export interface WipeFromBinderResponse {
+  deletedCount: number;
+  [k: string]: unknown;
+}

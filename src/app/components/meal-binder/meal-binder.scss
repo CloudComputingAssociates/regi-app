@@ -901,6 +901,65 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
+// Icon-only sort squares for the Binder MENUS list — small white squares that
+// fill blue when active; the alpha icon flips vertically to indicate Z→A.
+.binder-sort-row {
+  display: flex;
+  gap: 5px;
+  padding: 2px 2px 5px 2px;
+}
+.sort-square {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #c3c7cd;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #5a5f66;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: background 0.12s ease, color 0.12s ease;
+
+  &.active {
+    background: rgba(59, 125, 224, 0.6);
+    border-color: rgba(59, 125, 224, 0.8);
+    color: #ffffff;
+  }
+  &:hover { border-color: #9aa0a8; }
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+    &.flip { transform: scaleY(-1); }
+  }
+}
+
+// "Remove all from binder" — compact danger-tinted text button, sits next to the
+// "From MealSet" select and only when a specific set is chosen.
+.wipe-set-btn {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  padding: 3px 9px;
+  border: 1px solid #d68a8a;
+  border-radius: 5px;
+  background: #fff5f5;
+  color: #b23b3b;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+
+  &:hover { background: #f6dede; color: #8f2d2d; }
+  &:active { transform: translateY(1px); }
+}
+
 // One row: [name (grows)][chevron][P][Fiber][trash]. The chevron leads the
 // browse-by summary discs; discs are the shared raised style, flowing inline.
 .card-head {

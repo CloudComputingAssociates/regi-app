@@ -66,8 +66,32 @@ import { Meal, Menu, MealSetSummary } from '../../models';
             }
           </button>
           @if (binderMenusOpen()) {
+            @if (rotation.binderMenus().length > 1) {
+              <!-- Icon-only sort squares: alphabetical (A–Z toggle) + date (newest
+                   first toggle). Default is A–Z so menus read Menu 1, Menu 2, … -->
+              <div class="binder-sort-row">
+                <button
+                  type="button"
+                  class="sort-square"
+                  [class.active]="menuSortKind() === 'alpha'"
+                  [matTooltip]="menuSort() === 'za' ? 'Sorted Z→A' : 'Sorted A→Z'"
+                  matTooltipPosition="above"
+                  (click)="toggleAlphaSort()">
+                  <mat-icon [class.flip]="menuSort() === 'za'">sort_by_alpha</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="sort-square"
+                  [class.active]="menuSortKind() === 'date'"
+                  [matTooltip]="menuSort() === 'oldest' ? 'Oldest first' : 'Newest first'"
+                  matTooltipPosition="above"
+                  (click)="toggleDateSort()">
+                  <mat-icon>{{ menuSort() === 'oldest' ? 'arrow_upward' : menuSort() === 'newest' ? 'arrow_downward' : 'swap_vert' }}</mat-icon>
+                </button>
+              </div>
+            }
             <div class="section-body" cdkDropList>
-              @for (menu of rotation.binderMenus(); track menu.id) {
+              @for (menu of displayBinderMenus(); track menu.id) {
                 <div
                   class="binder-menu-card stacked-card"
                   [class.selected]="rotation.isCardSelected('menu', menu.id ?? -1)"
@@ -224,6 +248,18 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                         <option [value]="opt.id">{{ opt.name }}</option>
                       }
                     </select>
+                    <!-- Only when a specific set is chosen: wipe all its materialized
+                         meals from the binder (ownership unaffected). -->
+                    @if (selectedSourceSet(); as sel) {
+                      <button
+                        type="button"
+                        class="wipe-set-btn"
+                        matTooltip="Remove all of this set's meals from your binder"
+                        matTooltipPosition="above"
+                        (click)="onWipeMealSet(sel)">
+                        Remove all from binder
+                      </button>
+                    }
                   </div>
                 }
               </fieldset>
@@ -514,6 +550,34 @@ export class MealBinderComponent implements OnInit {
     this.sourceSetFilter.set(value === 'all' ? 'all' : Number(value));
   }
 
+  /** The selected source-set (id, name, and count of loaded binder meals from it),
+   *  or null when "All" is selected — gates + feeds the "Remove all" action. */
+  readonly selectedSourceSet = computed<{ id: number; name: string; count: number } | null>(() => {
+    const sel = this.sourceSetFilter();
+    if (sel === 'all') return null;
+    const opt = this.sourceSetOptions().find((o) => o.id === sel);
+    if (!opt) return null;
+    const count = this.rotation.binderMeals().filter((m) => m.sourceMealSetId === sel).length;
+    return { id: opt.id, name: opt.name, count };
+  });
+
+  /** Remove ALL binder meals materialized from the selected set — confirm first
+   *  (placements clear + edits lost; ownership is untouched). On confirm, wipe via
+   *  the service then reset the provenance filter back to All. */
+  onWipeMealSet(sel: { id: number; name: string; count: number }): void {
+    this.dialog.open(WipeConfirmDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: {
+        message: `Remove all ${sel.count} meals from ${sel.name} from your binder? Your edits to them will be lost. You still own this MealSet and can re-download it anytime from the MealSets marketplace.`,
+        confirmLabel: 'Remove all',
+        onConfirm: async () => {
+          await this.rotation.wipeMealSet(sel.id);
+          this.sourceSetFilter.set('all');
+        },
+      },
+    });
+  }
+
   /** True when the filter is doing anything (not the cleared default): a search
    *  term, an active Sort / Recipes-Only mode, or one or more Meal Sets mixed in.
    *  Drives the "Filter (ON)" label on the header button. */
@@ -639,6 +703,35 @@ export class MealBinderComponent implements OnInit {
 
   /** Top-level accordion open state — both default open. */
   readonly binderMenusOpen = signal(false);
+
+  // ----- Binder MENUS sort (icon-only squares) -------------------------------
+  /** Active menu sort. Default 'az' so the list reads Menu 1, Menu 2, … */
+  readonly menuSort = signal<'az' | 'za' | 'newest' | 'oldest'>('az');
+  /** Which square is "active" — for the highlight. */
+  readonly menuSortKind = computed<'alpha' | 'date'>(() =>
+    this.menuSort() === 'az' || this.menuSort() === 'za' ? 'alpha' : 'date',
+  );
+
+  /** Alpha square: switch to alphabetical, toggling A→Z ↔ Z→A. */
+  toggleAlphaSort(): void {
+    this.menuSort.update((s) => (s === 'az' ? 'za' : 'az'));
+  }
+  /** Date square: switch to date, toggling newest ↔ oldest. */
+  toggleDateSort(): void {
+    this.menuSort.update((s) => (s === 'newest' ? 'oldest' : 'newest'));
+  }
+
+  /** Binder menus in display order per the active sort square (default A→Z). */
+  readonly displayBinderMenus = computed<Menu[]>(() => {
+    const list = [...this.rotation.binderMenus()];
+    const s = this.menuSort();
+    const name = (m: Menu) => this.menuDisplayName(m).toLowerCase();
+    const ct = (m: Menu) => Date.parse(m.createdAt ?? '') || 0;
+    if (s === 'za') return list.sort((a, b) => name(b).localeCompare(name(a)));
+    if (s === 'newest') return list.sort((a, b) => ct(b) - ct(a));
+    if (s === 'oldest') return list.sort((a, b) => ct(a) - ct(b));
+    return list.sort((a, b) => name(a).localeCompare(name(b))); // 'az' default
+  });
 
   /** Per-card macro-chip expansion, keyed `menu-{id}` / `meal-{id}`. Chips are
    *  hidden by default (calories stay visible as text); a chevron reveals them. */
