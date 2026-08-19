@@ -85,7 +85,7 @@ import { NotificationService } from '../../services/notification.service';
           <div class="meal-sets-tags">GLP&#8209;1 friendly · Keto · Carnivore · more…</div>
           <a
             class="meal-sets-cta"
-            href="https://meals.regimenu.com"
+            href="https://mealsets.regimenu.com"
             target="_blank"
             rel="noopener">
             <mat-icon>open_in_new</mat-icon>Browse MealSets
