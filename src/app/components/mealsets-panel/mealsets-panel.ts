@@ -40,7 +40,7 @@ interface SetDraft {
   mealSetId: number | null;
   name: string;
   description: string;
-  genre: string;
+  genres: string[];
   pics: [string, string, string, string];
   video1: string;
   price: number;
@@ -191,7 +191,11 @@ interface SetDraft {
                   [class.selected]="draft()?.mealSetId === s.mealSetId"
                   (click)="editSet(s)">
                   <span class="msp-set-name">{{ s.name }}</span>
-                  @if (s.genre) { <span class="msp-set-genre">{{ s.genre }}</span> }
+                  @if (s.genres?.length) {
+                    <span class="msp-set-genres">
+                      @for (g of s.genres; track g) { <span class="msp-set-genre">{{ g }}</span> }
+                    </span>
+                  }
                   <span class="msp-set-flags">
                     <span
                       class="msp-flag"
@@ -224,11 +228,26 @@ interface SetDraft {
               <textarea class="msp-input msp-textarea" rows="2" [value]="d.description"
                 (input)="setField('description', $any($event.target).value)"></textarea>
             </label>
-            <label class="msp-field">
-              <span class="msp-label">Genre</span>
-              <input class="msp-input" type="text" placeholder="e.g. Keto, GLP-1 friendly" [value]="d.genre"
-                (input)="setField('genre', $any($event.target).value)" />
-            </label>
+            <div class="msp-field">
+              <span class="msp-label">Genres</span>
+              <div class="msp-chips">
+                @for (g of d.genres; track g; let i = $index) {
+                  <span class="msp-chip">{{ g }}<button type="button" class="msp-chip-x" (click)="removeGenre(i)" aria-label="Remove genre">×</button></span>
+                }
+                <input
+                  class="msp-input msp-chip-input"
+                  type="text"
+                  list="msp-genre-suggestions"
+                  placeholder="Add a genre — Enter or comma"
+                  [value]="genreInput()"
+                  (input)="genreInput.set($any($event.target).value)"
+                  (keydown)="onGenreKeydown($event)"
+                  (blur)="addGenre(genreInput())" />
+                <datalist id="msp-genre-suggestions">
+                  @for (opt of genreSuggestions(); track opt) { <option [value]="opt"></option> }
+                </datalist>
+              </div>
+            </div>
 
             <div class="msp-field">
               <span class="msp-label">Marketing Promo Photos (up to 4)</span>
@@ -471,6 +490,19 @@ export class MealsetsPanelComponent implements OnInit {
     void this.loadOwnMeals();
     void this.loadProfile();
     void this.loadContract();
+    void this.loadGenreSuggestions();
+  }
+
+  /** Fetch the catalog's distinct genres once for the chip autocomplete. Public
+   *  endpoint; a failure just leaves the suggestion list empty (free-text still
+   *  works). */
+  private async loadGenreSuggestions(): Promise<void> {
+    try {
+      const catalog = await firstValueFrom(this.mealSetService.getCatalog());
+      this.genreSuggestions.set(catalog?.genres ?? []);
+    } catch {
+      this.genreSuggestions.set([]);
+    }
   }
 
   private async loadAuthored(): Promise<void> {
@@ -530,11 +562,13 @@ export class MealsetsPanelComponent implements OnInit {
   // ---- Editor: create / edit / save ----------------------------------------
   startCreate(): void {
     this.resetPicker(new Set());
+    this.genreInput.set('');
+    this.genresBaseline = [];
     this.draft.set({
       mealSetId: null,
       name: '',
       description: '',
-      genre: '',
+      genres: [],
       pics: ['', '', '', ''],
       video1: '',
       price: 0,
@@ -543,11 +577,13 @@ export class MealsetsPanelComponent implements OnInit {
   }
 
   editSet(s: MealSet): void {
+    this.genreInput.set('');
+    this.genresBaseline = [...(s.genres ?? [])]; // baseline for the PATCH dirty check
     this.draft.set({
       mealSetId: s.mealSetId,
       name: s.name ?? '',
       description: s.description ?? '',
-      genre: s.genre ?? '',
+      genres: [...(s.genres ?? [])],
       pics: [s.mealSetPic1 ?? '', s.mealSetPic2 ?? '', s.mealSetPic3 ?? '', s.mealSetPic4 ?? ''],
       video1: s.mealSetVideo1 ?? '',
       price: s.price ?? 0,
@@ -556,8 +592,52 @@ export class MealsetsPanelComponent implements OnInit {
     void this.loadAssigned(s.mealSetId);
   }
 
-  setField(field: 'name' | 'description' | 'genre' | 'video1', value: string): void {
+  setField(field: 'name' | 'description' | 'video1', value: string): void {
     this.draft.update((d) => (d ? { ...d, [field]: value } : d));
+  }
+
+  // ---- Genres chip input ----------------------------------------------------
+  /** Live text in the genre chip input. */
+  readonly genreInput = signal('');
+  /** Distinct genres in use across active sets — autocomplete suggestions. */
+  readonly genreSuggestions = signal<string[]>([]);
+  /** The genre list when the editor opened — the PATCH sends genres ONLY when the
+   *  current chips differ from this (replace-vs-untouched contract). */
+  private genresBaseline: string[] = [];
+
+  /** Add the text as a chip (trimmed; case-insensitive de-dupe). */
+  addGenre(raw: string): void {
+    const v = raw.replace(/,+$/, '').trim();
+    if (!v) { this.genreInput.set(''); return; }
+    this.draft.update((d) => {
+      if (!d) return d;
+      if (d.genres.some((g) => g.toLowerCase() === v.toLowerCase())) return d;
+      return { ...d, genres: [...d.genres, v] };
+    });
+    this.genreInput.set('');
+  }
+
+  removeGenre(idx: number): void {
+    this.draft.update((d) => (d ? { ...d, genres: d.genres.filter((_, i) => i !== idx) } : d));
+  }
+
+  /** Enter / comma commit a chip; Backspace on an empty box pops the last chip. */
+  onGenreKeydown(ev: KeyboardEvent): void {
+    if (ev.key === 'Enter' || ev.key === ',') {
+      ev.preventDefault();
+      this.addGenre(this.genreInput());
+    } else if (ev.key === 'Backspace' && this.genreInput() === '') {
+      this.draft.update((d) => (d && d.genres.length ? { ...d, genres: d.genres.slice(0, -1) } : d));
+    }
+  }
+
+  /** Order-insensitive, case-insensitive compare (mirrors the server's normalize). */
+  private sameGenres(a: string[], b: string[]): boolean {
+    const norm = (x: string[]) =>
+      [...new Set(x.map((s) => s.trim().toLowerCase()).filter(Boolean))].sort();
+    const na = norm(a);
+    const nb = norm(b);
+    return na.length === nb.length && na.every((v, i) => v === nb[i]);
   }
 
   private draftToBody(): CreateMealSetRequest & UpdateMealSetRequest {
@@ -565,7 +645,6 @@ export class MealsetsPanelComponent implements OnInit {
     return {
       name: d.name.trim(),
       description: d.description.trim() || null,
-      genre: d.genre.trim() || null,
       mealSetPic1: d.pics[0] || null,
       mealSetPic2: d.pics[1] || null,
       mealSetPic3: d.pics[2] || null,
@@ -577,11 +656,23 @@ export class MealsetsPanelComponent implements OnInit {
   async saveSet(): Promise<void> {
     const d = this.draft();
     if (!d || !d.name.trim() || this.savingSet()) return;
+    // Commit any half-typed genre still in the box before saving.
+    if (this.genreInput().trim()) this.addGenre(this.genreInput());
+    const draft = this.draft()!;
     this.savingSet.set(true);
     try {
-      const saved = d.mealSetId
-        ? await firstValueFrom(this.mealSetService.updateSet(d.mealSetId, this.draftToBody()))
-        : await firstValueFrom(this.mealSetService.createSet(this.draftToBody()));
+      let saved: MealSet;
+      if (draft.mealSetId) {
+        // PATCH: send genres ONLY when the chip set changed (present = REPLACE).
+        const body: UpdateMealSetRequest = this.draftToBody();
+        if (!this.sameGenres(draft.genres, this.genresBaseline)) body.genres = draft.genres;
+        saved = await firstValueFrom(this.mealSetService.updateSet(draft.mealSetId, body));
+      } else {
+        // CREATE: include genres when any were entered (omit = uncategorized).
+        const body: CreateMealSetRequest = this.draftToBody();
+        if (draft.genres.length) body.genres = draft.genres;
+        saved = await firstValueFrom(this.mealSetService.createSet(body));
+      }
       // Commit staged meal membership now that the set has an id.
       await this.commitMembership(saved.mealSetId);
       await this.loadAuthored();

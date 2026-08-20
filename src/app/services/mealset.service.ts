@@ -15,6 +15,7 @@ import {
   MealSet,
   MealSetSummary,
   MealSetOwnerProfile,
+  MealSetCatalogResponse,
   MealSetContractView,
   CreateMealSetRequest,
   UpdateMealSetRequest,
@@ -41,6 +42,12 @@ export class MealSetService {
   /** GET /api/mealset — the caller's entitled sets (lightweight summaries). */
   getEntitled(): Observable<MealSetSummary[]> {
     return this.http.get<MealSetSummary[]>(this.baseUrl);
+  }
+
+  /** GET /api/mealset/catalog — PUBLIC (no auth): marketing cards + the distinct
+   *  genres in use across active sets. Used here for genre autocomplete. */
+  getCatalog(): Observable<MealSetCatalogResponse> {
+    return this.http.get<MealSetCatalogResponse>(`${this.baseUrl}/catalog`);
   }
 
   // ---- Owner side: authored sets CRUD ---------------------------------------

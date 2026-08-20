@@ -25,9 +25,9 @@ export interface MealSet {
   name: string;
   description?: string | null;
   /**
-   * Marketing genre / facet (exact-match filter in the catalog)
+   * Marketing genres / facets. Always present ([] when uncategorized). Server trims, dedupes case-insensitively, drops empties.
    */
-  genre?: string | null;
+  genres: string[];
   /**
    * dbo.Users.id of the authoring MealSetOwner
    */
@@ -66,7 +66,7 @@ export interface MealSet {
 export interface MealSetSummary {
   mealSetId: number;
   name: string;
-  genre?: string | null;
+  genres: string[];
   [k: string]: unknown;
 }
 /**
@@ -79,7 +79,7 @@ export interface MealSetCatalogEntry {
   mealSetId: number;
   name: string;
   description?: string | null;
-  genre?: string | null;
+  genres: string[];
   price: number;
   mealSetPic1?: string | null;
   mealSetPic2?: string | null;
@@ -160,7 +160,10 @@ export interface MealSetContractView {
 export interface CreateMealSetRequest {
   name: string;
   description?: string | null;
-  genre?: string | null;
+  /**
+   * Marketing genres. Omitted = uncategorized; present REPLACES the full list ([] clears).
+   */
+  genres?: string[];
   mealSetPic1?: string | null;
   mealSetPic2?: string | null;
   mealSetPic3?: string | null;
@@ -177,7 +180,10 @@ export interface CreateMealSetRequest {
 export interface UpdateMealSetRequest {
   name?: string | null;
   description?: string | null;
-  genre?: string | null;
+  /**
+   * Omitted = untouched; present REPLACES the full list ([] clears). Server trims, dedupes case-insensitively, drops empties.
+   */
+  genres?: string[];
   mealSetPic1?: string | null;
   mealSetPic2?: string | null;
   mealSetPic3?: string | null;

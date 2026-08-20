@@ -439,9 +439,10 @@ export class MealBinderComponent implements OnInit {
   private entitledLoaded = false;
   private selectionRestored = false;
 
-  /** Dropdown label: "Name — genre" when a genre is present, else just the name. */
+  /** Dropdown label: "Name — genres" when any genre is present, else just the name. */
   setLabel(set: MealSetSummary): string {
-    return set.genre ? `${set.name} — ${set.genre}` : set.name;
+    const g = (set.genres ?? []).join(', ');
+    return g ? `${set.name} — ${g}` : set.name;
   }
 
   isSetSelected(id: number): boolean {

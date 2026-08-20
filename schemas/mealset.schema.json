@@ -12,7 +12,7 @@
         "mealSetId": { "type": "integer", "description": "Server-assigned primary key" },
         "name": { "type": "string" },
         "description": { "type": ["string", "null"] },
-        "genre": { "type": ["string", "null"], "description": "Marketing genre / facet (exact-match filter in the catalog)" },
+        "genres": { "type": "array", "items": { "type": "string" }, "description": "Marketing genres / facets. Always present ([] when uncategorized). Server trims, dedupes case-insensitively, drops empties." },
         "ownerUserId": { "type": "integer", "description": "dbo.Users.id of the authoring MealSetOwner" },
         "contractId": { "type": ["integer", "null"], "description": "FK to MealSetContracts; null when no contract is attached" },
         "price": { "type": "number", "description": "Sale price. 0 = free (acquirable now); >0 = paid (processor not integrated)" },
@@ -26,7 +26,7 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["mealSetId", "name", "ownerUserId", "price", "grantAtSignup", "active"]
+      "required": ["mealSetId", "name", "genres", "ownerUserId", "price", "grantAtSignup", "active"]
     },
 
     "MealSetSummary": {
@@ -35,9 +35,9 @@
       "properties": {
         "mealSetId": { "type": "integer" },
         "name": { "type": "string" },
-        "genre": { "type": ["string", "null"] }
+        "genres": { "type": "array", "items": { "type": "string" } }
       },
-      "required": ["mealSetId", "name"]
+      "required": ["mealSetId", "name", "genres"]
     },
 
     "MealSetCatalogEntry": {
@@ -47,7 +47,7 @@
         "mealSetId": { "type": "integer" },
         "name": { "type": "string" },
         "description": { "type": ["string", "null"] },
-        "genre": { "type": ["string", "null"] },
+        "genres": { "type": "array", "items": { "type": "string" } },
         "price": { "type": "number" },
         "mealSetPic1": { "type": ["string", "null"] },
         "mealSetPic2": { "type": ["string", "null"] },
@@ -59,7 +59,7 @@
         "authorCredentials": { "type": ["string", "null"] },
         "authorPic": { "type": ["string", "null"] }
       },
-      "required": ["mealSetId", "name", "price"]
+      "required": ["mealSetId", "name", "genres", "price"]
     },
 
     "MealSetCatalogResponse": {
@@ -109,7 +109,7 @@
       "properties": {
         "name": { "type": "string" },
         "description": { "type": ["string", "null"] },
-        "genre": { "type": ["string", "null"] },
+        "genres": { "type": "array", "items": { "type": "string" }, "description": "Omitted = uncategorized; present REPLACES the full list ([] clears)." },
         "mealSetPic1": { "type": ["string", "null"] },
         "mealSetPic2": { "type": ["string", "null"] },
         "mealSetPic3": { "type": ["string", "null"] },
@@ -125,7 +125,7 @@
       "properties": {
         "name": { "type": ["string", "null"] },
         "description": { "type": ["string", "null"] },
-        "genre": { "type": ["string", "null"] },
+        "genres": { "type": "array", "items": { "type": "string" }, "description": "Omitted = untouched; present REPLACES the full list ([] clears)." },
         "mealSetPic1": { "type": ["string", "null"] },
         "mealSetPic2": { "type": ["string", "null"] },
         "mealSetPic3": { "type": ["string", "null"] },
