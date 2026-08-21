@@ -12,9 +12,11 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -25,6 +27,7 @@ import { AuthService } from '@auth0/auth0-angular';
 import { TabService } from '../../services/tab.service';
 import { NotificationService } from '../../services/notification.service';
 import { MealSetService } from '../../services/mealset.service';
+import { RecipeAuthoringService } from '../../services/recipe-authoring.service';
 import { ImageDropComponent } from '../image-drop/image-drop';
 import {
   MealSet,
@@ -32,6 +35,7 @@ import {
   CreateMealSetRequest,
   UpdateMealSetRequest,
   Meal,
+  RecipeSummary,
 } from '../../models';
 
 /** Editor draft — mirrors the author-writable set fields, plus the display-only
@@ -49,12 +53,12 @@ interface SetDraft {
 
 @Component({
   selector: 'app-mealsets-panel',
-  imports: [MatIconModule, MatTooltipModule, DragDropModule, ImageDropComponent],
+  imports: [DatePipe, MatIconModule, MatTooltipModule, DragDropModule, ImageDropComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="msp">
       <header class="msp-header">
-        <span class="msp-title"><mat-icon class="msp-title-icon">restaurant_menu</mat-icon>MealSets Author Studio</span>
+        <span class="msp-title"><mat-icon class="msp-title-icon">restaurant_menu</mat-icon>Author Studio</span>
         <button
           type="button"
           class="msp-close"
@@ -343,6 +347,40 @@ interface SetDraft {
             </div>
           </section>
         }
+
+        <!-- ============ RecipeBox ============ -->
+        <section class="msp-card">
+          <div class="msp-card-head">
+            <h3 class="msp-card-title">RecipeBox
+              <span
+                class="msp-info"
+                matTooltip="Author your own recipes. They appear here as drafts until you publish them."
+                matTooltipPosition="right">&#9432;</span>
+            </h3>
+            <button type="button" class="msp-btn primary" (click)="newRecipe()">+ New Recipe</button>
+          </div>
+          @if (recipes().length) {
+            <ul class="msp-set-list">
+              @for (r of recipes(); track r.id) {
+                <li class="msp-set-item" (click)="openRecipe(r.id)">
+                  <span class="msp-set-name">{{ r.title }}</span>
+                  <span class="msp-set-genre rb-badge type">{{ r.recipeType }}</span>
+                  @if (r.isPublished) {
+                    <span class="msp-set-genre rb-badge published">Published</span>
+                  } @else {
+                    <span class="msp-set-genre rb-badge draft">Draft</span>
+                  }
+                  @if (r.isArchived) { <span class="msp-set-genre rb-badge archived">Archived</span> }
+                  <span class="msp-set-flags">
+                    <span class="msp-flag">{{ r.updatedAt | date: 'MMM d, y' }}</span>
+                  </span>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="msp-empty">No recipes yet — create your first.</p>
+          }
+        </section>
       </div>
     </div>
   `,
@@ -351,8 +389,32 @@ interface SetDraft {
 export class MealsetsPanelComponent implements OnInit {
   protected tabService = inject(TabService);
   private mealSetService = inject(MealSetService);
+  private authoring = inject(RecipeAuthoringService);
   private notification = inject(NotificationService);
   private auth = inject(AuthService);
+
+  // ---- RecipeBox (authored recipes list) -----------------------------------
+  readonly recipes = signal<RecipeSummary[]>([]);
+
+  constructor() {
+    // Reload the recipe list whenever the editor closes (a save/create there
+    // should surface here) and on first mount. Fires only when the flag changes.
+    effect(() => {
+      if (!this.tabService.recipeEditorOpen()) void this.loadRecipes();
+    });
+  }
+
+  private async loadRecipes(): Promise<void> {
+    try {
+      const res = await firstValueFrom(this.authoring.listRecipes());
+      this.recipes.set(res?.recipes ?? []);
+    } catch {
+      this.recipes.set([]);
+    }
+  }
+
+  newRecipe(): void { this.tabService.openRecipeEditor(null); }
+  openRecipe(id: number): void { this.tabService.openRecipeEditor(id); }
 
   /** The name on the user's account (Auth0 profile) — the default author name. */
   readonly accountName = toSignal(this.auth.user$.pipe(map((u) => u?.name ?? '')), {

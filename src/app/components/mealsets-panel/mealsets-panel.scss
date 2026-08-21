@@ -576,3 +576,12 @@
   &:hover:not(:disabled) { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #fff; }
   &:disabled { opacity: 0.4; cursor: default; }
 }
+
+// RecipeBox badges — reuse the .msp-set-genre chip shape with status colors.
+.rb-badge {
+  text-transform: capitalize;
+  &.type { color: #cfe4ff; background: rgba(77,166,255,0.16); border: 1px solid rgba(77,166,255,0.35); }
+  &.published { color: #b7f5c4; background: rgba(52,214,81,0.16); border: 1px solid rgba(52,214,81,0.4); }
+  &.draft { color: #d6d6d6; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); }
+  &.archived { color: #ffd8a8; background: rgba(255,160,60,0.16); border: 1px solid rgba(255,160,60,0.4); }
+}

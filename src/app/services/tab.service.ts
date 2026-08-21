@@ -291,17 +291,16 @@ export class TabService {
   openAccount(): void { this.accountOpen.set(true); }
   closeAccount(): void { this.accountOpen.set(false); }
 
-  // Recipe authoring surface (MealSetOwner). Full-screen panels driven by signals
-  // (no Angular Router in this app). 'list' = My Recipes, 'editor' = the authoring
-  // editor for recipeAuthorEditorId (null = a new draft), null = closed.
-  readonly recipeAuthorView = signal<'list' | 'editor' | null>(null);
+  // Recipe authoring editor — a full-screen overlay launched from the Author
+  // Studio's RecipeBox section (the list lives there now, not in a panel).
+  // recipeAuthorEditorId: the recipe being edited (null = a new draft).
+  readonly recipeEditorOpen = signal(false);
   readonly recipeAuthorEditorId = signal<number | null>(null);
-  openRecipeList(): void { this.recipeAuthorView.set('list'); }
   openRecipeEditor(id: number | null): void {
     this.recipeAuthorEditorId.set(id);
-    this.recipeAuthorView.set('editor');
+    this.recipeEditorOpen.set(true);
   }
-  closeRecipeAuthor(): void { this.recipeAuthorView.set(null); }
+  closeRecipeEditor(): void { this.recipeEditorOpen.set(false); }
 
   // In-app web viewer — opens an external page in a bloom iframe overlay instead
   // of a new browser tab (so the user never leaves the app). null = closed.

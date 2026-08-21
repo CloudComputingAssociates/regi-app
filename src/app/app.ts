@@ -17,7 +17,6 @@ import { BugOverlayComponent } from './components/bug-overlay/bug-overlay';
 import { TetherPromptComponent } from './components/tether-prompt/tether-prompt';
 import { WebViewOverlayComponent } from './components/web-view-overlay/web-view-overlay';
 import { AccountPanelComponent } from './components/account-panel/account-panel';
-import { RecipeListPanelComponent } from './components/recipe-list-panel/recipe-list-panel';
 import { RecipeEditorPanelComponent } from './components/recipe-editor-panel/recipe-editor-panel';
 import { NotificationComponent } from './components/notification/notification';
 import { SubscriptionService } from './services/subscription.service';
@@ -57,7 +56,6 @@ const LEFT_NAV_PANEL_IDS = new Set([
     TetherPromptComponent,
     WebViewOverlayComponent,
     AccountPanelComponent,
-    RecipeListPanelComponent,
     RecipeEditorPanelComponent,
     NotificationComponent,
     MatTooltipModule
@@ -122,9 +120,9 @@ const LEFT_NAV_PANEL_IDS = new Set([
       }
       <app-web-view-overlay />
       <app-account-panel />
-      <!-- Recipe authoring (MealSetOwner) — full-screen panels, self-gate on the
-           TabService.recipeAuthorView signal. No Angular Router in this app. -->
-      <app-recipe-list-panel />
+      <!-- Recipe authoring editor (MealSetOwner) — full-screen overlay, self-gates
+           on TabService.recipeEditorOpen; launched from the Author Studio's
+           RecipeBox. No Angular Router in this app. -->
       <app-recipe-editor-panel />
       <!-- Notification toast lives at the app root (not inside main-body)
            so its z-index: 9999 punches above the overlays' z-index: 1100.

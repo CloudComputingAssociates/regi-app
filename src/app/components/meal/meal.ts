@@ -25,7 +25,6 @@ import { MealItem, MenuSlot, MenuSlotMeal } from '../../models';
 import { Food } from '../../models/food.model';
 import { FoodComponent } from '../food/food';
 import { RotationService } from '../../services/rotation.service';
-import { RecipeAuthoringService } from '../../services/recipe-authoring.service';
 import { TabService } from '../../services/tab.service';
 
 interface Macro {
@@ -181,23 +180,6 @@ interface Macro {
                   </button>
                 </div>
 
-                <!-- Cooking method — optional; fed by the cached vocabulary.
-                     Selecting "none" clears it (0 = clear per the wire). -->
-                @if (cookingMethods().length) {
-                  <div class="cook-method-row">
-                    <span class="cook-method-label">Method</span>
-                    <select
-                      class="cook-method-select"
-                      [value]="cookingMethodIdFor(fm.mealId)"
-                      (change)="onCookingMethodChange(fm.mealId, $any($event.target).value)">
-                      <option [value]="0">— none —</option>
-                      @for (cm of cookingMethods(); track cm.id) {
-                        <option [value]="cm.id">{{ cm.name }}</option>
-                      }
-                    </select>
-                  </div>
-                }
-
                 <!-- Recipe link (when the meal has a source PDF), right-justified.
                      "My Foods" label removed — not needed. -->
                 @if (recipeLinkFor(fm.mealId); as link) {
@@ -253,28 +235,6 @@ interface Macro {
 })
 export class MealComponent {
   protected readonly rotation = inject(RotationService);
-  private readonly authoring = inject(RecipeAuthoringService);
-
-  constructor() {
-    // Load the cooking-method vocabulary once (cached in the service).
-    void this.authoring.ensureCookingMethods();
-  }
-
-  /** Cooking-method vocabulary (cached signal on the authoring service). */
-  readonly cookingMethods = this.authoring.cookingMethods;
-
-  /** Current cooking-method id for a slotted meal (0 = none), from the cache. */
-  cookingMethodIdFor(mealId: number): number {
-    return this.rotation.getMeal(mealId)?.cookingMethodId ?? 0;
-  }
-
-  /** Method select changed — bubble to the parent, which owns the meal write. */
-  onCookingMethodChange(mealId: number, value: string): void {
-    this.cookingMethodChange.emit({ mealId, cookingMethodId: Number(value) || 0 });
-  }
-
-  /** Cooking-method chosen for a meal (id, or 0 to clear). Parent PUTs it. */
-  readonly cookingMethodChange = output<{ mealId: number; cookingMethodId: number }>();
   private readonly tabs = inject(TabService);
 
   readonly slot = input.required<MenuSlot>();

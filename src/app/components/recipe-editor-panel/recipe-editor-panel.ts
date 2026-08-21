@@ -1,8 +1,9 @@
 // src/app/components/recipe-editor-panel/recipe-editor-panel.ts
 //
-// Recipe authoring editor — a full-screen TabService panel (no router). Mounted
-// once in app.ts; self-gates on TabService.recipeAuthorView() === 'editor' AND
-// the MealSetOwner role. recipeAuthorEditorId() null = new draft, else edit.
+// Recipe authoring editor — a full-screen TabService overlay (no router). Mounted
+// once in app.ts; self-gates on TabService.recipeEditorOpen() AND the MealSetOwner
+// role. Launched from the Author Studio's RecipeBox; recipeAuthorEditorId() null =
+// new draft, else edit an existing recipe.
 //
 // Save model: create once on first save (POST), then PATCH the header. Ingredient
 // lines are server-managed (POST add / PATCH edit / DELETE remove / PUT reorder).
@@ -83,7 +84,7 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
               @if (isArchived()) { <span class="rep-badge archived">Archived</span> }
               @if (isRegiApproved()) { <span class="rep-badge regi">REGI-approved</span> }
             </span>
-            <a class="rep-mylink" (click)="myRecipes()">My recipes</a>
+            <a class="rep-mylink" (click)="myRecipes()">RecipeBox</a>
             <button type="button" class="rep-close" matTooltip="Close" (click)="close()">
               <mat-icon>close</mat-icon>
             </button>
@@ -269,7 +270,7 @@ export class RecipeEditorPanelComponent {
   private dialog = inject(MatDialog);
 
   readonly isOpen = computed(
-    () => this.tab.recipeAuthorView() === 'editor' && this.role.hasRole('MealSetOwner'),
+    () => this.tab.recipeEditorOpen() && this.role.hasRole('MealSetOwner'),
   );
 
   readonly form = signal<EditorForm>({ ...BLANK_FORM });
@@ -621,8 +622,9 @@ export class RecipeEditorPanelComponent {
   }
 
   // ---- Nav ------------------------------------------------------------------
-  myRecipes(): void { this.tab.openRecipeList(); }
-  close(): void { this.tab.closeRecipeAuthor(); }
+  // Closing returns to the Author Studio's RecipeBox (which reloads on close).
+  myRecipes(): void { this.tab.closeRecipeEditor(); }
+  close(): void { this.tab.closeRecipeEditor(); }
 
   // ---- helpers --------------------------------------------------------------
   private numStr(n: number | null | undefined): string {
