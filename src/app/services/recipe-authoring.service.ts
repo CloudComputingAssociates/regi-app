@@ -6,7 +6,7 @@
 // the editor, never as generic toasts, so this service does NOT swallow/toast
 // them. The cooking-method vocabulary is fetched once and cached in a signal.
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
@@ -16,6 +16,7 @@ import {
   ListCookingMethodsResponse,
   ListRecipesResponse,
   RecipeResponse,
+  RecipeType,
   ReorderIngredientsRequest,
   UpdateRecipeIngredientRequest,
   UpdateRecipeRequest,
@@ -33,9 +34,11 @@ export class RecipeAuthoringService {
     return this.http.post<RecipeResponse>(this.baseUrl, body);
   }
 
-  /** GET /api/recipe/authoring — the caller's recipes (summaries). */
-  listRecipes(): Observable<ListRecipesResponse> {
-    return this.http.get<ListRecipesResponse>(this.baseUrl);
+  /** GET /api/recipe/authoring — the caller's recipes (summaries). Optional
+   *  ?type=imported|authored filters by provenance server-side. */
+  listRecipes(type?: RecipeType): Observable<ListRecipesResponse> {
+    const options = type ? { params: new HttpParams().set('type', type) } : {};
+    return this.http.get<ListRecipesResponse>(this.baseUrl, options);
   }
 
   /** GET /api/recipe/authoring/{id} — header + ordered ingredient lines. */

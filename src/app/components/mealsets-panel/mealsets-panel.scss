@@ -585,3 +585,40 @@
   &.draft { color: #d6d6d6; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); }
   &.archived { color: #ffd8a8; background: rgba(255,160,60,0.16); border: 1px solid rgba(255,160,60,0.4); }
 }
+
+// RecipeBox search — a compact filter row with a leading icon + clear button.
+.rb-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .rb-search-icon {
+    position: absolute;
+    left: 8px;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    color: #9aa0a6;
+    pointer-events: none;
+  }
+  .rb-search-input {
+    padding-left: 32px;
+    padding-right: 30px;
+  }
+  .rb-search-clear {
+    position: absolute;
+    right: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    color: #c9c9c9;
+    background: none;
+    border: none;
+    cursor: pointer;
+    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+    &:hover { color: #fff; }
+  }
+}

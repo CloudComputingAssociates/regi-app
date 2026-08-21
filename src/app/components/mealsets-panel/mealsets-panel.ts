@@ -360,23 +360,42 @@ interface SetDraft {
             <button type="button" class="msp-btn primary" (click)="newRecipe()">+ New Recipe</button>
           </div>
           @if (recipes().length) {
-            <ul class="msp-set-list">
-              @for (r of recipes(); track r.id) {
-                <li class="msp-set-item" (click)="openRecipe(r.id)">
-                  <span class="msp-set-name">{{ r.title }}</span>
-                  <span class="msp-set-genre rb-badge type">{{ r.recipeType }}</span>
-                  @if (r.isPublished) {
-                    <span class="msp-set-genre rb-badge published">Published</span>
-                  } @else {
-                    <span class="msp-set-genre rb-badge draft">Draft</span>
-                  }
-                  @if (r.isArchived) { <span class="msp-set-genre rb-badge archived">Archived</span> }
-                  <span class="msp-set-flags">
-                    <span class="msp-flag">{{ r.updatedAt | date: 'MMM d, y' }}</span>
-                  </span>
-                </li>
+            <!-- Client-side, as-you-type title filter over the loaded list. -->
+            <div class="rb-search">
+              <mat-icon class="rb-search-icon">search</mat-icon>
+              <input
+                class="msp-input rb-search-input"
+                type="text"
+                placeholder="Search recipes by title…"
+                [value]="recipeSearch()"
+                (input)="recipeSearch.set($any($event.target).value)" />
+              @if (recipeSearch()) {
+                <button type="button" class="rb-search-clear" matTooltip="Clear" (click)="recipeSearch.set('')">
+                  <mat-icon>close</mat-icon>
+                </button>
               }
-            </ul>
+            </div>
+            @if (filteredRecipes().length) {
+              <ul class="msp-set-list">
+                @for (r of filteredRecipes(); track r.id) {
+                  <li class="msp-set-item" (click)="openRecipe(r.id)">
+                    <span class="msp-set-name">{{ r.title }}</span>
+                    <span class="msp-set-genre rb-badge type">{{ r.recipeType }}</span>
+                    @if (r.isPublished) {
+                      <span class="msp-set-genre rb-badge published">Published</span>
+                    } @else {
+                      <span class="msp-set-genre rb-badge draft">Draft</span>
+                    }
+                    @if (r.isArchived) { <span class="msp-set-genre rb-badge archived">Archived</span> }
+                    <span class="msp-set-flags">
+                      <span class="msp-flag">{{ r.updatedAt | date: 'MMM d, y' }}</span>
+                    </span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="msp-empty">No recipes match “{{ recipeSearch() }}”.</p>
+            }
           } @else {
             <p class="msp-empty">No recipes yet — create your first.</p>
           }
@@ -395,6 +414,13 @@ export class MealsetsPanelComponent implements OnInit {
 
   // ---- RecipeBox (authored recipes list) -----------------------------------
   readonly recipes = signal<RecipeSummary[]>([]);
+  /** As-you-type title filter — client-side, case-insensitive substring. */
+  readonly recipeSearch = signal('');
+  readonly filteredRecipes = computed<RecipeSummary[]>(() => {
+    const q = this.recipeSearch().trim().toLowerCase();
+    const list = this.recipes();
+    return q ? list.filter((r) => (r.title ?? '').toLowerCase().includes(q)) : list;
+  });
 
   constructor() {
     // Reload the recipe list whenever the editor closes (a save/create there
@@ -406,7 +432,8 @@ export class MealsetsPanelComponent implements OnInit {
 
   private async loadRecipes(): Promise<void> {
     try {
-      const res = await firstValueFrom(this.authoring.listRecipes());
+      // RecipeBox shows AUTHORED recipes only — imports live in the meal binder.
+      const res = await firstValueFrom(this.authoring.listRecipes('authored'));
       this.recipes.set(res?.recipes ?? []);
     } catch {
       this.recipes.set([]);
