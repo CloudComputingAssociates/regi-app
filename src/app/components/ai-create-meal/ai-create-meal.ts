@@ -21,6 +21,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { RecipeService } from '../../services/recipe.service';
 import { RecipeImportWatcher } from '../../services/recipe-import-watcher.service';
 import { NotificationService } from '../../services/notification.service';
+import { RoleService } from '../../services/role.service';
+import { TabService } from '../../services/tab.service';
 
 @Component({
   selector: 'app-ai-create-meal',
@@ -72,25 +74,54 @@ import { NotificationService } from '../../services/notification.service';
         <!-- Glowing separator into the upsell. -->
         <div class="glow-divider" aria-hidden="true"></div>
 
-        <!-- Purchase Additional Meal Sets — curated, chef-authored packs. -->
-        <div class="meal-sets">
-          <div class="meal-sets-head">
-            <mat-icon class="meal-sets-icon">restaurant_menu</mat-icon>
-            <span class="meal-sets-title">Purchase Additional MealSets</span>
+        @if (isAuthor()) {
+          <!-- MealSetOwner: author tools replace the buyer upsell. -->
+          <div class="meal-sets">
+            <div class="meal-sets-head">
+              <mat-icon class="meal-sets-icon">edit_note</mat-icon>
+              <span class="meal-sets-title">Author a Recipe</span>
+              <a class="meal-sets-mylink" (click)="myRecipes()">My recipes</a>
+            </div>
+            <div class="meal-sets-desc">Write and publish your own recipes.</div>
+            <button type="button" class="meal-sets-cta" (click)="authorRecipe()">
+              <mat-icon>add</mat-icon>New recipe
+            </button>
           </div>
-          <div class="meal-sets-price">
-            as low as <strong>$4.99</strong> for <strong>20 meals</strong>
+          <div class="meal-sets">
+            <div class="meal-sets-head">
+              <mat-icon class="meal-sets-icon">restaurant_menu</mat-icon>
+              <span class="meal-sets-title">My MealSets</span>
+            </div>
+            <div class="meal-sets-desc">Manage your published MealSets.</div>
+            <a
+              class="meal-sets-cta"
+              href="https://mealsets.regimenu.com/mine"
+              target="_blank"
+              rel="noopener">
+              <mat-icon>open_in_new</mat-icon>Open MealSets Studio
+            </a>
           </div>
-          <div class="meal-sets-desc">Full recipes, balanced nutrition.</div>
-          <div class="meal-sets-tags">GLP&#8209;1 friendly · Keto · Carnivore · more…</div>
-          <a
-            class="meal-sets-cta"
-            href="https://mealsets.regimenu.com"
-            target="_blank"
-            rel="noopener">
-            <mat-icon>open_in_new</mat-icon>Browse MealSets
-          </a>
-        </div>
+        } @else {
+          <!-- Purchase Additional Meal Sets — curated, chef-authored packs. -->
+          <div class="meal-sets">
+            <div class="meal-sets-head">
+              <mat-icon class="meal-sets-icon">restaurant_menu</mat-icon>
+              <span class="meal-sets-title">Purchase Additional MealSets</span>
+            </div>
+            <div class="meal-sets-price">
+              as low as <strong>$4.99</strong> for <strong>20 meals</strong>
+            </div>
+            <div class="meal-sets-desc">Full recipes, balanced nutrition.</div>
+            <div class="meal-sets-tags">GLP&#8209;1 friendly · Keto · Carnivore · more…</div>
+            <a
+              class="meal-sets-cta"
+              href="https://mealsets.regimenu.com"
+              target="_blank"
+              rel="noopener">
+              <mat-icon>open_in_new</mat-icon>Browse MealSets
+            </a>
+          </div>
+        }
       </div>
     </div>
   `,
@@ -100,9 +131,29 @@ export class AiCreateMealComponent {
   private recipeService = inject(RecipeService);
   private watcher = inject(RecipeImportWatcher);
   private notification = inject(NotificationService);
+  private role = inject(RoleService);
+  private tabService = inject(TabService);
 
   /** Close the bloom — on cancel (X / backdrop) or after an import kicks off. */
   readonly close = output<void>();
+
+  /** MealSetOwner authors see recipe-authoring cards instead of the upsell. */
+  isAuthor(): boolean {
+    return this.role.hasRole('MealSetOwner');
+  }
+
+  /** Open the authoring editor on a fresh draft (spec: "route to /author/recipe/new"
+   *  → open the editor panel). Closes this bloom first. */
+  authorRecipe(): void {
+    this.close.emit();
+    this.tabService.openRecipeEditor(null);
+  }
+
+  /** Open the My Recipes list panel. */
+  myRecipes(): void {
+    this.close.emit();
+    this.tabService.openRecipeList();
+  }
 
   // ----- Cancel / backdrop ---------------------------------------------------
   onCancel(): void {

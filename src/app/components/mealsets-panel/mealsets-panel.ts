@@ -191,7 +191,7 @@ interface SetDraft {
                   [class.selected]="draft()?.mealSetId === s.mealSetId"
                   (click)="editSet(s)">
                   <span class="msp-set-name">{{ s.name }}</span>
-                  @if (s.genres?.length) {
+                  @if (s.genres.length) {
                     <span class="msp-set-genres">
                       @for (g of s.genres; track g) { <span class="msp-set-genre">{{ g }}</span> }
                     </span>

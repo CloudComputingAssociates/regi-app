@@ -560,3 +560,28 @@
 
   .dyn-rows { padding-left: 16px; }
 }
+
+// Cooking-method picker on the meal back face — a compact labeled select.
+.cook-method-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 2px;
+
+  .cook-method-label {
+    flex: 0 0 auto;
+    font-size: 12px;
+    color: #b9bec4;
+  }
+  .cook-method-select {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 3px 6px;
+    font-size: 12px;
+    color: #f0f0f0;
+    background: #3a3a3a;
+    border: 1px solid #4a4a4a;
+    border-radius: 5px;
+    outline: none;
+  }
+}

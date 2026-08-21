@@ -291,6 +291,18 @@ export class TabService {
   openAccount(): void { this.accountOpen.set(true); }
   closeAccount(): void { this.accountOpen.set(false); }
 
+  // Recipe authoring surface (MealSetOwner). Full-screen panels driven by signals
+  // (no Angular Router in this app). 'list' = My Recipes, 'editor' = the authoring
+  // editor for recipeAuthorEditorId (null = a new draft), null = closed.
+  readonly recipeAuthorView = signal<'list' | 'editor' | null>(null);
+  readonly recipeAuthorEditorId = signal<number | null>(null);
+  openRecipeList(): void { this.recipeAuthorView.set('list'); }
+  openRecipeEditor(id: number | null): void {
+    this.recipeAuthorEditorId.set(id);
+    this.recipeAuthorView.set('editor');
+  }
+  closeRecipeAuthor(): void { this.recipeAuthorView.set(null); }
+
   // In-app web viewer — opens an external page in a bloom iframe overlay instead
   // of a new browser tab (so the user never leaves the app). null = closed.
   readonly webViewUrl = signal<string | null>(null);

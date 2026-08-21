@@ -242,6 +242,14 @@ export interface Meal {
    * Name of the MealSet this meal was materialized from — a query-time decoration paired with sourceMealSetId. Read-only / server-owned.
    */
   sourceMealSetName?: string | null;
+  /**
+   * FK to dbo.CookingMethods; null when unset. Write via the meal update path (0 = clear).
+   */
+  cookingMethodId?: number | null;
+  /**
+   * Denormalized cooking-method name for display; joined through cookingMethodId, never stored on the meal.
+   */
+  cookingMethodName?: string | null;
   createdAt: string;
   updatedAt: string;
   [k: string]: unknown;
@@ -275,6 +283,14 @@ export interface MealSummary {
    * Name of the source meal set; paired with mealSetId
    */
   mealSetName?: string | null;
+  /**
+   * FK to dbo.CookingMethods; null when unset.
+   */
+  cookingMethodId?: number | null;
+  /**
+   * Denormalized cooking-method name for display; joined through cookingMethodId.
+   */
+  cookingMethodName?: string | null;
   userName?: string;
   userEmail?: string;
   createdAt: string;
@@ -362,6 +378,10 @@ export interface UpdateMealRequest {
    * Clear-only: when true, sets clonedFromMealId to NULL so a copy pinned AS A NEW binder meal (renamed / from-scratch) becomes independent. Never sets a value — ClonedFromMealID stays server-owned (only DuplicateMeal writes it non-null).
    */
   clearClonedFrom?: boolean;
+  /**
+   * FK to dbo.CookingMethods. Positive id to set; 0 (or non-positive) to clear to NULL. Omit to leave unchanged.
+   */
+  cookingMethodId?: number | null;
   [k: string]: unknown;
 }
 /**

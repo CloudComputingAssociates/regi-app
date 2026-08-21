@@ -33,6 +33,7 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
             (editItem)="onEditItem($event)"
             (removeItem)="onRemoveItem($event)"
             (slotDragEnded)="onSlotDragEnded($event)"
+            (cookingMethodChange)="rotation.updateMealCookingMethod($event.mealId, $event.cookingMethodId)"
             (dropFood)="rotation.addFoodToEditingMeal($event.food, $event.serving)" />
         }
       </div>

@@ -1280,6 +1280,21 @@ export class RotationService {
     this.rotation.set({ ...rot, menus });
   }
 
+  /** Set (or clear) a meal's cooking method. PUT /meal/{id} { cookingMethodId }
+   *  — a positive id sets it, 0 clears to NULL (wire convention). Updates the
+   *  cache from the returned meal so the picker + metadata reflect it. */
+  async updateMealCookingMethod(mealId: number, cookingMethodId: number): Promise<void> {
+    try {
+      const body: UpdateMealRequest = { cookingMethodId };
+      const updated = await firstValueFrom(
+        this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, body),
+      );
+      this.mealsById.update((m) => new Map(m).set(mealId, updated));
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
   /** Open the food lookaside on a slot: the rail switches from the binder to
    *  the food list and adds funnel into this slot's meal. mealId is null for an
    *  empty slot (the first add creates + places the meal). */

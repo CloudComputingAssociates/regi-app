@@ -11,3 +11,4 @@ export * from './generated/preferences.schema';
 export * from './generated/rotation.schema';
 export * from './generated/meal.schema';
 export * from './generated/mealset.schema';
+export * from './generated/recipe.schema';

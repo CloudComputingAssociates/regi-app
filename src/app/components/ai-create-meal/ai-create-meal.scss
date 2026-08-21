@@ -199,3 +199,18 @@
   }
   &:active { transform: translateY(1px); }
 }
+
+// Author view: "My recipes" quick link in the card head, and button-as-CTA reset.
+.meal-sets-mylink {
+  margin-left: auto;
+  font-size: 12px;
+  color: #8ec5ff;
+  cursor: pointer;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+button.meal-sets-cta {
+  font: inherit;
+  cursor: pointer;
+  width: 100%;
+}
