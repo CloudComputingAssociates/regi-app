@@ -2,6 +2,8 @@
 
 // Barrel export - simplifies imports throughout the app
 export * from './nutrition.model';
+// Hand-maintained FatSecret / UPC add-food wire DTOs (no JSON schema on the API).
+export * from './fatsecret.model';
 
 // Generated from JSON schemas
 export * from './generated/chat.schema';
