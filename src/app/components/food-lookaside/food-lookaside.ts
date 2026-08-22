@@ -15,6 +15,7 @@ import { FoodPreferencesService } from '../../services/food-preferences.service'
 import { SettingsService } from '../../services/settings.service';
 import { Food } from '../../models/food.model';
 import { BASKET_KEYS, hydratePicks } from '../../models/picks-hydration';
+import { IngredientTypeaheadComponent, PickedFood } from '../ingredient-typeahead/ingredient-typeahead';
 
 type LookasidePane = 'picks' | 'myfoods';
 
@@ -41,7 +42,7 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
 
 @Component({
   selector: 'app-food-lookaside',
-  imports: [MatTooltipModule, MatIconModule, DragDropModule],
+  imports: [MatTooltipModule, MatIconModule, DragDropModule, IngredientTypeaheadComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="lookaside">
@@ -89,6 +90,20 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
             (input)="search.set($any($event.target).value)"
             placeholder="Search foods…" />
         </div>
+        <!-- Compact sort control + "add food" (reuses the recipe typeahead). -->
+        <div class="sort-row" role="group" aria-label="Sort My Foods">
+          <button type="button" class="sort-btn" [class.active]="sortMode() === 'category'"
+            (click)="setSort('category')">Category ↑</button>
+          <button type="button" class="sort-btn" [class.active]="sortMode() === 'newest'"
+            (click)="setSort('newest')">Newest ↑</button>
+          <button type="button" class="add-food-toggle" matTooltip="Add a food to My Foods"
+            (click)="addOpen.set(!addOpen())"><mat-icon>{{ addOpen() ? 'close' : 'add' }}</mat-icon></button>
+        </div>
+        @if (addOpen()) {
+          <div class="add-food-row">
+            <app-ingredient-typeahead (foodPicked)="onAddFoodToMyFoods($event)" />
+          </div>
+        }
       }
 
       <!-- The rail is inside the menus-layout cdkDropListGroup, so rows drag
@@ -142,6 +157,20 @@ export class FoodLookasideComponent {
 
   /** MyFoods live substring filter. */
   readonly search = signal('');
+
+  /** MyFoods sort mode — service-backed so it survives lookaside remounts. */
+  readonly sortMode = this.preferencesService.myFoodsSort;
+  setSort(mode: 'category' | 'newest'): void {
+    this.preferencesService.setMyFoodsSort(mode);
+  }
+
+  /** "+ Add food" (MyFoods header) — the same typeahead add mechanism, used
+   *  outside a recipe row. A pick/create refreshes the MyFoods list. */
+  readonly addOpen = signal(false);
+  onAddFoodToMyFoods(_p: PickedFood): void {
+    this.addOpen.set(false);
+    void this.load(); // the created food is now in MyFoods (Newest)
+  }
 
   /** Full allowed-foods list (same source foods-panel uses). Loaded on init. */
   private readonly allowedFull = signal<Food[]>([]);
@@ -205,8 +234,22 @@ export class FoodLookasideComponent {
     const myfoods = this.effectivePane() === 'myfoods';
     const foods = myfoods ? this.allowedFull() : this.pickFoods();
     const q = myfoods ? this.search().trim().toLowerCase() : '';
+    // MyFoods "Newest" → a single flat group sorted by createdAt desc.
+    if (myfoods && this.sortMode() === 'newest') return this.newestGroup(foods, q);
     return this.groupByCategory(foods, q);
   });
+
+  /** Newest-added first, filtered by the search box — one un-collapsible group. */
+  private newestGroup(foods: Food[], q: string): FoodGroup[] {
+    const filtered = q ? foods.filter((f) => this.name(f).toLowerCase().includes(q)) : [...foods];
+    filtered.sort((a, b) => this.createdTs(b) - this.createdTs(a));
+    return filtered.length
+      ? [{ cat: '__newest', label: 'Newest first', foods: filtered, collapsed: false }]
+      : [];
+  }
+  private createdTs(f: Food): number {
+    return Date.parse(f.createdAt ?? '') || 0;
+  }
 
   private groupByCategory(foods: Food[], q: string): FoodGroup[] {
     const searching = q.length > 0;

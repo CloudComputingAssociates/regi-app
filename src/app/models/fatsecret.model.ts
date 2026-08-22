@@ -12,7 +12,7 @@ import { UserFood } from './user-food.model';
  * UserFood plus create/dedup status. imageStatus is a hint for a follow-up
  * product photo ("" when already populated / disabled).
  */
-export interface UpcLookupResult {
+export interface FoodAddResult {
   /** The resolved UserFood; null when none was produced. */
   food: UserFood | null;
   created: boolean;
@@ -40,8 +40,19 @@ export interface FatSecretCandidatesResponse {
 }
 
 /**
+ * POST /api/userfoods/barcode body — create a UserFood from a scanned UPC/GTIN.
+ * upcCode required; userDescription/categoryId optional (category defaults to 9
+ * "Processed" server-side). Response is FoodAddResult.
+ */
+export interface UpcLookupRequest {
+  upcCode: string;
+  userDescription?: string;
+  categoryId?: number | null;
+}
+
+/**
  * POST /api/userfoods/from-fatsecret body — create a UserFood from a candidate.
- * fatsecretFoodId is required; the rest optional. Response is UpcLookupResult.
+ * fatsecretFoodId is required; the rest optional. Response is FoodAddResult.
  */
 export interface FromFatSecretRequest {
   fatsecretFoodId: string;

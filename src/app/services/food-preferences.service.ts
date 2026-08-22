@@ -107,6 +107,12 @@ export class FoodPreferencesService {
   private http = inject(HttpClient);
   private baseUrl = environment.apiUrl;
 
+  /** MyFoods list sort mode for the food lookaside — session-only (no server
+   *  persistence). 'category' (default) groups by category; 'newest' sorts by
+   *  createdAt descending. Lives on the service so it survives lookaside remounts. */
+  readonly myFoodsSort = signal<'category' | 'newest'>('category');
+  setMyFoodsSort(mode: 'category' | 'newest'): void { this.myFoodsSort.set(mode); }
+
   // Server state - what's saved in the database (maps foodId to preferenceId)
   private serverAllowedFoods = signal<Map<number, number>>(new Map());
   private serverRestrictedFoods = signal<Map<number, number>>(new Map());

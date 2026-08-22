@@ -32,6 +32,8 @@ import { RecipeAuthoringService } from '../../services/recipe-authoring.service'
 import { RotationService } from '../../services/rotation.service';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 import { FoodLookasideComponent } from '../food-lookaside/food-lookaside';
+import { IngredientTypeaheadComponent, PickedFood } from '../ingredient-typeahead/ingredient-typeahead';
+import { ImageUploadService } from '../../services/image-upload.service';
 import { Food } from '../../models/food.model';
 import {
   CreateRecipeRequest,
@@ -74,7 +76,7 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
 
 @Component({
   selector: 'app-recipe-editor-panel',
-  imports: [DatePipe, MatIconModule, MatTooltipModule, FoodLookasideComponent],
+  imports: [DatePipe, MatIconModule, MatTooltipModule, FoodLookasideComponent, IngredientTypeaheadComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (isOpen()) {
@@ -192,32 +194,33 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
               @if (reorderError()) { <p class="rep-inline-err">{{ reorderError() }}</p> }
               <ul class="rep-ings">
                 @for (ing of ingredients(); track ing.recipeIngredientId; let i = $index) {
-                  <li class="rep-ing" [class.selected]="selectedLineId() === ing.recipeIngredientId" [class.bound]="lineBound(ing)">
+                  <li class="rep-ing" [class.selected]="selectedLineId() === ing.recipeIngredientId" [class.bound]="lineBound(ing)"
+                    (focusin)="selectLine(ing.recipeIngredientId)">
                     <div class="rep-ing-main">
-                      <button type="button" class="rep-ing-btn bind" [class.on]="selectedLineId() === ing.recipeIngredientId"
-                        matTooltip="Select this line, then pick a food on the right"
-                        (click)="selectLine(ing.recipeIngredientId)">
-                        <mat-icon>{{ selectedLineId() === ing.recipeIngredientId ? 'my_location' : 'link' }}</mat-icon>
-                      </button>
-                      <input class="rep-input qty" type="text" [value]="ing.displayQuantity ?? ''"
-                        placeholder="1½ cups"
-                        (blur)="patchLine(ing, 'displayQuantity', $any($event.target).value)" />
-                      <input class="rep-input name" type="text" [value]="ing.ingredientName"
-                        placeholder="Ingredient"
-                        (blur)="patchLine(ing, 'ingredientName', $any($event.target).value)" />
-                      <input class="rep-input note" type="text" [value]="ing.note ?? ''"
-                        placeholder="(finely chopped)"
+                      <!-- Numbers first: real quantity + unit (Create-Meal scaling). -->
+                      <input class="rep-input amt-qty" type="number" [value]="ing.quantity ?? ''" placeholder="qty"
+                        (blur)="patchAmount(ing, 'quantity', $any($event.target).value)" />
+                      <input class="rep-input amt-unit" type="text" [value]="ing.unit ?? ''" placeholder="unit"
+                        (blur)="patchAmount(ing, 'unit', $any($event.target).value)" />
+                      <!-- Typeahead-first ingredient name → binds the row on pick. -->
+                      <app-ingredient-typeahead class="amt-name" [name]="ing.ingredientName"
+                        (nameChange)="patchLine(ing, 'ingredientName', $event)"
+                        (foodPicked)="onLinePick(ing, $event)" />
+                      <input class="rep-input note" type="text" [value]="ing.note ?? ''" placeholder="(note)"
                         (blur)="patchLine(ing, 'note', $any($event.target).value)" />
+                      @if (needsPhoto(ing)) {
+                        <button type="button" class="rep-ing-btn cam" matTooltip="Add a photo"
+                          (click)="uploadPhoto(ing)"><mat-icon>photo_camera</mat-icon></button>
+                      }
                       <button type="button" class="rep-ing-btn" matTooltip="Move up"
                         [disabled]="i === 0" (click)="move(i, -1)"><mat-icon>arrow_upward</mat-icon></button>
                       <button type="button" class="rep-ing-btn" matTooltip="Move down"
                         [disabled]="i === ingredients().length - 1" (click)="move(i, 1)"><mat-icon>arrow_downward</mat-icon></button>
                       <button type="button" class="rep-ing-btn del" matTooltip="Remove"
                         (click)="removeLine(ing)"><mat-icon>delete_outline</mat-icon></button>
-                      <button type="button" class="rep-ing-btn" matTooltip="Amount"
+                      <button type="button" class="rep-ing-btn" matTooltip="Display override"
                         (click)="toggleExpand(ing.recipeIngredientId)"><mat-icon>{{ isExpanded(ing.recipeIngredientId) ? 'expand_less' : 'tune' }}</mat-icon></button>
                     </div>
-                    <!-- Bind status: pending (unbound) vs bound (resolved food + qty/unit). -->
                     <div class="rep-ing-status">
                       @if (lineBound(ing)) {
                         <span class="rep-bound"><mat-icon>check_circle</mat-icon>{{ boundLabel(ing) }}
@@ -227,15 +230,17 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
                           <mat-icon>link_off</mat-icon>Unbind
                         </button>
                       } @else {
-                        <span class="rep-pending"><mat-icon>radio_button_unchecked</mat-icon>Pending — select, then pick a food</span>
+                        <span class="rep-pending"><mat-icon>radio_button_unchecked</mat-icon>Pick a food to finish this line</span>
                       }
                     </div>
                     @if (isExpanded(ing.recipeIngredientId)) {
+                      <!-- Display override: PDF renders "qty unit" unless set here. -->
                       <div class="rep-ing-num">
-                        <label><span>Qty</span><input class="rep-input" type="number" [value]="ing.quantity ?? ''"
-                          (blur)="patchLineNum(ing, 'quantity', $any($event.target).value)" /></label>
-                        <label><span>Unit</span><input class="rep-input" type="text" [value]="ing.unit ?? ''"
-                          (blur)="patchLine(ing, 'unit', $any($event.target).value)" /></label>
+                        <label class="rep-display-as"><span>Display as…</span>
+                          <input class="rep-input" type="text" [value]="ing.displayQuantity ?? ''"
+                            [placeholder]="composeDisplay(ing.quantity, ing.unit) || 'e.g. 1 large egg, beaten'"
+                            (blur)="patchLine(ing, 'displayQuantity', $any($event.target).value)" />
+                        </label>
                       </div>
                     }
                   </li>
@@ -270,7 +275,7 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
                 </button>
               </div>
               @if (!allBound() && ingredients().length) {
-                <p class="rep-cm-hint">Still pending: {{ pendingLineNames().join(', ') }}</p>
+                <p class="rep-cm-hint">Still needs a food: {{ pendingLineNames().join(', ') }}</p>
               }
               @if (createMealError()) { <p class="rep-inline-err">{{ createMealError() }}</p> }
             </div>
@@ -330,6 +335,7 @@ export class RecipeEditorPanelComponent {
   private notification = inject(NotificationService);
   private authoring = inject(RecipeAuthoringService);
   private rotation = inject(RotationService);
+  private imageUpload = inject(ImageUploadService);
   private dialog = inject(MatDialog);
 
   readonly isOpen = computed(
@@ -359,6 +365,8 @@ export class RecipeEditorPanelComponent {
   /** Client-side memory of the picked food's name per line (the wire line carries
    *  foodId, not a name) — for the "bound" display. */
   private readonly boundNames = signal<Map<number, string>>(new Map());
+  /** Lines whose bound food still needs a product photo (imageStatus 'needed'). */
+  private readonly photoLines = signal<Set<number>>(new Set());
 
   // ---- Create Meal (Step 2) ----
   readonly mealName = signal('');
@@ -488,6 +496,7 @@ export class RecipeEditorPanelComponent {
     this.createMealError.set(null);
     this.selectedLineId.set(null);
     this.boundNames.set(new Map());
+    this.photoLines.set(new Set());
     this.expanded.set(new Set());
   }
 
@@ -662,14 +671,6 @@ export class RecipeEditorPanelComponent {
     void this.commitLine(id, ing.recipeIngredientId, { [field]: v || (field === 'ingredientName' ? v : null) });
   }
 
-  patchLineNum(ing: RecipeIngredient, field: 'quantity', value: string): void {
-    const id = this.recipeId();
-    if (id == null) return;
-    const num = this.strNum(value);
-    if (num === (ing.quantity ?? null)) return;
-    void this.commitLine(id, ing.recipeIngredientId, { [field]: num });
-  }
-
   private async commitLine(id: number, iid: number, patch: Record<string, unknown>): Promise<void> {
     try {
       const res = await firstValueFrom(this.authoring.updateIngredient(id, iid, patch));
@@ -733,10 +734,95 @@ export class RecipeEditorPanelComponent {
     return this.expanded().has(iid);
   }
 
-  // ---- Food binding (Step 1) ------------------------------------------------
-  /** Select / deselect a line as the food-pick target. */
+  // ---- Food binding ---------------------------------------------------------
+  /** Focusing a row makes it the dock's rebind target. */
   selectLine(id: number): void {
-    this.selectedLineId.set(this.selectedLineId() === id ? null : id);
+    this.selectedLineId.set(id);
+  }
+
+  /** A food was chosen in the row's typeahead — bind the line, set the name, and
+   *  prefill qty/unit from the food's default serving ONLY if qty is still empty
+   *  (never clobber typed values). */
+  async onLinePick(ing: RecipeIngredient, p: PickedFood): Promise<void> {
+    const rid = this.recipeId();
+    if (rid == null) return;
+    const patch: UpdateRecipeIngredientRequest = {
+      foodId: p.foodId,
+      foodSource: p.foodSource as RecipeIngredientFoodSource,
+      ingredientName: p.name,
+    };
+    if (ing.quantity == null) {
+      patch.quantity = p.serving;
+      patch.unit = p.unit;
+      if (!this.hasDisplayOverride(ing)) patch.displayQuantity = this.composeDisplay(p.serving, p.unit) || null;
+    }
+    try {
+      const res = await firstValueFrom(this.authoring.updateIngredient(rid, ing.recipeIngredientId, patch));
+      this.ingredients.set(res.ingredients ?? this.ingredients());
+      this.boundNames.update((m) => new Map(m).set(ing.recipeIngredientId, p.name));
+      this.photoLines.update((s) => {
+        const n = new Set(s);
+        p.needsPhoto ? n.add(ing.recipeIngredientId) : n.delete(ing.recipeIngredientId);
+        return n;
+      });
+    } catch (err) {
+      this.notification.show(RecipeAuthoringService.messageFor(err, 'Could not bind the food.'), 'error');
+    }
+  }
+
+  /** Deferred product-photo upload for a bound food (imageStatus 'needed'). */
+  needsPhoto(ing: RecipeIngredient): boolean {
+    return this.photoLines().has(ing.recipeIngredientId);
+  }
+  uploadPhoto(ing: RecipeIngredient): void {
+    const foodId = ing.foodId;
+    if (foodId == null) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        await this.imageUpload.uploadProductImage(foodId, file);
+        this.photoLines.update((s) => {
+          const n = new Set(s);
+          n.delete(ing.recipeIngredientId);
+          return n;
+        });
+        this.notification.show('Photo added.', 'success');
+      } catch {
+        this.notification.show('Could not upload the photo.', 'error');
+      }
+    };
+    input.click();
+  }
+
+  /** Real quantity/unit change → PATCH, and auto-derive displayQuantity unless the
+   *  line has a custom "Display as…" override. */
+  patchAmount(ing: RecipeIngredient, field: 'quantity' | 'unit', raw: string): void {
+    const rid = this.recipeId();
+    if (rid == null) return;
+    const q = field === 'quantity' ? this.strNum(raw) : (ing.quantity ?? null);
+    const u = field === 'unit' ? raw.trim() : (ing.unit ?? '');
+    if (field === 'quantity' && q === (ing.quantity ?? null)) return;
+    if (field === 'unit' && u === (ing.unit ?? '').trim()) return;
+    const patch: UpdateRecipeIngredientRequest = field === 'quantity' ? { quantity: q } : { unit: u || null };
+    if (!this.hasDisplayOverride(ing)) {
+      patch.displayQuantity = this.composeDisplay(q, u) || null;
+    }
+    void this.commitLine(rid, ing.recipeIngredientId, patch);
+  }
+
+  /** Auto display string: "qty unit" (either side may be empty). */
+  composeDisplay(q: number | null | undefined, u: string | null | undefined): string {
+    return [q == null ? '' : String(q), (u ?? '').trim()].filter((x) => x !== '').join(' ').trim();
+  }
+  /** A displayQuantity that differs from the auto-composed "qty unit" is a custom
+   *  override we must not clobber on qty/unit edits. */
+  private hasDisplayOverride(ing: RecipeIngredient): boolean {
+    const dq = (ing.displayQuantity ?? '').trim();
+    return dq !== '' && dq !== this.composeDisplay(ing.quantity, ing.unit);
   }
 
   /** A food was chosen in the docked lookaside — bind it to the selected line via
@@ -794,7 +880,7 @@ export class RecipeEditorPanelComponent {
     if (rid == null || this.creatingMeal()) return;
     this.createMealError.set(null);
     if (!this.allBound()) {
-      this.createMealError.set('Bind every ingredient first. Still pending: ' + this.pendingLineNames().join(', '));
+      this.createMealError.set('Add a food to every ingredient first. Still needs a food: ' + this.pendingLineNames().join(', '));
       return;
     }
     this.creatingMeal.set(true);

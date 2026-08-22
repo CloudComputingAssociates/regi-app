@@ -36,6 +36,9 @@ export type Food = FoodSchema & {
   // generator uses the pick: PrimaryFood = build the meal around it,
   // SecondaryFood = supporting, AnyUse = unconstrained (default).
   mealRole?: MealRole;
+  // When the row was created (on the UserFood wire; absent for curated/USDA
+  // rows). Drives the MyFoods "Newest" sort in the food lookaside.
+  createdAt?: string | null;
 };
 
 export type MealRole = 'AnyUse' | 'PrimaryFood' | 'SecondaryFood';

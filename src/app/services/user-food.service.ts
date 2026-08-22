@@ -1,9 +1,15 @@
 // src/app/services/user-food.service.ts
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { UserFood, CreateUserFoodRequest, UpdateUserFoodCategoryRequest } from '../models/user-food.model';
+import {
+  FatSecretCandidatesResponse,
+  FromFatSecretRequest,
+  UpcLookupRequest,
+  FoodAddResult,
+} from '../models/fatsecret.model';
 
 interface ListUserFoodsResponse {
   foods: UserFood[];
@@ -43,6 +49,25 @@ export class UserFoodService {
    *  gate), so a fresh dynamic ingredient (ShareCandidate=1, ShareApproved=0)
    *  still returns. Used to resolve meal items backed by a userfood that isn't in
    *  the allowed-foods curation set. Returns null on any error. */
+  // ---- Add-food-by-name / barcode (typeahead miss path) ---------------------
+  /** GET /api/userfoods/fatsecret-search?q=&max= — slim FatSecret candidates. */
+  searchFatSecret(q: string, max = 8): Observable<FatSecretCandidatesResponse> {
+    const params = new HttpParams().set('q', q).set('max', String(max));
+    return this.http.get<FatSecretCandidatesResponse>(`${this.baseUrl}/fatsecret-search`, { params });
+  }
+
+  /** POST /api/userfoods/from-fatsecret — create a UserFood from a candidate id
+   *  (server AI-categorizes when categoryId is omitted). Returns FoodAddResult. */
+  createFromFatSecret(body: FromFatSecretRequest): Observable<FoodAddResult> {
+    return this.http.post<FoodAddResult>(`${this.baseUrl}/from-fatsecret`, body);
+  }
+
+  /** POST /api/userfoods/barcode — create a UserFood from a scanned UPC/GTIN.
+   *  404 when the barcode isn't found. Returns FoodAddResult. */
+  lookupBarcode(body: UpcLookupRequest): Observable<FoodAddResult> {
+    return this.http.post<FoodAddResult>(`${this.baseUrl}/barcode`, body);
+  }
+
   async getUserFoodById(id: number): Promise<UserFood | null> {
     try {
       return await firstValueFrom(

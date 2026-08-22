@@ -240,3 +240,40 @@
 .cdk-drag-animating {
   transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
 }
+
+// Compact MyFoods sort toggle (Category / Newest) under the search box.
+.sort-row {
+  display: flex;
+  gap: 6px;
+  padding: 0 8px 6px;
+}
+.sort-btn {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #b9bec4;
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  cursor: pointer;
+
+  &.active {
+    color: #ffffff;
+    background: rgba(77, 166, 255, 0.55);
+    border-color: rgba(77, 166, 255, 0.8);
+  }
+  &:hover:not(.active) { border-color: #6a6f75; color: #e0e0e0; }
+}
+
+// "+ Add food" toggle in the MyFoods header + the inline add row.
+.add-food-toggle {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; padding: 0;
+  color: #b7f5c4; background: #3a3a3a; border: 1px solid #4a4a4a; border-radius: 6px; cursor: pointer;
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; }
+  &:hover { border-color: #6a6f75; }
+}
+.add-food-row { padding: 0 8px 8px; }
