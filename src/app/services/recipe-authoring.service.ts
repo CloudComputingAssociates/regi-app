@@ -11,10 +11,12 @@ import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   CookingMethod,
+  CreateMealFromRecipeRequest,
   CreateRecipeIngredientRequest,
   CreateRecipeRequest,
   ListCookingMethodsResponse,
   ListRecipesResponse,
+  Meal,
   RecipeResponse,
   RecipeType,
   ReorderIngredientsRequest,
@@ -76,6 +78,12 @@ export class RecipeAuthoringService {
    *  longer matches the recipe's lines (caller reloads). Returns the fresh recipe. */
   reorderIngredients(id: number, body: ReorderIngredientsRequest): Observable<RecipeResponse> {
     return this.http.put<RecipeResponse>(`${this.baseUrl}/${id}/ingredient-order`, body);
+  }
+
+  /** POST .../{id}/create-meal — materialize a pinned Binder meal from the fully
+   *  resolved recipe. Response is the created Meal. 422 when any line is unbound. */
+  createMealFromRecipe(id: number, body: CreateMealFromRecipeRequest): Observable<Meal> {
+    return this.http.post<Meal>(`${this.baseUrl}/${id}/create-meal`, body);
   }
 
   // ---- Cooking-method vocabulary (cached) -----------------------------------

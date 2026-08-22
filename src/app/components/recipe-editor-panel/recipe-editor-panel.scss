@@ -11,7 +11,7 @@
 
 .rep-panel {
   width: 100%;
-  max-width: 860px;
+  max-width: 1180px;
   display: flex;
   flex-direction: column;
   background: #2a2a2a;
@@ -57,8 +57,73 @@
   &.regi { color: #e6d3ff; background: rgba(170,120,255,0.16); border-color: rgba(170,120,255,0.4); }
 }
 
-/* ---- Body ---- */
-.rep-body { padding: 14px 16px; overflow-y: auto; flex: 1 1 auto; }
+/* ---- Body: two columns — form/ingredients (left) + docked food search (right) ---- */
+.rep-body { display: flex; min-height: 0; flex: 1 1 auto; }
+.rep-main { flex: 1 1 auto; min-width: 0; padding: 14px 16px; overflow-y: auto; }
+.rep-dock {
+  flex: 0 0 340px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid #3a3a3a;
+  background: #262626;
+
+  app-food-lookaside { flex: 1 1 auto; min-height: 0; display: block; overflow: hidden; }
+}
+.rep-dock-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #b9bec4;
+  border-bottom: 1px solid #3a3a3a;
+  mat-icon { width: 16px; height: 16px; font-size: 16px; color: #8ec5ff; }
+}
+
+/* PDF link in the header */
+.rep-pdf {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #ff9e80;
+  font-size: 13px;
+  text-decoration: underline;
+  mat-icon { width: 18px; height: 18px; font-size: 18px; }
+}
+
+/* Ingredient bind states */
+.rep-ing.selected { border-color: #4da6ff; box-shadow: 0 0 0 1px #4da6ff; }
+.rep-ing.bound { border-color: #2f7a3a; }
+.rep-ing-btn.bind.on { background: #2f83db; border-color: #1f6ac0; color: #fff; }
+.rep-ing-status {
+  display: flex; align-items: center; gap: 8px; margin-top: 5px; padding-left: 2px; font-size: 12px; flex-wrap: wrap;
+}
+.rep-bound {
+  display: inline-flex; align-items: center; gap: 4px; color: #b7f5c4;
+  mat-icon { width: 16px; height: 16px; font-size: 16px; color: #34d651; }
+  .rep-bound-qty { color: #9aa0a6; }
+}
+.rep-pending {
+  display: inline-flex; align-items: center; gap: 4px; color: #ffd8a8;
+  mat-icon { width: 15px; height: 15px; font-size: 15px; color: #e0916b; }
+}
+.rep-unbind {
+  display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; font-size: 11px;
+  color: #e6b3b3; background: none; border: 1px solid #7a4a4a; border-radius: 5px; cursor: pointer;
+  mat-icon { width: 15px; height: 15px; font-size: 15px; }
+  &:hover { background: #5a2d2d; color: #fff; }
+}
+
+/* Assign & Create Meal */
+.rep-createmeal { border-top: 1px solid #3a3a3a; padding-top: 12px; margin-top: 4px; }
+.rep-cm-row {
+  display: flex; gap: 8px; align-items: center;
+  .rep-input { flex: 1 1 auto; }
+  .rep-btn { flex: 0 0 auto; white-space: nowrap; }
+}
+.rep-cm-hint { font-size: 12px; color: #ffd8a8; margin: 4px 2px 0; }
 
 .rep-field { display: block; margin-bottom: 12px; }
 .rep-row3 { display: flex; gap: 12px; .rep-field { flex: 1 1 0; } }

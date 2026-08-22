@@ -194,6 +194,17 @@ export interface ReorderIngredientsRequest {
   [k: string]: unknown;
 }
 
+/**
+ * POST .../create-meal — materialize a pinned Binder meal from a fully-resolved
+ * authored recipe (per-serving scale). mealName defaults to the recipe title when
+ * null/absent. The RESPONSE is the meal read shape (Meal), returned directly.
+ */
+export interface CreateMealFromRecipeRequest {
+  /** Meal name; defaults to the recipe title when null/absent. */
+  mealName?: string | null;
+  [k: string]: unknown;
+}
+
 /** Lightweight recipe row for list views. */
 export interface RecipeSummary {
   id: number;

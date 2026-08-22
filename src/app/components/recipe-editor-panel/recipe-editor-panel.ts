@@ -29,13 +29,18 @@ import { TabService } from '../../services/tab.service';
 import { RoleService } from '../../services/role.service';
 import { NotificationService } from '../../services/notification.service';
 import { RecipeAuthoringService } from '../../services/recipe-authoring.service';
+import { RotationService } from '../../services/rotation.service';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
+import { FoodLookasideComponent } from '../food-lookaside/food-lookaside';
+import { Food } from '../../models/food.model';
 import {
   CreateRecipeRequest,
   Recipe,
   RecipeIngredient,
+  RecipeIngredientFoodSource,
   RecipeResponse,
   RecipeType,
+  UpdateRecipeIngredientRequest,
   UpdateRecipeRequest,
 } from '../../models';
 
@@ -69,7 +74,7 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
 
 @Component({
   selector: 'app-recipe-editor-panel',
-  imports: [DatePipe, MatIconModule, MatTooltipModule],
+  imports: [DatePipe, MatIconModule, MatTooltipModule, FoodLookasideComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (isOpen()) {
@@ -84,6 +89,11 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
               @if (isArchived()) { <span class="rep-badge archived">Archived</span> }
               @if (isRegiApproved()) { <span class="rep-badge regi">REGI-approved</span> }
             </span>
+            @if (pdfHref(); as href) {
+              <a class="rep-pdf" [href]="href" target="_blank" rel="noopener">
+                <mat-icon>picture_as_pdf</mat-icon>View PDF
+              </a>
+            }
             <a class="rep-mylink" (click)="myRecipes()">RecipeBox</a>
             <button type="button" class="rep-close" matTooltip="Close" (click)="close()">
               <mat-icon>close</mat-icon>
@@ -91,6 +101,7 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
           </header>
 
           <div class="rep-body">
+            <div class="rep-main">
             <!-- ===== Header fields ===== -->
             <label class="rep-field">
               <span class="rep-label">Title <em>*</em></span>
@@ -181,8 +192,13 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
               @if (reorderError()) { <p class="rep-inline-err">{{ reorderError() }}</p> }
               <ul class="rep-ings">
                 @for (ing of ingredients(); track ing.recipeIngredientId; let i = $index) {
-                  <li class="rep-ing">
+                  <li class="rep-ing" [class.selected]="selectedLineId() === ing.recipeIngredientId" [class.bound]="lineBound(ing)">
                     <div class="rep-ing-main">
+                      <button type="button" class="rep-ing-btn bind" [class.on]="selectedLineId() === ing.recipeIngredientId"
+                        matTooltip="Select this line, then pick a food on the right"
+                        (click)="selectLine(ing.recipeIngredientId)">
+                        <mat-icon>{{ selectedLineId() === ing.recipeIngredientId ? 'my_location' : 'link' }}</mat-icon>
+                      </button>
                       <input class="rep-input qty" type="text" [value]="ing.displayQuantity ?? ''"
                         placeholder="1½ cups"
                         (blur)="patchLine(ing, 'displayQuantity', $any($event.target).value)" />
@@ -200,6 +216,19 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
                         (click)="removeLine(ing)"><mat-icon>delete_outline</mat-icon></button>
                       <button type="button" class="rep-ing-btn" matTooltip="Amount"
                         (click)="toggleExpand(ing.recipeIngredientId)"><mat-icon>{{ isExpanded(ing.recipeIngredientId) ? 'expand_less' : 'tune' }}</mat-icon></button>
+                    </div>
+                    <!-- Bind status: pending (unbound) vs bound (resolved food + qty/unit). -->
+                    <div class="rep-ing-status">
+                      @if (lineBound(ing)) {
+                        <span class="rep-bound"><mat-icon>check_circle</mat-icon>{{ boundLabel(ing) }}
+                          @if (ing.quantity != null) { <span class="rep-bound-qty">· {{ ing.quantity }} {{ ing.unit }}</span> }
+                        </span>
+                        <button type="button" class="rep-unbind" matTooltip="Unbind this line" (click)="unbindLine(ing)">
+                          <mat-icon>link_off</mat-icon>Unbind
+                        </button>
+                      } @else {
+                        <span class="rep-pending"><mat-icon>radio_button_unchecked</mat-icon>Pending — select, then pick a food</span>
+                      }
                     </div>
                     @if (isExpanded(ing.recipeIngredientId)) {
                       <div class="rep-ing-num">
@@ -227,6 +256,25 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
               @if (addError()) { <p class="rep-inline-err">{{ addError() }}</p> }
             </div>
 
+            <!-- ===== Assign & Create Meal ===== -->
+            <div class="rep-field rep-createmeal">
+              <span class="rep-label">Create a meal from this recipe</span>
+              <div class="rep-cm-row">
+                <input class="rep-input" type="text" [value]="mealName()"
+                  (input)="mealName.set($any($event.target).value)" placeholder="Meal name" />
+                <button type="button" class="rep-btn primary"
+                  [disabled]="creatingMeal() || !allBound()"
+                  [matTooltip]="allBound() ? '' : 'Bind every ingredient to a food first'"
+                  matTooltipPosition="above" (click)="createMeal()">
+                  {{ creatingMeal() ? 'Creating…' : 'Create Meal' }}
+                </button>
+              </div>
+              @if (!allBound() && ingredients().length) {
+                <p class="rep-cm-hint">Still pending: {{ pendingLineNames().join(', ') }}</p>
+              }
+              @if (createMealError()) { <p class="rep-inline-err">{{ createMealError() }}</p> }
+            </div>
+
             <!-- ===== Read-only wire fields ===== -->
             @if (recipePdfLink()) {
               <div class="rep-readonly">
@@ -234,6 +282,20 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
                 @if (pdfRenderedUtc()) { <span> · rendered {{ pdfRenderedUtc() | date: 'MMM d, y' }}</span> }
               </div>
             }
+            </div>
+
+            <!-- Docked food search (reused from Create Meal; emits picks instead
+                 of adding to a meal). Binds to the selected ingredient line. -->
+            <aside class="rep-dock">
+              <div class="rep-dock-hint">
+                @if (selectedLineId()) {
+                  <mat-icon>my_location</mat-icon> Pick a food to bind to the selected line.
+                } @else {
+                  <mat-icon>info</mat-icon> Select an ingredient line, then pick a food.
+                }
+              </div>
+              <app-food-lookaside [emitSelection]="true" (foodSelected)="onFoodSelected($event)" />
+            </aside>
           </div>
 
           <!-- Footer actions -->
@@ -267,6 +329,7 @@ export class RecipeEditorPanelComponent {
   private role = inject(RoleService);
   private notification = inject(NotificationService);
   private authoring = inject(RecipeAuthoringService);
+  private rotation = inject(RotationService);
   private dialog = inject(MatDialog);
 
   readonly isOpen = computed(
@@ -289,6 +352,47 @@ export class RecipeEditorPanelComponent {
   readonly publishError = signal<string | null>(null);
   readonly reorderError = signal<string | null>(null);
   private expanded = signal<Set<number>>(new Set());
+
+  // ---- Food binding (Step 1) ----
+  /** The ingredient line currently targeted by a food pick, or null. */
+  readonly selectedLineId = signal<number | null>(null);
+  /** Client-side memory of the picked food's name per line (the wire line carries
+   *  foodId, not a name) — for the "bound" display. */
+  private readonly boundNames = signal<Map<number, string>>(new Map());
+
+  // ---- Create Meal (Step 2) ----
+  readonly mealName = signal('');
+  readonly creatingMeal = signal(false);
+  readonly createMealError = signal<string | null>(null);
+
+  /** A line is BOUND once it has a resolved food (foodId set, not pending). */
+  lineBound(ing: RecipeIngredient): boolean {
+    return ing.foodId != null && ing.foodSource !== 'pending';
+  }
+  /** Every line bound (and at least one line) — the client mirror of the server
+   *  create-meal gate. */
+  readonly allBound = computed<boolean>(() => {
+    const lines = this.ingredients();
+    return lines.length > 0 && lines.every((l) => this.lineBound(l));
+  });
+  /** Names of the lines still pending — shown on the disabled Create Meal action. */
+  readonly pendingLineNames = computed<string[]>(() =>
+    this.ingredients().filter((l) => !this.lineBound(l)).map((l) => l.ingredientName),
+  );
+  /** Display label for a bound line: the picked food name if we have it, else the
+   *  as-written ingredient name. */
+  boundLabel(ing: RecipeIngredient): string {
+    return this.boundNames().get(ing.recipeIngredientId) ?? ing.ingredientName;
+  }
+
+  /** The published recipe PDF href with a ?v= cache-bust, or null. */
+  readonly pdfHref = computed<string | null>(() => {
+    const link = this.recipePdfLink();
+    if (!link) return null;
+    const v = this.pdfRenderedUtc();
+    if (!v) return link;
+    return link + (link.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(v);
+  });
 
   private loadedKey: string | null = null;
 
@@ -324,6 +428,7 @@ export class RecipeEditorPanelComponent {
     this.recipeType.set('authored');
     this.recipePdfLink.set(null);
     this.pdfRenderedUtc.set(null);
+    this.mealName.set('');
     this.resetTransient();
   }
 
@@ -359,6 +464,8 @@ export class RecipeEditorPanelComponent {
       summaryFatG: this.numStr(r.summaryFatG),
       summaryCarbG: this.numStr(r.summaryCarbG),
     });
+    // Prefill the Create-Meal name with the recipe title (editable).
+    this.mealName.set(r.title ?? '');
   }
 
   /** Apply server-owned state WITHOUT touching the text form (avoids cursor jumps
@@ -378,6 +485,9 @@ export class RecipeEditorPanelComponent {
     this.addError.set(null);
     this.publishError.set(null);
     this.reorderError.set(null);
+    this.createMealError.set(null);
+    this.selectedLineId.set(null);
+    this.boundNames.set(new Map());
     this.expanded.set(new Set());
   }
 
@@ -449,6 +559,8 @@ export class RecipeEditorPanelComponent {
       );
       this.applyServerFlags(res.recipe);
       this.notification.show('Recipe published.', 'success');
+      // Surface the rendered recipePdfLink (?v= cache-bust) in the header.
+      await this.refreshServerState();
     } catch (err) {
       if (err instanceof HttpErrorResponse && err.status === 422) {
         this.publishError.set(
@@ -619,6 +731,105 @@ export class RecipeEditorPanelComponent {
   }
   isExpanded(iid: number): boolean {
     return this.expanded().has(iid);
+  }
+
+  // ---- Food binding (Step 1) ------------------------------------------------
+  /** Select / deselect a line as the food-pick target. */
+  selectLine(id: number): void {
+    this.selectedLineId.set(this.selectedLineId() === id ? null : id);
+  }
+
+  /** A food was chosen in the docked lookaside — bind it to the selected line via
+   *  the line PATCH (foodId/foodSource/quantity/unit). */
+  async onFoodSelected(e: { food: Food; serving: number }): Promise<void> {
+    const rid = this.recipeId();
+    const lineId = this.selectedLineId();
+    if (rid == null) return;
+    if (lineId == null) {
+      this.notification.show('Select an ingredient line first, then pick a food.', 'warning');
+      return;
+    }
+    const food = e.food;
+    const patch: UpdateRecipeIngredientRequest = {
+      foodId: food.id ?? null,
+      foodSource: (food.foodSource ?? 'food') as RecipeIngredientFoodSource,
+      quantity: e.serving,
+      unit: food.servingUnit ?? 'serving',
+    };
+    try {
+      const res = await firstValueFrom(this.authoring.updateIngredient(rid, lineId, patch));
+      this.ingredients.set(res.ingredients ?? this.ingredients());
+      const name = food.shortDescription?.trim() || food.description || '';
+      this.boundNames.update((m) => new Map(m).set(lineId, name));
+    } catch (err) {
+      this.notification.show(RecipeAuthoringService.messageFor(err, 'Could not bind the food.'), 'error');
+    }
+  }
+
+  /** Reset a line to pending (foodSource='pending', foodId=null). */
+  async unbindLine(ing: RecipeIngredient): Promise<void> {
+    const rid = this.recipeId();
+    if (rid == null) return;
+    try {
+      const res = await firstValueFrom(
+        this.authoring.updateIngredient(rid, ing.recipeIngredientId, {
+          foodId: null,
+          foodSource: 'pending',
+        }),
+      );
+      this.ingredients.set(res.ingredients ?? this.ingredients());
+      this.boundNames.update((m) => {
+        const n = new Map(m);
+        n.delete(ing.recipeIngredientId);
+        return n;
+      });
+    } catch (err) {
+      this.notification.show(RecipeAuthoringService.messageFor(err, 'Could not unbind the line.'), 'error');
+    }
+  }
+
+  // ---- Create Meal (Step 2) -------------------------------------------------
+  async createMeal(): Promise<void> {
+    const rid = this.recipeId();
+    if (rid == null || this.creatingMeal()) return;
+    this.createMealError.set(null);
+    if (!this.allBound()) {
+      this.createMealError.set('Bind every ingredient first. Still pending: ' + this.pendingLineNames().join(', '));
+      return;
+    }
+    this.creatingMeal.set(true);
+    try {
+      await firstValueFrom(
+        this.authoring.createMealFromRecipe(rid, { mealName: this.mealName().trim() || null }),
+      );
+      this.notification.show('Meal created — added to your notebook.', 'success');
+      // Reuse the import-complete pattern: refresh the binder so the meal shows.
+      void this.rotation.loadBinder();
+    } catch (err) {
+      if (err instanceof HttpErrorResponse && err.status === 422) {
+        this.createMealError.set(
+          RecipeAuthoringService.messageFor(err, 'Some ingredients are still unresolved.'),
+        );
+      } else {
+        this.notification.show(RecipeAuthoringService.messageFor(err, 'Could not create the meal.'), 'error');
+      }
+    } finally {
+      this.creatingMeal.set(false);
+    }
+  }
+
+  /** Re-read server-owned state (flags, ingredients, recipePdfLink) without
+   *  touching the text form — used after publish to surface the rendered PDF. */
+  private async refreshServerState(): Promise<void> {
+    const id = this.recipeId();
+    if (id == null) return;
+    try {
+      const res = await firstValueFrom(this.authoring.getRecipe(id));
+      this.applyServerFlags(res.recipe);
+      this.ingredients.set(res.ingredients ?? this.ingredients());
+    } catch {
+      /* keep current state */
+    }
   }
 
   // ---- Nav ------------------------------------------------------------------

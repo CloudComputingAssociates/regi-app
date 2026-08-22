@@ -5,7 +5,7 @@
 // each a category accordion (start collapsed) of foods you can add to the
 // editing meal. A single click OR a drag onto the editing meal card adds the
 // row's food at its resolved default serving. Dark chrome mirrors the binder.
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -127,6 +127,14 @@ export class FoodLookasideComponent {
   readonly rotation = inject(RotationService);
   private preferencesService = inject(FoodPreferencesService);
   private settingsService = inject(SettingsService);
+
+  /** Redirect mode: when true (recipe editor), a pick is EMITTED via foodSelected
+   *  instead of added to the editing meal. Default false → the meal-slot flow is
+   *  byte-for-byte unchanged (menus-panel mounts this without the flag). */
+  readonly emitSelection = input<boolean>(false);
+  /** Emitted (only in emitSelection mode) when a food row is chosen — the recipe
+   *  editor binds it to its selected ingredient line. */
+  readonly foodSelected = output<{ food: Food; serving: number }>();
 
   /** The tab the user picked. Focus Foods is the default/primary (falls back to
    *  My Foods via effectivePane when the user has no picks). */
@@ -266,6 +274,11 @@ export class FoodLookasideComponent {
   /** Funnel both click + drag paths into the service add path, with a per-row
    *  busy guard so a slow POST can't be double-fired. */
   private async add(food: Food, serving: number): Promise<void> {
+    // Redirect mode (recipe editor): emit the pick, skip the meal-item path.
+    if (this.emitSelection()) {
+      this.foodSelected.emit({ food, serving });
+      return;
+    }
     const k = this.key(food);
     if (this.busyKeys().has(k)) return;
     this.busyKeys.update((s) => new Set(s).add(k));
