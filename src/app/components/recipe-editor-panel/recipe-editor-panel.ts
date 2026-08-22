@@ -226,8 +226,8 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
                         <span class="rep-bound"><mat-icon>check_circle</mat-icon>{{ boundLabel(ing) }}
                           @if (ing.quantity != null) { <span class="rep-bound-qty">· {{ ing.quantity }} {{ ing.unit }}</span> }
                         </span>
-                        <button type="button" class="rep-unbind" matTooltip="Unbind this line" (click)="unbindLine(ing)">
-                          <mat-icon>link_off</mat-icon>Unbind
+                        <button type="button" class="rep-unbind" matTooltip="Clear this food — pick a different one" (click)="unbindLine(ing)">
+                          <mat-icon>close</mat-icon>Clear
                         </button>
                       } @else {
                         <span class="rep-pending"><mat-icon>radio_button_unchecked</mat-icon>Pick a food to finish this line</span>
@@ -269,7 +269,7 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
                   (input)="mealName.set($any($event.target).value)" placeholder="Meal name" />
                 <button type="button" class="rep-btn primary"
                   [disabled]="creatingMeal() || !allBound()"
-                  [matTooltip]="allBound() ? '' : 'Bind every ingredient to a food first'"
+                  [matTooltip]="allBound() ? '' : 'Add a food to every ingredient first'"
                   matTooltipPosition="above" (click)="createMeal()">
                   {{ creatingMeal() ? 'Creating…' : 'Create Meal' }}
                 </button>
@@ -294,7 +294,7 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
             <aside class="rep-dock">
               <div class="rep-dock-hint">
                 @if (selectedLineId()) {
-                  <mat-icon>my_location</mat-icon> Pick a food to bind to the selected line.
+                  <mat-icon>my_location</mat-icon> Pick a food for the selected line.
                 } @else {
                   <mat-icon>info</mat-icon> Select an ingredient line, then pick a food.
                 }
@@ -766,7 +766,7 @@ export class RecipeEditorPanelComponent {
         return n;
       });
     } catch (err) {
-      this.notification.show(RecipeAuthoringService.messageFor(err, 'Could not bind the food.'), 'error');
+      this.notification.show(RecipeAuthoringService.messageFor(err, 'Couldn’t set food — try again.'), 'error');
     }
   }
 
@@ -848,7 +848,7 @@ export class RecipeEditorPanelComponent {
       const name = food.shortDescription?.trim() || food.description || '';
       this.boundNames.update((m) => new Map(m).set(lineId, name));
     } catch (err) {
-      this.notification.show(RecipeAuthoringService.messageFor(err, 'Could not bind the food.'), 'error');
+      this.notification.show(RecipeAuthoringService.messageFor(err, 'Couldn’t set food — try again.'), 'error');
     }
   }
 
@@ -870,7 +870,7 @@ export class RecipeEditorPanelComponent {
         return n;
       });
     } catch (err) {
-      this.notification.show(RecipeAuthoringService.messageFor(err, 'Could not unbind the line.'), 'error');
+      this.notification.show(RecipeAuthoringService.messageFor(err, 'Couldn’t clear the food — try again.'), 'error');
     }
   }
 
