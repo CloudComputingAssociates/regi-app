@@ -88,8 +88,11 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
           <header class="rep-head">
             <span class="rep-title">
               <mat-icon>edit_note</mat-icon>{{ recipeId() ? 'Edit Recipe' : 'New Recipe' }}
-              <span class="rep-badge type">{{ recipeType() }}</span>
-              @if (isPublished()) { <span class="rep-badge published">Published</span> }
+              @if (isPublished()) {
+                <span class="rep-badge published">Published</span>
+              } @else {
+                <span class="rep-badge draft">Draft</span>
+              }
               @if (isArchived()) { <span class="rep-badge archived">Archived</span> }
               @if (isRegiApproved()) { <span class="rep-badge regi">REGI-approved</span> }
             </span>

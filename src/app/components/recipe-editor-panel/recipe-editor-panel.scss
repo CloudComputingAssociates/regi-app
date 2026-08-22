@@ -51,7 +51,7 @@
 .rep-badge {
   font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;
   padding: 2px 6px; border-radius: 6px; border: 1px solid transparent;
-  &.type { color: #cfe4ff; background: rgba(77,166,255,0.16); border-color: rgba(77,166,255,0.35); }
+  &.draft { color: #d6d6d6; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.18); }
   &.published { color: #b7f5c4; background: rgba(52,214,81,0.16); border-color: rgba(52,214,81,0.4); }
   &.archived { color: #ffd8a8; background: rgba(255,160,60,0.16); border-color: rgba(255,160,60,0.4); }
   &.regi { color: #e6d3ff; background: rgba(170,120,255,0.16); border-color: rgba(170,120,255,0.4); }

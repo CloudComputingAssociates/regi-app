@@ -380,7 +380,6 @@ interface SetDraft {
                 @for (r of filteredRecipes(); track r.id) {
                   <li class="msp-set-item" (click)="openRecipe(r.id)">
                     <span class="msp-set-name">{{ r.title }}</span>
-                    <span class="msp-set-genre rb-badge type">{{ r.recipeType }}</span>
                     @if (r.isPublished) {
                       <span class="msp-set-genre rb-badge published">Published</span>
                     } @else {
