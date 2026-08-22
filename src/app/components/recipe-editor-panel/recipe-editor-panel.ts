@@ -205,9 +205,17 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
                         (blur)="patchAmount(ing, 'quantity', $any($event.target).value)" />
                       <input class="rep-input amt-unit" type="text" [value]="ing.unit ?? ''" placeholder="unit"
                         (blur)="patchAmount(ing, 'unit', $any($event.target).value)" />
-                      <app-ingredient-typeahead class="amt-name" [name]="ing.ingredientName"
-                        (nameChange)="patchLine(ing, 'ingredientName', $event)"
-                        (foodPicked)="onLinePick(ing, $event)" />
+                      @if (lineBound(ing)) {
+                        <!-- Completed row: plain name = display override (PATCH
+                             ingredientName; food untouched, typeahead not reopened). -->
+                        <input class="rep-input amt-name" type="text" [value]="ing.ingredientName" placeholder="Ingredient"
+                          (blur)="patchLine(ing, 'ingredientName', $any($event.target).value)" />
+                      } @else {
+                        <!-- No food yet: the typeahead drives food selection. -->
+                        <app-ingredient-typeahead class="amt-name" [name]="ing.ingredientName"
+                          (nameChange)="patchLine(ing, 'ingredientName', $event)"
+                          (foodPicked)="onLinePick(ing, $event)" />
+                      }
                       <input class="rep-input note" type="text" [value]="ing.note ?? ''" placeholder="(note)"
                         (blur)="patchLine(ing, 'note', $any($event.target).value)" />
                       @if (needsPhoto(ing)) {
@@ -232,12 +240,18 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
                       <div class="rep-ing-hint"><mat-icon>error_outline</mat-icon>Pick a food to finish this line</div>
                     }
                     @if (isExpanded(ing.recipeIngredientId)) {
-                      <!-- Display override: PDF renders "qty unit" unless set here. -->
+                      <!-- Presentation overrides: quantity string + the name shown on
+                           the recipe. Both are display-only; the food link is untouched. -->
                       <div class="rep-ing-num">
                         <label class="rep-display-as"><span>Display as…</span>
                           <input class="rep-input" type="text" [value]="ing.displayQuantity ?? ''"
                             [placeholder]="composeDisplay(ing.quantity, ing.unit) || 'e.g. 1 large egg, beaten'"
                             (blur)="patchLine(ing, 'displayQuantity', $any($event.target).value)" />
+                        </label>
+                        <label class="rep-display-as"><span>Shown on recipe as…</span>
+                          <input class="rep-input" type="text" [value]="ing.ingredientName"
+                            [placeholder]="ing.ingredientName"
+                            (blur)="patchLine(ing, 'ingredientName', $any($event.target).value)" />
                         </label>
                       </div>
                     }

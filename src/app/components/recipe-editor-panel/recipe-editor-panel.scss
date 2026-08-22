@@ -171,7 +171,7 @@
 .rep-ing-main .amt-name { flex: 1 1 auto; min-width: 0; }
 .rep-ing-main .note { flex: 0 0 128px; }
 .rep-ing-btn.cam { color: #ffd8a8; &:hover { background: #4a4436; } }
-.rep-display-as { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #b9bec4; width: 100%;
+.rep-display-as { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #b9bec4; flex: 1 1 220px; min-width: 0;
   .rep-input { width: 100%; } }
 .rep-ing-btn, .rep-add-btn {
   display: inline-flex; align-items: center; justify-content: center;
@@ -179,8 +179,8 @@
   mat-icon { width: 18px; height: 18px; font-size: 18px; }
 }
 .rep-ing-btn { width: 28px; height: 28px; flex: 0 0 auto; &.del:hover { background: #7a2d2d; } &:disabled { opacity: 0.4; cursor: default; } }
-.rep-ing-num { display: flex; gap: 10px; margin-top: 6px; padding-left: 2px;
-  label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #b9bec4; width: 120px; } }
+.rep-ing-num { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; padding-left: 2px;
+  label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #b9bec4; flex: 1 1 220px; min-width: 0; } }
 
 // Add row mirrors the real row's grid exactly (identical child widths).
 .rep-ing-add { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
