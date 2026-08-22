@@ -18,6 +18,7 @@ import {
   effect,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
@@ -72,7 +73,8 @@ const BLANK_FORM: EditorForm = {
   summaryCal: '', summaryProteinG: '', summaryFiberG: '', summaryFatG: '', summaryCarbG: '',
 };
 
-interface AddRow { displayQuantity: string; ingredientName: string; note: string; }
+interface AddRow { quantity: string; unit: string; ingredientName: string; note: string; }
+const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: '' };
 
 @Component({
   selector: 'app-recipe-editor-panel',
@@ -197,12 +199,12 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
                   <li class="rep-ing" [class.selected]="selectedLineId() === ing.recipeIngredientId" [class.bound]="lineBound(ing)"
                     (focusin)="selectLine(ing.recipeIngredientId)">
                     <div class="rep-ing-main">
-                      <!-- Numbers first: real quantity + unit (Create-Meal scaling). -->
+                      <!-- Left-edge status: a small green ✓ once a food is set. -->
+                      <span class="rep-ing-check">@if (lineBound(ing)) { <mat-icon matTooltip="Food set">check_circle</mat-icon> }</span>
                       <input class="rep-input amt-qty" type="number" [value]="ing.quantity ?? ''" placeholder="qty"
                         (blur)="patchAmount(ing, 'quantity', $any($event.target).value)" />
                       <input class="rep-input amt-unit" type="text" [value]="ing.unit ?? ''" placeholder="unit"
                         (blur)="patchAmount(ing, 'unit', $any($event.target).value)" />
-                      <!-- Typeahead-first ingredient name → binds the row on pick. -->
                       <app-ingredient-typeahead class="amt-name" [name]="ing.ingredientName"
                         (nameChange)="patchLine(ing, 'ingredientName', $event)"
                         (foodPicked)="onLinePick(ing, $event)" />
@@ -211,6 +213,10 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
                       @if (needsPhoto(ing)) {
                         <button type="button" class="rep-ing-btn cam" matTooltip="Add a photo"
                           (click)="uploadPhoto(ing)"><mat-icon>photo_camera</mat-icon></button>
+                      }
+                      @if (lineBound(ing)) {
+                        <button type="button" class="rep-ing-btn clear" matTooltip="Clear this food — pick a different one"
+                          (click)="unbindLine(ing)"><mat-icon>close</mat-icon></button>
                       }
                       <button type="button" class="rep-ing-btn" matTooltip="Move up"
                         [disabled]="i === 0" (click)="move(i, -1)"><mat-icon>arrow_upward</mat-icon></button>
@@ -221,18 +227,10 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
                       <button type="button" class="rep-ing-btn" matTooltip="Display override"
                         (click)="toggleExpand(ing.recipeIngredientId)"><mat-icon>{{ isExpanded(ing.recipeIngredientId) ? 'expand_less' : 'tune' }}</mat-icon></button>
                     </div>
-                    <div class="rep-ing-status">
-                      @if (lineBound(ing)) {
-                        <span class="rep-bound"><mat-icon>check_circle</mat-icon>{{ boundLabel(ing) }}
-                          @if (ing.quantity != null) { <span class="rep-bound-qty">· {{ ing.quantity }} {{ ing.unit }}</span> }
-                        </span>
-                        <button type="button" class="rep-unbind" matTooltip="Clear this food — pick a different one" (click)="unbindLine(ing)">
-                          <mat-icon>close</mat-icon>Clear
-                        </button>
-                      } @else {
-                        <span class="rep-pending"><mat-icon>radio_button_unchecked</mat-icon>Pick a food to finish this line</span>
-                      }
-                    </div>
+                    <!-- Amber hint ONLY on a saved line that has text but no food. -->
+                    @if (!lineBound(ing) && ing.ingredientName.trim()) {
+                      <div class="rep-ing-hint"><mat-icon>error_outline</mat-icon>Pick a food to finish this line</div>
+                    }
                     @if (isExpanded(ing.recipeIngredientId)) {
                       <!-- Display override: PDF renders "qty unit" unless set here. -->
                       <div class="rep-ing-num">
@@ -246,15 +244,20 @@ interface AddRow { displayQuantity: string; ingredientName: string; note: string
                   </li>
                 }
               </ul>
-              <!-- Add row: POSTs on Add (server appends sortOrder). -->
+              <!-- Add row: FULL row anatomy — [✓ spacer][qty][unit][typeahead][note][+ Add].
+                   A typeahead pick creates a complete line; "+ Add" on free text creates an
+                   unresolved line. Either way the row resets + refocuses (the cruise loop). -->
               <div class="rep-ing-add">
-                <input class="rep-input qty" type="text" [value]="addRow().displayQuantity"
-                  placeholder="1½ cups" (input)="setAdd('displayQuantity', $any($event.target).value)" />
-                <input class="rep-input name" type="text" [value]="addRow().ingredientName"
-                  placeholder="Add an ingredient" (input)="setAdd('ingredientName', $any($event.target).value)"
-                  (keydown.enter)="addLine()" />
-                <input class="rep-input note" type="text" [value]="addRow().note"
-                  placeholder="(note)" (input)="setAdd('note', $any($event.target).value)" />
+                <span class="rep-ing-check"></span>
+                <input class="rep-input amt-qty" type="number" [value]="addRow().quantity" placeholder="qty"
+                  (input)="setAdd('quantity', $any($event.target).value)" />
+                <input class="rep-input amt-unit" type="text" [value]="addRow().unit" placeholder="unit"
+                  (input)="setAdd('unit', $any($event.target).value)" />
+                <app-ingredient-typeahead #addType class="amt-name" [name]="addRow().ingredientName"
+                  (textInput)="setAdd('ingredientName', $event)"
+                  (foodPicked)="onAddPick($event)" />
+                <input class="rep-input note" type="text" [value]="addRow().note" placeholder="(note)"
+                  (input)="setAdd('note', $any($event.target).value)" />
                 <button type="button" class="rep-add-btn" [disabled]="!addRow().ingredientName.trim()"
                   (click)="addLine()"><mat-icon>add</mat-icon>Add</button>
               </div>
@@ -353,7 +356,9 @@ export class RecipeEditorPanelComponent {
   readonly pdfRenderedUtc = signal<string | null>(null);
   readonly saving = signal(false);
   readonly summaryOpen = signal(false);
-  readonly addRow = signal<AddRow>({ displayQuantity: '', ingredientName: '', note: '' });
+  readonly addRow = signal<AddRow>({ ...BLANK_ADD });
+  /** The add row's typeahead — refocused after each add for the cruise loop. */
+  private readonly addType = viewChild<IngredientTypeaheadComponent>('addType');
   readonly addError = signal<string | null>(null);
   readonly publishError = signal<string | null>(null);
   readonly reorderError = signal<string | null>(null);
@@ -489,7 +494,7 @@ export class RecipeEditorPanelComponent {
   }
 
   private resetTransient(): void {
-    this.addRow.set({ displayQuantity: '', ingredientName: '', note: '' });
+    this.addRow.set({ ...BLANK_ADD });
     this.addError.set(null);
     this.publishError.set(null);
     this.reorderError.set(null);
@@ -646,19 +651,69 @@ export class RecipeEditorPanelComponent {
       }
       if (!(await this.persistHeader())) return;
     }
+    const q = this.strNum(row.quantity);
+    const u = row.unit.trim();
     try {
       const res = await firstValueFrom(
         this.authoring.addIngredient(this.recipeId()!, {
           ingredientName: name,
-          displayQuantity: row.displayQuantity.trim() || null,
+          quantity: q,
+          unit: u || null,
+          displayQuantity: this.composeDisplay(q, u) || null,
           note: row.note.trim() || null,
         }),
       );
       this.ingredients.set(res.ingredients ?? []);
-      this.addRow.set({ displayQuantity: '', ingredientName: '', note: '' });
+      this.resetAddRow();
     } catch (err) {
       this.addError.set(RecipeAuthoringService.messageFor(err, 'Could not add the ingredient.'));
     }
+  }
+
+  /** Add-row typeahead pick → create a COMPLETE line (food set, qty/unit prefilled
+   *  from the default serving unless the author typed their own). */
+  async onAddPick(p: PickedFood): Promise<void> {
+    this.addError.set(null);
+    if (this.recipeId() == null) {
+      if (!this.form().title.trim()) {
+        this.addError.set('Enter a title, then Save, before adding ingredients.');
+        return;
+      }
+      if (!(await this.persistHeader())) return;
+    }
+    const row = this.addRow();
+    const q = this.strNum(row.quantity) ?? p.serving; // typed qty wins, else default
+    const u = row.unit.trim() || p.unit;
+    const prevIds = new Set(this.ingredients().map((l) => l.recipeIngredientId));
+    try {
+      const res = await firstValueFrom(
+        this.authoring.addIngredient(this.recipeId()!, {
+          ingredientName: p.name,
+          foodId: p.foodId,
+          foodSource: p.foodSource as RecipeIngredientFoodSource,
+          quantity: q,
+          unit: u,
+          displayQuantity: this.composeDisplay(q, u) || null,
+          note: row.note.trim() || null,
+        }),
+      );
+      const lines = res.ingredients ?? [];
+      this.ingredients.set(lines);
+      const created = lines.find((l) => !prevIds.has(l.recipeIngredientId));
+      if (created) {
+        this.boundNames.update((m) => new Map(m).set(created.recipeIngredientId, p.name));
+        if (p.needsPhoto) this.photoLines.update((s) => new Set(s).add(created.recipeIngredientId));
+      }
+      this.resetAddRow();
+    } catch (err) {
+      this.addError.set(RecipeAuthoringService.messageFor(err, 'Couldn’t set food — try again.'));
+    }
+  }
+
+  /** Clear the add row and refocus its typeahead — the type/Enter cruise loop. */
+  private resetAddRow(): void {
+    this.addRow.set({ ...BLANK_ADD });
+    setTimeout(() => this.addType()?.focus());
   }
 
   patchLine(ing: RecipeIngredient, field: 'displayQuantity' | 'ingredientName' | 'note' | 'unit', value: string): void {

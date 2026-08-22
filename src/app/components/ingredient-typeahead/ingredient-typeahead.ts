@@ -10,12 +10,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
   effect,
   inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
@@ -103,8 +105,17 @@ export class IngredientTypeaheadComponent {
   readonly name = input<string>('');
   /** Free-text name edit (blur with no pick) — parent PATCHes ingredientName. */
   readonly nameChange = output<string>();
+  /** Live text on every keystroke — the add row keeps its draft name in sync
+   *  (rows use nameChange-on-blur instead, to avoid a PATCH per keystroke). */
+  readonly textInput = output<string>();
   /** A food was chosen (match or created) — parent binds the row. */
   readonly foodPicked = output<PickedFood>();
+
+  private readonly boxRef = viewChild<ElementRef<HTMLInputElement>>('box');
+  /** Focus the input (used to keep the add-row cruise loop going). */
+  focus(): void {
+    this.boxRef()?.nativeElement.focus();
+  }
 
   readonly text = signal('');
   readonly open = signal(false);
@@ -160,6 +171,7 @@ export class IngredientTypeaheadComponent {
 
   onInput(v: string): void {
     this.text.set(v);
+    this.textInput.emit(v);
     this.open.set(true);
     this.mode.set('matches');
     this.hi.set(0);

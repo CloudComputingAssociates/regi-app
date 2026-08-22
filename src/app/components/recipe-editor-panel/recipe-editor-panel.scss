@@ -99,24 +99,23 @@
 /* Ingredient bind states */
 .rep-ing.selected { border-color: #4da6ff; box-shadow: 0 0 0 1px #4da6ff; }
 .rep-ing.bound { border-color: #2f7a3a; }
-.rep-ing-btn.bind.on { background: #2f83db; border-color: #1f6ac0; color: #fff; }
-.rep-ing-status {
-  display: flex; align-items: center; gap: 8px; margin-top: 5px; padding-left: 2px; font-size: 12px; flex-wrap: wrap;
+
+// Left-edge status marker — fixed width so every row's fields align whether or
+// not the ✓ is present.
+.rep-ing-check {
+  flex: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  mat-icon { width: 18px; height: 18px; font-size: 18px; color: #34d651; }
 }
-.rep-bound {
-  display: inline-flex; align-items: center; gap: 4px; color: #b7f5c4;
-  mat-icon { width: 16px; height: 16px; font-size: 16px; color: #34d651; }
-  .rep-bound-qty { color: #9aa0a6; }
-}
-.rep-pending {
-  display: inline-flex; align-items: center; gap: 4px; color: #ffd8a8;
+.rep-ing-btn.clear { color: #e6b3b3; &:hover { background: #5a2d2d; color: #fff; } }
+
+// Amber "needs a food" hint — only on a saved line with text but no food.
+.rep-ing-hint {
+  display: flex; align-items: center; gap: 4px;
+  margin: 5px 0 1px 24px; font-size: 12px; color: #ffd8a8;
   mat-icon { width: 15px; height: 15px; font-size: 15px; color: #e0916b; }
-}
-.rep-unbind {
-  display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; font-size: 11px;
-  color: #e6b3b3; background: none; border: 1px solid #7a4a4a; border-radius: 5px; cursor: pointer;
-  mat-icon { width: 15px; height: 15px; font-size: 15px; }
-  &:hover { background: #5a2d2d; color: #fff; }
 }
 
 /* Assign & Create Meal */
@@ -183,10 +182,12 @@
 .rep-ing-num { display: flex; gap: 10px; margin-top: 6px; padding-left: 2px;
   label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #b9bec4; width: 120px; } }
 
+// Add row mirrors the real row's grid exactly (identical child widths).
 .rep-ing-add { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
-.rep-ing-add .qty { flex: 0 0 90px; }
-.rep-ing-add .name { flex: 1 1 auto; }
-.rep-ing-add .note { flex: 0 0 150px; }
+.rep-ing-add .amt-qty { flex: 0 0 62px; }
+.rep-ing-add .amt-unit { flex: 0 0 80px; }
+.rep-ing-add .amt-name { flex: 1 1 auto; min-width: 0; }
+.rep-ing-add .note { flex: 0 0 128px; }
 .rep-add-btn { gap: 4px; height: 30px; padding: 0 10px; font-size: 13px; background: linear-gradient(180deg,#4d4d4d,#3a3a3a);
   &:disabled { opacity: 0.4; cursor: default; } }
 
