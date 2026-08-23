@@ -1042,6 +1042,14 @@ export class RotationService {
    *  after slot placement (the slot may hold a new forked meal id; the menu's
    *  pinned flag may have flipped) and after pinning a menu (server cascade
    *  pins the menu + every slotted meal). */
+  /** Force-reload the selected menu and every slotted meal (full GET, so fields
+   *  like recipeLink refresh). Used after a recipe publish backfills RecipeLink
+   *  onto meals already built from it — selectMenu would skip cached meals. */
+  async refreshSelectedMenu(): Promise<void> {
+    const id = this.selectedMenuId();
+    if (id != null) await this.refreshMenu(id);
+  }
+
   private async refreshMenu(menuId: number): Promise<void> {
     const menu = await firstValueFrom(this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`));
     this.cacheMenu(menuId, menu);

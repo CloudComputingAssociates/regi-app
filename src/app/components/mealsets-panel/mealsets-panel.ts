@@ -28,6 +28,8 @@ import { TabService } from '../../services/tab.service';
 import { NotificationService } from '../../services/notification.service';
 import { MealSetService } from '../../services/mealset.service';
 import { RecipeAuthoringService } from '../../services/recipe-authoring.service';
+import { RecipeService } from '../../services/recipe.service';
+import { RecipeImportWatcher } from '../../services/recipe-import-watcher.service';
 import { ImageDropComponent } from '../image-drop/image-drop';
 import {
   MealSet,
@@ -359,6 +361,16 @@ interface SetDraft {
             </h3>
             <button type="button" class="msp-btn primary" (click)="newRecipe()">+ New Recipe</button>
           </div>
+          <!-- Import a recipe from a PDF (or JPEG/PNG) — same background AI import
+               regular users get in "Add Meals". Lands as a meal in the binder. -->
+          <div class="rb-import" [class.dragover]="rbDragOver()"
+            (dragover)="onRbDragOver($event)" (dragleave)="onRbDragLeave($event)" (drop)="onRbDrop($event)"
+            (click)="rbFile.click()">
+            <mat-icon>upload_file</mat-icon>
+            <span>Import from a recipe PDF — drop a file or click</span>
+            <input #rbFile type="file" accept="application/pdf,image/jpeg,image/png" hidden
+              (change)="onRbFileSelected(rbFile)" />
+          </div>
           @if (recipes().length) {
             <!-- Client-side, as-you-type title filter over the loaded list. -->
             <div class="rb-search">
@@ -408,6 +420,8 @@ export class MealsetsPanelComponent implements OnInit {
   protected tabService = inject(TabService);
   private mealSetService = inject(MealSetService);
   private authoring = inject(RecipeAuthoringService);
+  private recipeService = inject(RecipeService);
+  private importWatcher = inject(RecipeImportWatcher);
   private notification = inject(NotificationService);
   private auth = inject(AuthService);
 
@@ -441,6 +455,46 @@ export class MealsetsPanelComponent implements OnInit {
 
   newRecipe(): void { this.tabService.openRecipeEditor(null); }
   openRecipe(id: number): void { this.tabService.openRecipeEditor(id); }
+
+  // ---- Import a recipe from a PDF (reuses the users' import pipeline) --------
+  readonly rbDragOver = signal(false);
+  onRbDragOver(ev: DragEvent): void { ev.preventDefault(); this.rbDragOver.set(true); }
+  onRbDragLeave(ev: DragEvent): void { ev.preventDefault(); this.rbDragOver.set(false); }
+  onRbDrop(ev: DragEvent): void {
+    ev.preventDefault();
+    this.rbDragOver.set(false);
+    this.importPdf(ev.dataTransfer?.files?.[0] ?? null);
+  }
+  onRbFileSelected(input: HTMLInputElement): void {
+    const file = input.files?.[0] ?? null;
+    input.value = ''; // allow re-picking the same file after a failure
+    this.importPdf(file);
+  }
+
+  /** Validate + kick off the same background recipe import users get. */
+  private importPdf(file: File | null): void {
+    if (!file) return;
+    if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
+      this.notification.show('Please choose a PDF, JPEG, or PNG recipe file.', 'error');
+      return;
+    }
+    if (file.type === 'application/pdf') {
+      this.notification.show(
+        "Queued for processing, we'll take it from here. Notification will be sent when finished importing and AI processing.",
+        'warning',
+        10000,
+      );
+    }
+    void this.uploadRecipe(file);
+  }
+  private async uploadRecipe(file: File): Promise<void> {
+    try {
+      const res = await firstValueFrom(this.recipeService.importRecipe(file));
+      if (res?.recipeId != null) this.importWatcher.watch(res.recipeId);
+    } catch {
+      this.notification.show('Recipe import failed — could not upload the file.', 'error');
+    }
+  }
 
   /** The name on the user's account (Auth0 profile) — the default author name. */
   readonly accountName = toSignal(this.auth.user$.pipe(map((u) => u?.name ?? '')), {

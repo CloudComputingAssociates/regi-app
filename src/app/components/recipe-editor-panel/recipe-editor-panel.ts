@@ -592,6 +592,12 @@ export class RecipeEditorPanelComponent {
       this.notification.show('Recipe published.', 'success');
       // Surface the rendered recipePdfLink (?v= cache-bust) in the header.
       await this.refreshServerState();
+      // Publishing renders the PDF + backfills RecipeLink on meals already built
+      // from this recipe (pre-publish). Refresh both surfaces so their "Recipe
+      // (PDF)" link appears without a manual reload: the binder list, and the
+      // board's slotted meals (force-reloaded — selectMenu skips cached ones).
+      void this.rotation.loadBinder();
+      void this.rotation.refreshSelectedMenu();
     } catch (err) {
       if (err instanceof HttpErrorResponse && err.status === 422) {
         this.publishError.set(
