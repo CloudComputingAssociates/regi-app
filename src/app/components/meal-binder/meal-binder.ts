@@ -24,6 +24,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '@auth0/auth0-angular';
 import { RotationService } from '../../services/rotation.service';
+import { TabService } from '../../services/tab.service';
 import { MealSetService } from '../../services/mealset.service';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 import { Meal, Menu, MealSetSummary } from '../../models';
@@ -360,6 +361,12 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
                       <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
+                      <!-- Meals built from a recipe carry its rendered PDF link. -->
+                      @if (meal.recipeLink?.trim()) {
+                        <button type="button" class="binder-recipe-link"
+                          matTooltip="Open the source recipe PDF"
+                          (click)="$event.stopPropagation(); openRecipe(meal.recipeLink)">Recipe (PDF)</button>
+                      }
                       <!-- Set-materialized meal: restore to the original (primary)
                            or detach from the set (secondary). Gated on provenance. -->
                       @if (meal.sourceMealSetId != null) {
@@ -419,6 +426,12 @@ export class MealBinderComponent implements OnInit {
   private host = inject(ElementRef<HTMLElement>);
   private mealSetService = inject(MealSetService);
   private auth = inject(AuthService);
+  private tabs = inject(TabService);
+
+  /** Open a meal's source recipe PDF in the in-app web viewer (same as the slot). */
+  openRecipe(url: string | null | undefined): void {
+    if (url?.trim()) this.tabs.openWebView(url.trim());
+  }
 
   /** Header "Create" button — asks the panel to bloom the AI Create Meal overlay
    *  over the board (the create controls no longer live inline in the rail). */

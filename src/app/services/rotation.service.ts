@@ -851,12 +851,18 @@ export class RotationService {
       await firstValueFrom(
         this.http.delete(`${this.baseUrl}/menu/${menuId}/slot/${slotOrder}/meals/${mealId}`),
       );
-      await this.refreshMenu(menuId);
-      await this.loadFolder();
-      this.markMenuComposition(menuId); // slot composition changed → savable back
     } catch (err) {
-      this.notification.show(this.errMessage(err), 'error');
+      // A 404 means the junction is ALREADY gone — e.g. the meal was deleted from
+      // the binder, which cascade-removed it from the slot; the board tile is just
+      // stale. Clearing is effectively done, so fall through and resync (no error).
+      if (!(err instanceof HttpErrorResponse && err.status === 404)) {
+        this.notification.show(this.errMessage(err), 'error');
+        return;
+      }
     }
+    await this.refreshMenu(menuId);
+    await this.loadFolder();
+    this.markMenuComposition(menuId); // slot composition changed → savable back
   }
 
   /** MOVE a slotted meal to another EMPTY slot in the SAME menu (drag a slot's
@@ -1696,6 +1702,10 @@ export class RotationService {
     try {
       await firstValueFrom(this.http.delete(url));
       await this.loadBinder();
+      // Deleting a binder meal cascade-removes it from any slot server-side —
+      // refresh the board so its (now-empty) slots update instead of leaving a
+      // stale tile that would 404 on a later "Clear".
+      await this.refreshSelectedMenu();
     } catch (err) {
       this.notification.show(this.deleteErrMessage(err), 'error');
     }

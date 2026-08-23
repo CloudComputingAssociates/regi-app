@@ -1178,3 +1178,18 @@
 .cdk-drag-animating {
   transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
 }
+
+// "Recipe (PDF)" link on a Binder meal built from a recipe (opens the PDF).
+.binder-recipe-link {
+  flex: 0 0 auto;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 11px;
+  color: #4da6ff;
+  text-decoration: underline;
+  text-decoration-color: #4da6ff;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  &:hover { color: #7ac0ff; text-decoration-color: #7ac0ff; }
+}

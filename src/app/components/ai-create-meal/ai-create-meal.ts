@@ -79,11 +79,11 @@ import { TabService } from '../../services/tab.service';
           <div class="meal-sets">
             <div class="meal-sets-head">
               <mat-icon class="meal-sets-icon">restaurant_menu</mat-icon>
-              <span class="meal-sets-title">Author Studio</span>
+              <span class="meal-sets-title">MealSet Studio</span>
             </div>
             <div class="meal-sets-desc">Author recipes and manage your MealSets.</div>
             <button type="button" class="meal-sets-cta" (click)="openStudio()">
-              <mat-icon>edit_note</mat-icon>Open Author Studio
+              <mat-icon>edit_note</mat-icon>Open MealSet Studio
             </button>
           </div>
         } @else {
@@ -131,7 +131,7 @@ export class AiCreateMealComponent {
   /** Open the Author Studio (the mealsets left-nav panel). Closes this bloom. */
   openStudio(): void {
     this.close.emit();
-    this.tabService.openPanel('mealsets', 'MealSets Studio');
+    this.tabService.openPanel('mealsets', 'MealSet Studio');
   }
 
   // ----- Cancel / backdrop ---------------------------------------------------
