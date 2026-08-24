@@ -198,6 +198,8 @@
   &:disabled { opacity: 0.4; cursor: default; } }
 
 .rep-inline-err { color: #ff9a9a; font-size: 12px; margin: 4px 2px; &.foot { margin: 0 auto 0 0; } }
+// Quiet (non-error) publish note — amber, not red. Sits left of the buttons.
+.rep-pdf-warn { color: #ffd8a8; font-size: 12px; margin: 0 auto 0 0; }
 .rep-readonly { font-size: 12px; color: #9aa0a6; margin-top: 8px; a { color: #8ec5ff; } }
 
 /* ---- Footer ---- */

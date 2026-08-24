@@ -326,20 +326,24 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
           <!-- Footer actions -->
           <footer class="rep-foot">
             @if (publishError()) { <span class="rep-inline-err foot">{{ publishError() }}</span> }
+            @else if (pdfMissing()) {
+              <span class="rep-pdf-warn foot">Published. PDF wasn't generated — edit and republish to retry.</span>
+            }
             <div class="rep-foot-btns">
               @if (recipeId()) {
-                <button type="button" class="rep-btn ghost" (click)="toggleArchive()">
+                <button type="button" class="rep-btn ghost" [disabled]="saving() || publishing()" (click)="toggleArchive()">
                   {{ isArchived() ? 'Unarchive' : 'Archive' }}
                 </button>
               }
               @if (isPublished()) {
-                <button type="button" class="rep-btn" [disabled]="saving()" (click)="unpublish()">Unpublish</button>
+                <button type="button" class="rep-btn" [disabled]="saving() || publishing()"
+                  (click)="unpublish()">{{ publishing() ? 'Unpublishing…' : 'Unpublish' }}</button>
               } @else {
-                <button type="button" class="rep-btn publish" [disabled]="saving() || !canPublish()"
+                <button type="button" class="rep-btn publish" [disabled]="saving() || publishing() || !canPublish()"
                   [matTooltip]="canPublish() ? '' : 'Add at least one ingredient and directions to publish'"
-                  matTooltipPosition="above" (click)="publish()">Publish</button>
+                  matTooltipPosition="above" (click)="publish()">{{ publishing() ? 'Publishing…' : 'Publish' }}</button>
               }
-              <button type="button" class="rep-btn primary" [disabled]="saving() || !form().title.trim()"
+              <button type="button" class="rep-btn primary" [disabled]="saving() || publishing() || !form().title.trim()"
                 (click)="save()">{{ saving() ? 'Saving…' : 'Save & Close' }}</button>
             </div>
           </footer>
@@ -372,6 +376,10 @@ export class RecipeEditorPanelComponent {
   readonly recipePdfLink = signal<string | null>(null);
   readonly pdfRenderedUtc = signal<string | null>(null);
   readonly saving = signal(false);
+  /** Publish/unpublish request in flight — drives the "Publishing…" label swap. */
+  readonly publishing = signal(false);
+  /** Published but the server didn't render a PDF — quiet inline retry line. */
+  readonly pdfMissing = signal(false);
   readonly summaryOpen = signal(false);
   readonly addRow = signal<AddRow>({ ...BLANK_ADD });
   /** The add row's typeahead — refocused after each add for the cruise loop. */
@@ -516,6 +524,7 @@ export class RecipeEditorPanelComponent {
     this.publishError.set(null);
     this.reorderError.set(null);
     this.createMealError.set(null);
+    this.pdfMissing.set(false);
     this.selectedLineId.set(null);
     this.boundNames.set(new Map());
     this.photoLines.set(new Set());
@@ -582,23 +591,23 @@ export class RecipeEditorPanelComponent {
   }
 
   async publish(): Promise<void> {
-    if (this.saving()) return;
+    if (this.saving() || this.publishing()) return;
     this.publishError.set(null);
-    this.saving.set(true);
+    this.publishing.set(true);
     try {
       // Persist header first so directions are saved before the server gate.
       if (!(await this.persistHeader())) return;
       const res = await firstValueFrom(
         this.authoring.updateRecipe(this.recipeId()!, { isPublished: true }),
       );
+      // The PATCH response IS the authority — render is synchronous, so it already
+      // reflects the outcome (recipePdfLink present ⇒ the PDF rendered).
       this.applyServerFlags(res.recipe);
-      this.notification.show('Recipe published.', 'success');
-      // Surface the rendered recipePdfLink (?v= cache-bust) in the header.
-      await this.refreshServerState();
-      // Publishing renders the PDF + backfills RecipeLink on meals already built
-      // from this recipe (pre-publish). Refresh both surfaces so their "Recipe
-      // (PDF)" link appears without a manual reload: the binder list, and the
-      // board's slotted meals (force-reloaded — selectMenu skips cached ones).
+      this.ingredients.set(res.ingredients ?? this.ingredients());
+      // Outcome: link present → "View PDF" appears (no toast). Published with no
+      // PDF → a quiet inline retry line (clears on a later link-present publish).
+      this.pdfMissing.set(!!res.recipe.isPublished && !res.recipe.recipePdfLink);
+      // Refresh binder + board so meals built from this recipe pick up RecipeLink.
       void this.rotation.loadBinder();
       void this.rotation.refreshSelectedMenu();
     } catch (err) {
@@ -613,23 +622,23 @@ export class RecipeEditorPanelComponent {
         this.notification.show(RecipeAuthoringService.messageFor(err, 'Could not publish.'), 'error');
       }
     } finally {
-      this.saving.set(false);
+      this.publishing.set(false);
     }
   }
 
   async unpublish(): Promise<void> {
-    if (this.saving() || this.recipeId() == null) return;
-    this.saving.set(true);
+    if (this.saving() || this.publishing() || this.recipeId() == null) return;
+    this.publishing.set(true);
     try {
       const res = await firstValueFrom(
         this.authoring.updateRecipe(this.recipeId()!, { isPublished: false }),
       );
       this.applyServerFlags(res.recipe);
-      this.notification.show('Recipe unpublished.', 'success');
+      this.pdfMissing.set(false); // dismiss the retry line on unpublish
     } catch (err) {
       this.notification.show(RecipeAuthoringService.messageFor(err, 'Could not unpublish.'), 'error');
     } finally {
-      this.saving.set(false);
+      this.publishing.set(false);
     }
   }
 
@@ -982,20 +991,6 @@ export class RecipeEditorPanelComponent {
       }
     } finally {
       this.creatingMeal.set(false);
-    }
-  }
-
-  /** Re-read server-owned state (flags, ingredients, recipePdfLink) without
-   *  touching the text form — used after publish to surface the rendered PDF. */
-  private async refreshServerState(): Promise<void> {
-    const id = this.recipeId();
-    if (id == null) return;
-    try {
-      const res = await firstValueFrom(this.authoring.getRecipe(id));
-      this.applyServerFlags(res.recipe);
-      this.ingredients.set(res.ingredients ?? this.ingredients());
-    } catch {
-      /* keep current state */
     }
   }
 
