@@ -1142,9 +1142,26 @@
   flex-wrap: wrap; // never overflow the cell — wrap before a horizontal scrollbar
   gap: 4px;
   margin-top: 6px;
+  // Expanded = a blue box + bloom-style glow (the tab blue) so the user sees
+  // clearly that they dropped this card open.
+  align-items: center;
+  padding: 6px 8px;
+  border: 1px solid rgba(59, 125, 224, 0.75);
+  border-radius: 8px;
+  background: rgba(59, 125, 224, 0.1);
+  box-shadow: 0 0 10px rgba(59, 125, 224, 0.55), inset 0 0 0 1px rgba(59, 125, 224, 0.22);
 
   .chip { min-width: 0; }
   .binder-cals { margin-left: 2px; font-size: 11px; }
+
+  // Delete = solid "traffic-light" red with a WHITE outlined trash.
+  .card-delete {
+    background: #ff5f57;
+    border-color: #e0463f;
+    color: #ffffff;
+    .mat-icon { color: #ffffff; }
+    &:hover { background: #ff6f68; border-color: #ff5f57; }
+  }
 }
 
 // Macro discs — shared by the summary head + the reveal. Muted palette so the
