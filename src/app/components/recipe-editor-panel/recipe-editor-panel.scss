@@ -89,11 +89,17 @@
   margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  color: #ff9e80;
-  font-size: 13px;
-  text-decoration: underline;
-  mat-icon { width: 18px; height: 18px; font-size: 18px; }
+  gap: 5px;
+  padding: 4px 10px;
+  color: #ffb59a;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  background: rgba(224, 102, 102, 0.14);
+  border: 1px solid rgba(224, 102, 102, 0.5);
+  border-radius: 6px;
+  mat-icon { width: 18px; height: 18px; font-size: 18px; color: #e06666; }
+  &:hover { background: rgba(224, 102, 102, 0.24); color: #ffffff; }
 }
 
 /* Ingredient bind states */

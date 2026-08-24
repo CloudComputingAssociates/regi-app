@@ -340,7 +340,7 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
                   matTooltipPosition="above" (click)="publish()">Publish</button>
               }
               <button type="button" class="rep-btn primary" [disabled]="saving() || !form().title.trim()"
-                (click)="save()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+                (click)="save()">{{ saving() ? 'Saving…' : 'Save & Close' }}</button>
             </div>
           </footer>
         </div>
@@ -570,7 +570,10 @@ export class RecipeEditorPanelComponent {
     this.saving.set(true);
     const ok = await this.persistHeader();
     this.saving.set(false);
-    if (ok) this.notification.show('Recipe saved.', 'success');
+    if (ok) {
+      this.notification.show('Recipe saved.', 'success');
+      this.close(); // Save & Close — return to the Studio's RecipeBox.
+    }
   }
 
   // ---- Publish (draft-first gate) -------------------------------------------
