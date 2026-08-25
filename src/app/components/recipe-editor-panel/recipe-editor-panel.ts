@@ -30,7 +30,6 @@ import { RoleService } from '../../services/role.service';
 import { NotificationService } from '../../services/notification.service';
 import { RecipeAuthoringService } from '../../services/recipe-authoring.service';
 import { RotationService } from '../../services/rotation.service';
-import { PdfViewService } from '../../services/pdf-view.service';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 import { AddToBinderDialogComponent } from '../add-to-binder-dialog/add-to-binder-dialog';
 import { RecipeStateChipComponent } from '../recipe-state-chip/recipe-state-chip';
@@ -103,7 +102,7 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
                 <span class="rep-pdfstatus pending">still working — check back in a moment</span>
               } @else if (pdfHref(); as href) {
                 <span class="rep-pdfstatus ok">
-                  <button type="button" class="rep-pdf-link" (click)="viewPdf(href)"><mat-icon>check_circle</mat-icon>PDF · View</button>
+                  <a class="rep-pdf-link" [href]="href" target="_blank" rel="noopener"><mat-icon>check_circle</mat-icon>PDF · View</a>
                   <span class="rep-pdf-sep">·</span>
                   <button type="button" class="rep-pdf-refresh" [disabled]="regenerating()"
                     matTooltip="Regenerates the PDF (and creates a photo if the recipe has none)."
@@ -355,7 +354,6 @@ export class RecipeEditorPanelComponent {
   private authoring = inject(RecipeAuthoringService);
   private rotation = inject(RotationService);
   private imageUpload = inject(ImageUploadService);
-  private pdfView = inject(PdfViewService);
   private dialog = inject(MatDialog);
 
   readonly isOpen = computed(
@@ -637,13 +635,6 @@ export class RecipeEditorPanelComponent {
     } finally {
       this.publishing.set(false);
     }
-  }
-
-  /** Open the published PDF inline in a new tab. The GCP object is download-served,
-   *  so a plain link downloads it — stream it into a blob: URL instead (renders
-   *  inline). */
-  viewPdf(href: string): void {
-    void this.pdfView.openInline(href);
   }
 
   // ---- PDF regenerate (async, one-shot re-fetch) ----------------------------

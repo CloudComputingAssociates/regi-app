@@ -26,7 +26,6 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TabService } from '../../services/tab.service';
-import { PdfViewService } from '../../services/pdf-view.service';
 
 const IDLE_MS = 30_000;
 
@@ -92,13 +91,7 @@ const IDLE_MS = 30_000;
               </button>
             </div>
           </div>
-          @if (frameSrc(); as src) {
-            <iframe class="wv-iframe" [src]="src" referrerpolicy="no-referrer"></iframe>
-          } @else if (isPdf() && pdfError()) {
-            <div class="wv-msg">Couldn’t display the PDF here — use “Open in browser” below.</div>
-          } @else {
-            <div class="wv-msg">Loading PDF…</div>
-          }
+          <iframe class="wv-iframe" [src]="safeUrl()" referrerpolicy="no-referrer"></iframe>
           <div class="wv-foot">
             <span class="wv-idle">{{ isPdf() ? 'Recipe PDF' : 'Closes itself after 30s idle' }}</span>
             <a class="wv-external" [href]="url" target="_blank" rel="noopener">Open in browser ↗</a>
@@ -179,10 +172,6 @@ const IDLE_MS = 30_000;
     .wv-print mat-icon { width: 11px; height: 11px; font-size: 11px; line-height: 11px; color: #fff; }
     .wv-close mat-icon { width: 12px; height: 12px; font-size: 12px; line-height: 12px; color: #000; }
     .wv-iframe { flex: 1; width: 100%; border: 0; background: #ffffff; }
-    .wv-msg {
-      flex: 1; display: flex; align-items: center; justify-content: center;
-      padding: 16px; text-align: center; font-size: 13px; color: #cfcfcf; background: #1a1a1a;
-    }
     .wv-foot {
       flex-shrink: 0;
       display: flex;
@@ -201,63 +190,27 @@ const IDLE_MS = 30_000;
 export class WebViewOverlayComponent {
   readonly tab = inject(TabService);
   private sanitizer = inject(DomSanitizer);
-  private pdfView = inject(PdfViewService);
 
   /** false = default ~2/3 window, true = full-app overlay. */
   readonly maximized = signal(false);
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** True when the target is a PDF (path ends .pdf, query string ignored so GCP
-   *  signed URLs still match). PDFs are streamed into a blob: URL for framing and
-   *  are exempt from the idle auto-close. */
+   *  signed URLs still match). PDFs are exempt from the idle auto-close. NOTE:
+   *  recipe PDFs now open by NAVIGATION (new tab) at the call sites, not through
+   *  this overlay — GCS sends no ACAO header so fetch/blob framing is CORS-blocked. */
   readonly isPdf = computed<boolean>(() => {
     const url = this.tab.webViewUrl() ?? '';
     return url.split('?')[0].toLowerCase().endsWith('.pdf');
   });
 
-  /** The blob: URL for a PDF target (null until fetched). Our GCP PDFs are served
-   *  as downloads, so a raw iframe src makes the browser DOWNLOAD rather than
-   *  render — we fetch the bytes and frame a blob: URL (application/pdf, no
-   *  Content-Disposition) instead. */
-  private readonly pdfBlobUrl = signal<SafeResourceUrl | null>(null);
-  /** The fetch failed (CORS/network) — surfaces the "Open in browser" fallback. */
-  readonly pdfError = signal(false);
-  /** The live object URL, kept for revocation. */
-  private objectUrl: string | null = null;
-
-  /** What the iframe frames: the blob: URL for PDFs, the raw URL for web pages. */
-  readonly frameSrc = computed<SafeResourceUrl | null>(() => {
+  readonly safeUrl = computed<SafeResourceUrl | null>(() => {
     const url = this.tab.webViewUrl();
     if (!url) return null;
-    if (this.isPdf()) return this.pdfBlobUrl(); // null until the blob resolves
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   });
 
   constructor() {
-    // Stream a PDF target into a blob: URL (see pdfBlobUrl). Non-PDF targets and
-    // the closed state release any prior blob. One-shot per url — no polling.
-    effect(
-      (onCleanup) => {
-        const url = this.tab.webViewUrl();
-        const pdf = this.isPdf();
-        this.revokeBlob();
-        this.pdfBlobUrl.set(null);
-        this.pdfError.set(false);
-        if (!url || !pdf) return;
-        let cancelled = false;
-        void this.pdfView
-          .toInlineBlobUrl(url)
-          .then((blobUrl) => {
-            if (cancelled) { URL.revokeObjectURL(blobUrl); return; }
-            this.objectUrl = blobUrl;
-            this.pdfBlobUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(blobUrl));
-          })
-          .catch(() => { if (!cancelled) this.pdfError.set(true); });
-        onCleanup(() => { cancelled = true; });
-      },
-      { allowSignalWrites: true },
-    );
-
     // Re-arm the idle timer each time the viewer opens; disarm when it closes.
     // PDFs (recipes) never auto-close — you read them at your own pace, and
     // iframe-internal scrolling wouldn't reach the parent to reset the timer.
@@ -279,42 +232,16 @@ export class WebViewOverlayComponent {
     if (this.tab.webViewUrl() && !this.isPdf()) this.armIdle();
   }
 
-  /** Print the PDF: stream it into a blob: URL, load a hidden iframe, print that.
-   *  Falls back to a browser tab if the fetch is blocked (CORS) — the browser's own
-   *  viewer can print it. */
-  async print(): Promise<void> {
+  /** Open the PDF in a browser tab — the native viewer handles save/print. (No
+   *  fetch/blob: GCS is CORS-blocked, and a plain navigation open renders it.) */
+  print(): void {
     const url = this.tab.webViewUrl();
-    if (!url) return;
-    try {
-      const blobUrl = await this.pdfView.toInlineBlobUrl(url);
-      const frame = document.createElement('iframe');
-      frame.style.display = 'none';
-      frame.src = blobUrl;
-      document.body.appendChild(frame);
-      frame.onload = () => {
-        frame.contentWindow?.print();
-        setTimeout(() => {
-          document.body.removeChild(frame);
-          URL.revokeObjectURL(blobUrl);
-        }, 1000);
-      };
-    } catch {
-      window.open(url, '_blank');
-    }
+    if (url) window.open(url, '_blank', 'noopener');
   }
 
   close(): void {
     this.clearIdle();
-    this.revokeBlob();
     this.tab.closeWebView();
-  }
-
-  /** Release the framed PDF blob URL (on close / url change). */
-  private revokeBlob(): void {
-    if (this.objectUrl) {
-      URL.revokeObjectURL(this.objectUrl);
-      this.objectUrl = null;
-    }
   }
 
   hostLabel(url: string): string {

@@ -24,7 +24,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '@auth0/auth0-angular';
 import { RotationService } from '../../services/rotation.service';
-import { TabService } from '../../services/tab.service';
 import { MealSetService } from '../../services/mealset.service';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 import { Meal, Menu, MealSetSummary } from '../../models';
@@ -426,11 +425,12 @@ export class MealBinderComponent implements OnInit {
   private host = inject(ElementRef<HTMLElement>);
   private mealSetService = inject(MealSetService);
   private auth = inject(AuthService);
-  private tabs = inject(TabService);
 
   /** Open a meal's source recipe PDF in the in-app web viewer (same as the slot). */
   openRecipe(url: string | null | undefined): void {
-    if (url?.trim()) this.tabs.openWebView(url.trim());
+    // Navigate to the PDF in a new tab — the browser renders it natively. GCS sends
+    // no ACAO header, so fetch/blob is CORS-blocked; plain navigation is the only way.
+    if (url?.trim()) window.open(url.trim(), '_blank', 'noopener');
   }
 
   /** Header "Create" button — asks the panel to bloom the AI Create Meal overlay

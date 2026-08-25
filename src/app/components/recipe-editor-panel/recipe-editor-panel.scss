@@ -95,8 +95,8 @@
 }
 .rep-pdf-link {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 0; font-size: 12px; font-weight: 600; cursor: pointer;
-  color: #b7f5c4; background: none; border: none; text-decoration: none;
+  font-size: 12px; font-weight: 600;
+  color: #b7f5c4; text-decoration: none;
   mat-icon { color: #34d651; }
   &:hover { color: #ffffff; text-decoration: underline; }
 }
