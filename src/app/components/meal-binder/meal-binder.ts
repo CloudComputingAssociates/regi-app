@@ -24,6 +24,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '@auth0/auth0-angular';
 import { RotationService } from '../../services/rotation.service';
+import { TabService } from '../../services/tab.service';
 import { MealSetService } from '../../services/mealset.service';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 import { Meal, Menu, MealSetSummary } from '../../models';
@@ -421,6 +422,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
 })
 export class MealBinderComponent implements OnInit {
   readonly rotation = inject(RotationService);
+  private tabs = inject(TabService);
   private dialog = inject(MatDialog);
   private host = inject(ElementRef<HTMLElement>);
   private mealSetService = inject(MealSetService);
@@ -428,9 +430,10 @@ export class MealBinderComponent implements OnInit {
 
   /** Open a meal's source recipe PDF in the in-app web viewer (same as the slot). */
   openRecipe(url: string | null | undefined): void {
-    // Navigate to the PDF in a new tab — the browser renders it natively. GCS sends
-    // no ACAO header, so fetch/blob is CORS-blocked; plain navigation is the only way.
-    if (url?.trim()) window.open(url.trim(), '_blank', 'noopener');
+    // In-app viewer overlay — renders the PDF via Google's Docs Viewer (server-side
+    // fetch), the only path that displays these download-served, CORS-blocked GCS
+    // PDFs inline instead of downloading them.
+    if (url?.trim()) this.tabs.openWebView(url.trim());
   }
 
   /** Header "Create" button — asks the panel to bloom the AI Create Meal overlay

@@ -102,7 +102,7 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
                 <span class="rep-pdfstatus pending">still working — check back in a moment</span>
               } @else if (pdfHref(); as href) {
                 <span class="rep-pdfstatus ok">
-                  <a class="rep-pdf-link" [href]="href" target="_blank" rel="noopener"><mat-icon>check_circle</mat-icon>PDF · View</a>
+                  <button type="button" class="rep-pdf-link" (click)="viewPdf(href)"><mat-icon>check_circle</mat-icon>PDF · View</button>
                   <span class="rep-pdf-sep">·</span>
                   <button type="button" class="rep-pdf-refresh" [disabled]="regenerating()"
                     matTooltip="Regenerates the PDF (and creates a photo if the recipe has none)."
@@ -635,6 +635,18 @@ export class RecipeEditorPanelComponent {
     } finally {
       this.publishing.set(false);
     }
+  }
+
+  /** View the published PDF. These GCS objects are served as downloads and CORS
+   *  blocks fetch/blob, so we render through Google's Docs Viewer (Google fetches
+   *  server-side). Opened in a new tab — the editor overlay sits above the in-app
+   *  web viewer, so it can't be framed here. ?v= cache-bust is preserved in href. */
+  viewPdf(href: string): void {
+    window.open(
+      `https://docs.google.com/gview?url=${encodeURIComponent(href)}&embedded=true`,
+      '_blank',
+      'noopener',
+    );
   }
 
   // ---- PDF regenerate (async, one-shot re-fetch) ----------------------------

@@ -195,10 +195,8 @@ export class WebViewOverlayComponent {
   readonly maximized = signal(false);
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** True when the target is a PDF (path ends .pdf, query string ignored so GCP
-   *  signed URLs still match). PDFs are exempt from the idle auto-close. NOTE:
-   *  recipe PDFs now open by NAVIGATION (new tab) at the call sites, not through
-   *  this overlay — GCS sends no ACAO header so fetch/blob framing is CORS-blocked. */
+  /** True when the target is a PDF (path ends .pdf, query string ignored so the
+   *  ?v= cache-bust still matches). PDFs are exempt from the idle auto-close. */
   readonly isPdf = computed<boolean>(() => {
     const url = this.tab.webViewUrl() ?? '';
     return url.split('?')[0].toLowerCase().endsWith('.pdf');
@@ -207,7 +205,14 @@ export class WebViewOverlayComponent {
   readonly safeUrl = computed<SafeResourceUrl | null>(() => {
     const url = this.tab.webViewUrl();
     if (!url) return null;
-    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    // PDFs render through Google's Docs Viewer: Google fetches the file server-side
+    // and serves an inline viewer, so it sidesteps BOTH the GCS download disposition
+    // (a raw src downloads) AND the browser CORS block (fetch/blob is refused — no
+    // ACAO header). Web pages frame raw.
+    const src = this.isPdf()
+      ? `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`
+      : url;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(src);
   });
 
   constructor() {

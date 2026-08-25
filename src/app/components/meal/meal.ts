@@ -25,6 +25,7 @@ import { MealItem, MenuSlot, MenuSlotMeal } from '../../models';
 import { Food } from '../../models/food.model';
 import { FoodComponent } from '../food/food';
 import { RotationService } from '../../services/rotation.service';
+import { TabService } from '../../services/tab.service';
 
 interface Macro {
   proteinG: number;
@@ -234,6 +235,7 @@ interface Macro {
 })
 export class MealComponent {
   protected readonly rotation = inject(RotationService);
+  private readonly tabs = inject(TabService);
 
   readonly slot = input.required<MenuSlot>();
   readonly editing = input<boolean>(false);
@@ -361,9 +363,10 @@ export class MealComponent {
   }
 
   openRecipe(url: string): void {
-    // Navigate to the PDF in a new tab — the browser renders it natively. GCS sends
-    // no ACAO header, so fetch/blob is CORS-blocked; plain navigation is the only way.
-    if (url) window.open(url, '_blank', 'noopener');
+    // In-app viewer overlay — it renders the PDF via Google's Docs Viewer (Google
+    // fetches server-side), the only path that displays these download-served,
+    // CORS-blocked GCS PDFs inline instead of downloading them.
+    if (url) this.tabs.openWebView(url);
   }
 
   isDirty(mealId: number): boolean {
