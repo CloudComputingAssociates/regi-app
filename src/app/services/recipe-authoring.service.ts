@@ -59,6 +59,14 @@ export class RecipeAuthoringService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
+  /** POST /api/recipe/authoring/{id}/regenerate — async artifact refresh (PDF, and
+   *  a photo when the recipe has no hero). 202 Accepted, empty body; the server
+   *  renders out of band, so the caller re-fetches to pick up the fresh ?v= link.
+   *  Server-gated to authored + live recipes. */
+  regeneratePdf(id: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${id}/regenerate`, null);
+  }
+
   // ---- Ingredient lines (each mutation but DELETE returns the fresh recipe) --
   /** POST .../{id}/ingredient — append a line; returns the updated recipe. */
   addIngredient(id: number, body: CreateRecipeIngredientRequest): Observable<RecipeResponse> {

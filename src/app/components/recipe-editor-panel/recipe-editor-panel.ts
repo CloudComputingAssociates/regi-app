@@ -92,16 +92,30 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
               <app-recipe-state-chip [published]="isPublished()" />
               @if (isRegiApproved()) { <span class="rep-badge regi">REGI-approved</span> }
             </span>
-            <!-- PDF status — server truth only. LIVE + link → View; LIVE + no link →
-                 pending (re-save to regenerate); DRAFT → nothing. No raw anchor when
-                 the link is null. -->
+            <!-- PDF status — server truth only, shown when LIVE. The ↻ affordance
+                 fires an async regenerate (202); we then re-fetch ONCE after a short
+                 delay to pick up the new ?v= link (no polling loop). DRAFT → nothing. -->
             @if (isPublished()) {
-              @if (pdfHref(); as href) {
-                <a class="rep-pdfstatus ok" [href]="href" target="_blank" rel="noopener">
-                  <mat-icon>check_circle</mat-icon>PDF · View
-                </a>
+              @if (pdfRefreshing()) {
+                <span class="rep-pdfstatus refreshing"><mat-icon class="spin">progress_activity</mat-icon>PDF refreshing…</span>
+              } @else if (pdfStalled()) {
+                <span class="rep-pdfstatus pending">still working — check back in a moment</span>
+              } @else if (pdfHref(); as href) {
+                <span class="rep-pdfstatus ok">
+                  <a class="rep-pdf-link" [href]="href" target="_blank" rel="noopener"><mat-icon>check_circle</mat-icon>PDF · View</a>
+                  <span class="rep-pdf-sep">·</span>
+                  <button type="button" class="rep-pdf-refresh" [disabled]="regenerating()"
+                    matTooltip="Regenerates the PDF (and creates a photo if the recipe has none)."
+                    matTooltipPosition="below" (click)="regeneratePdf()"><mat-icon>refresh</mat-icon>Refresh</button>
+                </span>
               } @else {
-                <span class="rep-pdfstatus pending">PDF pending — re-save to generate</span>
+                <span class="rep-pdfstatus pending">
+                  PDF not generated
+                  <span class="rep-pdf-sep">·</span>
+                  <button type="button" class="rep-pdf-refresh" [disabled]="regenerating()"
+                    matTooltip="Regenerates the PDF (and creates a photo if the recipe has none)."
+                    matTooltipPosition="below" (click)="regeneratePdf()"><mat-icon>refresh</mat-icon>Generate</button>
+                </span>
               }
             }
             <a class="rep-mylink" (click)="myRecipes()">RecipeBox</a>
@@ -320,8 +334,8 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
                   (click)="takeDown()">{{ publishing() ? 'Taking down…' : 'Take down' }}</button>
               } @else {
                 <button type="button" class="rep-btn publish" [disabled]="saving() || publishing() || !canPublish()"
-                  [matTooltip]="canPublish() ? '' : 'Add at least one ingredient and directions to publish'"
-                  matTooltipPosition="above" (click)="publish()">{{ publishing() ? 'Publishing…' : 'Publish' }}</button>
+                  [matTooltip]="canPublish() ? '' : 'Add at least one ingredient and directions to go live'"
+                  matTooltipPosition="above" (click)="publish()">{{ publishing() ? 'Going live…' : 'Go Live' }}</button>
               }
               <button type="button" class="rep-btn primary" [disabled]="saving() || publishing() || !form().title.trim()"
                 (click)="save()">{{ saving() ? 'Saving…' : 'Save & Close' }}</button>
@@ -356,8 +370,17 @@ export class RecipeEditorPanelComponent {
   readonly recipePdfLink = signal<string | null>(null);
   readonly pdfRenderedUtc = signal<string | null>(null);
   readonly saving = signal(false);
-  /** Publish/take-down request in flight — drives the "Publishing…" label swap. */
+  /** Publish/take-down request in flight — drives the "Going live…" label swap. */
   readonly publishing = signal(false);
+  /** Regenerate POST in flight (disables the ↻ during the request). */
+  readonly regenerating = signal(false);
+  /** After a 202: the async render is in flight, awaiting the one-shot re-fetch. */
+  readonly pdfRefreshing = signal(false);
+  /** Re-fetched and STILL no link — server hasn't finished; nudge to check back. */
+  readonly pdfStalled = signal(false);
+  /** The single deferred re-fetch timer — cleared on reload/regen so it never
+   *  fires against a different recipe. */
+  private regenTimer: ReturnType<typeof setTimeout> | null = null;
   readonly summaryOpen = signal(false);
   readonly addRow = signal<AddRow>({ ...BLANK_ADD });
   /** The add row's typeahead — refocused after each add for the cruise loop. */
@@ -493,6 +516,10 @@ export class RecipeEditorPanelComponent {
     this.addError.set(null);
     this.publishError.set(null);
     this.reorderError.set(null);
+    if (this.regenTimer) { clearTimeout(this.regenTimer); this.regenTimer = null; }
+    this.regenerating.set(false);
+    this.pdfRefreshing.set(false);
+    this.pdfStalled.set(false);
     this.selectedLineId.set(null);
     this.boundNames.set(new Map());
     this.photoLines.set(new Set());
@@ -607,6 +634,49 @@ export class RecipeEditorPanelComponent {
       this.notification.show(RecipeAuthoringService.messageFor(err, 'Could not take the recipe down.'), 'error');
     } finally {
       this.publishing.set(false);
+    }
+  }
+
+  // ---- PDF regenerate (async, one-shot re-fetch) ----------------------------
+  /** Fire the async artifact refresh. On 202 the server renders out of band, so we
+   *  show "PDF refreshing…" and re-fetch the recipe ONCE after a short delay to pick
+   *  up the fresh ?v= link — no polling loop. If it's still pending then, the status
+   *  invites the user to check back. */
+  async regeneratePdf(): Promise<void> {
+    const id = this.recipeId();
+    if (id == null || this.regenerating() || this.pdfRefreshing()) return;
+    this.regenerating.set(true);
+    this.pdfStalled.set(false);
+    try {
+      await firstValueFrom(this.authoring.regeneratePdf(id));
+      // 202 accepted — render is out of band.
+      this.pdfRefreshing.set(true);
+      if (this.regenTimer) clearTimeout(this.regenTimer);
+      this.regenTimer = setTimeout(() => void this.afterRegenRefetch(id), 8000);
+    } catch (err) {
+      this.notification.show(
+        RecipeAuthoringService.messageFor(err, 'Could not start the PDF refresh.'),
+        'error',
+      );
+    } finally {
+      this.regenerating.set(false);
+    }
+  }
+
+  /** The single deferred re-fetch after a regenerate 202. Applies fresh server flags
+   *  (new recipePdfLink / pdfRenderedUtc → new ?v=); if still no link, marks stalled. */
+  private async afterRegenRefetch(id: number): Promise<void> {
+    this.regenTimer = null;
+    if (this.recipeId() !== id) { this.pdfRefreshing.set(false); return; } // moved on
+    try {
+      const res = await firstValueFrom(this.authoring.getRecipe(id));
+      this.applyServerFlags(res.recipe);
+      this.ingredients.set(res.ingredients ?? this.ingredients());
+      this.pdfStalled.set(!!res.recipe.isPublished && !res.recipe.recipePdfLink);
+    } catch {
+      this.pdfStalled.set(true); // couldn't confirm — let the user retry
+    } finally {
+      this.pdfRefreshing.set(false);
     }
   }
 

@@ -85,18 +85,32 @@
 .rep-pdfstatus {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 12px;
   font-weight: 600;
   mat-icon { width: 16px; height: 16px; font-size: 16px; }
-  &.ok {
-    color: #b7f5c4;
-    text-decoration: none;
-    mat-icon { color: #34d651; }
-    &:hover { color: #ffffff; text-decoration: underline; }
-  }
+  &.ok { color: #b7f5c4; }
   &.pending { color: #b9bec4; font-weight: 500; font-style: italic; }
+  &.refreshing { color: #8ec5ff; font-weight: 500; }
 }
+.rep-pdf-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: #b7f5c4; text-decoration: none;
+  mat-icon { color: #34d651; }
+  &:hover { color: #ffffff; text-decoration: underline; }
+}
+.rep-pdf-sep { color: #6a6f75; }
+.rep-pdf-refresh {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+  color: #8ec5ff; background: none; border: none; border-radius: 5px;
+  mat-icon { color: #8ec5ff; }
+  &:hover:not(:disabled) { background: rgba(142, 197, 255, 0.14); color: #ffffff; mat-icon { color: #ffffff; } }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+// Spinner text glyph for the "refreshing…" state.
+.rep-pdfstatus .spin { animation: rep-spin 0.9s linear infinite; color: #8ec5ff; }
+@keyframes rep-spin { to { transform: rotate(360deg); } }
 
 /* Ingredient bind states */
 .rep-ing.selected { border-color: #4da6ff; box-shadow: 0 0 0 1px #4da6ff; }
