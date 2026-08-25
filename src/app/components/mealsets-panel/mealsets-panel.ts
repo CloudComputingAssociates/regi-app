@@ -31,6 +31,7 @@ import { RecipeAuthoringService } from '../../services/recipe-authoring.service'
 import { RecipeService } from '../../services/recipe.service';
 import { RecipeImportWatcher } from '../../services/recipe-import-watcher.service';
 import { ImageDropComponent } from '../image-drop/image-drop';
+import { RecipeStateChipComponent } from '../recipe-state-chip/recipe-state-chip';
 import {
   MealSet,
   MealSetContractView,
@@ -55,7 +56,7 @@ interface SetDraft {
 
 @Component({
   selector: 'app-mealsets-panel',
-  imports: [DatePipe, MatIconModule, MatTooltipModule, DragDropModule, ImageDropComponent],
+  imports: [DatePipe, MatIconModule, MatTooltipModule, DragDropModule, ImageDropComponent, RecipeStateChipComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="msp">
@@ -392,12 +393,7 @@ interface SetDraft {
                 @for (r of filteredRecipes(); track r.id) {
                   <li class="msp-set-item" (click)="openRecipe(r.id)">
                     <span class="msp-set-name">{{ r.title }}</span>
-                    @if (r.isPublished) {
-                      <span class="msp-set-genre rb-badge published">Published</span>
-                    } @else {
-                      <span class="msp-set-genre rb-badge draft">Draft</span>
-                    }
-                    @if (r.isArchived) { <span class="msp-set-genre rb-badge archived">Archived</span> }
+                    <app-recipe-state-chip [published]="r.isPublished" />
                     <span class="msp-set-flags">
                       <span class="msp-flag">{{ r.updatedAt | date: 'MMM d, y' }}</span>
                     </span>

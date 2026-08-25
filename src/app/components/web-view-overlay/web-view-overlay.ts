@@ -206,12 +206,12 @@ export class WebViewOverlayComponent {
   readonly safeUrl = computed<SafeResourceUrl | null>(() => {
     const url = this.tab.webViewUrl();
     if (!url) return null;
-    // PDFs go through Google's embedded viewer for reliable cross-origin display
-    // with scrollbars (same approach as the recipe viewer). Web pages frame raw.
-    const src = this.isPdf()
-      ? `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`
-      : url;
-    return this.sanitizer.bypassSecurityTrustResourceUrl(src);
+    // Frame the raw URL — including PDFs. The browser's built-in PDF viewer
+    // renders cross-origin PDFs inline in an iframe (GCP storage doesn't set
+    // X-Frame-Options, so framing is allowed), giving native scroll/zoom.
+    // We used to wrap PDFs in Google's docs.google.com/gview viewer, but Google
+    // deprecated it and it now renders blank — the raw URL is what displays.
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   });
 
   constructor() {

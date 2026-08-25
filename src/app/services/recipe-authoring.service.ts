@@ -54,6 +54,11 @@ export class RecipeAuthoringService {
     return this.http.patch<RecipeResponse>(`${this.baseUrl}/${id}`, body);
   }
 
+  /** DELETE /api/recipe/authoring/{id} — permanent removal; 204 No Content. */
+  deleteRecipe(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
   // ---- Ingredient lines (each mutation but DELETE returns the fresh recipe) --
   /** POST .../{id}/ingredient — append a line; returns the updated recipe. */
   addIngredient(id: number, body: CreateRecipeIngredientRequest): Observable<RecipeResponse> {

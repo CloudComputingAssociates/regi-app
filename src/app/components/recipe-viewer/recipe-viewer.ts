@@ -49,11 +49,9 @@ export class RecipeViewerComponent {
   readonly safeUrl = computed<SafeResourceUrl | null>(() => {
     const url = this.recipeUrl();
     if (!url) return null;
-    if (url.toLowerCase().endsWith('.pdf')) {
-      return this.sanitizer.bypassSecurityTrustResourceUrl(
-        `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`
-      );
-    }
+    // Frame the raw URL — the browser's native PDF viewer renders it inline.
+    // (We dropped the docs.google.com/gview wrapper: Google deprecated it and it
+    // now renders blank.) The print() path below still blob-fetches separately.
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   });
 

@@ -20,7 +20,6 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
@@ -32,6 +31,8 @@ import { NotificationService } from '../../services/notification.service';
 import { RecipeAuthoringService } from '../../services/recipe-authoring.service';
 import { RotationService } from '../../services/rotation.service';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
+import { AddToBinderDialogComponent } from '../add-to-binder-dialog/add-to-binder-dialog';
+import { RecipeStateChipComponent } from '../recipe-state-chip/recipe-state-chip';
 import { FoodLookasideComponent } from '../food-lookaside/food-lookaside';
 import { IngredientTypeaheadComponent, PickedFood } from '../ingredient-typeahead/ingredient-typeahead';
 import { ImageUploadService } from '../../services/image-upload.service';
@@ -78,7 +79,7 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
 
 @Component({
   selector: 'app-recipe-editor-panel',
-  imports: [DatePipe, MatIconModule, MatTooltipModule, FoodLookasideComponent, IngredientTypeaheadComponent],
+  imports: [MatIconModule, MatTooltipModule, RecipeStateChipComponent, FoodLookasideComponent, IngredientTypeaheadComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (isOpen()) {
@@ -88,18 +89,20 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
           <header class="rep-head">
             <span class="rep-title">
               <mat-icon>edit_note</mat-icon>{{ recipeId() ? 'Edit Recipe' : 'New Recipe' }}
-              @if (isPublished()) {
-                <span class="rep-badge published">Published</span>
-              } @else {
-                <span class="rep-badge draft">Draft</span>
-              }
-              @if (isArchived()) { <span class="rep-badge archived">Archived</span> }
+              <app-recipe-state-chip [published]="isPublished()" />
               @if (isRegiApproved()) { <span class="rep-badge regi">REGI-approved</span> }
             </span>
-            @if (pdfHref(); as href) {
-              <a class="rep-pdf" [href]="href" target="_blank" rel="noopener">
-                <mat-icon>picture_as_pdf</mat-icon>View PDF
-              </a>
+            <!-- PDF status — server truth only. LIVE + link → View; LIVE + no link →
+                 pending (re-save to regenerate); DRAFT → nothing. No raw anchor when
+                 the link is null. -->
+            @if (isPublished()) {
+              @if (pdfHref(); as href) {
+                <a class="rep-pdfstatus ok" [href]="href" target="_blank" rel="noopener">
+                  <mat-icon>check_circle</mat-icon>PDF · View
+                </a>
+              } @else {
+                <span class="rep-pdfstatus pending">PDF pending — re-save to generate</span>
+              }
             }
             <a class="rep-mylink" (click)="myRecipes()">RecipeBox</a>
             <button type="button" class="rep-close" matTooltip="Close" (click)="close()">
@@ -281,32 +284,6 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
               @if (addError()) { <p class="rep-inline-err">{{ addError() }}</p> }
             </div>
 
-            <!-- ===== Assign & Create Meal ===== -->
-            <div class="rep-field rep-createmeal">
-              <span class="rep-label">Create a meal from this recipe</span>
-              <div class="rep-cm-row">
-                <input class="rep-input" type="text" [value]="mealName()"
-                  (input)="mealName.set($any($event.target).value)" placeholder="Meal name" />
-                <button type="button" class="rep-btn primary"
-                  [disabled]="creatingMeal() || !allBound()"
-                  [matTooltip]="allBound() ? '' : 'Add a food to every ingredient first'"
-                  matTooltipPosition="above" (click)="createMeal()">
-                  {{ creatingMeal() ? 'Creating…' : 'Create Meal' }}
-                </button>
-              </div>
-              @if (!allBound() && ingredients().length) {
-                <p class="rep-cm-hint">Still needs a food: {{ pendingLineNames().join(', ') }}</p>
-              }
-              @if (createMealError()) { <p class="rep-inline-err">{{ createMealError() }}</p> }
-            </div>
-
-            <!-- ===== Read-only wire fields ===== -->
-            @if (recipePdfLink()) {
-              <div class="rep-readonly">
-                Recipe PDF: <a [href]="recipePdfLink()" target="_blank" rel="noopener">open</a>
-                @if (pdfRenderedUtc()) { <span> · rendered {{ pdfRenderedUtc() | date: 'MMM d, y' }}</span> }
-              </div>
-            }
             </div>
 
             <!-- Docked food search (reused from Create Meal; emits picks instead
@@ -323,21 +300,24 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
             </aside>
           </div>
 
-          <!-- Footer actions -->
+          <!-- Footer: [Delete] ....gap.... [Add to Binder] [Publish|Take down] [Save & Close] -->
           <footer class="rep-foot">
+            @if (recipeId()) {
+              <button type="button" class="rep-btn danger" [disabled]="saving() || publishing()"
+                (click)="deleteRecipe()">Delete</button>
+            }
+            <!-- Left status: publish 422 (red), else the needs-a-food hint (amber). -->
             @if (publishError()) { <span class="rep-inline-err foot">{{ publishError() }}</span> }
-            @else if (pdfMissing()) {
-              <span class="rep-pdf-warn foot">Published. PDF wasn't generated — edit and republish to retry.</span>
+            @else if (!allBound() && ingredients().length) {
+              <span class="rep-foot-hint">Still needs a food: {{ pendingLineNames().join(', ') }}</span>
             }
             <div class="rep-foot-btns">
-              @if (recipeId()) {
-                <button type="button" class="rep-btn ghost" [disabled]="saving() || publishing()" (click)="toggleArchive()">
-                  {{ isArchived() ? 'Unarchive' : 'Archive' }}
-                </button>
-              }
+              <button type="button" class="rep-btn" [disabled]="saving() || publishing() || !allBound()"
+                [matTooltip]="allBound() ? '' : 'Add a food to every ingredient first'"
+                matTooltipPosition="above" (click)="addToBinder()">Add to Binder</button>
               @if (isPublished()) {
                 <button type="button" class="rep-btn" [disabled]="saving() || publishing()"
-                  (click)="unpublish()">{{ publishing() ? 'Unpublishing…' : 'Unpublish' }}</button>
+                  (click)="takeDown()">{{ publishing() ? 'Taking down…' : 'Take down' }}</button>
               } @else {
                 <button type="button" class="rep-btn publish" [disabled]="saving() || publishing() || !canPublish()"
                   [matTooltip]="canPublish() ? '' : 'Add at least one ingredient and directions to publish'"
@@ -376,10 +356,8 @@ export class RecipeEditorPanelComponent {
   readonly recipePdfLink = signal<string | null>(null);
   readonly pdfRenderedUtc = signal<string | null>(null);
   readonly saving = signal(false);
-  /** Publish/unpublish request in flight — drives the "Publishing…" label swap. */
+  /** Publish/take-down request in flight — drives the "Publishing…" label swap. */
   readonly publishing = signal(false);
-  /** Published but the server didn't render a PDF — quiet inline retry line. */
-  readonly pdfMissing = signal(false);
   readonly summaryOpen = signal(false);
   readonly addRow = signal<AddRow>({ ...BLANK_ADD });
   /** The add row's typeahead — refocused after each add for the cruise loop. */
@@ -397,11 +375,6 @@ export class RecipeEditorPanelComponent {
   private readonly boundNames = signal<Map<number, string>>(new Map());
   /** Lines whose bound food still needs a product photo (imageStatus 'needed'). */
   private readonly photoLines = signal<Set<number>>(new Set());
-
-  // ---- Create Meal (Step 2) ----
-  readonly mealName = signal('');
-  readonly creatingMeal = signal(false);
-  readonly createMealError = signal<string | null>(null);
 
   /** A line is BOUND once it has a resolved food (foodId set, not pending). */
   lineBound(ing: RecipeIngredient): boolean {
@@ -466,7 +439,6 @@ export class RecipeEditorPanelComponent {
     this.recipeType.set('authored');
     this.recipePdfLink.set(null);
     this.pdfRenderedUtc.set(null);
-    this.mealName.set('');
     this.resetTransient();
   }
 
@@ -502,8 +474,6 @@ export class RecipeEditorPanelComponent {
       summaryFatG: this.numStr(r.summaryFatG),
       summaryCarbG: this.numStr(r.summaryCarbG),
     });
-    // Prefill the Create-Meal name with the recipe title (editable).
-    this.mealName.set(r.title ?? '');
   }
 
   /** Apply server-owned state WITHOUT touching the text form (avoids cursor jumps
@@ -523,8 +493,6 @@ export class RecipeEditorPanelComponent {
     this.addError.set(null);
     this.publishError.set(null);
     this.reorderError.set(null);
-    this.createMealError.set(null);
-    this.pdfMissing.set(false);
     this.selectedLineId.set(null);
     this.boundNames.set(new Map());
     this.photoLines.set(new Set());
@@ -604,9 +572,8 @@ export class RecipeEditorPanelComponent {
       // reflects the outcome (recipePdfLink present ⇒ the PDF rendered).
       this.applyServerFlags(res.recipe);
       this.ingredients.set(res.ingredients ?? this.ingredients());
-      // Outcome: link present → "View PDF" appears (no toast). Published with no
-      // PDF → a quiet inline retry line (clears on a later link-present publish).
-      this.pdfMissing.set(!!res.recipe.isPublished && !res.recipe.recipePdfLink);
+      // Outcome renders from server state in the header PDF status: link present →
+      // "PDF · View"; LIVE with no link → "PDF pending — re-save to generate".
       // Refresh binder + board so meals built from this recipe pick up RecipeLink.
       void this.rotation.loadBinder();
       void this.rotation.refreshSelectedMenu();
@@ -626,7 +593,9 @@ export class RecipeEditorPanelComponent {
     }
   }
 
-  async unpublish(): Promise<void> {
+  /** Take a LIVE recipe back to DRAFT (isPublished=false). Neutral action, not a
+   *  teardown — the PDF status/link simply disappears with the LIVE state. */
+  async takeDown(): Promise<void> {
     if (this.saving() || this.publishing() || this.recipeId() == null) return;
     this.publishing.set(true);
     try {
@@ -634,36 +603,33 @@ export class RecipeEditorPanelComponent {
         this.authoring.updateRecipe(this.recipeId()!, { isPublished: false }),
       );
       this.applyServerFlags(res.recipe);
-      this.pdfMissing.set(false); // dismiss the retry line on unpublish
     } catch (err) {
-      this.notification.show(RecipeAuthoringService.messageFor(err, 'Could not unpublish.'), 'error');
+      this.notification.show(RecipeAuthoringService.messageFor(err, 'Could not take the recipe down.'), 'error');
     } finally {
       this.publishing.set(false);
     }
   }
 
-  // ---- Archive / Unarchive (confirm) ----------------------------------------
-  toggleArchive(): void {
+  // ---- Delete (confirm) -----------------------------------------------------
+  /** Permanently delete this recipe (DELETE /api/recipe/authoring/{id}). Confirms
+   *  first; on 204 closes the editor, and the RecipeBox reloads on close. */
+  deleteRecipe(): void {
     const id = this.recipeId();
     if (id == null) return;
-    const archiving = !this.isArchived();
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',
       data: {
-        message: archiving
-          ? 'Archive this recipe? It will be hidden from your active list but not deleted.'
-          : 'Unarchive this recipe and return it to your active list?',
-        confirmLabel: archiving ? 'Archive' : 'Unarchive',
+        title: 'Delete recipe',
+        message: 'Delete this recipe permanently? This cannot be undone.',
+        confirmLabel: 'Delete',
         onConfirm: async () => {
           try {
-            const res = await firstValueFrom(
-              this.authoring.updateRecipe(id, { isArchived: archiving }),
-            );
-            this.applyServerFlags(res.recipe);
-            this.notification.show(archiving ? 'Recipe archived.' : 'Recipe unarchived.', 'success');
+            await firstValueFrom(this.authoring.deleteRecipe(id));
+            this.notification.show('Recipe deleted.', 'success');
+            this.close(); // RecipeBox reloads on close
           } catch (err) {
             this.notification.show(
-              RecipeAuthoringService.messageFor(err, 'Could not update the recipe.'),
+              RecipeAuthoringService.messageFor(err, 'Could not delete the recipe.'),
               'error',
             );
           }
@@ -964,34 +930,37 @@ export class RecipeEditorPanelComponent {
     }
   }
 
-  // ---- Create Meal (Step 2) -------------------------------------------------
-  async createMeal(): Promise<void> {
+  // ---- Add to Binder --------------------------------------------------------
+  /** Open the naming dialog, then materialize a Binder meal from the recipe. Same
+   *  all-lines-complete gate as the button; the dialog handles busy state and
+   *  renders the 422 "still unresolved" gate inline. */
+  addToBinder(): void {
     const rid = this.recipeId();
-    if (rid == null || this.creatingMeal()) return;
-    this.createMealError.set(null);
-    if (!this.allBound()) {
-      this.createMealError.set('Add a food to every ingredient first. Still needs a food: ' + this.pendingLineNames().join(', '));
-      return;
-    }
-    this.creatingMeal.set(true);
-    try {
-      await firstValueFrom(
-        this.authoring.createMealFromRecipe(rid, { mealName: this.mealName().trim() || null }),
-      );
-      this.notification.show('Meal created — added to your notebook.', 'success');
-      // Reuse the import-complete pattern: refresh the binder so the meal shows.
-      void this.rotation.loadBinder();
-    } catch (err) {
-      if (err instanceof HttpErrorResponse && err.status === 422) {
-        this.createMealError.set(
-          RecipeAuthoringService.messageFor(err, 'Some ingredients are still unresolved.'),
-        );
-      } else {
-        this.notification.show(RecipeAuthoringService.messageFor(err, 'Could not create the meal.'), 'error');
-      }
-    } finally {
-      this.creatingMeal.set(false);
-    }
+    if (rid == null || !this.allBound()) return;
+    this.dialog.open(AddToBinderDialogComponent, {
+      panelClass: 'wipe-dialog-panel',
+      data: {
+        defaultName: this.form().title.trim(),
+        onCreate: async (name: string): Promise<string | null> => {
+          try {
+            await firstValueFrom(
+              this.authoring.createMealFromRecipe(rid, { mealName: name || null }),
+            );
+            this.notification.show('Meal created — added to your notebook.', 'success');
+            void this.rotation.loadBinder(); // reuse import-complete refresh pattern
+            return null;
+          } catch (err) {
+            // Every failure (422 gate or otherwise) stays inline in the dialog.
+            return RecipeAuthoringService.messageFor(
+              err,
+              err instanceof HttpErrorResponse && err.status === 422
+                ? 'Some ingredients are still unresolved.'
+                : 'Could not create the meal.',
+            );
+          }
+        },
+      },
+    });
   }
 
   // ---- Nav ------------------------------------------------------------------
