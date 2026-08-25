@@ -637,16 +637,10 @@ export class RecipeEditorPanelComponent {
     }
   }
 
-  /** View the published PDF. These GCS objects are served as downloads and CORS
-   *  blocks fetch/blob, so we render through Google's Docs Viewer (Google fetches
-   *  server-side). Opened in a new tab — the editor overlay sits above the in-app
-   *  web viewer, so it can't be framed here. ?v= cache-bust is preserved in href. */
+  /** View the published PDF in the in-app bloom overlay (fetch → blob → rendered
+   *  inline). The overlay sits above the editor by z-index. ?v= is preserved in href. */
   viewPdf(href: string): void {
-    window.open(
-      `https://docs.google.com/gview?url=${encodeURIComponent(href)}&embedded=true`,
-      '_blank',
-      'noopener',
-    );
+    this.tab.openWebView(href);
   }
 
   // ---- PDF regenerate (async, one-shot re-fetch) ----------------------------
