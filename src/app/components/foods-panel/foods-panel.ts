@@ -140,16 +140,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               aria-label="Edit My Foods">
               <mat-icon aria-hidden="true">tune</mat-icon>
             </button>
-            <!-- Add a food (via the mobile app) — moved up next to Edit. -->
-            <button
-              type="button"
-              class="bar-icon-btn"
-              matTooltip="Add a food (via the mobile app)"
-              matTooltipPosition="below"
-              (click)="onAddFood()"
-              aria-label="Add food">
-              <mat-icon aria-hidden="true">add</mat-icon>
-            </button>
             <!-- Leave-panel key — lives here (not in the parked Focus Foods
                  header) so it's ALWAYS available to close the panel. -->
             <div class="title-right">
@@ -448,7 +438,16 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     <option disabled>──────────────</option>
                     <option value="restricted">Restricted</option>
                   </select>
-                  <!-- Add-food (+) moved up to the MyFoods header, next to Edit. -->
+                  <!-- Add a food (via the mobile app) — next to the LIST dropdown. -->
+                  <button
+                    type="button"
+                    class="bar-icon-btn"
+                    matTooltip="Add a food (via the mobile app)"
+                    matTooltipPosition="below"
+                    (click)="onAddFood()"
+                    aria-label="Add food">
+                    <mat-icon aria-hidden="true">add</mat-icon>
+                  </button>
                   <input
                     type="text"
                     class="picker-search-input regi-field"
