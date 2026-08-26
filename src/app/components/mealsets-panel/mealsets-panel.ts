@@ -138,8 +138,15 @@ import { MealSet, MealSetContractView, RecipeSummary } from '../../models';
             <button type="button" class="msp-btn primary" [disabled]="!profileComplete()"
               [matTooltip]="profileComplete() ? '' : 'Save a complete Author profile (Bio + photo) to create a MealSet'"
               matTooltipPosition="above" (click)="tabService.openMealsetEditor(null)">+ New MealSet</button>
+            <button type="button" class="msp-collapse"
+              [matTooltip]="setsCollapsed() ? 'Expand MealSets' : 'Collapse MealSets'"
+              (click)="setsCollapsed.set(!setsCollapsed())">
+              <mat-icon>{{ setsCollapsed() ? 'expand_more' : 'expand_less' }}</mat-icon>
+            </button>
           </div>
-          @if (authoredSets().length) {
+          @if (setsCollapsed()) {
+            <div class="msp-collapsed-summary">{{ authoredSets().length }} MealSet{{ authoredSets().length === 1 ? '' : 's' }}</div>
+          } @else if (authoredSets().length) {
             <div class="msp-tiles">
               @for (s of authoredSets(); track s.mealSetId) {
                 <button type="button" class="msp-tile" (click)="tabService.openMealsetEditor(s.mealSetId)">
@@ -244,6 +251,8 @@ export class MealsetsPanelComponent implements OnInit {
 
   // ---- Authored sets (tiles) ------------------------------------------------
   readonly authoredSets = signal<MealSet[]>([]);
+  /** Collapse the My MealSets tile row (like the Author-profile card). */
+  readonly setsCollapsed = signal(false);
 
   // ---- RecipeBox (authored recipes list) ------------------------------------
   readonly recipes = signal<RecipeSummary[]>([]);
