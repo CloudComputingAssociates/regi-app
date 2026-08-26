@@ -126,19 +126,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 My Foods
               </span>
             </span>
-            <!-- Manage the food library (favorite/restrict/add) — own icon so the
-                 pencil is free to toggle the Focus Foods split. -->
-            <button
-              type="button"
-              class="bar-icon-btn"
-              (click)="openEditOverlay()"
-              matTooltip="Manage My Foods library — favorite, restrict, add"
-              matTooltipPosition="below"
-              [matTooltipShowDelay]="350"
-              aria-label="Manage My Foods library">
-              <mat-icon aria-hidden="true">tune</mat-icon>
-            </button>
-            <!-- Pencil = Focus Foods edit mode: toggles the 50/50 split on/off. -->
+            <!-- Single edit control: toggles the Focus Foods 50/50 split on/off. -->
             <button
               type="button"
               class="bar-icon-btn"
@@ -148,7 +136,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               matTooltipPosition="below"
               [matTooltipShowDelay]="350"
               aria-label="Toggle Focus Foods edit">
-              <mat-icon aria-hidden="true">edit</mat-icon>
+              <mat-icon aria-hidden="true">tune</mat-icon>
             </button>
           </div>
 
