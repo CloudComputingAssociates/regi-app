@@ -140,6 +140,16 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               aria-label="Edit My Foods">
               <mat-icon aria-hidden="true">tune</mat-icon>
             </button>
+            <!-- Add a food (via the mobile app) — moved up next to Edit. -->
+            <button
+              type="button"
+              class="bar-icon-btn"
+              matTooltip="Add a food (via the mobile app)"
+              matTooltipPosition="below"
+              (click)="onAddFood()"
+              aria-label="Add food">
+              <mat-icon aria-hidden="true">add</mat-icon>
+            </button>
             <!-- Leave-panel key — lives here (not in the parked Focus Foods
                  header) so it's ALWAYS available to close the panel. -->
             <div class="title-right">
@@ -429,22 +439,16 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     class="spin-source-select regi-field"
                     [ngModel]="spinSource()"
                     (ngModelChange)="onSpinSourceChange($event)">
+                    <!-- Order: My Foods (default) · curated lists (Regi/YEH
+                         Approved, GLP-1 favorites) · separator · Restricted. -->
+                    <option value="myfoods">My Foods</option>
                     @for (list of orderedLists(); track list.name) {
                       <option [value]="list.name">{{ list.description }}</option>
                     }
                     <option disabled>──────────────</option>
-                    <option value="myfoods">My Foods</option>
                     <option value="restricted">Restricted</option>
                   </select>
-                  <button
-                    type="button"
-                    class="bar-icon-btn"
-                    matTooltip="Add a food (via the mobile app)"
-                    matTooltipPosition="below"
-                    (click)="onAddFood()"
-                    aria-label="Add food">
-                    <mat-icon aria-hidden="true">add</mat-icon>
-                  </button>
+                  <!-- Add-food (+) moved up to the MyFoods header, next to Edit. -->
                   <input
                     type="text"
                     class="picker-search-input regi-field"
@@ -805,12 +809,8 @@ export class FoodsPanelComponent {
       next: (resp) => {
         const lists = resp?.lists ?? [];
         this.availableLists.set(lists);
-        // Default the curate TYPE to the Regi Approved list (top of the menu),
-        // unless the user already picked something else.
-        if (this.spinSource() === 'myfoods') {
-          const regi = lists.find((l) => /regi|approved/i.test(l.description || ''));
-          if (regi) this.spinSource.set(regi.name);
-        }
+        // LIST dropdown defaults to My Foods (top of the menu) — do NOT auto-switch
+        // to the Regi Approved list; the user selects a curated list explicitly.
       },
       error: () => this.availableLists.set([]),
     });
