@@ -379,67 +379,37 @@
 .msp-set-genres { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .msp-set-flags { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 
-// ---- Editor "Genres" chip input -------------------------------------------
-// A bordered box (matching .msp-input) that holds removable chips plus a
-// borderless, growing text input; suggestions come from a native <datalist>.
-.msp-chips {
+// ---- My MealSets tiles (promo-photo cards → editor overlay) ----------------
+.msp-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  gap: 10px;
+}
+.msp-tile {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 5px 6px;
-  background: linear-gradient(180deg, #565656 0%, #434343 100%);
-  border: 1px solid #262626;
-  border-top-color: #6f6f6f;
-  border-radius: 6px;
-
-  &:focus-within { box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.6); }
-}
-.msp-chip {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #cfe4ff;
-  background: rgba(77, 166, 255, 0.18);
-  border: 1px solid rgba(77, 166, 255, 0.35);
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  text-align: left;
+  background: #383838;
+  border: 1px solid #4a4a4a;
   border-radius: 8px;
-  padding: 2px 4px 2px 8px;
-}
-.msp-chip-x {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 15px;
-  height: 15px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  color: #dfefff;
-  font-size: 13px;
-  line-height: 1;
   cursor: pointer;
-
-  &:hover { background: rgba(255, 120, 120, 0.45); color: #ffffff; }
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  &:hover { border-color: #4da6ff; box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.5); }
 }
-// Defined AFTER .msp-input so these win where they overlap (same specificity).
-.msp-chip-input {
-  flex: 1 1 120px;
-  min-width: 120px;
-  width: auto;
-  padding: 2px;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-
-  &:focus { box-shadow: none; }
+.msp-tile-cover {
+  display: flex; align-items: center; justify-content: center;
+  aspect-ratio: 16 / 10; width: 100%; overflow: hidden;
+  background: #2a2a2a; border: 1px solid #4a4a4a; border-radius: 6px;
+  img { width: 100%; height: 100%; object-fit: cover; }
+  .mat-icon, mat-icon { width: 28px; height: 28px; font-size: 28px; color: #6a6f75; }
 }
+.msp-tile-name { font-size: 14px; font-weight: 600; color: #f1f1f1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msp-tile-genres { display: flex; flex-wrap: wrap; gap: 4px; }
+.msp-tile-flags { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
 
-// Status / price pills in the My Sets rows. Active = green, Inactive = muted.
+// Status / price pills. Live = green, Inactive = muted.
 .msp-flag {
   font-size: 11px;
   font-weight: 700;
@@ -469,122 +439,8 @@
   color: #9aa0a6;
 }
 
-// ---- Editor readonly row ----
-.msp-readonly-row {
-  flex-direction: row;
-  align-items: center;
-  gap: 14px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: #2f2f2f;
-  border: 1px solid #262626;
-}
-.msp-readonly { font-size: 12px; color: #d8d8d8; strong { color: #f1f1f1; } }
-.msp-readonly-note { font-size: 11px; color: #7a7a7a; font-style: italic; }
-
-// ---- Meal picker: dual-list transfer (drag across, or ▶ / ◀ arrows) ----
-.msp-picker {
-  margin-top: 6px;
-  border-top: 1px solid #4a4a4a;
-  padding-top: 8px;
-}
-
-.msp-transfer {
-  display: flex;
-  align-items: stretch;
-  gap: 10px;
-}
-
-.msp-transfer-col {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.msp-transfer-head {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: #9aa0a6;
-}
-
-.msp-transfer-list {
-  flex: 1 1 auto;
-  min-height: 150px;
-  max-height: 260px;
-  overflow-y: auto;
-  padding: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  background: #2a2a2a;
-  border: 1px solid #262626;
-  border-radius: 6px;
-}
-
-.msp-transfer-item {
-  padding: 5px 8px;
-  font-size: 13px;
-  color: #e8e8e8;
-  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
-  border: 1px solid #4a4a4a;
-  border-radius: 5px;
-  cursor: grab;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  user-select: none;
-
-  &:hover { border-color: #6a6f75; }
-  &.sel { border-color: #4da6ff; box-shadow: 0 0 0 1px #4da6ff; }
-  &.cdk-drag-placeholder { opacity: 0.35; }
-  &:active { cursor: grabbing; }
-}
-
-.msp-transfer-empty {
-  padding: 8px;
-  font-size: 12px;
-  font-style: italic;
-  color: #7a7a7a;
-  text-align: center;
-}
-
-.msp-transfer-arrows {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-}
-
-.msp-arrow {
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  color: #e8e8e8;
-  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
-  border: 1px solid #262626;
-  border-top-color: #7d7d7d;
-  border-radius: 6px;
-  cursor: pointer;
-  &:hover:not(:disabled) { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #fff; }
-  &:disabled { opacity: 0.4; cursor: default; }
-}
-
-// RecipeBox badges — reuse the .msp-set-genre chip shape with status colors.
-.rb-badge {
-  text-transform: capitalize;
-  &.type { color: #cfe4ff; background: rgba(77,166,255,0.16); border: 1px solid rgba(77,166,255,0.35); }
-  &.published { color: #b7f5c4; background: rgba(52,214,81,0.16); border: 1px solid rgba(52,214,81,0.4); }
-  &.draft { color: #d6d6d6; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); }
-  &.archived { color: #ffd8a8; background: rgba(255,160,60,0.16); border: 1px solid rgba(255,160,60,0.4); }
-}
+// Recipe row number prefix.
+.rb-num { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: #8a8f95; min-width: 20px; }
 
 // RecipeBox search — a compact filter row with a leading icon + clear button.
 .rb-search {
@@ -623,22 +479,27 @@
   }
 }
 
-// RecipeBox PDF import drop zone — same capability as the users' "Add Meals" import.
-.rb-import {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  margin-top: 2px;
-  font-size: 12px;
-  color: #9aa0a6;
-  background: #2c2c2c;
-  border: 1px dashed #5a5a5a;
-  border-radius: 8px;
-  cursor: pointer;
+// RecipeBox intake — two modes side by side: import a PDF  — or —  author.
+.rb-intake { display: flex; align-items: stretch; gap: 12px; }
+.rb-dropzone,
+.rb-create {
+  flex: 1 1 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  padding: 18px 14px; text-align: center;
+  background: #2c2c2c; border: 1px dashed #5a5a5a; border-radius: 10px; cursor: pointer;
+  color: #cfcfcf;
   transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
-
-  .mat-icon { width: 20px; height: 20px; font-size: 20px; color: #8ec5ff; }
-  &:hover { border-color: #6a6f75; color: #cfcfcf; }
-  &.dragover { border-color: #4da6ff; background: rgba(77, 166, 255, 0.1); color: #cfe4ff; }
+  .mat-icon, mat-icon { width: 26px; height: 26px; font-size: 26px; color: #8ec5ff; }
+  &:hover { border-color: #4da6ff; background: rgba(77, 166, 255, 0.08); }
+}
+.rb-create { border-style: solid; border-color: #4a4a4a; background: #333; }
+.rb-dropzone.dragover { border-color: #4da6ff; background: rgba(77, 166, 255, 0.12); color: #cfe4ff; }
+.rb-dz-title { font-size: 13px; font-weight: 600; color: #f1f1f1; }
+.rb-dz-sub { font-size: 11px; color: #9aa0a6; }
+.rb-or {
+  flex: 0 0 auto; align-self: center; position: relative;
+  span {
+    display: inline-block; padding: 4px 6px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em; color: #9aa0a6;
+  }
 }

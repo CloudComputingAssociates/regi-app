@@ -302,6 +302,17 @@ export class TabService {
   }
   closeRecipeEditor(): void { this.recipeEditorOpen.set(false); }
 
+  // MealSet editor — a full-screen overlay launched from the MealSet Studio hub
+  // (mirrors the recipe editor seam). mealsetEditorId: the set being edited
+  // (null = a new set). Close flips only the flag so the hub can reload async.
+  readonly mealsetEditorOpen = signal(false);
+  readonly mealsetEditorId = signal<number | null>(null);
+  openMealsetEditor(id: number | null): void {
+    this.mealsetEditorId.set(id);
+    this.mealsetEditorOpen.set(true);
+  }
+  closeMealsetEditor(): void { this.mealsetEditorOpen.set(false); }
+
   // In-app web viewer — opens an external page in a bloom iframe overlay instead
   // of a new browser tab (so the user never leaves the app). null = closed.
   readonly webViewUrl = signal<string | null>(null);

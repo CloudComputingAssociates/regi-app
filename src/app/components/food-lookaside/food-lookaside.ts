@@ -76,7 +76,7 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
           class="icon-disc icon-disc-cancel close-btn"
           matTooltip="Close"
           matTooltipPosition="below"
-          (click)="rotation.stopEditing()">
+          (click)="onClose()">
           <mat-icon>close</mat-icon>
         </button>
       </div>
@@ -150,6 +150,16 @@ export class FoodLookasideComponent {
   /** Emitted (only in emitSelection mode) when a food row is chosen — the recipe
    *  editor binds it to its selected ingredient line. */
   readonly foodSelected = output<{ food: Food; serving: number }>();
+  /** Emitted (only in emitSelection mode) when the X is pressed — the host (recipe
+   *  editor) collapses the dock. In the meal-slot flow the X ends editing instead. */
+  readonly close = output<void>();
+
+  /** The red X: in redirect mode the host owns the surface (collapse it); otherwise
+   *  it ends the meal-slot editing session as before. */
+  onClose(): void {
+    if (this.emitSelection()) this.close.emit();
+    else this.rotation.stopEditing();
+  }
 
   /** The tab the user picked. Focus Foods is the default/primary (falls back to
    *  My Foods via effectivePane when the user has no picks). */

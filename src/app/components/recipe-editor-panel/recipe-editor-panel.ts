@@ -32,7 +32,6 @@ import { RecipeAuthoringService } from '../../services/recipe-authoring.service'
 import { RotationService } from '../../services/rotation.service';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 import { AddToBinderDialogComponent } from '../add-to-binder-dialog/add-to-binder-dialog';
-import { RecipeStateChipComponent } from '../recipe-state-chip/recipe-state-chip';
 import { FoodLookasideComponent } from '../food-lookaside/food-lookaside';
 import { IngredientTypeaheadComponent, PickedFood } from '../ingredient-typeahead/ingredient-typeahead';
 import { ImageUploadService } from '../../services/image-upload.service';
@@ -79,7 +78,7 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
 
 @Component({
   selector: 'app-recipe-editor-panel',
-  imports: [MatIconModule, MatTooltipModule, RecipeStateChipComponent, FoodLookasideComponent, IngredientTypeaheadComponent],
+  imports: [MatIconModule, MatTooltipModule, FoodLookasideComponent, IngredientTypeaheadComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (isOpen()) {
@@ -89,7 +88,6 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
           <header class="rep-head">
             <span class="rep-title">
               <mat-icon>edit_note</mat-icon>{{ recipeId() ? 'Edit Recipe' : 'New Recipe' }}
-              <app-recipe-state-chip [published]="isPublished()" />
               @if (isRegiApproved()) { <span class="rep-badge regi">REGI-approved</span> }
             </span>
             <!-- PDF status — server truth only, shown when LIVE. The ↻ affordance
@@ -301,17 +299,26 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
             </div>
 
             <!-- Docked food search (reused from Create Meal; emits picks instead
-                 of adding to a meal). Binds to the selected ingredient line. -->
-            <aside class="rep-dock">
-              <div class="rep-dock-hint">
-                @if (selectedLineId()) {
-                  <mat-icon>my_location</mat-icon> Pick a food for the selected line.
-                } @else {
-                  <mat-icon>info</mat-icon> Select an ingredient line, then pick a food.
-                }
-              </div>
-              <app-food-lookaside [emitSelection]="true" (foodSelected)="onFoodSelected($event)" />
-            </aside>
+                 of adding to a meal). Binds to the selected ingredient line. The X
+                 collapses it to a slim rail; the rail button brings it back. -->
+            @if (dockOpen()) {
+              <aside class="rep-dock">
+                <div class="rep-dock-hint">
+                  @if (selectedLineId()) {
+                    <mat-icon>my_location</mat-icon> Pick a food for the selected line.
+                  } @else {
+                    <mat-icon>info</mat-icon> Select an ingredient line, then pick a food.
+                  }
+                </div>
+                <app-food-lookaside [emitSelection]="true"
+                  (foodSelected)="onFoodSelected($event)" (close)="dockOpen.set(false)" />
+              </aside>
+            } @else {
+              <button type="button" class="rep-dock-reopen" matTooltip="Show foods"
+                matTooltipPosition="left" (click)="dockOpen.set(true)">
+                <mat-icon>restaurant</mat-icon><span>Foods</span>
+              </button>
+            }
           </div>
 
           <!-- Footer: [Delete] ....gap.... [Add to Binder] [Publish|Take down] [Save & Close] -->
@@ -382,6 +389,8 @@ export class RecipeEditorPanelComponent {
    *  fires against a different recipe. */
   private regenTimer: ReturnType<typeof setTimeout> | null = null;
   readonly summaryOpen = signal(false);
+  /** The docked food search — collapsed to a rail via the lookaside's X. */
+  readonly dockOpen = signal(true);
   readonly addRow = signal<AddRow>({ ...BLANK_ADD });
   /** The add row's typeahead — refocused after each add for the cruise loop. */
   private readonly addType = viewChild<IngredientTypeaheadComponent>('addType');
@@ -520,6 +529,7 @@ export class RecipeEditorPanelComponent {
     this.regenerating.set(false);
     this.pdfRefreshing.set(false);
     this.pdfStalled.set(false);
+    this.dockOpen.set(true);
     this.selectedLineId.set(null);
     this.boundNames.set(new Map());
     this.photoLines.set(new Set());

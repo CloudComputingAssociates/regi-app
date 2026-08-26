@@ -18,6 +18,7 @@ import { TetherPromptComponent } from './components/tether-prompt/tether-prompt'
 import { WebViewOverlayComponent } from './components/web-view-overlay/web-view-overlay';
 import { AccountPanelComponent } from './components/account-panel/account-panel';
 import { RecipeEditorPanelComponent } from './components/recipe-editor-panel/recipe-editor-panel';
+import { MealsetEditorPanelComponent } from './components/mealset-editor-panel/mealset-editor-panel';
 import { NotificationComponent } from './components/notification/notification';
 import { SubscriptionService } from './services/subscription.service';
 import { SettingsService } from './services/settings.service';
@@ -57,6 +58,7 @@ const LEFT_NAV_PANEL_IDS = new Set([
     WebViewOverlayComponent,
     AccountPanelComponent,
     RecipeEditorPanelComponent,
+    MealsetEditorPanelComponent,
     NotificationComponent,
     MatTooltipModule
   ],
@@ -124,6 +126,7 @@ const LEFT_NAV_PANEL_IDS = new Set([
            on TabService.recipeEditorOpen; launched from the Author Studio's
            RecipeBox. No Angular Router in this app. -->
       <app-recipe-editor-panel />
+      <app-mealset-editor-panel />
       <!-- Notification toast lives at the app root (not inside main-body)
            so its z-index: 9999 punches above the overlays' z-index: 1100.
            Mounted inside main-body, it was trapped in main-body's stacking

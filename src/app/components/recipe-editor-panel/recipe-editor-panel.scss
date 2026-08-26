@@ -70,6 +70,16 @@
   // scrolls. Overriding display to block was what killed the scroll here.
   app-food-lookaside { flex: 1 1 auto; min-height: 0; }
 }
+/* Collapsed dock — a slim vertical rail that reopens the food search. */
+.rep-dock-reopen {
+  flex: 0 0 34px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 12px 0; cursor: pointer;
+  color: #8ec5ff; background: #262626; border: none; border-left: 1px solid #3a3a3a;
+  mat-icon { width: 20px; height: 20px; font-size: 20px; }
+  span { writing-mode: vertical-rl; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
+  &:hover { color: #ffffff; background: #2c2c2c; }
+}
 .rep-dock-hint {
   display: flex;
   align-items: center;
