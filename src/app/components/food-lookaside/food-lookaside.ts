@@ -12,12 +12,11 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { firstValueFrom } from 'rxjs';
 import { RotationService } from '../../services/rotation.service';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
-import { SettingsService } from '../../services/settings.service';
+import { FoodsService } from '../../services/foods.service';
 import { Food } from '../../models/food.model';
-import { BASKET_KEYS, hydratePicks } from '../../models/picks-hydration';
 import { IngredientTypeaheadComponent, PickedFood } from '../ingredient-typeahead/ingredient-typeahead';
 
-type LookasidePane = 'picks' | 'myfoods';
+type LookasidePane = 'myfoods' | 'regi';
 
 interface FoodGroup {
   cat: string;
@@ -49,28 +48,23 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
       <!-- Tabs up top; the red X (same size as the meal card's green check)
            closes the lookaside. -->
       <div class="lookaside-header">
-        <!-- Focus Foods is primary/default; My Foods second. With no picks
-             there's nothing to toggle to — just show the My Foods label. -->
-        @if (hasPicks()) {
-          <div class="pane-toggle" role="tablist">
-            <button
-              type="button"
-              class="toggle-btn"
-              [class.active]="effectivePane() === 'picks'"
-              (click)="pane.set('picks')">
-              Focus Foods
-            </button>
-            <button
-              type="button"
-              class="toggle-btn"
-              [class.active]="effectivePane() === 'myfoods'"
-              (click)="pane.set('myfoods')">
-              My Foods
-            </button>
-          </div>
-        } @else {
-          <span class="lookaside-label">My Foods</span>
-        }
+        <!-- Focus Foods retired — two tabs: MyFoods and Regi-approved. -->
+        <div class="pane-toggle" role="tablist">
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="pane() === 'myfoods'"
+            (click)="pane.set('myfoods')">
+            MyFoods
+          </button>
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="pane() === 'regi'"
+            (click)="pane.set('regi')">
+            Regi-approved
+          </button>
+        </div>
         <button
           type="button"
           class="icon-disc icon-disc-cancel close-btn"
@@ -81,15 +75,16 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
         </button>
       </div>
 
-      @if (effectivePane() === 'myfoods') {
-        <div class="search-row">
-          <input
-            type="text"
-            class="search-input"
-            [value]="search()"
-            (input)="search.set($any($event.target).value)"
-            placeholder="Search foods…" />
-        </div>
+      <!-- Search applies to whichever tab is active. -->
+      <div class="search-row">
+        <input
+          type="text"
+          class="search-input"
+          [value]="search()"
+          (input)="search.set($any($event.target).value)"
+          placeholder="Search foods…" />
+      </div>
+      @if (pane() === 'myfoods') {
         <!-- Compact sort control + "add food" (reuses the recipe typeahead). -->
         <div class="sort-row" role="group" aria-label="Sort My Foods">
           <button type="button" class="sort-btn" [class.active]="sortMode() === 'category'"
@@ -131,7 +126,7 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
             }
           }
         } @empty {
-          <p class="pane-empty">{{ effectivePane() === 'picks' ? 'No picks yet.' : 'No MyFoods match.' }}</p>
+          <p class="pane-empty">{{ pane() === 'regi' ? 'No Regi-approved foods match.' : 'No MyFoods match.' }}</p>
         }
       </div>
     </div>
@@ -141,7 +136,7 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
 export class FoodLookasideComponent {
   readonly rotation = inject(RotationService);
   private preferencesService = inject(FoodPreferencesService);
-  private settingsService = inject(SettingsService);
+  private foodsService = inject(FoodsService);
 
   /** Redirect mode: when true (recipe editor), a pick is EMITTED via foodSelected
    *  instead of added to the editing meal. Default false → the meal-slot flow is
@@ -161,9 +156,8 @@ export class FoodLookasideComponent {
     else this.rotation.stopEditing();
   }
 
-  /** The tab the user picked. Focus Foods is the default/primary (falls back to
-   *  My Foods via effectivePane when the user has no picks). */
-  readonly pane = signal<LookasidePane>('picks');
+  /** The active tab: MyFoods (default) or Regi-approved. */
+  readonly pane = signal<LookasidePane>('myfoods');
 
   /** MyFoods live substring filter. */
   readonly search = signal('');
@@ -184,6 +178,8 @@ export class FoodLookasideComponent {
 
   /** Full allowed-foods list (same source foods-panel uses). Loaded on init. */
   private readonly allowedFull = signal<Food[]>([]);
+  /** Regi-approved foods for the second tab. Loaded on init. */
+  private readonly regiFoods = signal<Food[]>([]);
 
   /** Row keys with an add in flight, so a slow POST can't be double-fired. */
   private readonly busyKeys = signal<Set<string>>(new Set());
@@ -204,12 +200,11 @@ export class FoodLookasideComponent {
     } catch {
       this.allowedFull.set([]);
     }
-    if (!this.settingsService.allSettings()) {
-      try {
-        await this.settingsService.loadSettings();
-      } catch {
-        /* leave picks empty — the tab shows its empty state */
-      }
+    try {
+      const resp = await firstValueFrom(this.foodsService.searchYehApprovedFoods(500));
+      this.regiFoods.set(resp?.foods ?? []);
+    } catch {
+      this.regiFoods.set([]);
     }
   }
 
@@ -222,29 +217,12 @@ export class FoodLookasideComponent {
     });
   }
 
-  /** Picks hydrated to Food objects (shared with foods-panel), flattened across
-   *  baskets — grouped by category (below) exactly like MyFoods. */
-  private readonly pickFoods = computed<Food[]>(() => {
-    const picks = this.settingsService.allSettings()?.currentPicks ?? [];
-    const baskets = hydratePicks(picks, this.allowedFull()).baskets;
-    return BASKET_KEYS.flatMap((k) => baskets[k]);
-  });
-
-  /** Whether the user has any hydrated picks — gates the Picks tab entirely. */
-  readonly hasPicks = computed<boolean>(() => this.pickFoods().length > 0);
-
-  /** The pane actually shown: falls back to MyFoods when there are no picks. */
-  readonly effectivePane = computed<LookasidePane>(() =>
-    this.hasPicks() ? this.pane() : 'myfoods',
-  );
-
-  /** The active tab's foods grouped into the category accordion. MyFoods honors
-   *  the search box (and force-expands matching groups); Picks isn't searched. */
+  /** The active tab's foods grouped into the category accordion. Both tabs honor
+   *  the search box; MyFoods additionally supports the "Newest" sort. */
   readonly currentGroups = computed<FoodGroup[]>(() => {
-    const myfoods = this.effectivePane() === 'myfoods';
-    const foods = myfoods ? this.allowedFull() : this.pickFoods();
-    const q = myfoods ? this.search().trim().toLowerCase() : '';
-    // MyFoods "Newest" → a single flat group sorted by createdAt desc.
+    const myfoods = this.pane() === 'myfoods';
+    const foods = myfoods ? this.allowedFull() : this.regiFoods();
+    const q = this.search().trim().toLowerCase();
     if (myfoods && this.sortMode() === 'newest') return this.newestGroup(foods, q);
     return this.groupByCategory(foods, q);
   });
@@ -315,9 +293,7 @@ export class FoodLookasideComponent {
 
   // Resolved default serving — display only; re-resolved at add time below.
   resolveServing(food: Food): number {
-    return this.effectivePane() === 'picks'
-      ? (food.pickServingSize ?? food.userServingSize ?? food.servingSize ?? 1)
-      : (food.userServingSize ?? food.servingSize ?? 1);
+    return food.userServingSize ?? food.servingSize ?? 1;
   }
 
   onRowClick(food: Food): void {

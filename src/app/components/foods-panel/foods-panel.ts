@@ -176,6 +176,18 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 </button>
               }
               <span class="top-bar-spacer"></span>
+              <!-- Remove-from-MyFoods trashcan — greyed until a food is highlighted;
+                   then a grey button with a red trashcan to pare the list down. -->
+              <button
+                type="button"
+                class="bar-icon-btn myfoods-remove"
+                [disabled]="!selectedFood()"
+                (click)="removeSelectedFromMyFoods($event)"
+                matTooltip="Remove from MyFoods"
+                matTooltipPosition="below"
+                aria-label="Remove from MyFoods">
+                <mat-icon aria-hidden="true">delete_outline</mat-icon>
+              </button>
               <span class="top-bar-total">Total ({{ carouselSpinnerFoods().length }})</span>
             </div>
             <!-- Category filters — moved beneath the search, inside the card. -->
@@ -466,6 +478,18 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                       ✕
                     </button>
                   }
+                  <!-- Collapse/expand ALL category accordions for the current list
+                       (works for any list — MyFoods, curated, Restricted). -->
+                  <button
+                    type="button"
+                    class="bar-icon-btn curate-collapse-all"
+                    [class.pressed]="allCategoriesCollapsed()"
+                    (click)="allCategoriesCollapsed() ? expandAllCategories() : collapseAllCategories()"
+                    [matTooltip]="allCategoriesCollapsed() ? 'Expand all categories' : 'Collapse all categories'"
+                    matTooltipPosition="below"
+                    aria-label="Collapse or expand all categories">
+                    <mat-icon aria-hidden="true">{{ allCategoriesCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
+                  </button>
                   <span class="top-bar-total picker-search-total">Total ({{ bottomListLength() }})</span>
                 </div>
             <div class="pane-card list-card">
@@ -1454,6 +1478,22 @@ export class FoodsPanelComponent {
     this.selectedMyFood.set(null);
   }
 
+  /** Carousel trashcan — pare the highlighted food out of MyFoods. A brought-in
+   *  (user-added) food is PERMANENTLY deleted after a confirm (deleteUserFood);
+   *  a system food is simply un-favorited (removed from the MyFoods allowed list). */
+  removeSelectedFromMyFoods(event: Event): void {
+    const food = this.selectedFood();
+    if (!food) return;
+    if (this.isUserAddedFood(food)) {
+      void this.deleteUserFood(event, food).then(() => this.selectedFood.set(null));
+      return;
+    }
+    if (this.preferencesService.isAllowed(food.id)) {
+      this.toggleFavorite(event, food); // currently allowed → toggles OFF (removes)
+    }
+    this.selectedFood.set(null);
+  }
+
   /** Single-click on a LHS food tile = "Pick this" → drops it straight into
    *  the appropriate basket. Idempotent: clicking a food that's already in
    *  its basket is a silent no-op (addFoodToBasket dedupes by id), so a
@@ -1981,7 +2021,7 @@ export class FoodsPanelComponent {
     event.stopPropagation();
     if (!this.isUserAddedFood(food)) return; // hard guard for keyboard activation
     const name = food.shortDescription || food.description;
-    if (!window.confirm(`Delete "${name}"? This will permanently remove it from your MyFoods.`)) {
+    if (!window.confirm(`Do you want to permanently delete "${name}" from MyFoods?`)) {
       return;
     }
     const ok = await this.userFoodService.deleteUserFood(food.id);
