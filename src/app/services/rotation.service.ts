@@ -1678,7 +1678,8 @@ export class RotationService {
   }
 
   /** Discard a Folder meal.
-   *    DELETE /api/meal/{id}  (409 if the meal is currently slotted in a menu)
+   *    DELETE /api/meal/{id}  — the server force-detaches it from any menu slots,
+   *  so this always deletes; a 409 is a different case (e.g. sold in a meal set).
    *  Refresh the Folder from server truth on success. */
   async deleteFolderMeal(mealId: number): Promise<void> {
     try {
@@ -1690,7 +1691,9 @@ export class RotationService {
   }
 
   /** Explicitly delete a Binder (pinned) meal.
-   *    DELETE /api/meal/{id}  (409 if the meal is still slotted in a menu)
+   *    DELETE /api/meal/{id}  — the server force-detaches it from every menu slot,
+   *  so this always deletes (no local slot-membership pre-check); a 409 is a
+   *  different case (e.g. sold in a meal set).
    *  When deleteRecipe is true, the server also removes the imported recipe + its
    *  PDF the meal was created from (DELETE /api/meal/{id}?deleteRecipe=true). The
    *  meal delete reports success even if that cleanup partially failed — we don't
@@ -1984,13 +1987,17 @@ export class RotationService {
     return 'Request failed';
   }
 
-  /** Delete-specific message. A 409 means the meal is still slotted in a menu;
-   *  the server refuses to delete it until it's detached. Surface that plainly
-   *  rather than the raw body. */
+  /** Delete-specific message. The server force-detaches a meal from every menu slot
+   *  on delete, so a 409 is NOT a "still slotted in a menu" case (that copy was a
+   *  false positive, shown even with zero menus). A real 409 is a different reason —
+   *  e.g. the meal is sold in a purchased meal set — so surface the API's ACTUAL
+   *  message rather than hard-coding menu copy. */
   private deleteErrMessage(err: unknown): string {
-    const e = err as { status?: number };
+    const e = err as { status?: number; error?: unknown };
     if (e?.status === 409) {
-      return 'This meal is placed in a menu — remove it from that slot first.';
+      const body = e.error;
+      const msg = typeof body === 'string' ? body : (body as { error?: string })?.error;
+      return typeof msg === 'string' && msg.trim() ? msg : 'This meal can’t be deleted.';
     }
     return this.errMessage(err);
   }
