@@ -162,7 +162,7 @@ const BLANK_ADD: AddRow = { quantity: '', unit: '', ingredientName: '', note: ''
               </label>
             </div>
             <label class="rep-field">
-              <span class="rep-label">Hero image URL</span>
+              <span class="rep-label">Image URL</span>
               <input class="rep-input" type="url" [value]="form().heroImageLink"
                 (input)="set('heroImageLink', $any($event.target).value)" placeholder="https://…" />
             </label>

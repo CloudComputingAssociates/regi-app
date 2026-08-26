@@ -900,18 +900,17 @@ export class MealBinderComponent implements OnInit {
     });
   }
 
-  /** Deleting a Binder menu is a fully destructive mini-wipe — the menu AND all
-   *  its saved meals go. Warn explicitly. */
+  /** Deleting a Binder menu removes ONLY the menu (and its slotting) — the saved
+   *  meals stay in the Notebook and are deleted separately by the user. */
   onDeleteBinderMenu(menu: Menu): void {
     const id = menu.id;
     if (id == null) return;
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',
       data: {
-        title: `Delete "${menu.name}"`,
-        message: 'Delete Menu and all saved meals?',
+        message: `Delete "${menu.name}"?`,
         confirmLabel: 'Delete',
-        onConfirm: () => void this.rotation.deleteBinderMenu(id, true),
+        onConfirm: () => void this.rotation.deleteBinderMenu(id, false),
       },
     });
   }

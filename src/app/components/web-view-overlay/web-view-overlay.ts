@@ -26,12 +26,13 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TabService } from '../../services/tab.service';
+import { RecipePdfViewerComponent } from '../recipe-pdf-viewer/recipe-pdf-viewer';
 
 const IDLE_MS = 30_000;
 
 @Component({
   selector: 'app-web-view-overlay',
-  imports: [MatIconModule, MatTooltipModule],
+  imports: [MatIconModule, MatTooltipModule, RecipePdfViewerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onActivity()',
@@ -48,51 +49,39 @@ const IDLE_MS = 30_000;
                  an empty flex spacer keeps the controls right-aligned. -->
             <span class="wv-host">{{ isPdf() ? '' : hostLabel(url) }}</span>
             <div class="wv-controls">
-              <!-- Save/Print (PDFs only): leftmost of the cluster. Hands the PDF
-                   to the browser's PDF viewer, where the user saves or prints. -->
-              @if (isPdf()) {
-                <button
-                  type="button"
-                  class="wv-disc wv-print"
-                  (click)="print()"
-                  matTooltip="Save/Print with PDF viewer"
-                  matTooltipPosition="below"
-                  aria-label="Save or print with PDF viewer">
-                  <mat-icon>save</mat-icon>
-                </button>
-              }
-              <!-- Restore (yellow −): back to the default ~2/3 size. -->
-              <button
-                type="button"
-                class="wv-disc wv-min"
-                [disabled]="!maximized()"
-                (click)="maximized.set(false)"
-                matTooltip="Restore size"
-                matTooltipPosition="below"
-                aria-label="Restore size"></button>
-              <!-- Maximize (green +): fill the whole app. -->
-              <button
-                type="button"
-                class="wv-disc wv-max"
-                [disabled]="maximized()"
-                (click)="maximized.set(true)"
-                matTooltip="Maximize"
-                matTooltipPosition="below"
-                aria-label="Maximize"></button>
-              <!-- Close (red X): outermost. -->
-              <button
-                type="button"
-                class="wv-disc wv-close"
-                (click)="close()"
-                matTooltip="Close"
-                matTooltipPosition="below"
-                aria-label="Close">
+              <!-- Maximize / restore toggle (one clear button, not two discs). -->
+              <button type="button" class="wv-btn" (click)="maximized.set(!maximized())"
+                [matTooltip]="maximized() ? 'Restore size' : 'Maximize'" matTooltipPosition="below"
+                [attr.aria-label]="maximized() ? 'Restore size' : 'Maximize'">
+                <mat-icon>{{ maximized() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+              </button>
+              <!-- Close. -->
+              <button type="button" class="wv-btn wv-btn-close" (click)="close()"
+                matTooltip="Close" matTooltipPosition="below" aria-label="Close">
                 <mat-icon>close</mat-icon>
               </button>
             </div>
           </div>
-          <iframe class="wv-iframe" [src]="safeUrl()" referrerpolicy="no-referrer"
-            (error)="onLoadError()"></iframe>
+          @if (isPdf()) {
+            <!-- PDF.js viewer, lazy-loaded on demand (kept out of the main bundle).
+                 It renders the bytes to a canvas — its own toolbar carries download,
+                 print, zoom, page nav and search. -->
+            @defer (on immediate) {
+              <app-recipe-pdf-viewer [src]="url" />
+            } @placeholder {
+              <div class="wv-msg">Loading viewer…</div>
+            } @loading (minimum 150ms) {
+              <div class="wv-msg">Loading viewer…</div>
+            } @error {
+              <div class="wv-msg">
+                Couldn’t load the PDF viewer —
+                <a class="wv-external" [href]="url" target="_blank" rel="noopener">open in browser ↗</a>
+              </div>
+            }
+          } @else {
+            <iframe class="wv-iframe" [src]="safeUrl()" referrerpolicy="no-referrer"
+              (error)="onLoadError()"></iframe>
+          }
           <div class="wv-foot">
             <span class="wv-idle">{{ isPdf() ? 'Recipe PDF' : 'Closes itself after 30s idle' }}</span>
             <a class="wv-external" [href]="url" target="_blank" rel="noopener">Open in browser ↗</a>
@@ -152,29 +141,25 @@ const IDLE_MS = 30_000;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .wv-controls { flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
-    .wv-disc {
-      width: 18px;
-      height: 18px;
-      padding: 0;
-      border-radius: 50%;
-      border: 1px solid rgba(0, 0, 0, 0.4);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25), 0 1px 1px rgba(0, 0, 0, 0.35);
-      transition: transform 0.1s ease, filter 0.1s ease, opacity 0.1s ease;
+    .wv-controls { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+    /* Proper app-style buttons (not traffic-light discs). */
+    .wv-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 34px; height: 26px; padding: 0; cursor: pointer;
+      color: #e8e8e8; background: linear-gradient(180deg, #565656, #434343);
+      border: 1px solid #262626; border-top-color: #6f6f6f; border-radius: 6px;
+      transition: filter 0.1s ease;
+      mat-icon { width: 18px; height: 18px; font-size: 18px; }
     }
-    .wv-disc:hover:not(:disabled) { transform: scale(1.12); filter: brightness(1.12); }
-    .wv-disc:disabled { opacity: 0.35; cursor: default; }
-    .wv-min { background: #fff59d; }
-    .wv-max { background: #28c941; }
-    .wv-close { background: #ff5f57; }
-    .wv-print { background: #4da6ff; }
-    .wv-print mat-icon { width: 11px; height: 11px; font-size: 11px; line-height: 11px; color: #fff; }
-    .wv-close mat-icon { width: 12px; height: 12px; font-size: 12px; line-height: 12px; color: #000; }
+    .wv-btn:hover { filter: brightness(1.14); }
+    .wv-btn-close:hover {
+      color: #fff; background: linear-gradient(180deg, #e0625f, #c0433f); border-color: #a5322f;
+    }
     .wv-iframe { flex: 1; width: 100%; border: 0; background: #ffffff; }
+    .wv-msg {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+      padding: 16px; text-align: center; font-size: 13px; color: #cfcfcf; background: #1a1a1a;
+    }
     .wv-foot {
       flex-shrink: 0;
       display: flex;
@@ -245,13 +230,6 @@ export class WebViewOverlayComponent {
     console.warn('In-app viewer iframe failed to load; opening in a new tab.', url);
     window.open(url, '_blank', 'noopener');
     this.close();
-  }
-
-  /** Open the PDF in a browser tab — the inline-served URL renders natively there,
-   *  where the browser's own viewer handles save/print. */
-  print(): void {
-    const url = this.tab.webViewUrl();
-    if (url) window.open(url, '_blank', 'noopener');
   }
 
   close(): void {
