@@ -560,6 +560,73 @@ export class RotationService {
     }
   }
 
+  // ---- AI meal image generation (MealSetOwner-only) --------------------------
+  /** Meals with an AI image-generation request in flight — drives the card's
+   *  "Generating image…" state and guards double-submit. */
+  readonly generatingImageIds = signal<Set<number>>(new Set());
+  isGeneratingImage(mealId: number): boolean {
+    return this.generatingImageIds().has(mealId);
+  }
+
+  /** Kick off async AI image generation for a meal. POST /meal/{id}/generate-image
+   *  → 202 (regi-api emits a Kafka request; regi-image writes mealImage /
+   *  mealImageThumbnail back later). We poll the meal until the image URL appears
+   *  (or changes, for a regenerate), then the tile re-renders from coverImageFor.
+   *  The backend owns generation — the client never uploads/generates. */
+  async generateMealImage(mealId: number): Promise<void> {
+    if (this.generatingImageIds().has(mealId)) return; // guard double-submit
+    const baseline = this.mealImageUrl(mealId);        // regenerate → detect a change
+    this.generatingImageIds.update((s) => new Set(s).add(mealId));
+    try {
+      await firstValueFrom(
+        this.http.post<void>(`${this.baseUrl}/meal/${mealId}/generate-image`, null),
+      );
+      this.pollForMealImage(mealId, baseline, 0); // 202 accepted — poll for the write-back
+    } catch (err) {
+      this.clearGeneratingImage(mealId);
+      const status = (err as { status?: number })?.status;
+      if (status === 503) {
+        this.notification.show('Image generation is unavailable — please try again later.', 'error');
+      } else {
+        this.notification.show(this.errMessage(err), 'error');
+      }
+    }
+  }
+
+  private mealImageUrl(mealId: number): string {
+    const m = this.getMeal(mealId);
+    return m?.mealImage?.trim() || m?.mealImageThumbnail?.trim() || '';
+  }
+  private clearGeneratingImage(mealId: number): void {
+    this.generatingImageIds.update((s) => {
+      const n = new Set(s);
+      n.delete(mealId);
+      return n;
+    });
+  }
+
+  /** Poll ~every 4s (cap ~60s) re-fetching the meal until its image URL appears or
+   *  changes (regenerate), then clear the loading state and refresh the board. */
+  private pollForMealImage(mealId: number, baseline: string, attempt: number): void {
+    const MAX_ATTEMPTS = 15; // ~60s at 4s
+    setTimeout(async () => {
+      if (!this.generatingImageIds().has(mealId)) return; // cleared elsewhere
+      await this.loadMeal(mealId);
+      const now = this.mealImageUrl(mealId);
+      if (now !== '' && now !== baseline) {
+        void this.refreshSelectedMenu(); // surface the new cover on the board
+        this.clearGeneratingImage(mealId);
+        return;
+      }
+      if (attempt + 1 >= MAX_ATTEMPTS) {
+        this.clearGeneratingImage(mealId);
+        this.notification.show('Image is taking longer than expected — it may appear shortly.', 'warning');
+        return;
+      }
+      this.pollForMealImage(mealId, baseline, attempt + 1);
+    }, 4000);
+  }
+
 
   /** Build an empty board manually (no AI): create a staged rotation, a menu
    *  with N empty slots, link it, then load the detail and select the menu.

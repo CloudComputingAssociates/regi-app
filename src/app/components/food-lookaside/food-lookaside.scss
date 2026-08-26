@@ -85,10 +85,25 @@
 .search-row {
   flex-shrink: 0;
   margin: 10px 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+// Collapse/expand-all button beside the search input.
+.la-collapse-all {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0; cursor: pointer;
+  color: #cfcfcf; background: linear-gradient(180deg, #565656, #434343);
+  border: 1px solid #262626; border-top-color: #6f6f6f; border-radius: 6px;
+  .mat-icon, mat-icon { width: 18px; height: 18px; font-size: 18px; }
+  &.active { color: #fff; background: linear-gradient(180deg, #333, #3f3f3f); }
+  &:hover { filter: brightness(1.12); }
 }
 
 .search-input {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   box-sizing: border-box;
   padding: 6px 8px;
   font-family: inherit;

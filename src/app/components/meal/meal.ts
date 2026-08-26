@@ -26,6 +26,7 @@ import { Food } from '../../models/food.model';
 import { FoodComponent } from '../food/food';
 import { RotationService } from '../../services/rotation.service';
 import { TabService } from '../../services/tab.service';
+import { RoleService } from '../../services/role.service';
 
 interface Macro {
   proteinG: number;
@@ -89,7 +90,13 @@ interface Macro {
                   @if (tileImage(m); as src) {
                     <img class="tile-img" [src]="src" alt="" />
                   } @else {
-                    <div class="tile-noimg"><span>{{ clean(m.mealName) }}{{ isMealModified(m) ? ' (modified)' : '' }}</span></div>
+                    <div class="tile-noimg">
+                      @if (rotation.isGeneratingImage(m.mealId)) {
+                        <span class="tile-generating"><mat-icon class="spin">progress_activity</mat-icon>Generating image…</span>
+                      } @else {
+                        <span>{{ clean(m.mealName) }}{{ isMealModified(m) ? ' (modified)' : '' }}</span>
+                      }
+                    </div>
                   }
                   <div class="tile-scrim"></div>
                   <!-- "(modified)" — same white title text — marks a meal that
@@ -132,6 +139,20 @@ interface Macro {
                   (click)="flipHome()">
                   <mat-icon>flip_camera_android</mat-icon>
                 </button>
+                <!-- MealSetOwner only: generate (or regenerate) the AI meal image.
+                     Backend owns generation; we POST then poll for the write-back. -->
+                @if (isMealSetOwner()) {
+                  <button
+                    type="button"
+                    class="tile-btn tile-genimg"
+                    [disabled]="rotation.isGeneratingImage(fm.mealId)"
+                    [matTooltip]="rotation.isGeneratingImage(fm.mealId)
+                      ? 'Generating image…'
+                      : (tileImage(fm) ? 'Regenerate AI meal image' : 'Generate AI meal image')"
+                    (click)="rotation.generateMealImage(fm.mealId)">
+                    <mat-icon [class.spin]="rotation.isGeneratingImage(fm.mealId)">{{ rotation.isGeneratingImage(fm.mealId) ? 'progress_activity' : 'photo_camera' }}</mat-icon>
+                  </button>
+                }
                 <div class="back-head">
                   <span class="name-label">Meal</span>
                   <input
@@ -247,6 +268,10 @@ interface Macro {
 export class MealComponent {
   protected readonly rotation = inject(RotationService);
   private readonly tabs = inject(TabService);
+  private readonly role = inject(RoleService);
+
+  /** MealSetOwner-only affordances (e.g. the AI meal-image camera button). */
+  readonly isMealSetOwner = computed(() => this.role.hasRole('MealSetOwner'));
 
   readonly slot = input.required<MenuSlot>();
   readonly editing = input<boolean>(false);

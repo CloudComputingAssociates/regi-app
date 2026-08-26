@@ -83,6 +83,15 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
           [value]="search()"
           (input)="search.set($any($event.target).value)"
           placeholder="Search foods…" />
+        <button
+          type="button"
+          class="la-collapse-all"
+          [class.active]="allCatsCollapsed()"
+          [matTooltip]="allCatsCollapsed() ? 'Expand all categories' : 'Collapse all categories'"
+          matTooltipPosition="below"
+          (click)="allCatsCollapsed() ? expandAllCats() : collapseAllCats()">
+          <mat-icon>{{ allCatsCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
+        </button>
       </div>
       @if (pane() === 'myfoods') {
         <!-- Compact sort control + "add food" (reuses the recipe typeahead). -->
@@ -169,11 +178,22 @@ export class FoodLookasideComponent {
   }
 
   /** "+ Add food" (MyFoods header) — the same typeahead add mechanism, used
-   *  outside a recipe row. A pick/create refreshes the MyFoods list. */
+   *  outside a recipe row. A CREATED food (FatSecret/barcode) is a UserFood and
+   *  already in MyFoods with its full category + macros; a picked SYSTEM food
+   *  isn't in MyFoods until favorited — so favorite it (it carries category +
+   *  macros from the food record), persist, then refresh the list. */
   readonly addOpen = signal(false);
-  onAddFoodToMyFoods(_p: PickedFood): void {
+  async onAddFoodToMyFoods(p: PickedFood): Promise<void> {
     this.addOpen.set(false);
-    void this.load(); // the created food is now in MyFoods (Newest)
+    if (p.foodSource === 'food' && !this.preferencesService.isAllowed(p.foodId)) {
+      this.preferencesService.toggleFavoriteLocal(p.foodId);
+      try {
+        await firstValueFrom(this.preferencesService.saveAllChanges());
+      } catch {
+        /* the debounced autosave will still flush it */
+      }
+    }
+    await this.load(); // now MyFoods includes the added food (with macros/category)
   }
 
   /** Full allowed-foods list (same source foods-panel uses). Loaded on init. */
@@ -215,6 +235,17 @@ export class FoodLookasideComponent {
       else next.add(cat);
       return next;
     });
+  }
+
+  /** Collapse-all toggle for the category accordion (works on either tab). */
+  readonly allCatsCollapsed = computed<boolean>(() =>
+    CATEGORY_ORDER.every((c) => this.collapsedCats().has(c.cat)),
+  );
+  collapseAllCats(): void {
+    this.collapsedCats.set(new Set(CATEGORY_ORDER.map((c) => c.cat)));
+  }
+  expandAllCats(): void {
+    this.collapsedCats.set(new Set());
   }
 
   /** The active tab's foods grouped into the category accordion. Both tabs honor

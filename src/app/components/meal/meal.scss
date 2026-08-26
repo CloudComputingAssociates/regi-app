@@ -316,6 +316,20 @@
   bottom: 6px;
   right: 6px;
 }
+// AI meal-image camera — bottom-LEFT so it never collides with the flip key.
+.tile-genimg {
+  top: auto;
+  bottom: 6px;
+  left: 6px;
+  &:disabled { opacity: 0.75; cursor: default; }
+}
+// "Generating image…" placeholder on the front tile.
+.tile-generating {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #cfcfcf;
+  .mat-icon, mat-icon { width: 18px; height: 18px; font-size: 18px; }
+}
+.spin { animation: meal-spin 0.9s linear infinite; }
+@keyframes meal-spin { to { transform: rotate(360deg); } }
 
 // Drag cursor preview for a slot photo being relocated/cleared.
 .drag-tile-preview {
