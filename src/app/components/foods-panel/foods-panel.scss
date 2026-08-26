@@ -662,6 +662,8 @@
 // Fold controls + Total (+ close) grouped and floated to the right edge.
 .title-right { display: flex; align-items: center; gap: 6px; }
 .right-pane .title-right { margin-left: auto; }
+// Leave-panel key sits far-right of the (now full-width) My Foods header.
+.left-pane .title-right { margin-left: auto; }
 
 // Small parenthesized count that trails the heading like a subscript — e.g.
 // "Picks (32)". Deliberately small, non-bold, non-italic so it reads as a quiet

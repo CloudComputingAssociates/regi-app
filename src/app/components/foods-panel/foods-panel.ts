@@ -126,18 +126,31 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 My Foods
               </span>
             </span>
-            <!-- Single edit control: toggles the Focus Foods 50/50 split on/off. -->
+            <!-- Edit My Foods — opens the food-library editor (a full-panel
+                 overlay). Focus Foods stays parked behind it, never shown. -->
             <button
               type="button"
               class="bar-icon-btn"
-              [class.active]="focusEditOpen()"
-              (click)="toggleFocusEdit()"
-              [matTooltip]="focusEditOpen() ? 'Done — hide Focus Foods' : 'Edit Focus Foods (open the split)'"
+              (click)="openEditOverlay()"
+              matTooltip="Edit My Foods"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350"
-              aria-label="Toggle Focus Foods edit">
+              aria-label="Edit My Foods">
               <mat-icon aria-hidden="true">tune</mat-icon>
             </button>
+            <!-- Leave-panel key — lives here (not in the parked Focus Foods
+                 header) so it's ALWAYS available to close the panel. -->
+            <div class="title-right">
+              <button
+                type="button"
+                class="bar-icon-btn"
+                matTooltip="Close My Foods panel"
+                matTooltipPosition="below"
+                (click)="tabService.closePanel()"
+                aria-label="Close panel">
+                <mat-icon aria-hidden="true">logout</mat-icon>
+              </button>
+            </div>
           </div>
 
           <div class="pane-card carousel-card">
@@ -211,23 +224,21 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
           </div>
         </div>
 
-        <!-- FOCUS-FOODS: parked, restored via edit mode. The splitter + Focus
-             Foods right pane render only when focusEditOpen (the pencil toggle);
-             by default MyFoods fills the panel. Nothing deleted — services and
-             the Edit-MyFoods overlay stay intact. -->
-        @if (focusEditOpen()) {
-        <!-- VERTICAL SPLITTER — drag horizontally to resize the panes. -->
-        <div
-          #vSplitter
-          class="pane-splitter-v"
-          (mousedown)="onVSplitterMouseDown($event)"
-          (touchstart)="onVSplitterTouchStart($event)">
+        <!-- FOCUS-FOODS: parked for now. The right pane renders ONLY as the host
+             for the Edit-My-Foods overlay (focusEditOpen) — full width so the
+             overlay covers the whole panel; otherwise MyFoods fills the panel.
+             The vertical splitter is parked with it (no user-facing split now).
+             Nothing deleted — services + the overlay stay intact; restore the
+             split later by rendering the splitter + the Focus Foods baskets. -->
+        <!-- Parked splitter:
+        <div #vSplitter class="pane-splitter-v"
+          (mousedown)="onVSplitterMouseDown($event)" (touchstart)="onVSplitterTouchStart($event)">
           <div class="splitter-grip-v"></div>
         </div>
-
-        <!-- RIGHT PANE: blue section title at top ("Baskets" in This Week
-             mode, the collection name in Curate mode), DISPLAY toggle, then
-             (in Curate mode only) the TYPE dropdown, then the content. -->
+        -->
+        @if (focusEditOpen()) {
+        <!-- RIGHT PANE — hosts the Edit-My-Foods overlay (and the parked Focus
+             Foods baskets behind it). Full width while editing. -->
         <div class="right-pane" [style.flex]="rightPaneFlex()">
           <!-- RHS title:
                - Baskets mode (default): just "Baskets (n)" — no close.
@@ -1021,9 +1032,11 @@ export class FoodsPanelComponent {
     this.addTo.set('right');
   }
 
-  /** Close the Edit overlay back to the default Focus Foods view. */
+  /** Close the Edit overlay back to the default full-width MyFoods view (Focus
+   *  Foods stays parked — un-render its host pane). */
   closeEditOverlay(): void {
     this.addTo.set('left');
+    this.focusEditOpen.set(false);
   }
 
   /** Substring match against description + shortDescription, case-insensitive.
@@ -1333,11 +1346,10 @@ export class FoodsPanelComponent {
    *  Foods pane + splitter are parked. The MyFoods-header pencil toggles it back
    *  to the 50/50 split. See the FOCUS-FOODS marker in the template. */
   readonly focusEditOpen = signal(false);
-  /** LHS flex: full width when parked, else the draggable split fraction. */
-  readonly leftPaneFlex = computed(() =>
-    this.focusEditOpen() ? this.leftPaneWidthFraction() : 1,
-  );
-  toggleFocusEdit(): void { this.focusEditOpen.set(!this.focusEditOpen()); }
+  /** LHS flex: full width by default; collapses to 0 while the Edit-My-Foods
+   *  overlay is open so the right pane (its host) fills the panel and the overlay
+   *  covers everything. */
+  readonly leftPaneFlex = computed(() => (this.focusEditOpen() ? 0 : 1));
   private splitterStartX = 0;
   private splitterStartFraction = 0;
 
