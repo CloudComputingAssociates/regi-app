@@ -202,7 +202,9 @@
   .mode-toggle-container {
     position: absolute;
     bottom: 3px;
-    right: 3px;
+    // Right-align with the fiber slider's right edge: the row has 12px right
+    // padding, so the fiber bar ends 12px in from the padding box.
+    right: 12px;
     display: flex;
     align-items: center;
     gap: 6px; // space between the cals pill and the %/g toggle

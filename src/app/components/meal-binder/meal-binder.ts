@@ -41,31 +41,43 @@ import { Meal, Menu, MealSetSummary } from '../../models';
            AI controls live in the collapsible AI accordion below, toggled here. -->
       <div class="binder-header">
         <span class="binder-title">{{ notebookTitle() }}</span>
-        <!-- Collapse-all key pinned to the top-right corner. -->
+        <!-- Red X disc — closes (slides off) the Notebook, top-right corner. -->
         <button
           type="button"
-          class="collapse-all-btn"
-          matTooltip="Collapse all"
+          class="dialog-disc dialog-disc-cancel binder-close-disc"
+          matTooltip="Close Notebook"
           matTooltipPosition="below"
-          (click)="collapseAll()">
-          <mat-icon>unfold_less</mat-icon>
+          aria-label="Close Notebook"
+          (click)="rotation.hideBinder()">
+          <mat-icon>close</mat-icon>
         </button>
       </div>
 
       <!-- One scrollbar for the whole rail. -->
       <div class="rail-scroll">
 
-        <!-- Menus accordion (top-level; larger header). Starts COLLAPSED. -->
+        <!-- Menus accordion (top-level; larger header). Starts COLLAPSED. The
+             collapse-all key sits on this row, in line with the menus tab. -->
         <div class="rail-section">
-          <button type="button" class="section-head" (click)="binderMenusOpen.set(!binderMenusOpen())">
-            <span class="section-tab menus">
-              <span class="section-label">menus</span>
-              <span class="section-count">({{ rotation.binderMenus().length }})</span>
-            </span>
-            @if (rotation.binderMenus().length) {
-              <mat-icon class="section-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-            }
-          </button>
+          <div class="section-head-row">
+            <button type="button" class="section-head" (click)="binderMenusOpen.set(!binderMenusOpen())">
+              <span class="section-tab menus">
+                <span class="section-label">menus</span>
+                <span class="section-count">({{ rotation.binderMenus().length }})</span>
+              </span>
+              @if (rotation.binderMenus().length) {
+                <mat-icon class="section-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+              }
+            </button>
+            <button
+              type="button"
+              class="collapse-all-btn"
+              matTooltip="Collapse all"
+              matTooltipPosition="below"
+              (click)="collapseAll()">
+              <mat-icon>unfold_less</mat-icon>
+            </button>
+          </div>
           @if (binderMenusOpen()) {
             @if (rotation.binderMenus().length > 1) {
               <!-- Icon-only sort squares: alphabetical (A–Z toggle) + date (newest

@@ -101,15 +101,6 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                   (click)="onWipeMenus()">
                   <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
                 </button>
-                <button
-                  type="button"
-                  class="macros-toggle-btn"
-                  [class.depressed]="tabService.macrosVisible()"
-                  [matTooltip]="tabService.macrosVisible() ? 'Hide macros' : 'Show macros'"
-                  matTooltipPosition="above"
-                  (click)="tabService.toggleMacros()">
-                  macros
-                </button>
               </div>
               <!-- Exit — far right of the toolbar. -->
               <button

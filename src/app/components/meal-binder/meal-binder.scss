@@ -77,32 +77,46 @@
     color: #1a1a1a;
   }
 
-  // Collapse-all key — pinned to the top-RIGHT corner.
-  .collapse-all-btn {
+  // Red X disc — pinned to the top-RIGHT corner of the Notebook.
+  .binder-close-disc {
     position: absolute;
-    top: -8px; // way up in the top-right corner (above the "binder" baseline)
+    top: -4px;
     right: 4px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 26px;
-    padding: 0;
-    color: #3a3f45;
-    background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
-    border: 1px solid #b7bcc4;
-    border-radius: 8px;
-    box-shadow:
-      0 2px 5px rgba(0, 0, 0, 0.32),
-      0 1px 1px rgba(0, 0, 0, 0.18),
-      inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    cursor: pointer;
-    transition: background 0.12s ease, box-shadow 0.1s ease, transform 0.05s ease;
-
-    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
-    &:hover { background: linear-gradient(180deg, #ffffff 0%, #dde1e7 100%); }
-    &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2); }
   }
+}
+
+// Menus tab row: the tab grows; the collapse-all key sits at the right, in line
+// with the menus tab.
+.section-head-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  .section-head { flex: 1 1 auto; }
+}
+
+// Collapse-all key — raised white key, now on the menus-tab row.
+.collapse-all-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  color: #3a3f45;
+  background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
+  border: 1px solid #b7bcc4;
+  border-radius: 8px;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.32),
+    0 1px 1px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  transition: background 0.12s ease, box-shadow 0.1s ease, transform 0.05s ease;
+
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+  &:hover { background: linear-gradient(180deg, #ffffff 0%, #dde1e7 100%); }
+  &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2); }
 }
 
 // Meal search — now lives on the meals-tab line; GROWS to fill between the tab and

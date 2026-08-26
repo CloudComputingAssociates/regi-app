@@ -72,6 +72,7 @@ export class RotationService {
   readonly binderCollapsed = signal(true); // starts closed — open it when needed
   toggleBinderCollapsed(): void { this.binderCollapsed.update((v) => !v); }
   showBinder(): void { this.binderCollapsed.set(false); }
+  hideBinder(): void { this.binderCollapsed.set(true); }
 
   /** The user's Binder meals (pinned) — server truth via GET /meal?scope=binder. */
   readonly binderMeals = signal<Meal[]>([]);

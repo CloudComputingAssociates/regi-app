@@ -47,7 +47,7 @@ import { map } from 'rxjs/operators';
 
         <!-- Macros bar now lives IN the banner (menus tab only), pushed toward the
              right so it sits in the space before the tether / user name. -->
-        @if (isAuthenticated() && activeTabId() === 'menus' && tabService.macrosVisible()) {
+        @if (isAuthenticated() && activeTabId() === 'menus') {
           <div class="app-bar-macros"><app-macros /></div>
         }
 

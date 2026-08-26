@@ -184,25 +184,14 @@ interface Macro {
                     (click)="removeMeal.emit({ slotOrder: slot().slotOrder, mealId: fm.mealId })">
                     <mat-icon>clear_all</mat-icon>
                   </button>
-                  <!-- Show/hide the macro-nutrients bar (the cals + P/F/F/C chips). -->
-                  <button
-                    type="button"
-                    class="back-clear-btn"
-                    [class.active]="macrosVisible()"
-                    [matTooltip]="macrosVisible() ? 'Hide macro-nutrients bar' : 'Show macro-nutrients bar'"
-                    (click)="macrosVisible.set(!macrosVisible())">
-                    <mat-icon>bar_chart</mat-icon>
-                  </button>
                 </div>
 
                 <div class="macro-row">
-                  @if (macrosVisible()) {
-                    <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
-                    <span class="chip protein">P {{ round(mac(fm.macros).proteinG) }}</span>
-                    <span class="chip fiber">F {{ round(mac(fm.macros).fiberG) }}</span>
-                    <span class="chip fat">F {{ round(mac(fm.macros).fatG) }}</span>
-                    <span class="chip carb">C {{ round(mac(fm.macros).carbG) }}</span>
-                  }
+                  <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
+                  <span class="chip protein">P {{ round(mac(fm.macros).proteinG) }}</span>
+                  <span class="chip fiber">F {{ round(mac(fm.macros).fiberG) }}</span>
+                  <span class="chip fat">F {{ round(mac(fm.macros).fatG) }}</span>
+                  <span class="chip carb">C {{ round(mac(fm.macros).carbG) }}</span>
                   <button
                     type="button"
                     class="add-food-btn add-affordance"
@@ -278,8 +267,6 @@ export class MealComponent {
   readonly resolvingItemId = input<number | null>(null);
   readonly dropHighlight = input<boolean>(false);
 
-  /** Show/hide the macro-nutrients bar (cals + P/F/F/C chips) on the meal cards. */
-  readonly macrosVisible = signal(true);
 
   /** A binder meal was dropped on this slot — append it (parent calls place). */
   readonly placeMeal = output<{ slotOrder: number; mealId: number }>();

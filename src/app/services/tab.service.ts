@@ -27,13 +27,6 @@ export class TabService {
   /** True while restoring tab after cancel — suppresses guard re-entry */
   private _restoringTab = false;
 
-  /** Whether the macros bar (now hosted in the app-bar) is shown. Toggled from the
-   *  Menus & Meals toolbar; defaults ON when the panel opens. */
-  readonly macrosVisible = signal(true);
-  toggleMacros(): void {
-    this.macrosVisible.update((v) => !v);
-  }
-
   /** Register a guard that can block leaving the current tab */
   setBeforeLeaveGuard(guard: (() => boolean) | null): void {
     this._beforeLeaveGuard = guard;
