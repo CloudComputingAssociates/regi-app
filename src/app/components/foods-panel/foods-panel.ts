@@ -134,7 +134,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               [class.pressed]="focusEditOpen()"
               [attr.aria-pressed]="focusEditOpen()"
               (click)="toggleEdit()"
-              [matTooltip]="focusEditOpen() ? 'Done editing My Foods' : 'Edit My Foods'"
+              [matTooltip]="focusEditOpen() ? 'Close Curate MyFoods' : 'Curate MyFoods'"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350"
               aria-label="Edit My Foods">
@@ -409,7 +409,18 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             <div class="edit-overlay">
               <div class="edit-overlay-panel">
                 <div class="edit-overlay-header">
-                  <span class="edit-overlay-title">Edit</span>
+                  <span class="edit-overlay-title">Curate MyFoods</span>
+                  <!-- Add a food (via the mobile app) — up on the title line, next
+                       to EDIT (where the red X lives). -->
+                  <button
+                    type="button"
+                    class="bar-icon-btn edit-add-food"
+                    matTooltip="Add a food (via the mobile app)"
+                    matTooltipPosition="below"
+                    (click)="onAddFood()"
+                    aria-label="Add food">
+                    <mat-icon aria-hidden="true">add</mat-icon>
+                  </button>
                   <div class="dialog-discs">
                     <button
                       type="button"
@@ -438,16 +449,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     <option disabled>──────────────</option>
                     <option value="restricted">Restricted</option>
                   </select>
-                  <!-- Add a food (via the mobile app) — next to the LIST dropdown. -->
-                  <button
-                    type="button"
-                    class="bar-icon-btn"
-                    matTooltip="Add a food (via the mobile app)"
-                    matTooltipPosition="below"
-                    (click)="onAddFood()"
-                    aria-label="Add food">
-                    <mat-icon aria-hidden="true">add</mat-icon>
-                  </button>
                   <input
                     type="text"
                     class="picker-search-input regi-field"

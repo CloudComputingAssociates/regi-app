@@ -1617,12 +1617,11 @@ export class RotationService {
     }
   }
 
-  /** Baseline planned days for a NEW menu = the user's "Menu Repeats" setting
-   *  (regiMenu.repeatMeals; how many days/times a menu repeats), clamped to the
-   *  rotation span and at least 1. The user can then raise/lower it per menu. */
+  /** Baseline planned days for a NEW menu. The "Menu Repeats" setting is retired —
+   *  new menus baseline to 1 (no auto-repeat); the user can still raise/lower it
+   *  per menu. (repeatMeals is no longer read from settings.) */
   private repeatBaseline(spanDays: number): number {
-    const repeats = this.settingsService.allSettings()?.regiMenu?.repeatMeals ?? 1;
-    return Math.max(1, Math.min(spanDays, repeats));
+    return Math.max(1, Math.min(spanDays, 1));
   }
 
   /** The "Menu-Days" preference (regiMenu.menuDays) — how many Menus/days a new

@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
 import { NotificationService } from '../../services/notification.service';
-import { PreferencesService, MealsPerDay, DailyGoals, FoodListSource } from '../../services/preferences.service';
+import { PreferencesService, MealsPerDay, DailyGoals } from '../../services/preferences.service';
 import { SettingsService } from '../../services/settings.service';
 import { RotationService } from '../../services/rotation.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -404,19 +404,6 @@ import { MatIconModule } from '@angular/material/icon';
                         (click)="menuDaysTooltip.toggle()">&#9432;</span>
                 </div>
                 <div class="setting-row">
-                  <label class="setting-label">Repeats</label>
-                  <input type="number" min="1" class="setting-number"
-                    [ngModel]="userSettingsService.repeatMeals()"
-                    (input)="onRepeatMealsChange($event)" />
-                  <span class="info-icon"
-                        #repeatTooltip="matTooltip"
-                        matTooltip="Repeating a menu saves prep time & grocery $$ money"
-                        matTooltipPosition="above"
-                        [matTooltipShowDelay]="0"
-                        (click)="repeatTooltip.toggle()">&#9432;</span>
-                  <span class="setting-hint">per week</span>
-                </div>
-                <div class="setting-row">
                   <label class="setting-label">Slots for</label>
                   <select
                     class="setting-select"
@@ -435,23 +422,6 @@ import { MatIconModule } from '@angular/material/icon';
               </div>
 
               <div class="regimenu-column">
-                <div class="setting-row">
-                  <label class="setting-label">Foods from</label>
-                  <select
-                    class="setting-select"
-                    [ngModel]="userSettingsService.foodListSource()"
-                    (ngModelChange)="onFoodListSourceChange($event)">
-                    <option value="myfoods">MyFoods</option>
-                    <option value="regi_plus_myfoods">MyFoods + RegiApproved</option>
-                    <option value="all_foods">All Foods</option>
-                  </select>
-                  <span class="info-icon"
-                        #foodsTooltip="matTooltip"
-                        matTooltip="Which foods meal planning draws from: your own MyFoods, MyFoods plus the RegiApproved list, or all foods."
-                        matTooltipPosition="above"
-                        [matTooltipShowDelay]="0"
-                        (click)="foodsTooltip.toggle()">&#9432;</span>
-                </div>
                 <div class="setting-row">
                   <label class="setting-label">People</label>
                   <input type="number" min="1" class="setting-number"
@@ -1438,11 +1408,6 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     this.settingsChanged.set(true);
   }
 
-  onRepeatMealsChange(event: Event): void {
-    const raw = +(event.target as HTMLInputElement).value;
-    this.userSettingsService.setRepeatMeals(raw);
-    this.settingsChanged.set(true);
-  }
 
   onPersonsChange(event: Event): void {
     const raw = +(event.target as HTMLInputElement).value;
@@ -1460,10 +1425,6 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     void this.rotationService.setRotationSpanDays(this.userSettingsService.menuDays());
   }
 
-  onFoodListSourceChange(value: FoodListSource): void {
-    this.userSettingsService.setFoodListSource(value);
-    this.settingsChanged.set(true);
-  }
 
   onGlp1EnabledChange(value: boolean): void {
     this.userSettingsService.setGlp1Enabled(value);

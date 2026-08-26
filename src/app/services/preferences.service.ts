@@ -108,7 +108,11 @@ export class PreferencesService {
   readonly mealsPerDay = computed(() => this.preferencesSignal().mealsPerDay);
   readonly dailyGoals = computed(() => this.preferencesSignal().dailyGoals);
   readonly repeatMeals = computed(() => this.preferencesSignal().repeatMeals);
-  readonly foodListSource = computed(() => this.preferencesSignal().foodListSource);
+  // "Foods from" setting retired — planning always draws from MyFoods only. The
+  // persisted defaultFoodList/foodListSource token is ignored app-side (and being
+  // disabled server-side). Consumers that branched on 'regi_plus_myfoods' now stay
+  // MyFoods-only.
+  readonly foodListSource = computed<FoodListSource>(() => 'myfoods');
   readonly personalInfo = computed(() => this.preferencesSignal().personalInfo);
   readonly weekStartDay = computed(() => this.preferencesSignal().weekStartDay);
   readonly persons = computed(() => this.preferencesSignal().persons);

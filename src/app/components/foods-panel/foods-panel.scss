@@ -1601,22 +1601,28 @@
   overflow: hidden;
 }
 
+// Curate MyFoods banner — matches the "My Foods" .section-title (same size + color).
 .edit-overlay-header {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 9px 12px;
+  gap: 10px; // space between the Curate title and the + add-food button
+  margin: 6px 8px;
+  padding: 8px 12px;
   padding-right: 34px; // room for the red cancel disc in the corner
-  background: linear-gradient(180deg, #353535 0%, #2a2a2a 100%);
-  border-bottom: 1px solid #1a1a1a;
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
 }
+// Add-food (+) sits on the title line next to the banner label.
+.edit-add-food { flex: 0 0 auto; }
 
 .edit-overlay-title {
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
+  letter-spacing: -0.1px;
   color: #4da6ff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .nf-popup-overlay {
