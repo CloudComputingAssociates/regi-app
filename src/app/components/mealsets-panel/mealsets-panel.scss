@@ -49,7 +49,9 @@
   }
 }
 
-.msp-close {
+// Header buttons (collapse-all, close) — grey with light glyph.
+.msp-header-tools { display: inline-flex; align-items: center; gap: 8px; }
+.msp-header-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -63,7 +65,7 @@
   border-radius: 5px;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+  .mat-icon, mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
   &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #fff; }
 }
 
@@ -109,8 +111,12 @@
   align-items: center;
   gap: 10px;
 }
-// Collapse chevron hugs the right edge; title + any action stay grouped left.
+// The collapse chevron right-aligns by default (Author profile's lone chevron).
 .msp-collapse { margin-left: auto; }
+// Where a "+ New MealSet" action precedes it, the button starts the right cluster
+// (grey/white .msp-btn) and the chevron simply follows it.
+.msp-newset { margin-left: auto; }
+.msp-newset ~ .msp-collapse { margin-left: 0; }
 
 .msp-card-title {
   margin: 0;
@@ -347,6 +353,55 @@
 .msp-tile-name { font-size: 14px; font-weight: 600; color: #f1f1f1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .msp-tile-genres { display: flex; flex-wrap: wrap; gap: 4px; }
 .msp-tile-flags { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.msp-tile-by { font-size: 11px; color: #9aa0a6; }
+.msp-tile-author {
+  color: #8ec5ff; cursor: pointer; text-decoration: none; font-weight: 600;
+  &:hover { color: #cfe4ff; text-decoration: underline; }
+}
+
+// ---- Author bio bloom ----
+.msp-bio-backdrop {
+  position: fixed; inset: 0; z-index: 1400;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.msp-bio {
+  position: relative;
+  width: 100%; max-width: 380px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 22px 20px 20px;
+  background: #2a2a2a; border: 1px solid #4a4a4a; border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  color: #f0f0f0; text-align: center;
+}
+.msp-bio-close {
+  position: absolute; top: 8px; right: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; padding: 0; color: #c9c9c9; background: none; border: none; cursor: pointer;
+  .mat-icon, mat-icon { width: 18px; height: 18px; font-size: 18px; }
+  &:hover { color: #fff; }
+}
+.msp-bio-pic {
+  width: 96px; height: 96px; border-radius: 50%; object-fit: cover;
+  border: 2px solid #4da6ff; background: #333;
+  &.placeholder {
+    display: inline-flex; align-items: center; justify-content: center;
+    .mat-icon, mat-icon { width: 44px; height: 44px; font-size: 44px; color: #6a6f75; }
+  }
+}
+.msp-bio-name { margin: 2px 0 0; font-size: 18px; font-weight: 700; color: #4da6ff; }
+.msp-bio-text { margin: 0; font-size: 13px; line-height: 1.5; color: #dcdcdc; }
+.msp-bio-cred { margin: 0; font-size: 12px; font-style: italic; color: #9aa0a6; }
+.msp-bio-link {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 4px;
+  padding: 6px 12px; font-size: 13px; font-weight: 600; text-decoration: none;
+  color: #cfe4ff; background: rgba(77, 166, 255, 0.16);
+  border: 1px solid rgba(77, 166, 255, 0.4); border-radius: 8px;
+  img { width: 24px; height: 24px; border-radius: 4px; object-fit: cover; }
+  span { display: inline-flex; align-items: center; gap: 3px; }
+  .mat-icon, mat-icon { width: 15px; height: 15px; font-size: 15px; }
+  &:hover { background: rgba(77, 166, 255, 0.26); color: #fff; }
+}
 
 // Status / price pills. Live = green, Inactive = muted.
 .msp-flag {

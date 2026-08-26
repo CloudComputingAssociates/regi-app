@@ -42,10 +42,17 @@ import { MealSet, MealSetContractView, RecipeSummary } from '../../models';
     <div class="msp">
       <header class="msp-header">
         <span class="msp-title"><mat-icon class="msp-title-icon">restaurant_menu</mat-icon>MealSet Studio</span>
-        <button type="button" class="msp-close" matTooltip="Close MealSets" matTooltipPosition="below"
-          (click)="tabService.closePanel()">
-          <mat-icon>logout</mat-icon>
-        </button>
+        <div class="msp-header-tools">
+          <button type="button" class="msp-header-btn"
+            [matTooltip]="allCollapsed() ? 'Expand all sections' : 'Collapse all sections'"
+            matTooltipPosition="below" (click)="collapseAll()">
+            <mat-icon>{{ allCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
+          </button>
+          <button type="button" class="msp-header-btn" matTooltip="Close MealSets" matTooltipPosition="below"
+            (click)="tabService.closePanel()">
+            <mat-icon>logout</mat-icon>
+          </button>
+        </div>
       </header>
 
       <div class="msp-body">
@@ -135,7 +142,7 @@ import { MealSet, MealSetContractView, RecipeSummary } from '../../models';
                 matTooltip="MealSets require you to have created meals already. If you haven't, go to Menus & Meals and import from recipes or composite your meals first."
                 matTooltipPosition="right">&#9432;</span>
             </h3>
-            <button type="button" class="msp-btn primary" [disabled]="!profileComplete()"
+            <button type="button" class="msp-btn msp-newset" [disabled]="!profileComplete()"
               [matTooltip]="profileComplete() ? '' : 'Save a complete Author profile (Bio + photo) to create a MealSet'"
               matTooltipPosition="above" (click)="tabService.openMealsetEditor(null)">+ New MealSet</button>
             <button type="button" class="msp-collapse"
@@ -149,7 +156,9 @@ import { MealSet, MealSetContractView, RecipeSummary } from '../../models';
           } @else if (authoredSets().length) {
             <div class="msp-tiles">
               @for (s of authoredSets(); track s.mealSetId) {
-                <button type="button" class="msp-tile" (click)="tabService.openMealsetEditor(s.mealSetId)">
+                <div class="msp-tile" role="button" tabindex="0"
+                  (click)="tabService.openMealsetEditor(s.mealSetId)"
+                  (keydown.enter)="tabService.openMealsetEditor(s.mealSetId)">
                   <span class="msp-tile-cover">
                     @if (s.mealSetPic1) {
                       <img [src]="s.mealSetPic1" [alt]="s.name" />
@@ -158,6 +167,9 @@ import { MealSet, MealSetContractView, RecipeSummary } from '../../models';
                     }
                   </span>
                   <span class="msp-tile-name">{{ s.name }}</span>
+                  <span class="msp-tile-by">by
+                    <a class="msp-tile-author" (click)="$event.stopPropagation(); openBio()">{{ authorName() }}</a>
+                  </span>
                   @if (s.genres.length) {
                     <span class="msp-tile-genres">
                       @for (g of s.genres; track g) { <span class="msp-set-genre">{{ g }}</span> }
@@ -168,7 +180,7 @@ import { MealSet, MealSetContractView, RecipeSummary } from '../../models';
                       matTooltip="Live status is admin-set (catalog visibility)" matTooltipPosition="above">{{ s.active ? 'Live' : 'Inactive' }}</span>
                     <span class="msp-flag price">{{ s.price > 0 ? ('$' + s.price) : 'Free' }}</span>
                   </span>
-                </button>
+                </div>
               }
             </div>
           } @else {
@@ -236,6 +248,32 @@ import { MealSet, MealSetContractView, RecipeSummary } from '../../models';
           }
         </section>
       </div>
+
+      <!-- Author bio bloom — opened from a tile's "by {author}" link. Shows the
+           author card as it appears in the public MealSet gallery. -->
+      @if (bioBloomOpen()) {
+        <div class="msp-bio-backdrop" (click)="bioBloomOpen.set(false)">
+          <div class="msp-bio" (click)="$event.stopPropagation()">
+            <button type="button" class="msp-bio-close" matTooltip="Close" (click)="bioBloomOpen.set(false)">
+              <mat-icon>close</mat-icon>
+            </button>
+            @if (profilePic()) {
+              <img class="msp-bio-pic" [src]="profilePic()" [alt]="authorName()" />
+            } @else {
+              <div class="msp-bio-pic placeholder"><mat-icon>person</mat-icon></div>
+            }
+            <h3 class="msp-bio-name">{{ authorName() }}</h3>
+            @if (profileBio()) { <p class="msp-bio-text">{{ profileBio() }}</p> }
+            @if (profileCredentials()) { <p class="msp-bio-cred">{{ profileCredentials() }}</p> }
+            @if (backLink()) {
+              <a class="msp-bio-link" [href]="backLink()" target="_blank" rel="noopener">
+                @if (backLinkPhoto()) { <img [src]="backLinkPhoto()" alt="" /> }
+                <span>Visit <mat-icon>open_in_new</mat-icon></span>
+              </a>
+            }
+          </div>
+        </div>
+      }
     </div>
   `,
   styleUrls: ['./mealsets-panel.scss'],
@@ -253,6 +291,26 @@ export class MealsetsPanelComponent implements OnInit {
   readonly authoredSets = signal<MealSet[]>([]);
   /** Collapse the My MealSets tile row (like the Author-profile card). */
   readonly setsCollapsed = signal(false);
+  /** Author bio bloom (opened from a tile's "by {author}" link). */
+  readonly bioBloomOpen = signal(false);
+
+  /** The author's display name — the profile override, else the account name. */
+  readonly authorName = computed(() => this.profileAuthorName() || this.accountName() || 'Author');
+
+  /** True when every collapsible section is collapsed — drives the header toggle. */
+  readonly allCollapsed = computed(
+    () => this.setsCollapsed() && (this.profileCollapsed() || !this.profileSaved()),
+  );
+
+  openBio(): void { this.bioBloomOpen.set(true); }
+
+  /** Header "collapse all" toggle — collapses (or expands) both cards. The profile
+   *  only collapses when it's saved (so its expand chevron is available). */
+  collapseAll(): void {
+    const target = !this.allCollapsed();
+    this.setsCollapsed.set(target);
+    if (this.profileSaved()) this.profileCollapsed.set(target);
+  }
 
   // ---- RecipeBox (authored recipes list) ------------------------------------
   readonly recipes = signal<RecipeSummary[]>([]);
