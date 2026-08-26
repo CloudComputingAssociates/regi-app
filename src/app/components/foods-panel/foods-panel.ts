@@ -113,7 +113,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
              3. Rounded carousel "card" that holds the search row + the
                 carousel cards as a single visual unit, mirroring the basket-
                 card on the right pane. -->
-        <div class="left-pane" [style.flex]="leftPaneWidthFraction()">
+        <div class="left-pane" [style.flex]="leftPaneFlex()">
           <!-- Left-pane header mirrors "Focus Foods" across the way: the
                "My Foods" heading + the Edit… button share the section-title bar
                so both pane headers sit on one baseline. -->
@@ -126,14 +126,28 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 My Foods
               </span>
             </span>
+            <!-- Manage the food library (favorite/restrict/add) — own icon so the
+                 pencil is free to toggle the Focus Foods split. -->
             <button
               type="button"
               class="bar-icon-btn"
               (click)="openEditOverlay()"
-              matTooltip="Edit MyFoods — favorite, restrict, or edit foods"
+              matTooltip="Manage My Foods library — favorite, restrict, add"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350"
-              aria-label="Edit MyFoods">
+              aria-label="Manage My Foods library">
+              <mat-icon aria-hidden="true">tune</mat-icon>
+            </button>
+            <!-- Pencil = Focus Foods edit mode: toggles the 50/50 split on/off. -->
+            <button
+              type="button"
+              class="bar-icon-btn"
+              [class.active]="focusEditOpen()"
+              (click)="toggleFocusEdit()"
+              [matTooltip]="focusEditOpen() ? 'Done — hide Focus Foods' : 'Edit Focus Foods (open the split)'"
+              matTooltipPosition="below"
+              [matTooltipShowDelay]="350"
+              aria-label="Toggle Focus Foods edit">
               <mat-icon aria-hidden="true">edit</mat-icon>
             </button>
           </div>
@@ -209,6 +223,11 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
           </div>
         </div>
 
+        <!-- FOCUS-FOODS: parked, restored via edit mode. The splitter + Focus
+             Foods right pane render only when focusEditOpen (the pencil toggle);
+             by default MyFoods fills the panel. Nothing deleted — services and
+             the Edit-MyFoods overlay stay intact. -->
+        @if (focusEditOpen()) {
         <!-- VERTICAL SPLITTER — drag horizontally to resize the panes. -->
         <div
           #vSplitter
@@ -602,6 +621,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             </div>
           }
         </div>
+        }
       </div>
 
       <!-- Nutrition Facts popup. Opens in view mode by default (read-only).
@@ -1004,9 +1024,12 @@ export class FoodsPanelComponent {
   /** Edit MyFoods toggle. Clears the picker search bar every time we *enter*
    *  Edit mode so the user isn't squinting at a list filtered by a query
    *  they left in there from the last session.  */
-  /** Open the Edit MyFoods overlay (from the LHS "Edit…" button). */
+  /** Open the Edit MyFoods library overlay (its own header icon). The overlay is
+   *  a position:fixed popover hosted inside the Focus Foods right pane, so ensure
+   *  that pane is rendered (focusEditOpen) before showing it. */
   openEditOverlay(): void {
     this.pickerSearchQuery.set('');
+    this.focusEditOpen.set(true);
     this.addTo.set('right');
   }
 
@@ -1317,6 +1340,16 @@ export class FoodsPanelComponent {
   // (0.1 … 0.9). Defaults to 0.5 so the panes start equally sized.
   leftPaneWidthFraction = signal(0.5);
   rightPaneFlex = computed(() => 1 - this.leftPaneWidthFraction());
+
+  /** Focus Foods edit mode. Default OFF: MyFoods fills the panel and the Focus
+   *  Foods pane + splitter are parked. The MyFoods-header pencil toggles it back
+   *  to the 50/50 split. See the FOCUS-FOODS marker in the template. */
+  readonly focusEditOpen = signal(false);
+  /** LHS flex: full width when parked, else the draggable split fraction. */
+  readonly leftPaneFlex = computed(() =>
+    this.focusEditOpen() ? this.leftPaneWidthFraction() : 1,
+  );
+  toggleFocusEdit(): void { this.focusEditOpen.set(!this.focusEditOpen()); }
   private splitterStartX = 0;
   private splitterStartFraction = 0;
 
