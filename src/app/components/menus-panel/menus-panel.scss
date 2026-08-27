@@ -286,10 +286,31 @@
 // The strip stays pinned (it has its own horizontal scroll); only the body
 // scrolls vertically. min-height:0 lets the flex child shrink below content
 // height so overflow-y actually kicks in.
+// ── Board zoning (A+B) ──────────────────────────────────────────────────────
+// Split the board column into two legible areas so MENUS and MEALS stop reading
+// as one continuous dark field:
+//   A · two-tone — the MENUS strip is a slightly LIGHTER raised "shelf"; the
+//       MEALS region below is a slightly DARKER recessed "workspace".
+//   B · a single embossed SEAM at the join (dark ledge line + highlight under it,
+//       plus a soft inner top-shadow so MEALS reads as dropped below the shelf).
+app-menu-card-row {
+  position: relative;
+  z-index: 1; // the shelf sits above the recessed region so the seam reads cleanly
+  background: #2f2f2f; // MENUS shelf — a hair lighter than the #2a2a2a board
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035); // faint top-light on the shelf
+  border-bottom: 1px solid #161616; // the seam's dark ledge line
+}
+
 .panel-body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  background: #242424; // MEALS workspace — recessed, darker than the shelf
+  // Ledge highlight just under the seam line + a soft inner top-shadow so the
+  // region reads as dropped below the shelf.
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 8px 12px -10px rgba(0, 0, 0, 0.55);
 }
 
 // Loading / empty / error states — centered in the panel, dark theme.
