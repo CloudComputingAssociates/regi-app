@@ -161,7 +161,7 @@ export interface CreateMealSetRequest {
   name: string;
   description?: string | null;
   /**
-   * Marketing genres. Omitted = uncategorized; present REPLACES the full list ([] clears).
+   * Omitted = uncategorized; present REPLACES the full list ([] clears).
    */
   genres?: string[];
   mealSetPic1?: string | null;
@@ -181,7 +181,7 @@ export interface UpdateMealSetRequest {
   name?: string | null;
   description?: string | null;
   /**
-   * Omitted = untouched; present REPLACES the full list ([] clears). Server trims, dedupes case-insensitively, drops empties.
+   * Omitted = untouched; present REPLACES the full list ([] clears).
    */
   genres?: string[];
   mealSetPic1?: string | null;
@@ -221,8 +221,10 @@ export interface UpdateMealSetOwnerProfileRequest {
   [k: string]: unknown;
 }
 /**
- * 200 body of POST /api/mealset/{id}/wipe-from-binder — how many of the caller's
- * binder meals materialized from that set were deleted.
+ * 200 body of POST /api/mealset/{id}/wipe-from-binder — how many of the caller's binder meals materialized from that set were deleted.
+ *
+ * This interface was referenced by `MealSetSubsystemSchema`'s JSON-Schema
+ * via the `definition` "WipeFromBinderResponse".
  */
 export interface WipeFromBinderResponse {
   deletedCount: number;

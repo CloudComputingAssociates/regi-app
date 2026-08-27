@@ -199,8 +199,8 @@
         },
         "category": {
           "type": "string",
-          "enum": ["proteins", "produce", "bulk", "dairy", "aisles", "non_food"],
-          "description": "Shopping category"
+          "enum": ["proteins", "produce", "bulk", "dairy", "aisles", "non_food", "fruits"],
+          "description": "Shopping category. Display buckets map: produce=Vegetables, fruits=Fruits, proteins=Proteins, dairy=Dairy, bulk=Carbs, aisles+non_food=Processed/Aisles."
         },
         "item": {
           "type": "string",

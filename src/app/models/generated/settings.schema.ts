@@ -177,9 +177,9 @@ export interface ShoppingStaple {
    */
   id: string;
   /**
-   * Shopping category
+   * Shopping category. Display buckets map: produce=Vegetables, fruits=Fruits, proteins=Proteins, dairy=Dairy, bulk=Carbs, aisles+non_food=Processed/Aisles.
    */
-  category: "proteins" | "produce" | "bulk" | "dairy" | "aisles" | "non_food";
+  category: "proteins" | "produce" | "bulk" | "dairy" | "aisles" | "non_food" | "fruits";
   /**
    * Item name
    */

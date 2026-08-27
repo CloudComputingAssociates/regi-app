@@ -582,4 +582,22 @@ sup.sm {
   body.printing-shopping-list .no-print {
     display: none !important;
   }
+  // Reveal the checkbox square in front of the quantity for ticking off items.
+  body.printing-shopping-list .pdf-check {
+    display: inline-block !important;
+    visibility: visible !important;
+    width: 12px;
+    height: 12px;
+    flex: 0 0 auto;
+    border: 1.5px solid #000 !important;
+    border-radius: 2px;
+    margin-right: 8px;
+  }
+  // Item text left, quantity/unit inputs render as plain ink (no field chrome).
+  body.printing-shopping-list .staple-qty,
+  body.printing-shopping-list .staple-unit,
+  body.printing-shopping-list .staple-item {
+    border: none !important;
+    text-align: left;
+  }
 }

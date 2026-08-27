@@ -235,7 +235,7 @@ export interface Meal {
    */
   mealSetName?: string | null;
   /**
-   * MealSet this meal was materialized from at purchase; null for non-set meals. Presence gates "Restore original". Read-only / server-owned. NOTE: distinct from mealSetId (catalog set-filtered provenance).
+   * MealSet this meal was materialized from at purchase; null for non-set meals. Presence gates 'Restore original'. Read-only / server-owned. NOTE: distinct from mealSetId (catalog set-filtered provenance).
    */
   sourceMealSetId?: number | null;
   /**

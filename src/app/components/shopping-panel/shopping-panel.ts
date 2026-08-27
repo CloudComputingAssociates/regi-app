@@ -15,7 +15,7 @@ import { NotificationService } from '../../services/notification.service';
 import { RotationService } from '../../services/rotation.service';
 import { ShoppingStaple } from '../../models/settings.models';
 
-type StapleCategory = 'proteins' | 'produce' | 'bulk' | 'dairy' | 'aisles' | 'non_food';
+type StapleCategory = 'proteins' | 'produce' | 'bulk' | 'dairy' | 'aisles' | 'non_food' | 'fruits';
 
 interface CategorySection {
   id: StapleCategory;
@@ -28,44 +28,44 @@ interface CategorySection {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Top row: source note (left) + Scale/persons stepper (right). The Scale
-           shares the same persisted persons value as the Menus toolbar, so
-           scaling here (and future quantity re-adjustment) stays in sync. -->
-      <div class="shopping-top">
-        <p class="shopping-note">Shopping List from your active rotation of Menus &amp; Meals</p>
-        <div class="top-right">
-          @if (isSaving()) {
-            <span class="auto-save-indicator">saving...</span>
-          }
-          <div
-            class="scale-control"
-            matTooltip="People to scale the plan (and shopping quantities) for"
-            matTooltipPosition="below">
-            <span class="scale-label">Scale</span>
-            <button
-              type="button"
-              class="scale-step"
-              [disabled]="rotation.persons() <= 1"
-              (click)="rotation.setPersons(rotation.persons() - 1)">
-              −
-            </button>
-            <span class="scale-count">{{ rotation.persons() }}</span>
-            <button
-              type="button"
-              class="scale-step"
-              [disabled]="rotation.persons() >= 12"
-              (click)="rotation.setPersons(rotation.persons() + 1)">
-              +
-            </button>
-          </div>
+      <!-- Top row: quantity basis — either the recipe's own servings, or an
+           explicit scale factor (defaults to 1, overridable). Either/or radio. -->
+      <div class="shopping-top no-print">
+        <div class="scale-radio">
+          <label class="scale-opt">
+            <input
+              type="radio"
+              name="scaleMode"
+              [checked]="scaleMode() === 'recipe'"
+              (change)="scaleMode.set('recipe')" />
+            <span>Recipe Servings</span>
+          </label>
+          <label class="scale-opt">
+            <input
+              type="radio"
+              name="scaleMode"
+              [checked]="scaleMode() === 'custom'"
+              (change)="scaleMode.set('custom')" />
+            <span>Scale:</span>
+            <input
+              type="number"
+              class="scale-input"
+              min="1"
+              [value]="scaleValue()"
+              (focus)="scaleMode.set('custom')"
+              (input)="onScaleInput($event)" />
+          </label>
         </div>
+        @if (isSaving()) {
+          <span class="auto-save-indicator">saving...</span>
+        }
       </div>
 
       <!-- Staples (live, persisted to user settings) -->
       <div class="staples-pane">
         <div class="staples-header">
           <span class="staples-title">Staples &amp; One-Time purchases</span>
-          <span class="staples-title buy-column-label">Need</span>
+          <span class="staples-title buy-column-label no-print">Need</span>
         </div>
 
         <div class="staples-content">
@@ -79,7 +79,7 @@ interface CategorySection {
               @if (isCategoryOpen(cat.id)) {
                 <div class="accordion-body">
                   <!-- Add row -->
-                  <div class="add-row">
+                  <div class="add-row no-print">
                     <input
                       type="text"
                       class="add-input"
@@ -98,14 +98,13 @@ interface CategorySection {
                     </button>
                   </div>
 
-                  <!-- Staple rows -->
+                  <!-- Staple rows — alphabetical. Form shows quantity + unit +
+                       item + Need slider (no checkbox). The empty checkbox square
+                       is print-only (see the @media print block) and sits in
+                       front of the quantity for ticking off while shopping. -->
                   @for (staple of getCategoryItems(cat.id); track staple.id) {
-                    <div class="staple-row" [class.not-needed]="staple.needed === false" [class.picked-up]="staple.pickedUp && staple.needed !== false">
-                      <input type="checkbox"
-                        class="picked-up-check"
-                        [checked]="staple.pickedUp || staple.needed === false"
-                        [disabled]="staple.needed === false"
-                        (change)="togglePickedUp(staple)" />
+                    <div class="staple-row" [class.not-needed]="staple.needed === false">
+                      <span class="pdf-check" aria-hidden="true"></span>
 
                       <input type="text"
                         class="staple-qty"
@@ -114,17 +113,17 @@ interface CategorySection {
                         placeholder="Qty" />
 
                       <input type="text"
+                        class="staple-unit"
+                        [value]="staple.store || ''"
+                        (change)="updateField(staple, 'store', $event)"
+                        placeholder="unit" />
+
+                      <input type="text"
                         class="staple-item"
                         [value]="staple.item"
                         (change)="updateField(staple, 'item', $event)" />
 
-                      <input type="text"
-                        class="staple-store"
-                        [value]="staple.store || ''"
-                        (change)="updateField(staple, 'store', $event)"
-                        placeholder="Store" />
-
-                      <label class="toggle-slider" [class.on]="staple.needed !== false">
+                      <label class="toggle-slider no-print" [class.on]="staple.needed !== false">
                         <input type="checkbox"
                           [checked]="staple.needed !== false"
                           (change)="toggleNeeded(staple)" />
@@ -133,7 +132,7 @@ interface CategorySection {
                         </span>
                       </label>
 
-                      <button class="delete-btn"
+                      <button class="delete-btn no-print"
                         (click)="deleteItem(staple)"
                         matTooltip="Delete"
                         matTooltipPosition="above"
@@ -162,19 +161,37 @@ export class ShoppingPanelComponent {
   // Staples data
   staples = signal<ShoppingStaple[]>([]);
 
-  // Staple accordion state
-  private openCategories = signal<Set<StapleCategory>>(new Set(['proteins']));
+  // Quantity basis for the list: 'recipe' = each recipe's own servings;
+  // 'custom' = an explicit scale factor (default 1, overridable). Local UI state
+  // — the scaling MATH runs once the rotation-derived list is wired (the live
+  // content today is the persisted Staples below).
+  readonly scaleMode = signal<'recipe' | 'custom'>('recipe');
+  readonly scaleValue = signal<number>(1);
+
+  onScaleInput(event: Event): void {
+    const n = Math.max(1, Math.floor(Number((event.target as HTMLInputElement).value) || 1));
+    this.scaleValue.set(n);
+    this.scaleMode.set('custom');
+  }
+
+  // Staple accordion state — all categories open by default (usable list up-front).
+  private openCategories = signal<Set<StapleCategory>>(
+    new Set(['produce', 'fruits', 'proteins', 'dairy', 'bulk', 'aisles']),
+  );
 
   // New item text per category
   private newItemTexts = signal<Record<string, string>>({});
 
+  // Display buckets, in the requested order. Stored tokens map to labels:
+  // produce→Vegetables, fruits→Fruits, proteins→Proteins, dairy→Dairy,
+  // bulk→Carbs, aisles→Processed/Aisles (legacy non_food folds into Processed).
   categories: CategorySection[] = [
+    { id: 'produce', label: 'Vegetables' },
+    { id: 'fruits', label: 'Fruits' },
     { id: 'proteins', label: 'Proteins' },
-    { id: 'produce', label: 'Produce/Vegetables' },
-    { id: 'bulk', label: 'Bulk' },
     { id: 'dairy', label: 'Dairy' },
-    { id: 'aisles', label: 'Aisles' },
-    { id: 'non_food', label: 'Non-Food Items' }
+    { id: 'bulk', label: 'Carbs' },
+    { id: 'aisles', label: 'Processed / Aisles' }
   ];
 
   // Watch for settings to load (handles page refresh race condition)
@@ -222,8 +239,9 @@ export class ShoppingPanelComponent {
 
   getCategoryItems(category: StapleCategory): ShoppingStaple[] {
     return this.staples()
-      .filter(s => s.category === category)
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+      // Legacy 'non_food' rows fold into the Processed/Aisles bucket.
+      .filter(s => s.category === category || (category === 'aisles' && s.category === 'non_food'))
+      .sort((a, b) => a.item.localeCompare(b.item)); // alphabetical
   }
 
   // --- New item ---

@@ -473,9 +473,10 @@ export interface Menu {
   [k: string]: unknown;
 }
 /**
- * 409 body of PUT /api/menu/{id}/save-to-original — the copy can't overwrite its
- * original because one or more slotted meals aren't saved to the binder yet.
- * `unsavedMeals` lists their names for the user prompt.
+ * 409 body of PUT /api/menu/{id}/save-to-original — the copy can't overwrite its original because one or more slotted meals aren't saved to the binder yet. unsavedMeals lists their names for the user prompt.
+ *
+ * This interface was referenced by `RotationSchema`'s JSON-Schema
+ * via the `definition` "SaveMenuToOriginalConflict".
  */
 export interface SaveMenuToOriginalConflict {
   error: string;

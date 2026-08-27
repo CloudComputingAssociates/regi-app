@@ -103,7 +103,7 @@ import { RotationService } from '../../services/rotation.service';
       [class.complete]="plannedDays() === spanDays()"
       matTooltip="You set the # of menus, in User Settings by Menu-Days"
       matTooltipPosition="above">
-      <span class="check">✓</span>{{ plannedDays() }}/{{ spanDays() }} menu-days
+      <span class="check">✓</span>{{ plannedDays() }}/{{ spanDays() }} menus (days)
     </div>
   `,
   styleUrls: ['./menu-card-row.scss'],
