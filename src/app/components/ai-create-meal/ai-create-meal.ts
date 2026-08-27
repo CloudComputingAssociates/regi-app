@@ -11,13 +11,17 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   output,
   signal,
 } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { firstValueFrom, map } from 'rxjs';
+import { AuthService } from '@auth0/auth0-angular';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
+import { environment } from '../../../environments/environment';
 import { RecipeService } from '../../services/recipe.service';
 import { RecipeImportWatcher } from '../../services/recipe-import-watcher.service';
 import { NotificationService } from '../../services/notification.service';
@@ -100,7 +104,7 @@ import { TabService } from '../../services/tab.service';
             <div class="meal-sets-tags">GLP&#8209;1 friendly · Keto · Carnivore · more…</div>
             <a
               class="meal-sets-cta"
-              href="https://mealsets.regimenu.com"
+              [href]="marketplaceUrl()"
               target="_blank"
               rel="noopener">
               <mat-icon>open_in_new</mat-icon>Browse MealSets
@@ -118,6 +122,25 @@ export class AiCreateMealComponent {
   private notification = inject(NotificationService);
   private role = inject(RoleService);
   private tabService = inject(TabService);
+  private auth = inject(AuthService);
+
+  /** Current user's email (Auth0 email claim), '' until the profile loads. */
+  private readonly userEmail = toSignal(
+    this.auth.user$.pipe(map((u) => u?.email ?? '')),
+    { initialValue: '' },
+  );
+
+  /** MealSets marketplace URL with the SSO hand-off params. `?connect=1` triggers
+   *  the marketplace's prompt=none Auth0 round-trip to adopt the current SSO
+   *  identity; `login_hint` pre-fills the email (advisory — only matters if the
+   *  marketplace has to fall back to interactive login). Email is URL-encoded;
+   *  when it isn't loaded yet we send `?connect=1` alone so the marketplace falls
+   *  back to the raw shared SSO session. Both origins share the same Auth0 tenant. */
+  readonly marketplaceUrl = computed(() => {
+    const base = `${environment.mealsetsUrl}/?connect=1`;
+    const email = this.userEmail();
+    return email ? `${base}&login_hint=${encodeURIComponent(email)}` : base;
+  });
 
   /** Close the bloom — on cancel (X / backdrop) or after an import kicks off. */
   readonly close = output<void>();
