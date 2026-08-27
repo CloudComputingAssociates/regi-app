@@ -140,17 +140,17 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               aria-label="Edit My Foods">
               <mat-icon aria-hidden="true">tune</mat-icon>
             </button>
-            <!-- Leave-panel key — lives here (not in the parked Focus Foods
-                 header) so it's ALWAYS available to close the panel. -->
+            <!-- Leave-panel key — red X disc (consistent with the Notebook + Menus
+                 close). Lives here so it's ALWAYS available to close the panel. -->
             <div class="title-right">
               <button
                 type="button"
-                class="bar-icon-btn"
+                class="dialog-disc dialog-disc-cancel myfoods-close-disc"
                 matTooltip="Close My Foods panel"
                 matTooltipPosition="below"
                 (click)="tabService.closePanel()"
                 aria-label="Close panel">
-                <mat-icon aria-hidden="true">logout</mat-icon>
+                <mat-icon aria-hidden="true">close</mat-icon>
               </button>
             </div>
           </div>

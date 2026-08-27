@@ -271,8 +271,29 @@ sup.sm {
   }
 }
 
-.dialog-disc-confirm { background: #28c941; }   // Apple green
-.dialog-disc-cancel  { background: #ff5f57; }   // Apple red
+.dialog-disc-confirm { background: #28c941; }   // Apple green (confirm keeps the disc)
+
+// Close/cancel is a PLAIN Material "X" (no red disc) — uniform across every dialog,
+// panel and form close. White X on grey surfaces; add `.on-light` for a dark X on
+// light/paper backgrounds (the Notebook).
+.dialog-disc-cancel {
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  color: #f0f0f0;
+
+  .mat-icon {
+    width: 22px;
+    height: 22px;
+    font-size: 22px;
+    line-height: 22px;
+    color: inherit;
+  }
+  &:hover:not(:disabled) { transform: none; filter: none; color: #ffffff; background: none; }
+  &:active:not(:disabled) { transform: none; filter: none; }
+  &.on-light { color: #2a2a2a; &:hover:not(:disabled) { color: #000000; } }
+}
 
 // Shared action disc — the meal-card header (+/edit/delete) and the food-row
 // (edit/delete) controls all use this ONE definition so every disc + its icon

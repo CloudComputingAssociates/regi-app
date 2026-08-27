@@ -77,10 +77,10 @@
     color: #1a1a1a;
   }
 
-  // Red X disc — pinned to the top-RIGHT corner of the Notebook.
+  // Plain dark Material X (on-light) — pinned to the top-RIGHT corner of the Notebook.
   .binder-close-disc {
     position: absolute;
-    top: -4px;
+    top: -2px;
     right: 4px;
   }
 }

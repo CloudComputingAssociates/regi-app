@@ -102,14 +102,15 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                   <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
                 </button>
               </div>
-              <!-- Exit — far right of the toolbar. -->
+              <!-- Exit — far right of the toolbar. Red X disc (matches the Notebook). -->
               <button
                 type="button"
-                class="close-panel-btn"
+                class="dialog-disc dialog-disc-cancel menus-close-disc"
                 matTooltip="Close Menus &amp; Meals panel"
                 matTooltipPosition="above"
+                aria-label="Close Menus & Meals panel"
                 (click)="tabService.closePanel()">
-                <mat-icon class="close-icon" aria-hidden="true">logout</mat-icon>
+                <mat-icon aria-hidden="true">close</mat-icon>
               </button>
               <!-- Planned-days tally moved DOWN into the menu-strip area (see
                    app-menu-card-row), bottom-aligned with the "menus" watermark. -->

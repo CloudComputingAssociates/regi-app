@@ -239,6 +239,9 @@
   }
 }
 
+// Plain white Material X — pinned far right of the toolbar.
+.menus-close-disc { flex: 0 0 auto; margin-left: auto; }
+
 // Whole-rotation teardown key at the right end, just left of the days badge.
 // Same domed family as the steppers; a warm hover marks it as destructive.
 .wipe-menus-btn {

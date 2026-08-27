@@ -67,7 +67,7 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
         </div>
         <button
           type="button"
-          class="icon-disc icon-disc-cancel close-btn"
+          class="dialog-disc dialog-disc-cancel close-btn"
           matTooltip="Close"
           matTooltipPosition="below"
           (click)="onClose()">

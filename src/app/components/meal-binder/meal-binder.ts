@@ -44,7 +44,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
         <!-- Red X disc — closes (slides off) the Notebook, top-right corner. -->
         <button
           type="button"
-          class="dialog-disc dialog-disc-cancel binder-close-disc"
+          class="dialog-disc dialog-disc-cancel on-light binder-close-disc"
           matTooltip="Close Notebook"
           matTooltipPosition="below"
           aria-label="Close Notebook"
