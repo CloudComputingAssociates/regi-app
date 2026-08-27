@@ -102,7 +102,6 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                   matTooltip="Open your Shopping List"
                   (click)="tabService.openShopping()">
                   <mat-icon class="shop-list-icon" aria-hidden="true">list_alt</mat-icon>
-                  <span class="shop-list-label">Shopping List</span>
                 </button>
                 <button
                   type="button"

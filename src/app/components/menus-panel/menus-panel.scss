@@ -242,16 +242,16 @@
 // Plain white Material X — pinned far right of the toolbar.
 .menus-close-disc { flex: 0 0 auto; margin-left: auto; }
 
-// Shopping List key — a square-shouldered domed key with a square list glyph and
-// a label, sitting just left of the Clear-all key. Purple accent echoes the old
-// Shopping List left-nav item.
+// Shopping List key — a square icon-only domed key with a square list glyph,
+// sitting just left of the Clear-all key. Same 30×30 chrome as the Clear-all key.
 .shop-list-btn {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 30px;
   height: 30px;
-  padding: 0 12px;
+  padding: 0;
   color: #f0f0f0;
   background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
   border: 1px solid #262626;
@@ -260,9 +260,6 @@
   box-shadow:
     0 2px 3px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
 
@@ -271,7 +268,7 @@
     height: 18px;
     font-size: 18px;
     line-height: 18px;
-    color: #c88cf0; // purple, echoing the retired left-nav item
+    color: #f0f0f0; // white glyph, matching the Clear-all key
   }
 
   &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
