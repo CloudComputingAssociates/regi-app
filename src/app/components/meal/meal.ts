@@ -90,13 +90,7 @@ interface Macro {
                   @if (tileImage(m); as src) {
                     <img class="tile-img" [src]="src" alt="" />
                   } @else {
-                    <div class="tile-noimg">
-                      @if (rotation.isGeneratingImage(m.mealId)) {
-                        <span class="tile-generating"><mat-icon class="spin">progress_activity</mat-icon>Generating image…</span>
-                      } @else {
-                        <span>{{ clean(m.mealName) }}{{ isMealModified(m) ? ' (modified)' : '' }}</span>
-                      }
-                    </div>
+                    <div class="tile-noimg"><span>{{ clean(m.mealName) }}{{ isMealModified(m) ? ' (modified)' : '' }}</span></div>
                   }
                   <div class="tile-scrim"></div>
                   <!-- "(modified)" — same white title text — marks a meal that
@@ -186,12 +180,9 @@ interface Macro {
                       <button
                         type="button"
                         class="add-food-btn genimg-btn"
-                        [disabled]="rotation.isGeneratingImage(fm.mealId)"
-                        [matTooltip]="rotation.isGeneratingImage(fm.mealId)
-                          ? 'Generating image…'
-                          : (tileImage(fm) ? 'Regenerate AI meal image' : 'Generate AI meal image')"
+                        [matTooltip]="tileImage(fm) ? 'Regenerate AI meal image' : 'Generate AI meal image'"
                         (click)="rotation.generateMealImage(fm.mealId)">
-                        <mat-icon [class.spin]="rotation.isGeneratingImage(fm.mealId)">{{ rotation.isGeneratingImage(fm.mealId) ? 'progress_activity' : 'photo_camera' }}</mat-icon>
+                        <mat-icon>photo_camera</mat-icon>
                       </button>
                     }
                     <button

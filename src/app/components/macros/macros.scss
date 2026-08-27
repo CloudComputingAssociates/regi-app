@@ -174,13 +174,14 @@
     }
   }
 
-  // Total-cals pill — positioned on its OWN between the FATS and FIBER bars
-  // (relative to .macro-row, which spans the full width), dropped into the dark
-  // band. DARKER grey since calories rank below macros.
+  // Total-cals pill — centered horizontally on the macros area (relative to
+  // .macro-row, which spans the full width), dropped into the dark band. Sits in
+  // the carbs↔fats gap, just LEFT of the fats label so it never overlays it.
+  // DARKER grey since calories rank below macros.
   .macro-cals {
     position: absolute;
     bottom: 3px;
-    left: 62%; // centered in the gap between the fats and fiber bars
+    left: 50%; // horizontal center of the macros area, left of the fats label
     transform: translateX(-50%);
     display: inline-flex;
     align-items: center;

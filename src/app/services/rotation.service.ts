@@ -582,7 +582,10 @@ export class RotationService {
       await firstValueFrom(
         this.http.post<void>(`${this.baseUrl}/meal/${mealId}/generate-image`, null),
       );
-      this.pollForMealImage(mealId, baseline, 0); // 202 accepted — poll for the write-back
+      // 202 accepted — fire-and-forget. A brief dismissible toast is the only
+      // feedback (the camera stays enabled); poll quietly so the image appears.
+      this.notification.show('AI image creation queued — this may take a minute.', 'info', 5000);
+      this.pollForMealImage(mealId, baseline, 0);
     } catch (err) {
       this.clearGeneratingImage(mealId);
       const status = (err as { status?: number })?.status;
@@ -615,7 +618,12 @@ export class RotationService {
       await this.loadMeal(mealId);
       const now = this.mealImageUrl(mealId);
       if (now !== '' && now !== baseline) {
-        void this.refreshSelectedMenu(); // surface the new cover on the board
+        // Refresh BOTH surfaces: the board's selected menu AND the Notebook/Binder
+        // (a separate binderMeals signal), so the new thumbnail appears in the
+        // spiral notebook without a manual reload.
+        const fresh = this.getMeal(mealId);
+        if (fresh) this.replaceBinderMeal(fresh);
+        void this.refreshSelectedMenu();
         this.clearGeneratingImage(mealId);
         return;
       }
