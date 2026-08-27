@@ -316,11 +316,8 @@
   bottom: 6px;
   right: 6px;
 }
-// AI meal-image camera — bottom-LEFT so it never collides with the flip key.
-.tile-genimg {
-  top: auto;
-  bottom: 6px;
-  left: 6px;
+// AI meal-image camera (square [+]-style key) — disabled while generating.
+.genimg-btn {
   &:disabled { opacity: 0.75; cursor: default; }
 }
 // "Generating image…" placeholder on the front tile.
@@ -433,7 +430,13 @@
       white-space: nowrap;
     }
 
-    .add-affordance { margin-left: auto; }
+    // Camera + "+ Add" keys cluster on the right; camera sits just left of the +.
+    .macro-actions {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
   }
 
   // "Add food" — square [+] key, right-pinned on the macro row. Deliberately

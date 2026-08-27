@@ -139,20 +139,6 @@ interface Macro {
                   (click)="flipHome()">
                   <mat-icon>flip_camera_android</mat-icon>
                 </button>
-                <!-- MealSetOwner only: generate (or regenerate) the AI meal image.
-                     Backend owns generation; we POST then poll for the write-back. -->
-                @if (isMealSetOwner()) {
-                  <button
-                    type="button"
-                    class="tile-btn tile-genimg"
-                    [disabled]="rotation.isGeneratingImage(fm.mealId)"
-                    [matTooltip]="rotation.isGeneratingImage(fm.mealId)
-                      ? 'Generating image…'
-                      : (tileImage(fm) ? 'Regenerate AI meal image' : 'Generate AI meal image')"
-                    (click)="rotation.generateMealImage(fm.mealId)">
-                    <mat-icon [class.spin]="rotation.isGeneratingImage(fm.mealId)">{{ rotation.isGeneratingImage(fm.mealId) ? 'progress_activity' : 'photo_camera' }}</mat-icon>
-                  </button>
-                }
                 <div class="back-head">
                   <span class="name-label">Meal</span>
                   <input
@@ -186,19 +172,36 @@ interface Macro {
                   </button>
                 </div>
 
+                <!-- Order: Protein, Carbs, Fats, Fiber, then Cals last. -->
                 <div class="macro-row">
-                  <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
                   <span class="chip protein">P {{ round(mac(fm.macros).proteinG) }}</span>
-                  <span class="chip fiber">F {{ round(mac(fm.macros).fiberG) }}</span>
-                  <span class="chip fat">F {{ round(mac(fm.macros).fatG) }}</span>
                   <span class="chip carb">C {{ round(mac(fm.macros).carbG) }}</span>
-                  <button
-                    type="button"
-                    class="add-food-btn add-affordance"
-                    matTooltip="Add food to meal"
-                    (click)="toggleAdd.emit(fm.mealId)">
-                    <mat-icon>add</mat-icon>
-                  </button>
+                  <span class="chip fat">F {{ round(mac(fm.macros).fatG) }}</span>
+                  <span class="chip fiber">F {{ round(mac(fm.macros).fiberG) }}</span>
+                  <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
+                  <span class="macro-actions">
+                    <!-- MealSetOwner only: generate (or regenerate) the AI meal image
+                         — square grey key just left of the + Add. -->
+                    @if (isMealSetOwner()) {
+                      <button
+                        type="button"
+                        class="add-food-btn genimg-btn"
+                        [disabled]="rotation.isGeneratingImage(fm.mealId)"
+                        [matTooltip]="rotation.isGeneratingImage(fm.mealId)
+                          ? 'Generating image…'
+                          : (tileImage(fm) ? 'Regenerate AI meal image' : 'Generate AI meal image')"
+                        (click)="rotation.generateMealImage(fm.mealId)">
+                        <mat-icon [class.spin]="rotation.isGeneratingImage(fm.mealId)">{{ rotation.isGeneratingImage(fm.mealId) ? 'progress_activity' : 'photo_camera' }}</mat-icon>
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      class="add-food-btn"
+                      matTooltip="Add food to meal"
+                      (click)="toggleAdd.emit(fm.mealId)">
+                      <mat-icon>add</mat-icon>
+                    </button>
+                  </span>
                 </div>
 
                 <!-- Recipe link (when the meal has a source PDF), right-justified.
