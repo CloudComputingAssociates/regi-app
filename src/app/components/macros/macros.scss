@@ -181,7 +181,7 @@
   .macro-cals {
     position: absolute;
     bottom: 3px;
-    left: 50%; // horizontal center of the macros area, left of the fats label
+    left: 42%; // LEFT of center, in the carbs↔fats gap — clears the fats label
     transform: translateX(-50%);
     display: inline-flex;
     align-items: center;
