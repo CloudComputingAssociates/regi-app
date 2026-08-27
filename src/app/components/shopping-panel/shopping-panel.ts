@@ -215,6 +215,11 @@ export class ShoppingPanelComponent {
     return this.openCategories().has(id);
   }
 
+  /** Expand every category — used before printing so the whole list renders. */
+  openAllCategories(): void {
+    this.openCategories.set(new Set(this.categories.map((c) => c.id)));
+  }
+
   getCategoryItems(category: StapleCategory): ShoppingStaple[] {
     return this.staples()
       .filter(s => s.category === category)

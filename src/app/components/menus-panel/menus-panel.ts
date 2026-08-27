@@ -28,6 +28,7 @@ import { MenuCardRowComponent } from '../menu-card-row/menu-card-row';
 import { MenusMealsComponent } from '../menus-meals/menus-meals';
 import { MealBinderComponent } from '../meal-binder/meal-binder';
 import { AiCreateMealComponent } from '../ai-create-meal/ai-create-meal';
+import { ShoppingBloomComponent } from '../shopping-bloom/shopping-bloom';
 import { MacrosComponent } from '../macros/macros';
 import { FoodLookasideComponent } from '../food-lookaside/food-lookaside';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
@@ -44,6 +45,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
     MenusMealsComponent,
     MealBinderComponent,
     AiCreateMealComponent,
+    ShoppingBloomComponent,
     MacrosComponent,
     FoodLookasideComponent,
     NutritionFactsLabelComponent,
@@ -92,8 +94,16 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               <span class="toolbar-title">
                 <mat-icon class="toolbar-title-icon">restaurant</mat-icon>Menus &amp; Meals
               </span>
-              <!-- Clear · macros (an AM-radio push key: depressed = shown). -->
+              <!-- Shopping List (opens the bloom) · Clear all. -->
               <div class="toolbar-buttons">
+                <button
+                  type="button"
+                  class="shop-list-btn"
+                  matTooltip="Open your Shopping List"
+                  (click)="tabService.openShopping()">
+                  <mat-icon class="shop-list-icon" aria-hidden="true">list_alt</mat-icon>
+                  <span class="shop-list-label">Shopping List</span>
+                </button>
                 <button
                   type="button"
                   class="wipe-menus-btn"
@@ -145,6 +155,11 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                  it never pushes the meal list / meals grid off-screen. -->
             @if (createOpen()) {
               <app-ai-create-meal (close)="createOpen.set(false)" />
+            }
+
+            <!-- Shopping List bloom — floated over the board from the toolbar. -->
+            @if (tabService.shoppingOpen()) {
+              <app-shopping-bloom (close)="tabService.closeShopping()" />
             }
           </div>
 

@@ -546,3 +546,40 @@ sup.sm {
     color: #f1f1f1;
   }
 }
+// ── Shopping List print ──────────────────────────────────────────────────────
+// The Shopping List bloom's Print button adds `printing-shopping-list` to <body>,
+// then calls window.print() (the user can "Save as PDF"). Isolate the bloom
+// window: hide everything else, flatten the dark theme to ink-on-white, and lift
+// the window to fill the page. The `.no-print` head (title/Print/close) is
+// dropped so only the list prints.
+@media print {
+  body.printing-shopping-list * {
+    visibility: hidden !important;
+  }
+  body.printing-shopping-list .shopping-bloom-window,
+  body.printing-shopping-list .shopping-bloom-window * {
+    visibility: visible !important;
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    border-color: #999 !important;
+  }
+  body.printing-shopping-list .shopping-bloom-window {
+    position: fixed !important;
+    inset: 0 !important;
+    margin: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+  }
+  body.printing-shopping-list .shopping-bloom-backdrop {
+    position: static !important;
+    background: #fff !important;
+  }
+  body.printing-shopping-list .no-print {
+    display: none !important;
+  }
+}

@@ -306,6 +306,13 @@ export class TabService {
   }
   closeMealsetEditor(): void { this.mealsetEditorOpen.set(false); }
 
+  // Shopping List — a bloom overlay floated over the Menus & Meals board,
+  // launched from that toolbar (no longer a left-nav panel on web). The bloom's
+  // X / backdrop click flips it back.
+  readonly shoppingOpen = signal(false);
+  openShopping(): void { this.shoppingOpen.set(true); }
+  closeShopping(): void { this.shoppingOpen.set(false); }
+
   // In-app web viewer — opens an external page in a bloom iframe overlay instead
   // of a new browser tab (so the user never leaves the app). null = closed.
   readonly webViewUrl = signal<string | null>(null);

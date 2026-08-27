@@ -37,7 +37,6 @@ const LEFT_NAV_PANEL_IDS = new Set([
   'chat',
   'menus',
   'foods',
-  'shop',
   'mealsets',
 ]);
 

@@ -106,11 +106,13 @@ export class LeftNavComponent {
 
   private roleService = inject(RoleService);
 
+  // Shopping List is no longer a left-nav panel on the web app — it's a bloom
+  // launched from the Menus & Meals toolbar. (It stays a first-class nav item on
+  // the mobile app.)
   private readonly baseMenuItems: MenuItem[] = [
     { label: 'Chat', matIcon: 'forum', color: '#ff8c1a', tabId: 'chat' },
-    { label: 'Menus & Meals', matIcon: 'restaurant', color: '#43c13a', tabId: 'menus' },
     { label: 'My Foods', iconImage: 'favicon.ico', tabId: 'foods' },
-    { label: 'Shopping List', matIcon: 'shopping_cart', color: '#a53ee0', tabId: 'shop' }
+    { label: 'Menus & Meals', matIcon: 'restaurant', color: '#43c13a', tabId: 'menus' }
   ];
 
   /** Nav items — the MealSets authoring entry is appended only for MealSetOwners
