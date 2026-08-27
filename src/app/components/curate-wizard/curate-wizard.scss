@@ -1,0 +1,226 @@
+// src/app/components/curate-wizard/curate-wizard.scss
+
+.cw-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+// Bloom window — purple wand glow (distinct from the yellow blooms).
+.cw-window {
+  position: relative;
+  width: 420px;
+  max-width: calc(100% - 32px);
+  max-height: calc(100% - 32px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 2px solid #c88cf0;
+  background: #2b2b2b;
+  box-shadow:
+    0 0 16px rgba(200, 140, 240, 0.8),
+    0 0 34px rgba(160, 90, 220, 0.4),
+    0 12px 30px rgba(0, 0, 0, 0.55);
+}
+
+.cw-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #3a3a3a;
+
+  .cw-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #d6b0f5;
+
+    .cw-title-icon { width: 20px; height: 20px; font-size: 20px; line-height: 20px; color: #d6b0f5; }
+  }
+  .cw-progress {
+    margin-left: auto;
+    font-size: 13px;
+    color: #9aa0a6;
+  }
+  .cw-close { flex: 0 0 auto; }
+}
+
+.cw-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 16px 18px;
+  gap: 12px;
+}
+
+.cw-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #8a8a8a;
+}
+
+// The swipe card
+.cw-card {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 16px 20px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #383838 0%, #303030 100%);
+  border: 1px solid #4a4a4a;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  transition: transform 0.18s ease;
+
+  &.dragging {
+    cursor: grabbing;
+    transition: none; // follow the finger 1:1 while dragging
+  }
+}
+
+// ADD / SKIP stamps that fade in with the drag direction
+.cw-stamp {
+  position: absolute;
+  top: 14px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 2px 10px;
+  border-radius: 6px;
+  border: 3px solid currentColor;
+  text-transform: uppercase;
+  transition: opacity 0.1s ease;
+  pointer-events: none;
+
+  &.add { right: 14px; color: #43c13a; transform: rotate(12deg); }
+  &.nope { left: 14px; color: #ff5f57; transform: rotate(-12deg); }
+}
+
+.cw-cat {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #d6b0f5;
+}
+
+.cw-photo {
+  width: 140px;
+  height: 140px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #262626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img { width: 100%; height: 100%; object-fit: cover; }
+  .cw-photo-empty { width: 56px; height: 56px; font-size: 56px; line-height: 56px; color: #5a5a5a; }
+}
+
+.cw-name {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #f1f1f1;
+  line-height: 1.2;
+}
+
+.cw-macros {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: #c8c8c8;
+
+  b { color: #ffffff; }
+  .cals b { color: #ffffff; }
+}
+
+.cw-serving {
+  font-size: 11px;
+  color: #8a8a8a;
+}
+
+// Click buttons (mirror the swipe)
+.cw-actions {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-top: 4px;
+}
+
+.cw-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid;
+  background: #2f2f2f;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.08s ease, background 0.12s ease;
+
+  .mat-icon { width: 28px; height: 28px; font-size: 28px; line-height: 28px; }
+
+  &:active { transform: scale(0.92); }
+
+  &.nope { border-color: #ff5f57; color: #ff5f57; &:hover { background: #3a2b2b; } }
+  &.yes  { border-color: #43c13a; color: #43c13a; &:hover { background: #2b3a2b; } }
+}
+
+// Loading / done states
+.cw-state {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 240px;
+}
+
+.cw-done-icon { width: 48px; height: 48px; font-size: 48px; line-height: 48px; color: #43c13a; }
+.cw-done-msg { margin: 0; text-align: center; color: #d8d8d8; font-size: 14px; b { color: #fff; } }
+.cw-done-btn {
+  margin-top: 4px;
+  padding: 8px 22px;
+  border-radius: 6px;
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  color: #f0f0f0;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #fff; }
+}
+
+.cw-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #444;
+  border-top-color: #c88cf0;
+  border-radius: 50%;
+  animation: cw-spin 0.8s linear infinite;
+}
+@keyframes cw-spin { to { transform: rotate(360deg); } }

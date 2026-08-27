@@ -6,6 +6,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
+import { CurateWizardComponent } from '../curate-wizard/curate-wizard';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { UserFoodService } from '../../services/user-food.service';
@@ -93,7 +94,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
 
 @Component({
   selector: 'app-foods-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, NutritionFactsLabelComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, NutritionFactsLabelComponent, CurateWizardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="foods-panel-container">
@@ -126,6 +127,18 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 My Foods
               </span>
             </span>
+            <!-- Curate Wizard — the swipe deck for quickly favoriting Regi-approved
+                 foods into MyFoods. -->
+            <button
+              type="button"
+              class="bar-icon-btn curate-wizard-btn"
+              (click)="wizardOpen.set(true)"
+              matTooltip="Curate Wizard — swipe to build MyFoods"
+              matTooltipPosition="below"
+              [matTooltipShowDelay]="350"
+              aria-label="Curate Wizard">
+              <mat-icon aria-hidden="true">auto_fix_high</mat-icon>
+            </button>
             <!-- Edit My Foods — toggles the editor split on the RHS (MyFoods stays
                  on the left). Insets while active. -->
             <button
@@ -134,7 +147,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               [class.pressed]="focusEditOpen()"
               [attr.aria-pressed]="focusEditOpen()"
               (click)="toggleEdit()"
-              [matTooltip]="focusEditOpen() ? 'Close Curate MyFoods' : 'Curate MyFoods'"
+              [matTooltip]="focusEditOpen() ? 'Close Edit MyFoods' : 'Edit MyFoods'"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350"
               aria-label="Edit My Foods">
@@ -421,18 +434,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             <div class="edit-overlay">
               <div class="edit-overlay-panel">
                 <div class="edit-overlay-header">
-                  <span class="edit-overlay-title">Curate MyFoods</span>
-                  <!-- Add a food (via the mobile app) — up on the title line, next
-                       to EDIT (where the red X lives). -->
-                  <button
-                    type="button"
-                    class="bar-icon-btn edit-add-food"
-                    matTooltip="Add a food (via the mobile app)"
-                    matTooltipPosition="below"
-                    (click)="onAddFood()"
-                    aria-label="Add food">
-                    <mat-icon aria-hidden="true">add</mat-icon>
-                  </button>
+                  <span class="edit-overlay-title">Edit MyFoods</span>
                   <div class="dialog-discs">
                     <button
                       type="button"
@@ -812,6 +814,12 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
       <!-- (The phone-app "Tether Mobile" handoff moved to a global bloom dialog
            opened from the profile menu's "Mobile App" entry — see
            mobile-app-dialog + TabService.mobileAppOpen.) -->
+
+      <!-- Curate Wizard — swipe deck over the panel. On close it reloads MyFoods
+           so newly-favorited foods appear. -->
+      @if (wizardOpen()) {
+        <app-curate-wizard (close)="onWizardClose()" />
+      }
     </div>
   `,
   styleUrls: ['./foods-panel.scss']
@@ -964,6 +972,14 @@ export class FoodsPanelComponent {
 
   protected tabService = inject(TabService);
   protected preferencesService = inject(FoodPreferencesService);
+
+  /** Curate Wizard swipe-deck bloom. */
+  readonly wizardOpen = signal(false);
+  /** On close, reload MyFoods so newly-favorited foods appear immediately. */
+  async onWizardClose(): Promise<void> {
+    this.wizardOpen.set(false);
+    await this.refreshServerMyFoods();
+  }
   private notificationService = inject(NotificationService);
   private userFoodService = inject(UserFoodService);
   protected foodsService = inject(FoodsService);

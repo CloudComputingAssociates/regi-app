@@ -139,7 +139,7 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
               (saveToOriginal)="onSaveToOriginal($event)"
               (renameMenu)="rotation.updateMenuName($event.menuId, $event.name)"
               (dropMenu)="rotation.addMenuToRotation($event)"
-              (addMenu)="rotation.addMenu()"
+              (addMenu)="onAddMenu()"
               (duplicateMenu)="rotation.addMenuToRotation($event)" />
 
 
@@ -404,6 +404,18 @@ export class MenusPanelComponent implements OnInit {
   onSelectMenu(menuId: number): void {
     this.rotation.stopEditing();
     this.rotation.selectMenu(menuId);
+    // Selecting an empty menu → auto-open the Notebook so meals are right there
+    // to drag in. (A menu that already has meals leaves the binder as-is.)
+    if (!this.rotation.menuHasMeals(menuId)) {
+      this.rotation.showBinder();
+    }
+  }
+
+  /** + Add menu — the new menu is always empty, so open the Notebook to drag
+   *  meals in straight away. */
+  onAddMenu(): void {
+    this.rotation.showBinder();
+    void this.rotation.addMenu();
   }
 
   /** ✎ on a food row — resolve the item's food and open the serving popup at

@@ -1612,21 +1612,27 @@
   overflow: hidden;
 }
 
-// Curate MyFoods banner — matches the "My Foods" .section-title (same size + color).
+// Edit MyFoods banner — matches the "My Foods" .section-title (same size + color).
 .edit-overlay-header {
+  position: relative; // anchor the corner close disc to THIS row so it centers
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 10px; // space between the Curate title and the + add-food button
+  gap: 10px;
   margin: 6px 8px;
   padding: 8px 12px;
-  padding-right: 34px; // room for the red cancel disc in the corner
+  padding-right: 34px; // room for the close disc in the corner
   background: #3a3a3a;
   border: 1px solid #4a4a4a;
   border-radius: 8px;
+
+  // Vertically center the RHS close X in the header row (consistent with the
+  // other panel closes), rather than pinning it to the top.
+  .dialog-discs {
+    top: 50%;
+    transform: translateY(-50%);
+  }
 }
-// Add-food (+) sits on the title line next to the banner label.
-.edit-add-food { flex: 0 0 auto; }
 
 .edit-overlay-title {
   font-size: 20px;
