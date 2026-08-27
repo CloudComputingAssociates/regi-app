@@ -186,6 +186,8 @@
 
   &.nope { border-color: #ff5f57; color: #ff5f57; &:hover { background: #3a2b2b; } }
   &.yes  { border-color: #43c13a; color: #43c13a; &:hover { background: #2b3a2b; } }
+  // Restrict (allergen/inflammatory) — amber danger, distinct from the red skip.
+  &.restrict { border-color: #e0a020; color: #e8b13a; &:hover { background: #3a3320; } }
 }
 
 // Loading / done states

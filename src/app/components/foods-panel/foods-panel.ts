@@ -207,6 +207,17 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             <div class="carousel-filter-row">
               <span class="filter-bar-label">FILTER</span>
               <div class="category-radio-panel" role="group" aria-label="Category filter">
+                <!-- Clear all filters — icon key in front of the first category. -->
+                <button
+                  type="button"
+                  class="category-radio-btn filter-clear-btn"
+                  matTooltip="Clear filter"
+                  matTooltipPosition="below"
+                  [matTooltipShowDelay]="350"
+                  (click)="clearFilters()"
+                  aria-label="Clear filter">
+                  <mat-icon aria-hidden="true">filter_alt_off</mat-icon>
+                </button>
                 @for (group of filterGroups; track group.key) {
                   <button
                     type="button"
@@ -2324,6 +2335,11 @@ export class FoodsPanelComponent {
       if (this.isFilterGroupActive(group)) return new Set();
       return new Set(group.cats);
     });
+  }
+
+  /** Clear all category filters → show everything. */
+  clearFilters(): void {
+    this.selectedCategories.set(new Set());
   }
 
   private loadRequestId = 0;

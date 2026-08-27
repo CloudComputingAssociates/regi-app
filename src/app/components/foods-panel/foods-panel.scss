@@ -244,6 +244,22 @@
   }
 }
 
+// Clear-all-filters key — a compact square icon button at the head of the row.
+.filter-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  padding: 0;
+
+  .mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    line-height: 16px;
+  }
+}
+
 // ---- Health Benefits button (projected via [centerOverlay] into the image-carousel) ----
 // Now overlays the upper-left of the centered card, 2x its previous size. The
 // image-carousel positions the slot; we only style the button itself.

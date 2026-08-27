@@ -89,13 +89,22 @@ const SWIPE_THRESHOLD = 110; // px past which a release commits the decision
               }
             </div>
 
-            <!-- Click affordances (mirror the swipe) -->
+            <!-- Click affordances. Skip/Add mirror the swipe; Restrict is a
+                 click-only third action (not a swipe direction). -->
             <div class="cw-actions">
               <button type="button" class="cw-btn nope" matTooltip="Skip" aria-label="Skip" (click)="decide(false)">
                 <mat-icon>close</mat-icon>
               </button>
               <button type="button" class="cw-btn yes" matTooltip="Add to MyFoods" aria-label="Add to MyFoods" (click)="decide(true)">
                 <mat-icon>favorite</mat-icon>
+              </button>
+              <button
+                type="button"
+                class="cw-btn restrict"
+                matTooltip="Restricted (Allergen or Inflammatory)"
+                aria-label="Restricted (Allergen or Inflammatory)"
+                (click)="restrict()">
+                <mat-icon>dangerous</mat-icon>
               </button>
             </div>
           } @else {
@@ -105,7 +114,9 @@ const SWIPE_THRESHOLD = 110; // px past which a release commits the decision
               @if (total() === 0) {
                 <p class="cw-done-msg">Nothing new to review — your MyFoods already covers the Regi-approved list.</p>
               } @else {
-                <p class="cw-done-msg">All caught up! Added <b>{{ addedCount() }}</b> to MyFoods.</p>
+                <p class="cw-done-msg">
+                  All caught up! Added <b>{{ addedCount() }}</b> to MyFoods@if (restrictedCount() > 0) {, restricted <b>{{ restrictedCount() }}</b>}.
+                </p>
               }
               <button type="button" class="cw-done-btn" (click)="onClose()">Done</button>
             </div>
@@ -127,7 +138,8 @@ export class CurateWizardComponent {
   readonly loading = signal(true);
   private readonly index = signal(0);
   readonly addedCount = signal(0);
-  private touched = false; // any favorite staged → flush on close
+  readonly restrictedCount = signal(0);
+  private touched = false; // any change staged → flush on close
 
   readonly total = computed(() => this.deck().length);
   readonly done = computed(() => Math.min(this.index(), this.total()));
@@ -182,6 +194,23 @@ export class CurateWizardComponent {
       this.addedCount.update((n) => n + 1);
       this.touched = true;
     }
+    this.advance();
+  }
+
+  /** Tag the current food as Restricted (Allergen/Inflammatory). Click-only —
+   *  not a swipe direction. Pulls it out of MyFoods if it was there. */
+  restrict(): void {
+    const food = this.current();
+    if (!food) return;
+    if (!this.prefs.isRestricted(food.id)) {
+      this.prefs.toggleRestrictedLocal(food.id, food['foodSource'] as string | undefined);
+      this.restrictedCount.update((n) => n + 1);
+      this.touched = true;
+    }
+    this.advance();
+  }
+
+  private advance(): void {
     this.dragX.set(0);
     this.dragging.set(false);
     this.index.update((i) => i + 1);
