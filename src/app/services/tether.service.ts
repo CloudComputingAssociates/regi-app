@@ -57,6 +57,24 @@ export class TetherService {
     );
   }
 
+  /** POST /api/tether/device/{id}/command — ask a live device to run a command
+   *  (e.g. open the camera and capture the user's avatar). Fire-and-forget; the
+   *  phone picks it up on its next tether poll. NOTE: the command channel is part
+   *  of the pending mobile-capture handoff — until it deploys this 404s and the
+   *  caller surfaces a "try again later" message. */
+  async requestAvatarCapture(deviceId: number): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.baseUrl}/tether/device/${deviceId}/command`, {
+        type: 'captureAvatar',
+      }),
+    );
+  }
+
+  /** The first live device's id, or null when nothing is live. */
+  readonly firstLiveDeviceId = computed<number | null>(
+    () => this.devices().find((d) => d.live)?.deviceId ?? null,
+  );
+
   private start(): void {
     if (this.running) return;
     this.running = true;

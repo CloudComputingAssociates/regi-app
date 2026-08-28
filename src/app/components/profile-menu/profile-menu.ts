@@ -1,6 +1,7 @@
-import { Component, Input, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
+import { ProfileImageService } from '../../services/profile-image.service';
 import { AsyncPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -33,7 +34,7 @@ import { RoleService } from '../../services/role.service';
           </button>
         }
         <button class="profile-btn" [matMenuTriggerFor]="menu" aria-label="Open menu">
-          <img [src]="defaultImage" alt="Profile" class="profile-img" />
+          <img [src]="avatarSrc()" alt="Profile" class="profile-img" />
         </button>
       </div>
 
@@ -93,6 +94,10 @@ import { RoleService } from '../../services/role.service';
 export class ProfileMenuComponent {
   @Input() defaultImage = 'images/yeh_logo_dark.png';
   auth = inject(AuthService);
+  private profileImage = inject(ProfileImageService);
+
+  /** The user's avatar (session preview or persisted) or the default apple logo. */
+  readonly avatarSrc = computed(() => this.profileImage.avatarUrl() ?? this.defaultImage);
 
   /** The user's display name → email fallback → null (hide the link). Both this
    *  link and the avatar open the same RH nav menu. */

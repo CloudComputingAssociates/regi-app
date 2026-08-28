@@ -15,8 +15,10 @@
 
 .acct-dialog {
   position: relative;
-  width: 340px;
+  width: 380px;
   max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   box-sizing: border-box;
   padding: 22px 20px;
   background: #2a2a2a;
@@ -26,6 +28,122 @@
     0 0 16px rgba(255, 213, 79, 0.85),
     0 0 32px rgba(255, 193, 7, 0.45),
     0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+// ---- Identity (avatar + name + email) -----------------------------------
+.acct-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.acct-avatar {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  background: #1f1f1f;
+}
+.acct-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.acct-identity-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.acct-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.acct-email {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ---- Photo tools ---------------------------------------------------------
+.acct-photo-section {
+  margin-bottom: 16px;
+}
+.acct-section-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
+}
+.acct-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 10px;
+  border: 2px dashed #4da6ff;
+  border-radius: 8px;
+  background: rgba(77, 166, 255, 0.06);
+  color: #cfe4ff;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.12s ease;
+
+  &:hover { background: rgba(77, 166, 255, 0.12); }
+  &:focus-visible { box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.6); }
+  &.busy { cursor: progress; opacity: 0.8; }
+
+  .acct-dropzone-icon { width: 26px; height: 26px; font-size: 26px; }
+  .acct-dropzone-title { font-size: 13px; }
+  .acct-dropzone-sub { font-size: 11px; color: rgba(207, 228, 255, 0.6); }
+}
+.acct-phone-btn {
+  margin-top: 10px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+  border: 1px solid #5a5a5a;
+  border-bottom: 2px solid #1a1a1a;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: inherit;
+
+  .mat-icon, mat-icon { width: 18px; height: 18px; font-size: 18px; }
+  &:hover:not(:disabled) { background: linear-gradient(180deg, #606060 0%, #454545 100%); }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+}
+.acct-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(255, 213, 79, 0.85);
+}
+
+// The break between the "upper two-thirds" and the Danger Zone.
+.acct-divider {
+  border: none;
+  border-top: 1px solid #4a4a4a;
+  margin: 16px 0;
 }
 
 .dialog-discs {

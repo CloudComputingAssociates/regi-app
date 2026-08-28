@@ -68,6 +68,23 @@ export class ImageUploadService {
     }
   }
 
+  /** POST /api/image/upload/avatar — set the authenticated user's avatar (keyed
+   *  by the JWT, no id in the body). Returns the CDN + thumbnail urls. NOTE: this
+   *  endpoint is part of the pending avatar handoff; until it deploys the call
+   *  404s and callers fall back to a local preview. */
+  async uploadUserAvatar(image: File): Promise<ProductUploadResponse> {
+    const formData = new FormData();
+    formData.append('source', 'user');
+    formData.append('image', image);
+
+    return firstValueFrom(
+      this.http.post<ProductUploadResponse>(
+        `${this.imageApiUrl}/api/image/upload/avatar`,
+        formData,
+      ),
+    );
+  }
+
   async uploadProductImage(foodId: number, image: File): Promise<ProductUploadResponse> {
     const formData = new FormData();
     formData.append('foodId', foodId.toString());
