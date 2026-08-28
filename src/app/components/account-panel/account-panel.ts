@@ -24,6 +24,7 @@ import { SubscriptionService, SubscriptionStatus } from '../../services/subscrip
 import { ProfileImageService } from '../../services/profile-image.service';
 import { ImageUploadService } from '../../services/image-upload.service';
 import { TetherService } from '../../services/tether.service';
+import { UserProfileService } from '../../services/user-profile.service';
 
 @Component({
   selector: 'app-account-panel',
@@ -31,13 +32,29 @@ import { TetherService } from '../../services/tether.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (tab.accountOpen()) {
-      <div class="acct-overlay" (click)="close()">
+      <div class="acct-overlay" (click)="onBackdrop()">
         <div class="acct-dialog" (click)="$event.stopPropagation()">
+          <!-- Dialog discs (CLAUDE.md): the green Save disc APPEARS only when
+               there are unsaved changes (name and/or photo); the red X is always
+               present and discards staged edits on close. -->
           <div class="dialog-discs">
+            @if (dirty()) {
+              <button
+                type="button"
+                class="dialog-disc dialog-disc-confirm"
+                [disabled]="saveBusy()"
+                matTooltip="Save changes"
+                matTooltipPosition="below"
+                (click)="saveAll()"
+                aria-label="Save changes">
+                <mat-icon>{{ saveBusy() ? 'hourglass_empty' : 'check' }}</mat-icon>
+              </button>
+            }
             <button
               type="button"
               class="dialog-disc dialog-disc-cancel"
               matTooltip="Close"
+              matTooltipPosition="below"
               (click)="close()"
               aria-label="Close">
               <mat-icon>close</mat-icon>
@@ -45,32 +62,52 @@ import { TetherService } from '../../services/tether.service';
           </div>
           <h2 class="acct-title">Account</h2>
 
-          <!-- Identity: avatar + display name (email fallback) + email. -->
+          <!-- Identity: avatar (with X to drop the photo) + editable display
+               name (email fallback) + email. -->
           <div class="acct-identity">
             <div class="acct-avatar">
-              <img [src]="avatarSrc()" alt="" class="acct-avatar-img" />
+              <img [src]="displayAvatar()" alt="" class="acct-avatar-img" />
+              @if (hasPhoto()) {
+                <button
+                  type="button"
+                  class="acct-avatar-x"
+                  matTooltip="Remove photo (back to the apple)"
+                  matTooltipPosition="above"
+                  (click)="removePhoto()"
+                  aria-label="Remove photo">
+                  <mat-icon>close</mat-icon>
+                </button>
+              }
             </div>
             <div class="acct-identity-text">
-              <span class="acct-name">{{ displayName() }}</span>
+              <input
+                type="text"
+                class="acct-name-input"
+                [value]="nameDraft()"
+                placeholder="Display name"
+                maxlength="60"
+                aria-label="Display name"
+                (input)="onNameInput($any($event.target).value)"
+                (keydown.enter)="saveAll()" />
               @if (showEmail()) {
                 <span class="acct-email">{{ email() }}</span>
               }
             </div>
           </div>
 
-          <!-- Photo tools: drop / paste / browse, plus phone-camera capture. -->
+          <!-- Photo tools: drop / paste / browse (stages a new photo), plus
+               phone-camera capture. Staged changes commit on Save. -->
           <div class="acct-photo-section">
             <span class="acct-section-label">Profile photo</span>
             <div
               class="acct-dropzone"
               tabindex="0"
-              [class.busy]="photoBusy()"
               (dragover)="onDragOver($event)"
               (drop)="onDrop($event)"
               (paste)="onPaste($event)"
               (click)="fileInput.click()">
-              <mat-icon class="acct-dropzone-icon">{{ photoBusy() ? 'hourglass_empty' : 'add_photo_alternate' }}</mat-icon>
-              <span class="acct-dropzone-title">{{ photoBusy() ? 'Uploading…' : 'Drag, paste, or click to add a photo' }}</span>
+              <mat-icon class="acct-dropzone-icon">add_photo_alternate</mat-icon>
+              <span class="acct-dropzone-title">Drag, paste, or click to add a photo</span>
               <span class="acct-dropzone-sub">JPG / PNG — replaces the apple everywhere</span>
             </div>
             <input #fileInput type="file" accept="image/jpeg,image/png" hidden (change)="onFile(fileInput)" />
@@ -86,8 +123,8 @@ import { TetherService } from '../../services/tether.service';
               {{ phoneBusy() ? 'Asking your phone…' : 'Take it with my phone' }}
             </button>
 
-            @if (sessionOnly()) {
-              <p class="acct-note">Showing for this session — it’ll sync to your account once photo sync is enabled.</p>
+            @if (dirty()) {
+              <p class="acct-note">Press the green ✓ (top-right) to save your changes.</p>
             }
           </div>
 
@@ -176,33 +213,77 @@ export class AccountPanelComponent {
   private profileImage = inject(ProfileImageService);
   private imageUpload = inject(ImageUploadService);
   readonly tether = inject(TetherService);
+  private userProfile = inject(UserProfileService);
 
   showConfirmModal = signal(false);
   isDeleting = signal(false);
   subscriptionStatus = signal<SubscriptionStatus | null>(null);
   private statusLoaded = false;
 
-  // ---- Identity (from Auth0) ----------------------------------------------
+  // ---- Identity (Auth0 + editable override) -------------------------------
   private readonly user = toSignal(this.auth.user$, { initialValue: null });
-  /** Display name, falling back to email, then a generic label. */
+  /** The effective display name: a saved override wins, else Auth0 name, else
+   *  email, else a generic label. This is what the field is seeded from. */
   readonly displayName = computed(
-    () => this.user()?.name?.trim() || this.user()?.email?.trim() || 'Your account',
+    () =>
+      this.userProfile.displayName() ||
+      this.user()?.name?.trim() ||
+      this.user()?.email?.trim() ||
+      'Your account',
   );
   readonly email = computed(() => this.user()?.email?.trim() || null);
-  /** Only show the email line when it isn't already the heading (email fallback). */
+  /** Only show the email line when it isn't already the name (email fallback). */
   readonly showEmail = computed(() => {
     const e = this.email();
     return !!e && e !== this.displayName();
   });
 
-  /** The avatar to show — the user's photo (session or persisted) or the apple. */
-  readonly avatarSrc = computed(() => this.profileImage.avatarUrl() ?? 'images/yeh_logo_dark.png');
+  private readonly APPLE = 'images/yeh_logo_dark.png';
 
-  // ---- Photo tools ---------------------------------------------------------
-  readonly photoBusy = signal(false);
+  // Editable name field. Seeded from the effective name while the user hasn't
+  // typed; resyncs after a save (see the constructor effect).
+  readonly nameDraft = signal('');
+  private nameTouched = false;
+  readonly nameDirty = computed(() => {
+    const v = this.nameDraft().trim();
+    return v.length > 0 && v !== this.displayName().trim();
+  });
+  onNameInput(v: string): void {
+    this.nameTouched = true;
+    this.nameDraft.set(v);
+  }
+
+  // ---- Photo (STAGED — commits on Save) -----------------------------------
+  // null → no change; {file,preview} → a new photo staged; 'remove' → staged
+  // revert to the apple logo.
+  private readonly stagedAvatar = signal<{ file: File; preview: string } | 'remove' | null>(null);
+
+  /** Avatar shown in the panel: a staged change wins, else the committed avatar,
+   *  else the apple logo. */
+  readonly displayAvatar = computed(() => {
+    const s = this.stagedAvatar();
+    if (s === 'remove') return this.APPLE;
+    if (s) return s.preview;
+    return this.profileImage.avatarUrl() ?? this.APPLE;
+  });
+  /** A real photo is showing → offer the X-to-remove. */
+  readonly hasPhoto = computed(() => {
+    const s = this.stagedAvatar();
+    if (s === 'remove') return false;
+    if (s) return true;
+    return this.profileImage.avatarUrl() != null;
+  });
+  private readonly photoDirty = computed(() => {
+    const s = this.stagedAvatar();
+    if (s === 'remove') return this.profileImage.avatarUrl() != null; // removing an existing pic
+    return s != null; // a new staged pic
+  });
+
+  /** Anything to commit — a name change or a photo change. Drives the green disc. */
+  readonly dirty = computed(() => this.nameDirty() || this.photoDirty());
+
+  readonly saveBusy = signal(false);
   readonly phoneBusy = signal(false);
-  /** True when the photo is only a local preview (the upload endpoint isn't live). */
-  readonly sessionOnly = signal(false);
 
   onDragOver(ev: DragEvent): void {
     ev.preventDefault();
@@ -210,50 +291,81 @@ export class AccountPanelComponent {
   onDrop(ev: DragEvent): void {
     ev.preventDefault();
     const file = ev.dataTransfer?.files?.[0];
-    if (file) this.handleFile(file);
+    if (file) this.stageFile(file);
   }
   onPaste(ev: ClipboardEvent): void {
     const file = ev.clipboardData?.files?.[0];
     if (file) {
       ev.preventDefault();
-      this.handleFile(file);
+      this.stageFile(file);
     }
   }
   onFile(input: HTMLInputElement): void {
     const file = input.files?.[0];
     input.value = '';
-    if (file) this.handleFile(file);
+    if (file) this.stageFile(file);
   }
 
-  private handleFile(file: File): void {
+  private stageFile(file: File): void {
     if (!/^image\/(jpeg|png)$/.test(file.type)) {
       this.notificationService.show('Please use a JPG or PNG image.', 'error');
       return;
     }
-    // Immediate session preview so the swap is visible everywhere at once.
     const reader = new FileReader();
-    reader.onload = () => this.profileImage.setPreview(reader.result as string);
+    reader.onload = () => this.stagedAvatar.set({ file, preview: reader.result as string });
     reader.readAsDataURL(file);
-    void this.uploadAvatar(file);
   }
 
-  private async uploadAvatar(file: File): Promise<void> {
-    this.photoBusy.set(true);
-    this.sessionOnly.set(false);
+  /** X on the photo: stage a revert to the apple logo (commits on Save). */
+  removePhoto(): void {
+    this.stagedAvatar.set('remove');
+  }
+
+  /** Commit staged changes: upload/clear the photo, PUT the display name, and
+   *  reflect both everywhere. Degrades to a session-only apply if the endpoints
+   *  aren't live yet. */
+  async saveAll(): Promise<void> {
+    if (!this.dirty() || this.saveBusy()) return;
+    this.saveBusy.set(true);
+    let sessionOnly = false;
     try {
-      const res = await this.imageUpload.uploadUserAvatar(file);
-      if (res?.cdn_url) {
-        this.profileImage.setPersisted(res.cdn_url);
-        this.profileImage.setPreview(null); // persisted wins from here
-        this.notificationService.show('Profile photo updated');
-      } else {
-        this.sessionOnly.set(true);
+      const s = this.stagedAvatar();
+      if (s === 'remove') {
+        // No clear-avatar endpoint yet → session revert to the apple.
+        this.profileImage.setPreview(null);
+        this.profileImage.setPersisted(null);
+        sessionOnly = true;
+      } else if (s) {
+        try {
+          const res = await this.imageUpload.uploadUserAvatar(s.file);
+          if (res?.cdn_url) {
+            this.profileImage.setPersisted(res.cdn_url);
+            this.profileImage.setPreview(null);
+          } else {
+            this.profileImage.setPreview(s.preview);
+            sessionOnly = true;
+          }
+        } catch {
+          this.profileImage.setPreview(s.preview);
+          sessionOnly = true;
+        }
       }
-    } catch {
-      // Endpoint not live yet — keep the local preview; it'll sync once it ships.
-      this.sessionOnly.set(true);
+      if (this.nameDirty()) {
+        const name = this.nameDraft().trim();
+        const ok = await this.userProfile.updateDisplayName(name);
+        this.userProfile.setDisplayName(name);
+        if (!ok) sessionOnly = true;
+      }
+      this.stagedAvatar.set(null);
+      this.nameTouched = false; // field resyncs to the committed name
+      this.notificationService.show(
+        sessionOnly
+          ? 'Saved for this session — syncs to your account once profile save is enabled.'
+          : 'Account updated',
+        sessionOnly ? 'error' : 'success',
+      );
     } finally {
-      this.photoBusy.set(false);
+      this.saveBusy.set(false);
     }
   }
 
@@ -276,6 +388,16 @@ export class AccountPanelComponent {
   }
 
   constructor() {
+    // Seed / resync the name field from the effective name while the user hasn't
+    // typed (runs on load and after a save clears nameTouched).
+    effect(
+      () => {
+        const n = this.displayName();
+        if (!this.nameTouched) this.nameDraft.set(n === 'Your account' ? '' : n);
+      },
+      { allowSignalWrites: true },
+    );
+
     // Load subscription status the first time the overlay opens (drives the
     // delete-confirmation copy).
     effect(() => {
@@ -288,7 +410,18 @@ export class AccountPanelComponent {
     });
   }
 
+  /** Backdrop click closes — unless there are unsaved changes, in which case it's
+   *  swallowed so a stray click can't lose work (dialog convention). */
+  onBackdrop(): void {
+    if (this.dirty()) return;
+    this.close();
+  }
+
   close(): void {
+    // Discard any staged (uncommitted) photo + name edits, then close.
+    this.stagedAvatar.set(null);
+    this.nameTouched = false;
+    this.nameDraft.set(this.displayName() === 'Your account' ? '' : this.displayName());
     this.tab.closeAccount();
   }
 

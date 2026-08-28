@@ -28,11 +28,15 @@
   // Right zone ≈ the notebook rail (30%), tether + logo right-aligned in it — so
   // the macros to its left ends at the notebook's left edge.
   .app-bar-right {
-    flex: 0 0 22%; // reserve a wider right band so the macros isn't quite so wide
+    flex: 0 0 26%; // a bit wider so the display name has room to grow leftward
     margin-left: auto; // pin to the far right; keeps title left when macros is absent
     min-width: 0;
     display: flex;
-    align-items: center;
+    // Full banner height + bottom-aligned, so the tether glyph and the display
+    // name sit on the same baseline as the macros' %/g toggle (banner bottom).
+    align-self: stretch;
+    align-items: flex-end;
+    padding-bottom: 8px;
     // Tether sits at the left of this band (macros' edge); the spacer shoves the
     // display name + avatar to the far right.
     justify-content: flex-start;

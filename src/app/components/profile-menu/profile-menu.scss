@@ -51,7 +51,7 @@
   min-width: 0;
   background: none;
   border: none;
-  padding: 0 0 6px 0;             // drop it toward the bottom (level with %/g)
+  padding: 0;                     // the app-bar-right band handles bottom alignment
   cursor: pointer;
   color: #4da6ff !important;      // hyperlink blue (beats any inherited white)
   font-size: 13px;               // a touch smaller so long emails fit the banner
@@ -64,9 +64,9 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;      // long emails ellipsize rather than blow out
-    // Show ~25 characters, then clip with an ellipsis. Also never wider than the
-    // band, so the avatar always keeps its place on-screen.
-    max-width: min(25ch, 22vw);
+    // Show ~32 characters (there's room to grow leftward), then clip. Still capped
+    // so the avatar always keeps its place on-screen.
+    max-width: min(32ch, 24vw);
   }
 
   &:hover {
