@@ -115,15 +115,15 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
         <div class="lookaside-header">
           <img src="images/yeh_logo_dark.png" alt="" class="la-title-logo" />
           <span class="la-title">My Foods</span>
+          <button
+            type="button"
+            class="quik-add-btn"
+            matTooltip="Add a food to My Foods"
+            matTooltipPosition="below"
+            (click)="addPanelOpen.set(true)">
+            Quik add<mat-icon>add</mat-icon>
+          </button>
           <div class="la-header-tools">
-            <button
-              type="button"
-              class="add-food-toggle"
-              matTooltip="Add a food to My Foods"
-              matTooltipPosition="below"
-              (click)="addPanelOpen.set(true)">
-              <mat-icon>add</mat-icon>
-            </button>
             <button
               type="button"
               class="dialog-disc dialog-disc-cancel close-btn"
