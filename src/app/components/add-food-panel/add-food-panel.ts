@@ -5,20 +5,18 @@
 // learned once. Bloom-window chrome + round confirm/cancel discs per CLAUDE.md
 // Dialog conventions (copied from settings-overlay).
 //
-// Flow (reuses the SAME plumbing the recipe typeahead already uses):
-//   1. Type a name → Enter/Search → FatSecret candidates
-//      (GET /api/userfoods/fatsecret-search).
-//   2. Pick a candidate → create + auto-favorite into MyFoods
-//      (POST /api/userfoods/from-fatsecret → UserFood + imageStatus).
+// Flow (reuses the SAME typeahead the recipe editor uses):
+//   1. Type a name → IngredientTypeahead surfaces as-you-type matches from your
+//      food list, plus an "Add …" that hits the food database (FatSecret).
+//   2. Picking a candidate creates + auto-favorites a UserFood into MyFoods; the
+//      panel re-loads it for the ratify step. Picking a system/Regi match just
+//      favorites it (it's already fully specified) and closes.
 //   3. Ratify the serving geometry (quantity · unit · grams-per-unit) and read
 //      the per-100 g macros, then Save (PATCH /api/foods/serving-geometry).
-//   4. Photo: if the created food already has one, show it; otherwise SUGGEST a
-//      public/product photo (GET /api/image/url) the user can approve, or
-//      replace via drag / paste-screenshot / browse (POST /api/image/upload/product).
-//
-// The food is created the moment a candidate is picked (mirrors the existing
-// typeahead), so the ratify step edits an already-in-MyFoods food; the green
-// disc commits the geometry/photo edits, the red X just closes.
+//   4. Photo: if the food already has one, show it; otherwise SUGGEST a photo —
+//      first our CDN (GET /api/image/url), then Open Food Facts by name — which
+//      the user approves on Save, or replaces via drag / paste-screenshot /
+//      browse (POST /api/image/upload/product).
 import {
   ChangeDetectionStrategy,
   Component,
@@ -33,13 +31,14 @@ import { firstValueFrom } from 'rxjs';
 import { UserFoodService } from '../../services/user-food.service';
 import { FoodsService } from '../../services/foods.service';
 import { ImageUploadService } from '../../services/image-upload.service';
+import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { UserFood } from '../../models/user-food.model';
-import { FatSecretCandidate } from '../../models/fatsecret.model';
+import { IngredientTypeaheadComponent, PickedFood } from '../ingredient-typeahead/ingredient-typeahead';
 
 @Component({
   selector: 'app-add-food-panel',
-  imports: [MatIconModule, MatTooltipModule],
+  imports: [MatIconModule, MatTooltipModule, IngredientTypeaheadComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="afp-backdrop" (click)="onBackdrop()">
@@ -65,46 +64,13 @@ import { FatSecretCandidate } from '../../models/fatsecret.model';
 
         <div class="afp-body">
           @if (!created()) {
-            <!-- Stage 1: search FatSecret by name. -->
-            <label class="afp-label" for="afp-search">Search for a food</label>
-            <div class="afp-search-row">
-              <input
-                id="afp-search"
-                type="text"
-                class="afp-input"
-                [value]="query()"
-                placeholder="e.g. greek yogurt, chicken breast…"
-                (input)="query.set($any($event.target).value)"
-                (keydown.enter)="runSearch()" />
-              <button type="button" class="afp-search-btn"
-                [disabled]="!query().trim() || searching()"
-                (click)="runSearch()">
-                <mat-icon>{{ searching() ? 'hourglass_empty' : 'search' }}</mat-icon>
-              </button>
-            </div>
-
-            @if (searching()) {
-              <p class="afp-hint">Searching…</p>
-            } @else if (searched()) {
-              @if (candidates().length) {
-                <div class="afp-candidates">
-                  @for (c of candidates(); track c.fatsecretFoodId) {
-                    <button type="button" class="afp-cand" [disabled]="creating()"
-                      (click)="pickCandidate(c)">
-                      <span class="afp-cand-name">
-                        {{ c.name }}@if (c.brand) { <em> · {{ c.brand }}</em> }
-                      </span>
-                      <span class="afp-cand-sub">
-                        {{ c.servingDescription }}@if (c.calories) { · {{ c.calories }} cal }
-                      </span>
-                    </button>
-                  }
-                </div>
-              } @else {
-                <p class="afp-hint">No matches — try a different name.</p>
-              }
+            <!-- Stage 1: typeahead — as-you-type matches + food-database add. -->
+            <label class="afp-label">Search for a food</label>
+            <app-ingredient-typeahead (foodPicked)="onPicked($event)" />
+            @if (resolving()) {
+              <p class="afp-hint">Adding…</p>
             } @else {
-              <p class="afp-hint">Type a food name and press Enter to search the food database.</p>
+              <p class="afp-hint">Start typing — pick a match, or add a new food from the database.</p>
             }
           } @else {
             <!-- Stage 2: ratify serving geometry + photo for the created food. -->
@@ -170,6 +136,9 @@ import { FatSecretCandidate } from '../../models/fatsecret.model';
                   <div class="afp-photo-overlay">
                     @if (photoBusy()) {
                       <span>Uploading…</span>
+                    } @else if (photoSearching()) {
+                      <mat-icon>image_search</mat-icon>
+                      <span>Looking for a photo…</span>
                     } @else if (photoUrl()) {
                       <mat-icon>{{ photoIsSuggestion() ? 'auto_awesome' : 'photo_camera' }}</mat-icon>
                       <span>{{ photoIsSuggestion() ? 'Suggested — Save to keep, or click to replace' : 'Click to replace' }}</span>
@@ -194,6 +163,7 @@ export class AddFoodPanelComponent {
   private userFoods = inject(UserFoodService);
   private foodsService = inject(FoodsService);
   private imageUpload = inject(ImageUploadService);
+  private prefs = inject(FoodPreferencesService);
   private notification = inject(NotificationService);
 
   /** Fired when the dialog should close (host controls visibility with @if). */
@@ -201,26 +171,40 @@ export class AddFoodPanelComponent {
   /** Fired when a food was added/changed — the host reloads its MyFoods list. */
   readonly added = output<void>();
 
-  // ---- Stage 1: search -----------------------------------------------------
-  readonly query = signal('');
-  readonly searching = signal(false);
-  readonly searched = signal(false);
-  readonly candidates = signal<FatSecretCandidate[]>([]);
-  readonly creating = signal(false);
+  // ---- Stage 1: typeahead pick → resolve to the ratify stage ---------------
+  /** A pick is being resolved (created food fetched / system food favorited). */
+  readonly resolving = signal(false);
 
-  async runSearch(): Promise<void> {
-    const q = this.query().trim();
-    if (!q || this.searching()) return;
-    this.searching.set(true);
-    this.searched.set(true);
+  async onPicked(p: PickedFood): Promise<void> {
+    if (this.resolving()) return;
+    this.resolving.set(true);
     try {
-      const res = await firstValueFrom(this.userFoods.searchFatSecret(q, 10));
-      this.candidates.set(res?.candidates ?? []);
-    } catch {
-      this.candidates.set([]);
-      this.notification.show('Food search failed — try again.', 'error');
+      if (p.foodSource === 'userfood') {
+        // Freshly created (or existing) UserFood — load it for ratification.
+        const food = await this.userFoods.getUserFoodById(p.foodId);
+        if (!food) {
+          this.notification.show('Could not load the added food.', 'error');
+          return;
+        }
+        this.didAdd = true;
+        this.setCreated(food);
+      } else {
+        // A system / Regi match — already fully specified (serving, photo). The
+        // "add" is just favoriting it into MyFoods; then we're done.
+        if (!this.prefs.isAllowed(p.foodId)) {
+          this.prefs.toggleFavoriteLocal(p.foodId);
+          try {
+            await firstValueFrom(this.prefs.saveAllChanges());
+          } catch {
+            /* the debounced autosave will still flush it */
+          }
+        }
+        this.didAdd = true;
+        this.notification.show(`Added ${p.name} to My Foods.`, 'success');
+        this.finish();
+      }
     } finally {
-      this.searching.set(false);
+      this.resolving.set(false);
     }
   }
 
@@ -240,53 +224,43 @@ export class AddFoodPanelComponent {
   readonly photoUrl = signal('');
   readonly photoIsSuggestion = signal(false);
   readonly photoBusy = signal(false);
+  readonly photoSearching = signal(false);
 
-  async pickCandidate(c: FatSecretCandidate): Promise<void> {
-    if (this.creating()) return;
-    this.creating.set(true);
-    try {
-      const res = await firstValueFrom(
-        this.userFoods.createFromFatSecret({ fatsecretFoodId: c.fatsecretFoodId }),
-      );
-      const food = res?.food;
-      if (!food?.id) {
-        this.notification.show('Could not add the food.', 'error');
-        return;
-      }
-      this.didAdd = true;
-      this.created.set(food);
-      // Seed the ratify fields from the created food.
-      this.baseUnit = food.servingUnit ?? '';
-      this.baseGrams = food.servingGramsPerUnit ?? null;
-      this.baseQty = food.servingSizeMultiplicand ?? 1;
-      this.unit.set(this.baseUnit);
-      this.gramsPerUnit.set(this.baseGrams);
-      this.quantity.set(this.baseQty);
-      // Photo: use the food's own image if it has one, else suggest one.
-      if (food.foodImage) {
-        this.photoUrl.set(food.foodImage);
-        this.photoIsSuggestion.set(false);
-      } else {
-        void this.suggestPhoto(food);
-      }
-    } catch {
-      this.notification.show('Could not add the food.', 'error');
-    } finally {
-      this.creating.set(false);
+  /** Seed the ratify fields + photo from a just-resolved UserFood. */
+  private setCreated(food: UserFood): void {
+    this.created.set(food);
+    this.baseUnit = food.servingUnit ?? '';
+    this.baseGrams = food.servingGramsPerUnit ?? null;
+    this.baseQty = food.servingSizeMultiplicand ?? 1;
+    this.unit.set(this.baseUnit);
+    this.gramsPerUnit.set(this.baseGrams);
+    this.quantity.set(this.baseQty);
+    if (food.foodImage) {
+      this.photoUrl.set(food.foodImage);
+      this.photoIsSuggestion.set(false);
+    } else {
+      void this.suggestPhoto(food);
     }
   }
 
+  /** Suggest a photo when the food has none: our CDN by description first, then
+   *  Open Food Facts (.org) by name as a best-effort fallback. */
   private async suggestPhoto(food: UserFood): Promise<void> {
-    const desc = food.description || food.shortDescription;
+    const desc = (food.description || food.shortDescription || '').trim();
     if (!desc) return;
+    this.photoSearching.set(true);
     try {
-      const res = await this.imageUpload.lookupImageUrl(desc);
-      if (res?.product_image_url) {
-        this.photoUrl.set(res.product_image_url);
+      const cdn = await this.imageUpload.lookupImageUrl(desc);
+      let url = cdn?.product_image_url || '';
+      if (!url) url = await this.imageUpload.searchOpenFoodFactsImage(desc);
+      if (url) {
+        this.photoUrl.set(url);
         this.photoIsSuggestion.set(true);
       }
     } catch {
       /* no suggestion — the user can still upload one. */
+    } finally {
+      this.photoSearching.set(false);
     }
   }
 
@@ -295,19 +269,17 @@ export class AddFoodPanelComponent {
     return f?.shortDescription?.trim() || f?.description || 'Food';
   }
 
-  /** Per-100 g macros derived from the created food's nutrition facts, when the
-   *  reference-serving grams (servingSizeG) is known; otherwise null. */
+  /** Per-100 g macros. The API stores nutritionFacts ALREADY normalized per
+   *  100 g, so these are read straight through (no serving-size scaling). */
   readonly per100 = computed<{ cal: number; protein: number; fat: number; carbs: number } | null>(() => {
     const nf = this.created()?.nutritionFacts;
     if (!nf) return null;
-    const g = nf.servingSizeG ?? 0;
-    const factor = g > 0 ? 100 / g : 1; // no basis → show the stored values as-is
-    const round = (n: number | undefined) => Math.round((n ?? 0) * factor);
+    const r = (n: number | undefined) => Math.round(n ?? 0);
     return {
-      cal: round(nf.calories),
-      protein: round(nf.proteinG),
-      fat: round(nf.totalFatG),
-      carbs: round(nf.totalCarbohydrateG),
+      cal: r(nf.calories),
+      protein: r(nf.proteinG),
+      fat: r(nf.totalFatG),
+      carbs: r(nf.totalCarbohydrateG),
     };
   });
 
@@ -382,8 +354,8 @@ export class AddFoodPanelComponent {
     }
   }
 
-  /** Approve a suggested photo: fetch the CDN image, wrap it as a File, and push
-   *  it through the SAME upload path so the food gets a proper CDN + thumbnail. */
+  /** Approve a suggested photo: fetch the image, wrap it as a File, and push it
+   *  through the SAME upload path so the food gets a proper CDN + thumbnail. */
   private async approveSuggestedPhoto(): Promise<void> {
     const food = this.created();
     const url = this.photoUrl();
@@ -391,7 +363,7 @@ export class AddFoodPanelComponent {
     this.photoBusy.set(true);
     try {
       const blob = await (await fetch(url)).blob();
-      const type = /png$/i.test(url) ? 'image/png' : 'image/jpeg';
+      const type = /png(\?|$)/i.test(url) ? 'image/png' : 'image/jpeg';
       const file = new File([await blob.arrayBuffer()], 'suggested-photo', { type });
       const res = await this.imageUpload.uploadProductImage(food.id, file);
       if (res?.cdn_url) this.photoUrl.set(res.cdn_url);

@@ -3,7 +3,10 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { ImageUrlLookupResponse } from '../models/image-url.model';
+import {
+  ImageUrlLookupResponse,
+  OpenFoodFactsSearchResponse,
+} from '../models/image-url.model';
 
 export interface ProductUploadResponse {
   success: boolean;
@@ -37,6 +40,32 @@ export class ImageUploadService {
         { params },
       ),
     );
+  }
+
+  /** Best-effort photo SUGGESTION by name from Open Food Facts (.org). Used when
+   *  our own CDN has no image for a just-added food — regi-api only pulls OFF
+   *  images by GTIN, so a name-add with no barcode never gets one server-side.
+   *  Public + CORS-enabled + no auth. Returns the best front image URL, or ''. */
+  async searchOpenFoodFactsImage(description: string): Promise<string> {
+    const params = new HttpParams()
+      .set('search_terms', description)
+      .set('search_simple', '1')
+      .set('action', 'process')
+      .set('json', '1')
+      .set('page_size', '5')
+      .set('fields', 'product_name,image_front_url,image_url');
+    try {
+      const res = await firstValueFrom(
+        this.http.get<OpenFoodFactsSearchResponse>(
+          'https://world.openfoodfacts.org/cgi/search.pl',
+          { params },
+        ),
+      );
+      const hit = (res?.products ?? []).find((p) => p.image_front_url || p.image_url);
+      return hit?.image_front_url || hit?.image_url || '';
+    } catch {
+      return '';
+    }
   }
 
   async uploadProductImage(foodId: number, image: File): Promise<ProductUploadResponse> {
