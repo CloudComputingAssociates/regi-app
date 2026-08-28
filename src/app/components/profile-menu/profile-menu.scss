@@ -13,11 +13,13 @@
   }
 }
 
-// Avatar + name cluster; both open the menu.
+// Avatar + name cluster; both open the menu. Bottom-aligned so the name sits low
+// (level with the macros' %/g toggle), with the name padded up to the avatar.
 .profile-trigger {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
+  min-width: 0;
 }
 
 // Avatar (Apple logo) — a round image button that opens the menu.
@@ -43,32 +45,26 @@
 .profile-name-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  min-width: 0;
   background: none;
   border: none;
-  padding: 4px 8px;
+  padding: 0 0 6px 0;             // drop it toward the bottom (level with %/g)
   cursor: pointer;
   color: #4da6ff !important;      // hyperlink blue (beats any inherited white)
   font-size: 14px;
   font-weight: 600;
-  white-space: nowrap;
-
-  .profile-name-icon {
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
-    line-height: 18px;
-    color: #4da6ff;
-  }
 
   .profile-name-text {
     text-decoration: underline;
     text-underline-offset: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;      // long emails ellipsize rather than blow out
+    max-width: 22vw;
   }
 
   &:hover {
     color: #7cc0ff !important;
-    .profile-name-icon { color: #7cc0ff; }
   }
 }
 

@@ -1,4 +1,6 @@
 import { Component, Input, ChangeDetectionStrategy, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs/operators';
 import { AsyncPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,8 +23,15 @@ import { RoleService } from '../../services/role.service';
       <!-- While Auth0 is loading, show nothing to avoid flicker -->
       <div class="auth-loading"></div>
     } @else if (auth.isAuthenticated$ | async) {
-      <!-- Just the avatar (the logo) opens the menu — name + pawn removed. -->
+      <!-- Display name (underlined link) + the avatar; BOTH open the RH nav menu.
+           The name falls back to the email when Auth0 has no display name (email/
+           password sign-ups), and is hidden entirely if neither is known. -->
       <div class="profile-trigger">
+        @if (displayName(); as name) {
+          <button type="button" class="profile-name-btn" [matMenuTriggerFor]="menu" aria-label="Open menu">
+            <span class="profile-name-text">{{ name }}</span>
+          </button>
+        }
         <button class="profile-btn" [matMenuTriggerFor]="menu" aria-label="Open menu">
           <img [src]="defaultImage" alt="Profile" class="profile-img" />
         </button>
@@ -84,6 +93,13 @@ import { RoleService } from '../../services/role.service';
 export class ProfileMenuComponent {
   @Input() defaultImage = 'images/yeh_logo_dark.png';
   auth = inject(AuthService);
+
+  /** The user's display name → email fallback → null (hide the link). Both this
+   *  link and the avatar open the same RH nav menu. */
+  readonly displayName = toSignal(
+    this.auth.user$.pipe(map((u) => u?.name?.trim() || u?.email?.trim() || null)),
+    { initialValue: null },
+  );
   subscriptionService = inject(SubscriptionService);
   roleService = inject(RoleService);
   // Public so the template can read tabService.bugOpen() for the Bug menu

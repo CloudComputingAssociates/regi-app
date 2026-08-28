@@ -51,12 +51,15 @@ import { map } from 'rxjs/operators';
           <div class="app-bar-macros"><app-macros /></div>
         }
 
-        <!-- Right zone ≈ the notebook rail width, so the macros ends at the
-             notebook's left edge; tether + logo sit above the notebook. -->
+        <!-- Right zone ≈ the notebook rail width. The tether pins to the LEFT of
+             this band (right at the macros' edge, with the macros' own right
+             margin as padding); a flex spacer pushes the display name + avatar to
+             the far right (the name right-justified up to the circle). -->
         <div class="app-bar-right">
           @if (isAuthenticated()) {
             <app-tether-indicator />
           }
+          <span class="app-bar-right-spacer"></span>
           <app-profile-menu />
         </div>
       </div>

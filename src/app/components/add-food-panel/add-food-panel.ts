@@ -22,6 +22,7 @@ import {
   Component,
   computed,
   inject,
+  input,
   output,
   signal,
 } from '@angular/core';
@@ -64,9 +65,10 @@ import { IngredientTypeaheadComponent, PickedFood } from '../ingredient-typeahea
 
         <div class="afp-body">
           @if (!created()) {
-            <!-- Stage 1: typeahead — as-you-type matches + food-database add. -->
+            <!-- Stage 1: typeahead — as-you-type matches + food-database add.
+                 Seeded with the term the user typed in the panel that opened us. -->
             <label class="afp-label">Search for a food</label>
-            <app-ingredient-typeahead (foodPicked)="onPicked($event)" />
+            <app-ingredient-typeahead [name]="initialQuery()" (foodPicked)="onPicked($event)" />
             @if (resolving()) {
               <p class="afp-hint">Adding…</p>
             } @else {
@@ -165,6 +167,10 @@ export class AddFoodPanelComponent {
   private imageUpload = inject(ImageUploadService);
   private prefs = inject(FoodPreferencesService);
   private notification = inject(NotificationService);
+
+  /** Optional search term to seed the typeahead with (e.g. the text the user had
+   *  typed in the My Foods search when they hit "Quik add +"). */
+  readonly initialQuery = input<string>('');
 
   /** Fired when the dialog should close (host controls visibility with @if). */
   readonly close = output<void>();

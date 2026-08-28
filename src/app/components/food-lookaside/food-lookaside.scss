@@ -62,26 +62,7 @@
     white-space: nowrap;
   }
 
-  // Left-aligned "Quik add +" pill — sits right after the title.
-  .quik-add-btn {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    padding: 3px 8px 3px 10px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #b7f5c4;
-    background: #3a3a3a;
-    border: 1px solid #4a4a4a;
-    border-radius: 6px;
-    cursor: pointer;
-    white-space: nowrap;
-    .mat-icon, mat-icon { width: 16px; height: 16px; font-size: 16px; }
-    &:hover { border-color: #6a6f75; color: #d3ffdd; }
-  }
-
-  // Right-aligned cluster: just the X now (Quik add moved to the left).
+  // Right-aligned cluster: collapse-all + the X.
   .la-header-tools {
     margin-left: auto;
     display: flex;
@@ -90,6 +71,26 @@
 
     .close-btn { margin-left: 0; }
   }
+}
+
+// "Quik add +" pill — appears at the end of the Search Foods box when the typed
+// term isn't in My Foods, to add it.
+.quik-add-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 8px 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b7f5c4;
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  .mat-icon, mat-icon { width: 16px; height: 16px; font-size: 16px; }
+  &:hover { border-color: #6a6f75; color: #d3ffdd; }
 }
 
 // Segmented two-button tab toggle — a single raised pill split in two.

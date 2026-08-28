@@ -110,20 +110,23 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
         }
       } @else {
         <!-- Binder surface — MyFoods only. Titled header (YEH apple logo, sized
-             like "Menus & Meals"); collapse-all sits beside the X. The "+" opens
-             the shared Add-Food panel. -->
+             like "Menus & Meals"); collapse-all sits beside the X. Adding a food
+             is implicit: search filters My Foods, and when the term isn't found a
+             "Quik add +" appears at the end of the box to add it (seeding the
+             shared Add-Food popup, where the food info + photo load lazily). -->
         <div class="lookaside-header">
           <img src="images/yeh_logo_dark.png" alt="" class="la-title-logo" />
           <span class="la-title">My Foods</span>
-          <button
-            type="button"
-            class="quik-add-btn"
-            matTooltip="Add a food to My Foods"
-            matTooltipPosition="below"
-            (click)="addPanelOpen.set(true)">
-            Quik add<mat-icon>add</mat-icon>
-          </button>
           <div class="la-header-tools">
+            <button
+              type="button"
+              class="la-collapse-all"
+              [class.active]="allCatsCollapsed()"
+              [matTooltip]="allCatsCollapsed() ? 'Expand all categories' : 'Collapse all categories'"
+              matTooltipPosition="below"
+              (click)="allCatsCollapsed() ? expandAllCats() : collapseAllCats()">
+              <mat-icon>{{ allCatsCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
+            </button>
             <button
               type="button"
               class="dialog-disc dialog-disc-cancel close-btn"
@@ -141,16 +144,17 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
             class="search-input"
             [value]="search()"
             (input)="search.set($any($event.target).value)"
-            placeholder="Search My Foods…" />
-          <button
-            type="button"
-            class="la-collapse-all"
-            [class.active]="allCatsCollapsed()"
-            [matTooltip]="allCatsCollapsed() ? 'Expand all categories' : 'Collapse all categories'"
-            matTooltipPosition="below"
-            (click)="allCatsCollapsed() ? expandAllCats() : collapseAllCats()">
-            <mat-icon>{{ allCatsCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
-          </button>
+            placeholder="Search Foods…" />
+          @if (showQuikAdd()) {
+            <button
+              type="button"
+              class="quik-add-btn"
+              [matTooltip]="'Add “' + search().trim() + '” to My Foods'"
+              matTooltipPosition="below"
+              (click)="openQuikAdd()">
+              Quik add<mat-icon>add</mat-icon>
+            </button>
+          }
         </div>
       }
 
@@ -185,7 +189,7 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
     </div>
 
     @if (addPanelOpen()) {
-      <app-add-food-panel (close)="addPanelOpen.set(false)" (added)="onFoodAdded()" />
+      <app-add-food-panel [initialQuery]="addSeed()" (close)="addPanelOpen.set(false)" (added)="onFoodAdded()" />
     }
   `,
   styleUrls: ['./food-lookaside.scss'],
@@ -232,10 +236,22 @@ export class FoodLookasideComponent {
    *  macros from the food record), persist, then refresh the list. */
   readonly addOpen = signal(false);
 
-  /** Binder surface: the "+" opens the shared Add-Food dialog. */
+  /** Binder surface: "Quik add +" opens the shared Add-Food dialog, seeded with
+   *  the current search term. It only shows when the search finds nothing in
+   *  My Foods — i.e. the food isn't there yet, so offer to add it. */
   readonly addPanelOpen = signal(false);
-  /** The dialog added/changed a food — refresh MyFoods so it appears. */
+  readonly addSeed = signal('');
+  readonly showQuikAdd = computed<boolean>(
+    () => this.search().trim().length > 0 && this.currentGroups().length === 0,
+  );
+  openQuikAdd(): void {
+    this.addSeed.set(this.search().trim());
+    this.addPanelOpen.set(true);
+  }
+  /** The dialog added/changed a food — clear the search and refresh MyFoods so
+   *  the new food shows in the full list. */
   async onFoodAdded(): Promise<void> {
+    this.search.set('');
     await this.load();
   }
 

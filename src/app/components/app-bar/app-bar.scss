@@ -33,8 +33,15 @@
     min-width: 0;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
+    // Tether sits at the left of this band (macros' edge); the spacer shoves the
+    // display name + avatar to the far right.
+    justify-content: flex-start;
+  }
+
+  // Flexible gap between the tether (macros edge) and the name/avatar (far right).
+  .app-bar-right-spacer {
+    flex: 1 1 auto;
+    min-width: 8px;
   }
 
   .app-bar-macros {
