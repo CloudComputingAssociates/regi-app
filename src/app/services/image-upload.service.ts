@@ -15,6 +15,13 @@ export interface ProductUploadResponse {
   food_id: number;
 }
 
+/** POST /api/image/upload/avatar response — keyed off the JWT user, so no food_id. */
+export interface AvatarUploadResponse {
+  success: boolean;
+  cdn_url: string;
+  thumbnail_url: string;
+}
+
 interface NutritionUploadResponse {
   success: boolean;
   cdn_url: string;
@@ -72,13 +79,13 @@ export class ImageUploadService {
    *  by the JWT, no id in the body). Returns the CDN + thumbnail urls. NOTE: this
    *  endpoint is part of the pending avatar handoff; until it deploys the call
    *  404s and callers fall back to a local preview. */
-  async uploadUserAvatar(image: File): Promise<ProductUploadResponse> {
+  async uploadUserAvatar(image: File): Promise<AvatarUploadResponse> {
     const formData = new FormData();
     formData.append('source', 'user');
     formData.append('image', image);
 
     return firstValueFrom(
-      this.http.post<ProductUploadResponse>(
+      this.http.post<AvatarUploadResponse>(
         `${this.imageApiUrl}/api/image/upload/avatar`,
         formData,
       ),

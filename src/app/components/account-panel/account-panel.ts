@@ -17,6 +17,7 @@ import { map } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '@auth0/auth0-angular';
 import { TabService } from '../../services/tab.service';
 import { NotificationService } from '../../services/notification.service';
@@ -25,6 +26,7 @@ import { ProfileImageService } from '../../services/profile-image.service';
 import { ImageUploadService } from '../../services/image-upload.service';
 import { TetherService } from '../../services/tether.service';
 import { UserProfileService } from '../../services/user-profile.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-account-panel',
@@ -112,16 +114,21 @@ import { UserProfileService } from '../../services/user-profile.service';
             </div>
             <input #fileInput type="file" accept="image/jpeg,image/png" hidden (change)="onFile(fileInput)" />
 
-            <button
-              type="button"
-              class="acct-phone-btn"
-              [disabled]="phoneBusy()"
-              [matTooltip]="tether.anyLive() ? 'Open the camera on your tethered phone' : 'Connect your phone (tether) to use this'"
-              matTooltipPosition="above"
-              (click)="captureViaPhone()">
-              <mat-icon>photo_camera</mat-icon>
-              {{ phoneBusy() ? 'Asking your phone…' : 'Take it with my phone' }}
-            </button>
+            <!-- Camera-over-tether: hidden until the API command channel + mobile
+                 handler ship (environment.phoneCaptureEnabled). The wiring stays
+                 intact; flipping the flag reveals the button. -->
+            @if (phoneCaptureEnabled) {
+              <button
+                type="button"
+                class="acct-phone-btn"
+                [disabled]="phoneBusy() || !tether.anyLive()"
+                [matTooltip]="tether.anyLive() ? 'Open the camera on your tethered phone' : 'Connect your phone (tether) to use this'"
+                matTooltipPosition="above"
+                (click)="captureViaPhone()">
+                <mat-icon>photo_camera</mat-icon>
+                {{ phoneBusy() ? 'Asking your phone…' : 'Take it with my phone' }}
+              </button>
+            }
 
             @if (dirty()) {
               <p class="acct-note">Press the green ✓ (top-right) to save your changes.</p>
@@ -214,6 +221,9 @@ export class AccountPanelComponent {
   private imageUpload = inject(ImageUploadService);
   readonly tether = inject(TetherService);
   private userProfile = inject(UserProfileService);
+
+  /** "Take it with my phone" is hidden until the backend command channel ships. */
+  readonly phoneCaptureEnabled = environment.phoneCaptureEnabled;
 
   showConfirmModal = signal(false);
   isDeleting = signal(false);
@@ -369,7 +379,8 @@ export class AccountPanelComponent {
     }
   }
 
-  /** Fire the camera-capture command to the user's live tethered phone. */
+  /** Fire the camera-capture command to the user's live tethered phone. The phone
+   *  picks it up on its next tether poll and opens the camera. */
   async captureViaPhone(): Promise<void> {
     const deviceId = this.tether.firstLiveDeviceId();
     if (deviceId == null) {
@@ -380,8 +391,15 @@ export class AccountPanelComponent {
     try {
       await this.tether.requestAvatarCapture(deviceId);
       this.notificationService.show('Check your phone — open the camera to take your photo.');
-    } catch {
-      this.notificationService.show("Couldn't reach your phone yet — this turns on when phone capture ships.", 'error');
+    } catch (err) {
+      const status = err instanceof HttpErrorResponse ? err.status : 0;
+      const msg =
+        status === 409
+          ? 'Your phone isn’t connected right now — open the app on your phone and try again.'
+          : status === 404
+            ? 'Phone not found — re-tether it from the app and try again.'
+            : 'Couldn’t reach your phone. Try again.';
+      this.notificationService.show(msg, 'error');
     } finally {
       this.phoneBusy.set(false);
     }
