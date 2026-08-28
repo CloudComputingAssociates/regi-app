@@ -11,7 +11,10 @@
   
   .app-bar-content {
     display: flex;
-    align-items: center;
+    // BOTTOM-align the row so the macros %/g, the tether glyph, and the display
+    // name all share the banner-bottom baseline. The title + hamburger opt back
+    // to centered via their own align-self so they don't drop.
+    align-items: flex-end;
     // Pack left so RegiMenu stays pinned next to the hamburger. The right zone
     // is pushed over with margin-left:auto — NOT space-between, which would
     // center the title whenever the macros bar is absent (closed / other tabs).
@@ -32,11 +35,10 @@
     margin-left: auto; // pin to the far right; keeps title left when macros is absent
     min-width: 0;
     display: flex;
-    // Full banner height + bottom-aligned, so the tether glyph and the display
-    // name sit on the same baseline as the macros' %/g toggle (banner bottom).
-    align-self: stretch;
+    // The band already bottom-aligns with the row (app-bar-content flex-end); keep
+    // the tether + name at that same bottom baseline as the macros %/g.
     align-items: flex-end;
-    padding-bottom: 8px;
+    padding-bottom: 3px;  // tiny nudge to match the %/g's in-padding drop
     // Tether sits at the left of this band (macros' edge); the spacer shoves the
     // display name + avatar to the far right.
     justify-content: flex-start;
@@ -53,7 +55,7 @@
     min-width: 0;
     margin-left: 24px;   // small gap after the RegiMenu title
     margin-right: 12px;
-    align-self: center;
+    align-self: flex-end;  // drop the macros block to the banner bottom (%/g line)
 
     // Restyle the macros to lay on black: no component chrome, grey per-bar tracks
     // so the fill boundary reads against black, darker cals + %/g button.
@@ -94,6 +96,7 @@
 
   .menu-button {
     flex-shrink: 0;
+    align-self: center;  // stay centered even though the row bottom-aligns
     color: #ffffff;  // White - clickable
     z-index: 1;  // Keep hamburger above title
 
@@ -114,6 +117,7 @@
   // as the logo (per spec) so it reads as a sibling, not a subtitle.
   .title-area {
     flex: 0 1 auto; // don't GROW — was flex:1, which ate the space and shoved macros right
+    align-self: center;  // keep the RegiMenu title centered while the row bottom-aligns
     display: flex;
     flex-direction: row;
     align-items: baseline;
