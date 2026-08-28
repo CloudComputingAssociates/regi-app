@@ -374,6 +374,8 @@ export class AccountPanelComponent {
           : 'Account updated',
         sessionOnly ? 'error' : 'success',
       );
+      // Green check = save AND close (dialog convention).
+      this.tab.closeAccount();
     } finally {
       this.saveBusy.set(false);
     }

@@ -2,6 +2,7 @@ import { Component, Input, ChangeDetectionStrategy, computed, inject } from '@an
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import { ProfileImageService } from '../../services/profile-image.service';
+import { UserProfileService } from '../../services/user-profile.service';
 import { AsyncPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -99,12 +100,16 @@ export class ProfileMenuComponent {
   /** The user's avatar (session preview or persisted) or the default apple logo. */
   readonly avatarSrc = computed(() => this.profileImage.avatarUrl() ?? this.defaultImage);
 
-  /** The user's display name → email fallback → null (hide the link). Both this
-   *  link and the avatar open the same RH nav menu. */
-  readonly displayName = toSignal(
+  private userProfile = inject(UserProfileService);
+  /** Auth0's name/email — the fallback when the user hasn't set a display name. */
+  private readonly authName = toSignal(
     this.auth.user$.pipe(map((u) => u?.name?.trim() || u?.email?.trim() || null)),
     { initialValue: null },
   );
+  /** The display name shown in the app-bar → the user's edited/persisted name
+   *  wins (UserProfileService), else Auth0's name/email, else null (hide). Both
+   *  this link and the avatar open the same RH nav menu. */
+  readonly displayName = computed(() => this.userProfile.displayName() || this.authName());
   subscriptionService = inject(SubscriptionService);
   roleService = inject(RoleService);
   // Public so the template can read tabService.bugOpen() for the Bug menu
