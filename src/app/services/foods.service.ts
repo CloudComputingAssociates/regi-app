@@ -5,6 +5,10 @@ import { Observable, firstValueFrom } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Food, FoodSearchResponse } from '../models/food.model';
+import {
+  ServingGeometryPatchRequest,
+  ServingGeometryPatchResponse,
+} from '../models/serving-geometry.model';
 
 // Raw shape returned by the AllFoods-view endpoints (e.g. /api/lists/{name}/items).
 // Differs from FoodSchema in two ways: the id key is `foodId`, and nutrition
@@ -90,6 +94,19 @@ export class FoodsService {
   searchYehApprovedFoods(limit: number = 50): Observable<FoodSearchResponse> {
     const url = `${this.baseUrl}/foods/search/all/yehapproved?limit=${limit}`;
     return this.http.get<FoodSearchResponse>(url);
+  }
+
+  /** PATCH /api/foods/serving-geometry — set/teach a food's portion geometry
+   *  (unit + grams-per-unit + optional default quantity). A system food is
+   *  CLONED to a UserFood first (response.cloned=true, userFoodId is the clone),
+   *  a userfood is edited in place. Used by the Add-Food panel to ratify units. */
+  patchServingGeometry(
+    body: ServingGeometryPatchRequest,
+  ): Observable<ServingGeometryPatchResponse> {
+    return this.http.patch<ServingGeometryPatchResponse>(
+      `${this.baseUrl}/foods/serving-geometry`,
+      body,
+    );
   }
 
   /** Fetch a single canonical Food (Foods table) by id via GET /api/foods/{id}.

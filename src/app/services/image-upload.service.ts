@@ -1,8 +1,9 @@
 // src/app/services/image-upload.service.ts
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { ImageUrlLookupResponse } from '../models/image-url.model';
 
 export interface ProductUploadResponse {
   success: boolean;
@@ -24,6 +25,19 @@ interface NutritionUploadResponse {
 export class ImageUploadService {
   private http = inject(HttpClient);
   private imageApiUrl = environment.imageApiUrl;
+
+  /** GET /api/image/url?description= — look up an existing CDN product photo for
+   *  a food by (fuzzy) description. Used by the Add-Food panel to SUGGEST a photo
+   *  for a just-added food that has none. Fields are '' when nothing matched. */
+  async lookupImageUrl(description: string): Promise<ImageUrlLookupResponse> {
+    const params = new HttpParams().set('description', description);
+    return firstValueFrom(
+      this.http.get<ImageUrlLookupResponse>(
+        `${this.imageApiUrl}/api/image/url`,
+        { params },
+      ),
+    );
+  }
 
   async uploadProductImage(foodId: number, image: File): Promise<ProductUploadResponse> {
     const formData = new FormData();

@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { CurateWizardComponent } from '../curate-wizard/curate-wizard';
+import { AddFoodPanelComponent } from '../add-food-panel/add-food-panel';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { UserFoodService } from '../../services/user-food.service';
@@ -94,7 +95,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
 
 @Component({
   selector: 'app-foods-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, NutritionFactsLabelComponent, CurateWizardComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, NutritionFactsLabelComponent, CurateWizardComponent, AddFoodPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="foods-panel-container">
@@ -474,6 +475,19 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     <option disabled>──────────────</option>
                     <option value="restricted">Restricted</option>
                   </select>
+                  <!-- Add a food to MyFoods — opens the shared Add-Food dialog.
+                       Only meaningful for the MyFoods list. -->
+                  @if (spinSource() === 'myfoods') {
+                    <button
+                      type="button"
+                      class="bar-icon-btn add-food-btn"
+                      (click)="onAddFood()"
+                      matTooltip="Add a food to My Foods"
+                      matTooltipPosition="below"
+                      aria-label="Add a food to My Foods">
+                      <mat-icon aria-hidden="true">add</mat-icon>
+                    </button>
+                  }
                   <input
                     type="text"
                     class="picker-search-input regi-field"
@@ -830,6 +844,12 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
            so newly-favorited foods appear. -->
       @if (wizardOpen()) {
         <app-curate-wizard (close)="onWizardClose()" />
+      }
+
+      <!-- Shared Add-Food dialog — the same panel the binder's "+" opens. On
+           add it reloads MyFoods so the new food appears. -->
+      @if (addFoodPanelOpen()) {
+        <app-add-food-panel (close)="addFoodPanelOpen.set(false)" (added)="onAddFoodAdded()" />
       }
     </div>
   `,
@@ -1365,11 +1385,17 @@ export class FoodsPanelComponent {
 
   /** Food List dropdown change handler. Picking a new list opens that list's
    *  accordion fully expanded so the user sees every category right away. */
-  /** Add food (+): flip the list to MyFoods, then open the phone-app tether
-   *  dialog — adding a MyFood happens in the mobile app (QR / download for now). */
+  /** Add food (+): flip the list to MyFoods, then open the shared Add-Food
+   *  dialog (the same panel the binder's "+" opens). Search a food, ratify its
+   *  serving/units + photo, and it lands in MyFoods. */
+  readonly addFoodPanelOpen = signal(false);
   onAddFood(): void {
     this.onSpinSourceChange('myfoods');
-    this.tabService.openMobileApp();
+    this.addFoodPanelOpen.set(true);
+  }
+  /** The Add-Food dialog added/changed a food — reload MyFoods so it appears. */
+  async onAddFoodAdded(): Promise<void> {
+    await this.refreshServerMyFoods();
   }
 
   onSpinSourceChange(value: SpinSource): void {

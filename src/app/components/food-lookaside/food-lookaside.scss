@@ -46,6 +46,32 @@
     font-weight: 500;
     color: #f1f1f1;
   }
+
+  // Binder surface title: YEH apple logo + "My Foods", sized like the
+  // "Menus & Meals" toolbar title (20px / 600 / accent blue).
+  .la-title-logo {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+  }
+  .la-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #4da6ff;
+    white-space: nowrap;
+  }
+
+  // Right-aligned cluster: collapse-all sits just left of the X.
+  .la-header-tools {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    // The X no longer needs its own auto-margin inside the cluster.
+    .close-btn { margin-left: 0; }
+  }
 }
 
 // Segmented two-button tab toggle — a single raised pill split in two.

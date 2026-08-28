@@ -15,6 +15,7 @@ import { FoodPreferencesService } from '../../services/food-preferences.service'
 import { FoodsService } from '../../services/foods.service';
 import { Food } from '../../models/food.model';
 import { IngredientTypeaheadComponent, PickedFood } from '../ingredient-typeahead/ingredient-typeahead';
+import { AddFoodPanelComponent } from '../add-food-panel/add-food-panel';
 
 type LookasidePane = 'myfoods' | 'regi';
 
@@ -41,73 +42,116 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
 
 @Component({
   selector: 'app-food-lookaside',
-  imports: [MatTooltipModule, MatIconModule, DragDropModule, IngredientTypeaheadComponent],
+  imports: [MatTooltipModule, MatIconModule, DragDropModule, IngredientTypeaheadComponent, AddFoodPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="lookaside">
-      <!-- Tabs up top; the red X (same size as the meal card's green check)
-           closes the lookaside. -->
-      <div class="lookaside-header">
-        <!-- Focus Foods retired — two tabs: MyFoods and Regi-approved. -->
-        <div class="pane-toggle" role="tablist">
-          <button
-            type="button"
-            class="toggle-btn"
-            [class.active]="pane() === 'myfoods'"
-            (click)="pane.set('myfoods')">
-            MyFoods
-          </button>
-          <button
-            type="button"
-            class="toggle-btn"
-            [class.active]="pane() === 'regi'"
-            (click)="pane.set('regi')">
-            Regi-approved
-          </button>
-        </div>
-        <button
-          type="button"
-          class="dialog-disc dialog-disc-cancel close-btn"
-          matTooltip="Close"
-          matTooltipPosition="below"
-          (click)="onClose()">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-
-      <!-- Search applies to whichever tab is active. -->
-      <div class="search-row">
-        <input
-          type="text"
-          class="search-input"
-          [value]="search()"
-          (input)="search.set($any($event.target).value)"
-          placeholder="Search foods…" />
-        <button
-          type="button"
-          class="la-collapse-all"
-          [class.active]="allCatsCollapsed()"
-          [matTooltip]="allCatsCollapsed() ? 'Expand all categories' : 'Collapse all categories'"
-          matTooltipPosition="below"
-          (click)="allCatsCollapsed() ? expandAllCats() : collapseAllCats()">
-          <mat-icon>{{ allCatsCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
-        </button>
-      </div>
-      @if (pane() === 'myfoods') {
-        <!-- Compact sort control + "add food" (reuses the recipe typeahead). -->
-        <div class="sort-row" role="group" aria-label="Sort My Foods">
-          <button type="button" class="sort-btn" [class.active]="sortMode() === 'category'"
-            (click)="setSort('category')">Category ↑</button>
-          <button type="button" class="sort-btn" [class.active]="sortMode() === 'newest'"
-            (click)="setSort('newest')">Newest ↑</button>
-          <button type="button" class="add-food-toggle" matTooltip="Add a food to My Foods"
-            (click)="addOpen.set(!addOpen())"><mat-icon>{{ addOpen() ? 'close' : 'add' }}</mat-icon></button>
-        </div>
-        @if (addOpen()) {
-          <div class="add-food-row">
-            <app-ingredient-typeahead (foodPicked)="onAddFoodToMyFoods($event)" />
+      @if (emitSelection()) {
+        <!-- Recipe-editor surface — unchanged: two tabs (MyFoods / Regi-approved),
+             search + collapse-all, and the inline-typeahead add. -->
+        <div class="lookaside-header">
+          <div class="pane-toggle" role="tablist">
+            <button
+              type="button"
+              class="toggle-btn"
+              [class.active]="pane() === 'myfoods'"
+              (click)="pane.set('myfoods')">
+              MyFoods
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              [class.active]="pane() === 'regi'"
+              (click)="pane.set('regi')">
+              Regi-approved
+            </button>
           </div>
+          <button
+            type="button"
+            class="dialog-disc dialog-disc-cancel close-btn"
+            matTooltip="Close"
+            matTooltipPosition="below"
+            (click)="onClose()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="search-row">
+          <input
+            type="text"
+            class="search-input"
+            [value]="search()"
+            (input)="search.set($any($event.target).value)"
+            placeholder="Search foods…" />
+          <button
+            type="button"
+            class="la-collapse-all"
+            [class.active]="allCatsCollapsed()"
+            [matTooltip]="allCatsCollapsed() ? 'Expand all categories' : 'Collapse all categories'"
+            matTooltipPosition="below"
+            (click)="allCatsCollapsed() ? expandAllCats() : collapseAllCats()">
+            <mat-icon>{{ allCatsCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
+          </button>
+        </div>
+        @if (pane() === 'myfoods') {
+          <div class="sort-row" role="group" aria-label="Sort My Foods">
+            <button type="button" class="sort-btn" [class.active]="sortMode() === 'category'"
+              (click)="setSort('category')">Category ↑</button>
+            <button type="button" class="sort-btn" [class.active]="sortMode() === 'newest'"
+              (click)="setSort('newest')">Newest ↑</button>
+            <button type="button" class="add-food-toggle" matTooltip="Add a food to My Foods"
+              (click)="addOpen.set(!addOpen())"><mat-icon>{{ addOpen() ? 'close' : 'add' }}</mat-icon></button>
+          </div>
+          @if (addOpen()) {
+            <div class="add-food-row">
+              <app-ingredient-typeahead (foodPicked)="onAddFoodToMyFoods($event)" />
+            </div>
+          }
         }
+      } @else {
+        <!-- Binder surface — MyFoods only. Titled header (YEH apple logo, sized
+             like "Menus & Meals"); collapse-all sits beside the X. The "+" opens
+             the shared Add-Food panel. -->
+        <div class="lookaside-header">
+          <img src="images/yeh_logo_dark.png" alt="" class="la-title-logo" />
+          <span class="la-title">My Foods</span>
+          <div class="la-header-tools">
+            <button
+              type="button"
+              class="la-collapse-all"
+              [class.active]="allCatsCollapsed()"
+              [matTooltip]="allCatsCollapsed() ? 'Expand all categories' : 'Collapse all categories'"
+              matTooltipPosition="below"
+              (click)="allCatsCollapsed() ? expandAllCats() : collapseAllCats()">
+              <mat-icon>{{ allCatsCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
+            </button>
+            <button
+              type="button"
+              class="dialog-disc dialog-disc-cancel close-btn"
+              matTooltip="Close"
+              matTooltipPosition="below"
+              (click)="onClose()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="search-row">
+          <input
+            type="text"
+            class="search-input"
+            [value]="search()"
+            (input)="search.set($any($event.target).value)"
+            placeholder="Search My Foods…" />
+          <button
+            type="button"
+            class="add-food-toggle"
+            matTooltip="Add a food to My Foods"
+            matTooltipPosition="below"
+            (click)="addPanelOpen.set(true)">
+            <mat-icon>add</mat-icon>
+          </button>
+        </div>
       }
 
       <!-- The rail is inside the menus-layout cdkDropListGroup, so rows drag
@@ -139,6 +183,10 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
         }
       </div>
     </div>
+
+    @if (addPanelOpen()) {
+      <app-add-food-panel (close)="addPanelOpen.set(false)" (added)="onFoodAdded()" />
+    }
   `,
   styleUrls: ['./food-lookaside.scss'],
 })
@@ -183,6 +231,14 @@ export class FoodLookasideComponent {
    *  isn't in MyFoods until favorited — so favorite it (it carries category +
    *  macros from the food record), persist, then refresh the list. */
   readonly addOpen = signal(false);
+
+  /** Binder surface: the "+" opens the shared Add-Food dialog. */
+  readonly addPanelOpen = signal(false);
+  /** The dialog added/changed a food — refresh MyFoods so it appears. */
+  async onFoodAdded(): Promise<void> {
+    await this.load();
+  }
+
   async onAddFoodToMyFoods(p: PickedFood): Promise<void> {
     this.addOpen.set(false);
     if (p.foodSource === 'food' && !this.preferencesService.isAllowed(p.foodId)) {
@@ -248,12 +304,16 @@ export class FoodLookasideComponent {
     this.collapsedCats.set(new Set());
   }
 
-  /** The active tab's foods grouped into the category accordion. Both tabs honor
-   *  the search box; MyFoods additionally supports the "Newest" sort. */
+  /** The foods grouped into the category accordion. The binder surface is
+   *  MyFoods-only (category accordion, no sort/Regi). The recipe-editor surface
+   *  (emitSelection) keeps the two-tab behavior + the "Newest" sort. */
   readonly currentGroups = computed<FoodGroup[]>(() => {
+    const q = this.search().trim().toLowerCase();
+    if (!this.emitSelection()) {
+      return this.groupByCategory(this.allowedFull(), q);
+    }
     const myfoods = this.pane() === 'myfoods';
     const foods = myfoods ? this.allowedFull() : this.regiFoods();
-    const q = this.search().trim().toLowerCase();
     if (myfoods && this.sortMode() === 'newest') return this.newestGroup(foods, q);
     return this.groupByCategory(foods, q);
   });
