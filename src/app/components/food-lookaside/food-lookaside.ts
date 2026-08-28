@@ -118,12 +118,11 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
           <div class="la-header-tools">
             <button
               type="button"
-              class="la-collapse-all"
-              [class.active]="allCatsCollapsed()"
-              [matTooltip]="allCatsCollapsed() ? 'Expand all categories' : 'Collapse all categories'"
+              class="add-food-toggle"
+              matTooltip="Add a food to My Foods"
               matTooltipPosition="below"
-              (click)="allCatsCollapsed() ? expandAllCats() : collapseAllCats()">
-              <mat-icon>{{ allCatsCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
+              (click)="addPanelOpen.set(true)">
+              <mat-icon>add</mat-icon>
             </button>
             <button
               type="button"
@@ -145,11 +144,12 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
             placeholder="Search My Foods…" />
           <button
             type="button"
-            class="add-food-toggle"
-            matTooltip="Add a food to My Foods"
+            class="la-collapse-all"
+            [class.active]="allCatsCollapsed()"
+            [matTooltip]="allCatsCollapsed() ? 'Expand all categories' : 'Collapse all categories'"
             matTooltipPosition="below"
-            (click)="addPanelOpen.set(true)">
-            <mat-icon>add</mat-icon>
+            (click)="allCatsCollapsed() ? expandAllCats() : collapseAllCats()">
+            <mat-icon>{{ allCatsCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
           </button>
         </div>
       }

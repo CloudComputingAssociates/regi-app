@@ -69,7 +69,9 @@
     align-items: center;
     gap: 8px;
 
-    // The X no longer needs its own auto-margin inside the cluster.
+    // Neither the "+" nor the X needs its own auto-margin inside the cluster;
+    // the cluster's own margin-left:auto already right-aligns the pair.
+    .add-food-toggle,
     .close-btn { margin-left: 0; }
   }
 }
