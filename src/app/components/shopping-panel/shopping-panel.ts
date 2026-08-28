@@ -18,7 +18,7 @@ import { SettingsService } from '../../services/settings.service';
 import { NotificationService } from '../../services/notification.service';
 import { RotationService } from '../../services/rotation.service';
 import { ShoppingStaple } from '../../models/settings.models';
-import { ShoppingListResponse } from '../../models/generated/shopping.schema';
+import { ShoppingListResponse, ShoppingListPdfRequest } from '../../models/generated/shopping.schema';
 
 type StapleCategory = 'proteins' | 'produce' | 'bulk' | 'dairy' | 'aisles' | 'non_food' | 'fruits';
 
@@ -279,6 +279,42 @@ export class ShoppingPanelComponent {
     const id = this.rotation.rotation()?.id;
     if (id == null) return;
     void this.loadList(id, this.scaleMode() === 'recipe' ? 'recipe' : 'scale', this.scaleValue());
+  }
+
+  /** Fetch the server-rendered PDF (computed items + staples merged) and present
+   *  it — open in a new tab, or download if the popup is blocked. Returns false
+   *  on any failure so the caller can fall back to browser print. Sends the same
+   *  basis/factor as the on-screen list; staples come from the panel so the PDF
+   *  matches what the user sees. */
+  async downloadPdf(): Promise<boolean> {
+    const id = this.rotation.rotation()?.id;
+    if (id == null) return false;
+    const body: ShoppingListPdfRequest = {
+      basis: this.scaleMode() === 'recipe' ? 'recipe' : 'scale',
+      factor: this.scaleValue(),
+      // settings.models ShoppingStaple is structurally identical to the generated
+      // one; only a json2ts index signature differs, so bridge it explicitly.
+      staples: this.staples() as unknown as ShoppingListPdfRequest['staples'],
+    };
+    try {
+      const blob = await firstValueFrom(this.rotation.downloadShoppingListPdf(id, body));
+      if (!blob || blob.size === 0) return false;
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, '_blank');
+      if (!win) {
+        // Popup blocked — fall back to a direct download of the same blob.
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'shopping-list.pdf';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /** The computed list flattened into display groups (preferred category order). */

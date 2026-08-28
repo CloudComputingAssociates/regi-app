@@ -66,10 +66,18 @@ export class ShoppingBloomComponent {
 
   private readonly panel = viewChild.required(ShoppingPanelComponent);
 
-  /** Expand every category, then invoke the browser print dialog (where the user
-   *  can "Save as PDF"). A body class isolates the bloom window for print (see
-   *  the @media print block in styles.scss). */
-  print(): void {
+  /** Prefer the server-rendered PDF (POST …/shopping-list/pdf) — it merges the
+   *  computed list with the user's staples and formats consistently. If that
+   *  endpoint is unavailable, fall back to a browser print of the on-screen list. */
+  async print(): Promise<void> {
+    if (await this.panel().downloadPdf()) return;
+    this.clientPrint();
+  }
+
+  /** Fallback: expand every category, then invoke the browser print dialog (the
+   *  user can "Save as PDF"). A body class isolates the bloom window for print
+   *  (see the @media print block in styles.scss). */
+  private clientPrint(): void {
     this.panel().openAllCategories();
     document.body.classList.add('printing-shopping-list');
     const cleanup = (): void => {

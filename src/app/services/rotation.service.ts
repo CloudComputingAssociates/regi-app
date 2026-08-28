@@ -12,7 +12,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { firstValueFrom, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { ShoppingListResponse } from '../models/generated/shopping.schema';
+import { ShoppingListResponse, ShoppingListPdfRequest } from '../models/generated/shopping.schema';
 import {
   AddMealItemRequest,
   AddMealToSlotRequest,
@@ -512,6 +512,18 @@ export class RotationService {
     return this.http.put<void>(
       `${this.baseUrl}/rotation/${rotationId}/shopping-progress`,
       { checkedItems },
+    );
+  }
+
+  /** POST /api/rotation/{id}/shopping-list/pdf — server-rendered PDF that merges
+   *  the computed list with the user's staples (when body.staples is omitted the
+   *  server uses settings.shoppingStaples). Returns the binary PDF as a Blob
+   *  (Content-Disposition: inline; filename="shopping-list.pdf"). */
+  downloadShoppingListPdf(rotationId: number, body: ShoppingListPdfRequest): Observable<Blob> {
+    return this.http.post(
+      `${this.baseUrl}/rotation/${rotationId}/shopping-list/pdf`,
+      body,
+      { responseType: 'blob' },
     );
   }
 
