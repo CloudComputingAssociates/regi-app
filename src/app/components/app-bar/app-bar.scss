@@ -149,9 +149,12 @@
     min-width: 0;
   }
 
-  // Profile menu wrapper
+  // Profile menu wrapper — allowed to shrink so the display name can ellipsize
+  // in a tight banner; the avatar inside stays fixed (flex:0 0 auto), so only the
+  // name yields and the circle never leaves the screen.
   app-profile-menu {
-    flex-shrink: 0;
+    flex: 0 1 auto;
+    min-width: 0;
   }
 
   .profile-button {

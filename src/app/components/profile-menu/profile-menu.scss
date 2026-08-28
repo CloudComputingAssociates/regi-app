@@ -22,8 +22,10 @@
   min-width: 0;
 }
 
-// Avatar (Apple logo) — a round image button that opens the menu.
+// Avatar (Apple logo / user pic) — a round image button that opens the menu.
+// NEVER shrinks or clips: it must always stay on-screen; the name yields first.
 .profile-btn {
+  flex: 0 0 auto;
   background: none;
   border: none;
   padding: 0;
@@ -45,22 +47,26 @@
 .profile-name-btn {
   display: inline-flex;
   align-items: center;
+  flex: 0 1 auto;                 // yields space before the avatar does
   min-width: 0;
   background: none;
   border: none;
   padding: 0 0 6px 0;             // drop it toward the bottom (level with %/g)
   cursor: pointer;
   color: #4da6ff !important;      // hyperlink blue (beats any inherited white)
-  font-size: 14px;
+  font-size: 13px;               // a touch smaller so long emails fit the banner
   font-weight: 600;
 
   .profile-name-text {
+    display: block;
     text-decoration: underline;
     text-underline-offset: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;      // long emails ellipsize rather than blow out
-    max-width: 22vw;
+    // Show ~25 characters, then clip with an ellipsis. Also never wider than the
+    // band, so the avatar always keeps its place on-screen.
+    max-width: min(25ch, 22vw);
   }
 
   &:hover {
