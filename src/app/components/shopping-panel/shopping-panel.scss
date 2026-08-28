@@ -296,14 +296,111 @@
 
     &:focus { border-color: #4da6ff; }
   }
+
+  // The explicit either/or divider between the two scale modes.
+  .scale-or {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #8a8f96;
+    user-select: none;
+  }
+}
+
+// ============================================
+// Computed shopping list (from the rotation)
+// ============================================
+.list-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto; // primary view — takes the space
+  overflow: hidden;
+
+  .staples-content { flex: 1; overflow-y: auto; }
+}
+
+.list-msg {
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+
+  .link-btn {
+    background: none;
+    border: none;
+    color: #4da6ff;
+    font: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
+}
+
+// Column header for the computed rows (screen only).
+.list-col-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid #4a4a4a;
+
+  .staple-item { flex: 2; }
+}
+
+// Category subheader inside the computed list.
+.list-cat {
+  padding: 5px 12px;
+  background: #333333;
+  color: #4da6ff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid #4a4a4a;
+}
+
+// ============================================
+// Demoted staples pane
+// ============================================
+.staples-collapse {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 12px;
+  background: #333333;
+  border: none;
+  border-top: 1px solid #4a4a4a;
+  cursor: pointer;
+  font-family: inherit;
+
+  .accordion-arrow {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: rgba(255, 255, 255, 0.6);
+    transition: transform 0.2s ease;
+    &.open { transform: rotate(90deg); }
+  }
+
+  &:hover { background: #3a3a3a; }
 }
 
 .staples-pane {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  flex: 0 1 auto; // demoted below the primary computed list
   overflow: hidden;
-  min-height: 60px;
-  flex: 1 1 auto; // was driven by the now-removed splitter's bottomFlex binding
+
+  // When expanded, cap its height so the computed list stays the focus.
+  .staples-content { max-height: 38vh; overflow-y: auto; }
 }
 
 .staples-header {

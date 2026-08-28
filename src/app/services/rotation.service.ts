@@ -9,9 +9,10 @@
 //   menus, selectedMenuId, selectMenu, selectedMenu, selectedMenuTotals,
 //   slotItems, getMeal — plus loading/error and the loaders below.
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { firstValueFrom, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { ShoppingListResponse } from '../models/generated/shopping.schema';
 import {
   AddMealItemRequest,
   AddMealToSlotRequest,
@@ -485,6 +486,33 @@ export class RotationService {
     } catch {
       return { mealId, itemId }; // fall back to an in-place edit rather than block
     }
+  }
+
+  // ---- Shopping list (computed from the rotation) ----------------------
+
+  /** GET /api/rotation/{id}/shopping-list — the consolidated, retail-rounded
+   *  list computed from every tracked meal item across the rotation's menus.
+   *  basis 'recipe' uses each recipe's own servings; 'scale' multiplies every
+   *  quantity by factor. Returns categories → items (name / quantity / unit). */
+  getShoppingList(
+    rotationId: number,
+    basis: 'recipe' | 'scale',
+    factor: number,
+  ): Observable<ShoppingListResponse> {
+    const params = new HttpParams().set('basis', basis).set('factor', String(factor));
+    return this.http.get<ShoppingListResponse>(
+      `${this.baseUrl}/rotation/${rotationId}/shopping-list`,
+      { params },
+    );
+  }
+
+  /** PUT /api/rotation/{id}/shopping-progress — persist which computed items the
+   *  shopper has ticked off (opaque client-defined keys). Responds 204. */
+  saveShoppingProgress(rotationId: number, checkedItems: string[]): Observable<void> {
+    return this.http.put<void>(
+      `${this.baseUrl}/rotation/${rotationId}/shopping-progress`,
+      { checkedItems },
+    );
   }
 
   // ---- Loaders ---------------------------------------------------------

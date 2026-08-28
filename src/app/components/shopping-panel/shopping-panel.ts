@@ -1,19 +1,24 @@
 // src/app/components/shopping-panel/shopping-panel.ts
 //
-// The legacy "Plan Foods" surface was removed: it drove off the planning
-// endpoints that the rotation refactor deleted from the API, so it was
-// non-functional. The rotation-based shopping list is not wired yet, so the
-// top of the panel is an honest placeholder. The Staples pane below is live,
-// persisted user data (via SettingsService) and is kept.
-import { Component, ChangeDetectionStrategy, inject, signal, effect } from '@angular/core';
+// Shopping List panel. The star is the CONSOLIDATED list computed server-side
+// from every tracked meal item across the current rotation's menus
+// (GET /api/rotation/{id}/shopping-list) — deduped, summed, retail-rounded, and
+// grouped by category. Columns: Qty · Unit · Item, plus a per-row "Need" slider
+// (ON by default) whose off-state persists via the shopping-progress endpoint.
+// The quantity basis is either each recipe's own servings, or an explicit Scale
+// factor. The old per-category "Staples & one-time" add-boxes are still here but
+// demoted to a collapsed section below (persisted user data via SettingsService).
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
+import { firstValueFrom } from 'rxjs';
 import { SettingsService } from '../../services/settings.service';
 import { NotificationService } from '../../services/notification.service';
 import { RotationService } from '../../services/rotation.service';
 import { ShoppingStaple } from '../../models/settings.models';
+import { ShoppingListResponse } from '../../models/generated/shopping.schema';
 
 type StapleCategory = 'proteins' | 'produce' | 'bulk' | 'dairy' | 'aisles' | 'non_food' | 'fruits';
 
@@ -22,14 +27,40 @@ interface CategorySection {
   label: string;
 }
 
+/** A computed row flattened for display (with a stable identity key). */
+interface ListRow {
+  key: string;
+  name: string;
+  quantity: string;
+  unit: string;
+}
+interface ListGroup {
+  category: string;
+  label: string;
+  items: ListRow[];
+}
+
+// Server category token → display label + preferred display order.
+const CAT_LABEL: Record<string, string> = {
+  produce: 'Vegetables',
+  fruits: 'Fruits',
+  proteins: 'Proteins',
+  dairy: 'Dairy',
+  bulk: 'Carbs',
+  aisles: 'Processed / Aisles',
+};
+const CAT_RANK: Record<string, number> = {
+  produce: 0, fruits: 1, proteins: 2, dairy: 3, bulk: 4, aisles: 5,
+};
+
 @Component({
   selector: 'app-shopping-panel',
   imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Top row: quantity basis — either the recipe's own servings, or an
-           explicit scale factor (defaults to 1, overridable). Either/or radio. -->
+      <!-- Quantity basis — either each recipe's own servings, OR an explicit
+           scale factor. The "-or-" makes the either/or unmistakable. -->
       <div class="shopping-top no-print">
         <div class="scale-radio">
           <label class="scale-opt">
@@ -40,6 +71,7 @@ interface CategorySection {
               (change)="scaleMode.set('recipe')" />
             <span>Recipe Servings</span>
           </label>
+          <span class="scale-or">-or-</span>
           <label class="scale-opt">
             <input
               type="radio"
@@ -53,7 +85,7 @@ interface CategorySection {
               min="1"
               [value]="scaleValue()"
               (focus)="scaleMode.set('custom')"
-              (input)="onScaleInput($event)" />
+              (change)="onScaleInput($event)" />
           </label>
         </div>
         @if (isSaving()) {
@@ -61,91 +93,127 @@ interface CategorySection {
         }
       </div>
 
-      <!-- Staples (live, persisted to user settings) -->
-      <div class="staples-pane">
+      <!-- Computed shopping list (from the rotation's meals/recipes) -->
+      <div class="list-pane">
         <div class="staples-header">
-          <span class="staples-title">Staples &amp; One-Time purchases</span>
+          <span class="staples-title">Shopping List</span>
           <span class="staples-title buy-column-label no-print">Need</span>
         </div>
 
-        <div class="staples-content">
-          @for (cat of categories; track cat.id) {
-            <div class="accordion-section">
-              <button class="accordion-header" (click)="toggleCategory(cat.id)">
-                <mat-icon class="accordion-arrow" [class.open]="isCategoryOpen(cat.id)">chevron_right</mat-icon>
-                <span class="accordion-title">{{ cat.label }}</span>
-              </button>
-
-              @if (isCategoryOpen(cat.id)) {
-                <div class="accordion-body">
-                  <!-- Add row -->
-                  <div class="add-row no-print">
-                    <input
-                      type="text"
-                      class="add-input"
-                      [placeholder]="'Add ' + cat.label.toLowerCase() + ' item...'"
-                      [value]="getNewItemText(cat.id)"
-                      (input)="onNewItemInput(cat.id, $event)"
-                      (keydown.enter)="addItem(cat.id)" />
-                    <button
-                      class="add-btn"
-                      [disabled]="!getNewItemText(cat.id)"
-                      (click)="addItem(cat.id)"
-                      matTooltip="Add item"
-                      matTooltipPosition="above"
-                      [matTooltipShowDelay]="300">
-                      +
-                    </button>
-                  </div>
-
-                  <!-- Staple rows — alphabetical. Form shows quantity + unit +
-                       item + Need slider (no checkbox). The empty checkbox square
-                       is print-only (see the @media print block) and sits in
-                       front of the quantity for ticking off while shopping. -->
-                  @for (staple of getCategoryItems(cat.id); track staple.id) {
-                    <div class="staple-row" [class.not-needed]="staple.needed === false">
-                      <span class="pdf-check" aria-hidden="true"></span>
-
-                      <input type="text"
-                        class="staple-qty"
-                        [value]="staple.qty || ''"
-                        (change)="updateField(staple, 'qty', $event)"
-                        placeholder="Qty" />
-
-                      <input type="text"
-                        class="staple-unit"
-                        [value]="staple.store || ''"
-                        (change)="updateField(staple, 'store', $event)"
-                        placeholder="unit" />
-
-                      <input type="text"
-                        class="staple-item"
-                        [value]="staple.item"
-                        (change)="updateField(staple, 'item', $event)" />
-
-                      <label class="toggle-slider no-print" [class.on]="staple.needed !== false">
-                        <input type="checkbox"
-                          [checked]="staple.needed !== false"
-                          (change)="toggleNeeded(staple)" />
-                        <span class="toggle-track">
-                          <span class="toggle-thumb"></span>
-                        </span>
-                      </label>
-
-                      <button class="delete-btn no-print"
-                        (click)="deleteItem(staple)"
-                        matTooltip="Delete"
-                        matTooltipPosition="above"
-                        [matTooltipShowDelay]="300">
-                        <mat-icon class="delete-icon">delete</mat-icon>
-                      </button>
-                    </div>
-                  }
+        @if (listLoading()) {
+          <p class="list-msg">Building your list…</p>
+        } @else if (listError()) {
+          <p class="list-msg">
+            Couldn't build the shopping list.
+            <button type="button" class="link-btn" (click)="reloadList()">Retry</button>
+          </p>
+        } @else if (computedGroups().length === 0) {
+          <p class="list-msg">No meals in this rotation yet — add meals to your menus and they'll roll up here.</p>
+        } @else {
+          <div class="staples-content">
+            <div class="list-col-head no-print">
+              <span class="pdf-check" aria-hidden="true"></span>
+              <span class="staple-qty">Qty</span>
+              <span class="staple-unit">Unit</span>
+              <span class="staple-item">Item</span>
+            </div>
+            @for (group of computedGroups(); track group.category) {
+              <div class="list-cat">{{ group.label }}</div>
+              @for (item of group.items; track item.key) {
+                <div class="staple-row" [class.not-needed]="!isNeeded(item.key)">
+                  <span class="pdf-check" aria-hidden="true"></span>
+                  <span class="staple-qty">{{ item.quantity }}</span>
+                  <span class="staple-unit">{{ item.unit }}</span>
+                  <span class="staple-item">{{ item.name }}</span>
+                  <label class="toggle-slider no-print" [class.on]="isNeeded(item.key)">
+                    <input type="checkbox"
+                      [checked]="isNeeded(item.key)"
+                      (change)="toggleNeed(item.key)" />
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                  </label>
                 </div>
               }
-            </div>
-          }
-        </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- One-time & staples — demoted, collapsed by default (persisted user
+           data). Expanded automatically before printing. -->
+      <div class="staples-pane">
+        <button type="button" class="staples-collapse no-print" (click)="staplesOpen.set(!staplesOpen())">
+          <mat-icon class="accordion-arrow" [class.open]="staplesOpen()">chevron_right</mat-icon>
+          <span class="staples-title">One-time &amp; staples</span>
+        </button>
+
+        @if (staplesOpen()) {
+          <div class="staples-content">
+            @for (cat of categories; track cat.id) {
+              <div class="accordion-section">
+                <button class="accordion-header" (click)="toggleCategory(cat.id)">
+                  <mat-icon class="accordion-arrow" [class.open]="isCategoryOpen(cat.id)">chevron_right</mat-icon>
+                  <span class="accordion-title">{{ cat.label }}</span>
+                </button>
+
+                @if (isCategoryOpen(cat.id)) {
+                  <div class="accordion-body">
+                    <div class="add-row no-print">
+                      <input
+                        type="text"
+                        class="add-input"
+                        [placeholder]="'Add ' + cat.label.toLowerCase() + ' item...'"
+                        [value]="getNewItemText(cat.id)"
+                        (input)="onNewItemInput(cat.id, $event)"
+                        (keydown.enter)="addItem(cat.id)" />
+                      <button
+                        class="add-btn"
+                        [disabled]="!getNewItemText(cat.id)"
+                        (click)="addItem(cat.id)"
+                        matTooltip="Add item"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="300">
+                        +
+                      </button>
+                    </div>
+
+                    @for (staple of getCategoryItems(cat.id); track staple.id) {
+                      <div class="staple-row" [class.not-needed]="staple.needed === false">
+                        <span class="pdf-check" aria-hidden="true"></span>
+                        <input type="text"
+                          class="staple-qty"
+                          [value]="staple.qty || ''"
+                          (change)="updateField(staple, 'qty', $event)"
+                          placeholder="Qty" />
+                        <input type="text"
+                          class="staple-unit"
+                          [value]="staple.store || ''"
+                          (change)="updateField(staple, 'store', $event)"
+                          placeholder="unit" />
+                        <input type="text"
+                          class="staple-item"
+                          [value]="staple.item"
+                          (change)="updateField(staple, 'item', $event)" />
+                        <label class="toggle-slider no-print" [class.on]="staple.needed !== false">
+                          <input type="checkbox"
+                            [checked]="staple.needed !== false"
+                            (change)="toggleNeeded(staple)" />
+                          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                        </label>
+                        <button class="delete-btn no-print"
+                          (click)="deleteItem(staple)"
+                          matTooltip="Delete"
+                          matTooltipPosition="above"
+                          [matTooltipShowDelay]="300">
+                          <mat-icon class="delete-icon">delete</mat-icon>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
       </div>
     </div>
   `,
@@ -158,13 +226,15 @@ export class ShoppingPanelComponent {
 
   isSaving = signal(false);
 
-  // Staples data
-  staples = signal<ShoppingStaple[]>([]);
+  // ---- Computed shopping list (from the rotation) --------------------------
+  readonly listLoading = signal(false);
+  readonly listError = signal(false);
+  private readonly listResponse = signal<ShoppingListResponse | null>(null);
+  /** Item keys the shopper has ticked OFF (not needed). Absent ⇒ needed (ON). */
+  private readonly checkedKeys = signal<Set<string>>(new Set());
 
-  // Quantity basis for the list: 'recipe' = each recipe's own servings;
-  // 'custom' = an explicit scale factor (default 1, overridable). Local UI state
-  // — the scaling MATH runs once the rotation-derived list is wired (the live
-  // content today is the persisted Staples below).
+  // Quantity basis: 'recipe' = each recipe's own servings; 'custom' = an explicit
+  // scale factor. These drive the ?basis=&factor= query.
   readonly scaleMode = signal<'recipe' | 'custom'>('recipe');
   readonly scaleValue = signal<number>(1);
 
@@ -173,6 +243,106 @@ export class ShoppingPanelComponent {
     this.scaleValue.set(n);
     this.scaleMode.set('custom');
   }
+
+  // Refetch whenever the rotation or the basis/factor changes. Server is the
+  // source of truth (write-through) — no client caching.
+  private loadSeq = 0;
+  private listEffect = effect(() => {
+    const id = this.rotation.rotation()?.id ?? null;
+    const basis: 'recipe' | 'scale' = this.scaleMode() === 'recipe' ? 'recipe' : 'scale';
+    const factor = this.scaleValue();
+    if (id == null) {
+      this.listResponse.set(null);
+      return;
+    }
+    void this.loadList(id, basis, factor);
+  }, { allowSignalWrites: true });
+
+  private async loadList(id: number, basis: 'recipe' | 'scale', factor: number): Promise<void> {
+    const seq = ++this.loadSeq;
+    this.listLoading.set(true);
+    this.listError.set(false);
+    try {
+      const res = await firstValueFrom(this.rotation.getShoppingList(id, basis, factor));
+      if (seq !== this.loadSeq) return; // a newer request superseded this one
+      this.listResponse.set(res ?? null);
+    } catch {
+      if (seq !== this.loadSeq) return;
+      this.listError.set(true);
+      this.listResponse.set(null);
+    } finally {
+      if (seq === this.loadSeq) this.listLoading.set(false);
+    }
+  }
+
+  reloadList(): void {
+    const id = this.rotation.rotation()?.id;
+    if (id == null) return;
+    void this.loadList(id, this.scaleMode() === 'recipe' ? 'recipe' : 'scale', this.scaleValue());
+  }
+
+  /** The computed list flattened into display groups (preferred category order). */
+  readonly computedGroups = computed<ListGroup[]>(() => {
+    const res = this.listResponse();
+    if (!res?.categories?.length) return [];
+    return res.categories
+      .map((c) => ({
+        category: c.category,
+        label: CAT_LABEL[c.category] ?? c.category,
+        items: (c.items ?? []).map((it) => ({
+          key: this.itemKey(it.foodId ?? null, it.foodSource ?? null, it.name),
+          name: it.name,
+          quantity: this.fmtQty(it.quantity),
+          unit: it.unit,
+        })),
+      }))
+      .filter((g) => g.items.length > 0)
+      .sort((a, b) => (CAT_RANK[a.category] ?? 99) - (CAT_RANK[b.category] ?? 99));
+  });
+
+  /** Stable identity for a computed row — mirrors the server's foodIdentity so a
+   *  persisted "checked" key still matches after a recompute. */
+  private itemKey(foodId: number | null, foodSource: string | null, name: string): string {
+    return foodId != null ? `f:${foodId}:${foodSource ?? 'food'}` : `n:${name.trim().toLowerCase()}`;
+  }
+
+  private fmtQty(n: number): string {
+    const r = Math.round(n * 100) / 100;
+    return String(r);
+  }
+
+  isNeeded(key: string): boolean {
+    return !this.checkedKeys().has(key);
+  }
+
+  /** Flip a computed item's Need state and persist the checked set (write-through). */
+  toggleNeed(key: string): void {
+    this.checkedKeys.update((s) => {
+      const next = new Set(s);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+    void this.persistProgress();
+  }
+
+  private async persistProgress(): Promise<void> {
+    const id = this.rotation.rotation()?.id;
+    if (id == null) return;
+    this.isSaving.set(true);
+    try {
+      await firstValueFrom(this.rotation.saveShoppingProgress(id, [...this.checkedKeys()]));
+    } catch {
+      /* best-effort; the toggle stays reflected in the UI */
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
+  // ---- Staples (persisted user data) ---------------------------------------
+  staples = signal<ShoppingStaple[]>([]);
+  /** Staples pane collapsed by default — the computed list is the primary view. */
+  readonly staplesOpen = signal(false);
 
   // Staple accordion state — all categories open by default (usable list up-front).
   private openCategories = signal<Set<StapleCategory>>(
@@ -232,8 +402,10 @@ export class ShoppingPanelComponent {
     return this.openCategories().has(id);
   }
 
-  /** Expand every category — used before printing so the whole list renders. */
+  /** Expand everything (staples pane + every category) before printing so the
+   *  whole list renders in the print snapshot. */
   openAllCategories(): void {
+    this.staplesOpen.set(true);
     this.openCategories.set(new Set(this.categories.map((c) => c.id)));
   }
 
