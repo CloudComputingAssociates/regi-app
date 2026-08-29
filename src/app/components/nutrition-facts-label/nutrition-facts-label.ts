@@ -58,7 +58,30 @@ function dvPercent(actual: number | undefined | null, reference: number): number
               </button>
             </div>
           }
-          @if (editable() && editing()) {
+          @if (editable() && unitOptions().length) {
+            <!-- Inline serving editor: a fixed-position amount input + unit
+                 dropdown. No grams parenthetical and no separate commit button —
+                 Enter or blur auto-commits (the parent write-through saves). The
+                 input is ALWAYS rendered (never a tap-to-swap span) so entering a
+                 number never reflows the row. -->
+            <input
+              type="number"
+              inputmode="decimal"
+              class="nf-serving-edit-input"
+              [value]="displayQuantity()"
+              (change)="onInlineCommit($any($event.target).value)"
+              (keydown.enter)="onInlineCommit($any($event.target).value)"
+              aria-label="Serving size value" />
+            <select
+              class="nf-serving-unit-select"
+              [value]="displayUnit()"
+              (change)="onUnitSelect($any($event.target).value)"
+              aria-label="Serving unit">
+              @for (u of unitOptions(); track u) {
+                <option [value]="u" [selected]="u === displayUnit()">{{ u }}</option>
+              }
+            </select>
+          } @else if (editable() && editing()) {
             <input
               #editInput
               type="number"
@@ -84,22 +107,6 @@ function dvPercent(actual: number | undefined | null, reference: number): number
               </svg>
             </button>
             <span class="nf-serving-unit-suffix">{{ displayUnit() }} ({{ data().servingSizeG ?? 0 }}g)</span>
-          } @else if (editable() && unitOptions().length) {
-            <!-- Inline editor: amount (tap to type) · UNIT dropdown · grams. -->
-            <span
-              class="nf-serving-value nf-serving-clickable"
-              (click)="onValueClick()">{{ displayQuantity() }}</span>
-            <select
-              class="nf-serving-unit-select"
-              [value]="displayUnit()"
-              (click)="$event.stopPropagation()"
-              (change)="onUnitSelect($any($event.target).value)"
-              aria-label="Serving unit">
-              @for (u of unitOptions(); track u) {
-                <option [value]="u">{{ u }}</option>
-              }
-            </select>
-            <span class="nf-serving-grams">({{ data().servingSizeG ?? 0 }}g)</span>
           } @else {
             <span
               class="nf-serving-value"
@@ -553,6 +560,16 @@ export class NutritionFactsLabelComponent {
 
   onUnitSelect(unit: string): void {
     if (unit && unit !== this.displayUnit()) this.unitChange.emit(unit);
+  }
+
+  /** Inline amount input committed (Enter / blur). Emits a positive numeric
+   *  quantity; ignores blanks, non-numbers, and no-op re-commits of the same
+   *  value. The parent write-through saves. */
+  onInlineCommit(raw: string): void {
+    const n = Number((raw ?? '').trim());
+    if (!Number.isFinite(n) || n <= 0) return;
+    if (n === this.displayQuantity()) return;
+    this.commit.emit(n);
   }
 
   // Editable mode renders ▲ / ▼ stepper buttons next to the serving-size
