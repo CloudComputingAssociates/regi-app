@@ -459,6 +459,15 @@ app-menu-card-row {
   white-space: nowrap;
 }
 
+.nf-popup-unit-busy {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  font-size: 12px;
+  font-style: italic;
+  color: #b9bec4;
+  white-space: nowrap;
+}
+
 .dialog-discs {
   position: absolute;
   top: 6px;

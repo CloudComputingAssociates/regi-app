@@ -1613,12 +1613,17 @@ export class RotationService {
    *  items (row text) the same way addFoodToEditingMeal does. This is the
    *  meal-local serving layer only — it never touches Picks/MyFoods. A failure
    *  toasts and leaves the board intact. */
-  async updateMealItemQuantity(mealId: number, itemId: number, quantity: number): Promise<void> {
+  async updateMealItemQuantity(
+    mealId: number,
+    itemId: number,
+    quantity: number,
+    unit?: string,
+  ): Promise<void> {
     // Fork-on-edit: changing a serving on a placed SAVED meal forks it first.
     const { mealId: editId, itemId: editItemId } = await this.forkOnEdit(mealId, itemId);
     const menuId = this.editingSlot()?.menuId ?? this.selectedMenuId();
     try {
-      const body: UpdateMealItemRequest = { quantity };
+      const body: UpdateMealItemRequest = unit ? { quantity, unit } : { quantity };
       await firstValueFrom(
         this.http.put<MealItem>(`${this.baseUrl}/meal/${editId}/items/${editItemId}`, body),
       );

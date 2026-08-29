@@ -84,6 +84,22 @@ function dvPercent(actual: number | undefined | null, reference: number): number
               </svg>
             </button>
             <span class="nf-serving-unit-suffix">{{ displayUnit() }} ({{ data().servingSizeG ?? 0 }}g)</span>
+          } @else if (editable() && unitOptions().length) {
+            <!-- Inline editor: amount (tap to type) · UNIT dropdown · grams. -->
+            <span
+              class="nf-serving-value nf-serving-clickable"
+              (click)="onValueClick()">{{ displayQuantity() }}</span>
+            <select
+              class="nf-serving-unit-select"
+              [value]="displayUnit()"
+              (click)="$event.stopPropagation()"
+              (change)="onUnitSelect($any($event.target).value)"
+              aria-label="Serving unit">
+              @for (u of unitOptions(); track u) {
+                <option [value]="u">{{ u }}</option>
+              }
+            </select>
+            <span class="nf-serving-grams">({{ data().servingSizeG ?? 0 }}g)</span>
           } @else {
             <span
               class="nf-serving-value"
@@ -327,6 +343,25 @@ function dvPercent(actual: number | undefined | null, reference: number): number
       padding-bottom: 1px;
     }
 
+    // Inline UNIT dropdown on the serving line — a compact white select that sits
+    // between the amount and the "(28g)". Black-on-white to match the NF label.
+    .nf-serving-unit-select {
+      flex-shrink: 0;
+      margin: 0 2px;
+      padding: 1px 2px 1px 4px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      color: #000;
+      background: #fff;
+      border: 1px solid #777;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      &:focus { border-color: #4da6ff; }
+    }
+    .nf-serving-grams { flex-shrink: 0; }
+
     // Edit-mode input. Sized to match the displayed value's footprint so
     // the row doesn't reflow as the user toggles in and out of edit. Strip
     // the spinner Chrome injects on number inputs — we own the steppers.
@@ -507,6 +542,18 @@ export class NutritionFactsLabelComponent {
   // Display unit and quantity (shown on serving size line)
   displayUnit = input<string>('g');
   displayQuantity = input<number | null>(null);
+
+  // Inline UNIT selector on the serving-size line. When editable AND unitOptions
+  // is non-empty, the unit renders as a dropdown right after the amount; changing
+  // it emits `unitChange` and the parent does the conversion + persistence. Empty
+  // (the default) keeps the plain read-only unit text — so view usages are
+  // untouched. The label stays dumb about unit semantics.
+  unitOptions = input<string[]>([]);
+  unitChange = output<string>();
+
+  onUnitSelect(unit: string): void {
+    if (unit && unit !== this.displayUnit()) this.unitChange.emit(unit);
+  }
 
   // Editable mode renders ▲ / ▼ stepper buttons next to the serving-size
   // line AND makes the value tap-to-edit. The label is intentionally dumb

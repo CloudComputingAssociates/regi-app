@@ -36,7 +36,14 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
 import { MealItem } from '../../models';
 import { Food } from '../../models/food.model';
 import { UserFood } from '../../models/user-food.model';
-import { nutritionLabelScale, snapServing } from '../../models/food-display';
+import {
+  nutritionLabelScale,
+  snapServingForUnit,
+  massGramsForUnit,
+  nfUnitOptions,
+  parseGramsPerUnit,
+} from '../../models/food-display';
+import { LangfusePromptService } from '../../services/langfuse-prompt.service';
 
 @Component({
   selector: 'app-menus-panel',
@@ -199,26 +206,16 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
         </div>
       }
 
-      <!-- Per-item serving editor. Nutrition label + serving adjuster ONLY —
-           no category dropdown or other curation controls. Save persists just
-           the item's quantity (never Picks/MyFoods). Follows the CLAUDE.md
-           dialog-disc convention: red close always, green save only when dirty;
-           X reverts without persisting. -->
+      <!-- Per-item serving editor. Nutrition label + inline serving/unit adjuster
+           ONLY — no category dropdown or other curation controls. Every change
+           (stepper, typed quantity, unit switch) AUTO-SAVES the item's quantity
+           (and unit) via PUT — write-through, no green disc, no two-step. It's the
+           meal-local serving layer only: it never touches Picks/MyFoods. The red
+           disc just closes (there's nothing to discard — edits are already saved). -->
       @if (popupItem()) {
         <div class="nf-popup-overlay" (click)="onPopupClose()">
           <div class="nf-popup" (click)="$event.stopPropagation()">
             <div class="dialog-discs">
-              @if (canSave()) {
-                <button
-                  type="button"
-                  class="dialog-disc dialog-disc-confirm"
-                  (click)="onPopupSave()"
-                  matTooltip="Save serving"
-                  matTooltipPosition="below"
-                  aria-label="Save serving">
-                  <mat-icon>check</mat-icon>
-                </button>
-              }
               <button
                 type="button"
                 class="dialog-disc dialog-disc-cancel"
@@ -234,17 +231,21 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
                 <span class="nf-popup-title">
                   {{ popupFood()!.shortDescription || popupFood()!.description }}
                 </span>
+                @if (popupUnitResolving()) {
+                  <span class="nf-popup-unit-busy">figuring grams…</span>
+                }
               </div>
               <regi-nutrition-label
                 [nutritionFacts]="popupFood()!.nutritionFacts ?? null"
                 [scale]="popupScale()"
-                [displayUnit]="popupFood()!.servingUnit || popupItem()!.unit || 'g'"
+                [displayUnit]="popupUnit()"
                 [displayQuantity]="draft()"
                 [editable]="true"
                 [showSave]="false"
+                [unitOptions]="popupUnitOptions()"
                 (adjust)="onPopupAdjust($event)"
                 (commit)="onPopupCommit($event)"
-                (save)="onPopupSave()" />
+                (unitChange)="onPopupUnitChange($event)" />
             </div>
           </div>
         </div>
@@ -269,6 +270,7 @@ export class MenusPanelComponent implements OnInit {
   private foodsService = inject(FoodsService);
   private userFoodService = inject(UserFoodService);
   private notification = inject(NotificationService);
+  private langfusePromptService = inject(LangfusePromptService);
   protected tabService = inject(TabService);
   private host = inject(ElementRef<HTMLElement>);
 
@@ -366,13 +368,17 @@ export class MenusPanelComponent implements OnInit {
   private readonly popupMealId = signal<number | null>(null);
   /** The item's food, resolved to a full Food (per-100g nutritionFacts). */
   readonly popupFood = signal<Food | null>(null);
-  /** Draft quantity (local only until Save). Opens at the item's quantity. */
+  /** Draft quantity. Every stepper/commit/unit change AUTO-SAVES the item. */
   readonly draft = signal<number>(1);
-  /** The quantity the popup opened at — drives the dirty/Save gate. */
-  private readonly original = signal<number>(1);
+  /** True while the AI resolves grams-per-unit for a food-specific unit switch. */
+  readonly popupUnitResolving = signal(false);
 
-  /** Save disc appears only when the draft differs from the opened value. */
-  readonly canSave = computed<boolean>(() => this.draft() !== this.original());
+  /** The item's current serving unit (food's own, then the item's, then grams). */
+  readonly popupUnit = computed<string>(
+    () => this.popupFood()?.servingUnit || this.popupItem()?.unit || 'g',
+  );
+  /** Unit dropdown options — the standard set plus the current unit if novel. */
+  readonly popupUnitOptions = computed<string[]>(() => nfUnitOptions(this.popupUnit()));
 
   /** Label scale: per-100g × (draft × gramsPerUnit)/100 — same math as the
    *  foods-panel popup, keyed on the ITEM's draft quantity. */
@@ -441,7 +447,6 @@ export class MenusPanelComponent implements OnInit {
     this.popupItem.set(e.item);
     this.popupFood.set(food);
     this.draft.set(initial);
-    this.original.set(initial);
   }
 
   /** Resolve a meal item to a full Food (per-100g values). Key is
@@ -541,29 +546,86 @@ export class MenusPanelComponent implements OnInit {
     } as Food;
   }
 
-  /** ▲ / ▼ stepper — ladder-snap the draft (shared SERVING_SIZE_LADDER). */
+  /** ▲ / ▼ stepper — unit-aware ladder-snap the draft, then AUTO-SAVE the item. */
   onPopupAdjust(direction: 'up' | 'down'): void {
-    const next = snapServing(this.draft(), direction);
+    const next = snapServingForUnit(this.draft(), direction, this.popupUnit());
     if (next === undefined) return;
-    this.draft.set(Number(next.toFixed(4)));
+    const val = Number(next.toFixed(4));
+    this.draft.set(val);
+    void this.persistItemQuantity(val);
   }
 
-  /** Typed input commit — accept off-ladder values (draft only). */
+  /** Typed input commit — accept off-ladder values, then AUTO-SAVE the item. */
   onPopupCommit(value: number): void {
-    this.draft.set(Number(value.toFixed(4)));
+    const val = Number(value.toFixed(4));
+    this.draft.set(val);
+    void this.persistItemQuantity(val);
   }
 
-  /** Green Save — persist ONLY the item's quantity via PUT, then close. Never
-   *  touches Picks/MyFoods and never prompts the baseline dialog. */
-  onPopupSave(): void {
+  /** Inline unit switch. Converts the draft so total grams — and therefore the
+   *  nutrition — stay EQUATED: newQty = (oldQty × oldGramsPerUnit) / newGramsPerUnit.
+   *  Weight units use the deterministic table; a food-specific unit (cup/tbsp/each)
+   *  uses the food's own grams-per-unit, else the AI. AUTO-SAVES quantity + unit. */
+  async onPopupUnitChange(newUnit: string): Promise<void> {
+    const food = this.popupFood();
+    const curUnit = this.popupUnit();
+    if (!food || !newUnit || newUnit === curUnit) return;
+
+    // Current grams-per-unit: the food's own, else the weight table, else the AI.
+    let curGpu = food.servingGramsPerUnit && food.servingGramsPerUnit > 0
+      ? food.servingGramsPerUnit
+      : (massGramsForUnit(curUnit) ?? 0);
+    if (curGpu <= 0) {
+      this.popupUnitResolving.set(true);
+      curGpu = (await this.resolveGramsPerUnitAI(food, curUnit)) ?? 0;
+      this.popupUnitResolving.set(false);
+    }
+    const curGrams = curGpu > 0 ? this.draft() * curGpu : 0;
+
+    // New grams-per-unit: weight table (instant), else the AI (food-specific).
+    let newGpu = massGramsForUnit(newUnit);
+    if (newGpu == null) {
+      this.popupUnitResolving.set(true);
+      newGpu = await this.resolveGramsPerUnitAI(food, newUnit);
+      this.popupUnitResolving.set(false);
+    }
+    if (newGpu == null || newGpu <= 0) {
+      this.notification.show(`Couldn't work out grams per ${newUnit} — pick another unit.`, 'error');
+      return;
+    }
+
+    const newQty = curGrams > 0 ? Number((curGrams / newGpu).toFixed(4)) : this.draft();
+    this.popupFood.update((f) => (f ? { ...f, servingUnit: newUnit, servingGramsPerUnit: newGpu as number } : f));
+    this.draft.set(newQty);
+    void this.persistItemQuantity(newQty, newUnit);
+  }
+
+  /** Write-through: persist the item's quantity (and unit when it changed) via
+   *  PUT. Meal-local only — never touches Picks/MyFoods. Failure toasts inside
+   *  the rotation service; the board is refreshed there. */
+  private async persistItemQuantity(quantity: number, unit?: string): Promise<void> {
     const mealId = this.popupMealId();
     const item = this.popupItem();
-    if (mealId == null || item?.id == null || !this.canSave()) return;
-    void this.rotation.updateMealItemQuantity(mealId, item.id, this.draft());
-    this.closePopup();
+    if (mealId == null || item?.id == null) return;
+    await this.rotation.updateMealItemQuantity(mealId, item.id, quantity, unit);
   }
 
-  /** Red X / backdrop — close and discard the draft (nothing persisted). */
+  /** Ask the AI (Langfuse `grams-per-unit`) for grams in one `unit` of this food.
+   *  Null on any failure so the caller can warn and leave the unit unchanged. */
+  private async resolveGramsPerUnitAI(food: Food, unit: string): Promise<number | null> {
+    const name = (food.shortDescription?.trim() || food.description || '').trim();
+    if (!name) return null;
+    try {
+      const res = await this.langfusePromptService.run('grams-per-unit', { food: name, unit });
+      const parsed = parseGramsPerUnit(res.text);
+      const g = Number(parsed?.gramsPerUnit);
+      return Number.isFinite(g) && g > 0 ? g : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Red X / backdrop — just close (edits already auto-saved). */
   onPopupClose(): void {
     this.closePopup();
   }

@@ -24,7 +24,7 @@ import {
   emptyBaskets,
   hydratePicks,
 } from '../../models/picks-hydration';
-import { nutritionLabelScale, snapServing } from '../../models/food-display';
+import { nutritionLabelScale, snapServing, snapServingForUnit } from '../../models/food-display';
 
 // 'myfoods' and 'restricted' are special: they pull from the user-preferences
 // service. Any other value is treated as the handle of a curated list and
@@ -700,18 +700,9 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             <!-- Canonical confirm/cancel discs (see CLAUDE.md > Dialog
                  conventions): green confirm LEFT of red cancel, red in the
                  corner. Health Info is shifted left to make room. -->
+            <!-- Auto-save editor: unit / serving size / category all persist on
+                 change, so there's no green Save disc — just the red close X. -->
             <div class="dialog-discs">
-              @if (nfPopupCanSave()) {
-                <button
-                  type="button"
-                  class="dialog-disc dialog-disc-confirm"
-                  (click)="onNfSave()"
-                  matTooltip="Save serving size"
-                  matTooltipPosition="below"
-                  aria-label="Save serving size">
-                  <mat-icon>check</mat-icon>
-                </button>
-              }
               <button
                 type="button"
                 class="dialog-disc dialog-disc-cancel"
@@ -741,7 +732,10 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 }
               </div>
               @if (nfPopupMode() === 'edit') {
+                <!-- Category on its own line, labelled. Auto-saves on change.
+                     (The UNIT now lives inline on the serving line in the label.) -->
                 <div class="nf-popup-edit-row">
+                  <span class="nf-popup-cat-label">Category</span>
                   <select
                     class="nf-popup-category"
                     [value]="nfPopupCategory()"
@@ -750,19 +744,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     aria-label="Food category">
                     @for (name of nfCategoryOptions(); track name) {
                       <option [value]="name">{{ name }}</option>
-                    }
-                  </select>
-                  <!-- Serving UNIT — changing it converts the amount so the
-                       nutrition stays equated. Food-specific units (cup/tbsp/each)
-                       get their grams from the food's own value, else the AI. -->
-                  <select
-                    class="nf-popup-unit"
-                    [value]="nfPopupFood()!.servingUnit || 'g'"
-                    [disabled]="nfPopupUnitResolving()"
-                    (change)="onNfUnitChange($any($event.target).value)"
-                    aria-label="Serving unit">
-                    @for (u of nfPopupUnitOptions(); track u) {
-                      <option [value]="u">{{ u }}</option>
                     }
                   </select>
                   @if (nfPopupUnitResolving()) {
@@ -776,10 +757,11 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 [displayUnit]="nfPopupFood()!.servingUnit || 'g'"
                 [displayQuantity]="nfPopupServingSize()"
                 [editable]="nfPopupMode() === 'edit'"
+                [unitOptions]="nfPopupMode() === 'edit' ? nfPopupUnitOptions() : []"
                 [showSave]="false"
                 (adjust)="onNfAdjust($event)"
                 (commit)="onNfCommit($event)"
-                (save)="onNfSave()" />
+                (unitChange)="onNfUnitChange($event)" />
             </div>
             <!-- Dev-side data-trace, OUTSIDE the inner scroll area so it
                  rides on the popup's dark bottom chrome instead of inside
@@ -1745,11 +1727,18 @@ export class FoodsPanelComponent {
     }
   }
 
-  /** Category dropdown change (edit mode) — draft only. Persisted on the green
-   *  Save disc (onNfSave), so it appears only when something actually changed. */
+  /** Category dropdown change (edit mode) — AUTO-SAVES to the MyFoods copy
+   *  (userfoods only) via the category-only PATCH; no green disc. */
   onNfCategoryChange(name: string): void {
-    if (!name) return;
+    const food = this.nfPopupFood();
+    if (!name || !food) return;
     this.nfPopupCategory.set(name);
+    const cat = this.foodsService.categories().find((c) => c.name.toLowerCase() === name.toLowerCase());
+    if (cat && (food.foodSource ?? 'food') === 'userfood' && food.id != null) {
+      void this.userFoodService.setUserFoodCategory(food.id, cat.id);
+      this.nfPopupFood.update((f) => (f ? { ...f, categoryId: cat.id, categoryName: cat.name } : f));
+      this.applyLocalCategory(food.id, cat.id, cat.name);
+    }
   }
 
   /** Grams in one WEIGHT unit (deterministic), or null for a food-specific unit. */
@@ -1762,18 +1751,26 @@ export class FoodsPanelComponent {
    *  — and therefore the nutrition — stay EQUATED: newAmount = (oldAmount ×
    *  oldGramsPerUnit) / newGramsPerUnit. Weight units use a fixed table; a
    *  food-specific unit (cup/tbsp/each) uses the food's own grams-per-unit, else
-   *  the AI (Langfuse `grams-per-unit`). Draft only — the green disc persists. */
+   *  the AI (Langfuse `grams-per-unit`). AUTO-SAVES to the MyFoods copy. */
   async onNfUnitChange(newUnit: string): Promise<void> {
     const food = this.nfPopupFood();
     if (!food) return;
     const curUnit = food.servingUnit || 'g';
     if (!newUnit || newUnit === curUnit) return;
 
-    const curGpu = food.servingGramsPerUnit && food.servingGramsPerUnit > 0
+    // Current grams-per-unit: the food's own, else a weight-table value, else ask
+    // the AI (a food already in a food-specific unit with no stored grams).
+    let curGpu = food.servingGramsPerUnit && food.servingGramsPerUnit > 0
       ? food.servingGramsPerUnit
       : (this.massGrams(curUnit) ?? 0);
+    if (curGpu <= 0) {
+      this.nfPopupUnitResolving.set(true);
+      curGpu = (await this.resolveGramsPerUnitAI(food, curUnit)) ?? 0;
+      this.nfPopupUnitResolving.set(false);
+    }
     const curGrams = curGpu > 0 ? this.nfPopupServingSize() * curGpu : 0;
 
+    // New grams-per-unit: weight table (instant), else the AI (food-specific).
     let newGpu = this.massGrams(newUnit);
     if (newGpu == null) {
       this.nfPopupUnitResolving.set(true);
@@ -1788,7 +1785,29 @@ export class FoodsPanelComponent {
     const newServing = curGrams > 0 ? Number((curGrams / newGpu).toFixed(3)) : this.nfPopupServingSize();
     this.nfPopupFood.update((f) => (f ? { ...f, servingUnit: newUnit, servingGramsPerUnit: newGpu as number } : f));
     this.nfPopupServingSize.set(newServing);
-    this.nfPopupUnitDirty.set(true);
+
+    // Auto-save unit + grams + converted quantity to the MyFoods copy. The relaxed
+    // serving-geometry endpoint accepts weight units too and forks a system food
+    // into a userfood — retarget the popup to that fork so later edits land on it.
+    if (food.id != null) {
+      try {
+        const res = await firstValueFrom(
+          this.foodsService.patchServingGeometry({
+            foodId: food.id,
+            foodSource: food.foodSource === 'userfood' ? 'userfood' : 'food',
+            unitName: newUnit,
+            gramsPerUnit: newGpu,
+            defaultQuantity: newServing,
+          }),
+        );
+        if (res?.cloned && res.userFoodId) {
+          this.nfPopupFood.update((f) => (f ? { ...f, id: res.userFoodId, foodSource: 'userfood' } : f));
+        }
+        await this.refreshServerMyFoods();
+      } catch {
+        this.notificationService.show('Could not save the unit.', 'error');
+      }
+    }
   }
 
   /** Ask the AI (Langfuse `grams-per-unit`) for grams in one `unit` of this food.
@@ -1946,23 +1965,32 @@ export class FoodsPanelComponent {
     });
   }
 
-  /** Adjust handler emitted by the NF label's ▲ / ▼ steppers. Ladder-snap via
-   *  the shared SERVING_SIZE_LADDER (models/food-display). No-op if already at
-   *  the bound. Updates the DRAFT signal only — Save persists. */
+  /** Adjust handler from the NF label's ▲ / ▼ steppers — ladder-snap using the
+   *  ladder that fits the CURRENT unit (grams step coarsely, count by wholes),
+   *  then AUTO-SAVE the new baseline (no green disc / two-step). */
   onNfAdjust(direction: 'up' | 'down'): void {
-    if (!this.nfPopupFood() || this.nfPopupMode() !== 'edit') return;
-    const next = snapServing(this.nfPopupServingSize(), direction);
+    const food = this.nfPopupFood();
+    if (!food || this.nfPopupMode() !== 'edit') return;
+    const next = snapServingForUnit(this.nfPopupServingSize(), direction, food.servingUnit || 'g');
     if (next === undefined) return; // already at the top or bottom of the ladder
-    this.nfPopupServingSize.set(Number(next.toFixed(4)));
+    const val = Number(next.toFixed(4));
+    this.nfPopupServingSize.set(val);
+    this.persistServingBaseline(food, val);
   }
 
-  /** Commit handler emitted by the NF label's typed-input mode. The label
-   *  has already validated the value is a positive number; we accept off-
-   *  ladder typed values (e.g. 0.4, 1.3) since the ladder is for the
-   *  steppers only. Updates the draft only — Save persists. */
+  /** Commit handler from the NF label's typed-input mode (off-ladder values ok).
+   *  AUTO-SAVES the new baseline. */
   onNfCommit(value: number): void {
-    if (!this.nfPopupFood() || this.nfPopupMode() !== 'edit') return;
-    this.nfPopupServingSize.set(Number(value.toFixed(4)));
+    const food = this.nfPopupFood();
+    if (!food || this.nfPopupMode() !== 'edit') return;
+    const val = Number(value.toFixed(4));
+    this.nfPopupServingSize.set(val);
+    this.persistServingBaseline(food, val);
+  }
+
+  /** Write-through save of the serving-size baseline for the MyFoods copy. */
+  private persistServingBaseline(food: Food, val: number): void {
+    if (food.id != null) this.preferencesService.setUserServingSize(food.id, val, food.foodSource);
   }
 
   /** Returns true when the NF popup was opened on a food sitting in one of

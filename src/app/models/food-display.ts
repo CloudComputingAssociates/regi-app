@@ -67,3 +67,72 @@ export function snapServing(current: number, direction: 'up' | 'down'): number |
   }
   return undefined;
 }
+
+/** Coarse ladder for gram amounts — stepping a 500g serving by 0.25g is absurd. */
+const GRAM_LADDER: readonly number[] = [
+  5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 125, 150, 200, 250, 300, 400, 500, 750, 1000,
+];
+/** Whole-number ladder for countable units ("each"): 1, 2, 3 … */
+const COUNT_LADDER: readonly number[] = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24];
+
+/** The stepper ladder appropriate for a UNIT. Grams step coarsely, countable
+ *  units step by wholes, and everything else (oz/lb/kg/cup/tbsp/tsp) uses the
+ *  fine fractional ladder. */
+function ladderForUnit(unit: string | null | undefined): readonly number[] {
+  const u = (unit ?? '').toLowerCase().trim();
+  if (u === 'g' || u === 'gram' || u === 'grams' || u === 'mg') return GRAM_LADDER;
+  if (['each', 'whole', 'piece', 'pieces', 'slice', 'slices', 'egg', 'eggs', 'count'].includes(u)) {
+    return COUNT_LADDER;
+  }
+  return SERVING_SIZE_LADDER;
+}
+
+/** Ladder-snap in the pressed direction, using the ladder that fits `unit` so the
+ *  steppers move in sensible increments for the current units. */
+export function snapServingForUnit(
+  current: number,
+  direction: 'up' | 'down',
+  unit: string | null | undefined,
+): number | undefined {
+  const ladder = ladderForUnit(unit);
+  if (direction === 'up') return ladder.find((v) => v > current);
+  for (let i = ladder.length - 1; i >= 0; i--) {
+    if (ladder[i] < current) return ladder[i];
+  }
+  return undefined;
+}
+
+/** Units offered in the inline Nutrition-Facts unit editor. Weight units convert
+ *  deterministically off {@link WEIGHT_UNIT_GRAMS}; the rest are food-specific
+ *  (grams come from the food's own data or the AI grams-per-unit prompt). Shared
+ *  by every context that mounts the editor (MyFoods baseline + menus per-item). */
+export const NF_UNIT_CHOICES: readonly string[] = ['g', 'oz', 'lb', 'cup', 'tbsp', 'tsp', 'each'];
+
+/** Grams in ONE of each weight unit — deterministic and food-independent. */
+export const WEIGHT_UNIT_GRAMS: Readonly<Record<string, number>> = {
+  g: 1, gram: 1, grams: 1, mg: 0.001, kg: 1000, oz: 28.3495, lb: 453.592,
+};
+
+/** Deterministic grams-per-unit for a WEIGHT unit, else null (food-specific unit
+ *  whose grams must come from the food's data or the AI). */
+export function massGramsForUnit(unit: string | null | undefined): number | null {
+  const g = WEIGHT_UNIT_GRAMS[(unit ?? '').toLowerCase().trim()];
+  return g != null ? g : null;
+}
+
+/** The unit dropdown options for a food: the standard set, plus the food's own
+ *  current unit if it isn't already in it (so the current value is selectable). */
+export function nfUnitOptions(currentUnit: string | null | undefined): string[] {
+  const cur = (currentUnit || 'g').toLowerCase().trim();
+  const base = [...NF_UNIT_CHOICES];
+  return base.includes(cur) ? base : [cur, ...base];
+}
+
+/** Parse a `{ gramsPerUnit, confidence }` object from an LLM response, tolerating
+ *  stray prose / code fences around the JSON. */
+export function parseGramsPerUnit(text: string): { gramsPerUnit?: number; confidence?: string } | null {
+  try { return JSON.parse(text); } catch { /* fall through */ }
+  const m = text.match(/\{[\s\S]*\}/);
+  if (m) { try { return JSON.parse(m[0]); } catch { /* give up */ } }
+  return null;
+}

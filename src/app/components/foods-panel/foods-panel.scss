@@ -1853,6 +1853,14 @@
   gap: 8px;
   margin: 0 0 10px;
 
+  .nf-popup-cat-label {
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: #b9bec4;
+  }
   .nf-popup-category { flex: 1 1 auto; margin: 0; }
   .nf-popup-unit { flex: 0 0 84px; margin: 0; }
   .nf-popup-unit-busy {
