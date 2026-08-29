@@ -741,16 +741,34 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 }
               </div>
               @if (nfPopupMode() === 'edit') {
-                <select
-                  class="nf-popup-category"
-                  [value]="nfPopupCategory()"
-                  [disabled]="(nfPopupFood()!.foodSource ?? 'food') !== 'userfood'"
-                  (change)="onNfCategoryChange($any($event.target).value)"
-                  aria-label="Food category">
-                  @for (name of nfCategoryOptions(); track name) {
-                    <option [value]="name">{{ name }}</option>
+                <div class="nf-popup-edit-row">
+                  <select
+                    class="nf-popup-category"
+                    [value]="nfPopupCategory()"
+                    [disabled]="(nfPopupFood()!.foodSource ?? 'food') !== 'userfood'"
+                    (change)="onNfCategoryChange($any($event.target).value)"
+                    aria-label="Food category">
+                    @for (name of nfCategoryOptions(); track name) {
+                      <option [value]="name">{{ name }}</option>
+                    }
+                  </select>
+                  <!-- Serving UNIT — changing it converts the amount so the
+                       nutrition stays equated. Food-specific units (cup/tbsp/each)
+                       get their grams from the food's own value, else the AI. -->
+                  <select
+                    class="nf-popup-unit"
+                    [value]="nfPopupFood()!.servingUnit || 'g'"
+                    [disabled]="nfPopupUnitResolving()"
+                    (change)="onNfUnitChange($any($event.target).value)"
+                    aria-label="Serving unit">
+                    @for (u of nfPopupUnitOptions(); track u) {
+                      <option [value]="u">{{ u }}</option>
+                    }
+                  </select>
+                  @if (nfPopupUnitResolving()) {
+                    <span class="nf-popup-unit-busy">figuring grams…</span>
                   }
-                </select>
+                </div>
               }
               <regi-nutrition-label
                 [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
@@ -1697,6 +1715,8 @@ export class FoodsPanelComponent {
     this.nfPopupMode.set(mode);
     this.nfPopupOrigin.set(origin);
     this.nfPopupFood.set(food);
+    this.nfPopupUnitDirty.set(false);
+    this.nfPopupUnitResolving.set(false);
 
     // Edit mode: seed the dropdown from the food's actual category name (the
     // same value the accordion groups it under) and load the options list.
@@ -1713,6 +1733,68 @@ export class FoodsPanelComponent {
   onNfCategoryChange(name: string): void {
     if (!name) return;
     this.nfPopupCategory.set(name);
+  }
+
+  /** Grams in one WEIGHT unit (deterministic), or null for a food-specific unit. */
+  private massGrams(unit: string | null | undefined): number | null {
+    const g = FoodsPanelComponent.MASS_GRAMS[(unit ?? '').toLowerCase()];
+    return g != null ? g : null;
+  }
+
+  /** Serving-UNIT change (edit mode). Converts the displayed amount so total grams
+   *  — and therefore the nutrition — stay EQUATED: newAmount = (oldAmount ×
+   *  oldGramsPerUnit) / newGramsPerUnit. Weight units use a fixed table; a
+   *  food-specific unit (cup/tbsp/each) uses the food's own grams-per-unit, else
+   *  the AI (Langfuse `grams-per-unit`). Draft only — the green disc persists. */
+  async onNfUnitChange(newUnit: string): Promise<void> {
+    const food = this.nfPopupFood();
+    if (!food) return;
+    const curUnit = food.servingUnit || 'g';
+    if (!newUnit || newUnit === curUnit) return;
+
+    const curGpu = food.servingGramsPerUnit && food.servingGramsPerUnit > 0
+      ? food.servingGramsPerUnit
+      : (this.massGrams(curUnit) ?? 0);
+    const curGrams = curGpu > 0 ? this.nfPopupServingSize() * curGpu : 0;
+
+    let newGpu = this.massGrams(newUnit);
+    if (newGpu == null) {
+      this.nfPopupUnitResolving.set(true);
+      newGpu = await this.resolveGramsPerUnitAI(food, newUnit);
+      this.nfPopupUnitResolving.set(false);
+    }
+    if (newGpu == null || newGpu <= 0) {
+      this.notificationService.show(`Couldn't work out grams per ${newUnit} — pick another unit.`, 'error');
+      return;
+    }
+
+    const newServing = curGrams > 0 ? Number((curGrams / newGpu).toFixed(3)) : this.nfPopupServingSize();
+    this.nfPopupFood.update((f) => (f ? { ...f, servingUnit: newUnit, servingGramsPerUnit: newGpu as number } : f));
+    this.nfPopupServingSize.set(newServing);
+    this.nfPopupUnitDirty.set(true);
+  }
+
+  /** Ask the AI (Langfuse `grams-per-unit`) for grams in one `unit` of this food.
+   *  Null on any failure so the caller can warn and leave the unit unchanged. */
+  private async resolveGramsPerUnitAI(food: Food, unit: string): Promise<number | null> {
+    const name = (food.shortDescription?.trim() || food.description || '').trim();
+    if (!name) return null;
+    try {
+      const res = await this.langfusePromptService.run('grams-per-unit', { food: name, unit });
+      const parsed = this.parseJsonLoose(res.text);
+      const g = Number(parsed?.gramsPerUnit);
+      return Number.isFinite(g) && g > 0 ? g : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Parse a JSON object from an LLM response, tolerating stray prose / fences. */
+  private parseJsonLoose(text: string): { gramsPerUnit?: number; confidence?: string } | null {
+    try { return JSON.parse(text); } catch { /* fall through */ }
+    const m = text.match(/\{[\s\S]*\}/);
+    if (m) { try { return JSON.parse(m[0]); } catch { /* give up */ } }
+    return null;
   }
 
   /** Update a food's category in the local MyFoods caches (local + server) so
@@ -1775,6 +1857,30 @@ export class FoodsPanelComponent {
         this.applyLocalCategory(food.id, cat.id, cat.name);
       }
       this.nfPopupOriginalCategory.set(newCat);
+    }
+
+    // Persist a UNIT change to the MyFoods copy. serving-geometry teaches a
+    // food-specific unit (cup/tbsp/each…) and forks a system food into a userfood
+    // when needed; it rejects intrinsic weight units, so those are skipped (the
+    // grams-per-unit is fixed — nothing to teach — and the amount baseline below
+    // still carries the change).
+    if (this.nfPopupUnitDirty() && food.id != null) {
+      const unit = food.servingUnit || 'g';
+      const gpu = food.servingGramsPerUnit ?? 0;
+      if (this.massGrams(unit) == null && gpu > 0) {
+        void firstValueFrom(
+          this.foodsService.patchServingGeometry({
+            foodId: food.id,
+            foodSource: food.foodSource === 'userfood' ? 'userfood' : 'food',
+            unitName: unit,
+            gramsPerUnit: gpu,
+            defaultQuantity: this.nfPopupServingSize(),
+          }),
+        )
+          .then(() => this.refreshServerMyFoods())
+          .catch(() => this.notificationService.show('Could not save the unit.', 'error'));
+      }
+      this.nfPopupUnitDirty.set(false);
     }
 
     if (origin === 'picks') {
@@ -2223,6 +2329,26 @@ export class FoodsPanelComponent {
   nfPopupCategory = signal<string>('');
   nfPopupOriginalCategory = signal<string>('');
 
+  /** Serving-UNIT edit state. `Dirty` drives the green Save disc; `Resolving` is
+   *  true while the AI (grams-per-unit) estimates a food-specific unit. */
+  nfPopupUnitDirty = signal(false);
+  nfPopupUnitResolving = signal(false);
+
+  /** Units offered in the NF editor. Weight units convert deterministically; the
+   *  rest are food-specific (grams from the food's data or the AI). */
+  private static readonly NF_UNIT_CHOICES = ['g', 'oz', 'lb', 'cup', 'tbsp', 'tsp', 'each'];
+  /** Grams in ONE of each weight unit — deterministic, food-independent. */
+  private static readonly MASS_GRAMS: Record<string, number> = {
+    g: 1, gram: 1, grams: 1, mg: 0.001, kg: 1000, oz: 28.3495, lb: 453.592,
+  };
+  /** Unit dropdown options — the standard set, plus the food's current unit if
+   *  it isn't already in it (so the current value is always selectable). */
+  readonly nfPopupUnitOptions = computed<string[]>(() => {
+    const cur = (this.nfPopupFood()?.servingUnit || 'g').toLowerCase();
+    const base = [...FoodsPanelComponent.NF_UNIT_CHOICES];
+    return base.includes(cur) ? base : [cur, ...base];
+  });
+
   /** Dropdown options: the category vocabulary, plus the food's own category
    *  if it isn't in that list (so the current value is always selectable). */
   readonly nfCategoryOptions = computed<string[]>(() => {
@@ -2260,7 +2386,8 @@ export class FoodsPanelComponent {
   nfPopupCanSave = computed<boolean>(() =>
     this.nfPopupMode() === 'edit' &&
     (this.nfPopupServingSize() !== this.nfPopupOriginalServingSize() ||
-      this.nfPopupCategory().trim() !== this.nfPopupOriginalCategory().trim())
+      this.nfPopupCategory().trim() !== this.nfPopupOriginalCategory().trim() ||
+      this.nfPopupUnitDirty())
   );
 
   /** Scale factor handed to the NF label so it can recompute macros from the
