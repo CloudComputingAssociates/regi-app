@@ -1451,9 +1451,27 @@ export class RotationService {
    *  itemRole = 'primary' when the food is a Protein AND the meal has no primary
    *  yet; else 'side'. On success: refresh the menu (slot macros/chips) + the
    *  meal's items (rows/dot). Failures toast and leave the board intact. */
+  /** The most recent successful food-add: the meal it landed in (FINAL id, after
+   *  any copy-on-write fork) + the added food's id. Drives a one-shot "bloom" on
+   *  the new row in the meal card; the card clears it on animation end. */
+  readonly lastAdd = signal<{ mealId: number; foodId: number } | null>(null);
+
   async addFoodToEditingMeal(food: Food, serving: number): Promise<void> {
     const slot = this.editingSlot();
     if (!slot) return;
+
+    // Capture the meal's ASSIGNED photo (its own, or the fork original's borrowed
+    // one) BEFORE the add. POST /items never touches mealImage server-side, and a
+    // copy-on-write fork drops it — so we re-attach this afterward instead of
+    // letting the tile fall back to the protein-derived default. Deliberately does
+    // NOT capture the protein default itself.
+    const startMeal = slot.mealId != null ? this.getMeal(slot.mealId) : null;
+    const keepImage =
+      startMeal?.mealImage?.trim() || this.forkOriginal(startMeal)?.mealImage?.trim() || '';
+    const keepThumb =
+      startMeal?.mealImageThumbnail?.trim() ||
+      this.forkOriginal(startMeal)?.mealImageThumbnail?.trim() ||
+      '';
 
     const foodName = (food.shortDescription?.trim() || food.description || '').trim();
     const unit = food.servingUnit ?? 'serving';
@@ -1513,6 +1531,28 @@ export class RotationService {
       );
       this.cacheMenu(slot.menuId, menu);
       await this.loadMeal(mealId);
+
+      // Preserve the assigned photo through the add: if the (possibly forked) meal
+      // now has no image of its OWN, re-attach the one it was showing. Only the
+      // real assigned photo — coverImageFor still falls back to the protein
+      // default when there genuinely is no assigned image (keepImage === '').
+      if (keepImage) {
+        this.mealsById.update((map) => {
+          const cur = map.get(mealId);
+          if (!cur || cur.mealImage?.trim()) return map; // already has its own photo
+          const next = new Map(map);
+          next.set(mealId, {
+            ...cur,
+            mealImage: keepImage,
+            mealImageThumbnail: cur.mealImageThumbnail?.trim() || keepThumb,
+          });
+          return next;
+        });
+      }
+
+      // One-shot bloom on the new row (matched by foodId — stable across a fork).
+      if (food.id != null) this.lastAdd.set({ mealId, foodId: food.id });
+
       // Adding a food is an unsaved food change → light the back-face save disc.
       this.markFoodEdited(mealId);
     } catch (err) {

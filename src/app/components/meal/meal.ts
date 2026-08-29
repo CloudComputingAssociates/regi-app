@@ -13,6 +13,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -209,11 +210,16 @@ interface Macro {
 
                 <div class="food-rows">
                   @for (item of mainItemsFor(fm.mealId); track item.id) {
-                    <app-food
-                      [item]="item"
-                      [resolving]="resolvingItemId() === item.id"
-                      (editItem)="editItem.emit({ mealId: fm.mealId, item: $event })"
-                      (removeItem)="removeItem.emit({ mealId: fm.mealId, item: $event })" />
+                    <div
+                      class="food-row-wrap"
+                      [class.bloom-row]="item.food?.foodId === bloomFoodId()"
+                      (animationend)="onBloomDone($event)">
+                      <app-food
+                        [item]="item"
+                        [resolving]="resolvingItemId() === item.id"
+                        (editItem)="editItem.emit({ mealId: fm.mealId, item: $event })"
+                        (removeItem)="removeItem.emit({ mealId: fm.mealId, item: $event })" />
+                    </div>
                   }
                 </div>
                 @if (dynamicItemsFor(fm.mealId).length > 0) {
@@ -317,6 +323,45 @@ export class MealComponent {
 
   /** Dynamic-ingredients accordion open state (back face). */
   readonly dynamicOpen = signal(false);
+
+  /** foodId of a just-added row to glow once; null = nothing blooming. */
+  readonly bloomFoodId = signal<number | null>(null);
+
+  constructor() {
+    // Adding a food to a SAVED meal forks it (copy-on-write → a new mealId). The
+    // flip is keyed by mealId, so FOLLOW the fork — otherwise the flipped meal
+    // vanishes from meals() and the card snaps back to the photo. Manual flip
+    // (flipTo/flipHome) is untouched; this only re-points an already-open flip.
+    effect(
+      () => {
+        const id = this.flippedMealId();
+        if (id == null || this.meals().some((m) => m.mealId === id)) return;
+        const fork = this.meals().find(
+          (m) => this.rotation.getMeal(m.mealId)?.clonedFromMealId === id,
+        );
+        if (fork) this.flippedMealId.set(fork.mealId);
+      },
+      { allowSignalWrites: true },
+    );
+
+    // Bloom the newly-added row once, when a food lands in one of this card's meals.
+    effect(
+      () => {
+        const la = this.rotation.lastAdd();
+        if (la && this.meals().some((m) => m.mealId === la.mealId)) {
+          this.bloomFoodId.set(la.foodId);
+        }
+      },
+      { allowSignalWrites: true },
+    );
+  }
+
+  /** Bloom animation finished → clear the one-shot flag so it never re-fires. */
+  onBloomDone(ev: AnimationEvent): void {
+    if (ev.animationName && ev.animationName !== 'food-bloom') return;
+    this.bloomFoodId.set(null);
+    this.rotation.lastAdd.set(null);
+  }
 
   /** The ONLY flip trigger: a tile's ⤢ opens that meal's detail. */
   flipTo(mealId: number, ev: Event): void {
