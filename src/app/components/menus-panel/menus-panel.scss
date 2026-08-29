@@ -510,3 +510,44 @@ app-menu-card-row {
   0%, 100% { transform: translate(-50%, -50%) scale(1); }
   50% { transform: translate(-50%, -50%) scale(1.06); }
 }
+
+// My Foods bloom — floats the food-lookaside over the panel while a meal is being
+// edited, so the Notebook rail stays visible behind it. Yellow-glow window +
+// dim backdrop, matching the Shopping List / Settings blooms. Closed by the
+// lookaside's own X (stops editing) or a backdrop click.
+.myfoods-bloom-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+.myfoods-bloom-window {
+  position: relative;
+  width: 400px;
+  max-width: 92vw;
+  height: 78vh;
+  max-height: 820px;
+  display: flex;
+  background: #2a2a2a;
+  border: 1.5px solid rgba(255, 213, 79, 0.6);
+  border-radius: 14px;
+  box-shadow:
+    0 0 18px 2px rgba(255, 213, 79, 0.42),
+    0 0 36px 8px rgba(255, 193, 7, 0.25),
+    0 12px 36px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+
+  // The lookaside is authored as a rail item (flex-basis 25%, left divider). In
+  // the bloom, fill the window and drop the rail chrome.
+  ::ng-deep app-food-lookaside {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    border-left: none;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+}

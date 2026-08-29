@@ -352,12 +352,22 @@ export class RotationService {
    *      full-resolution `foodImage`; falls back to the thumbnail until the API
    *      enriches meal items with the full image. '' when nothing is available. */
   coverImageFor(mealId: number): string {
+    return this.assignedImageFor(mealId) || this.proteinImageFor(mealId);
+  }
+
+  /** The meal's ASSIGNED photo — its own MealImage, or (for a copy-on-write fork
+   *  that dropped its image) the fork ORIGINAL's, borrowed via clonedFromMealId.
+   *  EXCLUDES the protein-derived default so an assigned slot thumbnail can
+   *  outrank it (see meal.ts `tileImage`). '' when the meal has no assigned photo. */
+  assignedImageFor(mealId: number): string {
     const meal = this.getMeal(mealId);
-    const own = meal?.mealImage?.trim();
-    if (own) return own;
-    const srcImg = this.forkOriginal(meal)?.mealImage?.trim();
-    if (srcImg) return srcImg;
-    return this.primaryProteinImage(meal) || '';
+    return meal?.mealImage?.trim() || this.forkOriginal(meal)?.mealImage?.trim() || '';
+  }
+
+  /** The protein-derived default — the star ingredient's picture. The LAST-resort
+   *  cover, below any assigned photo/thumbnail. '' when none. */
+  proteinImageFor(mealId: number): string {
+    return this.primaryProteinImage(this.getMeal(mealId)) || '';
   }
 
   /** The star ingredient's picture — the meal's primary-protein food image. Full

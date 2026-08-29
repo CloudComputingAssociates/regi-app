@@ -160,34 +160,42 @@ import { nutritionLabelScale, snapServing } from '../../models/food-display';
             @if (tabService.shoppingOpen()) {
               <app-shopping-bloom (close)="tabService.closeShopping()" />
             }
+
+            <!-- Editing a meal (the card's + / a food drop) floats My Foods as a
+                 bloom OVER the panel — the Notebook stays visible in the rail.
+                 The lookaside's own header carries the "My Foods" title + X (which
+                 stops editing); the backdrop also closes it. -->
+            @if (rotation.editingSlot() !== null) {
+              <div class="myfoods-bloom-backdrop" (click)="rotation.stopEditing()">
+                <div class="myfoods-bloom-window" (click)="$event.stopPropagation()">
+                  <app-food-lookaside />
+                </div>
+              </div>
+            }
           </div>
 
-          @if (rotation.editingSlot() === null) {
-            <!-- Splitter doubles as the Binder toggle: DRAG to resize, or press the
-                 arrow to slide the notebook off to the right (→) / bring it back
-                 (←). A long vertical line with the arrow on the page's edge. -->
-            <div
-              class="rail-splitter"
-              [class.dragging]="splitterDragging"
-              [class.binder-hidden]="rotation.binderCollapsed()"
-              (mousedown)="onSplitterDown($event)">
-              <button
-                type="button"
-                class="rail-toggle"
-                [matTooltip]="rotation.binderCollapsed() ? 'Show Binder' : 'Hide Binder'"
-                matTooltipPosition="left"
-                (mousedown)="$event.stopPropagation()"
-                (click)="rotation.toggleBinderCollapsed()">
-                <mat-icon>{{ rotation.binderCollapsed() ? 'chevron_left' : 'chevron_right' }}</mat-icon>
-              </button>
-            </div>
-            <app-meal-binder
-              [class.binder-collapsed]="rotation.binderCollapsed()"
-              [style.flex-basis]="railBasis()"
-              (createMeal)="createOpen.set(true)" />
-          } @else {
-            <app-food-lookaside />
-          }
+          <!-- Notebook stays put whether or not a meal is being edited. Adding
+               food to a meal now floats My Foods as a bloom (see below) instead of
+               swapping the notebook out of the rail. -->
+          <div
+            class="rail-splitter"
+            [class.dragging]="splitterDragging"
+            [class.binder-hidden]="rotation.binderCollapsed()"
+            (mousedown)="onSplitterDown($event)">
+            <button
+              type="button"
+              class="rail-toggle"
+              [matTooltip]="rotation.binderCollapsed() ? 'Show Binder' : 'Hide Binder'"
+              matTooltipPosition="left"
+              (mousedown)="$event.stopPropagation()"
+              (click)="rotation.toggleBinderCollapsed()">
+              <mat-icon>{{ rotation.binderCollapsed() ? 'chevron_left' : 'chevron_right' }}</mat-icon>
+            </button>
+          </div>
+          <app-meal-binder
+            [class.binder-collapsed]="rotation.binderCollapsed()"
+            [style.flex-basis]="railBasis()"
+            (createMeal)="createOpen.set(true)" />
         </div>
       }
 
