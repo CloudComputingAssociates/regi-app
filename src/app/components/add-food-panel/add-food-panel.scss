@@ -16,7 +16,10 @@
   position: relative;
   width: 640px;
   max-width: 92vw;
-  max-height: 86vh;
+  // Fixed, roomy height so the search stage isn't squished and the window stays
+  // the SAME size through the flow (search → ratify) — no mid-flow resize.
+  height: 560px;
+  max-height: 88vh;
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #2f2f2f 0%, #262626 100%);

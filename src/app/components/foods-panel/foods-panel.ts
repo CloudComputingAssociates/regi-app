@@ -190,6 +190,18 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 </button>
               }
               <span class="top-bar-spacer"></span>
+              <!-- Edit Nutrition Facts (scale serving/units) for the highlighted
+                   food — a pencil just LEFT of the trash. -->
+              <button
+                type="button"
+                class="bar-icon-btn myfoods-edit"
+                [disabled]="!selectedFood()"
+                (click)="onSelectedTileEdit()"
+                matTooltip="Edit nutrition facts"
+                matTooltipPosition="below"
+                aria-label="Edit nutrition facts">
+                <mat-icon aria-hidden="true">edit</mat-icon>
+              </button>
               <!-- Remove-from-MyFoods trashcan — greyed until a food is highlighted;
                    then a grey button with a red trashcan to pare the list down. -->
               <button
@@ -245,7 +257,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   [class.selected]="selectedFood()?.id === food.id"
                   [draggable]="addTo() !== 'right'"
                   (click)="onTileClick(food)"
-                  (dblclick)="onTileDblClick(food)"
                   (dragstart)="onTileDragStart(food, $event)">
                   <div class="food-tile-image">
                     @if (foodThumb(food); as src) {
@@ -1565,11 +1576,36 @@ export class FoodsPanelComponent {
     return food.foodImageThumbnail || food.foodImage;
   }
 
+  private myFoodTileClickTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Single vs double click on a My Foods tile. A lone click (after a short
+   *  window) TOGGLES selection — a 2nd click on the SAME tile deselects — and, on
+   *  select, drops the food into its basket (unless we're in select-only mode). A
+   *  fast second click is a DOUBLE-click: it opens the Nutrition Facts editor and
+   *  never leaves the tile selected. */
   onTileClick(food: Food): void {
-    this.selectedFood.set(food);
-    if (this.addTo() === 'right') return;
-    const basket = this.basketForFood(food);
-    this.addFoodToBasket(food, basket);
+    if (this.myFoodTileClickTimer) {
+      clearTimeout(this.myFoodTileClickTimer);
+      this.myFoodTileClickTimer = null;
+      this.selectedFood.set(null); // a double-click never leaves it selected
+      this.onTileDblClick(food);
+      return;
+    }
+    this.myFoodTileClickTimer = setTimeout(() => {
+      this.myFoodTileClickTimer = null;
+      const wasSelected = this.selectedFood()?.id === food.id;
+      this.selectedFood.set(wasSelected ? null : food);
+      if (wasSelected) return; // 2nd click on the same tile = deselect only
+      if (this.addTo() === 'right') return;
+      const basket = this.basketForFood(food);
+      this.addFoodToBasket(food, basket);
+    }, 220);
+  }
+
+  /** Pencil (top bar) — open the Nutrition Facts editor for the highlighted food. */
+  onSelectedTileEdit(): void {
+    const food = this.selectedFood();
+    if (food) this.openNfPopupForFood(food, 'edit', 'myfoods');
   }
 
   /** Double-click on a LHS tile is now a no-op for NF popups — edits live
@@ -1578,8 +1614,11 @@ export class FoodsPanelComponent {
    *  click a silent no-op, so this method intentionally does nothing.
    *  Kept as an explicit handler so future intent (e.g. confirmation flash)
    *  has an obvious home. */
-  onTileDblClick(_food: Food): void {
-    // No NF popup from the LHS picks display — edits require Edit mode.
+  /** Double-click a My Food → the Nutrition Facts editor: edit the serving size /
+   *  units to SCALE the values (the other facts stay read-only), saved as the
+   *  food's baseline in MyFoods. Same editor the pencil + RHS list use. */
+  onTileDblClick(food: Food): void {
+    this.openNfPopupForFood(food, 'edit', 'myfoods');
   }
 
   /** Double-click on a row in the Edit MyFoods accordion → open the NF

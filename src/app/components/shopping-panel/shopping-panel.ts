@@ -17,6 +17,7 @@ import { firstValueFrom } from 'rxjs';
 import { SettingsService } from '../../services/settings.service';
 import { NotificationService } from '../../services/notification.service';
 import { RotationService } from '../../services/rotation.service';
+import { TabService } from '../../services/tab.service';
 import { ShoppingStaple } from '../../models/settings.models';
 import { ShoppingListResponse, ShoppingListPdfRequest } from '../../models/generated/shopping.schema';
 
@@ -223,6 +224,7 @@ export class ShoppingPanelComponent {
   private settingsService = inject(SettingsService);
   private notificationService = inject(NotificationService);
   readonly rotation = inject(RotationService);
+  private tab = inject(TabService);
 
   isSaving = signal(false);
 
@@ -299,18 +301,11 @@ export class ShoppingPanelComponent {
     try {
       const blob = await firstValueFrom(this.rotation.downloadShoppingListPdf(id, body));
       if (!blob || blob.size === 0) return false;
+      // Open it in the SAME bloom PDF viewer recipes use — fully rendered, with a
+      // print/download toolbar — instead of a browser download. The tab service
+      // owns the blob URL and revokes it when the viewer closes.
       const url = URL.createObjectURL(blob);
-      const win = window.open(url, '_blank');
-      if (!win) {
-        // Popup blocked — fall back to a direct download of the same blob.
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'shopping-list.pdf';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      }
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      this.tab.openPdf(url, true);
       return true;
     } catch {
       return false;

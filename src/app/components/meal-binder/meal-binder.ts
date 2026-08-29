@@ -223,10 +223,10 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                   <button
                     type="button"
                     class="filter-clear"
-                    matTooltip="Remove filters"
+                    matTooltip="Clear filter"
                     matTooltipPosition="above"
                     (click)="clearFilter()">
-                    <mat-icon>clear_all</mat-icon>
+                    <mat-icon>filter_alt_off</mat-icon>
                   </button>
                 </div>
                 <div class="mealset-row">
@@ -636,6 +636,26 @@ export class MealBinderComponent implements OnInit {
           m.name?.toLowerCase().includes(q) ||
           (m.ingredientNames ?? '').includes(q) ||
           (m.primaryProteinName ?? '').toLowerCase().includes(q),
+      );
+    }
+    // De-dupe against your OWN copies. When a purchased set is mixed in and you
+    // already have your own materialized copy of a meal (it carries a
+    // sourceMealSetId backlink — and possibly your edited quantities), show ONLY
+    // that owned copy and drop the raw mixed-in set meal, so it isn't listed
+    // twice. Match on (set id + name), the only shared key the meals carry.
+    const ownedFromSet = new Set(
+      list
+        .filter((m) => m.sourceMealSetId != null)
+        .map((m) => `${m.sourceMealSetId}:${(m.name ?? '').trim().toLowerCase()}`),
+    );
+    if (ownedFromSet.size > 0) {
+      list = list.filter(
+        (m) =>
+          !(
+            m.mealSetId != null &&
+            m.sourceMealSetId == null &&
+            ownedFromSet.has(`${m.mealSetId}:${(m.name ?? '').trim().toLowerCase()}`)
+          ),
       );
     }
     // Provenance filter: narrow to owned meals materialized from the chosen set.

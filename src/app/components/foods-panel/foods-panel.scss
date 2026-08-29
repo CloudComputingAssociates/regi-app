@@ -901,6 +901,12 @@
   &:disabled { opacity: 0.4; cursor: default; }
   &:disabled .mat-icon, &:disabled mat-icon { color: #9a9a9a; }
 }
+// Edit pencil — green when a food is selected, greyed when not (mirrors the trash).
+.myfoods-edit {
+  .mat-icon, mat-icon { color: #4caf50; }
+  &:disabled { opacity: 0.4; cursor: default; }
+  &:disabled .mat-icon, &:disabled mat-icon { color: #9a9a9a; }
+}
 
 // (The invisible .filter-bar-placeholder was retired — the RHS .section-title
 //  is now a real key-bar matching the LHS FILTER bar, so it provides the

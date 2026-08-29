@@ -316,6 +316,29 @@
   bottom: 6px;
   right: 6px;
 }
+// Recipe-PDF logo — top-right of the front tile. Just the logo (no button chrome)
+// with a drop shadow so it reads over any photo. Shown only when a link exists.
+.tile-pdf {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.75));
+  }
+  &:hover img { filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.9)) brightness(1.08); }
+}
 // AI meal-image camera (square [+]-style key) — disabled while generating.
 .genimg-btn {
   &:disabled { opacity: 0.75; cursor: default; }

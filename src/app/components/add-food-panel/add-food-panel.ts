@@ -412,9 +412,9 @@ export class AddFoodPanelComponent {
   }
 
   onBackdrop(): void {
-    // Don't dismiss on a stray backdrop click while there are uncommitted edits.
-    if (this.canSave()) return;
-    this.onClose();
+    // Clicking off does NOT close. Users grab the scrollbar / click around, and an
+    // accidental dismiss is worse than requiring the explicit red X — which is
+    // always right there (so it's not a rigid, punishing modal).
   }
 
   onClose(): void {

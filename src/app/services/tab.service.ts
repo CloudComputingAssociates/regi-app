@@ -313,11 +313,42 @@ export class TabService {
   openShopping(): void { this.shoppingOpen.set(true); }
   closeShopping(): void { this.shoppingOpen.set(false); }
 
-  // In-app web viewer — opens an external page in a bloom iframe overlay instead
-  // of a new browser tab (so the user never leaves the app). null = closed.
+  // In-app web viewer — opens an external page (or a PDF) in a bloom overlay
+  // instead of a new browser tab (so the user never leaves the app). null = closed.
   readonly webViewUrl = signal<string | null>(null);
-  openWebView(url: string): void { this.webViewUrl.set(url); }
-  closeWebView(): void { this.webViewUrl.set(null); }
+  /** Force the PDF.js viewer (with its print/download toolbar) even when the URL
+   *  has no .pdf extension — e.g. a `blob:` URL for a generated PDF. */
+  readonly webViewIsPdf = signal(false);
+  private webViewBlobUrl: string | null = null;
+
+  openWebView(url: string): void {
+    this.revokeWebViewBlob();
+    this.webViewIsPdf.set(false);
+    this.webViewUrl.set(url);
+  }
+
+  /** Open a PDF in the SAME bloom viewer used for recipe PDFs — fully rendered,
+   *  with a print button. Pass `ownsBlobUrl: true` for a `blob:` URL so it's
+   *  revoked when the viewer closes. Consolidates all PDF viewing on one surface. */
+  openPdf(url: string, ownsBlobUrl = false): void {
+    this.revokeWebViewBlob();
+    this.webViewBlobUrl = ownsBlobUrl ? url : null;
+    this.webViewIsPdf.set(true);
+    this.webViewUrl.set(url);
+  }
+
+  closeWebView(): void {
+    this.webViewUrl.set(null);
+    this.webViewIsPdf.set(false);
+    this.revokeWebViewBlob();
+  }
+
+  private revokeWebViewBlob(): void {
+    if (this.webViewBlobUrl) {
+      URL.revokeObjectURL(this.webViewBlobUrl);
+      this.webViewBlobUrl = null;
+    }
+  }
 
   // ============================================================
   // Single-active panel APIs (replaces the mat-tab strip model)

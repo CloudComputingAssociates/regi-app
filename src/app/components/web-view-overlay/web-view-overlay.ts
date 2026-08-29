@@ -186,6 +186,7 @@ export class WebViewOverlayComponent {
   /** True when the target is a PDF (path ends .pdf, query string ignored so the
    *  ?v= cache-bust still matches). PDFs are exempt from the idle auto-close. */
   readonly isPdf = computed<boolean>(() => {
+    if (this.tab.webViewIsPdf()) return true; // forced (e.g. a blob: URL PDF)
     const url = this.tab.webViewUrl() ?? '';
     return url.split('?')[0].toLowerCase().endsWith('.pdf');
   });

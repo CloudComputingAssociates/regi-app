@@ -1482,6 +1482,11 @@ export class RotationService {
       startMeal?.mealImageThumbnail?.trim() ||
       this.forkOriginal(startMeal)?.mealImageThumbnail?.trim() ||
       '';
+    // Same story for the recipe PDF link: a fork drops RecipeLink server-side, so
+    // capture it (own, or the fork original's) and re-attach it below — otherwise
+    // the "Recipe (PDF)" hyperlink vanishes the moment you add a food.
+    const keepRecipe =
+      startMeal?.recipeLink?.trim() || this.forkOriginal(startMeal)?.recipeLink?.trim() || '';
 
     const foodName = (food.shortDescription?.trim() || food.description || '').trim();
     const unit = food.servingUnit ?? 'serving';
@@ -1542,19 +1547,24 @@ export class RotationService {
       this.cacheMenu(slot.menuId, menu);
       await this.loadMeal(mealId);
 
-      // Preserve the assigned photo through the add: if the (possibly forked) meal
-      // now has no image of its OWN, re-attach the one it was showing. Only the
-      // real assigned photo — coverImageFor still falls back to the protein
-      // default when there genuinely is no assigned image (keepImage === '').
-      if (keepImage) {
+      // Preserve the assigned photo AND the recipe link through the add: if the
+      // (possibly forked) meal now has none of its OWN, re-attach what it was
+      // showing. Only real assigned values — coverImageFor still falls back to the
+      // protein default when there genuinely is no assigned image.
+      if (keepImage || keepRecipe) {
         this.mealsById.update((map) => {
           const cur = map.get(mealId);
-          if (!cur || cur.mealImage?.trim()) return map; // already has its own photo
+          if (!cur) return map;
+          const needImage = !!keepImage && !cur.mealImage?.trim();
+          const needRecipe = !!keepRecipe && !cur.recipeLink?.trim();
+          if (!needImage && !needRecipe) return map;
           const next = new Map(map);
           next.set(mealId, {
             ...cur,
-            mealImage: keepImage,
-            mealImageThumbnail: cur.mealImageThumbnail?.trim() || keepThumb,
+            ...(needImage
+              ? { mealImage: keepImage, mealImageThumbnail: cur.mealImageThumbnail?.trim() || keepThumb }
+              : {}),
+            ...(needRecipe ? { recipeLink: keepRecipe } : {}),
           });
           return next;
         });

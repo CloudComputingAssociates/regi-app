@@ -122,7 +122,9 @@
 // Meal search — now lives on the meals-tab line; GROWS to fill between the tab and
 // the Add/Filter keys, shrinks on narrow rails.
 .header-search {
-  flex: 1 1 60px;
+  // Shrink the search first (down to ~30px) so the Add + Filter keys are never
+  // pushed off a narrow rail — the middle squeezes, the buttons stay.
+  flex: 1 1 30px;
   min-width: 0;
   align-self: flex-end; // bottom-align with the tab + Add/Filter keys
   height: 26px;
@@ -1027,13 +1029,14 @@
     flex: 0 0 auto;
     max-width: 96px;
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1;
-    padding: 2px 6px;
+    padding: 3px 7px;
     border-radius: 8px;
-    color: #cfe4ff;
-    background: rgba(77, 166, 255, 0.18);
-    border: 1px solid rgba(77, 166, 255, 0.35);
+    // Solid blue + white text — the old light-on-light chip was unreadable.
+    color: #ffffff;
+    background: #3d86d6;
+    border: 1px solid #2f6cb0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
