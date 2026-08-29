@@ -59,7 +59,6 @@ import { map } from 'rxjs/operators';
           @if (isAuthenticated()) {
             <app-tether-indicator />
           }
-          <span class="app-bar-right-spacer"></span>
           <app-profile-menu />
         </div>
       </div>

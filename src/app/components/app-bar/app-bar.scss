@@ -39,15 +39,9 @@
     // the tether + name at that same bottom baseline as the macros %/g.
     align-items: flex-end;
     padding-bottom: 3px;  // tiny nudge to match the %/g's in-padding drop
-    // Tether sits at the left of this band (macros' edge); the spacer shoves the
-    // display name + avatar to the far right.
-    justify-content: flex-start;
-  }
-
-  // Flexible gap between the tether (macros edge) and the name/avatar (far right).
-  .app-bar-right-spacer {
-    flex: 1 1 auto;
-    min-width: 8px;
+    // Everything hugs the far right: [tether] · [name] [avatar]. The tether floats
+    // just left of the name; its own margin-right sets the ~1/3in gap.
+    justify-content: flex-end;
   }
 
   .app-bar-macros {

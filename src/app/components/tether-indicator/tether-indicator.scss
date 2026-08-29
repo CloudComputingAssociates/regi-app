@@ -2,8 +2,9 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  // ~1/2 inch of breathing room so the phone doesn't crowd the profile icon.
-  margin-right: 48px;
+  // The phone floats just left of the display-name link, with ~1/3in of padding
+  // so it reads as separate from the name.
+  margin-right: 32px;
 }
 
 .ti-btn {

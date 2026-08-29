@@ -341,10 +341,12 @@ export class AccountPanelComponent {
     try {
       const s = this.stagedAvatar();
       if (s === 'remove') {
-        // No clear-avatar endpoint yet → session revert to the apple.
+        // Persist the clear so it survives a reload; if the endpoint isn't live
+        // yet it's a session-only revert (the photo re-hydrates on refresh).
+        const cleared = await this.userProfile.clearAvatar();
         this.profileImage.setPreview(null);
         this.profileImage.setPersisted(null);
-        sessionOnly = true;
+        if (!cleared) sessionOnly = true;
       } else if (s) {
         try {
           const res = await this.imageUpload.uploadUserAvatar(s.file);
@@ -370,7 +372,7 @@ export class AccountPanelComponent {
       this.nameTouched = false; // field resyncs to the committed name
       this.notificationService.show(
         sessionOnly
-          ? 'Saved for this session — syncs to your account once profile save is enabled.'
+          ? 'Couldn’t reach your account — your change shows here but may not stick after a refresh.'
           : 'Account updated',
         sessionOnly ? 'error' : 'success',
       );

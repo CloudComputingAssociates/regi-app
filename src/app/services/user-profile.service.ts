@@ -63,6 +63,19 @@ export class UserProfileService {
     this.override.set(name && name.trim() ? name.trim() : null);
   }
 
+  /** DELETE /api/user/avatar — clear the stored avatar (revert to the apple logo)
+   *  so it STAYS cleared across reloads. Pending API handoff; until it ships this
+   *  404s and the caller keeps a session-only revert (which re-hydrates the old
+   *  photo on refresh). Returns true when the server actually cleared it. */
+  async clearAvatar(): Promise<boolean> {
+    try {
+      await firstValueFrom(this.http.delete(`${this.baseUrl}/user/avatar`));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   /** PUT /api/user/profile { displayName } — persist to the User record and adopt
    *  the server's canonical value. Returns true on success, false if the endpoint
    *  isn't reachable yet (caller keeps the name for the session). */
