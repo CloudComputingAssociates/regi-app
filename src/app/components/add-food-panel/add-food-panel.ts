@@ -42,8 +42,8 @@ import { IngredientTypeaheadComponent, PickedFood } from '../ingredient-typeahea
   imports: [MatIconModule, MatTooltipModule, IngredientTypeaheadComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="afp-backdrop" (click)="onBackdrop()">
-      <div class="afp-window" (click)="$event.stopPropagation()">
+    <div class="afp-backdrop" [class.inline]="inline()" (click)="onBackdrop()">
+      <div class="afp-window" [class.inline]="inline()" (click)="$event.stopPropagation()">
         <div class="afp-header">
           <img src="images/yeh_logo_dark.png" alt="" class="afp-logo" />
           <span class="afp-title">Add a Food</span>
@@ -171,6 +171,11 @@ export class AddFoodPanelComponent {
   /** Optional search term to seed the typeahead with (e.g. the text the user had
    *  typed in the My Foods search when they hit "Quik add +"). */
   readonly initialQuery = input<string>('');
+
+  /** Inline mode: render as a plain fill of the host (no backdrop / bloom window)
+   *  — used when this panel lives INSIDE another dialog (the My Foods bloom), so
+   *  Quik add stays a single dialog instead of stacking a second one. */
+  readonly inline = input<boolean>(false);
 
   /** Fired when the dialog should close (host controls visibility with @if). */
   readonly close = output<void>();

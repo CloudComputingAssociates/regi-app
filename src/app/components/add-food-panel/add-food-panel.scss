@@ -195,3 +195,22 @@
   .mat-icon, mat-icon { width: 26px; height: 26px; font-size: 26px; }
   span { font-size: 11px; line-height: 1.35; }
 }
+
+// Inline mode — the panel lives INSIDE another dialog (the My Foods bloom), so it
+// fills the host with no backdrop dim and no second glow window (one dialog).
+.afp-backdrop.inline {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: transparent;
+  padding: 0;
+}
+.afp-window.inline {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border: none;
+  border-radius: 14px;
+  box-shadow: none;
+}

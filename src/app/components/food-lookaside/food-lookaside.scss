@@ -4,6 +4,7 @@
 // min 300px, chrome-grey left divider, dark surface) so swapping in/out of edit
 // mode doesn't shift the layout.
 :host {
+  position: relative;   // anchors the inline Add-Food panel (fills this host)
   flex: 0 0 25%;
   min-width: 300px;
   display: flex;

@@ -29,11 +29,9 @@ import { RoleService } from '../../services/role.service';
            The name falls back to the email when Auth0 has no display name (email/
            password sign-ups), and is hidden entirely if neither is known. -->
       <div class="profile-trigger">
-        @if (displayName(); as name) {
-          <button type="button" class="profile-name-btn" [matMenuTriggerFor]="menu" aria-label="Open menu">
-            <span class="profile-name-text">{{ name }}</span>
-          </button>
-        }
+        <button type="button" class="profile-name-btn" [matMenuTriggerFor]="menu" aria-label="Open menu">
+          <span class="profile-name-text">{{ nameLinkText() }}</span>
+        </button>
         <button class="profile-btn" [matMenuTriggerFor]="menu" aria-label="Open menu">
           <img [src]="avatarSrc()" alt="Profile" class="profile-img" />
         </button>
@@ -110,6 +108,13 @@ export class ProfileMenuComponent {
    *  wins (UserProfileService), else Auth0's name/email, else null (hide). Both
    *  this link and the avatar open the same RH nav menu. */
   readonly displayName = computed(() => this.userProfile.displayName() || this.authName());
+
+  /** App-bar link text: the display name ONLY when a real avatar photo is set;
+   *  when it's the default apple logo, show "Account" instead of an underscored
+   *  name. (The Notebook always uses the display name — different rule.) */
+  readonly nameLinkText = computed<string>(() =>
+    this.profileImage.avatarUrl() != null ? this.displayName() || 'Account' : 'Account',
+  );
   subscriptionService = inject(SubscriptionService);
   roleService = inject(RoleService);
   // Public so the template can read tabService.bugOpen() for the Bug menu

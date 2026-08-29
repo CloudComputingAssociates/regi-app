@@ -134,6 +134,9 @@ interface Macro {
                   (click)="flipHome()">
                   <mat-icon>flip_camera_android</mat-icon>
                 </button>
+                <!-- Everything below scrolls; the flip button stays pinned to the
+                     card (it's absolute to the non-scrolling .flip-back). -->
+                <div class="back-scroll">
                 <div class="back-head">
                   <span class="name-label">Meal</span>
                   <input
@@ -245,6 +248,7 @@ interface Macro {
                     }
                   </div>
                 }
+                </div>
               }
             </div>
           </div>

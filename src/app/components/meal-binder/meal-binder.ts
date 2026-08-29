@@ -23,6 +23,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '@auth0/auth0-angular';
+import { UserProfileService } from '../../services/user-profile.service';
 import { RotationService } from '../../services/rotation.service';
 import { TabService } from '../../services/tab.service';
 import { MealSetService } from '../../services/mealset.service';
@@ -439,6 +440,7 @@ export class MealBinderComponent implements OnInit {
   private host = inject(ElementRef<HTMLElement>);
   private mealSetService = inject(MealSetService);
   private auth = inject(AuthService);
+  private userProfile = inject(UserProfileService);
 
   /** Open a meal's source recipe PDF in the in-app web viewer (same as the slot). */
   openRecipe(url: string | null | undefined): void {
@@ -885,11 +887,14 @@ export class MealBinderComponent implements OnInit {
     });
   }
 
-  /** The user's display name for the notebook title ("{name} notebook"). Empty
-   *  until auth resolves — the title falls back to plain "notebook". */
+  /** Auth0's name/email — the fallback when the user hasn't set a display name.
+   *  Empty until auth resolves. */
   readonly displayName = signal<string>('');
+  /** The notebook title prefers the user's EDITED display name (set in Account →
+   *  "Marty's Notebook") over Auth0's raw name/email, and updates live when the
+   *  name changes. Falls back to plain "Notebook" when neither is known. */
   readonly notebookTitle = computed<string>(() => {
-    const name = this.displayName();
+    const name = this.userProfile.displayName() || this.displayName();
     return name ? `${name}'s Notebook` : 'Notebook';
   });
 

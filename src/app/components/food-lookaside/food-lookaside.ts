@@ -189,7 +189,7 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
     </div>
 
     @if (addPanelOpen()) {
-      <app-add-food-panel [initialQuery]="addSeed()" (close)="addPanelOpen.set(false)" (added)="onFoodAdded()" />
+      <app-add-food-panel [inline]="true" [initialQuery]="addSeed()" (close)="addPanelOpen.set(false)" (added)="onFoodAdded()" />
     }
   `,
   styleUrls: ['./food-lookaside.scss'],

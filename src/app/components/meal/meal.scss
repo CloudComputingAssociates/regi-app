@@ -373,10 +373,20 @@
   transform: rotateY(180deg);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px;
   background: #3a3a3a;
-  overflow-y: auto;
+  overflow: hidden; // the inner .back-scroll scrolls → keeps the flip button pinned
+
+  // Scrolls the meal detail; the flip button stays put (it's absolute to the
+  // non-scrolling .flip-back, so it no longer scrolls up with the content).
+  .back-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+  }
 
   .back-head {
     display: flex;
