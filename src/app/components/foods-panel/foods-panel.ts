@@ -906,10 +906,11 @@ export class FoodsPanelComponent {
       },
       error: () => this.availableLists.set([]),
     });
-    // Hydrate baskets from server-side CurrentPicks. Sequenced after the
-    // allowed-foods load so we can intersect picks with the user's actual
-    // MyFoods set and silently drop stale (un-favorited) entries.
-    void this.hydratePicksFromServer();
+    // DISABLED — "This Week" picks/baskets feature turned off (no reads/writes,
+    // no warnings, no live paths). Re-enable by uncommenting this line + the
+    // rehydratePicksEffect + persistThisWeek effect + the early-returns in
+    // savePicks / addFoodToBasket.
+    // void this.hydratePicksFromServer();
     // One-shot purge of the pre-server-persistence localStorage cache so
     // users upgrading from the localStorage era don't have a parallel set
     // of picks lingering on disk.
@@ -962,14 +963,18 @@ export class FoodsPanelComponent {
         });
         this.hydrationSucceeded.set(true);
       } else if (dropped.length > 0 && kept.length === 0 && picks.length > 0) {
-        // Partial-load signature — leave server alone. Leave hydration flag
-        // FALSE so any user interaction is gated out (no risk of wiping the
-        // real server data with empty baskets). User must refresh to retry.
-        console.warn(
-          `[FoodsPanel] hydration matched 0 of ${picks.length} picks — ` +
-          `assuming partial allowed-foods load, NOT saving back. Refresh to retry.`,
-        );
-        this.notificationService.show('Couldn\'t load your picks. Refresh to retry.', 'error', 4000);
+        if (allowed.length === 0) {
+          // Genuine partial load — the MyFoods/allowed-foods list hasn't arrived
+          // yet. Stay SILENT and leave hydration ungated; the reactive re-hydrate
+          // (rehydratePicksEffect) re-runs the moment the list loads. No toast —
+          // this was the spurious "Couldn't load your picks" the user hit.
+          console.warn('[FoodsPanel] picks hydration deferred — allowed-foods not loaded yet');
+        } else {
+          // MyFoods DID load and none of the picks matched → they're genuinely
+          // stale. Accept the empty baskets and mark hydrated (no toast, no wipe).
+          console.warn(`[FoodsPanel] ${picks.length} pick(s) no longer in MyFoods — showing empty`);
+          this.hydrationSucceeded.set(true);
+        }
       } else {
         this.hydrationSucceeded.set(true);
       }
@@ -1012,13 +1017,15 @@ export class FoodsPanelComponent {
    *  Policy: see CLAUDE.md > Optimizations — no client-side caching or
    *  request coalescing in new code. */
   private async savePicks(): Promise<void> {
-    if (!this.hydrationSucceeded()) return;
-    try {
-      await this.settingsService.saveCurrentPicks(this.picksFromBaskets());
-    } catch (err) {
-      console.error('[FoodsPanel] failed to save currentPicks', err);
-      this.notificationService.show('Server unavailable. Try again later.', 'error', 4000);
-    }
+    // DISABLED — "This Week" picks feature off: never write currentPicks. Body
+    // preserved below for easy re-enable.
+    // if (!this.hydrationSucceeded()) return;
+    // try {
+    //   await this.settingsService.saveCurrentPicks(this.picksFromBaskets());
+    // } catch (err) {
+    //   console.error('[FoodsPanel] failed to save currentPicks', err);
+    //   this.notificationService.show('Server unavailable. Try again later.', 'error', 4000);
+    // }
   }
 
   private async refreshServerMyFoods(): Promise<void> {
@@ -1493,11 +1500,21 @@ export class FoodsPanelComponent {
   /** Write-through to the server on every basket mutation. The
    *  hydrationSucceeded gate prevents the initial empty-baskets state
    *  (before the GET resolves) from being PUT back as authoritative. */
-  private persistThisWeek = effect(() => {
-    this.thisWeekBaskets(); // read for dependency tracking
-    if (!this.hydrationSucceeded()) return;
-    void this.savePicks();
-  });
+  // DISABLED — "This Week" picks/baskets feature turned off. These effects used to
+  // write picks to the server on every basket mutation and re-hydrate them on
+  // load; both are dead now (no DB reads/writes, no live paths). Re-enable with
+  // the hydration call + savePicks / addFoodToBasket early-returns.
+  // private persistThisWeek = effect(() => {
+  //   this.thisWeekBaskets(); // read for dependency tracking
+  //   if (!this.hydrationSucceeded()) return;
+  //   void this.savePicks();
+  // });
+  // private rehydratePicksEffect = effect(() => {
+  //   const ready = this.serverMyFoods().length > 0;
+  //   if (ready && !this.hydrationSucceeded()) {
+  //     void this.hydratePicksFromServer();
+  //   }
+  // }, { allowSignalWrites: true });
 
   // ----- image-carousel: SpinnerItem mapping + outputs -----
 
@@ -2037,6 +2054,9 @@ export class FoodsPanelComponent {
   }
 
   private addFoodToBasket(food: Food, key: BasketKey): void {
+    // DISABLED — "This Week" picks feature off: never populate a basket (this fed
+    // the currentPicks persistence). No-op so tile clicks / drops only select.
+    return;
     const baskets = this.thisWeekBaskets();
     const exists = baskets[key].some(f => f.id === food.id);
     if (exists) {
