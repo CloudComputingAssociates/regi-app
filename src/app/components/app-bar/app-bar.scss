@@ -49,7 +49,7 @@
     min-width: 0;
     margin-left: 24px;   // small gap after the RegiMenu title
     margin-right: 12px;
-    align-self: center;  // vertically center the bars with the RegiMenu logo
+    align-self: flex-end;  // drop the bars down toward the RegiMenu baseline
 
     // Restyle the macros to lay on black: no component chrome, grey per-bar tracks
     // so the fill boundary reads against black, darker %/g button.
@@ -59,9 +59,10 @@
         border: none;
         border-radius: 0;
         box-shadow: none;
-        // Symmetric padding so the bars sit centered in the banner band.
-        padding-top: 4px;
-        padding-bottom: 4px;
+        // Black lives ABOVE the bars (top padding); almost none below, so the bar
+        // bottoms drop to sit on the RegiMenu baseline.
+        padding-top: 12px;
+        padding-bottom: 1px;
         overflow: visible;
         &::before { display: none; } // drop the sheen / backlight glow
       }
