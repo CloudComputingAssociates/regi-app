@@ -447,7 +447,9 @@
     .macro-actions {
       margin-left: auto;
       display: inline-flex;
-      align-items: center;
+      flex-direction: column; // stack the action keys vertically (camera · + · PDF)
+      align-items: flex-end;
+      align-self: flex-start; // anchor the stack to the top of the macro row
       gap: 5px;
     }
   }

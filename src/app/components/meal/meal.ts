@@ -189,8 +189,15 @@ interface Macro {
                         <mat-icon>photo_camera</mat-icon>
                       </button>
                     }
-                    <!-- Recipe PDF — sits just LEFT of the + Add key; shown only
-                         when the meal has a source recipe. Opens the in-app viewer. -->
+                    <button
+                      type="button"
+                      class="add-food-btn"
+                      matTooltip="Add food to meal"
+                      (click)="toggleAdd.emit(fm.mealId)">
+                      <mat-icon>add</mat-icon>
+                    </button>
+                    <!-- Recipe PDF — stacked directly BELOW the + Add key; shown
+                         only when the meal has a source recipe. In-app viewer. -->
                     @if (recipeLinkFor(fm.mealId); as link) {
                       <button
                         type="button"
@@ -200,13 +207,6 @@ interface Macro {
                         <mat-icon>picture_as_pdf</mat-icon>
                       </button>
                     }
-                    <button
-                      type="button"
-                      class="add-food-btn"
-                      matTooltip="Add food to meal"
-                      (click)="toggleAdd.emit(fm.mealId)">
-                      <mat-icon>add</mat-icon>
-                    </button>
                   </span>
                 </div>
 
