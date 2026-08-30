@@ -316,21 +316,25 @@
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  // Boxed as ONE toggle group — 1px rule so the two options read as together.
-  padding: 3px 10px;
+  // Boxed as ONE toggle group — SOLID white (no ruled lines behind it), with the
+  // SAME raised-key border + shadow as the Print / collapse-all buttons.
+  height: 26px;
+  padding: 0 10px;
+  background: #ffffff;
   border: 1px solid #b7bcc4;
   border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 
   .scale-opt {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     font-size: 13px; // shared controls size
-    color: #d8d8d8;
+    color: #1a1a1a;  // dark text on the white box
     cursor: pointer;
 
     input[type='radio'] {
-      accent-color: #4da6ff;
+      accent-color: #000000; // black radio
       cursor: pointer;
     }
   }
@@ -395,15 +399,15 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 1px 12px; // tightened
+  padding: 0 12px; // tightened — no vertical padding
   color: rgba(255, 255, 255, 0.5);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700; // bold; NEED (a child) inherits this too
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  border-bottom: 1px solid #4a4a4a;
 
   .staple-item { flex: 2; }
+  .col-need { font-weight: 700; } // explicit so NEED matches QTY/UNIT/ITEM
 }
 
 // Category subheader inside the computed list — ALL CAPS.
@@ -430,7 +434,7 @@
   .cat-rule {
     flex: 1 1 auto;
     height: 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+    border-bottom: 2px solid rgba(0, 0, 0, 0.3);
   }
 
   .cat-caret {
@@ -644,7 +648,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 1px 12px; // tightened
+  padding: 0 12px; // tightened — no vertical padding
+  line-height: 1.1;
   transition: background 0.15s ease;
 
   &:hover {
@@ -991,7 +996,7 @@
   .staple-qty,
   .staple-unit { color: #1f1f1f; }
 
-  .list-col-head { color: rgba(0, 0, 0, 0.5); border-bottom-color: rgba(0, 0, 0, 0.18); }
+  .list-col-head { color: rgba(0, 0, 0, 0.7); } // dark + bold QTY/UNIT/ITEM/NEED
   .list-msg { color: rgba(0, 0, 0, 0.6); }
   .staples-header { border-bottom-color: rgba(0, 0, 0, 0.18); }
   .list-cat { border-color: rgba(0, 0, 0, 0.12); }
