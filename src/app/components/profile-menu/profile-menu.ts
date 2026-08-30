@@ -109,12 +109,13 @@ export class ProfileMenuComponent {
    *  this link and the avatar open the same RH nav menu. */
   readonly displayName = computed(() => this.userProfile.displayName() || this.authName());
 
-  /** App-bar link text: the display name ONLY when a real avatar photo is set;
-   *  when it's the default apple logo, show "Account" instead of an underscored
-   *  name. (The Notebook always uses the display name — different rule.) */
-  readonly nameLinkText = computed<string>(() =>
-    this.profileImage.avatarUrl() != null ? this.displayName() || 'Account' : 'Account',
-  );
+  /** App-bar link text: a "Hi, {name}!" greeting ONLY when a real avatar photo is
+   *  set; when it's the default apple logo, show "Account" instead of an
+   *  underscored name. (The Notebook always uses the display name — different rule.) */
+  readonly nameLinkText = computed<string>(() => {
+    const name = this.profileImage.avatarUrl() != null ? this.displayName() : null;
+    return name ? `Hi, ${name}!` : 'Account';
+  });
   subscriptionService = inject(SubscriptionService);
   roleService = inject(RoleService);
   // Public so the template can read tabService.bugOpen() for the Bug menu

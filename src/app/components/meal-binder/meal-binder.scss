@@ -167,16 +167,22 @@
   box-sizing: border-box;
   border: none;
   border-radius: 12px 12px 0 0;
-  background: rgba(59, 125, 224, 0.26); // inactive: dim blue
+  background: rgba(59, 125, 224, 0.72); // inactive: only slightly lighter than active
   cursor: pointer;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
   transition: background 0.12s ease;
+  outline: none;
 
   .section-label { color: #ffffff; font-size: 16px; font-weight: 500; line-height: 20px; }
   .section-count { color: rgba(255, 255, 255, 0.9); font-size: 11px; font-weight: 400; line-height: 20px; }
 
-  &:hover { background: rgba(59, 125, 224, 0.45); }
-  &.active { background: rgba(59, 125, 224, 0.85); } // active: solid blue
+  &:hover { background: rgba(59, 125, 224, 0.85); }
+  // Active: fully solid blue with a subtle lift so it clearly reads as selected.
+  &.active {
+    background: #3b7de0;
+    box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.18);
+  }
+  &:focus-visible { box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.6); }
 }
 
 // Meals-tab controls — two stacked rows below the tab bar (Search + collapse-all,
@@ -236,10 +242,12 @@
     .create-word { text-decoration: underline; text-underline-offset: 2px; }
   }
 
-  // "＋ Add meals" — right-justified on its row (Filter stays left).
-  .add-meals-btn {
-    margin-left: auto;
-    .mat-icon { color: #2f6f3f; } // green + to signal "add"
+  // Actions row: Filter (left) · ＋ Add meals (centered) · collapse-all (flush right).
+  .meals-ctrl-actions {
+    .add-meals-btn {
+      margin: 0 auto; // symmetric auto margins center it; Filter left, collapse right
+      .mat-icon { color: #2f6f3f; } // green + to signal "add"
+    }
   }
 }
 

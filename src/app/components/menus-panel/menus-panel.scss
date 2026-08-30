@@ -245,9 +245,28 @@
 // Notebook key — reopens the Binder. Square domed key (same 30×30 chrome as the
 // Shopping/Clear-all keys); its margin-left:auto pushes it AND the close X to the
 // far right of the toolbar, sitting adjacent (the left cluster keys stay put).
+// Selected menu's calorie total — a grey pill that centers itself in the free
+// space between the Clear-all key and the Notebook toggle.
+.toolbar-cals {
+  flex: 0 0 auto;
+  margin: 0 auto; // symmetric auto margins → centered in the gap; pushes the keys right
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ececec;
+  background: linear-gradient(180deg, #5a5a5a 0%, #474747 100%);
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+}
+
 .notebook-btn {
   flex: 0 0 auto;
-  margin-left: auto;
   margin-right: 10px; // extra breathing room between the Notebook key and the X
   display: inline-flex;
   align-items: center;
@@ -275,6 +294,14 @@
 
   &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
   &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45); }
+
+  // Notebook is open — pressed-in blue-tinted state so the key reads as "on".
+  &.active {
+    color: #ffffff;
+    background: linear-gradient(180deg, #3f6fb0 0%, #2f5488 100%);
+    border-top-color: #5c8fd6;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  }
 }
 
 // Shopping List key — a square icon-only domed key with a square list glyph,

@@ -97,17 +97,6 @@ interface Macro {
                   <!-- "(modified)" — same white title text — marks a meal that
                        isn't a Binder meal yet (blocks the menu save until saved). -->
                   <span class="tile-name">{{ clean(m.mealName) }}{{ isMealModified(m) ? ' (modified)' : '' }}</span>
-                  <!-- PDF logo (upper-right) — links to the source recipe PDF,
-                       shown ONLY when the meal actually has one. -->
-                  @if (recipeLinkFor(m.mealId); as link) {
-                    <button
-                      type="button"
-                      class="tile-pdf"
-                      matTooltip="Open the recipe PDF"
-                      (click)="$event.stopPropagation(); openRecipe(link)">
-                      <img src="images/pdf-logo.png" alt="Recipe PDF" />
-                    </button>
-                  }
                   <button
                     type="button"
                     class="tile-btn tile-flip"

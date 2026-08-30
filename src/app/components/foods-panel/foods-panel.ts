@@ -739,7 +739,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <select
                     class="nf-popup-category"
                     [value]="nfPopupCategory()"
-                    [disabled]="(nfPopupFood()!.foodSource ?? 'food') !== 'userfood'"
                     (change)="onNfCategoryChange($any($event.target).value)"
                     aria-label="Food category">
                     @for (name of nfCategoryOptions(); track name) {
@@ -1729,16 +1728,48 @@ export class FoodsPanelComponent {
 
   /** Category dropdown change (edit mode) — AUTO-SAVES to the MyFoods copy
    *  (userfoods only) via the category-only PATCH; no green disc. */
-  onNfCategoryChange(name: string): void {
+  async onNfCategoryChange(name: string): Promise<void> {
     const food = this.nfPopupFood();
-    if (!name || !food) return;
-    this.nfPopupCategory.set(name);
+    if (!name || !food || food.id == null) return;
     const cat = this.foodsService.categories().find((c) => c.name.toLowerCase() === name.toLowerCase());
-    if (cat && (food.foodSource ?? 'food') === 'userfood' && food.id != null) {
-      void this.userFoodService.setUserFoodCategory(food.id, cat.id);
-      this.nfPopupFood.update((f) => (f ? { ...f, categoryId: cat.id, categoryName: cat.name } : f));
-      this.applyLocalCategory(food.id, cat.id, cat.name);
+    if (!cat) return;
+    this.nfPopupCategory.set(name);
+
+    // A userfood is recategorized in place. A Regi/system food has no editable
+    // category, so it's FORKED into a MyFoods copy first (the same fork-on-edit the
+    // inline unit editor uses), then the category is set on that fork.
+    let targetId = food.id;
+    if ((food.foodSource ?? 'food') !== 'userfood') {
+      try {
+        const res = await firstValueFrom(
+          this.foodsService.patchServingGeometry({
+            foodId: food.id,
+            foodSource: 'food',
+            unitName: food.servingUnit || 'g',
+            gramsPerUnit:
+              food.servingGramsPerUnit && food.servingGramsPerUnit > 0
+                ? food.servingGramsPerUnit
+                : (this.massGrams(food.servingUnit) ?? 1),
+            defaultQuantity: food.servingSize ?? this.nfPopupServingSize(),
+          }),
+        );
+        if (res?.cloned && res.userFoodId) {
+          targetId = res.userFoodId;
+          this.nfPopupFood.update((f) => (f ? { ...f, id: res.userFoodId, foodSource: 'userfood' } : f));
+        } else {
+          this.notificationService.show('Could not create your editable copy to recategorize.', 'error');
+          return;
+        }
+      } catch {
+        this.notificationService.show('Could not recategorize this food.', 'error');
+        return;
+      }
     }
+
+    void this.userFoodService.setUserFoodCategory(targetId, cat.id);
+    this.nfPopupFood.update((f) => (f ? { ...f, categoryId: cat.id, categoryName: cat.name } : f));
+    this.applyLocalCategory(targetId, cat.id, cat.name);
+    await this.refreshServerMyFoods();
   }
 
   /** Grams in one WEIGHT unit (deterministic), or null for a food-specific unit. */

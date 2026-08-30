@@ -58,9 +58,6 @@ export interface MacroDisplayData {
                   <div class="label-row">
                     <span class="bar-label" [style.color]="getLabelColor(macro.name)">{{ macro.name }}</span>
                     @if ($last) {
-                      @if (context() === 'menu') {
-                        <span class="macro-cals">{{ totalCals() }} cals</span>
-                      }
                       <div class="mode-toggle-container">
                         <button
                           type="button"

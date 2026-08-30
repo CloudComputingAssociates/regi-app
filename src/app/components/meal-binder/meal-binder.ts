@@ -169,8 +169,8 @@ import { Meal, Menu, MealSetSummary } from '../../models';
           </div>
         } @else {
           <!-- Meals tab. Controls sit on two rows below the tab bar:
-               Row 1 — Search meals + collapse-all.
-               Row 2 — Filter toggle + "＋ Add meals". -->
+               Row 1 — Search meals, stretched full width.
+               Row 2 — Filter (left) · ＋ Add meals (centered) · collapse-all (flush right). -->
           <div class="rail-section">
             <div class="meals-controls">
               <div class="meals-ctrl-row">
@@ -182,16 +182,8 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                   matTooltipPosition="above"
                   [value]="searchText()"
                   (input)="searchText.set($any($event.target).value)" />
-                <button
-                  type="button"
-                  class="collapse-all-btn"
-                  matTooltip="Collapse all"
-                  matTooltipPosition="below"
-                  (click)="collapseAll()">
-                  <mat-icon>unfold_less</mat-icon>
-                </button>
               </div>
-              <div class="meals-ctrl-row">
+              <div class="meals-ctrl-row meals-ctrl-actions">
                 <button type="button" class="create-toggle filter-toggle" [class.filter-on]="filterActive()" (click)="toggleFilterPanel()">
                   <span class="create-word">Filter{{ filterActive() ? ' on' : '' }}</span>
                   <mat-icon class="create-chevron">{{ filterOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
@@ -203,6 +195,14 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                   matTooltipPosition="above"
                   (click)="createMeal.emit()">
                   <mat-icon>add</mat-icon><span class="create-word">Add meals</span>
+                </button>
+                <button
+                  type="button"
+                  class="collapse-all-btn"
+                  matTooltip="Collapse all"
+                  matTooltipPosition="below"
+                  (click)="collapseAll()">
+                  <mat-icon>unfold_less</mat-icon>
                 </button>
               </div>
             </div>

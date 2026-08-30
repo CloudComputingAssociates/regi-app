@@ -118,15 +118,20 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
                   <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
                 </button>
               </div>
-              <!-- Notebook — reopens the Binder (Notebook). Square domed key,
-                   sits just left of the close X. -->
+              <!-- Selected menu's calorie total — centered in the gap between the
+                   Clear-all key and the Notebook toggle. -->
+              <span class="toolbar-cals">{{ round(rotation.selectedMenuTotals().calories) }} cals</span>
+              <!-- Notebook — toggles the Binder (Notebook): open if closed, close
+                   if open. Square domed key, sits just left of the close X. -->
               <button
                 type="button"
                 class="notebook-btn"
-                matTooltip="Notebook"
+                [class.active]="!rotation.binderCollapsed()"
+                [matTooltip]="rotation.binderCollapsed() ? 'Open Notebook' : 'Close Notebook'"
                 matTooltipPosition="above"
-                aria-label="Open Notebook"
-                (click)="rotation.showBinder()">
+                [attr.aria-label]="rotation.binderCollapsed() ? 'Open Notebook' : 'Close Notebook'"
+                [attr.aria-pressed]="!rotation.binderCollapsed()"
+                (click)="rotation.toggleBinderCollapsed()">
                 <svg class="notebook-icon" viewBox="0 0 24 24" aria-hidden="true">
                   <rect x="4.5" y="5.5" width="15" height="14.5" rx="1.6"
                         fill="none" stroke="currentColor" stroke-width="1.7" />
@@ -291,6 +296,11 @@ export class MenusPanelComponent implements OnInit {
   private langfusePromptService = inject(LangfusePromptService);
   protected tabService = inject(TabService);
   private host = inject(ElementRef<HTMLElement>);
+
+  /** Round a macro/calorie total for display in the toolbar cals pill. */
+  round(n: number | null | undefined): number {
+    return Math.round(n ?? 0);
+  }
 
   // ---- Rail splitter ---------------------------------------------------
   // User-draggable width for the Menus & Meals rail. null = the default 25%.
