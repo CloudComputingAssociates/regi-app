@@ -1,17 +1,17 @@
 // src/app/components/shopping-panel/shopping-panel.scss
 
 :host {
-  display: flex;
-  height: 100%;
+  display: block;
   width: 100%;
+  // Flow to content height — the Notebook rail's scroll is the ONE vertical scroll
+  // (no inner panel scroll).
 }
 
 .panel-container {
   position: relative;
-  height: 100%;
   width: 100%;
   background-color: #3a3a3a;
-  overflow: hidden;
+  overflow: visible;   // no inner clip → the rail scrolls the whole panel
   display: flex;
   flex-direction: column;
 }
@@ -366,11 +366,10 @@
 .list-pane {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  flex: 1 1 auto; // primary view — takes the space
-  overflow: hidden;
+  flex: 0 0 auto; // flow to content — the rail owns the scroll
+  overflow: visible;
 
-  .staples-content { flex: 1; overflow-y: auto; }
+  .staples-content { flex: 0 0 auto; overflow: visible; }
 }
 
 .list-msg {
@@ -485,12 +484,25 @@
 .staples-pane {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  flex: 0 1 auto; // demoted below the primary computed list
-  overflow: hidden;
+  flex: 0 0 auto; // flow to content — no inner scroll (the rail scrolls it)
+  overflow: visible;
 
-  // When expanded, cap its height so the computed list stays the focus.
-  .staples-content { max-height: 38vh; overflow-y: auto; }
+  .staples-content { max-height: none; overflow: visible; }
+}
+
+// Static sub-category label inside "Staples & other" — NOT collapsible; always
+// expanded. A plain label row (no toggle button).
+.accordion-title-row {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px 1px;
+
+  .accordion-title {
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1f1f1f;
+  }
 }
 
 .staples-header {

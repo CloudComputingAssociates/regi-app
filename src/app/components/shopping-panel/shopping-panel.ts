@@ -178,13 +178,12 @@ const CAT_RANK: Record<string, number> = {
           <div class="staples-content">
             @for (cat of categories; track cat.id) {
               <div class="accordion-section">
-                <button class="accordion-header" (click)="toggleCategory(cat.id)">
-                  <mat-icon class="accordion-arrow" [class.open]="isCategoryOpen(cat.id)">chevron_right</mat-icon>
+                <!-- Sub-categories inside "Staples & other" are NOT collapsible —
+                     always expanded; only the whole section toggles. -->
+                <div class="accordion-title-row">
                   <span class="accordion-title">{{ cat.label }}</span>
-                </button>
-
-                @if (isCategoryOpen(cat.id)) {
-                  <div class="accordion-body">
+                </div>
+                <div class="accordion-body">
                     <div class="add-row no-print">
                       <input
                         type="text"
@@ -236,8 +235,7 @@ const CAT_RANK: Record<string, number> = {
                         </button>
                       </div>
                     }
-                  </div>
-                }
+                </div>
               </div>
             }
           </div>
