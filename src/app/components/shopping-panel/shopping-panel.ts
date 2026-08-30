@@ -63,16 +63,16 @@ const CAT_RANK: Record<string, number> = {
       <!-- Quantity basis — either each recipe's own servings, OR an explicit
            scale factor. The "-or-" makes the either/or unmistakable. -->
       <div class="shopping-top no-print">
+        <button
+          type="button"
+          class="shopping-print-btn"
+          matTooltip="Print / Save as PDF"
+          matTooltipPosition="below"
+          (click)="print()">
+          <mat-icon>print</mat-icon>Print
+        </button>
         <div class="scale-radio">
-          <label class="scale-opt">
-            <input
-              type="radio"
-              name="scaleMode"
-              [checked]="scaleMode() === 'recipe'"
-              (change)="scaleMode.set('recipe')" />
-            <span>Recipe Servings</span>
-          </label>
-          <span class="scale-or">-or-</span>
+          <!-- Scale is the DEFAULT (left); -or- Use Servings. -->
           <label class="scale-opt">
             <input
               type="radio"
@@ -88,17 +88,26 @@ const CAT_RANK: Record<string, number> = {
               (focus)="scaleMode.set('custom')"
               (change)="onScaleInput($event)" />
           </label>
+          <span class="scale-or">-or-</span>
+          <label class="scale-opt">
+            <input
+              type="radio"
+              name="scaleMode"
+              [checked]="scaleMode() === 'recipe'"
+              (change)="scaleMode.set('recipe')" />
+            <span>Use Servings</span>
+          </label>
         </div>
         @if (isSaving()) {
           <span class="auto-save-indicator">saving...</span>
         }
         <button
           type="button"
-          class="shopping-print-btn"
-          matTooltip="Print / Save as PDF"
+          class="shopping-collapse-all"
+          matTooltip="Collapse / expand all sections"
           matTooltipPosition="below"
-          (click)="print()">
-          <mat-icon>print</mat-icon>Print
+          (click)="toggleAllCats()">
+          <mat-icon>{{ allCatsCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
         </button>
       </div>
 
@@ -117,28 +126,38 @@ const CAT_RANK: Record<string, number> = {
           <p class="list-msg">No meals in this rotation yet — add meals to your menus and they'll roll up here.</p>
         } @else {
           <div class="staples-content">
-            <div class="list-col-head no-print">
-              <span class="pdf-check" aria-hidden="true"></span>
-              <span class="staple-qty">Qty</span>
-              <span class="staple-unit">Unit</span>
-              <span class="staple-item">Item</span>
-              <span class="col-need">Need</span>
-            </div>
-            @for (group of computedGroups(); track group.category) {
-              <div class="list-cat">{{ group.label }}</div>
-              @for (item of group.items; track item.key) {
-                <div class="staple-row" [class.not-needed]="!isNeeded(item.key)">
+            @for (group of computedGroups(); track group.category; let first = $first) {
+              <!-- Collapsible category (PROTEINS, …). Caret toggles its items. -->
+              <button type="button" class="list-cat" (click)="toggleCat(group.category)">
+                <mat-icon class="cat-caret" [class.open]="!isCatCollapsed(group.category)">chevron_right</mat-icon>
+                {{ group.label }}
+              </button>
+              <!-- Column headings tuck under the FIRST category, between its title
+                   and the first item row (not a separate row at the very top). -->
+              @if (first && !isCatCollapsed(group.category)) {
+                <div class="list-col-head no-print">
                   <span class="pdf-check" aria-hidden="true"></span>
-                  <span class="staple-qty">{{ item.quantity }}</span>
-                  <span class="staple-unit">{{ item.unit }}</span>
-                  <span class="staple-item">{{ item.name }}</span>
-                  <label class="toggle-slider no-print" [class.on]="isNeeded(item.key)">
-                    <input type="checkbox"
-                      [checked]="isNeeded(item.key)"
-                      (change)="toggleNeed(item.key)" />
-                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                  </label>
+                  <span class="staple-qty">Qty</span>
+                  <span class="staple-unit">Unit</span>
+                  <span class="staple-item">Item</span>
+                  <span class="col-need">Need</span>
                 </div>
+              }
+              @if (!isCatCollapsed(group.category)) {
+                @for (item of group.items; track item.key) {
+                  <div class="staple-row" [class.not-needed]="!isNeeded(item.key)">
+                    <span class="pdf-check" aria-hidden="true"></span>
+                    <span class="staple-qty">{{ item.quantity }}</span>
+                    <span class="staple-unit">{{ item.unit }}</span>
+                    <span class="staple-item">{{ item.name }}</span>
+                    <label class="toggle-slider no-print" [class.on]="isNeeded(item.key)">
+                      <input type="checkbox"
+                        [checked]="isNeeded(item.key)"
+                        (change)="toggleNeed(item.key)" />
+                      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                  </div>
+                }
               }
             }
           </div>
@@ -241,10 +260,30 @@ export class ShoppingPanelComponent {
   /** Item keys the shopper has ticked OFF (not needed). Absent ⇒ needed (ON). */
   private readonly checkedKeys = signal<Set<string>>(new Set());
 
-  // Quantity basis: 'recipe' = each recipe's own servings; 'custom' = an explicit
-  // scale factor. These drive the ?basis=&factor= query.
-  readonly scaleMode = signal<'recipe' | 'custom'>('recipe');
+  // Quantity basis: 'custom' = an explicit scale factor (the DEFAULT); 'recipe' =
+  // each recipe's own servings ("Use Servings"). These drive ?basis=&factor=.
+  readonly scaleMode = signal<'recipe' | 'custom'>('custom');
   readonly scaleValue = signal<number>(1);
+
+  // ---- Collapsible computed-list categories (PROTEINS, PRODUCE, …) ----------
+  readonly collapsedCats = signal<Set<string>>(new Set());
+  isCatCollapsed(cat: string): boolean { return this.collapsedCats().has(cat); }
+  toggleCat(cat: string): void {
+    this.collapsedCats.update((s) => {
+      const next = new Set(s);
+      next.has(cat) ? next.delete(cat) : next.add(cat);
+      return next;
+    });
+  }
+  readonly allCatsCollapsed = computed<boolean>(() => {
+    const cats = this.computedGroups().map((g) => g.category);
+    return cats.length > 0 && cats.every((c) => this.collapsedCats().has(c));
+  });
+  toggleAllCats(): void {
+    this.collapsedCats.set(
+      this.allCatsCollapsed() ? new Set() : new Set(this.computedGroups().map((g) => g.category)),
+    );
+  }
 
   onScaleInput(event: Event): void {
     const n = Math.max(1, Math.floor(Number((event.target as HTMLInputElement).value) || 1));

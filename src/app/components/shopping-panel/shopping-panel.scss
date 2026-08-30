@@ -260,30 +260,53 @@
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start; // Print + scale cluster left; collapse-all pushed right
+  gap: 14px;
   padding: 5px 12px; // minimal height
   border-bottom: 1px solid #4a4a4a;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
+  font-size: 13px; // the shared "controls" size (tabs use 16px)
 }
 
-// Print — raised-white sans key (matches the Notebook's Filter / Add-meals keys).
+// Print — raised-white sans key, SAME 26px height as the meals-tab keys. Slid to
+// the left (leads the controls row).
 .shopping-print-btn {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 24px;
+  height: 26px;
   padding: 0 10px;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   color: #1a1a1a;
   background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
   border: 1px solid #b7bcc4;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.95);
   cursor: pointer;
-  .mat-icon { width: 15px; height: 15px; font-size: 15px; line-height: 15px; color: #3a3f45; }
+  .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; color: #3a3f45; }
+  &:hover { background: linear-gradient(180deg, #ffffff 0%, #dde1e7 100%); }
+  &:active { transform: translateY(1px); }
+}
+
+// Collapse-all — pushed to the FAR right of the controls row; raised white key.
+.shopping-collapse-all {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  color: #3a3f45;
+  background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
+  border: 1px solid #b7bcc4;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
   &:hover { background: linear-gradient(180deg, #ffffff 0%, #dde1e7 100%); }
   &:active { transform: translateY(1px); }
 }
@@ -298,7 +321,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 14px;
+    font-size: 13px; // shared controls size
     color: #d8d8d8;
     cursor: pointer;
 
@@ -381,14 +404,33 @@
 
 // Category subheader inside the computed list — ALL CAPS.
 .list-cat {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
   padding: 5px 12px;
-  background: #333333;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #4a4a4a;
   color: #4da6ff;
-  font-size: 12px;
-  font-weight: 600;
+  // Sans, grouped with the controls at the shared 13px "controls" size.
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
-  border-bottom: 1px solid #4a4a4a;
+  text-align: left;
+  cursor: pointer;
+
+  .cat-caret {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+    transition: transform 0.15s ease;
+    &.open { transform: rotate(90deg); }
+  }
 }
 
 // "NEED" column heading — sits on the QTY/UNIT/ITEM row, over the per-row toggle

@@ -1929,7 +1929,17 @@ export class RotationService {
       const meal = await firstValueFrom(
         this.http.post<Meal>(`${this.baseUrl}/meal/${mealId}/restore`, null),
       );
-      this.replaceBinderMeal(meal);
+      // Restore KEEPS the set link (unlike detach), but the /restore response omits
+      // the list-query-time sourceMealSetName decoration — so carry the set fields
+      // over from the existing meal, else the "Mexi Meals" badge blanks until a
+      // full reload re-decorates it.
+      const prev = this.binderMeals().find((m) => m.id === mealId);
+      const merged: Meal = {
+        ...meal,
+        sourceMealSetId: meal.sourceMealSetId ?? prev?.sourceMealSetId,
+        sourceMealSetName: meal.sourceMealSetName ?? prev?.sourceMealSetName,
+      };
+      this.replaceBinderMeal(merged);
       this.notification.show('Restored to original.', 'success');
     } catch (err) {
       if (err instanceof HttpErrorResponse && err.status === 409) {
