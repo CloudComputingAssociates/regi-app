@@ -382,14 +382,15 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
                       <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
-                      <!-- Meals built from a recipe carry its rendered PDF link. -->
+                      <!-- Meal's rendered PDF link (a recipe, or a print-formatted
+                           meal). Label stays generic — not every PDF is a recipe. -->
                       @if (meal.recipeLink?.trim()) {
                         <button type="button" class="binder-recipe-link"
-                          matTooltip="Open the source recipe PDF"
-                          (click)="$event.stopPropagation(); openRecipe(meal.recipeLink)">Recipe (PDF)</button>
+                          matTooltip="Open PDF"
+                          (click)="$event.stopPropagation(); openRecipe(meal.recipeLink)">(PDF)</button>
                       }
-                      <!-- Set-materialized meal: restore to the original (primary)
-                           or detach from the set (secondary). Gated on provenance. -->
+                      <!-- Set-materialized meal: restore to the original. Gated on
+                           provenance. -->
                       @if (meal.sourceMealSetId != null) {
                         <button
                           type="button"
@@ -397,13 +398,6 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                           matTooltip="Restore to the MealSet original"
                           (click)="$event.stopPropagation(); onRestoreMeal(meal)">
                           <mat-icon>restore</mat-icon>
-                        </button>
-                        <button
-                          type="button"
-                          class="card-detach icon-disc"
-                          matTooltip="Detach from the MealSet"
-                          (click)="$event.stopPropagation(); onDetachMeal(meal)">
-                          <mat-icon>link_off</mat-icon>
                         </button>
                       }
                       @if (!meal.mealSetId) {
@@ -746,20 +740,6 @@ export class MealBinderComponent implements OnInit {
     });
   }
 
-  /** Detach a set-materialized meal from its set — confirm first; afterwards the
-   *  badge + Restore disappear (the response nulls the source fields). */
-  onDetachMeal(meal: Meal): void {
-    if (meal.id == null) return;
-    const id = meal.id;
-    this.dialog.open(WipeConfirmDialogComponent, {
-      panelClass: 'wipe-dialog-panel',
-      data: {
-        message: `Detach this meal from ${meal.sourceMealSetName}? Restore original will no longer be available.`,
-        confirmLabel: 'Detach',
-        onConfirm: () => void this.rotation.detachMeal(id),
-      },
-    });
-  }
 
   /** Top-level accordion open state — both default open. */
   readonly binderMenusOpen = signal(false);

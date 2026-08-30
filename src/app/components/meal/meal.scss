@@ -45,7 +45,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
+  // Width matches the vertical action keys (.add-food-btn, 26px) and is right-
+  // aligned to the same edge, so the X centers directly over that button column.
+  width: 26px;
   height: 22px;
   padding: 0;
   color: #ffffff;
@@ -317,9 +319,15 @@
   bottom: 6px;
   right: 6px;
 }
-// Recipe-PDF key on the back — same square grey chrome as the + Add / camera keys,
-// but with the red PDF glyph. Sits just left of the + Add.
-.recipe-pdf-btn .mat-icon { color: #e2574c; } // PDF red
+// PDF key on the back — same square grey chrome as the + Add / camera keys, but
+// shows a legible red "PDF" wordmark instead of a glyph. Stacked below + Add.
+.recipe-pdf-btn .pdf-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  color: #e2574c; // PDF red
+}
 // AI meal-image camera (square [+]-style key) — disabled while generating.
 .genimg-btn {
   &:disabled { opacity: 0.75; cursor: default; }
@@ -405,25 +413,47 @@
       color: #4da6ff;
     }
 
-    // Darker grey inset box with OBVIOUS shading + white text — same look/size as
-    // the menu name box. Trimmed left padding (regi-field is 12px).
+    // Input-group: the title input + trailing save addon share ONE border, bg,
+    // inset shadow, and rounding so they read as a single adjoined control.
+    .name-field {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      align-items: stretch;
+      background: #3a3a3a;
+      border: 1px solid #1c1c1c;
+      border-top-color: #4a4a4a;
+      border-radius: 6px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7);
+      overflow: hidden; // clip the addon's corners to the group's rounding
+    }
+
+    // Input fills the group; the GROUP now owns the border/bg/shadow/rounding.
     .meal-name-box {
       flex: 1 1 auto;
       min-width: 0;
       padding: 4px 8px 4px 6px;
       font-size: 14px;
       color: #f0f0f0;
-      background: #3a3a3a;
-      border: 1px solid #1c1c1c;
-      border-top-color: #4a4a4a;
-      border-radius: 6px;
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7);
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      outline: none;
     }
 
-    // Save disc dims + goes inert when there are no unsaved food changes.
-    .save-disc:disabled {
-      opacity: 0.4;
-      cursor: default;
+    // Save = a square trailing addon flush against the input, sharing the group's
+    // right rounding (clipped by the group). Divider line on its left. Its dirty
+    // (green) / disabled states carry over from .icon-disc(-confirm).
+    .save-disc {
+      align-self: stretch;
+      width: 28px;
+      height: auto;
+      border: none;
+      border-left: 1px solid #1c1c1c;
+      border-radius: 0;
+      box-shadow: none;
+      &:disabled { opacity: 0.4; cursor: default; }
     }
   }
 

@@ -139,28 +139,32 @@ interface Macro {
                 <div class="back-scroll">
                 <div class="back-head">
                   <span class="name-label">Meal</span>
-                  <input
-                    #nameBox
-                    type="text"
-                    class="meal-name-box regi-field"
-                    [value]="clean(fm.mealName)"
-                    (input)="onNameInput(fm.mealId, nameBox.value)"
-                    (keydown.enter)="nameBox.blur()"
-                    (keydown.escape)="nameBox.value = clean(fm.mealName); onNameInput(fm.mealId, nameBox.value); nameBox.blur()"
-                    (blur)="commitName(fm, nameBox.value)"
-                    aria-label="Meal name" />
-                  <!-- Save disc lights on unsaved FOOD changes OR a pending name
-                       edit, so naming a meal shows there's something to save.
-                       Clicking persists the meal (name + food) to the Binder. -->
-                  <button
-                    type="button"
-                    class="icon-disc save-disc"
-                    [class.icon-disc-confirm]="rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm)"
-                    [disabled]="!(rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm))"
-                    matTooltip="Save changes to your notebook"
-                    (click)="pinMeal.emit(fm.mealId)">
-                    <mat-icon>check</mat-icon>
-                  </button>
+                  <!-- Title field + save, adjoined as one input-group control: the
+                       input and the trailing save addon share a border + rounding.
+                       (Save still persists ANY recipe change, not just the name.) -->
+                  <div class="name-field">
+                    <input
+                      #nameBox
+                      type="text"
+                      class="meal-name-box regi-field"
+                      [value]="clean(fm.mealName)"
+                      (input)="onNameInput(fm.mealId, nameBox.value)"
+                      (keydown.enter)="nameBox.blur()"
+                      (keydown.escape)="nameBox.value = clean(fm.mealName); onNameInput(fm.mealId, nameBox.value); nameBox.blur()"
+                      (blur)="commitName(fm, nameBox.value)"
+                      aria-label="Meal name" />
+                    <!-- Save addon lights on unsaved FOOD changes OR a pending name
+                         edit. Clicking persists the meal (name + food) to the Binder. -->
+                    <button
+                      type="button"
+                      class="icon-disc save-disc"
+                      [class.icon-disc-confirm]="rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm)"
+                      [disabled]="!(rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm))"
+                      matTooltip="Save changes to your notebook"
+                      (click)="pinMeal.emit(fm.mealId)">
+                      <mat-icon>check</mat-icon>
+                    </button>
+                  </div>
                   <button
                     type="button"
                     class="back-clear-x"
@@ -196,15 +200,15 @@ interface Macro {
                       (click)="toggleAdd.emit(fm.mealId)">
                       <mat-icon>add</mat-icon>
                     </button>
-                    <!-- Recipe PDF — stacked directly BELOW the + Add key; shown
-                         only when the meal has a source recipe. In-app viewer. -->
+                    <!-- PDF — stacked directly BELOW the + Add key; shown only when
+                         the meal has a rendered PDF (recipe OR print-formatted meal). -->
                     @if (recipeLinkFor(fm.mealId); as link) {
                       <button
                         type="button"
                         class="add-food-btn recipe-pdf-btn"
-                        matTooltip="Open the recipe PDF"
+                        matTooltip="Open PDF"
                         (click)="openRecipe(link)">
-                        <mat-icon>picture_as_pdf</mat-icon>
+                        <span class="pdf-label">PDF</span>
                       </button>
                     }
                   </span>
