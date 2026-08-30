@@ -986,6 +986,7 @@
 
   // Editable staple fields (One-time & staples) → white inputs, dark text.
   .staples-pane {
+    .add-input,
     .staple-qty,
     .staple-unit,
     .staple-item {
@@ -994,6 +995,7 @@
       color: #1f1f1f;
       &::placeholder { color: #8a8f94; }
     }
+    .accordion-title { color: #1f1f1f; }
     .accordion-arrow { color: rgba(0, 0, 0, 0.5); }
     .accordion-header:hover { background: rgba(0, 0, 0, 0.05); }
   }
