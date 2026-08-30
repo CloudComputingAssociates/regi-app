@@ -198,6 +198,22 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                   (input)="searchText.set($any($event.target).value)" />
               </div>
               <div class="meals-ctrl-row meals-ctrl-actions">
+                <!-- Sort — first-class control (independent of Filter; sorts within
+                     whatever the filter shows). Starts Off. -->
+                <label class="sort-inline">
+                  <span class="sort-inline-label">Sort</span>
+                  <select
+                    class="sort-inline-select"
+                    [value]="sortBy() ?? 'none'"
+                    (change)="onSortChange($any($event.target).value)">
+                    <option value="none">Off</option>
+                    <option value="protein">Protein</option>
+                    <option value="fiber">Fiber</option>
+                    <option value="recipes">Recipes Only</option>
+                    <option value="date">By Date</option>
+                    <option value="newest">Newest</option>
+                  </select>
+                </label>
                 <button type="button" class="create-toggle filter-toggle" [class.filter-on]="filterActive()" (click)="toggleFilterPanel()">
                   <span class="create-word">Filter{{ filterActive() ? ' on' : '' }}</span>
                   <mat-icon class="create-chevron">{{ filterOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
@@ -229,19 +245,9 @@ import { Meal, Menu, MealSetSummary } from '../../models';
             <div class="section-body filter-body">
               <fieldset class="filter-fieldset">
                 <legend>Filter</legend>
-                <div class="sort-row">
-                  <span class="filter-label">Sort</span>
-                  <select
-                    class="sort-select"
-                    [value]="sortBy() ?? 'none'"
-                    (change)="onSortChange($any($event.target).value)">
-                    <option value="none">Off</option>
-                    <option value="protein">Protein</option>
-                    <option value="fiber">Fiber</option>
-                    <option value="recipes">Recipes Only</option>
-                    <option value="date">By Date</option>
-                    <option value="newest">Newest</option>
-                  </select>
+                <!-- Sort moved OUT to the controls row (first-class). Clear-filter
+                     resets the MealSet filter only — it no longer touches Sort. -->
+                <div class="filter-clear-row">
                   <button
                     type="button"
                     class="filter-clear"
@@ -730,12 +736,12 @@ export class MealBinderComponent implements OnInit {
     return m ? Number(m[1]) : null;
   }
 
-  /** Clear the filter back to its default state: reset search + sort, drop all
-   *  Meal Set selections (→ My Meals only, reloaded), collapse every card, AND
-   *  close the filter region (the clear-filter key doubles as "done filtering"). */
+  /** Clear the FILTER back to default: reset search, drop all Meal Set selections
+   *  (→ My Meals only, reloaded), collapse every card, and close the filter region.
+   *  Sort is now a first-class control OUTSIDE the filter — deliberately NOT reset
+   *  here, so a sort survives a filter clear (they work in conjunction). */
   clearFilter(): void {
     this.searchText.set('');
-    this.sortBy.set(null);
     this.sourceSetFilter.set('all');
     this.selectedSetIds.set([]);
     this.persistSelected([]);

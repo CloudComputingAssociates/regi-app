@@ -251,9 +251,35 @@
 
   // Actions row: Filter (left) · ＋ Add meals (centered) · collapse-all (flush right).
   .meals-ctrl-actions {
-    .add-meals-btn {
-      margin: 0 auto; // symmetric auto margins center it; Filter left, collapse right
-      .mat-icon { color: #2f6f3f; } // green + to signal "add"
+    // Sort · Filter · + Add meals cluster LEFT; collapse-all is pushed to the far right.
+    .add-meals-btn .mat-icon { color: #2f6f3f; } // green + to signal "add"
+    .collapse-all-btn { margin-left: auto; }
+  }
+
+  // Sort — first-class control styled as a raised-white key (matches Filter / Add).
+  .sort-inline {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    padding: 0 6px 0 8px;
+    background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
+    border: 1px solid #b7bcc4;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
+    font-size: 12px;
+
+    .sort-inline-label { font-weight: 500; color: #3a3f45; }
+    .sort-inline-select {
+      border: none;
+      background: transparent;
+      font: inherit;
+      color: #1a1a1a;
+      outline: none;
+      cursor: pointer;
+      padding: 0 2px;
     }
   }
 }
@@ -451,6 +477,12 @@
     font-size: 12px;
     font-style: italic;
     color: #6a6f75; // darker grey — legible on white
+  }
+
+  // Clear-filter sits on its own right-aligned row now that Sort moved out.
+  .filter-clear-row {
+    display: flex;
+    justify-content: flex-end;
   }
 
   // Clear key — a clean white bordered key with a dark glyph ("Remove filters").
