@@ -59,17 +59,17 @@
         border: none;
         border-radius: 0;
         box-shadow: none;
-        // Black lives ABOVE the bars (top padding); almost none below, so the bar
-        // bottoms drop to sit on the RegiMenu baseline.
-        padding-top: 12px;
-        padding-bottom: 1px;
+        // Black lives ABOVE the bars (top padding); ZERO below, so the bar bottoms
+        // drop the last pixel to sit right on the RegiMenu baseline.
+        padding-top: 13px;
+        padding-bottom: 0;
         overflow: visible;
         &::before { display: none; } // drop the sheen / backlight glow
       }
       .mat-mdc-card,
       .mat-mdc-card-content { overflow: visible; }
       .custom-progress-track { background: #3a3a3a; } // grey track shows on black
-      .macro-row { padding: 2px 8px; }      // compact for the banner
+      .macro-row { padding: 3px 8px 0; }    // +1 top / no bottom → nudge down, squeeze bottom black
     }
   }
 
