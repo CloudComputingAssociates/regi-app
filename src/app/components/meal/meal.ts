@@ -200,19 +200,21 @@ interface Macro {
                       (click)="toggleAdd.emit(fm.mealId)">
                       <mat-icon>add</mat-icon>
                     </button>
-                    <!-- PDF — stacked directly BELOW the + Add key; shown only when
-                         the meal has a rendered PDF (recipe OR print-formatted meal). -->
-                    @if (recipeLinkFor(fm.mealId); as link) {
-                      <button
-                        type="button"
-                        class="add-food-btn recipe-pdf-btn"
-                        matTooltip="Open PDF"
-                        (click)="openRecipe(link)">
-                        <span class="pdf-label">PDF</span>
-                      </button>
-                    }
                   </span>
                 </div>
+
+                <!-- PDF link below the action discs — a compact blue hyperlink, so
+                     the ingredient list slides up (no tall button column). Shown
+                     only when the meal has a rendered PDF (recipe or print-meal). -->
+                @if (recipeLinkFor(fm.mealId); as link) {
+                  <div class="pdf-link-row">
+                    <button
+                      type="button"
+                      class="recipe-link pdf-link"
+                      matTooltip="Open PDF"
+                      (click)="openRecipe(link)">(PDF)</button>
+                  </div>
+                }
 
                 <div class="food-rows">
                   @for (item of mainItemsFor(fm.mealId); track item.id) {

@@ -70,9 +70,9 @@
     display: inline-flex;
     align-items: center;
     margin: 0;
-    // Same font/size/weight as the menu + meal entries (Calisto, 16px, 400).
+    // Calisto, 400 — the Notebook TITLE only is bumped ~2pt (16→19px) for presence.
     font-family: 'Calisto MT', Calisto, 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
-    font-size: 16px;
+    font-size: 19px;
     font-weight: 400;
     color: #1a1a1a;
   }
@@ -163,7 +163,7 @@
   justify-content: center;
   gap: 4px;
   flex: 0 0 96px; // both tabs identical, fixed width
-  padding: 7px 10px;
+  padding: 6px 10px; // 1px trimmed top + bottom → 2px shorter tab
   box-sizing: border-box;
   border: none;
   border-radius: 12px 12px 0 0;
@@ -173,7 +173,7 @@
   transition: background 0.12s ease;
   outline: none;
 
-  .section-label { color: #ffffff; font-size: 16px; font-weight: 500; line-height: 20px; }
+  .section-label { color: #ffffff; font-size: 16px; font-weight: 400; line-height: 20px; }
   .section-count { color: rgba(255, 255, 255, 0.9); font-size: 11px; font-weight: 400; line-height: 20px; }
 
   &:hover { background: rgba(59, 125, 224, 0.85); }
@@ -1146,6 +1146,8 @@
   .set-badge {
     flex: 0 0 auto;
     max-width: 96px;
+    // Sans-serif to match the tabs (the Binder body is serif Calisto).
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
     font-size: 10px;
     font-weight: 700;
     line-height: 1;

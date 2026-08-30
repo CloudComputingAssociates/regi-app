@@ -23,7 +23,7 @@
     padding: 3px 8px 3px 4px;  // top/bottom trimmed ~25% to reclaim vertical space
     max-width: 100%;
     margin: 0 auto;
-    min-height: 33px;  // ~25% shorter banner (was 44px)
+    min-height: 38px;  // a touch taller so the macros have room to drop down
   }
 
   // Macros bar hosted in the banner (menus tab). Pushed toward the right so it sits
@@ -38,7 +38,7 @@
     // The band already bottom-aligns with the row (app-bar-content flex-end); keep
     // the tether + name at that same bottom baseline as the macros %/g.
     align-items: flex-end;
-    padding-bottom: 3px;  // tiny nudge to match the %/g's in-padding drop
+    padding-bottom: 16px;  // lift tether · name · avatar to the macro bars' bottom line
     // Everything hugs the far right: [tether] · [name] [avatar]. The tether floats
     // just left of the name; its own margin-right sets the ~1/3in gap.
     justify-content: flex-end;
@@ -59,9 +59,10 @@
         border: none;
         border-radius: 0;
         box-shadow: none;
-        // Black lives ABOVE the bars (top padding); ZERO below, so the bar bottoms
-        // drop the last pixel to sit right on the RegiMenu baseline.
-        padding-top: 13px;
+        // Black lives ABOVE the bars (top padding); ZERO below. The labels sit at
+        // the block bottom, so the BARS' bottom lands ~one label-height up — that's
+        // the line the RegiMenu title / tether / name are lifted to (below).
+        padding-top: 18px;
         padding-bottom: 0;
         overflow: visible;
         &::before { display: none; } // drop the sheen / backlight glow
@@ -101,7 +102,8 @@
   // as the logo (per spec) so it reads as a sibling, not a subtitle.
   .title-area {
     flex: 0 1 auto; // don't GROW — was flex:1, which ate the space and shoved macros right
-    align-self: center;  // keep the RegiMenu title centered while the row bottom-aligns
+    align-self: flex-end;       // bottom-aligned…
+    padding-bottom: 16px;       // …then lifted to the macro BARS' bottom line (labels hang below)
     display: flex;
     flex-direction: row;
     align-items: baseline;

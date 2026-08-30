@@ -319,15 +319,6 @@
   bottom: 6px;
   right: 6px;
 }
-// PDF key on the back — same square grey chrome as the + Add / camera keys, but
-// shows a legible red "PDF" wordmark instead of a glyph. Stacked below + Add.
-.recipe-pdf-btn .pdf-label {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.3px;
-  line-height: 1;
-  color: #ffffff; // white — legible on the grey key
-}
 // AI meal-image camera (square [+]-style key) — disabled while generating.
 .genimg-btn {
   &:disabled { opacity: 0.75; cursor: default; }
@@ -474,15 +465,25 @@
       white-space: nowrap;
     }
 
-    // Camera + "+ Add" keys cluster on the right; camera sits just left of the +.
+    // Camera + "+ Add" keys cluster on the right, in ONE compact row (no vertical
+    // stack — the PDF moved to a hyperlink below, so the row stays chip-height).
     .macro-actions {
       margin-left: auto;
       display: inline-flex;
-      flex-direction: column; // stack the action keys vertically (camera · + · PDF)
-      align-items: flex-end;
-      align-self: flex-start; // anchor the stack to the top of the macro row
+      align-items: center;
       gap: 5px;
     }
+  }
+
+  // PDF hyperlink row — sits just BELOW the action discs, right-aligned under the
+  // + key. Blue standing-underline link; tight margins so the ingredients slide up.
+  .pdf-link-row {
+    display: flex;
+    justify-content: flex-end;
+    margin: 1px 0 2px;
+  }
+  .pdf-link {
+    margin-right: 0; // override .recipe-link's left-justify auto margin
   }
 
   // "Add food" — square [+] key, right-pinned on the macro row. Deliberately
