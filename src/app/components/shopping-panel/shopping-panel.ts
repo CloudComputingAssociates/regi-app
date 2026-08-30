@@ -103,12 +103,9 @@ const CAT_RANK: Record<string, number> = {
       </div>
 
       <!-- Computed shopping list (from the rotation's meals/recipes). No "Shopping
-           List" title — the Notebook's Shopping tab already names the surface. -->
+           List" title — the Notebook's Shopping tab already names the surface. The
+           NEED heading lives on the QTY/UNIT/ITEM column row below. -->
       <div class="list-pane">
-        <div class="staples-header">
-          <span class="staples-title buy-column-label no-print">Need</span>
-        </div>
-
         @if (listLoading()) {
           <p class="list-msg">Building your list…</p>
         } @else if (listError()) {
@@ -125,6 +122,7 @@ const CAT_RANK: Record<string, number> = {
               <span class="staple-qty">Qty</span>
               <span class="staple-unit">Unit</span>
               <span class="staple-item">Item</span>
+              <span class="col-need">Need</span>
             </div>
             @for (group of computedGroups(); track group.category) {
               <div class="list-cat">{{ group.label }}</div>
@@ -261,6 +259,7 @@ export class ShoppingPanelComponent {
     const id = this.rotation.rotation()?.id ?? null;
     const basis: 'recipe' | 'scale' = this.scaleMode() === 'recipe' ? 'recipe' : 'scale';
     const factor = this.scaleValue();
+    this.rotation.shoppingRefreshTick(); // refetch when meal/menu composition changes
     if (id == null) {
       this.listResponse.set(null);
       return;

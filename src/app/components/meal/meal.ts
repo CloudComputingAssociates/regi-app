@@ -91,12 +91,10 @@ interface Macro {
                   @if (tileImage(m); as src) {
                     <img class="tile-img" [src]="src" alt="" />
                   } @else {
-                    <div class="tile-noimg"><span>{{ clean(m.mealName) }}{{ isMealModified(m) ? ' (modified)' : '' }}</span></div>
+                    <div class="tile-noimg"><span>{{ clean(m.mealName) }}</span></div>
                   }
                   <div class="tile-scrim"></div>
-                  <!-- "(modified)" — same white title text — marks a meal that
-                       isn't a Binder meal yet (blocks the menu save until saved). -->
-                  <span class="tile-name">{{ clean(m.mealName) }}{{ isMealModified(m) ? ' (modified)' : '' }}</span>
+                  <span class="tile-name">{{ clean(m.mealName) }}</span>
                   <button
                     type="button"
                     class="tile-btn tile-flip"

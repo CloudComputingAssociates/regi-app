@@ -83,6 +83,12 @@ export class RotationService {
    *  list off this rotation). Item count is basis/scale-independent. */
   readonly shoppingItemCount = signal<number | null>(null);
 
+  /** Bumped whenever the rotation's meal/menu COMPOSITION changes (a meal reloads
+   *  after a food add/edit, a menu is (re)cached after a slot change). The Shopping
+   *  panel's list effect reads this so its list refreshes live — no page reload. */
+  readonly shoppingRefreshTick = signal(0);
+  private bumpShoppingRefresh(): void { this.shoppingRefreshTick.update((n) => n + 1); }
+
   /** The user's Binder menus (pinned) — server truth via GET /menu?scope=binder.
    *  First-class citizens alongside Binder meals; carry cached total macros. */
   readonly binderMenus = signal<Menu[]>([]);
@@ -415,6 +421,7 @@ export class RotationService {
    *  stay consistent. Slots carry `meals[]` (0–4) directly now. */
   private cacheMenu(id: number, menu: Menu): void {
     this.menusById.update((m) => new Map(m).set(id, menu));
+    this.bumpShoppingRefresh(); // slot composition may have changed → refresh Shopping
   }
 
   /** True when a slot holds no meals (and isn't dining-out). */
@@ -616,6 +623,7 @@ export class RotationService {
         this.http.get<Meal>(`${this.baseUrl}/meal/${mealId}`),
       );
       this.mealsById.update((m) => new Map(m).set(mealId, meal));
+      this.bumpShoppingRefresh(); // a meal's items may have changed → refresh Shopping
     } catch {
       // swallow — see doc comment
     }

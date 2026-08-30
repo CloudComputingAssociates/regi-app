@@ -379,7 +379,7 @@
   .staple-item { flex: 2; }
 }
 
-// Category subheader inside the computed list.
+// Category subheader inside the computed list — ALL CAPS.
 .list-cat {
   padding: 5px 12px;
   background: #333333;
@@ -387,7 +387,17 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.3px;
+  text-transform: uppercase;
   border-bottom: 1px solid #4a4a4a;
+}
+
+// "NEED" column heading — sits on the QTY/UNIT/ITEM row, over the per-row toggle
+// (rightmost). Fixed width matches the toggle footprint so the Item column lines
+// up between the header and the rows. (Uppercased by .list-col-head.)
+.col-need {
+  flex: 0 0 auto;
+  width: 34px;
+  text-align: center;
 }
 
 // ============================================
