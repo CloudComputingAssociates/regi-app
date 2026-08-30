@@ -61,7 +61,7 @@
   box-sizing: border-box;
   display: flex;
   justify-content: center; // "binder" centered at the top
-  padding: 0 4px;
+  padding: 2px 4px; // 2px above + below the title → slides the title (and content) down
   margin: 12px 4px 8px 0; // "binder" a touch lower; more room below before menus
   background: transparent;
   border: none;
