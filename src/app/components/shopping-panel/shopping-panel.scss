@@ -253,14 +253,39 @@
 // Bottom pane: Staples
 // ============================================
 // Top row: source note (left) + Scale stepper (right).
+// Controls strip — Recipe Servings / Scale + Print. Cordoned at the top in ONE
+// compact row (minimal vertical space). SANS-serif (these are app controls, like
+// everywhere else); only the LIST content below is serif.
 .shopping-top {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 12px 20px;
+  gap: 12px;
+  padding: 5px 12px; // minimal height
   border-bottom: 1px solid #4a4a4a;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+}
+
+// Print — raised-white sans key (matches the Notebook's Filter / Add-meals keys).
+.shopping-print-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 10px;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  font-size: 12px;
+  color: #1a1a1a;
+  background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
+  border: 1px solid #b7bcc4;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  .mat-icon { width: 15px; height: 15px; font-size: 15px; line-height: 15px; color: #3a3f45; }
+  &:hover { background: linear-gradient(180deg, #ffffff 0%, #dde1e7 100%); }
+  &:active { transform: translateY(1px); }
 }
 
 // Quantity-basis radio: Recipe Servings | Scale: [n]
@@ -858,5 +883,60 @@
 
   .toggle-slider.on .toggle-thumb {
     left: 16px;
+  }
+}
+
+// ============================================================================
+// NOTEBOOK INTEGRATION — the Shopping surface now lives INSIDE the ruled-paper
+// Binder (not the old dark bloom). Make the panel transparent so the serif list
+// content reads like handwritten meal entries on the lines, and recolor the ink
+// dark for the paper. Scoped under .panel-container so it wins on specificity.
+// The controls strip (.shopping-top) keeps its own compact sans styling above.
+// ============================================================================
+.panel-container {
+  background: transparent;
+
+  // Drop the dark fills off the header bands / category rows → paper shows through.
+  .staples-header,
+  .list-col-head,
+  .list-cat,
+  .staple-row,
+  .accordion-header,
+  .accordion-section,
+  .accordion-body { background: transparent; }
+
+  // Serif list content → dark ink on the paper.
+  .staples-title,
+  .buy-column-label,
+  .list-cat,
+  .accordion-title,
+  .staple-item,
+  .staple-qty,
+  .staple-unit { color: #1f1f1f; }
+
+  .list-col-head { color: rgba(0, 0, 0, 0.5); border-bottom-color: rgba(0, 0, 0, 0.18); }
+  .list-msg { color: rgba(0, 0, 0, 0.6); }
+  .staples-header { border-bottom-color: rgba(0, 0, 0, 0.18); }
+  .list-cat { border-color: rgba(0, 0, 0, 0.12); }
+
+  // Editable staple fields (One-time & staples) → white inputs, dark text.
+  .staples-pane {
+    .staple-qty,
+    .staple-unit,
+    .staple-item {
+      background: #ffffff;
+      border-color: #b7bcc4;
+      color: #1f1f1f;
+      &::placeholder { color: #8a8f94; }
+    }
+    .accordion-arrow { color: rgba(0, 0, 0, 0.5); }
+    .accordion-header:hover { background: rgba(0, 0, 0, 0.05); }
+  }
+
+  // Controls strip: dark ink over the paper (the strip itself stays sans).
+  .shopping-top {
+    border-bottom-color: rgba(0, 0, 0, 0.18);
+    .scale-opt { color: #1f1f1f; }
+    .scale-or { color: #6a6f75; }
   }
 }

@@ -92,12 +92,20 @@ const CAT_RANK: Record<string, number> = {
         @if (isSaving()) {
           <span class="auto-save-indicator">saving...</span>
         }
+        <button
+          type="button"
+          class="shopping-print-btn"
+          matTooltip="Print / Save as PDF"
+          matTooltipPosition="below"
+          (click)="print()">
+          <mat-icon>print</mat-icon>Print
+        </button>
       </div>
 
-      <!-- Computed shopping list (from the rotation's meals/recipes) -->
+      <!-- Computed shopping list (from the rotation's meals/recipes). No "Shopping
+           List" title — the Notebook's Shopping tab already names the surface. -->
       <div class="list-pane">
         <div class="staples-header">
-          <span class="staples-title">Shopping List</span>
           <span class="staples-title buy-column-label no-print">Need</span>
         </div>
 
@@ -314,6 +322,14 @@ export class ShoppingPanelComponent {
     } catch {
       return false;
     }
+  }
+
+  /** Print / Save-as-PDF from the Shopping tab: prefer the server-rendered PDF
+   *  (staples merged); fall back to the browser print dialog if it fails. */
+  async print(): Promise<void> {
+    this.staplesOpen.set(true); // expand staples so a browser-print fallback shows them
+    const ok = await this.downloadPdf();
+    if (!ok) window.print();
   }
 
   /** The computed list flattened into display groups (preferred category order). */

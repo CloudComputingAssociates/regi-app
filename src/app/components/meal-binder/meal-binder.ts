@@ -16,7 +16,6 @@ import {
   inject,
   output,
   signal,
-  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -446,18 +445,9 @@ import { Meal, Menu, MealSetSummary } from '../../models';
           </div>
         } @else {
           <!-- Shopping tab — the list is generated from the current menus' meals
-               (the panel refetches off the rotation). Print sits on its own row. -->
+               (the panel refetches off the rotation). Controls + Print live in the
+               panel's own compact top row. -->
           <div class="rail-section shopping-section">
-            <div class="shopping-tab-actions">
-              <button
-                type="button"
-                class="shopping-print-btn"
-                matTooltip="Print / Save as PDF"
-                matTooltipPosition="below"
-                (click)="printShopping()">
-                <mat-icon>print</mat-icon>Print
-              </button>
-            </div>
             <app-shopping-panel />
           </div>
         }
@@ -741,7 +731,8 @@ export class MealBinderComponent implements OnInit {
   }
 
   /** Clear the filter back to its default state: reset search + sort, drop all
-   *  Meal Set selections (→ My Meals only, reloaded), and collapse every card. */
+   *  Meal Set selections (→ My Meals only, reloaded), collapse every card, AND
+   *  close the filter region (the clear-filter key doubles as "done filtering"). */
   clearFilter(): void {
     this.searchText.set('');
     this.sortBy.set(null);
@@ -749,6 +740,7 @@ export class MealBinderComponent implements OnInit {
     this.selectedSetIds.set([]);
     this.persistSelected([]);
     void this.rotation.loadBinder([]);
+    this.filterOpen.set(false);
     this.expandedCards.update((s) => {
       const next = new Set(s);
       for (const key of next) if (key.startsWith('meal-')) next.delete(key);
@@ -780,18 +772,6 @@ export class MealBinderComponent implements OnInit {
    *  landing tab. Shopping generates its list from the meals when shown. */
   readonly activeTab = signal<'meals' | 'menus' | 'shopping'>('meals');
 
-  /** The embedded Shopping panel (only present while the Shopping tab is active),
-   *  used to drive Print from the tab's toolbar row. */
-  private readonly shoppingPanel = viewChild(ShoppingPanelComponent);
-
-  /** Print the shopping list — prefer the server-rendered PDF; fall back to the
-   *  browser print dialog if it fails (same behavior the old bloom had). */
-  async printShopping(): Promise<void> {
-    const panel = this.shoppingPanel();
-    if (!panel) return;
-    const ok = await panel.downloadPdf();
-    if (!ok) window.print();
-  }
 
   // ----- Binder MENUS sort (icon-only squares) -------------------------------
   /** Active menu sort. Default 'az' so the list reads Menu 1, Menu 2, … */

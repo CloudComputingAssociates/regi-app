@@ -186,42 +186,11 @@
   &:focus-visible { box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.6); }
 }
 
-// Shopping tab — a Print action row above the embedded shopping panel. The Print
-// key uses the same raised-white sans key chrome as the Filter / Add-meals keys so
-// the Shopping surface reads as part of the Notebook (not the old bloom popup).
-.shopping-section {
-  // The Binder body is serif (Calisto); the Shopping surface is a CONTROL surface,
-  // so force the sans control font on everything (buttons, scale, staples) to
-  // pattern-match the tabs / Filter / Add-meals keys.
-  font-family: Roboto, 'Helvetica Neue', sans-serif;
-
-  .shopping-tab-actions {
-    display: flex;
-    justify-content: flex-end;
-    padding: 8px 6px 4px;
-  }
-  .shopping-print-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    height: 26px;
-    padding: 0 10px;
-    font-family: Roboto, 'Helvetica Neue', sans-serif;
-    font-size: 12px;
-    color: #1a1a1a;
-    background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
-    border: 1px solid #b7bcc4;
-    border-radius: 8px;
-    box-shadow:
-      0 2px 5px rgba(0, 0, 0, 0.32),
-      0 1px 1px rgba(0, 0, 0, 0.18),
-      inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    cursor: pointer;
-    .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; color: #3a3f45; }
-    &:hover { background: linear-gradient(180deg, #ffffff 0%, #dde1e7 100%); }
-    &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2); }
-  }
-}
+// Shopping tab wrapper. Intentionally sets NO font-family: the LIST content (item
+// names, categories, the "Need" heading) inherits the Notebook's serif (Calisto)
+// so it reads like the meal entries on the ruled paper; the panel forces sans only
+// on its controls (scale radios / Print) itself.
+.shopping-section { min-width: 0; }
 
 // Meals-tab controls — two stacked rows below the tab bar (Search + collapse-all,
 // then Filter + Add meals).
