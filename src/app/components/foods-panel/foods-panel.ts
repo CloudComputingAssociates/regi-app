@@ -720,7 +720,18 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                  above without being clipped. -->
             <div class="nf-popup-inner">
               <div class="nf-popup-header">
-                @if (nfPopupFood()!.productPurchaseLink) {
+                @if (nfPopupMode() === 'edit') {
+                  <!-- Editable food NAME. Auto-saves on blur/Enter (forks a system
+                       food into a MyFoods copy first, like the other NF edits). -->
+                  <input
+                    #nfTitleBox
+                    type="text"
+                    class="nf-popup-title nf-popup-title-input"
+                    [value]="nfPopupFood()!.shortDescription || nfPopupFood()!.description"
+                    (keydown.enter)="nfTitleBox.blur()"
+                    (blur)="onNfTitleCommit(nfTitleBox.value)"
+                    aria-label="Food name" />
+                } @else if (nfPopupFood()!.productPurchaseLink) {
                   <a class="nf-popup-title nf-popup-title-link"
                      (click)="openProductLink(nfPopupFood()!)">
                     {{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}
@@ -1770,6 +1781,58 @@ export class FoodsPanelComponent {
     this.nfPopupFood.update((f) => (f ? { ...f, categoryId: cat.id, categoryName: cat.name } : f));
     this.applyLocalCategory(targetId, cat.id, cat.name);
     await this.refreshServerMyFoods();
+  }
+
+  /** Commit an edited food NAME (blur / Enter). A Regi/system food has no editable
+   *  name, so it's FORKED into a MyFoods copy first (same fork-on-edit as unit /
+   *  category), then renamed. Auto-saves; write-through. */
+  async onNfTitleCommit(name: string): Promise<void> {
+    const food = this.nfPopupFood();
+    const trimmed = (name ?? '').trim();
+    if (!food || food.id == null || !trimmed) return;
+    const current = (food.shortDescription || food.description || '').trim();
+    if (trimmed === current) return;
+
+    let targetId = food.id;
+    if ((food.foodSource ?? 'food') !== 'userfood') {
+      try {
+        const res = await firstValueFrom(
+          this.foodsService.patchServingGeometry({
+            foodId: food.id,
+            foodSource: 'food',
+            unitName: food.servingUnit || 'g',
+            gramsPerUnit:
+              food.servingGramsPerUnit && food.servingGramsPerUnit > 0
+                ? food.servingGramsPerUnit
+                : (this.massGrams(food.servingUnit) ?? 1),
+            defaultQuantity: food.servingSize ?? this.nfPopupServingSize(),
+          }),
+        );
+        if (res?.cloned && res.userFoodId) {
+          targetId = res.userFoodId;
+          this.nfPopupFood.update((f) => (f ? { ...f, id: res.userFoodId, foodSource: 'userfood' } : f));
+        } else {
+          this.notificationService.show('Could not create your editable copy to rename.', 'error');
+          return;
+        }
+      } catch {
+        this.notificationService.show('Could not rename this food.', 'error');
+        return;
+      }
+    }
+
+    void this.userFoodService.setUserFoodName(targetId, trimmed);
+    this.nfPopupFood.update((f) => (f ? { ...f, shortDescription: trimmed } : f));
+    this.applyLocalName(targetId, trimmed);
+    await this.refreshServerMyFoods();
+  }
+
+  /** Update a food's name in the local MyFoods caches so the accordion relabels it
+   *  live (mirrors applyLocalCategory). */
+  private applyLocalName(foodId: number, name: string): void {
+    const patch = (f: Food): Food => (f.id === foodId ? { ...f, shortDescription: name } : f);
+    this.myFoodsLocal.update((list) => list.map(patch));
+    this.serverMyFoods.update((list) => list.map(patch));
   }
 
   /** Grams in one WEIGHT unit (deterministic), or null for a food-specific unit. */

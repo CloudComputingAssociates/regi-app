@@ -1941,6 +1941,24 @@
   &:hover { text-decoration: underline; }
 }
 
+// Editable title (edit mode) — reads as the title but is a text field: subtle
+// inset box that brightens on focus. Overrides the .nf-popup-title clip so the
+// whole editable name is reachable.
+.nf-popup-title-input {
+  box-sizing: border-box;
+  width: 100%;
+  overflow: visible;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  outline: none;
+  font-family: inherit;
+  &::placeholder { color: rgba(255, 255, 255, 0.4); }
+  &:hover { background: rgba(255, 255, 255, 0.1); }
+  &:focus { background: rgba(255, 255, 255, 0.14); border-color: #4da6ff; }
+}
+
 // Confirm/cancel discs in the top-right corner: green confirm left, red cancel
 // in the corner. Health Info is shifted left (right:64) to clear the pair.
 .dialog-discs {

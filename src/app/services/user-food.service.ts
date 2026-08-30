@@ -109,6 +109,24 @@ export class UserFoodService {
    *  a partial body would null out serving unit, images, UPC, etc. Requires
    *  PATCH /api/userfoods/{id}/category on the API; error-swallowed so it's a
    *  harmless no-op until that endpoint ships. */
+  /** Update ONLY a userfood's display NAME (shortDescription). A name-only PATCH,
+   *  NOT the full-replace PUT (which nulls other columns) — mirrors
+   *  setUserFoodCategory. Requires PATCH /api/userfoods/{id}/name on the API;
+   *  error-swallowed so it's a harmless no-op until that endpoint ships. */
+  async setUserFoodName(id: number, name: string): Promise<boolean> {
+    try {
+      await firstValueFrom(
+        this.http.patch<UserFood>(`${this.baseUrl}/${id}/name`, { shortDescription: name })
+      );
+      this.userFoodsSignal.update(list =>
+        list.map(f => f.id === id ? { ...f, shortDescription: name } : f)
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async setUserFoodCategory(id: number, categoryId: number): Promise<boolean> {
     try {
       const body: UpdateUserFoodCategoryRequest = { categoryId };
