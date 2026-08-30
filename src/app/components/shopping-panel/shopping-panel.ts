@@ -268,6 +268,10 @@ export class ShoppingPanelComponent {
       const res = await firstValueFrom(this.rotation.getShoppingList(id, basis, factor));
       if (seq !== this.loadSeq) return; // a newer request superseded this one
       this.listResponse.set(res ?? null);
+      // Publish the item total for the Notebook's Shopping tab count (adjusts live).
+      this.rotation.shoppingItemCount.set(
+        (res?.categories ?? []).reduce((n, c) => n + (c.items?.length ?? 0), 0),
+      );
     } catch {
       if (seq !== this.loadSeq) return;
       this.listError.set(true);

@@ -16,6 +16,7 @@ import {
   inject,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -28,11 +29,12 @@ import { RotationService } from '../../services/rotation.service';
 import { TabService } from '../../services/tab.service';
 import { MealSetService } from '../../services/mealset.service';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
+import { ShoppingPanelComponent } from '../shopping-panel/shopping-panel';
 import { Meal, Menu, MealSetSummary } from '../../models';
 
 @Component({
   selector: 'app-meal-binder',
-  imports: [DragDropModule, MatTooltipModule, MatIconModule],
+  imports: [DragDropModule, MatTooltipModule, MatIconModule, ShoppingPanelComponent],
   // Releasing the mouse anywhere cancels the "drag" encourager hint.
   host: { '(document:mouseup)': 'clearDragHint()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,9 +59,20 @@ import { Meal, Menu, MealSetSummary } from '../../models';
       <!-- One scrollbar for the whole rail. -->
       <div class="rail-scroll">
 
-        <!-- Menus | Meals as real side-by-side tabs. The active tab's list and
-             controls fill the single sheet below (not stacked accordions). -->
+        <!-- Meals · Menus · Shopping as real side-by-side tabs. The active tab's
+             content fills the single sheet below. Meals is first (the landing tab);
+             Shopping is generated from the meals when its tab is shown. -->
         <div class="binder-tabs" role="tablist">
+          <button
+            type="button"
+            class="binder-tab meals"
+            role="tab"
+            [class.active]="activeTab() === 'meals'"
+            [attr.aria-selected]="activeTab() === 'meals'"
+            (click)="activeTab.set('meals')">
+            <span class="section-label">meals</span>
+            <span class="section-count">({{ rotation.binderMeals().length }})</span>
+          </button>
           <button
             type="button"
             class="binder-tab menus"
@@ -72,13 +85,15 @@ import { Meal, Menu, MealSetSummary } from '../../models';
           </button>
           <button
             type="button"
-            class="binder-tab meals"
+            class="binder-tab shopping"
             role="tab"
-            [class.active]="activeTab() === 'meals'"
-            [attr.aria-selected]="activeTab() === 'meals'"
-            (click)="activeTab.set('meals')">
-            <span class="section-label">meals</span>
-            <span class="section-count">({{ rotation.binderMeals().length }})</span>
+            [class.active]="activeTab() === 'shopping'"
+            [attr.aria-selected]="activeTab() === 'shopping'"
+            (click)="activeTab.set('shopping')">
+            <span class="section-label">shopping</span>
+            @if (rotation.shoppingItemCount() !== null) {
+              <span class="section-count">({{ rotation.shoppingItemCount() }})</span>
+            }
           </button>
         </div>
 
@@ -167,7 +182,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
               }
             </div>
           </div>
-        } @else {
+        } @else if (activeTab() === 'meals') {
           <!-- Meals tab. Controls sit on two rows below the tab bar:
                Row 1 — Search meals, stretched full width.
                Row 2 — Filter (left) · ＋ Add meals (centered) · collapse-all (flush right). -->
@@ -428,6 +443,22 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                 <p class="binder-empty">{{ rotation.binderMeals().length ? 'No filtered results.' : 'No saved Meals.' }}</p>
               }
             </div>
+          </div>
+        } @else {
+          <!-- Shopping tab — the list is generated from the current menus' meals
+               (the panel refetches off the rotation). Print sits on its own row. -->
+          <div class="rail-section shopping-section">
+            <div class="shopping-tab-actions">
+              <button
+                type="button"
+                class="shopping-print-btn"
+                matTooltip="Print / Save as PDF"
+                matTooltipPosition="below"
+                (click)="printShopping()">
+                <mat-icon>print</mat-icon>Print
+              </button>
+            </div>
+            <app-shopping-panel />
           </div>
         }
 
@@ -744,10 +775,23 @@ export class MealBinderComponent implements OnInit {
   /** Top-level accordion open state — both default open. */
   readonly binderMenusOpen = signal(false);
 
-  /** Active Notebook tab. Menus and Meals render as real side-by-side tabs; this
-   *  drives which one's list + controls fill the sheet. Meals is the default (it's
-   *  the primary working surface and usually has content). */
-  readonly activeTab = signal<'menus' | 'meals'>('meals');
+  /** Active Notebook tab. Meals · Menus · Shopping render as real side-by-side
+   *  tabs; this drives which one's content fills the sheet. Meals is the default
+   *  landing tab. Shopping generates its list from the meals when shown. */
+  readonly activeTab = signal<'meals' | 'menus' | 'shopping'>('meals');
+
+  /** The embedded Shopping panel (only present while the Shopping tab is active),
+   *  used to drive Print from the tab's toolbar row. */
+  private readonly shoppingPanel = viewChild(ShoppingPanelComponent);
+
+  /** Print the shopping list — prefer the server-rendered PDF; fall back to the
+   *  browser print dialog if it fails (same behavior the old bloom had). */
+  async printShopping(): Promise<void> {
+    const panel = this.shoppingPanel();
+    if (!panel) return;
+    const ok = await panel.downloadPdf();
+    if (!ok) window.print();
+  }
 
   // ----- Binder MENUS sort (icon-only squares) -------------------------------
   /** Active menu sort. Default 'az' so the list reads Menu 1, Menu 2, … */

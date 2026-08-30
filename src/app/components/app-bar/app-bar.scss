@@ -64,7 +64,7 @@
         // up — the line RegiMenu is lifted to (below). More top padding = more black
         // above + a taller banner (the bars stay bottom-anchored).
         padding-top: 22px;
-        padding-bottom: 0;
+        padding-bottom: 2px; // a sliver of black below to balance the top
         overflow: visible;
         &::before { display: none; } // drop the sheen / backlight glow
       }
@@ -104,7 +104,7 @@
   .title-area {
     flex: 0 1 auto; // don't GROW — was flex:1, which ate the space and shoved macros right
     align-self: flex-end;       // bottom-anchored…
-    padding-bottom: 20px;       // …then lifted to the macro BARS' bottom line (labels hang below)
+    padding-bottom: 22px;       // …then lifted to the macro BARS' bottom line (labels hang below)
     display: flex;
     flex-direction: row;
     align-items: baseline;

@@ -78,6 +78,11 @@ export class RotationService {
   /** The user's Binder meals (pinned) — server truth via GET /meal?scope=binder. */
   readonly binderMeals = signal<Meal[]>([]);
 
+  /** Total items on the computed shopping list, for the Notebook's Shopping tab
+   *  count. null = not yet computed (the Shopping panel sets it when it loads the
+   *  list off this rotation). Item count is basis/scale-independent. */
+  readonly shoppingItemCount = signal<number | null>(null);
+
   /** The user's Binder menus (pinned) — server truth via GET /menu?scope=binder.
    *  First-class citizens alongside Binder meals; carry cached total macros. */
   readonly binderMenus = signal<Menu[]>([]);

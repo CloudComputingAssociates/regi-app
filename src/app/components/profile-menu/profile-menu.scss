@@ -17,7 +17,7 @@
 // (level with the macros' %/g toggle), with the name padded up to the avatar.
 .profile-trigger {
   display: flex;
-  align-items: flex-end;
+  align-items: center; // "Hi {name}" centers on the avatar's midline (not its bottom)
   gap: 8px;
   min-width: 0;
 }

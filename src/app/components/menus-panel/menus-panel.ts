@@ -28,7 +28,6 @@ import { MenuCardRowComponent } from '../menu-card-row/menu-card-row';
 import { MenusMealsComponent } from '../menus-meals/menus-meals';
 import { MealBinderComponent } from '../meal-binder/meal-binder';
 import { AiCreateMealComponent } from '../ai-create-meal/ai-create-meal';
-import { ShoppingBloomComponent } from '../shopping-bloom/shopping-bloom';
 import { MacrosComponent } from '../macros/macros';
 import { FoodLookasideComponent } from '../food-lookaside/food-lookaside';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
@@ -52,7 +51,6 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
     MenusMealsComponent,
     MealBinderComponent,
     AiCreateMealComponent,
-    ShoppingBloomComponent,
     MacrosComponent,
     FoodLookasideComponent,
     NutritionFactsLabelComponent,
@@ -101,15 +99,8 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
               <span class="toolbar-title">
                 <mat-icon class="toolbar-title-icon">restaurant</mat-icon>Menus &amp; Meals
               </span>
-              <!-- Shopping List (opens the bloom) · Clear all. -->
+              <!-- Clear all. (Shopping List moved into the Notebook's Shopping tab.) -->
               <div class="toolbar-buttons">
-                <button
-                  type="button"
-                  class="shop-list-btn"
-                  matTooltip="Open your Shopping List"
-                  (click)="tabService.openShopping()">
-                  <mat-icon class="shop-list-icon" aria-hidden="true">list_alt</mat-icon>
-                </button>
                 <button
                   type="button"
                   class="wipe-menus-btn"
@@ -184,11 +175,6 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
                  it never pushes the meal list / meals grid off-screen. -->
             @if (createOpen()) {
               <app-ai-create-meal (close)="createOpen.set(false)" />
-            }
-
-            <!-- Shopping List bloom — floated over the board from the toolbar. -->
-            @if (tabService.shoppingOpen()) {
-              <app-shopping-bloom (close)="tabService.closeShopping()" />
             }
 
             <!-- Editing a meal (the card's + / a food drop) floats My Foods as a
