@@ -407,7 +407,9 @@
   letter-spacing: 0.4px;
 
   .staple-item { flex: 2; }
-  .col-need { font-weight: 700; } // explicit so NEED matches QTY/UNIT/ITEM
+  // Match QTY/UNIT/ITEM exactly: they render at 12px (via .staple-* classes), so
+  // NEED needs 12px too (it was inheriting the header's 11px → looked smaller).
+  .col-need { font-size: 12px; font-weight: 700; }
 }
 
 // Category subheader inside the computed list — ALL CAPS.
@@ -430,10 +432,13 @@
 
   .cat-label { flex: 0 1 auto; white-space: nowrap; }
 
-  // Rule that connects the label to the caret on the right.
+  // Rule that connects the label to the caret on the right — bottom-aligned with
+  // the text / caret baseline (not floating mid-line).
   .cat-rule {
     flex: 1 1 auto;
+    align-self: flex-end;
     height: 0;
+    margin-bottom: 4px;
     border-bottom: 2px solid rgba(0, 0, 0, 0.3);
   }
 
@@ -473,7 +478,7 @@
   font-family: Roboto, 'Helvetica Neue', sans-serif;
 
   .staples-title { flex: 0 1 auto; font-size: 16px; font-weight: 500; white-space: nowrap; }
-  .cat-rule { flex: 1 1 auto; height: 0; border-bottom: 1px solid rgba(0, 0, 0, 0.18); }
+  .cat-rule { flex: 1 1 auto; align-self: flex-end; height: 0; margin-bottom: 4px; border-bottom: 2px solid rgba(0, 0, 0, 0.3); }
 
   .accordion-arrow {
     flex: 0 0 auto;

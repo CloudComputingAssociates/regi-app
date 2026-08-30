@@ -169,7 +169,7 @@ const CAT_RANK: Record<string, number> = {
            data). Expanded automatically before printing. -->
       <div class="staples-pane">
         <button type="button" class="staples-collapse no-print" (click)="staplesOpen.set(!staplesOpen())">
-          <span class="staples-title">Staples &amp; other</span>
+          <span class="staples-title">Staples</span>
           <span class="cat-rule"></span>
           <mat-icon class="accordion-arrow" [class.open]="staplesOpen()">expand_more</mat-icon>
         </button>
