@@ -252,16 +252,14 @@
   margin: 0 auto; // symmetric auto margins → centered in the gap; pushes the keys right
   display: inline-flex;
   align-items: center;
-  padding: 3px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #ececec;
-  background: linear-gradient(180deg, #5a5a5a 0%, #474747 100%);
-  border: 1px solid #2a2a2a;
-  border-radius: 12px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 1px 2px rgba(0, 0, 0, 0.4);
+  padding: 1px 10px;
+  font-size: 11px; // smaller + crisper (matches the meal-card cals)
+  font-weight: 400;
+  color: #ffffff;
+  background: #999999; // lighter grey, same as the meal-card cals pill
+  border: none;
+  border-radius: 999px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45); // inset → sunk-in, not raised
   white-space: nowrap;
 }
 
