@@ -57,25 +57,24 @@ export interface MacroDisplayData {
                   </div>
                   <div class="label-row">
                     <span class="bar-label" [style.color]="getLabelColor(macro.name)">{{ macro.name }}</span>
-                    @if ($last) {
-                      <div class="mode-toggle-container">
-                        <button
-                          type="button"
-                          class="unit-toggle"
-                          (click)="toggleDisplayMode()"
-                          matTooltip="Click to switch between percent and grams"
-                          matTooltipPosition="above"
-                          [matTooltipShowDelay]="300">
-                          <span class="unit-label left">%</span>
-                          <span class="unit-thumb" [class.right]="!showPercent"></span>
-                          <span class="unit-label right">g</span>
-                        </button>
-                      </div>
-                    }
                   </div>
                 </div>
               </div>
             }
+            <!-- %/g switch — inline AFTER fiber, vertically centered with the bars. -->
+            <div class="mode-toggle-container">
+              <button
+                type="button"
+                class="unit-toggle"
+                (click)="toggleDisplayMode()"
+                matTooltip="Click to switch between percent and grams"
+                matTooltipPosition="above"
+                [matTooltipShowDelay]="300">
+                <span class="unit-label left">%</span>
+                <span class="unit-thumb" [class.right]="!showPercent"></span>
+                <span class="unit-label right">g</span>
+              </button>
+            </div>
           </div>
 
         </mat-card-content>
