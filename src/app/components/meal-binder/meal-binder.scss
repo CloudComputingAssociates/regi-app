@@ -378,6 +378,13 @@
     }
   }
 
+  // Every filter row must be able to shrink below its content's intrinsic width
+  // (the native selects size to their longest option) so nothing overflows the
+  // narrow rail — the Binder clips horizontal overflow (overflow-x: hidden).
+  .filter-fieldset,
+  .sort-row,
+  .mealset-row { min-width: 0; max-width: 100%; }
+
   // Sort row: label + compact white select + Clear key (pinned right).
   .sort-row {
     display: flex;
@@ -409,6 +416,8 @@
   .sort-select,
   .mealset-select {
     min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box; // borders/padding count inside the capped width
     padding: 4px 8px;
     font-family: inherit;
     font-size: 13px;
@@ -423,8 +432,11 @@
     option { background: #ffffff; color: #1a1a1a; }
     option:checked { background: #dbe8fb; color: #1a1a1a; }
   }
-  .sort-select { flex: 0 0 auto; } // sort stays compact
-  .mealset-select { flex: 1 1 auto; } // listbox fills the row
+  .sort-select { flex: 0 0 auto; max-width: 60%; } // sort stays compact but capped
+  // Listbox fills the row and is HARD-capped to it: flex-basis 0 + min-width 0 so a
+  // long option ("Mexi Meals — GLP-1 Friendly…") scrolls INSIDE the box instead of
+  // stretching it past the rail's right edge.
+  .mealset-select { flex: 1 1 0; width: 100%; }
 
   .mealset-empty {
     flex: 1 1 auto;
