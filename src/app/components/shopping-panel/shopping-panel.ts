@@ -63,23 +63,15 @@ const CAT_RANK: Record<string, number> = {
       <!-- Quantity basis — either each recipe's own servings, OR an explicit
            scale factor. The "-or-" makes the either/or unmistakable. -->
       <div class="shopping-top no-print">
-        <button
-          type="button"
-          class="shopping-print-btn"
-          matTooltip="Print / Save as PDF"
-          matTooltipPosition="below"
-          (click)="print()">
-          <mat-icon>print</mat-icon>Print
-        </button>
+        <!-- Order: boxed toggle group · Print · collapse-all (far right). -->
         <div class="scale-radio">
-          <!-- Scale is the DEFAULT (left); -or- Use Servings. -->
           <label class="scale-opt">
             <input
               type="radio"
               name="scaleMode"
               [checked]="scaleMode() === 'custom'"
               (change)="scaleMode.set('custom')" />
-            <span>Scale:</span>
+            <span>Scale</span>
             <input
               type="number"
               class="scale-input"
@@ -88,7 +80,6 @@ const CAT_RANK: Record<string, number> = {
               (focus)="scaleMode.set('custom')"
               (change)="onScaleInput($event)" />
           </label>
-          <span class="scale-or">-or-</span>
           <label class="scale-opt">
             <input
               type="radio"
@@ -98,6 +89,14 @@ const CAT_RANK: Record<string, number> = {
             <span>Use Servings</span>
           </label>
         </div>
+        <button
+          type="button"
+          class="shopping-print-btn"
+          matTooltip="Print / Save as PDF"
+          matTooltipPosition="below"
+          (click)="print()">
+          <mat-icon>print</mat-icon>Print
+        </button>
         @if (isSaving()) {
           <span class="auto-save-indicator">saving...</span>
         }
@@ -127,10 +126,12 @@ const CAT_RANK: Record<string, number> = {
         } @else {
           <div class="staples-content">
             @for (group of computedGroups(); track group.category; let first = $first) {
-              <!-- Collapsible category (PROTEINS, …). Caret toggles its items. -->
+              <!-- Collapsible category (PROTEINS, …). Caret on the RIGHT, a rule line
+                   between the label and it. -->
               <button type="button" class="list-cat" (click)="toggleCat(group.category)">
-                <mat-icon class="cat-caret" [class.open]="!isCatCollapsed(group.category)">chevron_right</mat-icon>
-                {{ group.label }}
+                <span class="cat-label">{{ group.label }}</span>
+                <span class="cat-rule"></span>
+                <mat-icon class="cat-caret" [class.open]="!isCatCollapsed(group.category)">expand_more</mat-icon>
               </button>
               <!-- Column headings tuck under the FIRST category, between its title
                    and the first item row (not a separate row at the very top). -->
@@ -168,8 +169,9 @@ const CAT_RANK: Record<string, number> = {
            data). Expanded automatically before printing. -->
       <div class="staples-pane">
         <button type="button" class="staples-collapse no-print" (click)="staplesOpen.set(!staplesOpen())">
-          <mat-icon class="accordion-arrow" [class.open]="staplesOpen()">chevron_right</mat-icon>
           <span class="staples-title">One-time &amp; staples</span>
+          <span class="cat-rule"></span>
+          <mat-icon class="accordion-arrow" [class.open]="staplesOpen()">expand_more</mat-icon>
         </button>
 
         @if (staplesOpen()) {

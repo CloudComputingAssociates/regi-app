@@ -313,9 +313,13 @@
 
 // Quantity-basis radio: Recipe Servings | Scale: [n]
 .scale-radio {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 20px;
+  gap: 14px;
+  // Boxed as ONE toggle group — 1px rule so the two options read as together.
+  padding: 3px 10px;
+  border: 1px solid #b7bcc4;
+  border-radius: 8px;
 
   .scale-opt {
     display: inline-flex;
@@ -331,12 +335,13 @@
     }
   }
 
+  // Scale value: WHITE field with a BLACK value.
   .scale-input {
-    width: 48px;
-    background: #2a2a2a;
-    border: 1px solid #555555;
+    width: 44px;
+    background: #ffffff;
+    border: 1px solid #b7bcc4;
     border-radius: 4px;
-    color: #ffffff;
+    color: #1a1a1a;
     font-size: 13px;
     padding: 2px 6px;
     text-align: center;
@@ -391,7 +396,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
+  padding: 1px 12px; // tightened
   color: rgba(255, 255, 255, 0.5);
   font-size: 11px;
   font-weight: 600;
@@ -406,30 +411,37 @@
 .list-cat {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
   width: 100%;
-  padding: 5px 12px;
+  padding: 2px 12px; // tightened
   background: transparent;
   border: none;
-  border-bottom: 1px solid #4a4a4a;
   color: #4da6ff;
-  // Sans, grouped with the controls at the shared 13px "controls" size.
+  // Same font + size as the tabs ("meals"); Initial Caps (CAT_LABEL already caps).
   font-family: Roboto, 'Helvetica Neue', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
   text-align: left;
   cursor: pointer;
 
+  .cat-label { flex: 0 1 auto; white-space: nowrap; }
+
+  // Rule that connects the label to the caret on the right.
+  .cat-rule {
+    flex: 1 1 auto;
+    height: 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+  }
+
   .cat-caret {
     flex: 0 0 auto;
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
-    line-height: 18px;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    line-height: 20px;
     transition: transform 0.15s ease;
-    &.open { transform: rotate(90deg); }
+    &.open { transform: rotate(180deg); } // expand_more → flip up when open
   }
 }
 
@@ -448,25 +460,26 @@
 .staples-collapse {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   width: 100%;
-  padding: 6px 12px;
-  background: #333333;
+  padding: 2px 12px; // tightened
+  background: transparent;
   border: none;
-  border-top: 1px solid #4a4a4a;
   cursor: pointer;
-  font-family: inherit;
+  // Same treatment as the category headers: sans, tab-size, label left, rule, caret.
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+
+  .staples-title { flex: 0 1 auto; font-size: 16px; font-weight: 500; white-space: nowrap; }
+  .cat-rule { flex: 1 1 auto; height: 0; border-bottom: 1px solid rgba(0, 0, 0, 0.18); }
 
   .accordion-arrow {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    color: rgba(255, 255, 255, 0.6);
+    flex: 0 0 auto;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
     transition: transform 0.2s ease;
-    &.open { transform: rotate(90deg); }
+    &.open { transform: rotate(180deg); } // expand_more → flip up when open
   }
-
-  &:hover { background: #3a3a3a; }
 }
 
 .staples-pane {
@@ -619,7 +632,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 12px;
+  padding: 1px 12px; // tightened
   transition: background 0.15s ease;
 
   &:hover {
