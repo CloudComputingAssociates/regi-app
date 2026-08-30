@@ -391,25 +391,14 @@ export class RotationService {
    *  recipe link (resolved via `clonedFromMealId` against the Binder list) so the
    *  "(from recipe import)" hyperlink survives — including across a reload. */
   recipeLinkFor(mealId: number): string {
-    const meal = this.getMeal(mealId);
-    const own = meal?.recipeLink?.trim();
+    // The API now resolves a forked meal's RecipeLink from its (cross-user) origin
+    // on the read path (GET /meal/{id}), so a placed meal's OWN recipeLink is
+    // populated. The clonedFromMealId fallback stays for the client-only case where
+    // the loaded meal predates that resolution (e.g. a same-session fork not yet
+    // re-fetched) and its origin happens to be a loaded Binder meal.
+    const own = this.getMeal(mealId)?.recipeLink?.trim();
     if (own) return own;
-    // Preferred: the fork ORIGINAL via the persisted clonedFromMealId back-pointer.
-    const viaFork = this.forkOriginal(meal)?.recipeLink?.trim();
-    if (viaFork) return viaFork;
-    // Fallback: a placed MealSet/imported meal loses its RecipeLink on the fork
-    // and its clonedFromMealId may not point at a loaded Binder row. Recover the
-    // link from ANY loaded Binder meal with the same name that still carries one
-    // (the Binder list select carries recipeLink). This keeps the Recipe PDF key
-    // present on placed meals whose exact fork-origin id isn't in binderMeals.
-    const name = meal?.name?.trim().toLowerCase();
-    if (name) {
-      const byName = this.binderMeals().find(
-        (m) => m.name?.trim().toLowerCase() === name && !!m.recipeLink?.trim(),
-      );
-      if (byName?.recipeLink) return byName.recipeLink.trim();
-    }
-    return '';
+    return this.forkOriginal(this.getMeal(mealId))?.recipeLink?.trim() || '';
   }
 
   slotItems(mealId: number | null | undefined): MealItem[] {
