@@ -118,6 +118,24 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
                   <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
                 </button>
               </div>
+              <!-- Notebook — reopens the Binder (Notebook). Square domed key,
+                   sits just left of the close X. -->
+              <button
+                type="button"
+                class="notebook-btn"
+                matTooltip="Notebook"
+                matTooltipPosition="above"
+                aria-label="Open Notebook"
+                (click)="rotation.showBinder()">
+                <svg class="notebook-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="4.5" y="5.5" width="15" height="14.5" rx="1.6"
+                        fill="none" stroke="currentColor" stroke-width="1.7" />
+                  <path d="M8 4.2 V7.2 M12 4.2 V7.2 M16 4.2 V7.2"
+                        fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  <path d="M8 11 H16 M8 14 H16 M8 17 H13"
+                        fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+              </button>
               <!-- Exit — far right of the toolbar. Red X disc (matches the Notebook). -->
               <button
                 type="button"

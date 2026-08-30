@@ -240,7 +240,41 @@
 }
 
 // Plain white Material X — pinned far right of the toolbar.
-.menus-close-disc { flex: 0 0 auto; margin-left: auto; }
+.menus-close-disc { flex: 0 0 auto; }
+
+// Notebook key — reopens the Binder. Square domed key (same 30×30 chrome as the
+// Shopping/Clear-all keys); its margin-left:auto pushes it AND the close X to the
+// far right of the toolbar, sitting adjacent (the left cluster keys stay put).
+.notebook-btn {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
+  border-radius: 5px;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
+
+  .notebook-icon {
+    width: 18px;
+    height: 18px;
+    display: block;
+    color: #f0f0f0;
+  }
+
+  &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
+  &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45); }
+}
 
 // Shopping List key — a square icon-only domed key with a square list glyph,
 // sitting just left of the Clear-all key. Same 30×30 chrome as the Clear-all key.
