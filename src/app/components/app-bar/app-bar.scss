@@ -11,9 +11,9 @@
   
   .app-bar-content {
     display: flex;
-    // BOTTOM-align the row so the macros %/g, the tether glyph, and the display
-    // name all share the banner-bottom baseline. The title + hamburger opt back
-    // to centered via their own align-self so they don't drop.
+    // Left group (RegiMenu + macros) bottom-anchors so extra macro top-padding
+    // pushes the bars DOWN toward the RegiMenu line; RegiMenu is lifted to the
+    // bars' bottom (labels hang below). The right zone opts into its own centering.
     align-items: flex-end;
     // Pack left so RegiMenu stays pinned next to the hamburger. The right zone
     // is pushed over with margin-left:auto — NOT space-between, which would
@@ -35,10 +35,10 @@
     margin-left: auto; // pin to the far right; keeps title left when macros is absent
     min-width: 0;
     display: flex;
-    // The band already bottom-aligns with the row (app-bar-content flex-end); keep
-    // the tether + name at that same bottom baseline as the macros %/g.
-    align-items: flex-end;
-    padding-bottom: 16px;  // lift tether · name · avatar to the macro bars' bottom line
+    align-self: center; // center the right zone with the row
+    // CENTER the tether glyph, the "Hi {name}" link, and the avatar together so
+    // they share one midline (their boxes are very different heights).
+    align-items: center;
     // Everything hugs the far right: [tether] · [name] [avatar]. The tether floats
     // just left of the name; its own margin-right sets the ~1/3in gap.
     justify-content: flex-end;
@@ -49,7 +49,7 @@
     min-width: 0;
     margin-left: 24px;   // small gap after the RegiMenu title
     margin-right: 12px;
-    align-self: flex-end;  // drop the bars down toward the RegiMenu baseline
+    align-self: flex-end;  // bottom-anchored: extra top-padding pushes bars down
 
     // Restyle the macros to lay on black: no component chrome, grey per-bar tracks
     // so the fill boundary reads against black, darker %/g button.
@@ -59,10 +59,11 @@
         border: none;
         border-radius: 0;
         box-shadow: none;
-        // Black lives ABOVE the bars (top padding); ZERO below. The labels sit at
-        // the block bottom, so the BARS' bottom lands ~one label-height up — that's
-        // the line the RegiMenu title / tether / name are lifted to (below).
-        padding-top: 18px;
+        // Black lives ABOVE the bars (top padding); ZERO below. The labels + %/g
+        // toggle sit at the block bottom, so the BARS' bottom lands ~one label-height
+        // up — the line RegiMenu is lifted to (below). More top padding = more black
+        // above + a taller banner (the bars stay bottom-anchored).
+        padding-top: 22px;
         padding-bottom: 0;
         overflow: visible;
         &::before { display: none; } // drop the sheen / backlight glow
@@ -102,8 +103,8 @@
   // as the logo (per spec) so it reads as a sibling, not a subtitle.
   .title-area {
     flex: 0 1 auto; // don't GROW — was flex:1, which ate the space and shoved macros right
-    align-self: flex-end;       // bottom-aligned…
-    padding-bottom: 16px;       // …then lifted to the macro BARS' bottom line (labels hang below)
+    align-self: flex-end;       // bottom-anchored…
+    padding-bottom: 20px;       // …then lifted to the macro BARS' bottom line (labels hang below)
     display: flex;
     flex-direction: row;
     align-items: baseline;

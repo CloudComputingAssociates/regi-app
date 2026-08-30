@@ -30,12 +30,9 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  // Bigger to fill the taller banner. The app-bar lifts the right zone to the
-  // macro-bar line; this negative margin drops the avatar back to the banner
-  // bottom so it fills the full height (the name/tether stay on the bar line).
-  width: 58px;
-  height: 58px;
-  margin-bottom: -14px;
+  // Bigger to fill the taller banner (the right zone is center-aligned in the bar).
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);

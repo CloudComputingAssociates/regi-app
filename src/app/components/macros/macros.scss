@@ -198,10 +198,10 @@
   }
 
   .mode-toggle-container {
-    // Inline flex item at the END of the macro row (after fiber), aligned with the
-    // bar row — no longer absolutely dropped below the bars.
+    // Inline flex item at the END of the macro row (after fiber), DROPPED to the
+    // bottom so it bottom-aligns with the fats/fiber labels (the macro's bottom).
     flex: 0 0 auto;
-    align-self: flex-start;
+    align-self: flex-end;
     display: flex;
     align-items: center;
     gap: 6px;

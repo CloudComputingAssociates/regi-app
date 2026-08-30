@@ -70,9 +70,11 @@ export interface MacroDisplayData {
                 matTooltip="Click to switch between percent and grams"
                 matTooltipPosition="above"
                 [matTooltipShowDelay]="300">
-                <span class="unit-label left">%</span>
+                <!-- g/% flipped: the thumb covers the OTHER unit, so the label left
+                     visible is the CURRENT setting (percent → "%", grams → "g"). -->
+                <span class="unit-label left">g</span>
                 <span class="unit-thumb" [class.right]="!showPercent"></span>
-                <span class="unit-label right">g</span>
+                <span class="unit-label right">%</span>
               </button>
             </div>
           </div>
