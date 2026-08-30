@@ -316,6 +316,9 @@
   bottom: 6px;
   right: 6px;
 }
+// Recipe-PDF key on the back — same square grey chrome as the + Add / camera keys,
+// but with the red PDF glyph. Sits just left of the + Add.
+.recipe-pdf-btn .mat-icon { color: #e2574c; } // PDF red
 // AI meal-image camera (square [+]-style key) — disabled while generating.
 .genimg-btn {
   &:disabled { opacity: 0.75; cursor: default; }

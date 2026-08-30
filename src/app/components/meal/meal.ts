@@ -189,6 +189,17 @@ interface Macro {
                         <mat-icon>photo_camera</mat-icon>
                       </button>
                     }
+                    <!-- Recipe PDF — sits just LEFT of the + Add key; shown only
+                         when the meal has a source recipe. Opens the in-app viewer. -->
+                    @if (recipeLinkFor(fm.mealId); as link) {
+                      <button
+                        type="button"
+                        class="add-food-btn recipe-pdf-btn"
+                        matTooltip="Open the recipe PDF"
+                        (click)="openRecipe(link)">
+                        <mat-icon>picture_as_pdf</mat-icon>
+                      </button>
+                    }
                     <button
                       type="button"
                       class="add-food-btn"
@@ -198,18 +209,6 @@ interface Macro {
                     </button>
                   </span>
                 </div>
-
-                <!-- Recipe link (when the meal has a source PDF), right-justified.
-                     "My Foods" label removed — not needed. -->
-                @if (recipeLinkFor(fm.mealId); as link) {
-                  <div class="foods-head">
-                    <button
-                      type="button"
-                      class="recipe-link"
-                      matTooltip="Open the source recipe PDF"
-                      (click)="openRecipe(link)">Recipe (PDF)</button>
-                  </div>
-                }
 
                 <div class="food-rows">
                   @for (item of mainItemsFor(fm.mealId); track item.id) {
