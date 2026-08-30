@@ -57,29 +57,33 @@ import { Meal, Menu, MealSetSummary } from '../../models';
       <!-- One scrollbar for the whole rail. -->
       <div class="rail-scroll">
 
-        <!-- Menus accordion (top-level; larger header). Starts COLLAPSED. The
-             collapse-all key sits on this row, in line with the menus tab. -->
-        <div class="rail-section">
-          <div class="section-head-row">
-            <button type="button" class="section-head" (click)="binderMenusOpen.set(!binderMenusOpen())">
-              <span class="section-tab menus">
-                <span class="section-label">menus</span>
-                <span class="section-count">({{ rotation.binderMenus().length }})</span>
-              </span>
-              @if (rotation.binderMenus().length) {
-                <mat-icon class="section-chevron">{{ binderMenusOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-              }
-            </button>
-            <button
-              type="button"
-              class="collapse-all-btn"
-              matTooltip="Collapse all"
-              matTooltipPosition="below"
-              (click)="collapseAll()">
-              <mat-icon>unfold_less</mat-icon>
-            </button>
-          </div>
-          @if (binderMenusOpen()) {
+        <!-- Menus | Meals as real side-by-side tabs. The active tab's list and
+             controls fill the single sheet below (not stacked accordions). -->
+        <div class="binder-tabs" role="tablist">
+          <button
+            type="button"
+            class="binder-tab menus"
+            role="tab"
+            [class.active]="activeTab() === 'menus'"
+            [attr.aria-selected]="activeTab() === 'menus'"
+            (click)="activeTab.set('menus')">
+            <span class="section-label">menus</span>
+            <span class="section-count">({{ rotation.binderMenus().length }})</span>
+          </button>
+          <button
+            type="button"
+            class="binder-tab meals"
+            role="tab"
+            [class.active]="activeTab() === 'meals'"
+            [attr.aria-selected]="activeTab() === 'meals'"
+            (click)="activeTab.set('meals')">
+            <span class="section-label">meals</span>
+            <span class="section-count">({{ rotation.binderMeals().length }})</span>
+          </button>
+        </div>
+
+        @if (activeTab() === 'menus') {
+          <div class="rail-section">
             @if (rotation.binderMenus().length > 1) {
               <!-- Icon-only sort squares: alphabetical (A–Z toggle) + date (newest
                    first toggle). Default is A–Z so menus read Menu 1, Menu 2, … -->
@@ -162,42 +166,46 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                 <p class="binder-empty">No saved Menus.</p>
               }
             </div>
-          }
-        </div>
-
-        <!-- Meals — always expanded. A plain "Create ⌄" toggle sits right-
-             justified on the header; opening it reveals the create controls in
-             the space above the list. This is the ONLY create surface. -->
-        <div class="rail-section">
-          <div class="section-head section-head-static section-head-meals">
-            <span class="section-tab meals">
-              <span class="section-label">meals</span>
-              <span class="section-count">({{ rotation.binderMeals().length }})</span>
-            </span>
-            <!-- [+] square Add key — blooms the AI Create Meal overlay. -->
-            <button
-              type="button"
-              class="create-icon-btn"
-              matTooltip="Add meals to your notebook"
-              matTooltipPosition="above"
-              (click)="createMeal.emit()">
-              <mat-icon>add</mat-icon>
-            </button>
-            <!-- Search fills between Add and Filter. -->
-            <input
-              type="text"
-              class="header-search"
-              placeholder="Search meals..."
-              matTooltip="Search a meal by name, or type any ingredient"
-              matTooltipPosition="above"
-              [value]="searchText()"
-              (input)="searchText.set($any($event.target).value)" />
-            <!-- Filter stays right-justified. -->
-            <button type="button" class="create-toggle filter-toggle" [class.filter-on]="filterActive()" (click)="toggleFilterPanel()">
-              <span class="create-word">Filter{{ filterActive() ? ' on' : '' }}</span>
-              <mat-icon class="create-chevron">{{ filterOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-            </button>
           </div>
+        } @else {
+          <!-- Meals tab. Controls sit on two rows below the tab bar:
+               Row 1 — Search meals + collapse-all.
+               Row 2 — Filter toggle + "＋ Add meals". -->
+          <div class="rail-section">
+            <div class="meals-controls">
+              <div class="meals-ctrl-row">
+                <input
+                  type="text"
+                  class="header-search"
+                  placeholder="Search meals..."
+                  matTooltip="Search a meal by name, or type any ingredient"
+                  matTooltipPosition="above"
+                  [value]="searchText()"
+                  (input)="searchText.set($any($event.target).value)" />
+                <button
+                  type="button"
+                  class="collapse-all-btn"
+                  matTooltip="Collapse all"
+                  matTooltipPosition="below"
+                  (click)="collapseAll()">
+                  <mat-icon>unfold_less</mat-icon>
+                </button>
+              </div>
+              <div class="meals-ctrl-row">
+                <button type="button" class="create-toggle filter-toggle" [class.filter-on]="filterActive()" (click)="toggleFilterPanel()">
+                  <span class="create-word">Filter{{ filterActive() ? ' on' : '' }}</span>
+                  <mat-icon class="create-chevron">{{ filterOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="create-toggle add-meals-btn"
+                  matTooltip="Add meals to your notebook"
+                  matTooltipPosition="above"
+                  (click)="createMeal.emit()">
+                  <mat-icon>add</mat-icon><span class="create-word">Add meals</span>
+                </button>
+              </div>
+            </div>
           @if (filterOpen()) {
             <!-- Bordered "Filter" fieldset. My Meals are ALWAYS shown; the
                  multi-select mixes in meals from any of the user's entitled Meal
@@ -426,7 +434,8 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                 <p class="binder-empty">{{ rotation.binderMeals().length ? 'No filtered results.' : 'No saved Meals.' }}</p>
               }
             </div>
-        </div>
+          </div>
+        }
 
       </div>
     </div>
@@ -755,6 +764,11 @@ export class MealBinderComponent implements OnInit {
   /** Top-level accordion open state — both default open. */
   readonly binderMenusOpen = signal(false);
 
+  /** Active Notebook tab. Menus and Meals render as real side-by-side tabs; this
+   *  drives which one's list + controls fill the sheet. Meals is the default (it's
+   *  the primary working surface and usually has content). */
+  readonly activeTab = signal<'menus' | 'meals'>('meals');
+
   // ----- Binder MENUS sort (icon-only squares) -------------------------------
   /** Active menu sort. Default 'az' so the list reads Menu 1, Menu 2, … */
   readonly menuSort = signal<'az' | 'za' | 'newest' | 'oldest'>('az');
@@ -870,6 +884,7 @@ export class MealBinderComponent implements OnInit {
         const id = this.rotation.revealBinderMenuId();
         if (id == null) return;
         this.binderMenusOpen.set(true);
+        this.activeTab.set('menus'); // surface the newly pinned menu on its tab
         // Wait a tick for the accordion to render, then bring the card into view.
         setTimeout(() => {
           const el = this.host.nativeElement.querySelector(`[data-menu-id="${id}"]`);
