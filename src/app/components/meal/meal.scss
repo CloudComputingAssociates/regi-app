@@ -38,22 +38,23 @@
 
 // Grey square "remove this meal" key — the destructive control lives ONLY on the
 // back (detail) face, top-right of its title row. Replaces the old red disc.
-.back-clear-btn {
+// Clear-meal affordance: a bare white X (no button box), clears the meal from
+// the slot. Just the glyph — transparent, no border/background.
+.back-clear-x {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   padding: 0;
-  color: #e0e0e0;
-  background: #555555;
-  border: 1px solid #6a6a6a;
-  border-radius: 2px;
+  color: #ffffff;
+  background: transparent;
+  border: none;
   cursor: pointer;
 
-  .mat-icon { width: 17px; height: 17px; font-size: 17px; line-height: 17px; }
-  &:hover { background: #616161; color: #ffffff; }
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+  &:hover { color: #ffffff; opacity: 0.8; }
   &:active { transform: translateY(1px); }
 }
 
