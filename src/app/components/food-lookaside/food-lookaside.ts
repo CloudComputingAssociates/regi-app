@@ -39,6 +39,16 @@ const CATEGORY_ORDER: ReadonlyArray<{ cat: string; label: string }> = [
   { cat: 'Processed', label: 'Processed' },
   { cat: 'Condiment', label: 'Seasonings' },
 ];
+const KNOWN_CATS = new Set(CATEGORY_ORDER.map((c) => c.cat));
+// Categories not in CATEGORY_ORDER fold into Processed so NO food is ever dropped
+// from the grouping (Beverages especially — newly added almond milks etc. land
+// with categoryName "Beverage", which was previously silently hidden here).
+const CAT_ALIAS: Record<string, string> = { Beverage: 'Processed', Beverages: 'Processed' };
+function normalizeCat(name: string | null | undefined): string {
+  const raw = (name ?? '').trim();
+  if (KNOWN_CATS.has(raw)) return raw;
+  return CAT_ALIAS[raw] ?? 'Processed';
+}
 
 @Component({
   selector: 'app-food-lookaside',
@@ -352,7 +362,7 @@ export class FoodLookasideComponent {
     const byCat = new Map<string, Food[]>();
     for (const f of foods) {
       if (q && !this.name(f).toLowerCase().includes(q)) continue;
-      const cat = f.categoryName ?? '';
+      const cat = normalizeCat(f.categoryName); // fold Beverage / unknowns → Processed
       const arr = byCat.get(cat);
       if (arr) arr.push(f);
       else byCat.set(cat, [f]);

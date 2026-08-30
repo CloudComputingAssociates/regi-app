@@ -77,6 +77,15 @@ const CATEGORY_PLURALS: Record<string, string> = {
   Condiment: 'Seasonings',
 };
 
+// Category aliasing — fold non-standard categories into an existing bucket so no
+// food is lost from the grouping / filters. Beverages → Processed for now (newly
+// added drinks like almond milk carry categoryName "Beverage").
+const CATEGORY_ALIAS: Record<string, string> = { Beverage: 'Processed', Beverages: 'Processed' };
+function normalizeCategory(name: string | null | undefined): string {
+  const raw = (name ?? '').trim();
+  return CATEGORY_ALIAS[raw] ?? raw;
+}
+
 // Filter-bar groups. Each group is a single button that toggles one or more
 // raw categories together. We combine Fat+Dairy and Vegetable+Fruit so the
 // filter UI nudges users to think of them as paired choices — dairy belongs
@@ -1290,7 +1299,7 @@ export class FoodsPanelComponent {
     const all = this.allMyFoods();
     const cats = this.selectedCategories();
     if (cats.size === 0 || cats.size === CAROUSEL_CATEGORIES.length) return all;
-    return all.filter(f => cats.has(f.categoryName ?? ''));
+    return all.filter(f => cats.has(normalizeCategory(f.categoryName)));
   });
 
   // Group ALL MyFoods (not filteredMyFoods) by category for the accordion
@@ -1311,7 +1320,7 @@ export class FoodsPanelComponent {
     for (const food of all) {
       // Pre-filter by the picker's type-ahead so the accordion narrows live.
       if (!this.matchesPickerSearch(food)) continue;
-      const cat = food.categoryName || 'Uncategorized';
+      const cat = normalizeCategory(food.categoryName) || 'Uncategorized';
       const arr = map.get(cat);
       if (arr) arr.push(food);
       else map.set(cat, [food]);
@@ -1353,7 +1362,7 @@ export class FoodsPanelComponent {
     const searching = this.pickerSearchQuery().trim() !== '';
     const map = new Map<string, Food[]>();
     for (const food of all) {
-      const cat = food.categoryName || 'Uncategorized';
+      const cat = normalizeCategory(food.categoryName) || 'Uncategorized';
       const arr = map.get(cat);
       if (arr) arr.push(food);
       else map.set(cat, [food]);
@@ -2172,7 +2181,7 @@ export class FoodsPanelComponent {
   }
 
   private basketForFood(food: Food): BasketKey {
-    return CATEGORY_TO_BASKET[food.categoryName ?? ''] ?? 'Other';
+    return CATEGORY_TO_BASKET[normalizeCategory(food.categoryName)] ?? 'Other';
   }
 
   private addFoodToBasket(food: Food, key: BasketKey): void {
