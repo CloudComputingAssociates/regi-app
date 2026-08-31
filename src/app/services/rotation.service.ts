@@ -1548,15 +1548,38 @@ export class RotationService {
   /** Set a meal's free-text TYPE label ("Breakfast", "Lunch/Dinner", …). PUT
    *  /meal/{id} { mealType }. Updates both caches so the Notebook row + the board
    *  card relabel live. */
+  /** The user's OWN Binder meal that a slot fork derives from (via clonedFromMealId),
+   *  or null when the meal isn't a fork or its origin isn't in the user's notebook.
+   *  A fork is spun off for FOOD fine-tuning, but label/type/notes are meal IDENTITY
+   *  and belong on the Binder meal — otherwise they're silently thrown away when the
+   *  slot is cleared (the confusion we're fixing). We only touch the origin when it's
+   *  the caller's own binder meal (a cross-user set origin is read-only → skip). */
+  private ownedBinderOrigin(mealId: number): number | null {
+    const originId = this.getMeal(mealId)?.clonedFromMealId ?? null;
+    if (originId == null) return null;
+    return this.binderMeals().some((m) => m.id === originId) ? originId : null;
+  }
+
+  /** PUT a metadata patch (type/notes — NOT food, NOT name) to the slot meal AND,
+   *  when it's a fork, its owned Binder origin, updating both caches. This is what
+   *  makes "meal type / notes changes auto-save to the Binder" hold even after a
+   *  food fine-tune has forked the slot copy. Name is deliberately excluded: it is
+   *  the pin-vs-overwrite discriminator in saveSlottedCopy, so it keeps its own path. */
+  private async putMealMetadata(mealId: number, patch: UpdateMealRequest): Promise<void> {
+    const ids = [mealId];
+    const origin = this.ownedBinderOrigin(mealId);
+    if (origin != null && origin !== mealId) ids.push(origin);
+    for (const id of ids) {
+      const updated = await firstValueFrom(this.http.put<Meal>(`${this.baseUrl}/meal/${id}`, patch));
+      this.mealsById.update((m) => new Map(m).set(id, updated));
+      this.binderMeals.update((list) => list.map((m) => (m.id === id ? updated : m)));
+    }
+  }
+
   async updateMealType(mealId: number, mealType: string): Promise<void> {
     const t = mealType.trim();
     try {
-      const body: UpdateMealRequest = { mealType: t };
-      const updated = await firstValueFrom(
-        this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, body),
-      );
-      this.mealsById.update((m) => new Map(m).set(mealId, updated));
-      this.binderMeals.update((list) => list.map((m) => (m.id === mealId ? updated : m)));
+      await this.putMealMetadata(mealId, { mealType: t });
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }
@@ -1571,12 +1594,7 @@ export class RotationService {
     // No-op if unchanged, so a blur without edits doesn't PUT.
     if ((this.getMeal(mealId)?.notes ?? '').trim() === n) return;
     try {
-      const body: UpdateMealRequest = { notes: n };
-      const updated = await firstValueFrom(
-        this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, body),
-      );
-      this.mealsById.update((m) => new Map(m).set(mealId, updated));
-      this.binderMeals.update((list) => list.map((m) => (m.id === mealId ? updated : m)));
+      await this.putMealMetadata(mealId, { notes: n });
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }

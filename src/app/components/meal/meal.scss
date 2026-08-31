@@ -479,23 +479,16 @@
       color: #4da6ff;       // blue, matching "Meal"
     }
     .back-type-input {
-      // Half-panel — the Type dropdown claims the left ~50%, leaving room for the
-      // action keys pushed up on the right (under the wastebasket).
-      flex: 0 1 50%;
+      // Sits just left of the Notes/Add keys; NOT full width. Same vertical metrics
+      // as the Meal name box (.meal-name-box) so the two boxes are the same height.
+      flex: 0 1 auto;
       min-width: 0;
-      max-width: 50%;
-      height: 24px;
+      max-width: 46%;
       box-sizing: border-box;
-      // Extra right padding clears the permanent dropdown chevron.
-      padding: 2px 22px 2px 8px;
-      font-size: 13px;
+      padding: 4px 8px;   // matches .meal-name-box → equal height
+      font-size: 14px;    // matches the "Meal" name box
       color: #f0f0f0;
       background-color: #3a3a3a;
-      // Permanent dropdown caret (still a text field — you can type a new Type).
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238a8f94'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 6px center;
-      background-size: 12px 12px;
       border: 1px solid #1c1c1c;
       border-top-color: #4a4a4a;
       border-radius: 6px;
@@ -503,13 +496,19 @@
       outline: none;
       &::placeholder { color: #8a8f94; font-style: italic; }
       &:focus { border-color: #4da6ff; }
-      // Hide the browser's native datalist arrow so only OUR chevron shows
-      // (was doubling up into two arrows).
-      &::-webkit-calendar-picker-indicator { display: none; }
+      // The browser's native datalist arrow is the ONE and only dropdown arrow
+      // (no custom chevron → no double arrow). Lighten it so it reads on the dark
+      // field; it stays permanent and the field still accepts a typed new Type.
+      &::-webkit-calendar-picker-indicator {
+        filter: invert(0.6);
+        opacity: 0.85;
+        cursor: pointer;
+      }
     }
 
-    // Camera + "+ Add" keys, right-pinned so they sit under the wastebasket.
-    .macro-actions {
+    // Print + Camera keys, pushed to the far right (under the wastebasket) — a
+    // separate cluster from the Notes/Add keys next to the dropdown.
+    .type-right-keys {
       margin-left: auto;
       display: inline-flex;
       align-items: center;
@@ -581,7 +580,7 @@
     gap: 4px;
 
     .notes-label {
-      font-size: 12px;
+      font-size: 14px; // same size as the "Meal" / "Type" labels
       font-weight: 600;
       color: #4da6ff; // blue label, matching "Meal" / "Type"
     }

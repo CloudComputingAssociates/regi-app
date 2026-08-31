@@ -156,8 +156,8 @@ interface Macro {
                     <button
                       type="button"
                       class="icon-disc save-disc"
-                      [class.icon-disc-confirm]="rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm)"
-                      [disabled]="!(rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm))"
+                      [class.icon-disc-confirm]="rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm) || notesDirty(fm)"
+                      [disabled]="!(rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm) || notesDirty(fm))"
                       matTooltip="Save changes to your notebook"
                       (click)="pinMeal.emit(fm.mealId)">
                       <mat-icon>check</mat-icon>
@@ -183,20 +183,26 @@ interface Macro {
                     [value]="fm.mealType ?? ''"
                     (change)="onMealTypeChange(fm.mealId, $any($event.target).value)"
                     placeholder="Breakfast, Lunch/Dinner…" />
-                  <!-- Keys pushed UP here, right-pinned so they sit directly under
-                       the wastebasket; the Type dropdown keeps the left half.
-                       Order: Notes · Print · Camera · + Add. -->
-                  <span class="macro-actions">
-                    <!-- Notes — toggles a drawer at the bottom of the card. Distinct
-                         glyph (sticky note), not the notebook/shopping icons. -->
-                    <button
-                      type="button"
-                      class="add-food-btn notes-btn"
-                      [class.on]="notesIsOpen(fm.mealId)"
-                      matTooltip="Meal notes"
-                      (click)="toggleNotes(fm.mealId)">
-                      <mat-icon>sticky_note_2</mat-icon>
-                    </button>
+                  <!-- Notes + Add sit immediately RIGHT of the dropdown. Notes glyph
+                       (sticky note) is deliberately unlike the notebook/shopping icons. -->
+                  <button
+                    type="button"
+                    class="add-food-btn notes-btn"
+                    [class.on]="notesIsOpen(fm.mealId)"
+                    matTooltip="Meal notes"
+                    (click)="toggleNotes(fm.mealId)">
+                    <mat-icon>sticky_note_2</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    class="add-food-btn"
+                    matTooltip="Add food to meal"
+                    (click)="toggleAdd.emit(fm.mealId)">
+                    <mat-icon>add</mat-icon>
+                  </button>
+                  <!-- Print + Camera are pushed to the FAR RIGHT (under the wastebasket),
+                       a separate cluster from Notes/Add. -->
+                  <span class="type-right-keys">
                     <!-- Print — renders this meal (ingredients + notes) as a
                          recipe-format PDF titled "{name} Meal". -->
                     <button
@@ -215,13 +221,6 @@ interface Macro {
                         <mat-icon>photo_camera</mat-icon>
                       </button>
                     }
-                    <button
-                      type="button"
-                      class="add-food-btn"
-                      matTooltip="Add food to meal"
-                      (click)="toggleAdd.emit(fm.mealId)">
-                      <mat-icon>add</mat-icon>
-                    </button>
                   </span>
                 </div>
                 <datalist id="card-mealtype-options">
@@ -295,6 +294,7 @@ interface Macro {
                       rows="3"
                       placeholder="e.g. hard-boiled eggs (not sunny-side up)…"
                       [value]="notesFor(fm.mealId)"
+                      (input)="onNotesInput(fm.mealId, notesBox.value)"
                       (blur)="commitNotes(fm.mealId, notesBox.value)"></textarea>
                   </div>
                 }
@@ -395,7 +395,19 @@ export class MealComponent {
   notesFor(mealId: number): string {
     return this.rotation.getMeal(mealId)?.notes ?? '';
   }
+  /** Live notes-edit tracking so the green save-check lights while the typed notes
+   *  differ from the saved ones — mirrors the name-edit dirty flow. */
+  readonly notesDraft = signal<{ id: number; val: string } | null>(null);
+  onNotesInput(mealId: number, val: string): void {
+    this.notesDraft.set({ id: mealId, val });
+  }
+  notesDirty(fm: MenuSlotMeal): boolean {
+    const d = this.notesDraft();
+    if (!d || d.id !== fm.mealId) return false;
+    return d.val.trim() !== this.notesFor(fm.mealId).trim();
+  }
   commitNotes(mealId: number, value: string): void {
+    this.notesDraft.set(null);
     void this.rotation.updateMealNotes(mealId, value);
   }
 

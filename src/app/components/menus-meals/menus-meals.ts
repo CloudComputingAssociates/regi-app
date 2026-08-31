@@ -181,6 +181,11 @@ export class MenusMealsComponent {
    *  auto-saves to the Binder on blur without a prompt. */
   onPinMeal(mealId: number | null | undefined): void {
     if (mealId == null) return;
+    // The dialog is ONLY for food quantity/unit overrides (slot-local until the
+    // user confirms pushing them to the Binder). Metadata — type / name / notes —
+    // already auto-saves to the Binder, so a metadata-only save must NOT pop this
+    // "save food changes?" prompt (that was the confusing part).
+    if (!this.rotation.hasUnsavedFoodChanges(mealId)) return;
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',
       data: {
