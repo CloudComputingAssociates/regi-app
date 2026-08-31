@@ -183,21 +183,9 @@ interface Macro {
                     [value]="fm.mealType ?? ''"
                     (change)="onMealTypeChange(fm.mealId, $any($event.target).value)"
                     placeholder="Breakfast, Lunch/Dinner…" />
-                </div>
-                <datalist id="card-mealtype-options">
-                  @for (t of rotation.mealTypeOptions(); track t) { <option [value]="t"></option> }
-                </datalist>
-
-                <!-- Order: Protein, Carbs, Fats, Fiber, then Cals last. -->
-                <div class="macro-row">
-                  <span class="chip protein">P {{ round(mac(fm.macros).proteinG) }}</span>
-                  <span class="chip carb">C {{ round(mac(fm.macros).carbG) }}</span>
-                  <span class="chip fat">F {{ round(mac(fm.macros).fatG) }}</span>
-                  <span class="chip fiber">F {{ round(mac(fm.macros).fiberG) }}</span>
-                  <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
+                  <!-- Camera + "+ Add" keys pushed UP here, right-pinned so they sit
+                       directly under the wastebasket; the Type dropdown keeps the left half. -->
                   <span class="macro-actions">
-                    <!-- MealSetOwner only: generate (or regenerate) the AI meal image
-                         — square grey key just left of the + Add. -->
                     @if (isMealSetOwner()) {
                       <button
                         type="button"
@@ -215,6 +203,18 @@ interface Macro {
                       <mat-icon>add</mat-icon>
                     </button>
                   </span>
+                </div>
+                <datalist id="card-mealtype-options">
+                  @for (t of rotation.mealTypeOptions(); track t) { <option [value]="t"></option> }
+                </datalist>
+
+                <!-- Order: Protein, Carbs, Fats, Fiber, then Cals last. -->
+                <div class="macro-row">
+                  <span class="chip protein">P {{ round(mac(fm.macros).proteinG) }}</span>
+                  <span class="chip carb">C {{ round(mac(fm.macros).carbG) }}</span>
+                  <span class="chip fat">F {{ round(mac(fm.macros).fatG) }}</span>
+                  <span class="chip fiber">F {{ round(mac(fm.macros).fiberG) }}</span>
+                  <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
                 </div>
 
                 <!-- PDF link below the action discs — a compact blue hyperlink, so

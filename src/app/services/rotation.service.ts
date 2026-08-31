@@ -767,7 +767,22 @@ export class RotationService {
         // (a separate binderMeals signal), so the new thumbnail appears in the
         // spiral notebook without a manual reload.
         const fresh = this.getMeal(mealId);
-        if (fresh) this.replaceBinderMeal(fresh);
+        if (fresh) {
+          this.replaceBinderMeal(fresh);
+          // The imaged tile is usually a placed FORK whose id ≠ the Binder
+          // original's id, so replaceBinderMeal (matches by id) misses the
+          // Notebook row. Stamp the origin's thumbnail too so it refreshes.
+          const originId = fresh.clonedFromMealId;
+          if (originId != null) {
+            const image = fresh.mealImage;
+            const thumb = fresh.mealImageThumbnail;
+            this.binderMeals.update((list) =>
+              list.map((m) =>
+                m.id === originId ? { ...m, mealImage: image, mealImageThumbnail: thumb } : m,
+              ),
+            );
+          }
+        }
         void this.refreshSelectedMenu();
         this.clearGeneratingImage(mealId);
         return;

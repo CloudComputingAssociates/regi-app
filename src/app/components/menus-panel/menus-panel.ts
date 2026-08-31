@@ -99,27 +99,8 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
               <span class="toolbar-title">
                 <mat-icon class="toolbar-title-icon">restaurant</mat-icon>Menus &amp; Meals
               </span>
-              <!-- Three keys next to the title: Notebook · Clear all · Shopping. -->
+              <!-- Two keys next to the title: Clear all · Shopping. -->
               <div class="toolbar-buttons">
-                <!-- Notebook — toggles the Binder open/closed. -->
-                <button
-                  type="button"
-                  class="notebook-btn"
-                  [class.active]="!rotation.binderCollapsed()"
-                  [matTooltip]="rotation.binderCollapsed() ? 'Open Notebook' : 'Close Notebook'"
-                  matTooltipPosition="above"
-                  [attr.aria-label]="rotation.binderCollapsed() ? 'Open Notebook' : 'Close Notebook'"
-                  [attr.aria-pressed]="!rotation.binderCollapsed()"
-                  (click)="rotation.toggleBinderCollapsed()">
-                  <svg class="notebook-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="4.5" y="5.5" width="15" height="14.5" rx="1.6"
-                          fill="none" stroke="currentColor" stroke-width="1.7" />
-                    <path d="M8 4.2 V7.2 M12 4.2 V7.2 M16 4.2 V7.2"
-                          fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-                    <path d="M8 11 H16 M8 14 H16 M8 17 H13"
-                          fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                </button>
                 <button
                   type="button"
                   class="wipe-menus-btn"
@@ -139,6 +120,25 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
               </div>
               <!-- Selected menu's calorie total — centered between the keys and the X. -->
               <span class="toolbar-cals">{{ round(rotation.selectedMenuTotals().calories) }} cals</span>
+              <!-- Notebook — toggles the Binder; sits just left of the close X. -->
+              <button
+                type="button"
+                class="notebook-btn"
+                [class.active]="!rotation.binderCollapsed()"
+                [matTooltip]="rotation.binderCollapsed() ? 'Open Notebook' : 'Close Notebook'"
+                matTooltipPosition="above"
+                [attr.aria-label]="rotation.binderCollapsed() ? 'Open Notebook' : 'Close Notebook'"
+                [attr.aria-pressed]="!rotation.binderCollapsed()"
+                (click)="rotation.toggleBinderCollapsed()">
+                <svg class="notebook-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="4.5" y="5.5" width="15" height="14.5" rx="1.6"
+                        fill="none" stroke="currentColor" stroke-width="1.7" />
+                  <path d="M8 4.2 V7.2 M12 4.2 V7.2 M16 4.2 V7.2"
+                        fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  <path d="M8 11 H16 M8 14 H16 M8 17 H13"
+                        fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+              </button>
               <!-- Exit — far right of the toolbar. Red X disc (matches the Notebook). -->
               <button
                 type="button"

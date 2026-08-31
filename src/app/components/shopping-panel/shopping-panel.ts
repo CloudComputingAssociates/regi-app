@@ -86,7 +86,7 @@ const CAT_RANK: Record<string, number> = {
               name="scaleMode"
               [checked]="scaleMode() === 'recipe'"
               (change)="scaleMode.set('recipe')" />
-            <span>Use Servings</span>
+            <span>Servings</span>
           </label>
         </div>
         <button
