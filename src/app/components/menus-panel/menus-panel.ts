@@ -112,7 +112,7 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
                 <button
                   type="button"
                   class="shop-list-btn"
-                  matTooltip="Shopping List (opens the Notebook)"
+                  matTooltip="Shopping list. Opens 'to buy' in your Notebook"
                   matTooltipPosition="above"
                   (click)="rotation.openBinderTab('shopping')">
                   <mat-icon class="shop-list-icon" aria-hidden="true">list_alt</mat-icon>
@@ -696,9 +696,32 @@ export class MenusPanelComponent implements OnInit {
   }
 
   onDeleteMenu(menuId: number): void {
+    const pinned = this.rotation.menus().find((m) => m.menuId === menuId)?.pinned === true;
+    if (pinned) {
+      // A saved (notebook) menu — give the explicit choice: clear it off the plan
+      // but keep it in the notebook (safe default), or delete it from the notebook
+      // entirely (its meals are kept). deleteMenu already keeps a pinned menu in the
+      // Binder; deleteBinderMenu(…, false) removes the menu but not its meals.
+      this.dialog.open(WipeConfirmDialogComponent, {
+        panelClass: 'wipe-dialog-panel',
+        data: {
+          title: 'Clear this menu?',
+          message:
+            'This menu is saved in your notebook. Clear it from your plan (it stays in your notebook), or delete it from your notebook entirely?',
+          confirmLabel: 'Clear from plan',
+          onConfirm: () => void this.rotation.deleteMenu(menuId),
+          secondaryLabel: 'Delete from notebook',
+          onSecondary: () => void this.rotation.deleteBinderMenu(menuId, false),
+        },
+      });
+      return;
+    }
+    // A disposable menu — one confirm; clearing it also hard-deletes it (it isn't
+    // saved anywhere), so surface the teach-line when it holds unsaved work.
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',
       data: {
+        title: 'Clear this menu?',
         message: 'Clear this menu from your plan?',
         teachLine: this.rotation.menuHasUnsavedWork(menuId) ? TEACH_SAVE_LINE : undefined,
         confirmLabel: 'Clear',

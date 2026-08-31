@@ -74,10 +74,10 @@ import { RotationService } from '../../services/rotation.service';
               <button
                 type="button"
                 class="menu-clear"
-                matTooltip="Clear this Menu"
+                matTooltip="Clear this menu"
                 matTooltipPosition="above"
                 (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
-                <mat-icon>clear_all</mat-icon>
+                <mat-icon>delete</mat-icon>
               </button>
             </div>
           </div>
