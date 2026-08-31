@@ -301,9 +301,26 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                     }
                   </div>
                 }
+                <!-- Meal Type filter — your own types (distinct + seeds). -->
+                <div class="mealset-row">
+                  <label class="filter-label">Type</label>
+                  <select
+                    class="sort-select"
+                    [value]="mealTypeFilter()"
+                    (change)="onMealTypeFilterChange($any($event.target).value)">
+                    <option value="all">All types</option>
+                    @for (t of rotation.mealTypeOptions(); track t) {
+                      <option [value]="t">{{ t }}</option>
+                    }
+                  </select>
+                </div>
               </fieldset>
             </div>
           }
+          <!-- Shared pick-or-type options for the meal-type inputs. -->
+          <datalist id="notebook-mealtype-options">
+            @for (t of rotation.mealTypeOptions(); track t) { <option [value]="t"></option> }
+          </datalist>
           <div class="section-body" cdkDropList>
               @for (meal of displayMeals(); track meal.id; let i = $index) {
                 <div
@@ -390,6 +407,21 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       </button>
                     }
                   </div>
+                  <!-- Meal TYPE label — pick-or-type, right under the title. Shown
+                       when the row is open (edit affordances appear on expand). -->
+                  @if (isMealOpen(meal) && !meal.mealSetId) {
+                    <div class="meal-type-row" (click)="$event.stopPropagation()">
+                      <span class="meal-type-label">Type</span>
+                      <input
+                        type="text"
+                        class="meal-type-input"
+                        list="notebook-mealtype-options"
+                        [value]="meal.mealType"
+                        (mousedown)="$event.stopPropagation()"
+                        (change)="onMealTypeChange(meal, $any($event.target).value)"
+                        placeholder="Breakfast, Lunch/Dinner…" />
+                    </div>
+                  }
                   <!-- Reveal: all macros in order P, C, F, fiber, cals, then the
                        delete flush right — only visible when dropped down. -->
                   @if (isMealOpen(meal)) {
@@ -618,6 +650,19 @@ export class MealBinderComponent implements OnInit {
     }
   }
 
+  /** Commit a meal's TYPE label (pick-or-type). No-op if unchanged/empty. */
+  onMealTypeChange(meal: Meal, value: string): void {
+    const t = (value ?? '').trim();
+    if (meal.id == null || t === (meal.mealType ?? '').trim()) return;
+    void this.rotation.updateMealType(meal.id, t);
+  }
+
+  /** Meal-type filter (from the Filter panel); 'all' = no filter. */
+  readonly mealTypeFilter = signal<string>('all');
+  onMealTypeFilterChange(value: string): void {
+    this.mealTypeFilter.set(value || 'all');
+  }
+
   /** The selected source-set (id, name, and count of loaded binder meals from it),
    *  or null when "All" is selected — gates + feeds the "Remove all" action. */
   readonly selectedSourceSet = computed<{ id: number; name: string; count: number } | null>(() => {
@@ -654,7 +699,8 @@ export class MealBinderComponent implements OnInit {
   readonly filterActive = computed<boolean>(() =>
     this.searchText().trim() !== '' ||
     this.selectedSetIds().length > 0 ||
-    this.sourceSetFilter() !== 'all',
+    this.sourceSetFilter() !== 'all' ||
+    this.mealTypeFilter() !== 'all',
   );
 
   /** The Meals list as displayed (My Meals + any mixed-in set meals, straight
@@ -700,6 +746,11 @@ export class MealBinderComponent implements OnInit {
     const setSel = this.sourceSetFilter();
     if (setSel !== 'all') {
       list = list.filter((m) => m.sourceMealSetId === setSel);
+    }
+    // Meal-type filter.
+    const typeSel = this.mealTypeFilter();
+    if (typeSel !== 'all') {
+      list = list.filter((m) => (m.mealType ?? '').trim() === typeSel);
     }
     const sort = this.sortBy();
     // "Recipes Only" is a filter dressed as a Sort option: narrow to
@@ -751,6 +802,7 @@ export class MealBinderComponent implements OnInit {
   clearFilter(): void {
     this.searchText.set('');
     this.sourceSetFilter.set('all');
+    this.mealTypeFilter.set('all');
     this.selectedSetIds.set([]);
     this.persistSelected([]);
     void this.rotation.loadBinder([]);

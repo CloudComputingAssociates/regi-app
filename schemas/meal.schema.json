@@ -8,8 +8,7 @@
 
     "MealType": {
       "type": "string",
-      "description": "Whether the meal is treated as a full meal or a snack",
-      "enum": ["meal", "snack"]
+      "description": "Free-text meal label chosen by the user (e.g. 'meal', 'snack', 'Breakfast', 'Lunch/Dinner'). Used to package MealSets. Trimmed and capped at 40 chars on write; no fixed enum."
     },
 
     "FoodSource": {
@@ -112,10 +111,10 @@
         "ingredientNames": { "type": "string", "description": "Space-joined, lowercased MealItems.foodName values for client-side ingredient search. Populated only on the list (scope=binder/folder) response; empty/absent when the meal has no items or on item-hydrated reads." },
         "mealSetId": { "type": ["integer", "null"], "description": "Set this meal was sourced from in a set-filtered list (mealSetIds); absent for caller-owned meals" },
         "mealSetName": { "type": ["string", "null"], "description": "Name of the source meal set; paired with mealSetId" },
-        "sourceMealSetId": { "type": ["integer", "null"], "description": "MealSet this meal was materialized from at purchase; null for non-set meals. Presence gates 'Restore original'. Read-only / server-owned. NOTE: distinct from mealSetId (catalog set-filtered provenance).", "readOnly": true },
-        "sourceMealSetName": { "type": ["string", "null"], "description": "Name of the MealSet this meal was materialized from — a query-time decoration paired with sourceMealSetId. Read-only / server-owned.", "readOnly": true },
-        "cookingMethodId": { "type": ["integer", "null"], "description": "FK to dbo.CookingMethods; null when unset. Write via the meal update path (0 = clear)." },
-        "cookingMethodName": { "type": ["string", "null"], "description": "Denormalized cooking-method name for display; joined through cookingMethodId, never stored on the meal." },
+        "sourceMealSetId": { "type": ["integer", "null"], "readOnly": true, "description": "The MealSet this meal was materialized from at purchase/grant time; null for non-set meals. Server-owned (stamped by grant materialization). Its presence gates the 'Restore original' affordance and disables clearClonedFrom (use detach instead)." },
+        "sourceMealSetName": { "type": ["string", "null"], "readOnly": true, "description": "Display name of sourceMealSetId, joined through it at query time. Never stored; present only where the read path decorates it (binder list)." },
+        "cookingMethodId": { "type": ["integer", "null"], "description": "FK to dbo.CookingMethods; null when unset" },
+        "cookingMethodName": { "type": ["string", "null"], "description": "Denormalized cooking-method name for display; joined through cookingMethodId, never stored on the meal" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
@@ -142,8 +141,8 @@
         "servings": { "type": "integer" },
         "mealSetId": { "type": ["integer", "null"], "description": "Set this meal was sourced from in a set-filtered list; absent for caller-owned meals" },
         "mealSetName": { "type": ["string", "null"], "description": "Name of the source meal set; paired with mealSetId" },
-        "cookingMethodId": { "type": ["integer", "null"], "description": "FK to dbo.CookingMethods; null when unset." },
-        "cookingMethodName": { "type": ["string", "null"], "description": "Denormalized cooking-method name for display; joined through cookingMethodId." },
+        "cookingMethodId": { "type": ["integer", "null"], "description": "FK to dbo.CookingMethods; null when unset" },
+        "cookingMethodName": { "type": ["string", "null"], "description": "Denormalized cooking-method name for display; joined through cookingMethodId, never stored on the meal" },
         "userName": { "type": "string" },
         "userEmail": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
@@ -222,11 +221,11 @@
         },
         "clearClonedFrom": {
           "type": "boolean",
-          "description": "Clear-only: when true, sets clonedFromMealId to NULL so a copy pinned AS A NEW binder meal (renamed / from-scratch) becomes independent. Never sets a value — ClonedFromMealID stays server-owned (only DuplicateMeal writes it non-null)."
+          "description": "Clear-only: when true, sets clonedFromMealId to NULL so a copy pinned AS A NEW binder meal (renamed / from-scratch) becomes independent. Never sets a value — ClonedFromMealID stays server-owned (only DuplicateMeal writes it non-null). No-op when the meal's sourceMealSetId is non-null (a set-materialized meal keeps its lineage for Restore original; use POST /api/meal/{id}/detach to sever a set meal)."
         },
         "cookingMethodId": {
           "type": ["integer", "null"],
-          "description": "FK to dbo.CookingMethods. Positive id to set; 0 (or non-positive) to clear to NULL. Omit to leave unchanged."
+          "description": "FK to dbo.CookingMethods. Provide a positive id to set; provide 0 (or a non-positive value) to clear to NULL. Omit to leave unchanged."
         }
       }
     },

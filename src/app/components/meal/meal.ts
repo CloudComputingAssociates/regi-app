@@ -172,6 +172,22 @@ interface Macro {
                   </button>
                 </div>
 
+                <!-- Meal TYPE — pick-or-type, between the name row and the discs
+                     (mirrors the Notebook). -->
+                <div class="back-type-row">
+                  <span class="back-type-label">Type</span>
+                  <input
+                    type="text"
+                    class="back-type-input"
+                    list="card-mealtype-options"
+                    [value]="fm.mealType ?? ''"
+                    (change)="onMealTypeChange(fm.mealId, $any($event.target).value)"
+                    placeholder="Breakfast, Lunch/Dinner…" />
+                </div>
+                <datalist id="card-mealtype-options">
+                  @for (t of rotation.mealTypeOptions(); track t) { <option [value]="t"></option> }
+                </datalist>
+
                 <!-- Order: Protein, Carbs, Fats, Fiber, then Cals last. -->
                 <div class="macro-row">
                   <span class="chip protein">P {{ round(mac(fm.macros).proteinG) }}</span>
@@ -439,6 +455,11 @@ export class MealComponent {
     // Delegates to the service, which falls back to the fork source's link (a
     // forked/placed imported meal drops its own RecipeLink server-side).
     return this.rotation.recipeLinkFor(mealId);
+  }
+
+  /** Commit the meal's TYPE label (pick-or-type) from the card. */
+  onMealTypeChange(mealId: number, value: string): void {
+    void this.rotation.updateMealType(mealId, (value ?? '').trim());
   }
 
   openRecipe(url: string): void {

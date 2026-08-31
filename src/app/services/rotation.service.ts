@@ -1530,6 +1530,34 @@ export class RotationService {
     }
   }
 
+  /** Set a meal's free-text TYPE label ("Breakfast", "Lunch/Dinner", …). PUT
+   *  /meal/{id} { mealType }. Updates both caches so the Notebook row + the board
+   *  card relabel live. */
+  async updateMealType(mealId: number, mealType: string): Promise<void> {
+    const t = mealType.trim();
+    try {
+      const body: UpdateMealRequest = { mealType: t };
+      const updated = await firstValueFrom(
+        this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, body),
+      );
+      this.mealsById.update((m) => new Map(m).set(mealId, updated));
+      this.binderMeals.update((list) => list.map((m) => (m.id === mealId ? updated : m)));
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** Distinct meal-type labels the user has actually used, unioned with a few
+   *  seeds — feeds the pick-or-type dropdown. Always "your types". */
+  readonly mealTypeOptions = computed<string[]>(() => {
+    const set = new Set<string>(['Breakfast', 'Lunch', 'Dinner', 'Snack']);
+    for (const m of this.binderMeals()) {
+      const t = m.mealType?.trim();
+      if (t) set.add(t);
+    }
+    return [...set].sort((a, b) => a.localeCompare(b));
+  });
+
   /** Open the food lookaside on a slot: the rail switches from the binder to
    *  the food list and adds funnel into this slot's meal. mealId is null for an
    *  empty slot (the first add creates + places the meal). */

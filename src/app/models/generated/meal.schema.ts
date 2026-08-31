@@ -6,12 +6,12 @@
  */
 
 /**
- * Whether the meal is treated as a full meal or a snack
+ * Free-text meal label chosen by the user (e.g. 'meal', 'snack', 'Breakfast', 'Lunch/Dinner'). Used to package MealSets. Trimmed and capped at 40 chars on write; no fixed enum.
  *
  * This interface was referenced by `MealSchema`'s JSON-Schema
  * via the `definition` "MealType".
  */
-export type MealType = "meal" | "snack";
+export type MealType = string;
 /**
  * Where a meal item's food record lives. 'food' = Food DB (USDA/brand), 'userfood' = user-owned UserFoods row, 'pending' = looked up on the fly, not yet saved to UserFoods; name is stored for the shopping list, IsTracked is false until resolved
  *
@@ -235,19 +235,19 @@ export interface Meal {
    */
   mealSetName?: string | null;
   /**
-   * MealSet this meal was materialized from at purchase; null for non-set meals. Presence gates 'Restore original'. Read-only / server-owned. NOTE: distinct from mealSetId (catalog set-filtered provenance).
+   * The MealSet this meal was materialized from at purchase/grant time; null for non-set meals. Server-owned (stamped by grant materialization). Its presence gates the 'Restore original' affordance and disables clearClonedFrom (use detach instead).
    */
   sourceMealSetId?: number | null;
   /**
-   * Name of the MealSet this meal was materialized from — a query-time decoration paired with sourceMealSetId. Read-only / server-owned.
+   * Display name of sourceMealSetId, joined through it at query time. Never stored; present only where the read path decorates it (binder list).
    */
   sourceMealSetName?: string | null;
   /**
-   * FK to dbo.CookingMethods; null when unset. Write via the meal update path (0 = clear).
+   * FK to dbo.CookingMethods; null when unset
    */
   cookingMethodId?: number | null;
   /**
-   * Denormalized cooking-method name for display; joined through cookingMethodId, never stored on the meal.
+   * Denormalized cooking-method name for display; joined through cookingMethodId, never stored on the meal
    */
   cookingMethodName?: string | null;
   createdAt: string;
@@ -284,11 +284,11 @@ export interface MealSummary {
    */
   mealSetName?: string | null;
   /**
-   * FK to dbo.CookingMethods; null when unset.
+   * FK to dbo.CookingMethods; null when unset
    */
   cookingMethodId?: number | null;
   /**
-   * Denormalized cooking-method name for display; joined through cookingMethodId.
+   * Denormalized cooking-method name for display; joined through cookingMethodId, never stored on the meal
    */
   cookingMethodName?: string | null;
   userName?: string;
@@ -333,9 +333,9 @@ export interface CreateMealRequest {
    */
   name: string;
   /**
-   * Whether the meal is treated as a full meal or a snack
+   * Free-text meal label chosen by the user (e.g. 'meal', 'snack', 'Breakfast', 'Lunch/Dinner'). Used to package MealSets. Trimmed and capped at 40 chars on write; no fixed enum.
    */
-  mealType?: "meal" | "snack";
+  mealType?: string;
   /**
    * How many servings this meal yields (1–100). Defaults to 1.
    */
@@ -375,11 +375,11 @@ export interface UpdateMealRequest {
    */
   recipeLink?: string;
   /**
-   * Clear-only: when true, sets clonedFromMealId to NULL so a copy pinned AS A NEW binder meal (renamed / from-scratch) becomes independent. Never sets a value — ClonedFromMealID stays server-owned (only DuplicateMeal writes it non-null).
+   * Clear-only: when true, sets clonedFromMealId to NULL so a copy pinned AS A NEW binder meal (renamed / from-scratch) becomes independent. Never sets a value — ClonedFromMealID stays server-owned (only DuplicateMeal writes it non-null). No-op when the meal's sourceMealSetId is non-null (a set-materialized meal keeps its lineage for Restore original; use POST /api/meal/{id}/detach to sever a set meal).
    */
   clearClonedFrom?: boolean;
   /**
-   * FK to dbo.CookingMethods. Positive id to set; 0 (or non-positive) to clear to NULL. Omit to leave unchanged.
+   * FK to dbo.CookingMethods. Provide a positive id to set; provide 0 (or a non-positive value) to clear to NULL. Omit to leave unchanged.
    */
   cookingMethodId?: number | null;
   [k: string]: unknown;
@@ -614,8 +614,8 @@ export interface GenerateMealRequest {
    */
   excludeFoods?: string[];
   /**
-   * Whether the meal is treated as a full meal or a snack
+   * Free-text meal label chosen by the user (e.g. 'meal', 'snack', 'Breakfast', 'Lunch/Dinner'). Used to package MealSets. Trimmed and capped at 40 chars on write; no fixed enum.
    */
-  mealType?: "meal" | "snack";
+  mealType?: string;
   [k: string]: unknown;
 }
