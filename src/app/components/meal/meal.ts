@@ -18,6 +18,7 @@ import {
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
@@ -176,13 +177,36 @@ interface Macro {
                      (mirrors the Notebook). -->
                 <div class="back-type-row">
                   <span class="back-type-label">Type</span>
-                  <input
-                    type="text"
-                    class="back-type-input"
-                    list="card-mealtype-options"
-                    [value]="fm.mealType ?? ''"
-                    (change)="onMealTypeChange(fm.mealId, $any($event.target).value)"
-                    placeholder="Breakfast, Lunch/Dinner…" />
+                  <!-- Combobox: on focus it shows ALL options (seeds Breakfast/Lunch/
+                       Dinner/Snack/Meal + your distinct types), UNFILTERED — a datalist
+                       hides options that don't match the typed text, which is why only
+                       "Meal" showed. You can still type a brand-new Type. -->
+                  <div class="type-combo">
+                    <input
+                      #typeBox
+                      type="text"
+                      class="back-type-input"
+                      [value]="fm.mealType ?? ''"
+                      (focus)="typeMenuOpenId.set(fm.mealId)"
+                      (change)="onMealTypeChange(fm.mealId, typeBox.value)"
+                      (keydown.enter)="onMealTypeChange(fm.mealId, typeBox.value); typeBox.blur()"
+                      (blur)="typeMenuOpenId.set(null)"
+                      placeholder="Breakfast, Lunch/Dinner…" />
+                    <mat-icon class="type-caret" aria-hidden="true">arrow_drop_down</mat-icon>
+                    @if (typeMenuOpenId() === fm.mealId) {
+                      <ul class="type-menu">
+                        @for (t of rotation.mealTypeOptions(); track t) {
+                          <li>
+                            <button
+                              type="button"
+                              class="type-opt"
+                              [class.sel]="(fm.mealType ?? '').toLowerCase() === t.toLowerCase()"
+                              (mousedown)="pickType(fm.mealId, t)">{{ t }}</button>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </div>
                   <!-- Notes + Add sit immediately RIGHT of the dropdown. Notes glyph
                        (sticky note) is deliberately unlike the notebook/shopping icons. -->
                   <button
@@ -223,9 +247,6 @@ interface Macro {
                     }
                   </span>
                 </div>
-                <datalist id="card-mealtype-options">
-                  @for (t of rotation.mealTypeOptions(); track t) { <option [value]="t"></option> }
-                </datalist>
 
                 <!-- Order: Protein, Carbs, Fats, Fiber, then Cals last. -->
                 <div class="macro-row">
@@ -441,6 +462,22 @@ export class MealComponent {
       },
       { allowSignalWrites: true },
     );
+
+    // When an AI image lands for a meal on THIS card, flip it back to the photo so
+    // the fresh image reveals itself. Only `imagedMeal` is a dependency (untracked
+    // reads of flip/meals) so a manual flip doesn't retrigger this.
+    effect(
+      () => {
+        const done = this.rotation.imagedMeal();
+        if (!done) return;
+        untracked(() => {
+          if (this.meals().some((m) => m.mealId === done.id)) {
+            this.flippedMealId.set(null); // flip home → show the new photo
+          }
+        });
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   /** Bloom animation finished → clear the one-shot flag so it never re-fires. */
@@ -524,6 +561,15 @@ export class MealComponent {
   /** Commit the meal's TYPE label (pick-or-type) from the card. */
   onMealTypeChange(mealId: number, value: string): void {
     void this.rotation.updateMealType(mealId, (value ?? '').trim());
+  }
+
+  /** Which meal's Type combobox menu is open (null = none). */
+  readonly typeMenuOpenId = signal<number | null>(null);
+  /** Pick an option from the Type menu. mousedown fires before the input's blur,
+   *  so the choice commits before the menu closes. */
+  pickType(mealId: number, t: string): void {
+    this.typeMenuOpenId.set(null);
+    this.onMealTypeChange(mealId, t);
   }
 
   openRecipe(url: string): void {

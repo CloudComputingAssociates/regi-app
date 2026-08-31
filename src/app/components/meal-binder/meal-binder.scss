@@ -168,7 +168,7 @@
   box-sizing: border-box;
   border: none;
   border-radius: 12px 12px 0 0;
-  background: rgba(58, 169, 129, 0.72); // inactive: cool calming green, slightly lighter than active
+  background: #7cc6a9; // inactive: LIGHT calming green (clear contrast vs active)
   cursor: pointer;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
   transition: background 0.12s ease;
@@ -177,13 +177,14 @@
   .section-label { color: #ffffff; font-size: 16px; font-weight: 400; line-height: 20px; }
   .section-count { color: rgba(255, 255, 255, 0.9); font-size: 11px; font-weight: 400; line-height: 20px; }
 
-  &:hover { background: rgba(58, 169, 129, 0.85); }
-  // Active: fully solid green with a subtle lift so it clearly reads as selected.
+  &:hover { background: #8ccfb5; }
+  // Active: a much DEEPER green so the selected tab clearly separates from the
+  // light inactive ones.
   &.active {
-    background: #3aa981;
-    box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.18);
+    background: #218a5d;
+    box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.22);
   }
-  &:focus-visible { box-shadow: 0 0 0 2px rgba(58, 169, 129, 0.6); }
+  &:focus-visible { box-shadow: 0 0 0 2px rgba(33, 138, 93, 0.6); }
 }
 
 // Shopping tab wrapper. Intentionally sets NO font-family: the LIST content (item
@@ -1250,10 +1251,10 @@
     line-height: 1;
     padding: 3px 7px;
     border-radius: 8px;
-    // Lighter blue + white text (the tabs moved to green, so blue is freed up here).
+    // The same light green as the UNSELECTED tabs (was blue) + white text.
     color: #ffffff;
-    background: #5f9fe4;
-    border: 1px solid #4585cf;
+    background: #7cc6a9;
+    border: 1px solid #5fb094;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

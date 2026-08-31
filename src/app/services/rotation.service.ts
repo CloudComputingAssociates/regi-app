@@ -713,6 +713,11 @@ export class RotationService {
   isGeneratingImage(mealId: number): boolean {
     return this.generatingImageIds().has(mealId);
   }
+  /** Bumped when an AI image lands for a meal, so the card can flip to the photo
+   *  the moment it's ready. `seq` makes a repeat generation of the SAME meal still
+   *  emit a change (the id alone wouldn't). */
+  private imgDoneSeq = 0;
+  readonly imagedMeal = signal<{ id: number; seq: number } | null>(null);
 
   /** Kick off async AI image generation for a meal. POST /meal/{id}/generate-image
    *  → 202 (regi-api emits a Kafka request; regi-image writes mealImage /
@@ -785,6 +790,8 @@ export class RotationService {
         }
         void this.refreshSelectedMenu();
         this.clearGeneratingImage(mealId);
+        // Signal the card to flip to the photo now that the fresh image is in.
+        this.imagedMeal.set({ id: mealId, seq: ++this.imgDoneSeq });
         return;
       }
       if (attempt + 1 >= MAX_ATTEMPTS) {

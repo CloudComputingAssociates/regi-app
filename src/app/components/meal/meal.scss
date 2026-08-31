@@ -62,14 +62,16 @@
   width: 26px;
   height: 26px;
   padding: 0;
-  color: #e0e0e0;
+  // Red trash glyph so the DELETE key stands out from the grey action keys now
+  // crowding the card (Notes / Print / Camera / +).
+  color: #ff5f57;
   background: #555555;
   border: 1px solid #6a6a6a;
   border-radius: 2px;
   cursor: pointer;
 
   .mat-icon { width: 17px; height: 17px; font-size: 17px; line-height: 17px; }
-  &:hover { background: #616161; color: #ffffff; }
+  &:hover { background: #616161; color: #ff8079; }
   &:active { transform: translateY(1px); }
 }
 
@@ -478,14 +480,24 @@
       font-weight: 600;
       color: #4da6ff;       // blue, matching "Meal"
     }
-    .back-type-input {
-      // Sits just left of the Notes/Add keys; NOT full width. Same vertical metrics
-      // as the Meal name box (.meal-name-box) so the two boxes are the same height.
+    // Type combobox — a real input + a caret + an always-full option menu (not a
+    // datalist, which filters by typed text). Claims the left ~46%; keys sit right.
+    .type-combo {
+      position: relative;
       flex: 0 1 auto;
       min-width: 0;
       max-width: 46%;
+      display: flex;
+      align-items: center;
+    }
+    .back-type-input {
+      // Fills the combo; same vertical metrics as the Meal name box so the two
+      // boxes match height. Right padding clears the caret.
+      flex: 1 1 auto;
+      min-width: 0;
+      width: 100%;
       box-sizing: border-box;
-      padding: 4px 8px;   // matches .meal-name-box → equal height
+      padding: 4px 22px 4px 8px;
       font-size: 14px;    // matches the "Meal" name box
       color: #f0f0f0;
       background-color: #3a3a3a;
@@ -496,13 +508,51 @@
       outline: none;
       &::placeholder { color: #8a8f94; font-style: italic; }
       &:focus { border-color: #4da6ff; }
-      // The browser's native datalist arrow is the ONE and only dropdown arrow
-      // (no custom chevron → no double arrow). Lighten it so it reads on the dark
-      // field; it stays permanent and the field still accepts a typed new Type.
-      &::-webkit-calendar-picker-indicator {
-        filter: invert(0.6);
-        opacity: 0.85;
+    }
+    // Single permanent caret (visual only — clicks fall through to the input,
+    // which opens the menu on focus).
+    .type-caret {
+      position: absolute;
+      right: 3px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      width: 20px;
+      height: 20px;
+      font-size: 20px;
+      line-height: 20px;
+      color: #9aa0a6;
+    }
+    // Dropdown menu — shows ALL options, unfiltered.
+    .type-menu {
+      position: absolute;
+      top: calc(100% + 2px);
+      left: 0;
+      min-width: 100%;
+      max-height: 180px;
+      overflow-y: auto;
+      margin: 0;
+      padding: 4px 0;
+      list-style: none;
+      background: #2c2c2c;
+      border: 1px solid #1c1c1c;
+      border-radius: 6px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55);
+      z-index: 30;
+
+      .type-opt {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 5px 10px;
+        background: none;
+        border: none;
+        color: #e8e8e8;
+        font-size: 13px;
+        white-space: nowrap;
         cursor: pointer;
+        &:hover { background: #3a3a3a; color: #ffffff; }
+        &.sel { color: #4da6ff; font-weight: 600; }
       }
     }
 
