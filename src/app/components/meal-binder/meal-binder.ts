@@ -89,7 +89,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
             [class.active]="activeTab() === 'shopping'"
             [attr.aria-selected]="activeTab() === 'shopping'"
             (click)="activeTab.set('shopping')">
-            <span class="section-label">shopping</span>
+            <span class="section-label">to buy</span>
             @if (rotation.shoppingItemCount() !== null) {
               <span class="section-count">({{ rotation.shoppingItemCount() }})</span>
             }
