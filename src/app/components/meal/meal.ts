@@ -399,18 +399,17 @@ export class MealComponent {
   /** Dynamic-ingredients accordion open state (back face). */
   readonly dynamicOpen = signal(false);
 
-  /** Meal-ids whose bottom Notes drawer is open (a Set → multi-meal slots each
-   *  toggle independently). */
-  readonly notesOpen = signal<Set<number>>(new Set());
+  /** Explicit user open/close overrides for the bottom Notes drawer, per meal.
+   *  Absent → use the DEFAULT: open when the meal already has notes (so existing
+   *  notes reveal themselves without a click), closed when it has none. */
+  readonly notesOverride = signal<Map<number, boolean>>(new Map());
   notesIsOpen(mealId: number): boolean {
-    return this.notesOpen().has(mealId);
+    const o = this.notesOverride().get(mealId);
+    return o ?? this.notesFor(mealId).trim() !== '';
   }
   toggleNotes(mealId: number): void {
-    this.notesOpen.update((s) => {
-      const next = new Set(s);
-      next.has(mealId) ? next.delete(mealId) : next.add(mealId);
-      return next;
-    });
+    const next = !this.notesIsOpen(mealId);
+    this.notesOverride.update((m) => new Map(m).set(mealId, next));
   }
   /** Current persisted notes for a meal (read through the full Meal row). */
   notesFor(mealId: number): string {
