@@ -6,20 +6,26 @@
   position: relative; // anchors the dead-center watermark
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  height: 100%; // fill the panel-body so the grid can size its rows to fit
+  min-height: 0;
 }
 
 .canvas-grid {
   position: relative;
   z-index: 1; // meal cards sit above the watermark
-  flex: 0 0 auto;
+  flex: 1 1 auto;   // FILL the board height so tiles fit vertically (no page scroll)
+  min-height: 0;
   display: grid;
   // 280px floor (+ tighter gap/padding) lets 3 cards fit on a ~900px board
   // (laptop) while staying responsive — drops to 2 on a narrower window.
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  // Rows share the available height (so a single row of tiles fits a short
+  // viewport). Floor of 150px keeps them usable if many rows push past the fold
+  // (then the panel-body scrolls as a fallback).
+  grid-auto-rows: minmax(150px, 1fr);
   gap: 10px;
   padding: 3px 6px 8px 4px; // flush left; a sliver above the cards so the strip separator shows
-  align-content: start;
+  align-content: stretch;
 }
 
 // Embossed (debossed) area watermark pinned DEAD CENTER of the meal region (fixed

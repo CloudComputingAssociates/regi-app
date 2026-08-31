@@ -1547,15 +1547,20 @@ export class RotationService {
     }
   }
 
-  /** Distinct meal-type labels the user has actually used, unioned with a few
-   *  seeds — feeds the pick-or-type dropdown. Always "your types". */
+  /** Options for the pick-or-type meal-type dropdown: the standard seeds (Initial
+   *  Cap) unioned with the user's own distinct types (SELECT-DISTINCT, no DB list).
+   *  Deduped case-insensitively so a legacy lowercase "meal" collapses into "Meal".
+   *  Not fixed — a user can type "Tapas" and it joins the list. */
   readonly mealTypeOptions = computed<string[]>(() => {
-    const set = new Set<string>(['Breakfast', 'Lunch', 'Dinner', 'Snack']);
+    const byLower = new Map<string, string>();
+    for (const s of ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Meal']) {
+      byLower.set(s.toLowerCase(), s);
+    }
     for (const m of this.binderMeals()) {
       const t = m.mealType?.trim();
-      if (t) set.add(t);
+      if (t && !byLower.has(t.toLowerCase())) byLower.set(t.toLowerCase(), t);
     }
-    return [...set].sort((a, b) => a.localeCompare(b));
+    return [...byLower.values()].sort((a, b) => a.localeCompare(b));
   });
 
   /** Open the food lookaside on a slot: the rail switches from the binder to

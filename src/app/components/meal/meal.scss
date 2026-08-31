@@ -1,9 +1,20 @@
 // src/app/components/meal/meal.scss
 
+// Fill the grid cell so a filled tile sizes to the available height (the board
+// grid distributes height across rows) instead of its width (4:3), which made
+// tiles overflow a short viewport.
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
 .slot-card {
   position: relative;
   display: flex;
   flex-direction: column;
+  height: 100%;        // fill the cell
+  box-sizing: border-box;
   gap: 8px;
   padding: 4px 8px; // trimmed top/bottom black on the collapsed meal cards
   border: 1px solid #4a4a4a;
@@ -176,11 +187,15 @@
 // are absolutely stacked; rotating .flip-inner swaps them.
 .flip {
   perspective: 1200px;
+  // In a filled tile, fill the card height (which fills the grid cell) instead of
+  // letting the 4:3 aspect drive an over-tall card.
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .flip-inner {
   position: relative;
-  aspect-ratio: 4 / 3;
+  height: 100%; // fill the card; was aspect-ratio: 4/3 (width-driven → too tall)
   transform-style: preserve-3d;
   transition: transform 0.4s ease;
 }
@@ -459,11 +474,9 @@
 
     .back-type-label {
       flex: 0 0 auto;
-      font-size: 11px;
+      font-size: 14px;      // same size as the "Meal" label
       font-weight: 600;
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
-      color: #9aa0a6;
+      color: #4da6ff;       // blue, matching "Meal"
     }
     .back-type-input {
       flex: 1 1 auto;
