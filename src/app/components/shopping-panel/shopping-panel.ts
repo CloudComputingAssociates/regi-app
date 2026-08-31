@@ -257,8 +257,9 @@ export class ShoppingPanelComponent {
   readonly listLoading = signal(false);
   readonly listError = signal(false);
   private readonly listResponse = signal<ShoppingListResponse | null>(null);
-  /** Item keys the shopper has ticked OFF (not needed). Absent ⇒ needed (ON). */
-  private readonly checkedKeys = signal<Set<string>>(new Set());
+  /** Item keys ticked OFF (not needed) — held on the SERVICE so it survives this
+   *  panel being destroyed on tab-switch. Absent ⇒ needed (ON). */
+  private readonly checkedKeys = this.rotation.shoppingCheckedKeys;
 
   // Quantity basis: 'custom' = an explicit scale factor (the DEFAULT); 'recipe' =
   // each recipe's own servings ("Use Servings"). These drive ?basis=&factor=.
@@ -314,10 +315,8 @@ export class ShoppingPanelComponent {
       const res = await firstValueFrom(this.rotation.getShoppingList(id, basis, factor));
       if (seq !== this.loadSeq) return; // a newer request superseded this one
       this.listResponse.set(res ?? null);
-      // Publish the item total for the Notebook's Shopping tab count (adjusts live).
-      this.rotation.shoppingItemCount.set(
-        (res?.categories ?? []).reduce((n, c) => n + (c.items?.length ?? 0), 0),
-      );
+      // (The Shopping tab count is a computed on the service — see shoppingItemCount —
+      //  fed by an eager list fetch + the checked-keys, so we don't set it here.)
     } catch {
       if (seq !== this.loadSeq) return;
       this.listError.set(true);

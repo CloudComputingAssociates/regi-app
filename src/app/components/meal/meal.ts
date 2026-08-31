@@ -168,7 +168,7 @@ interface Macro {
                     class="back-clear-x"
                     [matTooltip]="'Clear meal from Slot ' + slot().slotOrder"
                     (click)="removeMeal.emit({ slotOrder: slot().slotOrder, mealId: fm.mealId })">
-                    <mat-icon>close</mat-icon>
+                    <mat-icon>delete</mat-icon>
                   </button>
                 </div>
 

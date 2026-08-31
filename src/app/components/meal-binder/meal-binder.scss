@@ -480,10 +480,33 @@
   }
 
   // Clear-filter sits on its own right-aligned row now that Sort moved out.
-  .filter-clear-row {
+  // Search is the first control inside the filter: grows full-width, clear key at
+  // its right edge.
+  .filter-search-row {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+
+    .filter-search {
+      flex: 1 1 auto;
+      min-width: 0;
+      height: 26px;
+      box-sizing: border-box;
+      padding: 3px 8px;
+      font-family: Roboto, 'Helvetica Neue', sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      background: #ffffff;
+      border: 1px solid #9a9ea3;
+      border-radius: 2px;
+      outline: none;
+      &::placeholder { color: #8a8f94; font-style: italic; }
+      &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.3); }
+    }
   }
+
+  // "From MealSet" fills its row (full-width) — its own dropdown, all the way across.
+  .mealset-row .sort-select { flex: 1 1 auto; max-width: none; }
 
   // Clear key — a clean white bordered key with a dark glyph ("Remove filters").
   .filter-clear {

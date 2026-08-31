@@ -67,6 +67,10 @@ export interface Rotation {
    * When the rotation was last modified
    */
   updatedAt?: string;
+  /**
+   * Read-only: shopping-list item keys the user has checked off ('have it'), parsed from Rotation.ShoppingProgress. [] when none saved. Written via PUT /api/rotation/{id}/shopping-progress.
+   */
+  shoppingProgress?: string[];
   [k: string]: unknown;
 }
 /**
@@ -246,6 +250,10 @@ export interface RotationDetail {
    * The Menus in this rotation and their consumption counts
    */
   menus: RotationMenuEntry[];
+  /**
+   * Read-only: shopping-list item keys the user has checked off ('have it'), parsed from Rotation.ShoppingProgress. [] when none saved. Written via PUT /api/rotation/{id}/shopping-progress.
+   */
+  shoppingProgress?: string[];
   [k: string]: unknown;
 }
 /**
@@ -431,7 +439,7 @@ export interface Menu {
    */
   pinned: boolean;
   /**
-   * Back-pointer set on copies minted by POST /menu/{id}/duplicate to the source menu id; null on originals. Read-only / server-owned.
+   * Source menu id when this menu is a copy minted by POST /menu/{id}/duplicate (fork-on-place into a rotation); null for originals. Back-pointer the client resolves to offer 'save my slot changes back to the original notebook menu' via PUT /menu/{id}/save-to-original. Mirrors clonedFromMealId on MenuSlotMeal.
    */
   clonedFromMenuId?: number | null;
   /**
@@ -470,17 +478,6 @@ export interface Menu {
    * When the menu was last modified
    */
   updatedAt?: string;
-  [k: string]: unknown;
-}
-/**
- * 409 body of PUT /api/menu/{id}/save-to-original — the copy can't overwrite its original because one or more slotted meals aren't saved to the binder yet. unsavedMeals lists their names for the user prompt.
- *
- * This interface was referenced by `RotationSchema`'s JSON-Schema
- * via the `definition` "SaveMenuToOriginalConflict".
- */
-export interface SaveMenuToOriginalConflict {
-  error: string;
-  unsavedMeals: string[];
   [k: string]: unknown;
 }
 /**
@@ -561,6 +558,23 @@ export interface AddMealToSlotRequest {
   [k: string]: unknown;
 }
 /**
+ * 409 body for PUT /api/menu/{id}/save-to-original. Returned when the copy holds one or more disposable (non-pinned/non-Binder) slotted meals, which must not be dragged into the saved original. The client should prompt the user to save those meals into the Binder first, then retry.
+ *
+ * This interface was referenced by `RotationSchema`'s JSON-Schema
+ * via the `definition` "SaveMenuToOriginalConflict".
+ */
+export interface SaveMenuToOriginalConflict {
+  /**
+   * Human-readable conflict reason
+   */
+  error: string;
+  /**
+   * Display names of the copy's slotted meals that are not pinned/Binder meals
+   */
+  unsavedMeals: string[];
+  [k: string]: unknown;
+}
+/**
  * Request body for PUT /api/menu/{id}/slots/{slotOrder}/name — sets or clears the user-defined name on a slot
  *
  * This interface was referenced by `RotationSchema`'s JSON-Schema
@@ -584,104 +598,5 @@ export interface SetDiningOutRequest {
    * True to mark the slot as dining out; false to clear the flag
    */
   isDiningOut: boolean;
-  [k: string]: unknown;
-}
-/**
- * One line item on a shopping list
- *
- * This interface was referenced by `RotationSchema`'s JSON-Schema
- * via the `definition` "ShoppingItem".
- */
-export interface ShoppingItem {
-  /**
-   * Food name as it should appear on the list
-   */
-  foodName: string;
-  /**
-   * Quantity scaled by rotation peopleCount and meal servings
-   */
-  scaledQuantity: number;
-  /**
-   * Unit of measurement
-   */
-  unit: string;
-  /**
-   * Optional list of meal names that contribute to this quantity
-   */
-  usedInMeals?: string[];
-  /**
-   * Optional list of menu names that contribute to this quantity
-   */
-  usedInMenus?: string[];
-  /**
-   * Optional pre-baked purchase link (e.g., Amazon URL)
-   */
-  productPurchaseLink?: string;
-  /**
-   * True when the item is a pantry staple
-   */
-  isStaple: boolean;
-  /**
-   * True when the item is an untracked freeform entry
-   */
-  isUntracked: boolean;
-  /**
-   * Optional shopper-facing note
-   */
-  note?: string;
-  [k: string]: unknown;
-}
-/**
- * A named grouping of shopping items (e.g., 'Produce', 'Protein')
- *
- * This interface was referenced by `RotationSchema`'s JSON-Schema
- * via the `definition` "ShoppingCategory".
- */
-export interface ShoppingCategory {
-  /**
-   * Display name of the category
-   */
-  categoryName: string;
-  /**
-   * Items in this category
-   */
-  items: ShoppingItem[];
-  [k: string]: unknown;
-}
-/**
- * GET /api/rotation/{id}/shopping-list response
- *
- * This interface was referenced by `RotationSchema`'s JSON-Schema
- * via the `definition` "ShoppingList".
- */
-export interface ShoppingList {
-  /**
-   * ID of the source rotation
-   */
-  rotationId: number;
-  /**
-   * Display name of the source rotation
-   */
-  rotationName: string;
-  /**
-   * People count the quantities were scaled to
-   */
-  peopleCount: number;
-  /**
-   * When the shopping list was generated
-   */
-  generatedAt: string;
-  /**
-   * Tracked items, grouped by category
-   */
-  categories: ShoppingCategory[];
-  /**
-   * Freeform untracked items collected from meals
-   */
-  untrackedItems: ShoppingItem[];
-  /**
-   * Pantry staple items pulled in from user prefs / curated lists
-   */
-  stapleItems: ShoppingItem[];
   [k: string]: unknown;
 }

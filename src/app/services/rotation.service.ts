@@ -8,7 +8,7 @@
 // The component-facing surface is unchanged from Phase 0:
 //   menus, selectedMenuId, selectMenu, selectedMenu, selectedMenuTotals,
 //   slotItems, getMeal — plus loading/error and the loaders below.
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { firstValueFrom, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -75,19 +75,87 @@ export class RotationService {
   showBinder(): void { this.binderCollapsed.set(false); }
   hideBinder(): void { this.binderCollapsed.set(true); }
 
+  /** A request to focus a specific Notebook tab (set by the Menus toolbar's
+   *  Shopping key). The Binder consumes it and resets to null. */
+  readonly requestedBinderTab = signal<'meals' | 'menus' | 'shopping' | null>(null);
+  /** Open the Notebook and focus a tab (used by the toolbar Shopping key). */
+  openBinderTab(tab: 'meals' | 'menus' | 'shopping'): void {
+    this.showBinder();
+    this.requestedBinderTab.set(tab);
+  }
+
   /** The user's Binder meals (pinned) — server truth via GET /meal?scope=binder. */
   readonly binderMeals = signal<Meal[]>([]);
 
-  /** Total items on the computed shopping list, for the Notebook's Shopping tab
-   *  count. null = not yet computed (the Shopping panel sets it when it loads the
-   *  list off this rotation). Item count is basis/scale-independent. */
-  readonly shoppingItemCount = signal<number | null>(null);
+  /** The computed shopping list for the current rotation, fetched EAGERLY (below)
+   *  so the Notebook's Shopping tab shows an accurate count before the tab is even
+   *  opened. Item keys/count are basis-independent, so recipe/×1 is enough. */
+  private readonly shoppingList = signal<ShoppingListResponse | null>(null);
+
+  /** Computed shopping-list item keys the shopper ticked OFF (not needed). Lives
+   *  on the SERVICE (not the Shopping panel) so it survives the panel being
+   *  destroyed when the user leaves the Shopping tab — otherwise every remount
+   *  reset every switch back to "needed". Absent ⇒ needed (ON). Persisted to the
+   *  server via saveShoppingProgress. */
+  readonly shoppingCheckedKeys = signal<Set<string>>(new Set());
+
+  /** Stable key for a shopping-list item (matches the panel's itemKey). */
+  private shoppingKey(it: { foodId?: number | null; foodSource?: string | null; name?: string }): string {
+    return it.foodId != null
+      ? `f:${it.foodId}:${it.foodSource ?? 'food'}`
+      : `n:${(it.name ?? '').trim().toLowerCase()}`;
+  }
+
+  /** NEEDED item count (need-ON) for the Shopping tab — items whose key isn't
+   *  ticked off. Reacts to both the list and the checked-keys, so the tab count
+   *  is pre-computed AND updates live as the user toggles Need. */
+  readonly shoppingItemCount = computed<number | null>(() => {
+    const list = this.shoppingList();
+    if (!list) return null;
+    const off = this.shoppingCheckedKeys();
+    let n = 0;
+    for (const cat of list.categories ?? []) {
+      for (const it of cat.items ?? []) {
+        if (!off.has(this.shoppingKey(it))) n++;
+      }
+    }
+    return n;
+  });
 
   /** Bumped whenever the rotation's meal/menu COMPOSITION changes (a meal reloads
-   *  after a food add/edit, a menu is (re)cached after a slot change). The Shopping
-   *  panel's list effect reads this so its list refreshes live — no page reload. */
+   *  after a food add/edit, a menu is (re)cached after a slot change). Drives the
+   *  eager shopping-list refetch (and the panel's own list effect). */
   readonly shoppingRefreshTick = signal(0);
   private bumpShoppingRefresh(): void { this.shoppingRefreshTick.update((n) => n + 1); }
+
+  // Eagerly (re)fetch the computed list whenever the rotation or its composition
+  // changes, so shoppingItemCount is accurate before the Shopping tab is opened.
+  // An in-flight guard coalesces the burst of composition ticks during a load into
+  // at most one trailing refetch (no debounce timer).
+  private shoppingFetching = false;
+  private shoppingDirty = false;
+  private readonly shoppingListEffect = effect(
+    () => {
+      const id = this.rotation()?.id ?? null;
+      this.shoppingRefreshTick();
+      if (id == null) { this.shoppingList.set(null); return; }
+      void this.refreshShoppingList(id);
+    },
+    { allowSignalWrites: true },
+  );
+  private async refreshShoppingList(id: number): Promise<void> {
+    if (this.shoppingFetching) { this.shoppingDirty = true; return; }
+    this.shoppingFetching = true;
+    try {
+      const res = await firstValueFrom(this.getShoppingList(id, 'recipe', 1));
+      this.shoppingList.set(res ?? null);
+    } catch {
+      /* keep the prior list on a transient failure */
+    } finally {
+      this.shoppingFetching = false;
+      if (this.shoppingDirty) { this.shoppingDirty = false; void this.refreshShoppingList(id); }
+    }
+  }
 
   /** The user's Binder menus (pinned) — server truth via GET /menu?scope=binder.
    *  First-class citizens alongside Binder meals; carry cached total macros. */
@@ -558,6 +626,14 @@ export class RotationService {
 
   /** Load the user's current rotation: pick the active one (else newest),
    *  fetch its detail, and select the first menu. Empty list → empty state. */
+  /** Seed the shopping "Need" check-state from a freshly-loaded rotation's persisted
+   *  ShoppingProgress (item keys ticked OFF). Called ONLY on genuine server loads —
+   *  never on local rotation re-sets, which carry a stale snapshot that would revert
+   *  in-session toggles. */
+  private hydrateShoppingProgress(detail: RotationDetail): void {
+    this.shoppingCheckedKeys.set(new Set(detail.shoppingProgress ?? []));
+  }
+
   async loadCurrentRotation(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
@@ -575,6 +651,7 @@ export class RotationService {
         this.http.get<RotationDetail>(`${this.baseUrl}/rotation/${chosen.id}`),
       );
       this.rotation.set(detail);
+      this.hydrateShoppingProgress(detail); // restore "Need" check-state across reloads
       const firstMenuId = detail.menus[0]?.menuId ?? null;
       this.selectedMenuId.set(firstMenuId);
       if (firstMenuId != null) await this.selectMenu(firstMenuId);

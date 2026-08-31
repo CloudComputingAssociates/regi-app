@@ -182,21 +182,10 @@ import { Meal, Menu, MealSetSummary } from '../../models';
             </div>
           </div>
         } @else if (activeTab() === 'meals') {
-          <!-- Meals tab. Controls sit on two rows below the tab bar:
-               Row 1 — Search meals, stretched full width.
-               Row 2 — Filter (left) · ＋ Add meals (centered) · collapse-all (flush right). -->
+          <!-- Meals tab controls: one row — Sort · Filter · ＋ Add meals (left) ·
+               collapse-all (right). Search now lives INSIDE the Filter panel. -->
           <div class="rail-section">
             <div class="meals-controls">
-              <div class="meals-ctrl-row">
-                <input
-                  type="text"
-                  class="header-search"
-                  placeholder="Search meals..."
-                  matTooltip="Search a meal by name, or type any ingredient"
-                  matTooltipPosition="above"
-                  [value]="searchText()"
-                  (input)="searchText.set($any($event.target).value)" />
-              </div>
               <div class="meals-ctrl-row meals-ctrl-actions">
                 <!-- Sort — first-class control (independent of Filter; sorts within
                      whatever the filter shows). Starts Off. -->
@@ -245,9 +234,17 @@ import { Meal, Menu, MealSetSummary } from '../../models';
             <div class="section-body filter-body">
               <fieldset class="filter-fieldset">
                 <legend>Filter</legend>
-                <!-- Sort moved OUT to the controls row (first-class). Clear-filter
-                     resets the MealSet filter only — it no longer touches Sort. -->
-                <div class="filter-clear-row">
+                <!-- Search is a filtration — the FIRST control inside the filter.
+                     Clear-filter (right) resets search + MealSet (not Sort). -->
+                <div class="filter-search-row">
+                  <input
+                    type="text"
+                    class="filter-search"
+                    placeholder="Search meals..."
+                    matTooltip="Search a meal by name, or type any ingredient"
+                    matTooltipPosition="above"
+                    [value]="searchText()"
+                    (input)="searchText.set($any($event.target).value)" />
                   <button
                     type="button"
                     class="filter-clear"
@@ -517,6 +514,8 @@ export class MealBinderComponent implements OnInit {
       .filter((n) => !Number.isNaN(n));
     this.selectedSetIds.set(ids);
     this.persistSelected(ids);
+    // Either/or: turning ON the mix-in clears the "From MealSet" provenance filter.
+    if (ids.length > 0) this.sourceSetFilter.set('all');
     void this.rotation.loadBinder(ids);
   }
 
@@ -608,7 +607,15 @@ export class MealBinderComponent implements OnInit {
 
   /** Map the "From MealSet" dropdown value to the provenance filter signal. */
   onSourceSetChange(value: string): void {
-    this.sourceSetFilter.set(value === 'all' ? 'all' : Number(value));
+    const sel = value === 'all' ? 'all' : Number(value);
+    this.sourceSetFilter.set(sel);
+    // Either/or: choosing a "From MealSet" filter turns OFF the mix-in (reload as
+    // My Meals only) so the two are never combined.
+    if (sel !== 'all' && this.selectedSetIds().length > 0) {
+      this.selectedSetIds.set([]);
+      this.persistSelected([]);
+      void this.rotation.loadBinder([]);
+    }
   }
 
   /** The selected source-set (id, name, and count of loaded binder meals from it),
@@ -642,9 +649,10 @@ export class MealBinderComponent implements OnInit {
   /** True when the filter is doing anything (not the cleared default): a search
    *  term, an active Sort / Recipes-Only mode, or one or more Meal Sets mixed in.
    *  Drives the "Filter (ON)" label on the header button. */
+  // "Filter on" reflects only actual FILTERS (search + MealSet) — NOT Sort, which is
+  // a separate first-class control.
   readonly filterActive = computed<boolean>(() =>
     this.searchText().trim() !== '' ||
-    this.sortBy() !== null ||
     this.selectedSetIds().length > 0 ||
     this.sourceSetFilter() !== 'all',
   );
@@ -887,6 +895,18 @@ export class MealBinderComponent implements OnInit {
   }
 
   constructor() {
+    // The Menus toolbar (or elsewhere) can request a specific Notebook tab — e.g.
+    // the Shopping key opens the Binder and focuses Shopping. Consume + reset.
+    effect(
+      () => {
+        const tab = this.rotation.requestedBinderTab();
+        if (tab == null) return;
+        this.activeTab.set(tab);
+        this.rotation.requestedBinderTab.set(null);
+      },
+      { allowSignalWrites: true },
+    );
+
     // When a menu is pinned, the service sets revealBinderMenuId. Expand the
     // Menus accordion and scroll the new entry into view.
     effect(

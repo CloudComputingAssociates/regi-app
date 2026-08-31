@@ -38,25 +38,27 @@
 
 // Grey square "remove this meal" key — the destructive control lives ONLY on the
 // back (detail) face, top-right of its title row. Replaces the old red disc.
-// Clear-meal affordance: a bare white X (no button box), clears the meal from
-// the slot. Just the glyph — transparent, no border/background.
+// Clear-meal affordance: a white wastebasket in a grey key (same chrome as the
+// + Add key), so it reads as "remove this meal" — NOT an X, which too many people
+// mistake for "close the panel" instead of flipping the card.
 .back-clear-x {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  // Width matches the vertical action keys (.add-food-btn, 26px) and is right-
-  // aligned to the same edge, so the X centers directly over that button column.
+  // 26×26 matches the vertical action keys (.add-food-btn), right-aligned to the
+  // same edge so it centers over that button column.
   width: 26px;
-  height: 22px;
+  height: 26px;
   padding: 0;
-  color: #ffffff;
-  background: transparent;
-  border: none;
+  color: #e0e0e0;
+  background: #555555;
+  border: 1px solid #6a6a6a;
+  border-radius: 2px;
   cursor: pointer;
 
-  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
-  &:hover { color: #ffffff; opacity: 0.8; }
+  .mat-icon { width: 17px; height: 17px; font-size: 17px; line-height: 17px; }
+  &:hover { background: #616161; color: #ffffff; }
   &:active { transform: translateY(1px); }
 }
 
