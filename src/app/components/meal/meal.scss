@@ -503,6 +503,9 @@
       outline: none;
       &::placeholder { color: #8a8f94; font-style: italic; }
       &:focus { border-color: #4da6ff; }
+      // Hide the browser's native datalist arrow so only OUR chevron shows
+      // (was doubling up into two arrows).
+      &::-webkit-calendar-picker-indicator { display: none; }
     }
 
     // Camera + "+ Add" keys, right-pinned so they sit under the wastebasket.
@@ -521,7 +524,9 @@
     gap: 5px;
     // Left-justified (cals leads the row now — no indent).
 
-    // Calories readout — grey pill (same as the Binder cals pills).
+    // Calories readout — grey pill (same as the Binder cals pills). Sits inline
+    // right after the macro chips (no auto margin — the action keys moved up to
+    // the Type row, so this row is chips · cals · (PDF), left-justified).
     .slot-cals {
       color: #ffffff;
       background: #999999;
@@ -529,19 +534,12 @@
       padding: 1px 7px;
       border-radius: 999px;
       white-space: nowrap;
-      margin-left: auto; // cals pill now trails the row (action keys moved up to the Type row)
     }
-  }
 
-  // PDF hyperlink row — sits just BELOW the action discs, right-aligned under the
-  // + key. Blue standing-underline link; tight margins so the ingredients slide up.
-  .pdf-link-row {
-    display: flex;
-    justify-content: flex-end;
-    margin: 1px 0 2px;
-  }
-  .pdf-link {
-    margin-right: 0; // override .recipe-link's left-justify auto margin
+    // Recipe PDF link — inline right after cals (no longer its own row).
+    .pdf-link {
+      margin: 0 0 0 2px;
+    }
   }
 
   // "Add food" — square [+] key, right-pinned on the macro row. Deliberately
@@ -563,6 +561,47 @@
     .mat-icon { width: 17px; height: 17px; font-size: 17px; line-height: 17px; }
     &:hover { background: #616161; color: #ffffff; }
     &:active { transform: translateY(1px); }
+  }
+
+  // Notes key — same grey key family; when the drawer is open it reads "on".
+  .notes-btn.on {
+    background: #6f6f6f;
+    color: #ffffff;
+    border-color: #8a8a8a;
+  }
+
+  // Notes drawer — bottom of the card, cordoned by a top rule; the textarea
+  // fills the width and grows downward (~bottom quarter of the card).
+  .notes-drawer {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #3a3a3a;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .notes-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #4da6ff; // blue label, matching "Meal" / "Type"
+    }
+    .notes-box {
+      width: 100%;
+      box-sizing: border-box;
+      resize: vertical;
+      min-height: 56px;
+      padding: 4px 6px;
+      font-size: 12px;
+      color: #f0f0f0;
+      background: #3a3a3a;
+      border: 1px solid #1c1c1c;
+      border-top-color: #4a4a4a;
+      border-radius: 6px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+      outline: none;
+      &::placeholder { color: #8a8f94; font-style: italic; }
+      &:focus { border-color: #4da6ff; }
+    }
   }
 }
 

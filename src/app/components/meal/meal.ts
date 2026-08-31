@@ -183,9 +183,29 @@ interface Macro {
                     [value]="fm.mealType ?? ''"
                     (change)="onMealTypeChange(fm.mealId, $any($event.target).value)"
                     placeholder="Breakfast, Lunch/Dinner…" />
-                  <!-- Camera + "+ Add" keys pushed UP here, right-pinned so they sit
-                       directly under the wastebasket; the Type dropdown keeps the left half. -->
+                  <!-- Keys pushed UP here, right-pinned so they sit directly under
+                       the wastebasket; the Type dropdown keeps the left half.
+                       Order: Notes · Print · Camera · + Add. -->
                   <span class="macro-actions">
+                    <!-- Notes — toggles a drawer at the bottom of the card. Distinct
+                         glyph (sticky note), not the notebook/shopping icons. -->
+                    <button
+                      type="button"
+                      class="add-food-btn notes-btn"
+                      [class.on]="notesIsOpen(fm.mealId)"
+                      matTooltip="Meal notes"
+                      (click)="toggleNotes(fm.mealId)">
+                      <mat-icon>sticky_note_2</mat-icon>
+                    </button>
+                    <!-- Print — renders this meal (ingredients + notes) as a
+                         recipe-format PDF titled "{name} Meal". -->
+                    <button
+                      type="button"
+                      class="add-food-btn print-meal-btn"
+                      matTooltip="Print meal as a recipe PDF"
+                      (click)="rotation.printMealPdf(fm.mealId)">
+                      <mat-icon>print</mat-icon>
+                    </button>
                     @if (isMealSetOwner()) {
                       <button
                         type="button"
@@ -215,20 +235,16 @@ interface Macro {
                   <span class="chip fat">F {{ round(mac(fm.macros).fatG) }}</span>
                   <span class="chip fiber">F {{ round(mac(fm.macros).fiberG) }}</span>
                   <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
-                </div>
-
-                <!-- PDF link below the action discs — a compact blue hyperlink, so
-                     the ingredient list slides up (no tall button column). Shown
-                     only when the meal has a rendered PDF (recipe or print-meal). -->
-                @if (recipeLinkFor(fm.mealId); as link) {
-                  <div class="pdf-link-row">
+                  <!-- Recipe PDF link — inline right after cals (no longer its own
+                       row). Shown only when the meal has a published recipe PDF. -->
+                  @if (recipeLinkFor(fm.mealId); as link) {
                     <button
                       type="button"
                       class="recipe-link pdf-link"
                       matTooltip="Open PDF"
                       (click)="openRecipe(link)">(PDF)</button>
-                  </div>
-                }
+                  }
+                </div>
 
                 <div class="food-rows">
                   @for (item of mainItemsFor(fm.mealId); track item.id) {
@@ -265,6 +281,21 @@ interface Macro {
                         }
                       </div>
                     }
+                  </div>
+                }
+
+                <!-- Notes drawer — bottom quarter of the card, toggled by the Notes
+                     key. Free text; persists on blur and feeds the AI image + PDF. -->
+                @if (notesIsOpen(fm.mealId)) {
+                  <div class="notes-drawer">
+                    <span class="notes-label">Notes</span>
+                    <textarea
+                      #notesBox
+                      class="notes-box regi-field"
+                      rows="3"
+                      placeholder="e.g. hard-boiled eggs (not sunny-side up)…"
+                      [value]="notesFor(fm.mealId)"
+                      (blur)="commitNotes(fm.mealId, notesBox.value)"></textarea>
                   </div>
                 }
                 </div>
@@ -346,6 +377,27 @@ export class MealComponent {
 
   /** Dynamic-ingredients accordion open state (back face). */
   readonly dynamicOpen = signal(false);
+
+  /** Meal-ids whose bottom Notes drawer is open (a Set → multi-meal slots each
+   *  toggle independently). */
+  readonly notesOpen = signal<Set<number>>(new Set());
+  notesIsOpen(mealId: number): boolean {
+    return this.notesOpen().has(mealId);
+  }
+  toggleNotes(mealId: number): void {
+    this.notesOpen.update((s) => {
+      const next = new Set(s);
+      next.has(mealId) ? next.delete(mealId) : next.add(mealId);
+      return next;
+    });
+  }
+  /** Current persisted notes for a meal (read through the full Meal row). */
+  notesFor(mealId: number): string {
+    return this.rotation.getMeal(mealId)?.notes ?? '';
+  }
+  commitNotes(mealId: number, value: string): void {
+    void this.rotation.updateMealNotes(mealId, value);
+  }
 
   /** foodId of a just-added row to glow once; null = nothing blooming. */
   readonly bloomFoodId = signal<number | null>(null);

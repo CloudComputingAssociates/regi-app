@@ -1562,6 +1562,43 @@ export class RotationService {
     }
   }
 
+  /** PUT /api/meal/{id} {notes} — persist free-text meal notes (recipe or
+   *  non-recipe). The notes double as (a) an AI image-generation hint and (b)
+   *  the body of the meal-as-recipe PDF, so a write-through here is enough; the
+   *  server reads notes on the next generate-image / print-pdf call. */
+  async updateMealNotes(mealId: number, notes: string): Promise<void> {
+    const n = notes.trim();
+    // No-op if unchanged, so a blur without edits doesn't PUT.
+    if ((this.getMeal(mealId)?.notes ?? '').trim() === n) return;
+    try {
+      const body: UpdateMealRequest = { notes: n };
+      const updated = await firstValueFrom(
+        this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, body),
+      );
+      this.mealsById.update((m) => new Map(m).set(mealId, updated));
+      this.binderMeals.update((list) => list.map((m) => (m.id === mealId ? updated : m)));
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
+  /** POST /api/meal/{id}/print-pdf — server renders THIS meal (its ingredients +
+   *  notes) in the same layout as a published recipe PDF, titled "{name} Meal",
+   *  and returns a URL we open in the PDF viewer. Works for non-recipe meals too.
+   *  NOTE: inert until the API endpoint lands (see the API hand-off prompt). */
+  async printMealPdf(mealId: number): Promise<void> {
+    try {
+      const res = await firstValueFrom(
+        this.http.post<{ url: string }>(`${this.baseUrl}/meal/${mealId}/print-pdf`, null),
+      );
+      const url = res?.url?.trim();
+      if (url) window.open(url, '_blank', 'noopener');
+      else this.notification.show('The meal PDF is not ready yet.', 'warning');
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+    }
+  }
+
   /** Options for the pick-or-type meal-type dropdown: the standard seeds (Initial
    *  Cap) unioned with the user's own distinct types (SELECT-DISTINCT, no DB list).
    *  Deduped case-insensitively so a legacy lowercase "meal" collapses into "Meal".

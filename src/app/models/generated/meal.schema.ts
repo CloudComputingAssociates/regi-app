@@ -215,6 +215,10 @@ export interface Meal {
   totalSodiumMg?: number;
   prepVideoLink?: string;
   recipeLink?: string;
+  /**
+   * Free-text meal notes for recipe AND non-recipe meals. User-editable via PUT /meal/{id} {notes}. Fed into the AI image-generation prompt as a hint (e.g. 'hard-boiled eggs, not sunny-side up') and rendered on the meal-as-recipe PDF.
+   */
+  notes?: string | null;
   mealImage?: string;
   mealImageThumbnail?: string;
   /**
@@ -374,6 +378,10 @@ export interface UpdateMealRequest {
    * New recipe URL (empty string clears the link)
    */
   recipeLink?: string;
+  /**
+   * New meal notes (empty string / null clears). Persisted to the meal; also used as an AI image-generation hint and rendered on the meal-as-recipe PDF.
+   */
+  notes?: string | null;
   /**
    * Clear-only: when true, sets clonedFromMealId to NULL so a copy pinned AS A NEW binder meal (renamed / from-scratch) becomes independent. Never sets a value — ClonedFromMealID stays server-owned (only DuplicateMeal writes it non-null). No-op when the meal's sourceMealSetId is non-null (a set-materialized meal keeps its lineage for Restore original; use POST /api/meal/{id}/detach to sever a set meal).
    */

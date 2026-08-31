@@ -101,6 +101,7 @@
         "totalSodiumMg": { "type": "integer" },
         "prepVideoLink": { "type": "string" },
         "recipeLink": { "type": "string" },
+        "notes": { "type": ["string", "null"], "description": "Free-text meal notes for recipe AND non-recipe meals. User-editable via PUT /meal/{id} {notes}. Fed into the AI image-generation prompt as a hint (e.g. 'hard-boiled eggs, not sunny-side up') and rendered on the meal-as-recipe PDF." },
         "mealImage": { "type": "string" },
         "mealImageThumbnail": { "type": "string" },
         "servings": { "type": "integer", "description": "How many servings this meal yields" },
@@ -218,6 +219,10 @@
         "recipeLink": {
           "type": "string",
           "description": "New recipe URL (empty string clears the link)"
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "New meal notes (empty string / null clears). Persisted to the meal; also used as an AI image-generation hint and rendered on the meal-as-recipe PDF."
         },
         "clearClonedFrom": {
           "type": "boolean",

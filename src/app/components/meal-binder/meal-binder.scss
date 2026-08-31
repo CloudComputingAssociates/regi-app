@@ -168,7 +168,7 @@
   box-sizing: border-box;
   border: none;
   border-radius: 12px 12px 0 0;
-  background: rgba(59, 125, 224, 0.72); // inactive: only slightly lighter than active
+  background: rgba(58, 169, 129, 0.72); // inactive: cool calming green, slightly lighter than active
   cursor: pointer;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
   transition: background 0.12s ease;
@@ -177,13 +177,13 @@
   .section-label { color: #ffffff; font-size: 16px; font-weight: 400; line-height: 20px; }
   .section-count { color: rgba(255, 255, 255, 0.9); font-size: 11px; font-weight: 400; line-height: 20px; }
 
-  &:hover { background: rgba(59, 125, 224, 0.85); }
-  // Active: fully solid blue with a subtle lift so it clearly reads as selected.
+  &:hover { background: rgba(58, 169, 129, 0.85); }
+  // Active: fully solid green with a subtle lift so it clearly reads as selected.
   &.active {
-    background: #3b7de0;
+    background: #3aa981;
     box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.18);
   }
-  &:focus-visible { box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.6); }
+  &:focus-visible { box-shadow: 0 0 0 2px rgba(58, 169, 129, 0.6); }
 }
 
 // Shopping tab wrapper. Intentionally sets NO font-family: the LIST content (item
@@ -1250,10 +1250,10 @@
     line-height: 1;
     padding: 3px 7px;
     border-radius: 8px;
-    // Solid blue + white text — the old light-on-light chip was unreadable.
+    // Lighter blue + white text (the tabs moved to green, so blue is freed up here).
     color: #ffffff;
-    background: #3d86d6;
-    border: 1px solid #2f6cb0;
+    background: #5f9fe4;
+    border: 1px solid #4585cf;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
