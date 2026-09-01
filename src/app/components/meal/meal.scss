@@ -481,12 +481,12 @@
       color: #4da6ff;       // blue, matching "Meal"
     }
     // Type select — a strict dropdown of the fixed, DB-constrained set (no free
-    // typing). Claims the left ~46%; keys sit right.
+    // typing). Claims the left ~57.5% (25% wider than before); keys sit right.
     .type-combo {
       position: relative;
       flex: 0 1 auto;
       min-width: 0;
-      max-width: 46%;
+      max-width: 57.5%;
       display: flex;
       align-items: center;
     }
@@ -509,15 +509,6 @@
       &:focus { border-color: #4da6ff; }
     }
     .back-type-select { cursor: pointer; }
-
-    // Print key, pushed to the far right (under the wastebasket) — a separate
-    // cluster from the Notes/Camera/Add keys next to the dropdown.
-    .type-right-keys {
-      margin-left: auto;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
   }
 
   .macro-row {
@@ -529,7 +520,7 @@
 
     // Calories readout — grey pill (same as the Binder cals pills). Sits inline
     // right after the macro chips (no auto margin — the action keys moved up to
-    // the Type row, so this row is chips · cals · (PDF), left-justified).
+    // the Type row, so this row is chips · cals, left-justified).
     .slot-cals {
       color: #ffffff;
       background: #999999;
@@ -537,11 +528,6 @@
       padding: 1px 7px;
       border-radius: 999px;
       white-space: nowrap;
-    }
-
-    // Recipe PDF link — inline right after cals (no longer its own row).
-    .pdf-link {
-      margin: 0 0 0 2px;
     }
   }
 
@@ -667,21 +653,6 @@
     font-weight: 600;
     color: #4da6ff;
   }
-}
-
-// Recipe link — white standing underline, LEFT-justified.
-.recipe-link {
-  margin-right: auto;
-  padding: 0;
-  border: none;
-  background: none;
-  font-size: 12px;
-  color: #4da6ff; // standard hyperlink blue — reads as a clickable link
-  text-decoration: underline;
-  text-decoration-color: #4da6ff;
-  text-underline-offset: 2px;
-  cursor: pointer;
-  &:hover { color: #7ac0ff; text-decoration-color: #7ac0ff; } // brighten on hover
 }
 
 // Ingredient list — tight interline rhythm. Zero inter-row gap, and shave a pixel

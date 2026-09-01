@@ -185,15 +185,15 @@ interface Macro {
                   <div class="type-combo">
                     <select
                       class="back-type-input back-type-select"
-                      [value]="fm.mealType ?? ''"
                       (change)="onMealTypeChange(fm.mealId, $any($event.target).value)">
-                      @if (!fm.mealType) { <option value="" disabled>Type…</option> }
+                      @if (!fm.mealType) { <option value="" disabled selected>Type…</option> }
                       @for (t of rotation.mealTypeOptions; track t) {
-                        <option [value]="t">{{ t }}</option>
+                        <option [value]="t" [selected]="t === fm.mealType">{{ t }}</option>
                       }
                     </select>
                   </div>
-                  <!-- Three keys immediately RIGHT of the dropdown: Notes · Camera · +.
+                  <!-- Four keys immediately RIGHT of the dropdown, all left-clustered:
+                       Notes · Camera · + · Print. (The delete lives alone upper-right.)
                        Notes glyph (sticky note) is deliberately unlike the notebook/
                        shopping icons; Camera opens the 3-way image-source bloom. -->
                   <button
@@ -220,18 +220,15 @@ interface Macro {
                     (click)="toggleAdd.emit(fm.mealId)">
                     <mat-icon>add</mat-icon>
                   </button>
-                  <!-- Print sits ALONE on the far right (under the wastebasket). -->
-                  <span class="type-right-keys">
-                    <!-- Print — renders this meal (ingredients + notes) as a
-                         recipe-format PDF titled "{name} Meal". -->
-                    <button
-                      type="button"
-                      class="add-food-btn print-meal-btn"
-                      matTooltip="Print meal as a recipe PDF"
-                      (click)="printMeal(fm.mealId)">
-                      <mat-icon>print</mat-icon>
-                    </button>
-                  </span>
+                  <!-- Print — ambidextrous: opens the recipe if one exists, else
+                       renders the meal to a PDF. Sits right after the + in the cluster. -->
+                  <button
+                    type="button"
+                    class="add-food-btn print-meal-btn"
+                    [matTooltip]="recipeLinkFor(fm.mealId) ? 'Open the recipe (PDF)' : 'Print this meal as a PDF'"
+                    (click)="printMeal(fm.mealId)">
+                    <mat-icon>print</mat-icon>
+                  </button>
                 </div>
 
                 <!-- Order: Protein, Carbs, Fats, Fiber, then Cals last. -->
@@ -241,15 +238,6 @@ interface Macro {
                   <span class="chip fat">F {{ round(mac(fm.macros).fatG) }}</span>
                   <span class="chip fiber">F {{ round(mac(fm.macros).fiberG) }}</span>
                   <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
-                  <!-- Recipe PDF link — inline right after cals (no longer its own
-                       row). Shown only when the meal has a published recipe PDF. -->
-                  @if (recipeLinkFor(fm.mealId); as link) {
-                    <button
-                      type="button"
-                      class="recipe-link pdf-link"
-                      matTooltip="Open PDF"
-                      (click)="openRecipe(link)">(PDF)</button>
-                  }
                 </div>
 
                 <div class="food-rows">
@@ -566,9 +554,16 @@ export class MealComponent {
     if (url) this.tabs.openWebView(url);
   }
 
-  /** Print key — render this meal to a PDF and open it in the SAME in-app viewer
-   *  as the recipe (PDF) link (not a browser download). */
+  /** Print key — ambidextrous. IFF the meal has a recipe link, open THAT recipe
+   *  (the real recipe always wins — never a generated stand-in). Only when no recipe
+   *  link exists do we render the meal to a print-formatted PDF. Both open in the
+   *  same in-app viewer (not a browser download). */
   async printMeal(mealId: number): Promise<void> {
+    const recipe = this.recipeLinkFor(mealId);
+    if (recipe) {
+      this.openRecipe(recipe);
+      return;
+    }
     const url = await this.rotation.printMealPdf(mealId);
     if (url) this.tabs.openWebView(url);
   }

@@ -410,12 +410,11 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       <span class="meal-type-label">Type</span>
                       <select
                         class="meal-type-input"
-                        [value]="meal.mealType"
                         (mousedown)="$event.stopPropagation()"
                         (change)="onMealTypeChange(meal, $any($event.target).value)">
-                        @if (!meal.mealType) { <option value="" disabled>Type…</option> }
+                        @if (!meal.mealType) { <option value="" disabled selected>Type…</option> }
                         @for (t of rotation.mealTypeOptions; track t) {
-                          <option [value]="t">{{ t }}</option>
+                          <option [value]="t" [selected]="t === meal.mealType">{{ t }}</option>
                         }
                       </select>
                     </div>
