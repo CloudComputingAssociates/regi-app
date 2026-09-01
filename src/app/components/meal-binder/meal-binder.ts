@@ -198,7 +198,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                     <option value="none">Off</option>
                     <option value="protein">Protein</option>
                     <option value="fiber">Fiber</option>
-                    <option value="recipes">Recipes Only</option>
+                    <option value="recipes">Recipes</option>
                     <option value="date">By Date</option>
                     <option value="newest">Newest</option>
                   </select>
@@ -293,10 +293,10 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       <button
                         type="button"
                         class="wipe-set-btn"
-                        matTooltip="Remove all of this set's meals from your binder"
+                        [matTooltip]="'Remove all ' + sel.count + ' meals in ' + sel.name + ' from your binder (you keep the MealSet)'"
                         matTooltipPosition="above"
                         (click)="onWipeMealSet(sel)">
-                        Remove all from binder
+                        <mat-icon>delete</mat-icon>
                       </button>
                     }
                   </div>

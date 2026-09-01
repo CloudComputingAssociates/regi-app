@@ -1608,19 +1608,21 @@ export class RotationService {
   }
 
   /** POST /api/meal/{id}/print-pdf — server renders THIS meal (its ingredients +
-   *  notes) in the same layout as a published recipe PDF, titled "{name} Meal",
-   *  and returns a URL we open in the PDF viewer. Works for non-recipe meals too.
-   *  NOTE: inert until the API endpoint lands (see the API hand-off prompt). */
-  async printMealPdf(mealId: number): Promise<void> {
+   *  notes) in the same layout as a published recipe PDF, titled "{name} Meal".
+   *  Returns the served URL so the caller can open it in the SAME in-app PDF viewer
+   *  the recipe (PDF) link uses (openWebView) — not a browser download. Works for
+   *  non-recipe meals too. Returns '' on failure/empty. */
+  async printMealPdf(mealId: number): Promise<string> {
     try {
       const res = await firstValueFrom(
         this.http.post<{ url: string }>(`${this.baseUrl}/meal/${mealId}/print-pdf`, null),
       );
-      const url = res?.url?.trim();
-      if (url) window.open(url, '_blank', 'noopener');
-      else this.notification.show('The meal PDF is not ready yet.', 'warning');
+      const url = res?.url?.trim() ?? '';
+      if (!url) this.notification.show('The meal PDF is not ready yet.', 'warning');
+      return url;
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
+      return '';
     }
   }
 

@@ -233,7 +233,7 @@ interface Macro {
                       type="button"
                       class="add-food-btn print-meal-btn"
                       matTooltip="Print meal as a recipe PDF"
-                      (click)="rotation.printMealPdf(fm.mealId)">
+                      (click)="printMeal(fm.mealId)">
                       <mat-icon>print</mat-icon>
                     </button>
                     @if (isMealSetOwner()) {
@@ -575,6 +575,13 @@ export class MealComponent {
     // In-app viewer overlay — it renders the PDF via Google's Docs Viewer (Google
     // fetches server-side), the only path that displays these download-served,
     // CORS-blocked GCS PDFs inline instead of downloading them.
+    if (url) this.tabs.openWebView(url);
+  }
+
+  /** Print key — render this meal to a PDF and open it in the SAME in-app viewer
+   *  as the recipe (PDF) link (not a browser download). */
+  async printMeal(mealId: number): Promise<void> {
+    const url = await this.rotation.printMealPdf(mealId);
     if (url) this.tabs.openWebView(url);
   }
 
