@@ -12,7 +12,15 @@
 //                others — intentional, so non-authors bring their own photo).
 // Any success closes the dialog; the card flips to the fresh photo and the Notebook
 // thumbnail updates (both via rotation.imagedMeal / applyUploadedMealImage).
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -43,6 +51,20 @@ export interface MealImageSourceData {
         <mat-icon>close</mat-icon>
       </button>
 
+      @if (phoneWaiting()) {
+        <!-- Phone-capture waiting state — clear instructions + auto-closes when the
+             photo lands from the phone. -->
+        <div class="mis-waiting">
+          <mat-icon class="mis-wait-icon">phonelink_ring</mat-icon>
+          <span class="mis-wait-title">Open the Regi app on your phone</span>
+          <span class="mis-wait-sub">
+            Your phone will open its camera — snap this meal and the photo appears here
+            automatically. You can close this window; the picture will still arrive and
+            drop onto the card.
+          </span>
+          <button type="button" class="mis-wait-btn" (click)="close()">Close</button>
+        </div>
+      } @else {
       <h3 class="mis-title">Add a photo — {{ data.mealName }}</h3>
 
       <!-- Top 2/3: the drop zone. -->
@@ -107,6 +129,7 @@ export interface MealImageSourceData {
           </div>
         }
       </div>
+      }
     </div>
   `,
   styleUrls: ['./meal-image-source.scss'],
@@ -124,6 +147,27 @@ export class MealImageSourceComponent {
   readonly dragOver = signal(false);
   readonly isOwner = computed(() => this.role.hasRole('MealSetOwner'));
   readonly canPhone = this.tether.anyLive;
+
+  /** True after a phone-capture command is sent — shows the "open your phone" panel
+   *  until the photo arrives (auto-close) or the user closes it. */
+  readonly phoneWaiting = signal(false);
+  /** The imagedMeal seq at wait-start, so we only auto-close on a NEW arrival for
+   *  this meal (not a stale prior completion). */
+  private waitStartSeq = 0;
+
+  constructor() {
+    // Photo arrived from the phone (or any source) for THIS meal while waiting →
+    // close; the card flip + thumbnail refresh happen via rotation.imagedMeal.
+    effect(() => {
+      const done = this.rotation.imagedMeal();
+      if (!done) return;
+      untracked(() => {
+        if (this.phoneWaiting() && done.id === this.data.mealId && done.seq > this.waitStartSeq) {
+          this.ref.close();
+        }
+      });
+    });
+  }
 
   // JPG/PNG plus Apple HEIC/HEIF (the server transcodes HEIC → JPEG). Apple HEIC
   // often arrives with an EMPTY or odd MIME type, so accept by extension too.
@@ -192,25 +236,23 @@ export class MealImageSourceComponent {
   takePhonePic(): void {
     const deviceId = this.tether.firstLiveDeviceId();
     if (deviceId == null) {
-      this.notification.show('Connect your phone (open the Regi app) to use this.', 'warning');
+      this.notification.show('Open the Regi app on your phone first (it must show connected).', 'warning');
       return;
     }
     void (async () => {
       try {
         await this.tether.requestMealImageCapture(deviceId, this.data.mealId);
-        this.notification.show(
-          'Grab your phone and use your camera to complete the operation.',
-          'info',
-          8000,
-        );
-        this.rotation.awaitMealImage(this.data.mealId); // poll → flip when it lands
-        this.ref.close();
+        // Start the background poll (flips the card when the phone's upload lands)
+        // and show the in-dialog "open your phone" panel instead of a vague toast.
+        this.waitStartSeq = this.rotation.imagedMeal()?.seq ?? 0;
+        this.rotation.awaitMealImage(this.data.mealId);
+        this.phoneWaiting.set(true);
       } catch (err) {
         const status = (err as { status?: number })?.status;
         if (status === 409) {
           this.notification.show('Your phone went offline — reopen the Regi app and retry.', 'error');
         } else if (status === 404) {
-          this.notification.show('Phone capture isn’t available yet — coming soon.', 'warning');
+          this.notification.show('Phone capture isn’t available on your app version yet.', 'warning');
         } else {
           this.notification.show('Could not reach your phone. Please try again.', 'error');
         }

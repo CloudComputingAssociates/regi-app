@@ -32,6 +32,54 @@
   text-overflow: ellipsis;
 }
 
+// Phone-capture waiting panel — replaces the body while we wait for the shot.
+.mis-waiting {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 8px 20px;
+
+  .mis-wait-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 56px;
+    line-height: 56px;
+    color: #7fb2e6;
+    animation: mis-pulse 1.4s ease-in-out infinite;
+  }
+  .mis-wait-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #f1f1f1;
+  }
+  .mis-wait-sub {
+    font-size: 13px;
+    line-height: 1.45;
+    color: #b9bdc2;
+    max-width: 380px;
+  }
+  .mis-wait-btn {
+    margin-top: 4px;
+    padding: 7px 18px;
+    border: 1px solid #5a5a5a;
+    border-radius: 7px;
+    background: #3a3a3a;
+    color: #eaeaea;
+    font-size: 13px;
+    cursor: pointer;
+    &:hover { background: #464646; }
+  }
+}
+@keyframes mis-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
 // Top 2/3 — the drop zone.
 .mis-drop {
   flex: 2 1 0;
