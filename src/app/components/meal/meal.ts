@@ -241,6 +241,12 @@ interface Macro {
                   </button>
                 </div>
 
+                <!-- Provenance caption — only for meals that carry a recipe link
+                     (their own, or resolved from the fork origin). -->
+                @if (recipeLinkFor(fm.mealId)) {
+                  <div class="imported-tag">imported from recipe</div>
+                }
+
                 <div class="food-rows">
                   @for (item of mainItemsFor(fm.mealId); track item.id) {
                     <div

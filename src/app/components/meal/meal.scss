@@ -537,14 +537,21 @@
     }
 
     // Notes toggle — sits right after the cals bubble. It's a display drawer for
-    // this meal, not a card action, so it lives on the macro row. Sized a touch
-    // smaller than the Type-row keys so it doesn't inflate the row height.
+    // this meal, not a card action, so it lives on the macro row. Same 26px size as
+    // every other key (inherited from .add-food-btn).
     .macro-notes-btn {
-      width: 22px;
-      height: 22px;
       margin-left: 2px;
-      .mat-icon { width: 15px; height: 15px; font-size: 15px; line-height: 15px; }
     }
+  }
+
+  // Provenance caption for recipe-imported meals — blue italic, same 13px as the
+  // food-row serving text ("1 pieces").
+  .imported-tag {
+    margin: 1px 0 2px;
+    font-size: 13px;
+    font-style: italic;
+    color: #4da6ff;
+    white-space: nowrap;
   }
 
   // "Add food" — square [+] key, right-pinned on the macro row. Deliberately

@@ -1928,16 +1928,42 @@ export class RotationService {
       ]);
       const key = (it: MealItem): string =>
         it.food ? `${it.food.foodSource}:${it.food.foodId}` : `name:${it.foodName}`;
-      const sourceByKey = new Map<string, MealItem>();
-      for (const it of source.items ?? []) sourceByKey.set(key(it), it);
-      const seen = new Set<string>();
+      // Bucket BOTH sides by identity into LISTS (not a 1:1 map) so identical rows
+      // — the same food appearing N times — are reconciled by COUNT. Collapsing
+      // duplicates to one key is what let deletions of a duplicated item silently
+      // no-op and then resurrect when the slot was repointed at the original.
+      const bucket = (items: MealItem[] | undefined): Map<string, MealItem[]> => {
+        const m = new Map<string, MealItem[]>();
+        for (const it of items ?? []) {
+          const k = key(it);
+          const list = m.get(k);
+          if (list) list.push(it);
+          else m.set(k, [it]);
+        }
+        return m;
+      };
+      const forkByKey = bucket(fork.items);
+      const sourceByKey = bucket(source.items);
       const calls: Promise<unknown>[] = [];
 
-      for (const f of fork.items ?? []) {
-        const k = key(f);
-        seen.add(k);
-        const s = sourceByKey.get(k);
-        if (!s) {
+      for (const k of new Set([...forkByKey.keys(), ...sourceByKey.keys()])) {
+        const fList = forkByKey.get(k) ?? [];
+        const sList = sourceByKey.get(k) ?? [];
+        const paired = Math.min(fList.length, sList.length);
+        // Overlapping copies: update the source row's serving when it differs.
+        for (let i = 0; i < paired; i++) {
+          const f = fList[i];
+          const s = sList[i];
+          if (s.id != null && (s.quantity !== f.quantity || s.unit !== f.unit)) {
+            const body: UpdateMealItemRequest = { quantity: f.quantity, unit: f.unit };
+            calls.push(
+              firstValueFrom(this.http.put(`${this.baseUrl}/meal/${sourceId}/items/${s.id}`, body)),
+            );
+          }
+        }
+        // Fork has MORE copies of this food → add the extras to the source.
+        for (let i = paired; i < fList.length; i++) {
+          const f = fList[i];
           const body: AddMealItemRequest = {
             foodId: f.food?.foodId ?? null,
             foodSource: (f.food?.foodSource ?? 'pending') as FoodSource,
@@ -1948,17 +1974,14 @@ export class RotationService {
             unit: f.unit,
           };
           calls.push(firstValueFrom(this.http.post(`${this.baseUrl}/meal/${sourceId}/items`, body)));
-        } else if (s.id != null && (s.quantity !== f.quantity || s.unit !== f.unit)) {
-          const body: UpdateMealItemRequest = { quantity: f.quantity, unit: f.unit };
-          calls.push(
-            firstValueFrom(this.http.put(`${this.baseUrl}/meal/${sourceId}/items/${s.id}`, body)),
-          );
         }
-      }
-      // Remove source items the fork no longer has.
-      for (const [k, s] of sourceByKey) {
-        if (!seen.has(k) && s.id != null) {
-          calls.push(firstValueFrom(this.http.delete(`${this.baseUrl}/meal/${sourceId}/items/${s.id}`)));
+        // Source has MORE copies than the fork → delete the surplus (this is the
+        // duplicate-removal path that used to be dropped).
+        for (let i = paired; i < sList.length; i++) {
+          const s = sList[i];
+          if (s.id != null) {
+            calls.push(firstValueFrom(this.http.delete(`${this.baseUrl}/meal/${sourceId}/items/${s.id}`)));
+          }
         }
       }
       await Promise.all(calls);
