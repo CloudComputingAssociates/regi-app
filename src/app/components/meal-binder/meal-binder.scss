@@ -204,7 +204,7 @@
   .meals-ctrl-row {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px; // tightened so collapse-all isn't clipped
   }
 
   // Raised white key chrome (moved here from the old .section-head scope so the
@@ -216,7 +216,7 @@
     gap: 3px;
     height: 26px;
     box-sizing: border-box;
-    padding: 0 10px;
+    padding: 0 8px;
     color: #1a1a1a;
     font-family: Roboto, 'Helvetica Neue', sans-serif;
     font-size: 12px;
@@ -262,9 +262,9 @@
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
     height: 26px;
-    padding: 0 6px 0 8px;
+    padding: 0 4px 0 6px;
     background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
     border: 1px solid #b7bcc4;
     border-radius: 8px;
@@ -276,15 +276,15 @@
     .sort-inline-select {
       // Narrow: the option labels are short (Off / Protein / Fiber / Recipes /
       // By Date / Newest), so cap the control instead of letting it auto-size wide.
-      width: 82px;
-      max-width: 82px;
+      width: 66px;
+      max-width: 66px;
       border: none;
       background: transparent;
       font: inherit;
       color: #1a1a1a;
       outline: none;
       cursor: pointer;
-      padding: 0 2px;
+      padding: 0 1px;
     }
   }
 }

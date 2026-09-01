@@ -481,16 +481,20 @@
       color: #4da6ff;       // blue, matching "Meal"
     }
     // Type select — a strict dropdown of the fixed, DB-constrained set (no free
-    // typing). Width is pinned (not content-sized) so it reaches the right edge of
-    // the cals bubble in the macro row below (~62% of the row); keys sit right.
+    // typing). Width is pinned (not content-sized) so its right edge lands at the
+    // right edge of the "313 cals" bubble in the macro row below (~31% of the row);
+    // keys sit right.
     .type-combo {
       position: relative;
       flex: 0 1 auto;
       min-width: 0;
-      width: 62%;
-      max-width: 62%;
+      width: 31%;
+      max-width: 31%;
       display: flex;
       align-items: center;
+      // Half-button (26px → 13px) of breathing room between the dropdown arrow and
+      // the first + key: 6px row gap + 7px margin ≈ 13px.
+      margin-right: 7px;
     }
     .back-type-input {
       // Fills the combo; same vertical metrics as the Meal name box so the two
@@ -530,6 +534,16 @@
       padding: 1px 7px;
       border-radius: 999px;
       white-space: nowrap;
+    }
+
+    // Notes toggle — sits right after the cals bubble. It's a display drawer for
+    // this meal, not a card action, so it lives on the macro row. Sized a touch
+    // smaller than the Type-row keys so it doesn't inflate the row height.
+    .macro-notes-btn {
+      width: 22px;
+      height: 22px;
+      margin-left: 2px;
+      .mat-icon { width: 15px; height: 15px; font-size: 15px; line-height: 15px; }
     }
   }
 

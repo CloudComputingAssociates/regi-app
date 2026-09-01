@@ -261,8 +261,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-start; // Print + scale cluster left; collapse-all pushed right
-  gap: 14px;
-  padding: 5px 12px; // minimal height
+  gap: 8px; // tightened so Print isn't clipped
+  padding: 5px 8px; // minimal height; left-aligned with the meals tab strip
   border-bottom: 1px solid #4a4a4a;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
   font-size: 13px; // the shared "controls" size (tabs use 16px)
@@ -315,11 +315,11 @@
 .scale-radio {
   display: inline-flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px; // tightened between Scale and Servings
   // Boxed as ONE toggle group — SOLID white (no ruled lines behind it), with the
   // SAME raised-key border + shadow as the Print / collapse-all buttons.
   height: 26px;
-  padding: 0 10px;
+  padding: 0 7px;
   background: #ffffff;
   border: 1px solid #b7bcc4;
   border-radius: 8px;
@@ -328,7 +328,7 @@
   .scale-opt {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px; // tighter between the radio and its label
     font-size: 13px; // shared controls size
     color: #1a1a1a;  // dark text on the white box
     cursor: pointer;
@@ -341,13 +341,13 @@
 
   // Scale value: WHITE field with a BLACK value.
   .scale-input {
-    width: 44px;
+    width: 32px;
     background: #ffffff;
     border: 1px solid #b7bcc4;
     border-radius: 4px;
     color: #1a1a1a;
     font-size: 13px;
-    padding: 2px 6px;
+    padding: 2px 4px;
     text-align: center;
     outline: none;
 

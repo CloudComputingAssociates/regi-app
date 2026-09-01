@@ -192,17 +192,15 @@ interface Macro {
                       }
                     </select>
                   </div>
-                  <!-- Four keys immediately RIGHT of the dropdown, all left-clustered:
-                       Notes · Camera · + · Print. (The delete lives alone upper-right.)
-                       Notes glyph (sticky note) is deliberately unlike the notebook/
-                       shopping icons; Camera opens the 3-way image-source bloom. -->
+                  <!-- Three keys immediately RIGHT of the dropdown, left-clustered:
+                       + · Camera · Print. (Notes moved down to the macro row; delete
+                       lives alone upper-right.) Camera opens the 3-way image bloom. -->
                   <button
                     type="button"
-                    class="add-food-btn notes-btn"
-                    [class.on]="notesIsOpen(fm.mealId)"
-                    matTooltip="Meal notes"
-                    (click)="toggleNotes(fm.mealId)">
-                    <mat-icon>sticky_note_2</mat-icon>
+                    class="add-food-btn"
+                    matTooltip="Add food to meal"
+                    (click)="toggleAdd.emit(fm.mealId)">
+                    <mat-icon>add</mat-icon>
                   </button>
                   <!-- Camera — opens the 3-way image-source bloom (upload / phone /
                        AI). Shown to EVERYONE; the AI option inside is owner-gated. -->
@@ -213,15 +211,8 @@ interface Macro {
                     (click)="openImageSource(fm)">
                     <mat-icon>photo_camera</mat-icon>
                   </button>
-                  <button
-                    type="button"
-                    class="add-food-btn"
-                    matTooltip="Add food to meal"
-                    (click)="toggleAdd.emit(fm.mealId)">
-                    <mat-icon>add</mat-icon>
-                  </button>
                   <!-- Print — ambidextrous: opens the recipe if one exists, else
-                       renders the meal to a PDF. Sits right after the + in the cluster. -->
+                       renders the meal to a PDF. Last in the cluster. -->
                   <button
                     type="button"
                     class="add-food-btn print-meal-btn"
@@ -231,13 +222,23 @@ interface Macro {
                   </button>
                 </div>
 
-                <!-- Order: Protein, Carbs, Fats, Fiber, then Cals last. -->
+                <!-- Order: Protein, Carbs, Fats, Fiber, Cals, then the Notes toggle —
+                     it's just a display drawer for this meal, unrelated to the card's
+                     action keys. (Auto-opens when a note already exists.) -->
                 <div class="macro-row">
                   <span class="chip protein">P {{ round(mac(fm.macros).proteinG) }}</span>
                   <span class="chip carb">C {{ round(mac(fm.macros).carbG) }}</span>
                   <span class="chip fat">F {{ round(mac(fm.macros).fatG) }}</span>
                   <span class="chip fiber">F {{ round(mac(fm.macros).fiberG) }}</span>
                   <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
+                  <button
+                    type="button"
+                    class="add-food-btn notes-btn macro-notes-btn"
+                    [class.on]="notesIsOpen(fm.mealId)"
+                    matTooltip="Meal notes"
+                    (click)="toggleNotes(fm.mealId)">
+                    <mat-icon>sticky_note_2</mat-icon>
+                  </button>
                 </div>
 
                 <div class="food-rows">
