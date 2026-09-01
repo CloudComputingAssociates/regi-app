@@ -95,7 +95,7 @@ const CAT_RANK: Record<string, number> = {
           matTooltip="Print / Save as PDF"
           matTooltipPosition="below"
           (click)="print()">
-          <mat-icon>print</mat-icon>Print
+          <mat-icon>print</mat-icon>
         </button>
         @if (isSaving()) {
           <span class="auto-save-indicator">saving...</span>

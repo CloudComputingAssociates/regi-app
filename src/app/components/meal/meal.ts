@@ -192,9 +192,9 @@ interface Macro {
                       }
                     </select>
                   </div>
-                  <!-- Three keys immediately RIGHT of the dropdown, left-clustered:
-                       + · Camera · Print. (Notes moved down to the macro row; delete
-                       lives alone upper-right.) Camera opens the 3-way image bloom. -->
+                  <!-- Four keys immediately RIGHT of the dropdown, left-clustered:
+                       + · Camera · Notes · Print. (Delete lives alone upper-right.)
+                       Camera opens the 3-way image bloom. -->
                   <button
                     type="button"
                     class="add-food-btn"
@@ -211,6 +211,16 @@ interface Macro {
                     (click)="openImageSource(fm)">
                     <mat-icon>photo_camera</mat-icon>
                   </button>
+                  <!-- Notes — toggles the notes drawer (auto-opens when a note
+                       exists). Sits between the Camera and the Print key. -->
+                  <button
+                    type="button"
+                    class="add-food-btn notes-btn"
+                    [class.on]="notesIsOpen(fm.mealId)"
+                    matTooltip="Meal notes"
+                    (click)="toggleNotes(fm.mealId)">
+                    <mat-icon>sticky_note_2</mat-icon>
+                  </button>
                   <!-- Print — ambidextrous: opens the recipe if one exists, else
                        renders the meal to a PDF. Last in the cluster. -->
                   <button
@@ -222,30 +232,19 @@ interface Macro {
                   </button>
                 </div>
 
-                <!-- Order: Protein, Carbs, Fats, Fiber, Cals, then the Notes toggle —
-                     it's just a display drawer for this meal, unrelated to the card's
-                     action keys. (Auto-opens when a note already exists.) -->
+                <!-- Order: Protein, Carbs, Fats, Fiber, Cals, then (for recipe-imported
+                     meals) the "imported from recipe" caption INLINE — keeps it on the
+                     macro line to save vertical space. -->
                 <div class="macro-row">
                   <span class="chip protein">P {{ round(mac(fm.macros).proteinG) }}</span>
                   <span class="chip carb">C {{ round(mac(fm.macros).carbG) }}</span>
                   <span class="chip fat">F {{ round(mac(fm.macros).fatG) }}</span>
                   <span class="chip fiber">F {{ round(mac(fm.macros).fiberG) }}</span>
                   <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
-                  <button
-                    type="button"
-                    class="add-food-btn notes-btn macro-notes-btn"
-                    [class.on]="notesIsOpen(fm.mealId)"
-                    matTooltip="Meal notes"
-                    (click)="toggleNotes(fm.mealId)">
-                    <mat-icon>sticky_note_2</mat-icon>
-                  </button>
+                  @if (recipeLinkFor(fm.mealId)) {
+                    <span class="imported-tag">imported from recipe</span>
+                  }
                 </div>
-
-                <!-- Provenance caption — only for meals that carry a recipe link
-                     (their own, or resolved from the fork origin). -->
-                @if (recipeLinkFor(fm.mealId)) {
-                  <div class="imported-tag">imported from recipe</div>
-                }
 
                 <div class="food-rows">
                   @for (item of mainItemsFor(fm.mealId); track item.id) {

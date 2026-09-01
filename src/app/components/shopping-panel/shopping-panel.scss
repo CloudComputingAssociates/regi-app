@@ -262,7 +262,9 @@
   align-items: center;
   justify-content: flex-start; // Print + scale cluster left; collapse-all pushed right
   gap: 8px; // tightened so Print isn't clipped
-  padding: 5px 8px; // minimal height; left-aligned with the meals tab strip
+  // Left padding matches the meals tab strip's inset (.binder-tabs padding-left 4px,
+  // less the sheet's 1px border) so the scale box lines up under the tabs' left edge.
+  padding: 5px 8px 5px 3px;
   border-bottom: 1px solid #4a4a4a;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
   font-size: 13px; // the shared "controls" size (tabs use 16px)
@@ -274,9 +276,10 @@
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  width: 30px; // icon-only (the "Print" word was dropped — the glyph says it)
   height: 26px;
-  padding: 0 10px;
+  padding: 0;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
   font-size: 13px;
   color: #1a1a1a;
@@ -341,7 +344,7 @@
 
   // Scale value: WHITE field with a BLACK value.
   .scale-input {
-    width: 32px;
+    width: 24px;
     background: #ffffff;
     border: 1px solid #b7bcc4;
     border-radius: 4px;
