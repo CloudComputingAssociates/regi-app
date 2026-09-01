@@ -8,7 +8,7 @@
 // The quantity basis is either each recipe's own servings, or an explicit Scale
 // factor. The old per-category "Staples & one-time" add-boxes are still here but
 // demoted to a collapsed section below (persisted user data via SettingsService).
-import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -73,7 +73,10 @@ const CAT_RANK: Record<string, number> = {
       <div class="shopping-top no-print">
         <!-- Order: boxed toggle group · Print · collapse-all (far right). -->
         <div class="scale-radio">
-          <label class="scale-opt">
+          <label
+            class="scale-opt"
+            [matTooltip]="'Always scale to ' + scaleValue()"
+            matTooltipPosition="below">
             <input
               type="radio"
               name="scaleMode"
@@ -88,7 +91,10 @@ const CAT_RANK: Record<string, number> = {
               (focus)="scaleMode.set('custom')"
               (change)="onScaleInput($event)" />
           </label>
-          <label class="scale-opt">
+          <label
+            class="scale-opt"
+            matTooltip="Use Servings from recipe, and Scale value otherwise"
+            matTooltipPosition="below">
             <input
               type="radio"
               name="scaleMode"
@@ -286,6 +292,20 @@ export class ShoppingPanelComponent {
   // each recipe's own servings ("Use Servings"). These drive ?basis=&factor=.
   readonly scaleMode = signal<'recipe' | 'custom'>('custom');
   readonly scaleValue = signal<number>(1);
+  /** True once the user types a scale by hand — after that we stop tracking the
+   *  standing People count so a manual override sticks. */
+  private scaleTouched = false;
+  /** Seed the Scale value from the People setting (regiMenu.persons) — that setting
+   *  exists to scale the shopping list — until the user overrides it by hand. */
+  private readonly seedScaleFromPeople = effect(
+    () => {
+      const people = this.rotation.persons();
+      untracked(() => {
+        if (!this.scaleTouched) this.scaleValue.set(people);
+      });
+    },
+    { allowSignalWrites: true },
+  );
 
   // ---- Collapsible computed-list categories (PROTEINS, PRODUCE, …) ----------
   readonly collapsedCats = signal<Set<string>>(new Set());
@@ -309,6 +329,7 @@ export class ShoppingPanelComponent {
 
   onScaleInput(event: Event): void {
     const n = Math.max(1, Math.floor(Number((event.target as HTMLInputElement).value) || 1));
+    this.scaleTouched = true; // manual override — stop following the People setting
     this.scaleValue.set(n);
     this.scaleMode.set('custom');
   }
