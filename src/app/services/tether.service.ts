@@ -70,6 +70,21 @@ export class TetherService {
     );
   }
 
+  /** POST /api/tether/device/{id}/command {type:'captureMeal', mealId} — ask a live
+   *  device to open its camera, shoot the meal, and upload it against THIS meal id.
+   *  Unlike the avatar command, this carries a `mealId` so the phone knows which
+   *  meal to attach the photo to (source=meal upload). NOTE: the `mealId` field +
+   *  the 'captureMeal' type are part of the regi-api / regi-mobile-app handoff —
+   *  until both deploy the phone drops the command (unknown type) and nothing fires. */
+  async requestMealImageCapture(deviceId: number, mealId: number): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.baseUrl}/tether/device/${deviceId}/command`, {
+        type: 'captureMeal',
+        mealId,
+      }),
+    );
+  }
+
   /** The first live device's id, or null when nothing is live. */
   readonly firstLiveDeviceId = computed<number | null>(
     () => this.devices().find((d) => d.live)?.deviceId ?? null,

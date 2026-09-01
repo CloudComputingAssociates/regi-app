@@ -761,8 +761,13 @@ export class RotationService {
 
   /** Poll ~every 4s (cap ~60s) re-fetching the meal until its image URL appears or
    *  changes (regenerate), then clear the loading state and refresh the board. */
-  private pollForMealImage(mealId: number, baseline: string, attempt: number): void {
-    const MAX_ATTEMPTS = 15; // ~60s at 4s
+  private pollForMealImage(
+    mealId: number,
+    baseline: string,
+    attempt: number,
+    maxAttempts = 15, // ~60s at 4s (AI). The phone path passes a longer budget.
+  ): void {
+    const MAX_ATTEMPTS = maxAttempts;
     setTimeout(async () => {
       if (!this.generatingImageIds().has(mealId)) return; // cleared elsewhere
       await this.loadMeal(mealId);
@@ -799,8 +804,40 @@ export class RotationService {
         this.notification.show('Image is taking longer than expected — it may appear shortly.', 'warning');
         return;
       }
-      this.pollForMealImage(mealId, baseline, attempt + 1);
+      this.pollForMealImage(mealId, baseline, attempt + 1, MAX_ATTEMPTS);
     }, 4000);
+  }
+
+  /** Direct-upload path (drop-zone / paste / browse): the image bytes already went
+   *  to POST /image/upload/product?source=meal (synchronous — the server wrote
+   *  MealImage/Thumbnail), so we just stamp the returned URLs onto the cached meal
+   *  (+ its Binder origin for a fork) and fire the flip-to-photo. No polling. */
+  applyUploadedMealImage(mealId: number, imageUrl: string, thumbUrl: string): void {
+    const cur = this.getMeal(mealId);
+    if (cur) {
+      this.replaceBinderMeal({ ...cur, mealImage: imageUrl, mealImageThumbnail: thumbUrl });
+      const originId = cur.clonedFromMealId;
+      if (originId != null) {
+        this.binderMeals.update((list) =>
+          list.map((m) =>
+            m.id === originId ? { ...m, mealImage: imageUrl, mealImageThumbnail: thumbUrl } : m,
+          ),
+        );
+      }
+    }
+    void this.refreshSelectedMenu();
+    this.imagedMeal.set({ id: mealId, seq: ++this.imgDoneSeq }); // flip to the new photo
+  }
+
+  /** Phone-capture path: the command was already sent to the device. The phone will
+   *  shoot + upload against this meal (source=meal) sometime in the next minute or
+   *  two, so poll the meal until its image URL changes — same detect-and-flip as
+   *  the AI path, with a longer budget (~3 min) since a human has to grab the phone. */
+  awaitMealImage(mealId: number): void {
+    if (this.generatingImageIds().has(mealId)) return;
+    const baseline = this.mealImageUrl(mealId);
+    this.generatingImageIds.update((s) => new Set(s).add(mealId));
+    this.pollForMealImage(mealId, baseline, 0, 45); // ~3 min at 4s
   }
 
 

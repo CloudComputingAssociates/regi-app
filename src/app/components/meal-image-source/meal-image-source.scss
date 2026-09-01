@@ -1,0 +1,178 @@
+:host {
+  display: block;
+}
+
+.mis {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(560px, 88vw);
+  height: min(520px, 82vh);
+  padding: 16px;
+  box-sizing: border-box;
+  overflow: hidden; // clip the rounded corners
+}
+
+// Close disc — inside the top-right corner (dialog convention).
+.mis-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+}
+
+.mis-title {
+  margin: 0 34px 0 2px; // clear the close disc
+  font-size: 15px;
+  font-weight: 600;
+  color: #f1f1f1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Top 2/3 — the drop zone.
+.mis-drop {
+  flex: 2 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  border: 2px dashed #5a5a5a;
+  border-radius: 10px;
+  background: #242424;
+  outline: none;
+  transition: border-color 0.12s ease, background 0.12s ease;
+  cursor: default;
+
+  &.dragging {
+    border-color: #4da6ff;
+    background: #22303f;
+  }
+  &.busy {
+    opacity: 0.7;
+  }
+
+  .mis-drop-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 44px;
+    line-height: 44px;
+    color: #7fb2e6;
+  }
+  .mis-drop-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e8e8e8;
+  }
+  .mis-drop-sub {
+    font-size: 12px;
+    color: #9aa0a6;
+  }
+  .mis-link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: #4da6ff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font: inherit;
+    cursor: pointer;
+    &:hover {
+      color: #7ac0ff;
+    }
+  }
+}
+
+// Bottom 1/3 — split into two halves.
+.mis-actions {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  gap: 12px;
+
+  .mis-half {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    background: #242424;
+  }
+}
+
+// The icon-buttons (same square grey key as the meal card's action keys).
+.mis-source-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  color: #e6e6e6;
+  background: #555555;
+  border: 1px solid #6a6a6a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s ease, opacity 0.12s ease;
+
+  .mat-icon {
+    width: 26px;
+    height: 26px;
+    font-size: 26px;
+    line-height: 26px;
+  }
+  .mis-ai-img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+  }
+  &:hover:not(:disabled) {
+    background: #616161;
+    color: #ffffff;
+  }
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  &:disabled {
+    // Shaded — phone not connected (green tether off).
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+.mis-ai-btn {
+  background: #2b3b52; // subtle blue seat for the AI star
+  border-color: #3d5a80;
+  &:hover {
+    background: #35496a;
+  }
+}
+
+.mis-source-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  &.shaded {
+    opacity: 0.5;
+  }
+
+  .mis-source-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #eaeaea;
+  }
+  .mis-source-sub {
+    font-size: 11px;
+    color: #9aa0a6;
+  }
+}

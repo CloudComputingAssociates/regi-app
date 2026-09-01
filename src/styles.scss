@@ -202,6 +202,24 @@ sup.sm {
   }
 }
 
+// Meal image-source bloom — dark surface, no default padding (the component owns
+// its own layout), with a soft halo. Mirrors wipe-dialog-panel.
+.meal-image-dialog-panel {
+  --mdc-dialog-container-color: #2a2a2a;
+
+  .mat-mdc-dialog-surface {
+    background-color: #2a2a2a;
+    color: #f1f1f1;
+    border: 1px solid #4a4a4a;
+    border-radius: 12px;
+    box-shadow: 0 0 0 3px rgba(77, 166, 255, 0.18), 0 14px 40px rgba(0, 0, 0, 0.6);
+    padding: 0;
+  }
+  .mat-mdc-dialog-content {
+    padding: 0;
+  }
+}
+
 // Food picker filter radio buttons - white theme
 .filter-radio-group .mat-mdc-radio-button {
   --mdc-radio-selected-icon-color: #ffffff !important;

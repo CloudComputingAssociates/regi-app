@@ -28,7 +28,12 @@ import { Food } from '../../models/food.model';
 import { FoodComponent } from '../food/food';
 import { RotationService } from '../../services/rotation.service';
 import { TabService } from '../../services/tab.service';
+import { MatDialog } from '@angular/material/dialog';
 import { RoleService } from '../../services/role.service';
+import {
+  MealImageSourceComponent,
+  MealImageSourceData,
+} from '../meal-image-source/meal-image-source';
 
 interface Macro {
   proteinG: number;
@@ -236,15 +241,15 @@ interface Macro {
                       (click)="printMeal(fm.mealId)">
                       <mat-icon>print</mat-icon>
                     </button>
-                    @if (isMealSetOwner()) {
-                      <button
-                        type="button"
-                        class="add-food-btn genimg-btn"
-                        [matTooltip]="tileImage(fm) ? 'Regenerate AI meal image' : 'Generate AI meal image'"
-                        (click)="rotation.generateMealImage(fm.mealId)">
-                        <mat-icon>photo_camera</mat-icon>
-                      </button>
-                    }
+                    <!-- Camera — opens the 3-way image-source bloom (upload / phone /
+                         AI). Shown to EVERYONE; the AI option inside is owner-gated. -->
+                    <button
+                      type="button"
+                      class="add-food-btn genimg-btn"
+                      matTooltip="Add a meal photo"
+                      (click)="openImageSource(fm)">
+                      <mat-icon>photo_camera</mat-icon>
+                    </button>
                   </span>
                 </div>
 
@@ -333,6 +338,17 @@ export class MealComponent {
   protected readonly rotation = inject(RotationService);
   private readonly tabs = inject(TabService);
   private readonly role = inject(RoleService);
+  private readonly dialog = inject(MatDialog);
+
+  /** Camera key → the 3-way image-source bloom (upload · phone · AI). */
+  openImageSource(fm: MenuSlotMeal): void {
+    const data: MealImageSourceData = { mealId: fm.mealId, mealName: this.clean(fm.mealName) };
+    this.dialog.open(MealImageSourceComponent, {
+      panelClass: 'meal-image-dialog-panel',
+      autoFocus: false,
+      data,
+    });
+  }
 
   /** MealSetOwner-only affordances (e.g. the AI meal-image camera button). */
   readonly isMealSetOwner = computed(() => this.role.hasRole('MealSetOwner'));
