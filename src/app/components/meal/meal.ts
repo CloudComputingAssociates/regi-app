@@ -178,42 +178,24 @@ interface Macro {
                   </button>
                 </div>
 
-                <!-- Meal TYPE — pick-or-type, between the name row and the discs
-                     (mirrors the Notebook). -->
+                <!-- Meal TYPE — strict select of the DB-constrained set (no free
+                     typing), between the name row and the discs (mirrors the Notebook). -->
                 <div class="back-type-row">
                   <span class="back-type-label">Type</span>
-                  <!-- Combobox: on focus it shows ALL options (seeds Breakfast/Lunch/
-                       Dinner/Snack/Meal + your distinct types), UNFILTERED — a datalist
-                       hides options that don't match the typed text, which is why only
-                       "Meal" showed. You can still type a brand-new Type. -->
                   <div class="type-combo">
-                    <input
-                      #typeBox
-                      type="text"
-                      class="back-type-input"
+                    <select
+                      class="back-type-input back-type-select"
                       [value]="fm.mealType ?? ''"
-                      (focus)="typeMenuOpenId.set(fm.mealId)"
-                      (change)="onMealTypeChange(fm.mealId, typeBox.value)"
-                      (keydown.enter)="onMealTypeChange(fm.mealId, typeBox.value); typeBox.blur()"
-                      (blur)="typeMenuOpenId.set(null)"
-                      placeholder="Breakfast, Lunch/Dinner…" />
-                    <mat-icon class="type-caret" aria-hidden="true">arrow_drop_down</mat-icon>
-                    @if (typeMenuOpenId() === fm.mealId) {
-                      <ul class="type-menu">
-                        @for (t of rotation.mealTypeOptions(); track t) {
-                          <li>
-                            <button
-                              type="button"
-                              class="type-opt"
-                              [class.sel]="(fm.mealType ?? '').toLowerCase() === t.toLowerCase()"
-                              (mousedown)="pickType(fm.mealId, t)">{{ t }}</button>
-                          </li>
-                        }
-                      </ul>
-                    }
+                      (change)="onMealTypeChange(fm.mealId, $any($event.target).value)">
+                      @if (!fm.mealType) { <option value="" disabled>Type…</option> }
+                      @for (t of rotation.mealTypeOptions; track t) {
+                        <option [value]="t">{{ t }}</option>
+                      }
+                    </select>
                   </div>
-                  <!-- Notes + Add sit immediately RIGHT of the dropdown. Notes glyph
-                       (sticky note) is deliberately unlike the notebook/shopping icons. -->
+                  <!-- Three keys immediately RIGHT of the dropdown: Notes · Camera · +.
+                       Notes glyph (sticky note) is deliberately unlike the notebook/
+                       shopping icons; Camera opens the 3-way image-source bloom. -->
                   <button
                     type="button"
                     class="add-food-btn notes-btn"
@@ -222,6 +204,15 @@ interface Macro {
                     (click)="toggleNotes(fm.mealId)">
                     <mat-icon>sticky_note_2</mat-icon>
                   </button>
+                  <!-- Camera — opens the 3-way image-source bloom (upload / phone /
+                       AI). Shown to EVERYONE; the AI option inside is owner-gated. -->
+                  <button
+                    type="button"
+                    class="add-food-btn genimg-btn"
+                    matTooltip="Add a meal photo"
+                    (click)="openImageSource(fm)">
+                    <mat-icon>photo_camera</mat-icon>
+                  </button>
                   <button
                     type="button"
                     class="add-food-btn"
@@ -229,8 +220,7 @@ interface Macro {
                     (click)="toggleAdd.emit(fm.mealId)">
                     <mat-icon>add</mat-icon>
                   </button>
-                  <!-- Print + Camera are pushed to the FAR RIGHT (under the wastebasket),
-                       a separate cluster from Notes/Add. -->
+                  <!-- Print sits ALONE on the far right (under the wastebasket). -->
                   <span class="type-right-keys">
                     <!-- Print — renders this meal (ingredients + notes) as a
                          recipe-format PDF titled "{name} Meal". -->
@@ -240,15 +230,6 @@ interface Macro {
                       matTooltip="Print meal as a recipe PDF"
                       (click)="printMeal(fm.mealId)">
                       <mat-icon>print</mat-icon>
-                    </button>
-                    <!-- Camera — opens the 3-way image-source bloom (upload / phone /
-                         AI). Shown to EVERYONE; the AI option inside is owner-gated. -->
-                    <button
-                      type="button"
-                      class="add-food-btn genimg-btn"
-                      matTooltip="Add a meal photo"
-                      (click)="openImageSource(fm)">
-                      <mat-icon>photo_camera</mat-icon>
                     </button>
                   </span>
                 </div>
@@ -573,18 +554,9 @@ export class MealComponent {
     return this.rotation.recipeLinkFor(mealId);
   }
 
-  /** Commit the meal's TYPE label (pick-or-type) from the card. */
+  /** Commit the meal's TYPE from the card's strict select (fixed, DB-constrained). */
   onMealTypeChange(mealId: number, value: string): void {
     void this.rotation.updateMealType(mealId, (value ?? '').trim());
-  }
-
-  /** Which meal's Type combobox menu is open (null = none). */
-  readonly typeMenuOpenId = signal<number | null>(null);
-  /** Pick an option from the Type menu. mousedown fires before the input's blur,
-   *  so the choice commits before the menu closes. */
-  pickType(mealId: number, t: string): void {
-    this.typeMenuOpenId.set(null);
-    this.onMealTypeChange(mealId, t);
   }
 
   openRecipe(url: string): void {

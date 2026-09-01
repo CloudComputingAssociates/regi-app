@@ -18,7 +18,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@auth0/auth0-angular';
 import { environment } from '../../environments/environment';
-import { TetherPresenceResponse } from '../models/tether.models';
+import { MobileCommandRequest, TetherPresenceResponse } from '../models/tether.models';
 
 @Injectable({ providedIn: 'root' })
 export class TetherService {
@@ -57,38 +57,25 @@ export class TetherService {
     );
   }
 
-  /** POST /api/tether/device/{id}/command — ask a live device to run a command
-   *  (e.g. open the camera and capture the user's avatar). Fire-and-forget; the
-   *  phone picks it up on its next tether poll. NOTE: the command channel is part
-   *  of the pending mobile-capture handoff — until it deploys this 404s and the
-   *  caller surfaces a "try again later" message. */
-  async requestAvatarCapture(deviceId: number): Promise<void> {
-    await firstValueFrom(
-      this.http.post<void>(`${this.baseUrl}/tether/device/${deviceId}/command`, {
-        type: 'captureAvatar',
-      }),
-    );
+  /** POST /api/mobile/command {type:'camera.captureAvatar'} — ENQUEUE an avatar
+   *  capture for the caller's live phone. User-scoped (no deviceId): the API routes
+   *  it to the live device and answers 202 Accepted, or 409 if presence went stale.
+   *  Fire-and-forget from the web's side; the phone picks it up on its next poll and
+   *  uploads server-side. Gate the call on {@link anyLive} so we never fire into the
+   *  void. NOTE: pending the regi-api /mobile/command deploy — until then this 404s. */
+  async requestAvatarCapture(): Promise<void> {
+    const body: MobileCommandRequest = { type: 'camera.captureAvatar' };
+    await firstValueFrom(this.http.post<void>(`${this.baseUrl}/mobile/command`, body));
   }
 
-  /** POST /api/tether/device/{id}/command {type:'captureMeal', mealId} — ask a live
-   *  device to open its camera, shoot the meal, and upload it against THIS meal id.
-   *  Unlike the avatar command, this carries a `mealId` so the phone knows which
-   *  meal to attach the photo to (source=meal upload). NOTE: the `mealId` field +
-   *  the 'captureMeal' type are part of the regi-api / regi-mobile-app handoff —
-   *  until both deploy the phone drops the command (unknown type) and nothing fires. */
-  async requestMealImageCapture(deviceId: number, mealId: number): Promise<void> {
-    await firstValueFrom(
-      this.http.post<void>(`${this.baseUrl}/tether/device/${deviceId}/command`, {
-        type: 'captureMeal',
-        mealId,
-      }),
-    );
+  /** POST /api/mobile/command {type:'camera.captureMeal', payload:{mealId}} — ENQUEUE
+   *  a meal-photo capture for the caller's live phone. Carries `mealId` so the phone
+   *  knows which meal to attach its photo to (source=meal upload). Same transport /
+   *  202-or-409 contract as {@link requestAvatarCapture}; gate on {@link anyLive}. */
+  async requestMealImageCapture(mealId: number): Promise<void> {
+    const body: MobileCommandRequest = { type: 'camera.captureMeal', payload: { mealId } };
+    await firstValueFrom(this.http.post<void>(`${this.baseUrl}/mobile/command`, body));
   }
-
-  /** The first live device's id, or null when nothing is live. */
-  readonly firstLiveDeviceId = computed<number | null>(
-    () => this.devices().find((d) => d.live)?.deviceId ?? null,
-  );
 
   private start(): void {
     if (this.running) return;

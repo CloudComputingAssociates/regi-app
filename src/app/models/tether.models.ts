@@ -23,3 +23,19 @@ export interface TetherPresenceResponse {
   devices: TetherDevice[];
   pollIntervalSeconds: number;
 }
+
+/** Discriminator for a queued mobile command. */
+export type MobileCommandType = 'camera.captureMeal' | 'camera.captureAvatar';
+
+/** POST /api/mobile/command body — the web app ENQUEUES a camera command for the
+ *  caller's live phone. User-scoped (no deviceId in the path): the API routes it
+ *  to the user's live device and answers 202 Accepted, or 409 when presence went
+ *  stale and no device is live. `payload.mealId` rides only on camera.captureMeal
+ *  (the meal the phone's photo attaches to); camera.captureAvatar omits payload.
+ *  NOTE: this endpoint is part of the pending mobile-capture handoff — until the
+ *  regi-api /mobile/command route deploys, these POSTs 404 and the callers surface
+ *  a "try again" message. Keep in sync with the API's mobile-command schema. */
+export interface MobileCommandRequest {
+  type: MobileCommandType;
+  payload?: { mealId: number };
+}

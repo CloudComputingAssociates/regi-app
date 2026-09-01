@@ -480,8 +480,8 @@
       font-weight: 600;
       color: #4da6ff;       // blue, matching "Meal"
     }
-    // Type combobox — a real input + a caret + an always-full option menu (not a
-    // datalist, which filters by typed text). Claims the left ~46%; keys sit right.
+    // Type select — a strict dropdown of the fixed, DB-constrained set (no free
+    // typing). Claims the left ~46%; keys sit right.
     .type-combo {
       position: relative;
       flex: 0 1 auto;
@@ -492,7 +492,7 @@
     }
     .back-type-input {
       // Fills the combo; same vertical metrics as the Meal name box so the two
-      // boxes match height. Right padding clears the caret.
+      // boxes match height.
       flex: 1 1 auto;
       min-width: 0;
       width: 100%;
@@ -506,58 +506,12 @@
       border-radius: 6px;
       box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
       outline: none;
-      &::placeholder { color: #8a8f94; font-style: italic; }
       &:focus { border-color: #4da6ff; }
     }
-    // Single permanent caret (visual only — clicks fall through to the input,
-    // which opens the menu on focus).
-    .type-caret {
-      position: absolute;
-      right: 3px;
-      top: 50%;
-      transform: translateY(-50%);
-      pointer-events: none;
-      width: 20px;
-      height: 20px;
-      font-size: 20px;
-      line-height: 20px;
-      color: #9aa0a6;
-    }
-    // Dropdown menu — shows ALL options, unfiltered.
-    .type-menu {
-      position: absolute;
-      top: calc(100% + 2px);
-      left: 0;
-      min-width: 100%;
-      max-height: 180px;
-      overflow-y: auto;
-      margin: 0;
-      padding: 4px 0;
-      list-style: none;
-      background: #2c2c2c;
-      border: 1px solid #1c1c1c;
-      border-radius: 6px;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55);
-      z-index: 30;
+    .back-type-select { cursor: pointer; }
 
-      .type-opt {
-        display: block;
-        width: 100%;
-        text-align: left;
-        padding: 5px 10px;
-        background: none;
-        border: none;
-        color: #e8e8e8;
-        font-size: 13px;
-        white-space: nowrap;
-        cursor: pointer;
-        &:hover { background: #3a3a3a; color: #ffffff; }
-        &.sel { color: #4da6ff; font-weight: 600; }
-      }
-    }
-
-    // Print + Camera keys, pushed to the far right (under the wastebasket) — a
-    // separate cluster from the Notes/Add keys next to the dropdown.
+    // Print key, pushed to the far right (under the wastebasket) — a separate
+    // cluster from the Notes/Camera/Add keys next to the dropdown.
     .type-right-keys {
       margin-left: auto;
       display: inline-flex;

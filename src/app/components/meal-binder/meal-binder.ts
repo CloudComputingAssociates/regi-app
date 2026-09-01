@@ -309,7 +309,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                     [value]="mealTypeFilter()"
                     (change)="onMealTypeFilterChange($any($event.target).value)">
                     <option value="all">All types</option>
-                    @for (t of rotation.mealTypeOptions(); track t) {
+                    @for (t of rotation.mealTypeOptions; track t) {
                       <option [value]="t">{{ t }}</option>
                     }
                   </select>
@@ -317,10 +317,6 @@ import { Meal, Menu, MealSetSummary } from '../../models';
               </fieldset>
             </div>
           }
-          <!-- Shared pick-or-type options for the meal-type inputs. -->
-          <datalist id="notebook-mealtype-options">
-            @for (t of rotation.mealTypeOptions(); track t) { <option [value]="t"></option> }
-          </datalist>
           <div class="section-body" cdkDropList>
               @for (meal of displayMeals(); track meal.id; let i = $index) {
                 <div
@@ -407,19 +403,21 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       </button>
                     }
                   </div>
-                  <!-- Meal TYPE label — pick-or-type, right under the title. Shown
-                       when the row is open (edit affordances appear on expand). -->
+                  <!-- Meal TYPE — strict select of the fixed, DB-constrained set (no
+                       free typing). Shown when the row is open. -->
                   @if (isMealOpen(meal) && !meal.mealSetId) {
                     <div class="meal-type-row" (click)="$event.stopPropagation()">
                       <span class="meal-type-label">Type</span>
-                      <input
-                        type="text"
+                      <select
                         class="meal-type-input"
-                        list="notebook-mealtype-options"
                         [value]="meal.mealType"
                         (mousedown)="$event.stopPropagation()"
-                        (change)="onMealTypeChange(meal, $any($event.target).value)"
-                        placeholder="Breakfast, Lunch/Dinner…" />
+                        (change)="onMealTypeChange(meal, $any($event.target).value)">
+                        @if (!meal.mealType) { <option value="" disabled>Type…</option> }
+                        @for (t of rotation.mealTypeOptions; track t) {
+                          <option [value]="t">{{ t }}</option>
+                        }
+                      </select>
                     </div>
                   }
                   <!-- Reveal: all macros in order P, C, F, fiber, cals, then the

@@ -58,6 +58,21 @@ export class UserProfileService {
     }
   }
 
+  /** Re-fetch the profile and adopt the server's avatar url app-wide. Returns the
+   *  current avatarUrl (or null). Used to reflect a phone-uploaded avatar (the phone
+   *  uploads server-side after a camera.captureAvatar command) without a full reload.
+   *  Fails soft — returns null if the endpoint isn't reachable. */
+  async refreshAvatar(): Promise<string | null> {
+    try {
+      const p = await firstValueFrom(this.http.get<UserProfile>(`${this.baseUrl}/user/profile`));
+      const url = p?.avatarUrl ?? null;
+      this.profileImage.setPersisted(url);
+      return url;
+    } catch {
+      return null;
+    }
+  }
+
   /** Reflect a name everywhere immediately (also used for the session-only path). */
   setDisplayName(name: string | null): void {
     this.override.set(name && name.trim() ? name.trim() : null);

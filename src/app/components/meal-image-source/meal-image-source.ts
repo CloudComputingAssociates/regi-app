@@ -5,9 +5,12 @@
 //   • Top 2/3  — a drop zone: paste (Ctrl+V) / drag-drop / browse a PNG · JPG · HEIC
 //                → POST /image/upload/product?source=meal (synchronous; server
 //                writes MealImage/Thumbnail) → stamp + flip.
-//   • Bottom-left  — "Camera – take phone pic": fires a captureMeal command to the
-//                tethered phone; enabled ONLY when a device is live (else shaded).
-//                Snackbar + poll-to-flip (mirrors the AI methodology).
+//   • Bottom-left  — "Camera – take phone pic": ENQUEUES a camera.captureMeal
+//                command (POST /api/mobile/command, 202) for the user's live phone;
+//                enabled ONLY when a device is live (else shaded). The web no longer
+//                pops the phone camera — an in-dialog panel directs the user to the
+//                phone's menu (☰) → Phone panel, while a background poll flips the
+//                card when the phone's upload lands.
 //   • Bottom-right — "AI Generate meal image": MealSetOwner ONLY (not rendered for
 //                others — intentional, so non-authors bring their own photo).
 // Any success closes the dialog; the card flips to the fresh photo and the Notebook
@@ -21,6 +24,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -56,11 +60,11 @@ export interface MealImageSourceData {
              photo lands from the phone. -->
         <div class="mis-waiting">
           <mat-icon class="mis-wait-icon">phonelink_ring</mat-icon>
-          <span class="mis-wait-title">Open the Regi app on your phone</span>
+          <span class="mis-wait-title">📱 Sent to your phone</span>
           <span class="mis-wait-sub">
-            Your phone will open its camera — snap this meal and the photo appears here
-            automatically. You can close this window; the picture will still arrive and
-            drop onto the card.
+            On your phone, open the menu (☰) → <strong>Phone</strong> to take the
+            picture. The photo drops onto this card automatically when it lands — you
+            can close this window; it will still arrive.
           </span>
           <button type="button" class="mis-wait-btn" (click)="close()">Close</button>
         </div>
@@ -101,14 +105,14 @@ export interface MealImageSourceData {
             type="button"
             class="mis-source-btn"
             [disabled]="!canPhone()"
-            [matTooltip]="canPhone() ? 'Open your phone camera' : 'Connect your phone to enable'"
+            [matTooltip]="canPhone() ? 'Send a photo request to your phone' : 'Open Regi on your phone to enable'"
             (click)="takePhonePic()">
             <mat-icon>photo_camera</mat-icon>
           </button>
           <div class="mis-source-text" [class.shaded]="!canPhone()">
             <span class="mis-source-label">Camera — take phone pic</span>
             <span class="mis-source-sub">{{
-              canPhone() ? 'must have phone app active/open' : 'connect your phone to enable'
+              canPhone() ? 'sends the request to your phone' : 'Open Regi on your phone to enable'
             }}</span>
           </div>
         </div>
@@ -234,25 +238,30 @@ export class MealImageSourceComponent {
   }
 
   takePhonePic(): void {
-    const deviceId = this.tether.firstLiveDeviceId();
-    if (deviceId == null) {
-      this.notification.show('Open the Regi app on your phone first (it must show connected).', 'warning');
+    // Gate on presence — never fire a request into the void. If we can't see a live
+    // phone, we can't ask it.
+    if (!this.canPhone()) {
+      this.notification.show('Open Regi on your phone to enable phone capture.', 'warning');
       return;
     }
     void (async () => {
       try {
-        await this.tether.requestMealImageCapture(deviceId, this.data.mealId);
-        // Start the background poll (flips the card when the phone's upload lands)
-        // and show the in-dialog "open your phone" panel instead of a vague toast.
+        // Enqueue (202 Accepted) — do NOT wait on the phone. The web no longer pops
+        // the phone camera; the request now waits on the device's Phone panel.
+        await this.tether.requestMealImageCapture(this.data.mealId);
+        // Point the user at the phone (the waiting panel names menu → Phone) and
+        // start the background poll that flips the card when the upload lands.
         this.waitStartSeq = this.rotation.imagedMeal()?.seq ?? 0;
         this.rotation.awaitMealImage(this.data.mealId);
         this.phoneWaiting.set(true);
       } catch (err) {
-        const status = (err as { status?: number })?.status;
+        const status = err instanceof HttpErrorResponse ? err.status : 0;
         if (status === 409) {
-          this.notification.show('Your phone went offline — reopen the Regi app and retry.', 'error');
-        } else if (status === 404) {
-          this.notification.show('Phone capture isn’t available on your app version yet.', 'warning');
+          // Presence went stale between render and click.
+          this.notification.show(
+            "Your phone isn't connected right now — open Regi on your phone and try again.",
+            'error',
+          );
         } else {
           this.notification.show('Could not reach your phone. Please try again.', 'error');
         }

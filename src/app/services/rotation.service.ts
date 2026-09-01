@@ -1663,21 +1663,12 @@ export class RotationService {
     }
   }
 
-  /** Options for the pick-or-type meal-type dropdown: the standard seeds (Initial
-   *  Cap) unioned with the user's own distinct types (SELECT-DISTINCT, no DB list).
-   *  Deduped case-insensitively so a legacy lowercase "meal" collapses into "Meal".
-   *  Not fixed — a user can type "Tapas" and it joins the list. */
-  readonly mealTypeOptions = computed<string[]>(() => {
-    const byLower = new Map<string, string>();
-    for (const s of ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Meal']) {
-      byLower.set(s.toLowerCase(), s);
-    }
-    for (const m of this.binderMeals()) {
-      const t = m.mealType?.trim();
-      if (t && !byLower.has(t.toLowerCase())) byLower.set(t.toLowerCase(), t);
-    }
-    return [...byLower.values()].sort((a, b) => a.localeCompare(b));
-  });
+  /** The FIXED, DB-constrained set of meal types. The database now enforces these
+   *  exact values (users can no longer free-type a type), so the client offers them
+   *  as a strict list and the pick controls are selects, not comboboxes. Order is
+   *  the natural meal progression, not alphabetical. Keep in sync with the DB CHECK
+   *  constraint — a value the DB rejects must not appear here. */
+  readonly mealTypeOptions: readonly string[] = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Meal'];
 
   /** Open the food lookaside on a slot: the rail switches from the binder to
    *  the food list and adds funnel into this slot's meal. mealId is null for an

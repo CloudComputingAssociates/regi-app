@@ -383,30 +383,48 @@ export class AccountPanelComponent {
     }
   }
 
-  /** Fire the camera-capture command to the user's live tethered phone. The phone
-   *  picks it up on its next tether poll and opens the camera. */
+  /** ENQUEUE an avatar capture for the user's live phone (POST /api/mobile/command,
+   *  202). Gated on tether presence — never fires without a live device. The web no
+   *  longer pops the phone camera; we point the user at the phone's Phone panel and
+   *  poll the profile so the uploaded photo appears here without a reload. */
   async captureViaPhone(): Promise<void> {
-    const deviceId = this.tether.firstLiveDeviceId();
-    if (deviceId == null) {
-      this.notificationService.show('Open the app on your phone first (tether it), then try again.', 'error');
+    // Gate on presence — the same anyLive signal that drives the green dot.
+    if (!this.tether.anyLive()) {
+      this.notificationService.show('Open Regi on your phone to enable phone capture.', 'error');
       return;
     }
     this.phoneBusy.set(true);
     try {
-      await this.tether.requestAvatarCapture(deviceId);
-      this.notificationService.show('Check your phone — open the camera to take your photo.');
+      await this.tether.requestAvatarCapture();
+      this.notificationService.show(
+        '📱 Sent to your phone. Open the menu (☰) → Phone to take the picture.',
+      );
+      this.awaitAvatarFromPhone();
     } catch (err) {
       const status = err instanceof HttpErrorResponse ? err.status : 0;
       const msg =
         status === 409
-          ? 'Your phone isn’t connected right now — open the app on your phone and try again.'
-          : status === 404
-            ? 'Phone not found — re-tether it from the app and try again.'
-            : 'Couldn’t reach your phone. Try again.';
+          ? "Your phone isn't connected right now — open Regi on your phone and try again."
+          : 'Couldn’t reach your phone. Try again.';
       this.notificationService.show(msg, 'error');
     } finally {
       this.phoneBusy.set(false);
     }
+  }
+
+  /** After enqueuing a capture, poll the profile (~30s at 3s) so the phone's uploaded
+   *  avatar appears here without a manual reload. Stops on the first change. */
+  private awaitAvatarFromPhone(): void {
+    const baseline = this.profileImage.avatarUrl();
+    let tries = 0;
+    const MAX_TRIES = 10; // ~30s at 3s
+    const tick = async (): Promise<void> => {
+      const url = await this.userProfile.refreshAvatar();
+      if (url && url !== baseline) return; // landed — refreshAvatar already applied it
+      if (++tries >= MAX_TRIES) return;
+      setTimeout(() => void tick(), 3000);
+    };
+    setTimeout(() => void tick(), 3000);
   }
 
   constructor() {
