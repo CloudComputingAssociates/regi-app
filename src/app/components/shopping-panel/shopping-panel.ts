@@ -40,14 +40,6 @@ interface ListGroup {
   label: string;
   items: ListRow[];
 }
-/** A display banner. Most banners wrap ONE category; the "Produce" banner wraps the
- *  produce (Vegetables) + fruits (Fruits) categories as sub-headed sub-groups, the
- *  way a grocery store shelves produce together. */
-interface ListSection {
-  key: string;
-  label: string;
-  subGroups: ListGroup[]; // length > 1 → render the sub-headers
-}
 
 // Server category token → display label + preferred display order.
 const CAT_LABEL: Record<string, string> = {
@@ -144,17 +136,18 @@ const CAT_RANK: Record<string, number> = {
           <p class="list-msg">No meals in this rotation yet — add meals to your menus and they'll roll up here.</p>
         } @else {
           <div class="staples-content">
-            @for (section of displaySections(); track section.key; let first = $first) {
-              <!-- Collapsible banner (PRODUCE, PROTEINS, …). Caret on the RIGHT, a
-                   rule line between the label and it. -->
-              <button type="button" class="list-cat" (click)="toggleCat(section.key)">
-                <span class="cat-label">{{ section.label }}</span>
+            @for (group of computedGroups(); track group.category; let first = $first) {
+              <!-- Collapsible category (VEGETABLES, FRUITS, PROTEINS, …) — flat, so
+                   the meals'-groceries categories match the staples ones. Caret on
+                   the RIGHT, a rule line between the label and it. -->
+              <button type="button" class="list-cat" (click)="toggleCat(group.category)">
+                <span class="cat-label">{{ group.label }}</span>
                 <span class="cat-rule"></span>
-                <mat-icon class="cat-caret" [class.open]="!isCatCollapsed(section.key)">expand_more</mat-icon>
+                <mat-icon class="cat-caret" [class.open]="!isCatCollapsed(group.category)">expand_more</mat-icon>
               </button>
-              <!-- Column headings tuck under the FIRST banner, between its title
+              <!-- Column headings tuck under the FIRST category, between its title
                    and the first item row (not a separate row at the very top). -->
-              @if (first && !isCatCollapsed(section.key)) {
+              @if (first && !isCatCollapsed(group.category)) {
                 <div class="list-col-head no-print">
                   <span class="pdf-check" aria-hidden="true"></span>
                   <span class="staple-qty">Qty</span>
@@ -163,14 +156,8 @@ const CAT_RANK: Record<string, number> = {
                   <span class="col-need">Need</span>
                 </div>
               }
-              @if (!isCatCollapsed(section.key)) {
-                @for (sub of section.subGroups; track sub.category) {
-                  <!-- Sub-header only when the banner holds more than one category
-                       (i.e. Produce → Vegetables / Fruits). -->
-                  @if (section.subGroups.length > 1) {
-                    <div class="list-subcat"><span class="subcat-label">{{ sub.label }}</span></div>
-                  }
-                  @for (item of sub.items; track item.key) {
+              @if (!isCatCollapsed(group.category)) {
+                  @for (item of group.items; track item.key) {
                     <div class="staple-row" [class.not-needed]="!isNeeded(item.key)">
                       <span class="pdf-check" aria-hidden="true"></span>
                       <span class="staple-qty">{{ item.quantity }}</span>
@@ -184,7 +171,6 @@ const CAT_RANK: Record<string, number> = {
                       </label>
                     </div>
                   }
-                }
               }
             }
           </div>
@@ -336,7 +322,7 @@ export class ShoppingPanelComponent {
   // categories + the staple sub-categories); it never touches the two major banners
   // (meals' groceries / staples), whose open state stays as the user left it.
   readonly allCatsCollapsed = computed<boolean>(() => {
-    const mealKeys = this.displaySections().map((s) => s.key);
+    const mealKeys = this.computedGroups().map((g) => g.category);
     const stapleKeys = this.categories.map((c) => c.id);
     if (mealKeys.length + stapleKeys.length === 0) return false;
     return (
@@ -349,7 +335,7 @@ export class ShoppingPanelComponent {
       this.collapsedCats.set(new Set());
       this.collapsedStaples.set(new Set());
     } else {
-      this.collapsedCats.set(new Set(this.displaySections().map((s) => s.key)));
+      this.collapsedCats.set(new Set(this.computedGroups().map((g) => g.category)));
       this.collapsedStaples.set(new Set(this.categories.map((c) => c.id)));
     }
   }
@@ -456,29 +442,6 @@ export class ShoppingPanelComponent {
       }))
       .filter((g) => g.items.length > 0)
       .sort((a, b) => (CAT_RANK[a.category] ?? 99) - (CAT_RANK[b.category] ?? 99));
-  });
-
-  /** Banners for display: produce (Vegetables) + fruits (Fruits) collapse into ONE
-   *  "Produce" banner (store-style), each shown as a sub-header beneath; every other
-   *  category is its own single-subgroup banner. Order follows CAT_RANK, so Produce
-   *  leads (produce rank 0). Empty categories are already dropped upstream. */
-  readonly displaySections = computed<ListSection[]>(() => {
-    const groups = this.computedGroups();
-    const produceSubs = groups.filter((g) => g.category === 'produce' || g.category === 'fruits');
-    const sections: ListSection[] = [];
-    let producePlaced = false;
-    for (const g of groups) {
-      if (g.category === 'produce' || g.category === 'fruits') {
-        // Emit the umbrella once, at the position of the first produce/fruits group.
-        if (!producePlaced) {
-          producePlaced = true;
-          sections.push({ key: 'produce', label: 'Produce', subGroups: produceSubs });
-        }
-        continue;
-      }
-      sections.push({ key: g.category, label: g.label, subGroups: [g] });
-    }
-    return sections;
   });
 
   /** Stable identity for a computed row — mirrors the server's foodIdentity so a
