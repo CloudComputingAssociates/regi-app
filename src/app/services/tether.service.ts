@@ -27,8 +27,8 @@ export class TetherService {
   private baseUrl = environment.apiUrl; // already ends in /api
 
   /** Poll cadence FLOOR + pre-first-response default. After the first success the
-   *  client uses response.pollIntervalSeconds, but never faster than this (30s). */
-  private static readonly DEFAULT_POLL_MS = 30000;
+   *  client uses response.pollIntervalSeconds, but never faster than this (15s). */
+  private static readonly DEFAULT_POLL_MS = 15000;
 
   private presenceSignal = signal<TetherPresenceResponse | null>(null);
   readonly presence = this.presenceSignal.asReadonly();
