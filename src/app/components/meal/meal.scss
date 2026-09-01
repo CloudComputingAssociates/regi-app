@@ -481,12 +481,14 @@
       color: #4da6ff;       // blue, matching "Meal"
     }
     // Type select — a strict dropdown of the fixed, DB-constrained set (no free
-    // typing). Claims the left ~57.5% (25% wider than before); keys sit right.
+    // typing). Width is pinned (not content-sized) so it reaches the right edge of
+    // the cals bubble in the macro row below (~62% of the row); keys sit right.
     .type-combo {
       position: relative;
       flex: 0 1 auto;
       min-width: 0;
-      max-width: 57.5%;
+      width: 62%;
+      max-width: 62%;
       display: flex;
       align-items: center;
     }
