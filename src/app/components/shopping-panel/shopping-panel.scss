@@ -405,9 +405,13 @@
     flex: 1 1 auto;
     text-align: left;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 400; // de-emboldened — bold white on green read fuzzy
     color: #ffffff;
     white-space: nowrap;
+    // Crisper white-on-green text (kills the sub-pixel fuzz on the bold weight).
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   .accordion-arrow {
     flex: 0 0 auto;
@@ -560,20 +564,8 @@
   .staples-content { max-height: none; overflow: visible; }
 }
 
-// Static sub-category label inside "Staples & other" — NOT collapsible; always
-// expanded. A plain label row (no toggle button).
-.accordion-title-row {
-  display: flex;
-  align-items: center;
-  padding: 4px 12px 1px;
-
-  .accordion-title {
-    font-family: Roboto, 'Helvetica Neue', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    color: #1f1f1f;
-  }
-}
+// (Staple sub-categories are now collapsible .list-cat headers — same chrome as the
+// computed-list meal categories; the old static .accordion-title-row is retired.)
 
 .staples-header {
   display: flex;

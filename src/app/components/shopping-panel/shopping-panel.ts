@@ -129,7 +129,7 @@ const CAT_RANK: Record<string, number> = {
            collapsible sections inside their own 2px green border). -->
       <div class="list-pane section-box">
         <button type="button" class="section-banner no-print" (click)="mealsOpen.set(!mealsOpen())">
-          <span class="section-banner-title">Meals</span>
+          <span class="section-banner-title">meals</span>
           <mat-icon class="accordion-arrow" [class.open]="mealsOpen()">expand_more</mat-icon>
         </button>
         @if (mealsOpen()) {
@@ -197,7 +197,7 @@ const CAT_RANK: Record<string, number> = {
            green box as the Meals section, so the two read as distinct areas. -->
       <div class="staples-pane section-box">
         <button type="button" class="section-banner no-print" (click)="staplesOpen.set(!staplesOpen())">
-          <span class="section-banner-title">Staples</span>
+          <span class="section-banner-title">staples</span>
           <mat-icon class="accordion-arrow" [class.open]="staplesOpen()">expand_more</mat-icon>
         </button>
 
@@ -205,11 +205,14 @@ const CAT_RANK: Record<string, number> = {
           <div class="staples-content">
             @for (cat of categories; track cat.id) {
               <div class="accordion-section">
-                <!-- Sub-categories inside "Staples & other" are NOT collapsible —
-                     always expanded; only the whole section toggles. -->
-                <div class="accordion-title-row">
-                  <span class="accordion-title">{{ cat.label }}</span>
-                </div>
+                <!-- Each staple sub-category collapses/expands on its own, exactly
+                     like the computed-list meal categories (caret + rule line). -->
+                <button type="button" class="list-cat" (click)="toggleStaple(cat.id)">
+                  <span class="cat-label">{{ cat.label }}</span>
+                  <span class="cat-rule"></span>
+                  <mat-icon class="cat-caret" [class.open]="!isStapleCollapsed(cat.id)">expand_more</mat-icon>
+                </button>
+                @if (!isStapleCollapsed(cat.id)) {
                 <div class="accordion-body">
                     <div class="add-row no-print">
                       <input
@@ -263,6 +266,7 @@ const CAT_RANK: Record<string, number> = {
                       </div>
                     }
                 </div>
+                }
               </div>
             }
           </div>
@@ -310,6 +314,17 @@ export class ShoppingPanelComponent {
   // ---- Collapsible computed-list categories (PROTEINS, PRODUCE, …) ----------
   readonly collapsedCats = signal<Set<string>>(new Set());
   isCatCollapsed(cat: string): boolean { return this.collapsedCats().has(cat); }
+  // Staple sub-categories collapse independently — their ids (produce, proteins, …)
+  // collide with the computed-list section keys, so they need their own set.
+  readonly collapsedStaples = signal<Set<string>>(new Set());
+  isStapleCollapsed(id: string): boolean { return this.collapsedStaples().has(id); }
+  toggleStaple(id: string): void {
+    this.collapsedStaples.update((s) => {
+      const next = new Set(s);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
   toggleCat(cat: string): void {
     this.collapsedCats.update((s) => {
       const next = new Set(s);
@@ -407,6 +422,7 @@ export class ShoppingPanelComponent {
    *  (staples merged); fall back to the browser print dialog if it fails. */
   async print(): Promise<void> {
     this.staplesOpen.set(true); // expand staples so a browser-print fallback shows them
+    this.collapsedStaples.set(new Set()); // and expand every staple sub-category
     const ok = await this.downloadPdf();
     if (!ok) window.print();
   }
