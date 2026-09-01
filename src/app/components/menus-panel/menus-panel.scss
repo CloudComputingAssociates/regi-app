@@ -337,6 +337,15 @@
 
   &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
   &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45); }
+
+  // Notebook is open on the Shopping tab — lighter raised grey "on" state, matching
+  // the Notebook key's .active treatment.
+  &.active {
+    color: #ffffff;
+    background: linear-gradient(180deg, #7a7a7a 0%, #616161 100%);
+    border-top-color: #9a9a9a;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
 }
 
 // Whole-rotation teardown key at the right end, just left of the days badge.

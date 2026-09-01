@@ -956,6 +956,13 @@ export class MealBinderComponent implements OnInit {
       { allowSignalWrites: true },
     );
 
+    // Mirror the active tab into the service so toolbar keys can toggle a tab
+    // open/closed (they can't read this component's local signal directly).
+    effect(
+      () => this.rotation.activeBinderTab.set(this.activeTab()),
+      { allowSignalWrites: true },
+    );
+
     // When a menu is pinned, the service sets revealBinderMenuId. Expand the
     // Menus accordion and scroll the new entry into view.
     effect(

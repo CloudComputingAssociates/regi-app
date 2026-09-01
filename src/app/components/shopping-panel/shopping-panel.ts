@@ -40,6 +40,14 @@ interface ListGroup {
   label: string;
   items: ListRow[];
 }
+/** A display banner. Most banners wrap ONE category; the "Produce" banner wraps the
+ *  produce (Vegetables) + fruits (Fruits) categories as sub-headed sub-groups, the
+ *  way a grocery store shelves produce together. */
+interface ListSection {
+  key: string;
+  label: string;
+  subGroups: ListGroup[]; // length > 1 → render the sub-headers
+}
 
 // Server category token → display label + preferred display order.
 const CAT_LABEL: Record<string, string> = {
@@ -110,10 +118,15 @@ const CAT_RANK: Record<string, number> = {
         </button>
       </div>
 
-      <!-- Computed shopping list (from the rotation's meals/recipes). No "Shopping
-           List" title — the Notebook's Shopping tab already names the surface. The
-           NEED heading lives on the QTY/UNIT/ITEM column row below. -->
-      <div class="list-pane">
+      <!-- Computed shopping list (from the rotation's meals/recipes). A deep-green
+           "Meals" banner separates this from the Staples box below (both are green
+           collapsible sections inside their own 2px green border). -->
+      <div class="list-pane section-box">
+        <button type="button" class="section-banner no-print" (click)="mealsOpen.set(!mealsOpen())">
+          <span class="section-banner-title">Meals</span>
+          <mat-icon class="accordion-arrow" [class.open]="mealsOpen()">expand_more</mat-icon>
+        </button>
+        @if (mealsOpen()) {
         @if (listLoading()) {
           <p class="list-msg">Building your list…</p>
         } @else if (listError()) {
@@ -125,17 +138,17 @@ const CAT_RANK: Record<string, number> = {
           <p class="list-msg">No meals in this rotation yet — add meals to your menus and they'll roll up here.</p>
         } @else {
           <div class="staples-content">
-            @for (group of computedGroups(); track group.category; let first = $first) {
-              <!-- Collapsible category (PROTEINS, …). Caret on the RIGHT, a rule line
-                   between the label and it. -->
-              <button type="button" class="list-cat" (click)="toggleCat(group.category)">
-                <span class="cat-label">{{ group.label }}</span>
+            @for (section of displaySections(); track section.key; let first = $first) {
+              <!-- Collapsible banner (PRODUCE, PROTEINS, …). Caret on the RIGHT, a
+                   rule line between the label and it. -->
+              <button type="button" class="list-cat" (click)="toggleCat(section.key)">
+                <span class="cat-label">{{ section.label }}</span>
                 <span class="cat-rule"></span>
-                <mat-icon class="cat-caret" [class.open]="!isCatCollapsed(group.category)">expand_more</mat-icon>
+                <mat-icon class="cat-caret" [class.open]="!isCatCollapsed(section.key)">expand_more</mat-icon>
               </button>
-              <!-- Column headings tuck under the FIRST category, between its title
+              <!-- Column headings tuck under the FIRST banner, between its title
                    and the first item row (not a separate row at the very top). -->
-              @if (first && !isCatCollapsed(group.category)) {
+              @if (first && !isCatCollapsed(section.key)) {
                 <div class="list-col-head no-print">
                   <span class="pdf-check" aria-hidden="true"></span>
                   <span class="staple-qty">Qty</span>
@@ -144,33 +157,41 @@ const CAT_RANK: Record<string, number> = {
                   <span class="col-need">Need</span>
                 </div>
               }
-              @if (!isCatCollapsed(group.category)) {
-                @for (item of group.items; track item.key) {
-                  <div class="staple-row" [class.not-needed]="!isNeeded(item.key)">
-                    <span class="pdf-check" aria-hidden="true"></span>
-                    <span class="staple-qty">{{ item.quantity }}</span>
-                    <span class="staple-unit">{{ item.unit }}</span>
-                    <span class="staple-item">{{ item.name }}</span>
-                    <label class="toggle-slider no-print" [class.on]="isNeeded(item.key)">
-                      <input type="checkbox"
-                        [checked]="isNeeded(item.key)"
-                        (change)="toggleNeed(item.key)" />
-                      <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                    </label>
-                  </div>
+              @if (!isCatCollapsed(section.key)) {
+                @for (sub of section.subGroups; track sub.category) {
+                  <!-- Sub-header only when the banner holds more than one category
+                       (i.e. Produce → Vegetables / Fruits). -->
+                  @if (section.subGroups.length > 1) {
+                    <div class="list-subcat"><span class="subcat-label">{{ sub.label }}</span></div>
+                  }
+                  @for (item of sub.items; track item.key) {
+                    <div class="staple-row" [class.not-needed]="!isNeeded(item.key)">
+                      <span class="pdf-check" aria-hidden="true"></span>
+                      <span class="staple-qty">{{ item.quantity }}</span>
+                      <span class="staple-unit">{{ item.unit }}</span>
+                      <span class="staple-item">{{ item.name }}</span>
+                      <label class="toggle-slider no-print" [class.on]="isNeeded(item.key)">
+                        <input type="checkbox"
+                          [checked]="isNeeded(item.key)"
+                          (change)="toggleNeed(item.key)" />
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                      </label>
+                    </div>
+                  }
                 }
               }
             }
           </div>
         }
+        }
       </div>
 
       <!-- One-time & staples — demoted, collapsed by default (persisted user
-           data). Expanded automatically before printing. -->
-      <div class="staples-pane">
-        <button type="button" class="staples-collapse no-print" (click)="staplesOpen.set(!staplesOpen())">
-          <span class="staples-title">Staples</span>
-          <span class="cat-rule"></span>
+           data). Expanded automatically before printing. Same green banner + 2px
+           green box as the Meals section, so the two read as distinct areas. -->
+      <div class="staples-pane section-box">
+        <button type="button" class="section-banner no-print" (click)="staplesOpen.set(!staplesOpen())">
+          <span class="section-banner-title">Staples</span>
           <mat-icon class="accordion-arrow" [class.open]="staplesOpen()">expand_more</mat-icon>
         </button>
 
@@ -277,12 +298,12 @@ export class ShoppingPanelComponent {
     });
   }
   readonly allCatsCollapsed = computed<boolean>(() => {
-    const cats = this.computedGroups().map((g) => g.category);
-    return cats.length > 0 && cats.every((c) => this.collapsedCats().has(c));
+    const keys = this.displaySections().map((s) => s.key);
+    return keys.length > 0 && keys.every((k) => this.collapsedCats().has(k));
   });
   toggleAllCats(): void {
     this.collapsedCats.set(
-      this.allCatsCollapsed() ? new Set() : new Set(this.computedGroups().map((g) => g.category)),
+      this.allCatsCollapsed() ? new Set() : new Set(this.displaySections().map((s) => s.key)),
     );
   }
 
@@ -388,6 +409,29 @@ export class ShoppingPanelComponent {
       .sort((a, b) => (CAT_RANK[a.category] ?? 99) - (CAT_RANK[b.category] ?? 99));
   });
 
+  /** Banners for display: produce (Vegetables) + fruits (Fruits) collapse into ONE
+   *  "Produce" banner (store-style), each shown as a sub-header beneath; every other
+   *  category is its own single-subgroup banner. Order follows CAT_RANK, so Produce
+   *  leads (produce rank 0). Empty categories are already dropped upstream. */
+  readonly displaySections = computed<ListSection[]>(() => {
+    const groups = this.computedGroups();
+    const produceSubs = groups.filter((g) => g.category === 'produce' || g.category === 'fruits');
+    const sections: ListSection[] = [];
+    let producePlaced = false;
+    for (const g of groups) {
+      if (g.category === 'produce' || g.category === 'fruits') {
+        // Emit the umbrella once, at the position of the first produce/fruits group.
+        if (!producePlaced) {
+          producePlaced = true;
+          sections.push({ key: 'produce', label: 'Produce', subGroups: produceSubs });
+        }
+        continue;
+      }
+      sections.push({ key: g.category, label: g.label, subGroups: [g] });
+    }
+    return sections;
+  });
+
   /** Stable identity for a computed row — mirrors the server's foodIdentity so a
    *  persisted "checked" key still matches after a recompute. */
   private itemKey(foodId: number | null, foodSource: string | null, name: string): string {
@@ -431,6 +475,8 @@ export class ShoppingPanelComponent {
   staples = signal<ShoppingStaple[]>([]);
   /** Staples pane collapsed by default — the computed list is the primary view. */
   readonly staplesOpen = signal(false);
+  /** The computed "Meals" list section — collapsible, open by default. */
+  readonly mealsOpen = signal(true);
 
   // Staple accordion state — all categories open by default (usable list up-front).
   private openCategories = signal<Set<StapleCategory>>(

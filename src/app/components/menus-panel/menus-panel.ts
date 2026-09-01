@@ -105,14 +105,16 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
               <!-- Right-justified action cluster: Shopping · Notebook · Clear all.
                    A padding gap (on the close X) separates Clear all from the X. -->
               <div class="toolbar-buttons">
-                <!-- Shopping List — opens the Notebook and focuses the Shopping tab.
-                     Grocery-bag glyph reads instantly as "to buy". -->
+                <!-- Shopping List — toggles the Notebook on the Shopping tab (second
+                     click closes it, like the Notebook key). Grocery-bag glyph reads
+                     instantly as "to buy". -->
                 <button
                   type="button"
                   class="shop-list-btn"
+                  [class.active]="!rotation.binderCollapsed() && rotation.activeBinderTab() === 'shopping'"
                   matTooltip="Shopping list. Opens 'to buy' in your Notebook"
                   matTooltipPosition="above"
-                  (click)="rotation.openBinderTab('shopping')">
+                  (click)="rotation.toggleBinderTab('shopping')">
                   <mat-icon class="shop-list-icon" aria-hidden="true">shopping_bag</mat-icon>
                 </button>
                 <!-- Notebook — toggles the Binder. -->

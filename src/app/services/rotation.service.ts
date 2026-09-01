@@ -78,10 +78,23 @@ export class RotationService {
   /** A request to focus a specific Notebook tab (set by the Menus toolbar's
    *  Shopping key). The Binder consumes it and resets to null. */
   readonly requestedBinderTab = signal<'meals' | 'menus' | 'shopping' | null>(null);
+  /** The Notebook tab currently shown — mirrored from the Binder so toolbar keys can
+   *  toggle a tab open/closed (the Binder owns the source-of-truth signal). */
+  readonly activeBinderTab = signal<'meals' | 'menus' | 'shopping'>('meals');
   /** Open the Notebook and focus a tab (used by the toolbar Shopping key). */
   openBinderTab(tab: 'meals' | 'menus' | 'shopping'): void {
     this.showBinder();
     this.requestedBinderTab.set(tab);
+  }
+  /** Toolbar tab key — toggle the Notebook on a specific tab, mirroring the Notebook
+   *  button's open/close feel: closed → open + focus it; open ON that tab → close;
+   *  open on another tab → switch to it (stays open). */
+  toggleBinderTab(tab: 'meals' | 'menus' | 'shopping'): void {
+    if (!this.binderCollapsed() && this.activeBinderTab() === tab) {
+      this.hideBinder();
+    } else {
+      this.openBinderTab(tab);
+    }
   }
 
   /** The user's Binder meals (pinned) — server truth via GET /meal?scope=binder. */

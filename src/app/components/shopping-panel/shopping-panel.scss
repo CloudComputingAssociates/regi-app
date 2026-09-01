@@ -379,6 +379,49 @@
   .staples-content { flex: 0 0 auto; overflow: visible; }
 }
 
+// Meals / Staples areas each sit inside their own 2px green box, led by a deep-green
+// collapsible banner — the visual separator between the two.
+.section-box {
+  border: 2px solid #218a5d; // deep green, matching the active Notebook tab
+  border-radius: 8px;
+  overflow: hidden; // clip the banner to the rounded top corners
+  margin: 0 4px 8px 0; // the gap between the two boxes is the separator
+}
+
+// Deep-green collapsible header for a section box (Meals / Staples). Reads like the
+// highlighted (active) Notebook tab.
+.section-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 12px;
+  background: #218a5d; // active-tab green
+  border: none;
+  cursor: pointer;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+
+  .section-banner-title {
+    flex: 1 1 auto;
+    text-align: left;
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+    white-space: nowrap;
+  }
+  .accordion-arrow {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    line-height: 20px;
+    color: #ffffff;
+    transition: transform 0.2s ease;
+    &.open { transform: rotate(180deg); } // expand_more → flip up when open
+  }
+  &:hover { background: #1e7d54; }
+}
+
 .list-msg {
   margin: 0;
   padding: 14px 16px;
@@ -453,6 +496,21 @@
     line-height: 20px;
     transition: transform 0.15s ease;
     &.open { transform: rotate(180deg); } // expand_more → flip up when open
+  }
+}
+
+// Sub-header inside a multi-category banner (Produce → Vegetables / Fruits). Smaller
+// and indented so it reads as a subcategory beneath the banner, not a peer of it.
+.list-subcat {
+  padding: 1px 12px 0 22px;
+
+  .subcat-label {
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: #6a7a52; // muted produce-green, subordinate to the blue banner
   }
 }
 
