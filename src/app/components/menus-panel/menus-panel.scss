@@ -240,13 +240,13 @@
 }
 
 // Plain white Material X — pinned far right of the toolbar.
-.menus-close-disc { flex: 0 0 auto; }
+// Close X — sits after the right-justified button cluster; the left margin is the
+// padding the user wants between the rightmost key (Clear all) and the X.
+.menus-close-disc { flex: 0 0 auto; margin-left: 10px; }
 
-// Notebook key — reopens the Binder. Square domed key (same 30×30 chrome as the
-// Shopping/Clear-all keys); its margin-left:auto pushes it AND the close X to the
-// far right of the toolbar, sitting adjacent (the left cluster keys stay put).
-// Selected menu's calorie total — a grey pill that centers itself in the free
-// space between the Clear-all key and the Notebook toggle.
+// Selected menu's calorie total — a grey pill whose symmetric auto margins center
+// it in the free space, flushing the Shopping · Notebook · Clear-all cluster (and
+// the close X) to the far right of the toolbar.
 .toolbar-cals {
   flex: 0 0 auto;
   margin: 0 auto; // symmetric auto margins → centered in the gap; pushes the keys right
@@ -264,9 +264,10 @@
   white-space: nowrap;
 }
 
+// Notebook key — toggles the Binder. Square domed key (same 30×30 chrome as the
+// Shopping/Clear-all keys); it's the middle key of the right-justified cluster.
 .notebook-btn {
   flex: 0 0 auto;
-  margin-right: 10px; // breathing room between the Notebook key and the close X
   display: inline-flex;
   align-items: center;
   justify-content: center;

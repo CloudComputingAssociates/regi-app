@@ -27,7 +27,7 @@ import { ShoppingPanelComponent } from '../shopping-panel/shopping-panel';
              scrolls below. -->
         <div class="shopping-bloom-head no-print">
           <span class="bloom-title">
-            <mat-icon class="bloom-title-icon">list_alt</mat-icon>Shopping List
+            <mat-icon class="bloom-title-icon">shopping_bag</mat-icon>Shopping List
           </span>
           <div class="shopping-bloom-actions">
             <button
