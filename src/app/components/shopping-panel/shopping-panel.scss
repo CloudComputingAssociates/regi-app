@@ -1071,7 +1071,9 @@
       &::placeholder { color: #8a8f94; }
     }
     .accordion-title { color: #1f1f1f; }
-    .accordion-arrow { color: rgba(0, 0, 0, 0.5); }
+    // The only .accordion-arrow left in the staples pane is the green banner's —
+    // keep it white to match the "meals' groceries" banner.
+    .accordion-arrow { color: #ffffff; }
     .accordion-header:hover { background: rgba(0, 0, 0, 0.05); }
   }
 

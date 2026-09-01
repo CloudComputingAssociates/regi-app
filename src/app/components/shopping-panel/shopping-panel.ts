@@ -117,7 +117,7 @@ const CAT_RANK: Record<string, number> = {
         <button
           type="button"
           class="shopping-collapse-all"
-          matTooltip="Collapse / expand all sections"
+          [matTooltip]="allCatsCollapsed() ? 'Expand all' : 'Collapse all'"
           matTooltipPosition="below"
           (click)="toggleAllCats()">
           <mat-icon>{{ allCatsCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
@@ -129,7 +129,7 @@ const CAT_RANK: Record<string, number> = {
            collapsible sections inside their own 2px green border). -->
       <div class="list-pane section-box">
         <button type="button" class="section-banner no-print" (click)="mealsOpen.set(!mealsOpen())">
-          <span class="section-banner-title">meals</span>
+          <span class="section-banner-title">meals' groceries</span>
           <mat-icon class="accordion-arrow" [class.open]="mealsOpen()">expand_more</mat-icon>
         </button>
         @if (mealsOpen()) {
@@ -332,14 +332,26 @@ export class ShoppingPanelComponent {
       return next;
     });
   }
+  // "Collapse all" acts on the INNER categories of BOTH sections (the meal-groceries
+  // categories + the staple sub-categories); it never touches the two major banners
+  // (meals' groceries / staples), whose open state stays as the user left it.
   readonly allCatsCollapsed = computed<boolean>(() => {
-    const keys = this.displaySections().map((s) => s.key);
-    return keys.length > 0 && keys.every((k) => this.collapsedCats().has(k));
+    const mealKeys = this.displaySections().map((s) => s.key);
+    const stapleKeys = this.categories.map((c) => c.id);
+    if (mealKeys.length + stapleKeys.length === 0) return false;
+    return (
+      mealKeys.every((k) => this.collapsedCats().has(k)) &&
+      stapleKeys.every((k) => this.collapsedStaples().has(k))
+    );
   });
   toggleAllCats(): void {
-    this.collapsedCats.set(
-      this.allCatsCollapsed() ? new Set() : new Set(this.displaySections().map((s) => s.key)),
-    );
+    if (this.allCatsCollapsed()) {
+      this.collapsedCats.set(new Set());
+      this.collapsedStaples.set(new Set());
+    } else {
+      this.collapsedCats.set(new Set(this.displaySections().map((s) => s.key)));
+      this.collapsedStaples.set(new Set(this.categories.map((c) => c.id)));
+    }
   }
 
   onScaleInput(event: Event): void {
