@@ -387,22 +387,9 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       </button>
                     }
                   </div>
-                  <!-- Meal TYPE — strict select of the fixed, DB-constrained set (no
-                       free typing). Shown when the row is open. -->
-                  @if (isMealOpen(meal) && !meal.mealSetId) {
-                    <div class="meal-type-row" (click)="$event.stopPropagation()">
-                      <span class="meal-type-label">Type</span>
-                      <select
-                        class="meal-type-input"
-                        (mousedown)="$event.stopPropagation()"
-                        (change)="onMealTypeChange(meal, $any($event.target).value)">
-                        @if (!meal.mealType) { <option value="" disabled selected>Type…</option> }
-                        @for (t of rotation.mealTypeOptions; track t) {
-                          <option [value]="t" [selected]="t === meal.mealType">{{ t }}</option>
-                        }
-                      </select>
-                    </div>
-                  }
+                  <!-- Meal TYPE assignment lives on the meal card (back face), not
+                       here — removed from the notebook card as redundant. -->
+
                   <!-- Reveal: all macros in order P, C, F, fiber, cals, then the
                        delete flush right — only visible when dropped down. -->
                   @if (isMealOpen(meal)) {
@@ -412,33 +399,35 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
                       <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
-                      <!-- Meal's rendered PDF link (a recipe, or a print-formatted
-                           meal). Label stays generic — not every PDF is a recipe. -->
-                      @if (meal.recipeLink?.trim()) {
-                        <button type="button" class="binder-recipe-link"
-                          matTooltip="Open PDF"
-                          (click)="$event.stopPropagation(); openRecipe(meal.recipeLink)">(PDF)</button>
-                      }
-                      <!-- Set-materialized meal: restore to the original. Gated on
-                           provenance. -->
-                      @if (meal.sourceMealSetId != null) {
-                        <button
-                          type="button"
-                          class="card-restore icon-disc icon-disc-edit"
-                          matTooltip="Restore to the MealSet original"
-                          (click)="$event.stopPropagation(); onRestoreMeal(meal)">
-                          <mat-icon>restore</mat-icon>
-                        </button>
-                      }
-                      @if (!meal.mealSetId) {
-                        <button
-                          type="button"
-                          class="card-delete icon-disc icon-disc-danger"
-                          matTooltip="Delete this meal"
-                          (click)="$event.stopPropagation(); onDeleteBinder(meal)">
-                          <mat-icon>delete_outline</mat-icon>
-                        </button>
-                      }
+                      <!-- Action discs, right-aligned. Non-destructive Print (PDF) ·
+                           Restore share the top row; the DESTRUCTIVE Delete drops to
+                           its own row below, aligned under Restore. Restore shows ONLY
+                           when a set meal has DIVERGED (the user edited it). -->
+                      <span class="card-actions">
+                        <span class="card-actions-row">
+                          @if (meal.recipeLink?.trim()) {
+                            <button type="button" class="card-pdf icon-disc"
+                              matTooltip="Open PDF"
+                              (click)="$event.stopPropagation(); openRecipe(meal.recipeLink)">
+                              <mat-icon>print</mat-icon>
+                            </button>
+                          }
+                          @if (meal.sourceMealSetId != null && rotation.isDiverged(meal)) {
+                            <button type="button" class="card-restore icon-disc icon-disc-edit"
+                              matTooltip="Restore to the MealSet original"
+                              (click)="$event.stopPropagation(); onRestoreMeal(meal)">
+                              <mat-icon>restore</mat-icon>
+                            </button>
+                          }
+                        </span>
+                        @if (!meal.mealSetId) {
+                          <button type="button" class="card-delete icon-disc icon-disc-danger"
+                            matTooltip="Delete this meal"
+                            (click)="$event.stopPropagation(); onDeleteBinder(meal)">
+                            <mat-icon>delete_outline</mat-icon>
+                          </button>
+                        }
+                      </span>
                     </div>
                   }
                   <!-- Drag preview: the meal's PHOTO (name over a scrim), so the
@@ -633,13 +622,6 @@ export class MealBinderComponent implements OnInit {
       this.persistSelected([]);
       void this.rotation.loadBinder([]);
     }
-  }
-
-  /** Commit a meal's TYPE label (pick-or-type). No-op if unchanged/empty. */
-  onMealTypeChange(meal: Meal, value: string): void {
-    const t = (value ?? '').trim();
-    if (meal.id == null || t === (meal.mealType ?? '').trim()) return;
-    void this.rotation.updateMealType(meal.id, t);
   }
 
   /** Meal-type filter (from the Filter panel); 'all' = no filter. */
