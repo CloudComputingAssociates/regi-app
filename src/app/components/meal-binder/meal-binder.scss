@@ -151,11 +151,13 @@
   flex-shrink: 0;
   display: flex;
   align-items: flex-end;
-  gap: 0; // no inter-tab spacing — the tabs sit flush against each other
-  // Right padding matches the sheet's 4px right margin so the "$ buy" tab's edge
-  // lands ON the box rule instead of overhanging it.
+  gap: 4px; // inter-tab spacing (restored)
+  // Mirror the SHEET's bounds — it has a 4px right margin and no left margin — then
+  // inset the tabs 4px on BOTH sides. So the first tab clears the left corner curve
+  // by the same amount the last tab clears the right one (symmetric, no overhang).
+  margin: 2px 4px -2px 0;
   padding: 0 4px;
-  margin: 2px 0 -2px; // -2px bottom → active tab overlaps the sheet's 2px top border
+  position: relative;
   // No z-index here (no stacking context) so each tab layers RELATIVE TO THE SHEET:
   // the active tab sits IN FRONT of it, the inactive tabs BEHIND — folder style.
   position: relative;
