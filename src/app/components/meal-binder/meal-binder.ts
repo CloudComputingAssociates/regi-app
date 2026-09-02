@@ -241,12 +241,11 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                   <input
                     type="text"
                     class="filter-search"
-                    placeholder="Search meals..."
+                    placeholder="Search: type meal or food name..."
                     matTooltip="Search a meal by name, or type any ingredient"
                     matTooltipPosition="above"
                     [value]="searchText()"
-                    (input)="searchText.set($any($event.target).value)"
-                    (keydown.enter)="filterOpen.set(false)" />
+                    (input)="searchText.set($any($event.target).value)" />
                   <button
                     type="button"
                     class="filter-clear"
@@ -291,7 +290,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                   <select
                     class="sort-select"
                     [value]="mealTypeFilter()"
-                    (change)="onMealTypeFilterChange($any($event.target).value); filterOpen.set(false)">
+                    (change)="onMealTypeFilterChange($any($event.target).value)">
                     <option value="all">All types</option>
                     @for (t of rotation.mealTypeOptions; track t) {
                       <option [value]="t">{{ t }}</option>
@@ -306,9 +305,6 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                 <div
                   class="binder-card"
                   [class.selected]="rotation.isCardSelected('meal', meal.id)"
-                  matTooltip="Drag a meal to a meal slot, or double-click"
-                  matTooltipPosition="above"
-                  [matTooltipShowDelay]="400"
                   cdkDrag
                   [cdkDragData]="meal"
                   (cdkDragStarted)="rotation.dragging.set('meal'); clearDragHint()"
@@ -555,12 +551,11 @@ export class MealBinderComponent implements OnInit {
     if (pruned.length) void this.rotation.loadBinder(pruned);
   }
 
-  /** Toggle the Filter accordion. Filters only apply while the box is visible —
-   *  collapsing it (the up-arrow) removes them (same as "Remove filters"). */
+  /** Toggle the Filter accordion. Collapsing it just HIDES the controls — the active
+   *  filter STAYS applied (the "Filter on" underline on the button is the reminder).
+   *  Use the clear-filter button to actually remove it. */
   toggleFilterPanel(): void {
-    const willOpen = !this.filterOpen();
-    this.filterOpen.set(willOpen);
-    if (!willOpen) this.clearFilter();
+    this.filterOpen.update((v) => !v);
   }
 
   // ----- Binder Meals filter + sort -----------------------------------------
@@ -609,10 +604,6 @@ export class MealBinderComponent implements OnInit {
   onSourceSetChange(value: string): void {
     const sel = value === 'all' ? 'all' : Number(value);
     this.sourceSetFilter.set(sel);
-    // Rollup EXCEPTION: picking a specific MealSet reveals its trash (remove-from-
-    // notebook) inside the panel — DON'T snap the filter closed, or the user never
-    // sees it. It stays open (and applied); "All" behaves normally and closes.
-    if (sel === 'all') this.filterOpen.set(false);
     // Either/or: choosing a "From MealSet" filter turns OFF the mix-in (reload as
     // My Meals only) so the two are never combined.
     if (sel !== 'all' && this.selectedSetIds().length > 0) {
