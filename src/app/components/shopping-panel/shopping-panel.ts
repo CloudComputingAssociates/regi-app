@@ -63,7 +63,16 @@ const CAT_RANK: Record<string, number> = {
       <!-- Quantity basis — either each recipe's own servings, OR an explicit
            scale factor. The "-or-" makes the either/or unmistakable. -->
       <div class="shopping-top no-print">
-        <!-- Order: boxed toggle group · Print · collapse-all (far right). -->
+        <!-- Order: "Shopping List" title · Print · Scale/Servings · collapse-all. -->
+        <span class="shopping-title">Shopping List</span>
+        <button
+          type="button"
+          class="shopping-print-btn"
+          matTooltip="Print / Save as PDF"
+          matTooltipPosition="below"
+          (click)="print()">
+          <mat-icon>print</mat-icon>
+        </button>
         <div class="scale-radio">
           <label
             class="scale-opt"
@@ -95,14 +104,6 @@ const CAT_RANK: Record<string, number> = {
             <span>Servings</span>
           </label>
         </div>
-        <button
-          type="button"
-          class="shopping-print-btn"
-          matTooltip="Print / Save as PDF"
-          matTooltipPosition="below"
-          (click)="print()">
-          <mat-icon>print</mat-icon>
-        </button>
         @if (isSaving()) {
           <span class="auto-save-indicator">saving...</span>
         }

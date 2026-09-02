@@ -102,14 +102,13 @@ import { RotationService } from '../../services/rotation.service';
             [class.bloom]="menuTargetHot()"
             cdkDropList
             [cdkDropListEnterPredicate]="menuDropPredicate"
-            (cdkDropListDropped)="onMenuDrop($event)"
-            (click)="addMenu.emit()">
+            (cdkDropListDropped)="onMenuDrop($event)">
             @if (menuTargetHot()) {
               <span class="dnd-text">Drag &amp; drop<br />a menu here</span>
             } @else {
               <span class="add-menu-text">
                 <span class="add-menu-main">+ Add menu</span>
-                <span class="add-menu-sub">(click here or drag saved Menu)</span>
+                <span class="add-menu-sub">(<button type="button" class="am-link" (click)="addMenu.emit()">click here</button> or drag a saved <button type="button" class="am-link" (click)="rotation.openBinderTab('menus')">Menu</button>)</span>
               </span>
             }
           </div>

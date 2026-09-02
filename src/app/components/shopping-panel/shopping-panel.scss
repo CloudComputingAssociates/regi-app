@@ -270,6 +270,17 @@
   font-size: 13px; // the shared "controls" size (tabs use 16px)
 }
 
+// "Shopping List" — leads the controls row in the Notebook TITLE font (Calisto),
+// sized to match the "Meals" tab (16px).
+.shopping-title {
+  flex: 0 0 auto;
+  font-family: 'Calisto MT', Calisto, 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
 // Print — raised-white sans key, SAME 26px height as the meals-tab keys. Slid to
 // the left (leads the controls row).
 .shopping-print-btn {

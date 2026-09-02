@@ -286,13 +286,8 @@
   color: #4da6ff; // blue label — matches the meal drag-area instructions
   font-size: 13px; // smaller
   font-weight: 400; // not bold
-  cursor: pointer;
+  cursor: default; // the tile itself isn't clickable — only its inline links / drop
   transition: border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
-
-  &:hover {
-    border-color: #4da6ff;
-    color: #7fbfff;
-  }
 
   // Two-line prompt — SAME type vocabulary as an empty meal slot: a blue 14/600
   // action over a grey 13/400 hint, with the meal-slot's line gap. One family, one
@@ -309,10 +304,24 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  // Both lines are the SAME 13px (the smaller one). "+ Add menu" inherits the link's
-  // blue (#4da6ff) so it lightens on hover; the hint is grey.
+  // Both lines are the SAME 13px (the smaller one). "+ Add menu" is a blue label;
+  // the hint is grey with two inline blue links ("click here" · "Menu").
   .add-menu-main { font-size: 13px; font-weight: 600; }
   .add-menu-sub { font-size: 13px; font-weight: 400; color: #9aa0a6; }
+
+  // Inline blue links inside the hint — only these are clickable now (the tile
+  // itself no longer is): "click here" adds a menu; "Menu" opens the Menus tab.
+  .am-link {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: #4da6ff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    &:hover { color: #7fbfff; }
+  }
 
   // Bloom — solid gold glow ring + faint gold wash; the drop prompt is small,
   // light, WHITE and two lines.
