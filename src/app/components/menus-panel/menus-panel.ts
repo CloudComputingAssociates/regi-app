@@ -143,7 +143,7 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
                   class="wipe-menus-btn"
                   matTooltip="Clear all, start over"
                   (click)="onWipeMenus()">
-                  <mat-icon class="wipe-icon" aria-hidden="true">delete_sweep</mat-icon>
+                  <mat-icon class="wipe-icon" aria-hidden="true">clear_all</mat-icon>
                 </button>
               </div>
               <!-- Exit — far right of the toolbar. Red X disc (matches the Notebook). -->

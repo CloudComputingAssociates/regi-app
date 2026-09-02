@@ -25,8 +25,6 @@ import { environment } from '../../../environments/environment';
 import { RecipeService } from '../../services/recipe.service';
 import { RecipeImportWatcher } from '../../services/recipe-import-watcher.service';
 import { NotificationService } from '../../services/notification.service';
-import { RoleService } from '../../services/role.service';
-import { TabService } from '../../services/tab.service';
 
 @Component({
   selector: 'app-ai-create-meal',
@@ -78,39 +76,28 @@ import { TabService } from '../../services/tab.service';
         <!-- Glowing separator into the upsell. -->
         <div class="glow-divider" aria-hidden="true"></div>
 
-        @if (isAuthor()) {
-          <!-- MealSetOwner: one card into the Author Studio (recipes + MealSets). -->
-          <div class="meal-sets">
-            <div class="meal-sets-head">
-              <mat-icon class="meal-sets-icon">restaurant_menu</mat-icon>
-              <span class="meal-sets-title">MealSet Studio</span>
-            </div>
-            <div class="meal-sets-desc">Author recipes and manage your MealSets.</div>
-            <button type="button" class="meal-sets-cta" (click)="openStudio()">
-              <mat-icon>edit_note</mat-icon>Open MealSet Studio
-            </button>
+        <!-- Purchase Additional Meal Sets — curated, chef-authored packs. Shown to
+             EVERYONE, including MealSetOwner authors: they bounce to the marketplace
+             like any user here, and reach their own MealSet Studio from the hamburger
+             left-nav (the authoring entry the left-nav appends for MealSetOwners). -->
+        <div class="meal-sets">
+          <div class="meal-sets-head">
+            <mat-icon class="meal-sets-icon">restaurant_menu</mat-icon>
+            <span class="meal-sets-title">Purchase Additional MealSets</span>
           </div>
-        } @else {
-          <!-- Purchase Additional Meal Sets — curated, chef-authored packs. -->
-          <div class="meal-sets">
-            <div class="meal-sets-head">
-              <mat-icon class="meal-sets-icon">restaurant_menu</mat-icon>
-              <span class="meal-sets-title">Purchase Additional MealSets</span>
-            </div>
-            <div class="meal-sets-price">
-              as low as <strong>$4.99</strong> for <strong>20 meals</strong>
-            </div>
-            <div class="meal-sets-desc">Full recipes, balanced nutrition.</div>
-            <div class="meal-sets-tags">GLP&#8209;1 friendly · Keto · Carnivore · more…</div>
-            <a
-              class="meal-sets-cta"
-              [href]="marketplaceUrl()"
-              target="_blank"
-              rel="noopener">
-              <mat-icon>open_in_new</mat-icon>Browse MealSets
-            </a>
+          <div class="meal-sets-price">
+            as low as <strong>$4.99</strong> for <strong>20 meals</strong>
           </div>
-        }
+          <div class="meal-sets-desc">Full recipes, balanced nutrition.</div>
+          <div class="meal-sets-tags">GLP&#8209;1 friendly · Keto · Carnivore · more…</div>
+          <a
+            class="meal-sets-cta"
+            [href]="marketplaceUrl()"
+            target="_blank"
+            rel="noopener">
+            <mat-icon>open_in_new</mat-icon>Browse MealSets
+          </a>
+        </div>
       </div>
     </div>
   `,
@@ -120,8 +107,6 @@ export class AiCreateMealComponent {
   private recipeService = inject(RecipeService);
   private watcher = inject(RecipeImportWatcher);
   private notification = inject(NotificationService);
-  private role = inject(RoleService);
-  private tabService = inject(TabService);
   private auth = inject(AuthService);
 
   /** Current user's email (Auth0 email claim), '' until the profile loads. */
@@ -144,18 +129,6 @@ export class AiCreateMealComponent {
 
   /** Close the bloom — on cancel (X / backdrop) or after an import kicks off. */
   readonly close = output<void>();
-
-  /** MealSetOwner authors get a single "Author Studio" card instead of the upsell;
-   *  authoring + MealSets both live in the Studio now. */
-  isAuthor(): boolean {
-    return this.role.hasRole('MealSetOwner');
-  }
-
-  /** Open the Author Studio (the mealsets left-nav panel). Closes this bloom. */
-  openStudio(): void {
-    this.close.emit();
-    this.tabService.openPanel('mealsets', 'MealSet Studio');
-  }
 
   // ----- Cancel / backdrop ---------------------------------------------------
   onCancel(): void {
