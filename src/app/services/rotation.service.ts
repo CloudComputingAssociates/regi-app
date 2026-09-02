@@ -119,18 +119,24 @@ export class RotationService {
       : `n:${(it.name ?? '').trim().toLowerCase()}`;
   }
 
-  /** NEEDED item count (need-ON) for the Shopping tab — items whose key isn't
-   *  ticked off. Reacts to both the list and the checked-keys, so the tab count
-   *  is pre-computed AND updates live as the user toggles Need. */
+  /** NEEDED item count (need-ON) for the "$ buy" tab — the computed meals-list
+   *  items whose key isn't ticked off, PLUS the staples whose Need slider is ON.
+   *  Reacts to the list, the checked-keys, AND the persisted staples, so the tab
+   *  count is pre-computed and updates live as the user toggles either. */
   readonly shoppingItemCount = computed<number | null>(() => {
     const list = this.shoppingList();
-    if (!list) return null;
+    const staples = this.settingsService.allSettings()?.shoppingStaples ?? null;
+    if (!list && !staples) return null;
     const off = this.shoppingCheckedKeys();
     let n = 0;
-    for (const cat of list.categories ?? []) {
+    for (const cat of list?.categories ?? []) {
       for (const it of cat.items ?? []) {
         if (!off.has(this.shoppingKey(it))) n++;
       }
+    }
+    // Staples with the Need slider ON (needed !== false) also count.
+    for (const s of staples ?? []) {
+      if (s.needed !== false) n++;
     }
     return n;
   });
@@ -861,7 +867,7 @@ export class RotationService {
    *    POST /menu      { slotCount }                        -> Menu (N slots)
    *    POST /rotation/{id}/menus { menuId, plannedCount }   -> link
    *    GET  /rotation/{id}                                  -> RotationDetail */
-  async startEmptyPlan(): Promise<void> {
+  async startEmptyPlan(createFirstMenu = true): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
     try {
@@ -874,25 +880,30 @@ export class RotationService {
       const rot = await firstValueFrom(
         this.http.post<Rotation>(`${this.baseUrl}/rotation`, createBody),
       );
-      const menu = await firstValueFrom(
-        this.http.post<Menu>(`${this.baseUrl}/menu`, { slotCount }),
-      );
-      await firstValueFrom(
-        this.http.post(`${this.baseUrl}/rotation/${rot.id}/menus`, {
-          menuId: menu.id,
-          plannedCount: this.repeatBaseline(spanDays),
-        }),
-      );
+      // A fresh plan seeds "Day 1"; a post-wipe reset leaves ZERO menus so the strip
+      // shows only "+ Add menu" (the drop zone) — the user adds days deliberately.
+      let firstMenuId: number | null = null;
+      if (createFirstMenu) {
+        const menu = await firstValueFrom(
+          this.http.post<Menu>(`${this.baseUrl}/menu`, { slotCount }),
+        );
+        firstMenuId = menu.id ?? null;
+        await firstValueFrom(
+          this.http.post(`${this.baseUrl}/rotation/${rot.id}/menus`, {
+            menuId: menu.id,
+            plannedCount: this.repeatBaseline(spanDays),
+          }),
+        );
+      }
 
       const detail = await firstValueFrom(
         this.http.get<RotationDetail>(`${this.baseUrl}/rotation/${rot.id}`),
       );
       this.rotation.set(detail);
-      // The first menu of a fresh plan is "Day 1".
-      if (menu.id != null) {
-        await this.updateMenuName(menu.id, this.nextUnusedDayName(menu.id));
-        this.selectedMenuId.set(menu.id);
-        await this.selectMenu(menu.id);
+      if (firstMenuId != null) {
+        await this.updateMenuName(firstMenuId, this.nextUnusedDayName(firstMenuId)); // "Day 1"
+        this.selectedMenuId.set(firstMenuId);
+        await this.selectMenu(firstMenuId);
       }
     } catch (err) {
       this.error.set(this.errMessage(err));
@@ -2377,14 +2388,6 @@ export class RotationService {
     return `Day ${n}`;
   }
 
-  /** Trash "No, just clear": empty this menu's meal slots (the meals themselves are
-   *  kept — pinned occupants stay in the Binder) and rename the (now-empty) menu to
-   *  the next unused Day, so it's a fresh open day the user can refill. */
-  async clearAndRecycleMenu(menuId: number): Promise<void> {
-    await this.clearMenuMeals(menuId);
-    await this.updateMenuName(menuId, this.nextUnusedDayName(menuId));
-  }
-
   /** Add a new empty menu to the rotation (the "+ Add menu" link).
    *  POST /menu -> POST /rotation/{id}/menus -> reload + select the new menu. */
   async addMenu(): Promise<void> {
@@ -2502,9 +2505,9 @@ export class RotationService {
       }
 
       await Promise.all([this.loadFolder(), this.loadBinder(), this.loadBinderMenus()]);
-      // Stand a fresh empty plan back up immediately (empty slots), so the user
-      // lands on a usable board rather than a "Start a plan" prompt.
-      await this.startEmptyPlan();
+      // Stand a fresh EMPTY rotation back up (NO Day 1) — the strip shows only the
+      // "+ Add menu" drop zone; the user adds days when ready.
+      await this.startEmptyPlan(false);
     } catch (err) {
       this.notification.show(this.errMessage(err), 'error');
     }

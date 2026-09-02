@@ -77,10 +77,11 @@
   display: flex;
   flex-direction: column;
   justify-content: center; // vertically center the row in the taller card
-  // ~90% of the meal card's 280px base — intentionally narrower so the menu
-  // strip reads as a separate set of things, not lined up with the meal grid.
-  width: 252px;
-  min-width: 252px;
+  // Responsive: cards SHARE the strip width and shrink as more days are planned
+  // (e.g. 7 menus), down to a usable floor, then the < / > bars scroll the overflow.
+  flex: 1 1 210px;
+  min-width: 180px; // stays usable — "Menu" label + name box + keys
+  max-width: 260px; // don't over-grow when only a few
   min-height: 42px; // 3/4 of the taller drop-target height — roomy but not huge
   padding: 7px 8px;
   border: 2px solid #4a4a4a;
@@ -271,8 +272,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 120px;
-  min-height: 42px; // SAME fixed height as the menu cards — it IS a drop zone
+  // SAME responsive sizing as a menu card (so the drop zone matches Day 1's box).
+  flex: 1 1 210px;
+  min-width: 180px;
+  max-width: 260px;
+  min-height: 42px; // SAME height as the menu cards — it IS a drop zone
   box-sizing: border-box;
   border: 2px dashed #5a5a5a;
   border-radius: 8px;

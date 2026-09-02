@@ -112,7 +112,7 @@ const CAT_RANK: Record<string, number> = {
           [matTooltip]="allCatsCollapsed() ? 'Expand all' : 'Clear all — collapse &amp; reset staple needs'"
           matTooltipPosition="below"
           (click)="toggleAllCats()">
-          <mat-icon>{{ allCatsCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
+          <mat-icon>{{ allCatsCollapsed() ? 'unfold_more' : 'clear_all' }}</mat-icon>
         </button>
       </div>
 

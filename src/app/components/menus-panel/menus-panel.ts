@@ -113,7 +113,7 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
                   type="button"
                   class="shop-list-btn"
                   [class.active]="!rotation.binderCollapsed() && rotation.activeBinderTab() === 'shopping'"
-                  matTooltip="Shopping list. Opens 'to buy' in your Notebook"
+                  matTooltip="Shopping list. Opens '$ buy' tab in your Notebook"
                   matTooltipPosition="above"
                   (click)="rotation.toggleBinderTab('shopping')">
                   <mat-icon class="shop-list-icon" aria-hidden="true">shopping_bag</mat-icon>
@@ -704,19 +704,18 @@ export class MenusPanelComponent implements OnInit {
   }
 
   onDeleteMenu(menuId: number): void {
-    // One question: delete the whole menu from the notebook (its meals are kept), or
-    // "No, just clear" — empty this menu's meal slots and recycle it as the next open
-    // Day (the menu that points to the meals is kept, the meals themselves survive).
+    // Simple clear — Wipe Menus is what nukes the default Day 1…N menus from the
+    // notebook, so the per-menu trash just clears this menu (and its meals) off the
+    // current week's rotation. Saved (renamed) menus stay in the notebook.
+    const raw = this.rotation.menus().find((m) => m.menuId === menuId)?.menuName?.trim() ?? '';
+    const name = raw.replace(/(\s*\(copy\))+\s*$/i, '').trim() || 'this menu';
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',
       data: {
-        title: 'Delete Menu from Notebook?',
-        message:
-          'Delete this menu from your notebook? Its meals are kept. Or choose “No, just clear” to empty this menu’s meal slots and reuse it as the next open Day.',
-        confirmLabel: 'Delete from notebook',
-        onConfirm: () => void this.rotation.deleteBinderMenu(menuId, false),
-        secondaryLabel: 'No, just clear',
-        onSecondary: () => void this.rotation.clearAndRecycleMenu(menuId),
+        title: 'Clear Menu?',
+        message: `Clear Menu slot "${name}" and meals from this week's rotation?`,
+        confirmLabel: 'Yes',
+        onConfirm: () => void this.rotation.deleteMenu(menuId),
       },
     });
   }
