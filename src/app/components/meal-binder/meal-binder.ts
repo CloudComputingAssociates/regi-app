@@ -1044,6 +1044,22 @@ export class MealBinderComponent implements OnInit {
    *  the recipe. In that case, confirm and offer to remove the recipe + its PDF
    *  too (emphasis on deleting both, so no unreachable recipe is left behind). */
   onDeleteBinder(meal: Meal): void {
+    if (meal.id == null) return;
+    // In a menu? Menus are throwaway — deleting the meal takes its menu(s) with it
+    // (the menu's other meals survive in the notebook). One plain Yes/Cancel.
+    if (this.rotation.menusContainingMeal(meal.id).length > 0) {
+      const mealId = meal.id;
+      this.dialog.open(WipeConfirmDialogComponent, {
+        panelClass: 'wipe-dialog-panel',
+        data: {
+          title: `Delete "${meal.name}"`,
+          message: "If you delete this meal, we'll delete the Menu containing it as well.",
+          confirmLabel: 'Yes',
+          onConfirm: () => void this.rotation.deleteMealAndContainingMenus(mealId),
+        },
+      });
+      return;
+    }
     if (!meal.recipeLink?.trim()) {
       void this.rotation.deleteBinderMeal(meal.id);
       return;

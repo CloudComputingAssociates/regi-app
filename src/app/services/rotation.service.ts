@@ -2178,6 +2178,54 @@ export class RotationService {
     }
   }
 
+  /** Menu ids (this rotation + the notebook) whose slots currently hold this meal —
+   *  drives the "deleting this meal deletes its menu too" warning. Menus are
+   *  throwaway, so we can cascade; the etch-a-sketch stays clean. */
+  menusContainingMeal(mealId: number): number[] {
+    const ids = new Set<number>();
+    const scan = (menu: Menu | undefined): void => {
+      if (menu?.id == null) return;
+      if ((menu.slots ?? []).some((s) => (s.meals ?? []).some((m) => m.mealId === mealId))) {
+        ids.add(menu.id);
+      }
+    };
+    for (const menu of this.menusById().values()) scan(menu);
+    for (const menu of this.binderMenus()) scan(menu);
+    return [...ids];
+  }
+
+  /** Delete a meal AND every throwaway menu that contains it (each menu's OTHER
+   *  meals survive in the notebook). One trailing reload of everything after. */
+  async deleteMealAndContainingMenus(mealId: number, deleteRecipe = false): Promise<void> {
+    const rot = this.rotation();
+    const menuIds = this.menusContainingMeal(mealId);
+    try {
+      for (const menuId of menuIds) {
+        // Unlink from the rotation (FK), then delete the menu record.
+        if (rot?.id != null) {
+          await firstValueFrom(
+            this.http.delete(`${this.baseUrl}/rotation/${rot.id}/menus/${menuId}`),
+          ).catch(() => undefined);
+        }
+        await firstValueFrom(this.http.delete(`${this.baseUrl}/menu/${menuId}`)).catch(
+          () => undefined,
+        );
+      }
+      const url = deleteRecipe
+        ? `${this.baseUrl}/meal/${mealId}?deleteRecipe=true`
+        : `${this.baseUrl}/meal/${mealId}`;
+      await firstValueFrom(this.http.delete(url));
+      await Promise.all([
+        this.loadBinder(),
+        this.loadFolder(),
+        this.loadBinderMenus(),
+        this.loadCurrentRotation(),
+      ]);
+    } catch (err) {
+      this.notification.show(this.deleteErrMessage(err), 'error');
+    }
+  }
+
   /** Replace one meal in binderMeals + the mealsById cache with a fresh copy,
    *  immutably (the 200 body from restore/detach is the refresh — no reload). */
   private replaceBinderMeal(meal: Meal): void {

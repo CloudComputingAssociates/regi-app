@@ -171,7 +171,6 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
               (menuSelect)="onSelectMenu($event)"
               (deleteMenu)="onDeleteMenu($event)"
               (pinMenu)="onSaveMenu($event)"
-              (saveToOriginal)="onSaveToOriginal($event)"
               (renameMenu)="rotation.updateMenuName($event.menuId, $event.name)"
               (dropMenu)="rotation.addMenuToRotation($event)"
               (addMenu)="onAddMenu()"
@@ -674,46 +673,22 @@ export class MenusPanelComponent implements OnInit {
    *  them back to the notebook (each meal overwrites its Binder original). A plain
    *  unsaved menu (name only) pins directly, as before. */
   onSaveMenu(menuId: number): void {
-    if (this.rotation.menuHasUnsavedWork(menuId) || this.rotation.menuCompositionChanged(menuId)) {
-      this.dialog.open(WipeConfirmDialogComponent, {
-        panelClass: 'wipe-dialog-panel',
-        data: {
-          message: 'Save these menu changes back into your notebook, permanently?',
-          confirmLabel: 'Save to notebook',
-          onConfirm: () => void this.rotation.saveMenuMealChanges(menuId),
-        },
-      });
-      return;
-    }
-    void this.rotation.pinMenu(menuId);
-  }
-
-  /** Save-to-original pressed on a placed copy. Confirm, then overwrite the
-   *  notebook original's slots with this copy's current meals (name + pinned
-   *  status on both menus are left untouched). */
-  onSaveToOriginal(copyId: number): void {
-    this.dialog.open(WipeConfirmDialogComponent, {
-      panelClass: 'wipe-dialog-panel',
-      data: {
-        message:
-          "Overwrite the original menu's slots with this menu's current meals? Name and pinned status are not changed.",
-        confirmLabel: 'Save to original',
-        onConfirm: () => void this.rotation.saveMenuToOriginal(copyId),
-      },
-    });
+    // No confirmation — the green check saves the (re)named menu to the notebook.
+    // Meal adds/removes already autosave (write-through), so there's nothing to ask
+    // about; saveMenuMealChanges also pins any not-yet-saved slotted meals first.
+    void this.rotation.saveMenuMealChanges(menuId);
   }
 
   onDeleteMenu(menuId: number): void {
     // Simple clear — Wipe Menus is what nukes the default Day 1…N menus from the
     // notebook, so the per-menu trash just clears this menu (and its meals) off the
-    // current week's rotation. Saved (renamed) menus stay in the notebook.
-    const raw = this.rotation.menus().find((m) => m.menuId === menuId)?.menuName?.trim() ?? '';
-    const name = raw.replace(/(\s*\(copy\))+\s*$/i, '').trim() || 'this menu';
+    // current week's rotation. Saved (renamed) menus stay in the notebook; meals are
+    // never deleted (they live in the notebook independently).
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',
       data: {
-        title: 'Clear Menu?',
-        message: `Clear Menu slot "${name}" and meals from this week's rotation?`,
+        title: 'Clear Menu Slot?',
+        message: "Wipe the day's menu, meals are not deleted.",
         confirmLabel: 'Yes',
         onConfirm: () => void this.rotation.deleteMenu(menuId),
       },

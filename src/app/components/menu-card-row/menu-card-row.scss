@@ -276,7 +276,9 @@
   flex: 1 1 210px;
   min-width: 180px;
   max-width: 260px;
-  min-height: 42px; // SAME height as the menu cards — it IS a drop zone
+  // Taller than a menu card — the empty menus strip (just this drop zone, before any
+  // menu is added) read too skinny. The whole strip stretches to this height.
+  min-height: 64px;
   box-sizing: border-box;
   border: 2px dashed #5a5a5a;
   border-radius: 8px;
@@ -291,6 +293,19 @@
     border-color: #4da6ff;
     color: #7fbfff;
   }
+
+  // Two-line prompt: "+ Add menu" over a muted hint line.
+  .add-menu-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-align: center;
+    padding: 4px 8px;
+    line-height: 1.2;
+  }
+  .add-menu-main { font-size: 13px; font-weight: 500; }
+  .add-menu-sub { font-size: 10px; font-weight: 300; color: #8a97a4; }
 
   // Bloom — solid gold glow ring + faint gold wash; the drop prompt is small,
   // light, WHITE and two lines.

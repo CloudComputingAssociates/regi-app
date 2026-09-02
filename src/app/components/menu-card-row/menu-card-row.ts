@@ -80,19 +80,6 @@ import { RotationService } from '../../services/rotation.service';
                 (click)="$event.stopPropagation(); onSaveCheck(menu, i)">
                 <mat-icon>check</mat-icon>
               </button>
-              <!-- Save-to-original key — only on a PLACED COPY (carries the
-                   server-owned clonedFromMenuId). Pushes this menu's slots back
-                   onto its notebook original. -->
-              @if (showSaveToOriginal(menu)) {
-                <button
-                  type="button"
-                  class="menu-save-original"
-                  matTooltip="Save changes to the original menu"
-                  matTooltipPosition="above"
-                  (click)="$event.stopPropagation(); saveToOriginal.emit(menu.menuId)">
-                  <mat-icon>save</mat-icon>
-                </button>
-              }
               <!-- Trash — outline glyph. Deletes/clears this menu and its meal
                    slots (parent confirms Delete-from-Notebook vs Clear). -->
               <button
@@ -116,7 +103,16 @@ import { RotationService } from '../../services/rotation.service';
             cdkDropList
             [cdkDropListEnterPredicate]="menuDropPredicate"
             (cdkDropListDropped)="onMenuDrop($event)"
-            (click)="addMenu.emit()">@if (menuTargetHot()) {<span class="dnd-text">Drag &amp; drop<br />a menu here</span>} @else {+ Add menu}</div>
+            (click)="addMenu.emit()">
+            @if (menuTargetHot()) {
+              <span class="dnd-text">Drag &amp; drop<br />a menu here</span>
+            } @else {
+              <span class="add-menu-text">
+                <span class="add-menu-main">+ Add menu</span>
+                <span class="add-menu-sub">(click here or drag saved Menu from Notebook)</span>
+              </span>
+            }
+          </div>
         }
       </div>
       <!-- Right nav — appears while more cards sit past the right edge. Tall bar. -->
@@ -164,9 +160,6 @@ export class MenuCardRowComponent {
   readonly renameMenu = output<{ menuId: number; name: string }>();
   /** "+ Add menu" clicked. */
   readonly addMenu = output<void>();
-  /** Save-to-original key on a placed copy — push its slots back onto the notebook
-   *  original (emits the copy's menuId; the parent confirms + calls the service). */
-  readonly saveToOriginal = output<number>();
   /** Foot "Copy" clicked — duplicate this menu into a new card (emits the menuId).
    *  The parent duplicates it server-side and links the copy into the rotation. */
   readonly duplicateMenu = output<number>();
@@ -351,12 +344,6 @@ export class MenuCardRowComponent {
     return this.copyRoles().get(menu.menuId) ?? null;
   }
 
-  /** Show the "Save to original" key only for a placed COPY — one the server
-   *  linked back to a source menu via clonedFromMenuId. */
-  showSaveToOriginal(menu: RotationMenuEntry): boolean {
-    return this.rotation.menuClonedFromMenuId(menu.menuId) != null;
-  }
-
   /** Tile pin icon — emit pin unless the entry is already pinned. */
   onPin(menu: RotationMenuEntry): void {
     if (menu.pinned) return;
@@ -380,12 +367,10 @@ export class MenuCardRowComponent {
     return this.editingMenuId() === menuId && this.nameDraft().trim() !== '';
   }
 
-  /** The green save-check is ONLY for saving a menu to the Binder as a "Named
-   *  Menu" — so it appears solely once the user has given the menu a REAL custom
-   *  name (not the positional default "Menu A" / a bare "Menu N"). Slot/meal edits
-   *  autosave on their own (write-through), so a default-named menu needs no check.
-   *  Shows when that named menu isn't yet saved (unpinned), or when a saved menu's
-   *  name was just changed in the box. */
+  /** The green save-check is ONLY for a NAME change now. Meal adds/removes autosave
+   *  on their own (write-through back to the notebook), so composition never lights
+   *  the check. It shows while a real, changed name sits in the box, or for a menu
+   *  the user renamed this session that isn't pinned to the notebook yet. */
   showSaveCheck(menu: RotationMenuEntry, index: number): boolean {
     const shown = this.displayName(menu, index);
     // While editing: a real, CHANGED name in the box lights the check immediately.
@@ -393,21 +378,13 @@ export class MenuCardRowComponent {
       const draft = this.nameDraft().trim();
       if (draft !== '' && draft !== shown && !/^menu\s+\d+$/i.test(draft)) return true;
     }
-    // A menu the user RENAMED this session (and hasn't saved to the Binder yet).
-    if (this.renamedMenus().has(menu.menuId) && !menu.pinned) return true;
-    // OR a menu whose slotted meals hold unsaved edits (a food added, a portion
-    // changed) — the menu now differs from its saved state and can be saved back.
-    if (this.rotation.menuHasUnsavedWork(menu.menuId)) return true;
-    // OR the user changed a COMMITTED menu's composition (added / removed a meal).
-    // Only for a menu already saved (pinned) or real-named — on a fresh unnamed
-    // menu, filling slots is just building it, so no save-check yet.
-    const committed = menu.pinned || !this.isUnnamedMenu(menu);
-    return committed && this.rotation.menuCompositionChanged(menu.menuId);
+    // A menu the user RENAMED this session (and hasn't saved to the notebook yet).
+    return this.renamedMenus().has(menu.menuId) && !menu.pinned;
   }
 
-  /** Green check pressed. It fires on mousedown-preventDefault (the name box keeps
-   *  focus, so no blur), so it commits the work itself: persist a pending name
-   *  change, and for an unsaved menu also save it to the Binder. */
+  /** Green check pressed. Fires on mousedown-preventDefault (the name box keeps
+   *  focus), so it commits the work itself: persist a pending name change, and pin
+   *  a not-yet-saved menu to the notebook. (Composition already autosaves.) */
   onSaveCheck(menu: RotationMenuEntry, index: number): void {
     const draft = this.nameDraft().trim();
     if (draft !== '' && draft !== this.displayName(menu, index)) {
@@ -415,16 +392,9 @@ export class MenuCardRowComponent {
       this.markRenamed(menu.menuId);
       this.flashSaveHint(menu.menuId);
     }
-    // Fire the save when the menu is unsaved OR its meals hold unsaved edits OR its
-    // composition changed. Emit directly (not via onPin, which no-ops on an
-    // already-pinned menu) so a saved menu with modifications still offers a save.
-    if (
-      !menu.pinned ||
-      this.rotation.menuHasUnsavedWork(menu.menuId) ||
-      this.rotation.menuCompositionChanged(menu.menuId)
-    ) {
-      this.pinMenu.emit(menu.menuId);
-    }
+    // A not-yet-saved menu gets pinned to the notebook; a pinned menu's rename
+    // already persisted above.
+    if (!menu.pinned) this.pinMenu.emit(menu.menuId);
     this.editingMenuId.set(null);
   }
 
