@@ -18,7 +18,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { firstValueFrom } from 'rxjs';
-import { RotationService, TEACH_SAVE_LINE } from '../../services/rotation.service';
+import { RotationService } from '../../services/rotation.service';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { FoodsService } from '../../services/foods.service';
 import { UserFoodService } from '../../services/user-food.service';
@@ -702,36 +702,19 @@ export class MenusPanelComponent implements OnInit {
   }
 
   onDeleteMenu(menuId: number): void {
-    const pinned = this.rotation.menus().find((m) => m.menuId === menuId)?.pinned === true;
-    if (pinned) {
-      // A saved (notebook) menu — give the explicit choice: clear it off the plan
-      // but keep it in the notebook (safe default), or delete it from the notebook
-      // entirely (its meals are kept). deleteMenu already keeps a pinned menu in the
-      // Binder; deleteBinderMenu(…, false) removes the menu but not its meals.
-      this.dialog.open(WipeConfirmDialogComponent, {
-        panelClass: 'wipe-dialog-panel',
-        data: {
-          title: 'Clear this menu?',
-          message:
-            'This menu is saved in your notebook. Clear it from your plan (it stays in your notebook), or delete it from your notebook entirely?',
-          confirmLabel: 'Clear from plan',
-          onConfirm: () => void this.rotation.deleteMenu(menuId),
-          secondaryLabel: 'Delete from notebook',
-          onSecondary: () => void this.rotation.deleteBinderMenu(menuId, false),
-        },
-      });
-      return;
-    }
-    // A disposable menu — one confirm; clearing it also hard-deletes it (it isn't
-    // saved anywhere), so surface the teach-line when it holds unsaved work.
+    // One question: delete the whole menu from the notebook (its meals are kept), or
+    // "No, just clear" — empty this menu's meal slots and recycle it as the next open
+    // Day (the menu that points to the meals is kept, the meals themselves survive).
     this.dialog.open(WipeConfirmDialogComponent, {
       panelClass: 'wipe-dialog-panel',
       data: {
-        title: 'Clear this menu?',
-        message: 'Clear this menu from your plan?',
-        teachLine: this.rotation.menuHasUnsavedWork(menuId) ? TEACH_SAVE_LINE : undefined,
-        confirmLabel: 'Clear',
-        onConfirm: () => void this.rotation.deleteMenu(menuId),
+        title: 'Delete Menu from Notebook?',
+        message:
+          'Delete this menu from your notebook? Its meals are kept. Or choose “No, just clear” to empty this menu’s meal slots and reuse it as the next open Day.',
+        confirmLabel: 'Delete from notebook',
+        onConfirm: () => void this.rotation.deleteBinderMenu(menuId, false),
+        secondaryLabel: 'No, just clear',
+        onSecondary: () => void this.rotation.clearAndRecycleMenu(menuId),
       },
     });
   }

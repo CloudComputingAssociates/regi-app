@@ -888,7 +888,9 @@ export class RotationService {
         this.http.get<RotationDetail>(`${this.baseUrl}/rotation/${rot.id}`),
       );
       this.rotation.set(detail);
+      // The first menu of a fresh plan is "Day 1".
       if (menu.id != null) {
+        await this.updateMenuName(menu.id, this.nextUnusedDayName(menu.id));
         this.selectedMenuId.set(menu.id);
         await this.selectMenu(menu.id);
       }
@@ -2359,6 +2361,30 @@ export class RotationService {
     }
   }
 
+  /** The lowest "Day N" name not already used by a menu — across BOTH this rotation
+   *  and the notebook — so a Day number in the notebook is never reused. Optionally
+   *  ignores one menu (the one being (re)named). Menus default to Day 1, Day 2, …. */
+  nextUnusedDayName(excludeMenuId?: number): string {
+    const used = new Set<number>();
+    const collect = (name: string | null | undefined): void => {
+      const m = /^day\s+(\d+)$/i.exec((name ?? '').trim());
+      if (m) used.add(Number(m[1]));
+    };
+    for (const e of this.menus()) if (e.menuId !== excludeMenuId) collect(e.menuName);
+    for (const b of this.binderMenus()) if (b.id !== excludeMenuId) collect(b.name);
+    let n = 1;
+    while (used.has(n)) n++;
+    return `Day ${n}`;
+  }
+
+  /** Trash "No, just clear": empty this menu's meal slots (the meals themselves are
+   *  kept — pinned occupants stay in the Binder) and rename the (now-empty) menu to
+   *  the next unused Day, so it's a fresh open day the user can refill. */
+  async clearAndRecycleMenu(menuId: number): Promise<void> {
+    await this.clearMenuMeals(menuId);
+    await this.updateMenuName(menuId, this.nextUnusedDayName(menuId));
+  }
+
   /** Add a new empty menu to the rotation (the "+ Add menu" link).
    *  POST /menu -> POST /rotation/{id}/menus -> reload + select the new menu. */
   async addMenu(): Promise<void> {
@@ -2379,7 +2405,10 @@ export class RotationService {
         this.http.get<RotationDetail>(`${this.baseUrl}/rotation/${rot.id}`),
       );
       this.rotation.set(detail);
+      // Name it as the next open Day (Day 1, Day 2, …) so the notebook saves a
+      // friendly "Day N", not the server's "Menu N" seed.
       if (menu.id != null) {
+        await this.updateMenuName(menu.id, this.nextUnusedDayName(menu.id));
         this.selectedMenuId.set(menu.id);
         await this.selectMenu(menu.id);
       }

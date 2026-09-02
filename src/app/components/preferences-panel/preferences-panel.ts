@@ -393,12 +393,12 @@ import { MatIconModule } from '@angular/material/icon';
               <div class="plan-column">
                 <div class="setting-row">
                   <label class="setting-label">Menu-days</label>
-                  <input type="number" min="2" max="10" class="setting-number"
+                  <input type="number" min="2" max="9" class="setting-number"
                     [ngModel]="userSettingsService.menuDays()"
                     (input)="onMenuDaysChange($event)" />
                   <span class="info-icon"
                         #menuDaysTooltip="matTooltip"
-                        matTooltip="Set up # menus, for your week. Consider leftovers, and travel or other events."
+                        matTooltip="Number of Menu slots, or days planned (max 9)"
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
                         (click)="menuDaysTooltip.toggle()">&#9432;</span>
@@ -1418,8 +1418,15 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   /** Menu-Days: persist the preference (drives new rotations) AND push the new
    *  span to the active rotation so the "n / span days" badge updates live. */
   onMenuDaysChange(event: Event): void {
-    const raw = +(event.target as HTMLInputElement).value;
+    const input = event.target as HTMLInputElement;
+    let raw = +input.value;
     if (!raw) return;
+    // Hard cap at 9 (keeps Day names single-digit) — warn + clamp if they exceed it.
+    if (raw > 9) {
+      raw = 9;
+      input.value = '9';
+      this.notificationService.show('Menu-days is capped at 9 — set to 9.', 'warning');
+    }
     this.userSettingsService.setMenuDays(raw);
     this.settingsChanged.set(true);
     void this.rotationService.setRotationSpanDays(this.userSettingsService.menuDays());

@@ -223,12 +223,26 @@ export class MenuCardRowComponent {
    *  they letter cleanly as Menu A / B / C — so it's obvious they need a name; then
    *  the named menus, alphabetically. Purely cosmetic (letters are display-only);
    *  selection / drag use menuId, so reordering is safe. */
+  /** The Day number of a menu named "Day N", else null. Drives NUMERIC ordering so
+   *  Day 1, Day 2, … Day 10 sort correctly (a plain string sort gives Day 1, 10, 2). */
+  private dayNumber(m: RotationMenuEntry): number | null {
+    const match = /^day\s+(\d+)$/i.exec((m.menuName?.trim() ?? '').replace(/(\s*\(copy\))+\s*$/i, '').trim());
+    return match ? Number(match[1]) : null;
+  }
+
   readonly sortedMenus = computed<RotationMenuEntry[]>(() =>
     [...this.menus()].sort((a, b) => {
+      // Day-named menus lead, ordered NUMERICALLY (Day 1 … Day N).
+      const da = this.dayNumber(a);
+      const db = this.dayNumber(b);
+      if (da != null && db != null) return da - db;
+      if (da != null) return -1;
+      if (db != null) return 1;
+      // Then the rest: still-unnamed ("Menu N") first, custom names alphabetical.
       const ua = this.isUnnamedMenu(a);
       const ub = this.isUnnamedMenu(b);
-      if (ua !== ub) return ua ? -1 : 1; // unnamed first
-      if (ua && ub) return 0; // stable — keep add order among the unnamed
+      if (ua !== ub) return ua ? -1 : 1;
+      if (ua && ub) return 0;
       return (a.menuName ?? '').localeCompare(b.menuName ?? '', undefined, { sensitivity: 'base' });
     }),
   );
