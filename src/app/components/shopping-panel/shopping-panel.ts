@@ -109,7 +109,7 @@ const CAT_RANK: Record<string, number> = {
         <button
           type="button"
           class="shopping-collapse-all"
-          [matTooltip]="allCatsCollapsed() ? 'Expand all' : 'Collapse all'"
+          [matTooltip]="allCatsCollapsed() ? 'Expand all' : 'Clear all — collapse &amp; reset staple needs'"
           matTooltipPosition="below"
           (click)="toggleAllCats()">
           <mat-icon>{{ allCatsCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
@@ -337,7 +337,19 @@ export class ShoppingPanelComponent {
     } else {
       this.collapsedCats.set(new Set(this.computedGroups().map((g) => g.category)));
       this.collapsedStaples.set(new Set(this.categories.map((c) => c.id)));
+      // "Clear all" also resets the staples for a fresh trip — every staple flips
+      // back to NOT needed; the user re-marks what they need next time.
+      this.resetStapleNeeds();
     }
+  }
+
+  /** Flip EVERY staple back to not-needed (and un-pick) — a fresh shopping trip.
+   *  No-op (and no save) when they're already all clear. Persists to settings. */
+  private resetStapleNeeds(): void {
+    const dirty = this.staples().some((s) => s.needed !== false || s.pickedUp === true);
+    if (!dirty) return;
+    this.staples.update((list) => list.map((s) => ({ ...s, needed: false, pickedUp: false })));
+    void this.autoSave();
   }
 
   onScaleInput(event: Event): void {

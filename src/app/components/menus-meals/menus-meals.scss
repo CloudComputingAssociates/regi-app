@@ -19,13 +19,13 @@
   // 280px floor (+ tighter gap/padding) lets 3 cards fit on a ~900px board
   // (laptop) while staying responsive — drops to 2 on a narrower window.
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  // Rows share the available height (so a single row of tiles fits a short
-  // viewport). Floor of 150px keeps them usable if many rows push past the fold
-  // (then the panel-body scrolls as a fallback).
-  grid-auto-rows: minmax(150px, 1fr);
+  // Rows are a STANDARD size — a 150px floor up to a 340px cap — so tiles never
+  // balloon to full-screen when there are only a few (was `1fr`, which stretched a
+  // single row to the whole board height). Many rows still scroll as a fallback.
+  grid-auto-rows: minmax(150px, 340px);
   gap: 10px;
   padding: 3px 6px 8px 4px; // flush left; a sliver above the cards so the strip separator shows
-  align-content: stretch;
+  align-content: start; // pack tiles at the top; don't stretch to fill the board
 }
 
 // Embossed (debossed) area watermark pinned DEAD CENTER of the meal region (fixed

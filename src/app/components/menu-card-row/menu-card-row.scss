@@ -26,7 +26,11 @@
   flex: 1 1 auto;
   min-width: 0;
   overflow-x: auto;
-  scroll-behavior: smooth;
+  // Scrollbar hidden — the < / > bars are the only scroll affordance now. The
+  // component animates scrollLeft itself, so no native scroll-behavior here.
+  scrollbar-width: none;          // Firefox
+  -ms-overflow-style: none;       // old Edge/IE
+  &::-webkit-scrollbar { display: none; } // Chrome/Safari
 }
 
 // Tall left/right nav bars — full strip height ("long"), a chevron centered.

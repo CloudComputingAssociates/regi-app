@@ -107,13 +107,17 @@ import { RotationService } from '../../services/rotation.service';
           </div>
         }
 
-        <div
-          class="add-menu-link"
-          [class.bloom]="menuTargetHot()"
-          cdkDropList
-          [cdkDropListEnterPredicate]="menuDropPredicate"
-          (cdkDropListDropped)="onMenuDrop($event)"
-          (click)="addMenu.emit()">@if (menuTargetHot()) {<span class="dnd-text">Drag &amp; drop<br />a menu here</span>} @else {+ Add menu}</div>
+        <!-- "+ Add menu" only while under the Menu-days cap (User Settings). At the
+             cap it disappears — no more days can be added until the cap is raised. -->
+        @if (menus().length < spanDays()) {
+          <div
+            class="add-menu-link"
+            [class.bloom]="menuTargetHot()"
+            cdkDropList
+            [cdkDropListEnterPredicate]="menuDropPredicate"
+            (cdkDropListDropped)="onMenuDrop($event)"
+            (click)="addMenu.emit()">@if (menuTargetHot()) {<span class="dnd-text">Drag &amp; drop<br />a menu here</span>} @else {+ Add menu}</div>
+        }
       </div>
       <!-- Right nav — appears while more cards sit past the right edge. Tall bar. -->
       @if (!atEnd()) {
@@ -204,12 +208,32 @@ export class MenuCardRowComponent {
     this.atEnd.set(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
   }
 
-  /** Scroll by ~one viewport (min one card) in the given direction (-1 left, +1 right). */
+  private scrollAnim: number | null = null;
+
+  /** Scroll by ~one viewport (min one card) in the given direction (-1 left, +1
+   *  right) with a custom eased animation — slower + smoother than the browser's
+   *  native smooth-scroll (which reads choppy on the wide cards). */
   scrollByCards(dir: number): void {
     const el = this.scroller()?.nativeElement;
     if (!el) return;
     const step = Math.max(el.clientWidth * 0.8, 264); // ~one card width floor
-    el.scrollBy({ left: dir * step, behavior: 'smooth' });
+    const start = el.scrollLeft;
+    const max = el.scrollWidth - el.clientWidth;
+    const target = Math.max(0, Math.min(max, start + dir * step));
+    const dist = target - start;
+    if (dist === 0) return;
+    if (this.scrollAnim != null) cancelAnimationFrame(this.scrollAnim);
+    const duration = 550; // ms — deliberately slow + smooth
+    const t0 = performance.now();
+    const easeInOutQuad = (p: number): number =>
+      p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    const tick = (now: number): void => {
+      const p = Math.min(1, (now - t0) / duration);
+      el.scrollLeft = start + dist * easeInOutQuad(p);
+      this.updateScrollState();
+      this.scrollAnim = p < 1 ? requestAnimationFrame(tick) : null;
+    };
+    this.scrollAnim = requestAnimationFrame(tick);
   }
 
   /** Unnamed = still on the server default ("Menu N") or blank — no real custom

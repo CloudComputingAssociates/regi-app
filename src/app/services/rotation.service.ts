@@ -2390,6 +2390,16 @@ export class RotationService {
   async addMenu(): Promise<void> {
     const rot = this.rotation();
     if (!rot?.id) return;
+    // Enforce the Menu-days cap — never let the rotation exceed the configured
+    // number of menus/days (the "+ Add menu" tile is also hidden at the cap).
+    const cap = rot.spanDays ?? this.menuDaysSetting();
+    if (this.menus().length >= cap) {
+      this.notification.show(
+        `You've reached your Menu-days limit (${cap}). Raise Menu-days in Settings to add more.`,
+        'warning',
+      );
+      return;
+    }
     try {
       const slotCount = this.settingsService.allSettings()?.regiMenu?.mealsPerDay ?? 4;
       const menu = await firstValueFrom(
@@ -2423,6 +2433,15 @@ export class RotationService {
   async addMenuToRotation(menuId: number): Promise<void> {
     const rot = this.rotation();
     if (!rot?.id) return;
+    // Same Menu-days cap as +Add menu — a dropped Binder menu can't exceed it.
+    const cap = rot.spanDays ?? this.menuDaysSetting();
+    if (this.menus().length >= cap) {
+      this.notification.show(
+        `You've reached your Menu-days limit (${cap}). Raise Menu-days in Settings to add more.`,
+        'warning',
+      );
+      return;
+    }
     try {
       const copy = await firstValueFrom(
         this.http.post<Menu>(`${this.baseUrl}/menu/${menuId}/duplicate`, {}),
