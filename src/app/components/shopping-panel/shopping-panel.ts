@@ -583,7 +583,7 @@ export class ShoppingPanelComponent {
       category,
       item: text,
       qty: '1',
-      needed: true,
+      needed: false, // opt-in — staples start NOT needed; the user marks what they need
       pickedUp: false,
       sortOrder: categoryItems.length
     };

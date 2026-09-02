@@ -699,8 +699,10 @@
     background: rgba(255, 255, 255, 0.03);
   }
 
+  // Not-needed: the row stays fully READABLE (item + unit at normal ink). Only the
+  // QTY reads muted until the user flips the Need slider on.
   &.not-needed {
-    opacity: 0.45;
+    .staple-qty { color: #9aa0a6; }
   }
 
   &.picked-up {
@@ -1055,6 +1057,9 @@
       color: #1f1f1f;
       &::placeholder { color: #8a8f94; }
     }
+    // Item + Unit stay dark/readable even when not needed; only the QTY greys out
+    // until the Need slider is flipped on.
+    .staple-row.not-needed .staple-qty { color: #9aa0a6; }
     .accordion-title { color: #1f1f1f; }
     // The only .accordion-arrow left in the staples pane is the green banner's —
     // keep it white to match the "meals' groceries" banner.
