@@ -12,47 +12,43 @@
   z-index: 1; // cards sit above the watermark (which may show through / be covered)
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   padding: 1px 6px 4px 4px; // flush left; a touch of room below the selected card's blue border
   border-bottom: none; // no divider — the blue line got lost in the ruled paper
-  overflow-x: auto;
 }
 
+// The cards themselves are the horizontal scroller now (the tall < / > bars flank
+// it and drive the scroll); cards keep their min-width so they overflow and scroll.
 .cards {
   display: flex;
   align-items: stretch;
   gap: 12px;
   flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scroll-behavior: smooth;
 }
 
-// Embossed (debossed) area watermark — fills the blank strip space to the right
-// of the cards, labelling the row as the rotation's "menus". Lowercase Fredoka to
-// match the macro-bar labels; sunken gray so it reads as carved into the surface.
-// Shrinks away (min-width:0 + clip) once the cards fill the strip.
-// Planned-days tally — pinned to the strip's TOP-right so it reads as belonging
-// to the Menus area (not the meals grouping below).
-.span-badge {
-  position: absolute;
-  right: 12px;
-  top: 6px;
-  z-index: 2;
+// Tall left/right nav bars — full strip height ("long"), a chevron centered.
+.strip-nav {
+  flex: 0 0 auto;
+  align-self: stretch;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 12px;
-  border: 1px solid #4a4a4a;
-  border-radius: 14px;
-  background: #333;
-  color: #9aa0a6;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
+  justify-content: center;
+  width: 26px;
+  padding: 0;
+  color: #cfcfcf;
+  background: linear-gradient(180deg, #4d4d4d 0%, #3a3a3a 100%);
+  border: 1px solid #262626;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
 
-  .check { color: #6a6f75; }
-  &.complete {
-    color: #f1f1f1;
-    .check { color: #41ac17; }
-  }
+  .mat-icon { width: 22px; height: 22px; font-size: 22px; line-height: 22px; }
+  &:hover { background: linear-gradient(180deg, #5a5a5a 0%, #464646 100%); color: #ffffff; }
+  &:active { transform: translateY(1px); }
 }
 
 .area-watermark {

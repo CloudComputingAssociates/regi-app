@@ -4,7 +4,19 @@
 // menu name and its planned day count; the selected card gets a blue border.
 // A badge tallies planned days against the rotation span, and a disabled
 // "+ Add menu" stub marks the Phase-1 affordance.
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
@@ -17,7 +29,18 @@ import { RotationService } from '../../services/rotation.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="strip">
-      <div class="cards">
+      <!-- Left nav — appears ONLY once scrolled off the start. Tall bar. -->
+      @if (!atStart()) {
+        <button
+          type="button"
+          class="strip-nav strip-nav-left"
+          matTooltip="Scroll menus left"
+          matTooltipPosition="above"
+          (click)="scrollByCards(-1)">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+      }
+      <div class="cards" #scroller (scroll)="updateScrollState()">
         @for (menu of sortedMenus(); track menu.menuId; let i = $index) {
           <div
             class="menu-card"
@@ -70,14 +93,15 @@ import { RotationService } from '../../services/rotation.service';
                   <mat-icon>save</mat-icon>
                 </button>
               }
-              <!-- Square Clear key — removes this menu from the plan. -->
+              <!-- Trash — outline glyph. Deletes/clears this menu and its meal
+                   slots (parent confirms Delete-from-Notebook vs Clear). -->
               <button
                 type="button"
                 class="menu-clear"
-                matTooltip="Clear this menu"
+                matTooltip="Delete or clear Menu, and mealslots"
                 matTooltipPosition="above"
                 (click)="$event.stopPropagation(); deleteMenu.emit(menu.menuId)">
-                <mat-icon>delete</mat-icon>
+                <mat-icon>delete_outline</mat-icon>
               </button>
             </div>
           </div>
@@ -91,22 +115,25 @@ import { RotationService } from '../../services/rotation.service';
           (cdkDropListDropped)="onMenuDrop($event)"
           (click)="addMenu.emit()">@if (menuTargetHot()) {<span class="dnd-text">Drag &amp; drop<br />a menu here</span>} @else {+ Add menu}</div>
       </div>
+      <!-- Right nav — appears while more cards sit past the right edge. Tall bar. -->
+      @if (!atEnd()) {
+        <button
+          type="button"
+          class="strip-nav strip-nav-right"
+          matTooltip="Scroll menus right"
+          matTooltipPosition="above"
+          (click)="scrollByCards(1)">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      }
     </div>
     <!-- Embossed area watermark, pinned DEAD CENTER of the strip (fixed — it never
          reflows with the cards; tiles simply overlay it as a one-time training cue).
          Same lowercase Fredoka face as the macro labels. -->
     <span class="area-watermark">menus</span>
-    <!-- Planned-days tally — right-justified in the strip, bottom-aligned with the
-         "menus" watermark (moved here from the toolbar). -->
-    <div
-      class="span-badge"
-      [class.complete]="plannedDays() === spanDays()"
-      matTooltip="You set the # of menus, in User Settings by Menu-Days"
-      matTooltipPosition="above">
-      <span class="check">✓</span>{{ plannedDays() }}/{{ spanDays() }} menus (days)
-    </div>
   `,
   styleUrls: ['./menu-card-row.scss'],
+  host: { '(window:resize)': 'updateScrollState()' },
 })
 export class MenuCardRowComponent {
   /** Source of live per-menu macro totals for the cals readout + chip dropdown. */
@@ -161,14 +188,29 @@ export class MenuCardRowComponent {
    *  visible either way. */
   private readonly collapsedMenus = signal<Set<number>>(new Set());
 
-  /** Total planned menu-days — a menu counts ONLY once it holds at least one
-   *  meal (an empty menu isn't a planned menu-day yet). Drives the tally badge. */
-  readonly plannedDays = computed<number>(() =>
-    this.menus().reduce(
-      (sum, m) => sum + (this.rotation.menuHasMeals(m.menuId) ? (m.plannedCount ?? 0) : 0),
-      0,
-    ),
-  );
+  // ----- Horizontal scroll navigation (tall < / > bars) --------------------
+  /** The scrolling cards container. */
+  private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
+  /** True when the strip is scrolled to the far left (hide the left arrow). */
+  readonly atStart = signal(true);
+  /** True when the strip is scrolled to the far right / fits (hide the right arrow). */
+  readonly atEnd = signal(true);
+
+  /** Recompute which nav arrows are needed from the scroller's geometry. */
+  updateScrollState(): void {
+    const el = this.scroller()?.nativeElement;
+    if (!el) return;
+    this.atStart.set(el.scrollLeft <= 1);
+    this.atEnd.set(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
+  }
+
+  /** Scroll by ~one viewport (min one card) in the given direction (-1 left, +1 right). */
+  scrollByCards(dir: number): void {
+    const el = this.scroller()?.nativeElement;
+    if (!el) return;
+    const step = Math.max(el.clientWidth * 0.8, 264); // ~one card width floor
+    el.scrollBy({ left: dir * step, behavior: 'smooth' });
+  }
 
   /** Unnamed = still on the server default ("Menu N") or blank — no real custom
    *  name yet. Drives sort-to-front so the user sees which menus still need naming. */
@@ -218,6 +260,15 @@ export class MenuCardRowComponent {
       },
       { allowSignalWrites: true },
     );
+
+    // Nav-arrow visibility: measure once mounted, then re-measure after the card
+    // list changes (a card added/removed shifts the overflow). rAF lets layout
+    // settle before we read scrollWidth/clientWidth.
+    afterNextRender(() => this.updateScrollState());
+    effect(() => {
+      this.sortedMenus(); // re-run when the card set changes
+      requestAnimationFrame(() => this.updateScrollState());
+    });
   }
 
   isOpen(menuId: number): boolean {
@@ -405,9 +456,9 @@ export class MenuCardRowComponent {
       // that noise (the amber badge marks a copy, not the name).
       return base;
     }
-    // Default menus show the FULL "Menu A" / "Menu B" in the box (redundant with the
-    // "Menu" label, but per request the box holds the whole default name).
-    return `Menu ${this.letter(index)}`;
+    // Default menus show "Day 1" / "Day 2" … by position (the server's "Menu N"
+    // seed is treated as unnamed; the box shows the friendly Day label instead).
+    return `Day ${index + 1}`;
   }
 
   /** Display label by position: 0→A, 1→B, … Menus are lettered (Menu A/B/C);
