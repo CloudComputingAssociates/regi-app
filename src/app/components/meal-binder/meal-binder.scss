@@ -392,19 +392,19 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  margin: 4px 8px 10px;
+  margin: 1px 8px 3px; // tight top + bottom — meals-list real estate is precious
   font-family: Roboto, 'Helvetica Neue', sans-serif; // filter is a control — stay sans
 
   .filter-fieldset {
     margin: 0;
-    padding: 8px 12px 12px;
+    padding: 4px 10px 6px; // trimmed inner padding
     background: #ffffff; // opaque white — no line bleed-through
     border: 1px solid #2a2a2a; // one clean dark outline
     border-radius: 6px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px; // tighter inter-control spacing
 
     legend {
       padding: 0 6px;

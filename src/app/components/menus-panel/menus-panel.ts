@@ -106,18 +106,6 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
               <!-- Right-justified action cluster: Shopping · Notebook · Clear all.
                    A padding gap (on the close X) separates Clear all from the X. -->
               <div class="toolbar-buttons">
-                <!-- Shopping List — toggles the Notebook on the Shopping tab (second
-                     click closes it, like the Notebook key). Grocery-bag glyph reads
-                     instantly as "to buy". -->
-                <button
-                  type="button"
-                  class="shop-list-btn"
-                  [class.active]="!rotation.binderCollapsed() && rotation.activeBinderTab() === 'shopping'"
-                  matTooltip="Shopping list. Opens '$ buy' tab in your Notebook"
-                  matTooltipPosition="above"
-                  (click)="rotation.toggleBinderTab('shopping')">
-                  <mat-icon class="shop-list-icon" aria-hidden="true">shopping_bag</mat-icon>
-                </button>
                 <!-- Notebook — toggles the Binder. -->
                 <button
                   type="button"
@@ -136,6 +124,18 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
                     <path d="M8 11 H16 M8 14 H16 M8 17 H13"
                           fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   </svg>
+                </button>
+                <!-- Shopping List — toggles the Notebook on the Shopping tab (second
+                     click closes it, like the Notebook key). Grocery-bag glyph reads
+                     instantly as "to buy". -->
+                <button
+                  type="button"
+                  class="shop-list-btn"
+                  [class.active]="!rotation.binderCollapsed() && rotation.activeBinderTab() === 'shopping'"
+                  matTooltip="Shopping list. Opens '$ buy' tab in your Notebook"
+                  matTooltipPosition="above"
+                  (click)="rotation.toggleBinderTab('shopping')">
+                  <mat-icon class="shop-list-icon" aria-hidden="true">shopping_bag</mat-icon>
                 </button>
                 <!-- Clear all — wipe everything, start over. -->
                 <button

@@ -244,7 +244,8 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                     matTooltip="Search a meal by name, or type any ingredient"
                     matTooltipPosition="above"
                     [value]="searchText()"
-                    (input)="searchText.set($any($event.target).value)" />
+                    (input)="searchText.set($any($event.target).value)"
+                    (keydown.enter)="filterOpen.set(false)" />
                   <button
                     type="button"
                     class="filter-clear"
@@ -254,34 +255,16 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                     <mat-icon>filter_alt_off</mat-icon>
                   </button>
                 </div>
-                <div class="mealset-row">
-                  <label class="filter-label">MealSet</label>
-                  @if (entitledSets().length) {
-                    <select
-                      class="mealset-select"
-                      multiple
-                      size="4"
-                      (change)="onMealSetsChange($any($event.target))">
-                      @for (set of entitledSets(); track set.mealSetId) {
-                        <option [value]="set.mealSetId" [selected]="isSetSelected(set.mealSetId)">
-                          {{ setLabel(set) }}
-                        </option>
-                      }
-                    </select>
-                  } @else {
-                    <span class="mealset-empty">No MealSets available</span>
-                  }
-                </div>
-                <!-- Provenance filter — owned meals materialized FROM a set.
-                     Distinct from the entitled-sets row above; shown only when
-                     loaded meals carry a sourceMealSetId. -->
+                <!-- MealSet filter — narrow to meals from one of your MealSets. Shown
+                     only when loaded meals carry a sourceMealSetId. Snaps the filter
+                     panel closed on select (compound filters: reopen + pick again). -->
                 @if (sourceSetOptions().length) {
                   <div class="mealset-row">
-                    <label class="filter-label">From MealSet</label>
+                    <label class="filter-label">MealSet</label>
                     <select
                       class="sort-select"
                       [value]="sourceSetFilter()"
-                      (change)="onSourceSetChange($any($event.target).value)">
+                      (change)="onSourceSetChange($any($event.target).value); filterOpen.set(false)">
                       <option value="all">All</option>
                       @for (opt of sourceSetOptions(); track opt.id) {
                         <option [value]="opt.id">{{ opt.name }}</option>
@@ -301,13 +284,13 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                     }
                   </div>
                 }
-                <!-- Meal Type filter — your own types (distinct + seeds). -->
+                <!-- Meal Type filter — snaps the panel closed on select too. -->
                 <div class="mealset-row">
                   <label class="filter-label">Type</label>
                   <select
                     class="sort-select"
                     [value]="mealTypeFilter()"
-                    (change)="onMealTypeFilterChange($any($event.target).value)">
+                    (change)="onMealTypeFilterChange($any($event.target).value); filterOpen.set(false)">
                     <option value="all">All types</option>
                     @for (t of rotation.mealTypeOptions; track t) {
                       <option [value]="t">{{ t }}</option>
