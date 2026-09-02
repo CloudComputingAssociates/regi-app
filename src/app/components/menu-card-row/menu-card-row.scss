@@ -301,16 +301,17 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px; // matches the meal slot's placeholder line gap
+    gap: 2px; // tight inter-line — the tile's vertical centering gives the space above/below
     text-align: center;
     padding: 4px 10px;
     line-height: 1.3;
     font-family: Roboto, 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  // "+ Add menu" — inherits the link's blue (#4da6ff) so it lightens on hover, like
-  // the meal slot's "notebook" link/title.
-  .add-menu-main { font-size: 14px; font-weight: 600; }
-  // Hint line — the same grey + size as the meal slot's "Drag from notebook…".
+  // Both lines are the SAME 13px (the smaller one). "+ Add menu" inherits the link's
+  // blue (#4da6ff) so it lightens on hover; the hint is grey.
+  .add-menu-main { font-size: 13px; font-weight: 600; }
   .add-menu-sub { font-size: 13px; font-weight: 400; color: #9aa0a6; }
 
   // Bloom — solid gold glow ring + faint gold wash; the drop prompt is small,

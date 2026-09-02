@@ -154,16 +154,22 @@
   }
 
   // "Create from scratch" — a BLUE hyperlink (the whole phrase) on the 2nd line.
+  // Same 13px as the grey line above (the smaller one) + crisp smoothing so it
+  // doesn't render blurry; mirrors the app-bar "Hi, {name}!" link.
   .create-link {
     padding: 0;
     border: none;
     background: none;
-    font: inherit;
+    font-family: inherit;
+    font-size: 13px;
     font-weight: 600;
     color: #4da6ff;
     text-decoration: underline;
     text-underline-offset: 2px;
     cursor: pointer;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 
     &:hover { color: #7fbfff; }
   }
