@@ -462,6 +462,9 @@
   gap: 6px;
   padding: 0 12px; // tightened — no vertical padding
   color: rgba(255, 255, 255, 0.5);
+  // Sans-serif (matches the category titles) — the SERIF is reserved for the data
+  // rows below. Children (.staple-* labels + NEED) inherit this.
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
   font-size: 11px;
   font-weight: 700; // bold; NEED (a child) inherits this too
   text-transform: uppercase;
@@ -483,10 +486,11 @@
   background: transparent;
   border: none;
   color: #4da6ff;
-  // Same font + size as the tabs ("meals"); Initial Caps (CAT_LABEL already caps).
+  // Sans-serif, sized to match the QTY/UNIT/ITEM column header (12px) — smaller than
+  // the tab titles. Initial Caps (CAT_LABEL already caps).
   font-family: Roboto, 'Helvetica Neue', sans-serif;
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.2px;
   text-align: left;
   cursor: pointer;
