@@ -19,6 +19,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { firstValueFrom } from 'rxjs';
 import { RotationService } from '../../services/rotation.service';
+import { SettingsService } from '../../services/settings.service';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { FoodsService } from '../../services/foods.service';
 import { UserFoodService } from '../../services/user-food.service';
@@ -287,6 +288,7 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
 })
 export class MenusPanelComponent implements OnInit {
   readonly rotation = inject(RotationService);
+  private settingsService = inject(SettingsService);
   private dialog = inject(MatDialog);
   private preferencesService = inject(FoodPreferencesService);
   private foodsService = inject(FoodsService);
@@ -728,9 +730,15 @@ export class MenusPanelComponent implements OnInit {
       data: {
         title: 'Wipe Menus',
         message: "You will lose your work for this week's menus. OK to proceed?",
-        teachLine: 'All menus will be wiped. Meal slots all cleared.\nMeals saved to notebook will be retained.',
+        teachLine:
+          '1. All menus wiped. Meal slots cleared.\n' +
+          '2. Menus & meals that are saved, are retained.\n' +
+          '3. Shopping List staples are set to Need = false.',
         confirmLabel: 'Proceed',
-        onConfirm: () => void this.rotation.wipeMenus(),
+        onConfirm: () => {
+          void this.rotation.wipeMenus();
+          void this.settingsService.resetShoppingStapleNeeds();
+        },
       },
     });
   }

@@ -128,6 +128,14 @@ export class SettingsService {
     return saved.shoppingStaples || data;
   }
 
+  /** Flip every shopping staple back to NOT needed (and un-pick) — a fresh trip.
+   *  Used by the Wipe-Menus teardown. No-op when there are no staples. */
+  async resetShoppingStapleNeeds(): Promise<void> {
+    const current = this.allSettings()?.shoppingStaples ?? [];
+    if (current.length === 0) return;
+    await this.saveShoppingStaples(current.map((s) => ({ ...s, needed: false, pickedUp: false })));
+  }
+
   async saveGlp1Settings(data: Glp1Settings): Promise<Glp1Settings> {
     const saved = await this.saveSettings({ glp1: data });
     return saved.glp1 || data;

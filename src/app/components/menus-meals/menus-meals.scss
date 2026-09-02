@@ -16,9 +16,11 @@
   flex: 1 1 auto;   // FILL the board height so tiles fit vertically (no page scroll)
   min-height: 0;
   display: grid;
-  // 280px floor (+ tighter gap/padding) lets 3 cards fit on a ~900px board
-  // (laptop) while staying responsive — drops to 2 on a narrower window.
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  // 280px floor up to a 400px CAP (was 1fr, which stretched cards super-wide and
+  // over-cropped the photo). Columns pack from the left; extra board width stays
+  // empty rather than ballooning the tiles.
+  grid-template-columns: repeat(auto-fit, minmax(280px, 400px));
+  justify-content: start;
   // Rows are a STANDARD size — a 150px floor up to a 340px cap — so tiles never
   // balloon to full-screen when there are only a few (was `1fr`, which stretched a
   // single row to the whole board height). Many rows still scroll as a fallback.
