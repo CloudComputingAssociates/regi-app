@@ -732,8 +732,9 @@ export class MenusPanelComponent implements OnInit {
         message: "You will lose your work for this week's menus. OK to proceed?",
         teachLine:
           '1. All menus wiped. Meal slots cleared.\n' +
-          '2. Menus & meals that are saved, are retained.\n' +
-          '3. Shopping List staples are set to Need = false.',
+          '2. Renamed menus & saved meals are retained.\n' +
+          '3. Default "Day 1…N" menus are removed from your notebook.\n' +
+          '4. Shopping List staples are set to Need = false.',
         confirmLabel: 'Proceed',
         onConfirm: () => {
           void this.rotation.wipeMenus();

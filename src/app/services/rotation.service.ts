@@ -2465,16 +2465,42 @@ export class RotationService {
     }
   }
 
-  /** "Wipe Menus" — the whole-rotation teardown. DELETE /rotation/{id} on the
-   *  server deletes unpinned menus and their unpinned slotted meals; pinned
-   *  menus survive (kept for the Binder with their composition); the rotation
-   *  row is deleted. Folder + Binder are NOT cleared by this — only refreshed.
-   *  Reloads the board (empty-state until a new plan is started). */
+  /** True when a menu name is still a DEFAULT ("Day N" / "Menu N" / blank), i.e. the
+   *  user never renamed it into a curated, keep-forever menu. */
+  private isDefaultMenuName(name: string | null | undefined): boolean {
+    const base = (name?.trim() ?? '').replace(/(\s*\(copy\))+\s*$/i, '').trim();
+    return !base || /^(day|menu)\s+\d+$/i.test(base);
+  }
+
+  /** "Wipe Menus" — the whole-rotation teardown. DELETE /rotation/{id} deletes
+   *  unpinned menus and their unpinned meals; pinned menus survive. But a saved
+   *  DEFAULT-named menu ("Day 1" … "Day N") is NOT a curated keeper — only a
+   *  user-RENAMED menu is ("a day we like over and over"). So after the teardown we
+   *  NUKE the leftover default-named menus from the notebook too (their meals are
+   *  kept). If we didn't, stale "Day N" rows would linger and throw off the Day
+   *  numbering for new menus. Folder + Binder are refreshed; a fresh empty plan is
+   *  stood back up. */
   async wipeMenus(): Promise<void> {
     const rot = this.rotation();
     if (!rot?.id) return;
     try {
+      // Snapshot the SAVED default-named menus before the teardown — these are the
+      // ones the rotation delete would otherwise leave behind in the notebook.
+      const defaultsToNuke = this.menus()
+        .filter((m) => m.pinned && this.isDefaultMenuName(m.menuName))
+        .map((m) => m.menuId);
+
       await firstValueFrom(this.http.delete(`${this.baseUrl}/rotation/${rot.id}`));
+
+      // Now delete those default menu RECORDS from the notebook (meals are kept —
+      // they live independently). They're already unlinked, so no FK trip. Ignore a
+      // 404 (an unpinned one the rotation delete already removed).
+      for (const menuId of defaultsToNuke) {
+        await firstValueFrom(this.http.delete(`${this.baseUrl}/menu/${menuId}`)).catch(
+          () => undefined,
+        );
+      }
+
       await Promise.all([this.loadFolder(), this.loadBinder(), this.loadBinderMenus()]);
       // Stand a fresh empty plan back up immediately (empty slots), so the user
       // lands on a usable board rather than a "Start a plan" prompt.
