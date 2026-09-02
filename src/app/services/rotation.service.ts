@@ -2283,13 +2283,32 @@ export class RotationService {
     }
   }
 
-  /** Wipe every binder meal the caller materialized from a MealSet.
+  /** Wipe every binder meal the caller materialized from a MealSet — AND every
+   *  throwaway menu that holds one of them (menus are disposable, so we cascade the
+   *  same way a single meal-delete does; the notebook stays etch-a-sketch clean).
    *    POST /api/mealset/{setId}/wipe-from-binder → { deletedCount }
    *  Placements clear + edits are lost, but ownership is untouched (the set stays
-   *  re-downloadable). On 200, drop those meals from binderMeals + the cache
-   *  (immutable); 404 = the caller has no purchase for the set. */
+   *  re-downloadable). 404 = the caller has no purchase for the set. */
   async wipeMealSet(setId: number): Promise<void> {
     try {
+      // Menus containing any of this set's meals go too (found BEFORE the wipe, while
+      // the meals are still cached).
+      const setMealIds = this.binderMeals()
+        .filter((m) => m.sourceMealSetId === setId)
+        .map((m) => m.id)
+        .filter((id): id is number => id != null);
+      const menuIds = new Set<number>();
+      for (const mid of setMealIds) for (const menuId of this.menusContainingMeal(mid)) menuIds.add(menuId);
+      const rot = this.rotation();
+      for (const menuId of menuIds) {
+        if (rot?.id != null) {
+          await firstValueFrom(
+            this.http.delete(`${this.baseUrl}/rotation/${rot.id}/menus/${menuId}`),
+          ).catch(() => undefined);
+        }
+        await firstValueFrom(this.http.delete(`${this.baseUrl}/menu/${menuId}`)).catch(() => undefined);
+      }
+
       const res = await firstValueFrom(
         this.http.post<WipeFromBinderResponse>(`${this.baseUrl}/mealset/${setId}/wipe-from-binder`, null),
       );
@@ -2299,6 +2318,8 @@ export class RotationService {
         for (const [id, meal] of next) if (meal.sourceMealSetId === setId) next.delete(id);
         return next;
       });
+      // Deleted menus → refresh the notebook menus + the board.
+      if (menuIds.size > 0) await Promise.all([this.loadBinderMenus(), this.loadCurrentRotation()]);
       const n = res?.deletedCount ?? 0;
       this.notification.show(
         `${n} meals removed. Re-download anytime from the MealSets marketplace.`,

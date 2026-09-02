@@ -294,18 +294,24 @@
     color: #7fbfff;
   }
 
-  // Two-line prompt: "+ Add menu" over a muted hint line.
+  // Two-line prompt — SAME type vocabulary as an empty meal slot: a blue 14/600
+  // action over a grey 13/400 hint, with the meal-slot's line gap. One family, one
+  // grey, one blue — nothing else.
   .add-menu-text {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 8px; // matches the meal slot's placeholder line gap
     text-align: center;
-    padding: 4px 8px;
-    line-height: 1.2;
+    padding: 4px 10px;
+    line-height: 1.3;
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
   }
-  .add-menu-main { font-size: 13px; font-weight: 500; }
-  .add-menu-sub { font-size: 10px; font-weight: 300; color: #8a97a4; }
+  // "+ Add menu" — inherits the link's blue (#4da6ff) so it lightens on hover, like
+  // the meal slot's "notebook" link/title.
+  .add-menu-main { font-size: 14px; font-weight: 600; }
+  // Hint line — the same grey + size as the meal slot's "Drag from notebook…".
+  .add-menu-sub { font-size: 13px; font-weight: 400; color: #9aa0a6; }
 
   // Bloom — solid gold glow ring + faint gold wash; the drop prompt is small,
   // light, WHITE and two lines.

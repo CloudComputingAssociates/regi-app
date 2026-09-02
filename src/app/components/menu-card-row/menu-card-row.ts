@@ -109,7 +109,7 @@ import { RotationService } from '../../services/rotation.service';
             } @else {
               <span class="add-menu-text">
                 <span class="add-menu-main">+ Add menu</span>
-                <span class="add-menu-sub">(click here or drag saved Menu from Notebook)</span>
+                <span class="add-menu-sub">(click here or drag saved Menu)</span>
               </span>
             }
           </div>

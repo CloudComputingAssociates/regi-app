@@ -265,7 +265,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                     <select
                       class="sort-select"
                       [value]="sourceSetFilter()"
-                      (change)="onSourceSetChange($any($event.target).value); filterOpen.set(false)">
+                      (change)="onSourceSetChange($any($event.target).value)">
                       <option value="all">All</option>
                       @for (opt of sourceSetOptions(); track opt.id) {
                         <option [value]="opt.id">{{ opt.name }}</option>
@@ -622,6 +622,10 @@ export class MealBinderComponent implements OnInit {
   onSourceSetChange(value: string): void {
     const sel = value === 'all' ? 'all' : Number(value);
     this.sourceSetFilter.set(sel);
+    // Rollup EXCEPTION: picking a specific MealSet reveals its trash (remove-from-
+    // notebook) inside the panel — DON'T snap the filter closed, or the user never
+    // sees it. It stays open (and applied); "All" behaves normally and closes.
+    if (sel === 'all') this.filterOpen.set(false);
     // Either/or: choosing a "From MealSet" filter turns OFF the mix-in (reload as
     // My Meals only) so the two are never combined.
     if (sel !== 'all' && this.selectedSetIds().length > 0) {
