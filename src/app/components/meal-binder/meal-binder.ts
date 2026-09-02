@@ -187,6 +187,19 @@ import { Meal, Menu, MealSetSummary } from '../../models';
           <div class="rail-section">
             <div class="meals-controls">
               <div class="meals-ctrl-row meals-ctrl-actions">
+                <!-- Order: + Add meals · Filter (middle) · Sort. -->
+                <button
+                  type="button"
+                  class="create-toggle add-meals-btn"
+                  matTooltip="Add meals to your notebook"
+                  matTooltipPosition="above"
+                  (click)="createMeal.emit()">
+                  <mat-icon>add</mat-icon><span class="create-word">Add meals</span>
+                </button>
+                <button type="button" class="create-toggle filter-toggle" [class.filter-on]="filterActive()" (click)="toggleFilterPanel()">
+                  <span class="create-word">Filter{{ filterActive() ? ' on' : '' }}</span>
+                  <mat-icon class="create-chevron">{{ filterOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
                 <!-- Sort — first-class control (independent of Filter; sorts within
                      whatever the filter shows). Starts Off. -->
                 <label class="sort-inline">
@@ -203,18 +216,6 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                     <option value="newest">Newest</option>
                   </select>
                 </label>
-                <button type="button" class="create-toggle filter-toggle" [class.filter-on]="filterActive()" (click)="toggleFilterPanel()">
-                  <span class="create-word">Filter{{ filterActive() ? ' on' : '' }}</span>
-                  <mat-icon class="create-chevron">{{ filterOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-                </button>
-                <button
-                  type="button"
-                  class="create-toggle add-meals-btn"
-                  matTooltip="Add meals to your notebook"
-                  matTooltipPosition="above"
-                  (click)="createMeal.emit()">
-                  <mat-icon>add</mat-icon><span class="create-word">Add meals</span>
-                </button>
                 <button
                   type="button"
                   class="collapse-all-btn"
@@ -276,7 +277,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       <button
                         type="button"
                         class="wipe-set-btn"
-                        [matTooltip]="'Remove all ' + sel.count + ' meals in ' + sel.name + ' from your binder (you keep the MealSet)'"
+                        matTooltip="Remove MealSet meals from your notebook. You own them to re-add back at any time."
                         matTooltipPosition="above"
                         (click)="onWipeMealSet(sel)">
                         <mat-icon>delete</mat-icon>

@@ -796,7 +796,9 @@
   // paper still shows through), outlined so each section reads as its own area
   // instead of floating.
   background: rgba(255, 255, 255, 0.32);
-  border: 1px solid rgba(90, 90, 90, 0.28);
+  // 1px green outline (the tab focus/active green) so the sheet reads as belonging
+  // to the active tab above it — the tab + its contents as one enclosed area.
+  border: 1px solid #218a5d;
   border-radius: 8px;
   padding-bottom: 4px;
 }
