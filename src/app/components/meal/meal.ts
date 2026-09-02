@@ -242,7 +242,7 @@ interface Macro {
                   <span class="chip fiber">F {{ round(mac(fm.macros).fiberG) }}</span>
                   <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
                   @if (recipeLinkFor(fm.mealId)) {
-                    <span class="imported-tag">imported from recipe</span>
+                    <span class="imported-tag">from recipe</span>
                   }
                 </div>
 

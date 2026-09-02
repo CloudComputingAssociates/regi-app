@@ -533,14 +533,18 @@
     }
 
     // Provenance caption for recipe-imported meals — blue italic, INLINE right after
-    // the cals bubble (on the macro line, to save vertical space). Same 13px as the
-    // food-row serving text ("1 pieces").
+    // the cals bubble. RESPONSIVE: shrinks and ellipsizes against the card's right
+    // edge instead of overflowing. Same 13px as the food-row serving text.
     .imported-tag {
+      flex: 0 1 auto;
+      min-width: 0;
       margin-left: 6px;
       font-size: 13px;
       font-style: italic;
       color: #4da6ff;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 

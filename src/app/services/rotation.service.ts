@@ -2252,6 +2252,11 @@ export class RotationService {
         ...meal,
         sourceMealSetId: meal.sourceMealSetId ?? prev?.sourceMealSetId,
         sourceMealSetName: meal.sourceMealSetName ?? prev?.sourceMealSetName,
+        // A just-restored meal MATCHES its original, so treat it as NOT diverged —
+        // the /restore write bumps updatedAt, which would otherwise keep the Restore
+        // disc lit (isDiverged = updatedAt > createdAt). Pin updatedAt to createdAt
+        // so the disc goes away until the user edits it again.
+        updatedAt: meal.createdAt ?? meal.updatedAt,
       };
       this.replaceBinderMeal(merged);
       this.notification.show('Restored to original.', 'success');

@@ -399,27 +399,25 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                       <span class="chip carb">C {{ round(meal.totalCarbG) }}</span>
                       <span class="chip fat">F {{ round(meal.totalFatG) }}</span>
                       <span class="chip fiber">F {{ round(meal.totalFiberG) }}</span>
-                      <!-- Action discs, right-aligned. Non-destructive Print (PDF) ·
-                           Restore share the top row; the DESTRUCTIVE Delete drops to
-                           its own row below, aligned under Restore. Restore shows ONLY
-                           when a set meal has DIVERGED (the user edited it). -->
+                      <!-- Action discs — ONE right-aligned row of uniform 24px discs:
+                           Print (PDF) · Restore · Delete, all the same outline style
+                           (colored glyph, fills on hover). Restore shows ONLY when a
+                           set meal has DIVERGED (the user edited it). -->
                       <span class="card-actions">
-                        <span class="card-actions-row">
-                          @if (meal.recipeLink?.trim()) {
-                            <button type="button" class="card-pdf icon-disc"
-                              matTooltip="Open PDF"
-                              (click)="$event.stopPropagation(); openRecipe(meal.recipeLink)">
-                              <mat-icon>print</mat-icon>
-                            </button>
-                          }
-                          @if (meal.sourceMealSetId != null && rotation.isDiverged(meal)) {
-                            <button type="button" class="card-restore icon-disc icon-disc-edit"
-                              matTooltip="Restore to the MealSet original"
-                              (click)="$event.stopPropagation(); onRestoreMeal(meal)">
-                              <mat-icon>restore</mat-icon>
-                            </button>
-                          }
-                        </span>
+                        @if (meal.recipeLink?.trim()) {
+                          <button type="button" class="card-pdf icon-disc"
+                            matTooltip="Open PDF"
+                            (click)="$event.stopPropagation(); openRecipe(meal.recipeLink)">
+                            <mat-icon>print</mat-icon>
+                          </button>
+                        }
+                        @if (meal.sourceMealSetId != null && rotation.isDiverged(meal)) {
+                          <button type="button" class="card-restore icon-disc icon-disc-edit"
+                            matTooltip="Restore to the MealSet original"
+                            (click)="$event.stopPropagation(); onRestoreMeal(meal)">
+                            <mat-icon>restore</mat-icon>
+                          </button>
+                        }
                         @if (!meal.mealSetId) {
                           <button type="button" class="card-delete icon-disc icon-disc-danger"
                             matTooltip="Delete this meal"

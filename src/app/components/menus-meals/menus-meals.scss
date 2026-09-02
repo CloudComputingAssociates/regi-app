@@ -16,9 +16,10 @@
   flex: 1 1 auto;   // FILL the board height so tiles fit vertically (no page scroll)
   min-height: 0;
   display: grid;
-  // Responsive WIDTH: fill the meals area with as many tiles as fit (240px floor),
-  // each sharing the width (1fr) — 2–3 per row, wrapping (6 meals → two rows of 3).
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  // Responsive WIDTH, capped at 3 COLUMNS (never 4 across): each column's min width
+  // is the larger of 240px and a third of the row, so at most three fit — a 4th tile
+  // wraps to the next row. Fewer tiles still grow to share the width.
+  grid-template-columns: repeat(auto-fit, minmax(max(240px, calc((100% - 20px) / 3)), 1fr));
   // FIXED, EQUAL row height so EVERY tile is the same size — an empty slot and a
   // slot with a photo are identical, and dragging a meal in NEVER resizes the slot
   // (aspect-ratio + auto rows made a filled tile grow and the others ride up).
