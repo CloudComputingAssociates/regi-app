@@ -141,7 +141,7 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
                 <button
                   type="button"
                   class="wipe-menus-btn"
-                  matTooltip="Clear all, start over"
+                  matTooltip="Clear rotation of all menus & meals"
                   (click)="onWipeMenus()">
                   <mat-icon class="wipe-icon" aria-hidden="true">clear_all</mat-icon>
                 </button>
