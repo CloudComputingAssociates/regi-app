@@ -125,6 +125,9 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  // FILL the rest of the slot (below the header) so the drop zone is the whole
+  // slot, not just a ~96px band. Content stays centered.
+  flex: 1 1 auto;
   min-height: 96px;
   color: #9aa0a6;
   font-size: 13px;
