@@ -16,18 +16,22 @@
   flex: 1 1 auto;   // FILL the board height so tiles fit vertically (no page scroll)
   min-height: 0;
   display: grid;
-  // 280px floor up to a 400px CAP (was 1fr, which stretched cards super-wide and
-  // over-cropped the photo). Columns pack from the left; extra board width stays
-  // empty rather than ballooning the tiles.
-  grid-template-columns: repeat(auto-fit, minmax(280px, 400px));
-  justify-content: start;
-  // Rows are a STANDARD size — a 150px floor up to a 340px cap — so tiles never
-  // balloon to full-screen when there are only a few (was `1fr`, which stretched a
-  // single row to the whole board height). Many rows still scroll as a fallback.
-  grid-auto-rows: minmax(150px, 340px);
+  // Responsive: fill the meals area with as many SQUARE tiles as fit (240px floor),
+  // each stretching to share the width (1fr). Fewer tiles → they grow; a narrower
+  // splitter → they shrink, then wrap. So 2–3 meals sit on one row; 6 meals fit
+  // ~3-per-row and flow onto a 2nd row of 3.
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  grid-auto-rows: auto; // row height follows each tile's square aspect
   gap: 10px;
   padding: 3px 6px 8px 4px; // flush left; a sliver above the cards so the strip separator shows
   align-content: start; // pack tiles at the top; don't stretch to fill the board
+
+  // Each tile is a SQUARE that grows/shrinks with its column width.
+  > app-meal {
+    aspect-ratio: 1 / 1;
+    height: auto;   // let aspect-ratio drive the height (overrides the card's height:100%)
+    min-height: 0;
+  }
 }
 
 // Embossed (debossed) area watermark pinned DEAD CENTER of the meal region (fixed
