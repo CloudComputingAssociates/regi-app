@@ -184,7 +184,7 @@ export class MealImageSourceComponent {
         if (
           this.phoneWaiting() &&
           ev.kind === 'meal' &&
-          ev.mealId === this.data.mealId &&
+          ev.id === this.data.mealId &&
           ev.status !== 'done'
         ) {
           this.ref.close();
@@ -270,7 +270,11 @@ export class MealImageSourceComponent {
         // the device's Phone panel. Completion (card flip) / timeout arrive via the
         // TetherService results poll (rotation.imagedMeal / captureEvent).
         this.waitStartSeq = this.rotation.imagedMeal()?.seq ?? 0;
-        await this.tether.requestMealImageCapture(deviceId, this.data.mealId);
+        await this.tether.requestCapture(deviceId, {
+          kind: 'meal',
+          id: this.data.mealId,
+          name: this.data.mealName,
+        });
         this.phoneWaiting.set(true);
       } catch (err) {
         const status = err instanceof HttpErrorResponse ? err.status : 0;

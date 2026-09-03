@@ -399,7 +399,7 @@ export class AccountPanelComponent {
       // Issue OPTIMISTICALLY (durable command — no "device offline" rejection). The
       // uploaded avatar appears when the TetherService results poll resolves the
       // command and refreshes the profile.
-      await this.tether.requestAvatarCapture(deviceId);
+      await this.tether.requestCapture(deviceId, { kind: 'avatar', id: null, name: 'Profile photo' });
       this.notificationService.show(
         '📱 Sent to your phone. Open the menu (☰) → Phone to take the picture.',
       );

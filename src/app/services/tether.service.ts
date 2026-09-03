@@ -19,6 +19,8 @@ import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@auth0/auth0-angular';
 import { environment } from '../../environments/environment';
 import {
+  CaptureKind,
+  CaptureTarget,
   TetherCommandRequest,
   TetherCommandResponse,
   TetherPresenceResponse,
@@ -33,8 +35,8 @@ import { NotificationService } from './notification.service';
  *  so it can close its "waiting" UI. `done` also fires the relevant refresh. */
 export interface TetherCaptureEvent {
   messageId: string;
-  kind: 'meal' | 'avatar';
-  mealId: number | null;
+  kind: CaptureKind;
+  id: number | null;
   status: 'done' | 'failed' | 'timeout';
 }
 
@@ -93,42 +95,46 @@ export class TetherService {
 
   // ---- Command issuance + results poll -------------------------------------
   /** Outstanding commands we issued, keyed by the 202 messageId, so a returned
-   *  result can be matched back to its intent (and timed out if none arrives). */
+   *  result can be matched back to its target (and timed out if none arrives). */
   private outstanding = new Map<
     string,
-    { kind: 'meal' | 'avatar'; mealId: number | null; startedAt: number }
+    { kind: CaptureKind; id: number | null; startedAt: number }
   >();
   private resultsTimer: ReturnType<typeof setTimeout> | null = null;
   private resultsRunning = false;
 
-  /** POST /api/tether/device/{deviceId}/command {type:'captureMeal', mealId} — issue
-   *  a DURABLE meal-photo capture (durable for ttlSeconds even if the phone is
-   *  offline). Returns the 202 messageId and starts tracking it; the results poll
-   *  resolves it (flips the meal card) or times it out. Throws on 404/503/400. */
-  async requestMealImageCapture(deviceId: number, mealId: number): Promise<string> {
-    const body: TetherCommandRequest = { type: 'captureMeal', mealId };
-    const res = await firstValueFrom(
-      this.http.post<TetherCommandResponse>(`${this.baseUrl}/tether/device/${deviceId}/command`, body),
-    );
-    this.track(res.messageId, 'meal', mealId);
-    return res.messageId;
-  }
+  /** Legacy discriminator per kind (meal/avatar keep their existing type so the
+   *  pre-generic API/phone still resolve them during rollout). Unknown kinds fall
+   *  back to the generic 'capture'. */
+  private static readonly KIND_TO_TYPE: Record<string, TetherCommandRequest['type']> = {
+    meal: 'captureMeal',
+    food: 'captureFood',
+    avatar: 'captureAvatar',
+    mealset: 'captureMealset',
+  };
 
-  /** POST /api/tether/device/{deviceId}/command {type:'captureAvatar'} — issue a
-   *  durable avatar capture. Returns the messageId; the results poll resolves it
-   *  (refreshes the profile avatar) or times it out. */
-  async requestAvatarCapture(deviceId: number): Promise<string> {
-    const body: TetherCommandRequest = { type: 'captureAvatar' };
+  /** POST /api/tether/device/{deviceId}/command — issue a DURABLE photo capture for
+   *  ANY target (meal / food / avatar / mealset / …). Carries the generic `capture`
+   *  {kind,id,name}; ALSO sets the legacy `mealId` for a meal so the pre-generic
+   *  API/phone still work. Returns the 202 messageId and tracks it; the results poll
+   *  resolves it (refreshes the right thing) or times it out. Throws on 404/503/400. */
+  async requestCapture(deviceId: number, target: CaptureTarget, ttlSeconds?: number): Promise<string> {
+    const body: TetherCommandRequest = {
+      type: TetherService.KIND_TO_TYPE[target.kind] ?? 'capture',
+      capture: target,
+      ...(target.kind === 'meal' && target.id != null ? { mealId: target.id } : {}),
+      ...(ttlSeconds != null ? { ttlSeconds } : {}),
+    };
     const res = await firstValueFrom(
       this.http.post<TetherCommandResponse>(`${this.baseUrl}/tether/device/${deviceId}/command`, body),
     );
-    this.track(res.messageId, 'avatar', null);
+    this.track(res.messageId, target.kind, target.id);
     return res.messageId;
   }
 
   /** Register an issued command and make sure the results poll is running. */
-  private track(messageId: string, kind: 'meal' | 'avatar', mealId: number | null): void {
-    this.outstanding.set(messageId, { kind, mealId, startedAt: Date.now() });
+  private track(messageId: string, kind: CaptureKind, id: number | null): void {
+    this.outstanding.set(messageId, { kind, id, startedAt: Date.now() });
     this.startResults();
   }
 
@@ -170,12 +176,15 @@ export class TetherService {
     if (!cmd) return; // not ours (or already handled) — the cursor still advanced
     this.outstanding.delete(r.messageId);
     if (r.status === 'done') {
-      if (cmd.kind === 'meal' && cmd.mealId != null) this.rotation.awaitMealImage(cmd.mealId);
+      // Kind-routed refresh so the right surface updates even if its dialog closed.
+      // meal → flip the card; avatar → reload the profile pic. food/mealset/other
+      // refresh in the initiating component off captureEvent (no shared store here).
+      if (cmd.kind === 'meal' && cmd.id != null) this.rotation.awaitMealImage(cmd.id);
       else if (cmd.kind === 'avatar') void this.userProfile.refreshAvatar();
-      this.captureEvent.set({ messageId: r.messageId, kind: cmd.kind, mealId: cmd.mealId, status: 'done' });
+      this.captureEvent.set({ messageId: r.messageId, kind: cmd.kind, id: cmd.id, status: 'done' });
     } else {
       this.notification.show('Your phone couldn’t take the photo. Please try again.', 'error');
-      this.captureEvent.set({ messageId: r.messageId, kind: cmd.kind, mealId: cmd.mealId, status: 'failed' });
+      this.captureEvent.set({ messageId: r.messageId, kind: cmd.kind, id: cmd.id, status: 'failed' });
     }
   }
 
@@ -187,7 +196,7 @@ export class TetherService {
       if (now - cmd.startedAt <= TetherService.COMMAND_TTL_MS) continue;
       this.outstanding.delete(messageId);
       this.notification.show('Your phone didn’t respond in time. Please try again.', 'warning');
-      this.captureEvent.set({ messageId, kind: cmd.kind, mealId: cmd.mealId, status: 'timeout' });
+      this.captureEvent.set({ messageId, kind: cmd.kind, id: cmd.id, status: 'timeout' });
     }
   }
 
