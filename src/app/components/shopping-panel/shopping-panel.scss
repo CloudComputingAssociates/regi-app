@@ -262,9 +262,9 @@
   align-items: center;
   justify-content: flex-start; // Print + scale cluster left; collapse-all pushed right
   gap: 8px; // tightened so Print isn't clipped
-  // Left padding matches the meals tab strip's inset (.binder-tabs padding-left 4px,
-  // less the sheet's 1px border) so the scale box lines up under the tabs' left edge.
-  padding: 5px 8px 5px 3px;
+  // A touch more top/bottom for levity; the title's own left padding handles its
+  // alignment with the "meals' groceries" banner below.
+  padding: 7px 8px;
   border-bottom: 1px solid #4a4a4a;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
   font-size: 13px; // the shared "controls" size (tabs use 16px)
@@ -275,16 +275,20 @@
 .shopping-title {
   flex: 0 0 auto;
   font-family: 'Calisto MT', Calisto, 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
-  font-size: 16px;
-  font-weight: 400;
+  font-size: 18px;         // bigger
+  font-weight: 600;        // embolden
   color: #1a1a1a;
   white-space: nowrap;
+  // Left inset so the "S" sits ~above the "m" in "meals' groceries" below, and some
+  // breathing room after it.
+  padding: 0 12px 0 11px;
 }
 
-// Print — raised-white sans key, SAME 26px height as the meals-tab keys. Slid to
-// the left (leads the controls row).
+// Print — raised-white sans key. Leads the RIGHT-justified cluster (Print · Scale/
+// Servings · collapse-all); margin-left:auto pushes the whole cluster right.
 .shopping-print-btn {
   flex: 0 0 auto;
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -304,10 +308,9 @@
   &:active { transform: translateY(1px); }
 }
 
-// Collapse-all — pushed to the FAR right of the controls row; raised white key.
+// Collapse-all — the tail of the right-justified cluster (Print pushes it right now).
 .shopping-collapse-all {
   flex: 0 0 auto;
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -396,7 +399,9 @@
   border: 2px solid #218a5d; // deep green, matching the active Notebook tab
   border-radius: 8px;
   overflow: hidden; // clip the banner to the rounded top corners
-  margin: 0 4px 8px 0; // the gap between the two boxes is the separator
+  // Full width — the box IS the edge now (the sheet's own outline was dropped on the
+  // shopping tab), so no nested "line within a line". Bottom gap separates the two.
+  margin: 0 0 8px 0;
 }
 
 // Deep-green collapsible header for a section box (Meals / Staples). Reads like the
@@ -486,11 +491,11 @@
   background: transparent;
   border: none;
   color: #4da6ff;
-  // Sans-serif, sized to match the QTY/UNIT/ITEM column header (12px) — smaller than
-  // the tab titles. Initial Caps (CAT_LABEL already caps).
+  // Sans-serif, a touch bigger than the QTY/UNIT/ITEM header and de-emboldened.
+  // Initial Caps (CAT_LABEL already caps).
   font-family: Roboto, 'Helvetica Neue', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   letter-spacing: 0.2px;
   text-align: left;
   cursor: pointer;

@@ -252,7 +252,7 @@
   margin: 0 auto; // symmetric auto margins → centered in the gap; pushes the keys right
   display: inline-flex;
   align-items: center;
-  padding: 4px 11px; // a bit taller so the text sits centered in the pill
+  padding: 5px 11px 4px; // 1px extra above the text
   font-size: 11px; // smaller + crisper (matches the meal-card cals)
   font-weight: 400;
   line-height: 1;
