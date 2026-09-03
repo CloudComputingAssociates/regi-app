@@ -5,7 +5,7 @@
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { SettingsService } from './settings.service';
 import {
-  DailyGoals, RegiMenuSettings, PersonalInfo, Glp1Settings, Glp1Dose
+  AllSettings, DailyGoals, RegiMenuSettings, PersonalInfo, Glp1Settings, Glp1Dose
 } from '../models/settings.models';
 
 // Narrower types for UI
@@ -401,7 +401,13 @@ export class PreferencesService {
   async savePreferences(): Promise<void> {
     const current = this.preferencesSignal();
     const dirty = this.dirtyGroups();
-    const promises: Promise<unknown>[] = [];
+
+    // ONE atomic PUT with every dirty group combined — NOT one concurrent PUT per
+    // group. Firing 5 parallel PUTs at /user/settings raced and, if any single one
+    // failed (or its response failed to parse), rejected the whole save with a
+    // "Failed to save preferences" toast even though the other writes had already
+    // landed (the spurious-failure-but-it-saved symptom).
+    const partial: Partial<AllSettings> = {};
 
     if (dirty.regiMenu) {
       const data: RegiMenuSettings = {
@@ -411,30 +417,16 @@ export class PreferencesService {
         persons: current.persons,
         menuDays: current.menuDays
       };
-      promises.push(this.settingsService.saveRegiMenuSettings(data));
+      partial.regiMenu = data;
     }
+    if (dirty.dailyGoals) partial.dailyGoals = current.dailyGoals;
+    if (dirty.defaultFoodList) partial.defaultFoodList = this.mapFoodListSourceToApi(current.foodListSource);
+    if (dirty.personalInfo) partial.personalInfo = current.personalInfo;
+    if (dirty.glp1) partial.glp1 = current.glp1;
 
-    if (dirty.dailyGoals) {
-      promises.push(this.settingsService.saveDailyGoals(current.dailyGoals));
-    }
+    if (Object.keys(partial).length === 0) return;
 
-    if (dirty.defaultFoodList) {
-      promises.push(this.settingsService.saveDefaultFoodList(
-        this.mapFoodListSourceToApi(current.foodListSource)
-      ));
-    }
-
-    if (dirty.personalInfo) {
-      promises.push(this.settingsService.savePersonalInfo(current.personalInfo));
-    }
-
-    if (dirty.glp1) {
-      promises.push(this.settingsService.saveGlp1Settings(current.glp1));
-    }
-
-    if (promises.length === 0) return;
-
-    await Promise.all(promises);
+    await this.settingsService.saveSettings(partial);
     this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false, glp1: false });
   }
 
