@@ -24,18 +24,39 @@ export interface TetherPresenceResponse {
   pollIntervalSeconds: number;
 }
 
-/** Discriminator for a queued mobile command. */
-export type MobileCommandType = 'camera.captureMeal' | 'camera.captureAvatar';
+/** Command discriminator sent to a device. */
+export type TetherCommandType = 'captureMeal' | 'captureAvatar';
 
-/** POST /api/mobile/command body — the web app ENQUEUES a camera command for the
- *  caller's live phone. User-scoped (no deviceId in the path): the API routes it
- *  to the user's live device and answers 202 Accepted, or 409 when presence went
- *  stale and no device is live. `payload.mealId` rides only on camera.captureMeal
- *  (the meal the phone's photo attaches to); camera.captureAvatar omits payload.
- *  NOTE: this endpoint is part of the pending mobile-capture handoff — until the
- *  regi-api /mobile/command route deploys, these POSTs 404 and the callers surface
- *  a "try again" message. Keep in sync with the API's mobile-command schema. */
-export interface MobileCommandRequest {
-  type: MobileCommandType;
-  payload?: { mealId: number };
+/** POST /api/tether/device/{deviceId}/command body. `mealId` is required for
+ *  captureMeal (the meal the phone's photo attaches to), omitted/null otherwise.
+ *  `ttlSeconds` omitted → the server default (300s). The command is DURABLE for
+ *  ttlSeconds regardless of whether the phone is currently connected — issue
+ *  optimistically; there is no "device not live" rejection anymore. */
+export interface TetherCommandRequest {
+  type: TetherCommandType;
+  mealId?: number | null;
+  ttlSeconds?: number | null;
+}
+
+/** 202 response to a command POST — the messageId to match against the results
+ *  poll (this is the ONLY handle back to the eventual result). */
+export interface TetherCommandResponse {
+  messageId: string;
+}
+
+/** One completed command from GET /api/tether/results. `result` is the opaque
+ *  body the phone supplied (e.g. an image ref); absent on failure. */
+export interface TetherResult {
+  messageId: string;
+  deviceId?: number | null;
+  mealId?: number | null;
+  status: 'done' | 'failed';
+  result?: unknown;
+}
+
+/** GET /api/tether/results — AT-MOST-ONCE per-user cursor: each result is returned
+ *  exactly once, then the server advances the cursor (don't expect to re-fetch). */
+export interface TetherResultsResponse {
+  results: TetherResult[];
+  pollIntervalSeconds: number;
 }

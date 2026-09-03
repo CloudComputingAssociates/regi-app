@@ -18,17 +18,42 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@auth0/auth0-angular';
 import { environment } from '../../environments/environment';
-import { MobileCommandRequest, TetherPresenceResponse } from '../models/tether.models';
+import {
+  TetherCommandRequest,
+  TetherCommandResponse,
+  TetherPresenceResponse,
+  TetherResult,
+  TetherResultsResponse,
+} from '../models/tether.models';
+import { RotationService } from './rotation.service';
+import { UserProfileService } from './user-profile.service';
+import { NotificationService } from './notification.service';
+
+/** A capture command's terminal outcome, surfaced to whichever component issued it
+ *  so it can close its "waiting" UI. `done` also fires the relevant refresh. */
+export interface TetherCaptureEvent {
+  messageId: string;
+  kind: 'meal' | 'avatar';
+  mealId: number | null;
+  status: 'done' | 'failed' | 'timeout';
+}
 
 @Injectable({ providedIn: 'root' })
 export class TetherService {
   private http = inject(HttpClient);
   private auth = inject(AuthService);
+  private rotation = inject(RotationService);
+  private userProfile = inject(UserProfileService);
+  private notification = inject(NotificationService);
   private baseUrl = environment.apiUrl; // already ends in /api
 
   /** Poll cadence FLOOR + pre-first-response default. After the first success the
    *  client uses response.pollIntervalSeconds, but never faster than this (15s). */
   private static readonly DEFAULT_POLL_MS = 15000;
+
+  /** Client-side timeout: an expired command produces NO result, so treat any
+   *  outstanding command with no result after this long as failed/timed-out. */
+  private static readonly COMMAND_TTL_MS = 300_000; // 300s, the server default
 
   private presenceSignal = signal<TetherPresenceResponse | null>(null);
   readonly presence = this.presenceSignal.asReadonly();
@@ -36,6 +61,15 @@ export class TetherService {
   readonly registered = computed(() => this.presenceSignal()?.registered ?? false);
   readonly anyLive = computed(() => this.presenceSignal()?.anyLive ?? false);
   readonly devices = computed(() => this.presenceSignal()?.devices ?? []);
+
+  /** First registered device id (LIVE not required — commands are durable), or null
+   *  when the user has no registered device. The command URL is device-scoped, so we
+   *  need this to issue; if it's null, prompt the user to register their phone. */
+  readonly firstDeviceId = computed<number | null>(() => this.devices()[0]?.deviceId ?? null);
+
+  /** Terminal outcome of the most recent capture command — components watch this to
+   *  close their "waiting" panel. `done` also triggers the meal/avatar refresh. */
+  readonly captureEvent = signal<TetherCaptureEvent | null>(null);
 
   private isAuthenticated = toSignal(this.auth.isAuthenticated$, { initialValue: false });
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
@@ -57,24 +91,104 @@ export class TetherService {
     );
   }
 
-  /** POST /api/mobile/command {type:'camera.captureAvatar'} — ENQUEUE an avatar
-   *  capture for the caller's live phone. User-scoped (no deviceId): the API routes
-   *  it to the live device and answers 202 Accepted, or 409 if presence went stale.
-   *  Fire-and-forget from the web's side; the phone picks it up on its next poll and
-   *  uploads server-side. Gate the call on {@link anyLive} so we never fire into the
-   *  void. NOTE: pending the regi-api /mobile/command deploy — until then this 404s. */
-  async requestAvatarCapture(): Promise<void> {
-    const body: MobileCommandRequest = { type: 'camera.captureAvatar' };
-    await firstValueFrom(this.http.post<void>(`${this.baseUrl}/mobile/command`, body));
+  // ---- Command issuance + results poll -------------------------------------
+  /** Outstanding commands we issued, keyed by the 202 messageId, so a returned
+   *  result can be matched back to its intent (and timed out if none arrives). */
+  private outstanding = new Map<
+    string,
+    { kind: 'meal' | 'avatar'; mealId: number | null; startedAt: number }
+  >();
+  private resultsTimer: ReturnType<typeof setTimeout> | null = null;
+  private resultsRunning = false;
+
+  /** POST /api/tether/device/{deviceId}/command {type:'captureMeal', mealId} — issue
+   *  a DURABLE meal-photo capture (durable for ttlSeconds even if the phone is
+   *  offline). Returns the 202 messageId and starts tracking it; the results poll
+   *  resolves it (flips the meal card) or times it out. Throws on 404/503/400. */
+  async requestMealImageCapture(deviceId: number, mealId: number): Promise<string> {
+    const body: TetherCommandRequest = { type: 'captureMeal', mealId };
+    const res = await firstValueFrom(
+      this.http.post<TetherCommandResponse>(`${this.baseUrl}/tether/device/${deviceId}/command`, body),
+    );
+    this.track(res.messageId, 'meal', mealId);
+    return res.messageId;
   }
 
-  /** POST /api/mobile/command {type:'camera.captureMeal', payload:{mealId}} — ENQUEUE
-   *  a meal-photo capture for the caller's live phone. Carries `mealId` so the phone
-   *  knows which meal to attach its photo to (source=meal upload). Same transport /
-   *  202-or-409 contract as {@link requestAvatarCapture}; gate on {@link anyLive}. */
-  async requestMealImageCapture(mealId: number): Promise<void> {
-    const body: MobileCommandRequest = { type: 'camera.captureMeal', payload: { mealId } };
-    await firstValueFrom(this.http.post<void>(`${this.baseUrl}/mobile/command`, body));
+  /** POST /api/tether/device/{deviceId}/command {type:'captureAvatar'} — issue a
+   *  durable avatar capture. Returns the messageId; the results poll resolves it
+   *  (refreshes the profile avatar) or times it out. */
+  async requestAvatarCapture(deviceId: number): Promise<string> {
+    const body: TetherCommandRequest = { type: 'captureAvatar' };
+    const res = await firstValueFrom(
+      this.http.post<TetherCommandResponse>(`${this.baseUrl}/tether/device/${deviceId}/command`, body),
+    );
+    this.track(res.messageId, 'avatar', null);
+    return res.messageId;
+  }
+
+  /** Register an issued command and make sure the results poll is running. */
+  private track(messageId: string, kind: 'meal' | 'avatar', mealId: number | null): void {
+    this.outstanding.set(messageId, { kind, mealId, startedAt: Date.now() });
+    this.startResults();
+  }
+
+  private startResults(): void {
+    if (this.resultsRunning) return;
+    this.resultsRunning = true;
+    void this.resultsTick();
+  }
+
+  /** Poll GET /api/tether/results while any command is outstanding. Each result is
+   *  delivered AT-MOST-ONCE, so we resolve on the first (and only) sighting; the loop
+   *  stops once nothing is outstanding, and restarts when the next command is issued. */
+  private async resultsTick(): Promise<void> {
+    if (!this.resultsRunning) return;
+    let nextMs = 3000;
+    try {
+      const res = await firstValueFrom(
+        this.http.get<TetherResultsResponse>(`${this.baseUrl}/tether/results`),
+      );
+      for (const r of res?.results ?? []) this.handleResult(r);
+      const secs = res?.pollIntervalSeconds;
+      if (typeof secs === 'number' && secs > 0) nextMs = secs * 1000;
+    } catch {
+      // Silent: keep the interval, keep trying (an indicator must never toast).
+    }
+    this.expireTimedOut();
+    if (this.outstanding.size === 0) {
+      this.resultsRunning = false;
+      return;
+    }
+    this.resultsTimer = setTimeout(() => void this.resultsTick(), nextMs);
+  }
+
+  /** Match a returned result to an outstanding command; on 'done' fire the relevant
+   *  refresh (so the card flips / avatar updates even if the dialog was closed), on
+   *  'failed' toast + emit so the waiting UI closes. Ignore unknown messageIds. */
+  private handleResult(r: TetherResult): void {
+    const cmd = this.outstanding.get(r.messageId);
+    if (!cmd) return; // not ours (or already handled) — the cursor still advanced
+    this.outstanding.delete(r.messageId);
+    if (r.status === 'done') {
+      if (cmd.kind === 'meal' && cmd.mealId != null) this.rotation.awaitMealImage(cmd.mealId);
+      else if (cmd.kind === 'avatar') void this.userProfile.refreshAvatar();
+      this.captureEvent.set({ messageId: r.messageId, kind: cmd.kind, mealId: cmd.mealId, status: 'done' });
+    } else {
+      this.notification.show('Your phone couldn’t take the photo. Please try again.', 'error');
+      this.captureEvent.set({ messageId: r.messageId, kind: cmd.kind, mealId: cmd.mealId, status: 'failed' });
+    }
+  }
+
+  /** An expired command yields NO result, so drop any outstanding one past its TTL
+   *  and surface it as a timeout (the waiting UI closes; a toast explains). */
+  private expireTimedOut(): void {
+    const now = Date.now();
+    for (const [messageId, cmd] of this.outstanding) {
+      if (now - cmd.startedAt <= TetherService.COMMAND_TTL_MS) continue;
+      this.outstanding.delete(messageId);
+      this.notification.show('Your phone didn’t respond in time. Please try again.', 'warning');
+      this.captureEvent.set({ messageId, kind: cmd.kind, mealId: cmd.mealId, status: 'timeout' });
+    }
   }
 
   private start(): void {

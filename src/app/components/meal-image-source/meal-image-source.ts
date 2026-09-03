@@ -5,12 +5,13 @@
 //   • Top 2/3  — a drop zone: paste (Ctrl+V) / drag-drop / browse a PNG · JPG · HEIC
 //                → POST /image/upload/product?source=meal (synchronous; server
 //                writes MealImage/Thumbnail) → stamp + flip.
-//   • Bottom-left  — "Camera – take phone pic": ENQUEUES a camera.captureMeal
-//                command (POST /api/mobile/command, 202) for the user's live phone;
-//                enabled ONLY when a device is live (else shaded). The web no longer
-//                pops the phone camera — an in-dialog panel directs the user to the
-//                phone's menu (☰) → Phone panel, while a background poll flips the
-//                card when the phone's upload lands.
+//   • Bottom-left  — "Camera – take phone pic": issues a DURABLE captureMeal command
+//                (POST /api/tether/device/{id}/command → 202 {messageId}) to the
+//                user's registered phone; enabled once a phone is REGISTERED (live
+//                not required — the command survives ttlSeconds offline). The web no
+//                longer pops the phone camera — an in-dialog panel directs the user to
+//                the phone's menu (☰) → Phone panel; the TetherService results poll
+//                flips the card on 'done' or closes the panel on failed/timeout.
 //   • Bottom-right — "AI Generate meal image": MealSetOwner ONLY (not rendered for
 //                others — intentional, so non-authors bring their own photo).
 // Any success closes the dialog; the card flips to the fresh photo and the Notebook
@@ -150,7 +151,9 @@ export class MealImageSourceComponent {
   readonly busy = signal(false);
   readonly dragOver = signal(false);
   readonly isOwner = computed(() => this.role.hasRole('MealSetOwner'));
-  readonly canPhone = this.tether.anyLive;
+  // Enabled once a phone is REGISTERED (live not required — the command is durable
+  // and the phone picks it up when it next connects).
+  readonly canPhone = computed(() => this.tether.firstDeviceId() != null);
 
   /** True after a phone-capture command is sent — shows the "open your phone" panel
    *  until the photo arrives (auto-close) or the user closes it. */
@@ -167,6 +170,23 @@ export class MealImageSourceComponent {
       if (!done) return;
       untracked(() => {
         if (this.phoneWaiting() && done.id === this.data.mealId && done.seq > this.waitStartSeq) {
+          this.ref.close();
+        }
+      });
+    });
+
+    // The phone capture FAILED or TIMED OUT for this meal (the results poll surfaces
+    // it; TetherService already toasted) → drop the waiting panel.
+    effect(() => {
+      const ev = this.tether.captureEvent();
+      if (!ev) return;
+      untracked(() => {
+        if (
+          this.phoneWaiting() &&
+          ev.kind === 'meal' &&
+          ev.mealId === this.data.mealId &&
+          ev.status !== 'done'
+        ) {
           this.ref.close();
         }
       });
@@ -238,32 +258,28 @@ export class MealImageSourceComponent {
   }
 
   takePhonePic(): void {
-    // Gate on presence — never fire a request into the void. If we can't see a live
-    // phone, we can't ask it.
-    if (!this.canPhone()) {
-      this.notification.show('Open Regi on your phone to enable phone capture.', 'warning');
+    const deviceId = this.tether.firstDeviceId();
+    if (deviceId == null) {
+      this.notification.show('Register your phone (open Regi on it once) to enable phone capture.', 'warning');
       return;
     }
     void (async () => {
       try {
-        // Enqueue (202 Accepted) — do NOT wait on the phone. The web no longer pops
-        // the phone camera; the request now waits on the device's Phone panel.
-        await this.tether.requestMealImageCapture(this.data.mealId);
-        // Point the user at the phone (the waiting panel names menu → Phone) and
-        // start the background poll that flips the card when the upload lands.
+        // Issue OPTIMISTICALLY — the command is durable, so no "device offline"
+        // rejection. The web no longer pops the phone camera; the request waits on
+        // the device's Phone panel. Completion (card flip) / timeout arrive via the
+        // TetherService results poll (rotation.imagedMeal / captureEvent).
         this.waitStartSeq = this.rotation.imagedMeal()?.seq ?? 0;
-        this.rotation.awaitMealImage(this.data.mealId);
+        await this.tether.requestMealImageCapture(deviceId, this.data.mealId);
         this.phoneWaiting.set(true);
       } catch (err) {
         const status = err instanceof HttpErrorResponse ? err.status : 0;
-        if (status === 409) {
-          // Presence went stale between render and click.
-          this.notification.show(
-            "Your phone isn't connected right now — open Regi on your phone and try again.",
-            'error',
-          );
+        if (status === 503) {
+          this.notification.show('Phone capture is temporarily unavailable. Please try again later.', 'error');
+        } else if (status === 404) {
+          this.notification.show('That phone isn’t linked to your account anymore. Re-open Regi on your phone.', 'error');
         } else {
-          this.notification.show('Could not reach your phone. Please try again.', 'error');
+          this.notification.show('Could not send the request to your phone. Please try again.', 'error');
         }
       }
     })();
