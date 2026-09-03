@@ -1924,7 +1924,7 @@
 
 .nf-popup-title {
   color: #ffffff;
-  font-size: 20px;
+  font-size: 16px; // shortened from 20px — less towering, leaves room for a photo key
   font-weight: 600;
   // Clean clip — no ellipsis. The badge overlays the right portion of the
   // name (intentional per the spec), so the truncated visible portion just
