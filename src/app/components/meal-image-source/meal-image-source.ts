@@ -34,10 +34,25 @@ import { RotationService } from '../../services/rotation.service';
 import { TetherService } from '../../services/tether.service';
 import { RoleService } from '../../services/role.service';
 import { NotificationService } from '../../services/notification.service';
+import { CaptureKind } from '../../models/tether.models';
 
-export interface MealImageSourceData {
-  mealId: number;
-  mealName: string;
+/** What this dialog is attaching a photo to. `meal` self-applies (rotation store flips
+ *  the card); `food` has no store here, so the dialog CLOSES with an ImageSourceResult
+ *  and the opener applies it. `name` is shown in the title + on the phone shutter. */
+export interface ImageSourceData {
+  kind: Extract<CaptureKind, 'meal' | 'food'>;
+  id: number;
+  name: string;
+}
+
+/** Returned via MatDialogRef.close() when a `food` capture succeeds, so the foods
+ *  panel can drop the new photo onto its caches (meal closes with no payload — it
+ *  self-applies through the rotation store). */
+export interface ImageSourceResult {
+  kind: 'food';
+  id: number;
+  cdnUrl: string;
+  thumbnailUrl?: string;
 }
 
 @Component({
@@ -63,14 +78,14 @@ export interface MealImageSourceData {
           <mat-icon class="mis-wait-icon">phonelink_ring</mat-icon>
           <span class="mis-wait-title">📱 Sent to your phone</span>
           <span class="mis-wait-sub">
-            On your phone, open the menu (☰) → <strong>Phone</strong> to take the
-            picture. The photo drops onto this card automatically when it lands — you
-            can close this window; it will still arrive.
+            On your phone, open the menu (☰) → <strong>Camera</strong> to take the
+            picture. The photo drops in automatically when it lands — you can close
+            this window; it will still arrive.
           </span>
           <button type="button" class="mis-wait-btn" (click)="close()">Close</button>
         </div>
       } @else {
-      <h3 class="mis-title">Add a photo — {{ data.mealName }}</h3>
+      <h3 class="mis-title">Add a photo — {{ data.name }}</h3>
 
       <!-- Top 2/3: the drop zone. -->
       <div
@@ -118,7 +133,7 @@ export interface MealImageSourceData {
           </div>
         </div>
 
-        @if (isOwner()) {
+        @if (showAi()) {
           <div class="mis-half">
             <button
               type="button"
@@ -141,7 +156,7 @@ export interface MealImageSourceData {
 })
 export class MealImageSourceComponent {
   private ref = inject(MatDialogRef<MealImageSourceComponent>);
-  readonly data = inject<MealImageSourceData>(MAT_DIALOG_DATA);
+  readonly data = inject<ImageSourceData>(MAT_DIALOG_DATA);
   private imageUpload = inject(ImageUploadService);
   private rotation = inject(RotationService);
   private tether = inject(TetherService);
@@ -151,6 +166,9 @@ export class MealImageSourceComponent {
   readonly busy = signal(false);
   readonly dragOver = signal(false);
   readonly isOwner = computed(() => this.role.hasRole('MealSetOwner'));
+  // AI generation is a meal-only, owner-only affordance (built from the meal's
+  // ingredients + notes); foods bring their own photo, so it's hidden for them.
+  readonly showAi = computed(() => this.data.kind === 'meal' && this.isOwner());
   // Enabled only when one of the user's phones is LIVE — the enqueue routes to a live
   // phone and 409s if none is connected, so gate the button on presence.anyLive.
   readonly canPhone = computed(() => this.tether.anyLive());
@@ -163,30 +181,42 @@ export class MealImageSourceComponent {
   private waitStartSeq = 0;
 
   constructor() {
-    // Photo arrived from the phone (or any source) for THIS meal while waiting →
-    // close; the card flip + thumbnail refresh happen via rotation.imagedMeal.
+    // MEAL only: photo arrived from the phone (or any source) for THIS meal while
+    // waiting → close; the card flip + thumbnail refresh happen via rotation.imagedMeal.
     effect(() => {
       const done = this.rotation.imagedMeal();
       if (!done) return;
       untracked(() => {
-        if (this.phoneWaiting() && done.id === this.data.mealId && done.seq > this.waitStartSeq) {
+        if (
+          this.data.kind === 'meal' &&
+          this.phoneWaiting() &&
+          done.id === this.data.id &&
+          done.seq > this.waitStartSeq
+        ) {
           this.ref.close();
         }
       });
     });
 
-    // The phone capture FAILED or TIMED OUT for this meal (the results poll surfaces
-    // it; TetherService already toasted) → drop the waiting panel.
+    // Terminal phone-capture outcome for THIS target. Meal 'done' closes via the
+    // imagedMeal effect above (the store flip); a FOOD has no store here, so on 'done'
+    // we close WITH the uploaded image so the opener applies it. Any failure/timeout
+    // (already toasted by TetherService) just drops the waiting panel.
     effect(() => {
       const ev = this.tether.captureEvent();
       if (!ev) return;
       untracked(() => {
-        if (
-          this.phoneWaiting() &&
-          ev.kind === 'meal' &&
-          ev.id === this.data.mealId &&
-          ev.status !== 'done'
-        ) {
+        if (!this.phoneWaiting() || ev.kind !== this.data.kind || ev.id !== this.data.id) return;
+        if (ev.status === 'done') {
+          if (this.data.kind === 'food' && ev.cdnUrl) {
+            this.ref.close({
+              kind: 'food',
+              id: this.data.id,
+              cdnUrl: ev.cdnUrl,
+              thumbnailUrl: ev.thumbnailUrl,
+            } satisfies ImageSourceResult);
+          }
+        } else {
           this.ref.close();
         }
       });
@@ -239,10 +269,24 @@ export class MealImageSourceComponent {
     }
     this.busy.set(true);
     try {
-      const res = await this.imageUpload.uploadMealImage(this.data.mealId, file);
+      // meal → source=meal (self-applies via the rotation store); food → source=user
+      // (dialog closes with the result so the foods panel drops it onto its caches).
+      const res =
+        this.data.kind === 'meal'
+          ? await this.imageUpload.uploadMealImage(this.data.id, file)
+          : await this.imageUpload.uploadProductImage(this.data.id, file);
       if (res?.cdn_url) {
-        this.rotation.applyUploadedMealImage(this.data.mealId, res.cdn_url, res.thumbnail_url);
-        this.ref.close();
+        if (this.data.kind === 'meal') {
+          this.rotation.applyUploadedMealImage(this.data.id, res.cdn_url, res.thumbnail_url);
+          this.ref.close();
+        } else {
+          this.ref.close({
+            kind: 'food',
+            id: this.data.id,
+            cdnUrl: res.cdn_url,
+            thumbnailUrl: res.thumbnail_url,
+          } satisfies ImageSourceResult);
+        }
       } else {
         this.notification.show('Upload failed — no URL returned.', 'error');
       }
@@ -269,9 +313,9 @@ export class MealImageSourceComponent {
         // (card flip) / timeout arrive via the results poll (rotation.imagedMeal / captureEvent).
         this.waitStartSeq = this.rotation.imagedMeal()?.seq ?? 0;
         await this.tether.requestCapture({
-          kind: 'meal',
-          id: this.data.mealId,
-          name: this.data.mealName,
+          kind: this.data.kind,
+          id: this.data.id,
+          name: this.data.name,
         });
         this.notification.show('📱 Sent to your phone — open the menu (☰) → Camera to take the picture.', 'info');
         this.phoneWaiting.set(true);
@@ -289,7 +333,7 @@ export class MealImageSourceComponent {
   }
 
   generateAi(): void {
-    void this.rotation.generateMealImage(this.data.mealId); // its own snackbar + poll
+    void this.rotation.generateMealImage(this.data.id); // its own snackbar + poll
     this.ref.close();
   }
 

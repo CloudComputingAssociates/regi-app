@@ -1959,6 +1959,33 @@
   &:focus { background: rgba(255, 255, 255, 0.14); border-color: #4da6ff; }
 }
 
+// Photo key at the end of the food name (before the X). Ghost icon button that
+// brightens on hover; flex:0 0 auto so the name input takes the remaining width.
+// It rides inside the header's 38px right-padding, so it sits just left of the X.
+.nf-photo-btn {
+  flex: 0 0 auto;
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  &:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+  }
+}
+
 // Confirm/cancel discs in the top-right corner: green confirm left, red cancel
 // in the corner. Health Info is shifted left (right:64) to clear the pair.
 .dialog-discs {

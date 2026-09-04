@@ -38,6 +38,10 @@ export interface TetherCaptureEvent {
   kind: CaptureKind;
   id: number | null;
   status: 'done' | 'failed' | 'timeout';
+  /** The stored image URIs from the phone's upload — present on 'done' so a surface
+   *  with no server-side store of its own (e.g. a food) can apply the photo directly. */
+  cdnUrl?: string;
+  thumbnailUrl?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -180,7 +184,14 @@ export class TetherService {
       // refresh in the initiating component off captureEvent (no shared store here).
       if (cmd.kind === 'meal' && cmd.id != null) this.rotation.awaitMealImage(cmd.id);
       else if (cmd.kind === 'avatar') void this.userProfile.refreshAvatar();
-      this.captureEvent.set({ messageId: r.messageId, kind: cmd.kind, id: cmd.id, status: 'done' });
+      this.captureEvent.set({
+        messageId: r.messageId,
+        kind: cmd.kind,
+        id: cmd.id,
+        status: 'done',
+        cdnUrl: r.result?.cdnUrl,
+        thumbnailUrl: r.result?.thumbnailUrl,
+      });
     } else {
       this.notification.show('Your phone couldn’t take the photo. Please try again.', 'error');
       this.captureEvent.set({ messageId: r.messageId, kind: cmd.kind, id: cmd.id, status: 'failed' });

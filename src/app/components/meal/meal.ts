@@ -32,7 +32,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { RoleService } from '../../services/role.service';
 import {
   MealImageSourceComponent,
-  MealImageSourceData,
+  ImageSourceData,
 } from '../meal-image-source/meal-image-source';
 
 interface Macro {
@@ -317,7 +317,7 @@ export class MealComponent {
 
   /** Camera key → the 3-way image-source bloom (upload · phone · AI). */
   openImageSource(fm: MenuSlotMeal): void {
-    const data: MealImageSourceData = { mealId: fm.mealId, mealName: this.clean(fm.mealName) };
+    const data: ImageSourceData = { kind: 'meal', id: fm.mealId, name: this.clean(fm.mealName) };
     this.dialog.open(MealImageSourceComponent, {
       panelClass: 'meal-image-dialog-panel',
       autoFocus: false,

@@ -4,7 +4,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
+import {
+  MealImageSourceComponent,
+  ImageSourceData,
+  ImageSourceResult,
+} from '../meal-image-source/meal-image-source';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { CurateWizardComponent } from '../curate-wizard/curate-wizard';
 import { AddFoodPanelComponent } from '../add-food-panel/add-food-panel';
@@ -750,6 +756,17 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     {{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}
                   </span>
                 }
+                <!-- Photo key — same 3-way image-source dialog the meal card uses
+                     (upload · phone). Sits at the end of the name, clear of the X. -->
+                <button
+                  type="button"
+                  class="nf-photo-btn"
+                  matTooltip="Add or replace this food's photo"
+                  matTooltipPosition="below"
+                  aria-label="Add a food photo"
+                  (click)="openFoodImageSource()">
+                  <mat-icon>photo_camera</mat-icon>
+                </button>
               </div>
               @if (nfPopupMode() === 'edit') {
                 <!-- Category on its own line, labelled. Auto-saves on change.
@@ -1053,6 +1070,7 @@ export class FoodsPanelComponent {
   protected foodsService = inject(FoodsService);
   private langfusePromptService = inject(LangfusePromptService);
   private settingsService = inject(SettingsService);
+  private dialog = inject(MatDialog);
 
   // Spin carousel state
   readonly carouselCategories = CAROUSEL_CATEGORIES;
@@ -1842,6 +1860,74 @@ export class FoodsPanelComponent {
     const patch = (f: Food): Food => (f.id === foodId ? { ...f, shortDescription: name } : f);
     this.myFoodsLocal.update((list) => list.map(patch));
     this.serverMyFoods.update((list) => list.map(patch));
+  }
+
+  /** Photo key in the NF popup → the same 3-way image-source bloom the meal card
+   *  uses (upload · phone · —no AI for foods). A Regi/system food is FORKED into a
+   *  MyFoods copy first (same fork-on-edit as name/category) so the photo lands on a
+   *  food the user owns; the dialog returns the uploaded image and we drop it onto the
+   *  local caches + the popup. Phone capture stays inert until the API/mobile capture
+   *  changes deploy — the upload path works today. */
+  async openFoodImageSource(): Promise<void> {
+    const food = this.nfPopupFood();
+    if (!food || food.id == null) return;
+    const targetId = await this.forkToUserFoodIfNeeded(food);
+    if (targetId == null) {
+      this.notificationService.show('Could not prepare your editable copy for a photo.', 'error');
+      return;
+    }
+    const name = (food.shortDescription || food.description || 'Food').trim();
+    const ref = this.dialog.open(MealImageSourceComponent, {
+      panelClass: 'meal-image-dialog-panel',
+      autoFocus: false,
+      data: { kind: 'food', id: targetId, name } as ImageSourceData,
+    });
+    const result = (await firstValueFrom(ref.afterClosed())) as ImageSourceResult | undefined;
+    if (result?.kind === 'food' && result.cdnUrl) {
+      this.applyLocalImage(targetId, result.cdnUrl, result.thumbnailUrl ?? result.cdnUrl);
+      await this.refreshServerMyFoods();
+    }
+  }
+
+  /** Ensure we have a MyFoods (userfood) copy to attach edits/photos to. Returns the
+   *  target userfood id — the food's own id when it's already a userfood, else the id
+   *  of a freshly-forked copy (mirrors the fork in onNfTitleCommit/onNfCategoryChange).
+   *  Returns null if the fork failed. */
+  private async forkToUserFoodIfNeeded(food: Food): Promise<number | null> {
+    if (food.id == null) return null;
+    if ((food.foodSource ?? 'food') === 'userfood') return food.id;
+    try {
+      const res = await firstValueFrom(
+        this.foodsService.patchServingGeometry({
+          foodId: food.id,
+          foodSource: 'food',
+          unitName: food.servingUnit || 'g',
+          gramsPerUnit:
+            food.servingGramsPerUnit && food.servingGramsPerUnit > 0
+              ? food.servingGramsPerUnit
+              : (this.massGrams(food.servingUnit) ?? 1),
+          defaultQuantity: food.servingSize ?? this.nfPopupServingSize(),
+        }),
+      );
+      if (res?.cloned && res.userFoodId) {
+        this.nfPopupFood.update((f) => (f ? { ...f, id: res.userFoodId, foodSource: 'userfood' } : f));
+        return res.userFoodId;
+      }
+    } catch {
+      /* fall through to null */
+    }
+    return null;
+  }
+
+  /** Drop a just-uploaded food photo onto the local caches + the open popup so the
+   *  picture shows immediately (mirrors applyLocalName; refreshServerMyFoods then
+   *  reconciles from the server). */
+  private applyLocalImage(foodId: number, foodImage: string, foodImageThumbnail: string): void {
+    const patch = (f: Food): Food =>
+      f.id === foodId ? { ...f, foodImage, foodImageThumbnail } : f;
+    this.myFoodsLocal.update((list) => list.map(patch));
+    this.serverMyFoods.update((list) => list.map(patch));
+    this.nfPopupFood.update((f) => (f && f.id === foodId ? { ...f, foodImage, foodImageThumbnail } : f));
   }
 
   /** Grams in one WEIGHT unit (deterministic), or null for a food-specific unit. */
