@@ -39,18 +39,16 @@ export interface CaptureTarget {
   name: string;
 }
 
-/** Legacy command discriminator (still sent for meal/avatar back-compat). */
+/** Command discriminator. `type` is a coarse hint; the `capture` target is authoritative. */
 export type TetherCommandType = 'captureMeal' | 'captureFood' | 'captureAvatar' | 'captureMealset' | 'capture';
 
-/** POST /api/tether/device/{deviceId}/command body. Prefer the generic `capture`
- *  target; `mealId` is kept ONLY so the current (pre-generic) API/phone still resolve
- *  a meal capture during rollout. `ttlSeconds` omitted → the server default (300s).
- *  The command is DURABLE for ttlSeconds regardless of whether the phone is connected
- *  — issue optimistically; there is no "device not live" rejection. */
+/** POST /api/tether/command body — USER-LEVEL: no deviceId. The API delivers the
+ *  command to whichever of the user's phones is currently LIVE (gate the UI on
+ *  presence.anyLive; the enqueue 409s if none is live). `ttlSeconds` omitted → the
+ *  server default (300s). */
 export interface TetherCommandRequest {
   type: TetherCommandType;
-  mealId?: number | null; // legacy back-compat (kind === 'meal' only)
-  capture?: CaptureTarget;
+  capture: CaptureTarget;
   ttlSeconds?: number | null;
 }
 
@@ -60,17 +58,24 @@ export interface TetherCommandResponse {
   messageId: string;
 }
 
-/** One completed command from GET /api/tether/results. `result` is the opaque
- *  body the phone supplied (e.g. an image ref); absent on failure. `kind`/`mealId`
- *  echo the target so the web routes its refresh (we match on our own outstanding
- *  map by messageId, so these are advisory). */
+/** The phone's upload receipt on a 'done' result — the CDN URI of the stored image
+ *  (and thumbnail, when supplied). Absent on failure. */
+export interface TetherCaptureResult {
+  cdnUrl?: string;
+  thumbnailUrl?: string;
+}
+
+/** One completed command from GET /api/tether/results. `deviceId` is WHICH of the
+ *  user's phones did it (traceability); `kind`/`id` echo the target so the web routes
+ *  its refresh (we also match on our own outstanding map by messageId). `result.cdnUrl`
+ *  is the stored image URI — the receipt. */
 export interface TetherResult {
   messageId: string;
   deviceId?: number | null;
   kind?: CaptureKind;
-  mealId?: number | null;
+  id?: number | null;
   status: 'done' | 'failed';
-  result?: unknown;
+  result?: TetherCaptureResult;
 }
 
 /** GET /api/tether/results — AT-MOST-ONCE per-user cursor: each result is returned

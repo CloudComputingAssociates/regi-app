@@ -121,8 +121,8 @@ import { environment } from '../../../environments/environment';
               <button
                 type="button"
                 class="acct-phone-btn"
-                [disabled]="phoneBusy() || !tether.firstDeviceId()"
-                [matTooltip]="tether.firstDeviceId() ? 'Send a photo request to your phone' : 'Register your phone (tether) to use this'"
+                [disabled]="phoneBusy() || !tether.anyLive()"
+                [matTooltip]="tether.anyLive() ? 'Send a photo request to your phone' : 'Open Regi on your phone to use this'"
                 matTooltipPosition="above"
                 (click)="captureViaPhone()">
                 <mat-icon>photo_camera</mat-icon>
@@ -383,35 +383,32 @@ export class AccountPanelComponent {
     }
   }
 
-  /** Issue a DURABLE avatar capture (POST /api/tether/device/{id}/command → 202
-   *  {messageId}) to the user's registered phone. Enabled once a phone is registered
-   *  (live not required). The web no longer pops the phone camera; we point the user
-   *  at the phone's Phone panel, and the TetherService results poll refreshes the
-   *  avatar here when the phone's upload lands. */
+  /** Enqueue a USER-LEVEL avatar capture (POST /api/tether/command → {messageId}); the
+   *  API routes it to whichever of the user's phones is LIVE. Gated on presence.anyLive;
+   *  a 409 means no phone is connected. The web doesn't pop a camera — we point the user
+   *  at the phone's Camera panel, and the TetherService results poll refreshes the avatar
+   *  here when the phone's upload lands. */
   async captureViaPhone(): Promise<void> {
-    const deviceId = this.tether.firstDeviceId();
-    if (deviceId == null) {
-      this.notificationService.show('Register your phone (open Regi on it once) to enable phone capture.', 'error');
+    if (!this.tether.anyLive()) {
+      this.notificationService.show('No phone connected — open Regi on your phone and try again.', 'warning');
       return;
     }
     this.phoneBusy.set(true);
     try {
-      // Issue OPTIMISTICALLY (durable command — no "device offline" rejection). The
-      // uploaded avatar appears when the TetherService results poll resolves the
-      // command and refreshes the profile.
-      await this.tether.requestCapture(deviceId, { kind: 'avatar', id: null, name: 'Profile photo' });
+      await this.tether.requestCapture({ kind: 'avatar', id: null, name: 'Profile photo' });
       this.notificationService.show(
-        '📱 Sent to your phone. Open the menu (☰) → Phone to take the picture.',
+        '📱 Sent to your phone — open the menu (☰) → Camera to take the picture.',
+        'info',
       );
     } catch (err) {
       const status = err instanceof HttpErrorResponse ? err.status : 0;
       const msg =
-        status === 503
-          ? 'Phone capture is temporarily unavailable. Please try again later.'
-          : status === 404
-            ? 'That phone isn’t linked to your account anymore. Re-open Regi on your phone.'
+        status === 409
+          ? 'No phone connected — open Regi on your phone and try again.'
+          : status === 503
+            ? 'Phone capture is temporarily unavailable. Please try again later.'
             : 'Couldn’t send the request to your phone. Try again.';
-      this.notificationService.show(msg, 'error');
+      this.notificationService.show(msg, status === 409 ? 'warning' : 'error');
     } finally {
       this.phoneBusy.set(false);
     }

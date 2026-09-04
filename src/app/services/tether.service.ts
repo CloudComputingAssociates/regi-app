@@ -64,9 +64,9 @@ export class TetherService {
   readonly anyLive = computed(() => this.presenceSignal()?.anyLive ?? false);
   readonly devices = computed(() => this.presenceSignal()?.devices ?? []);
 
-  /** First registered device id (LIVE not required — commands are durable), or null
-   *  when the user has no registered device. The command URL is device-scoped, so we
-   *  need this to issue; if it's null, prompt the user to register their phone. */
+  /** First registered device id (LIVE not required), or null when the user has no
+   *  registered device. Kept for display/tooltip use; issuing a command no longer
+   *  needs it (the enqueue is user-level and routes to whichever phone is live). */
   readonly firstDeviceId = computed<number | null>(() => this.devices()[0]?.deviceId ?? null);
 
   /** Terminal outcome of the most recent capture command — components watch this to
@@ -113,20 +113,19 @@ export class TetherService {
     mealset: 'captureMealset',
   };
 
-  /** POST /api/tether/device/{deviceId}/command — issue a DURABLE photo capture for
-   *  ANY target (meal / food / avatar / mealset / …). Carries the generic `capture`
-   *  {kind,id,name}; ALSO sets the legacy `mealId` for a meal so the pre-generic
-   *  API/phone still work. Returns the 202 messageId and tracks it; the results poll
-   *  resolves it (refreshes the right thing) or times it out. Throws on 404/503/400. */
-  async requestCapture(deviceId: number, target: CaptureTarget, ttlSeconds?: number): Promise<string> {
+  /** POST /api/tether/command — USER-LEVEL enqueue of a photo capture for ANY target
+   *  (meal / food / avatar / mealset / …). No deviceId: the API routes to whichever of
+   *  the user's phones is LIVE. Gate the caller on presence.anyLive; a 409 means no
+   *  phone is connected. Returns the messageId and tracks it; the results poll resolves
+   *  it (refreshes the right thing) or times it out. Throws on 409/503/400. */
+  async requestCapture(target: CaptureTarget, ttlSeconds?: number): Promise<string> {
     const body: TetherCommandRequest = {
       type: TetherService.KIND_TO_TYPE[target.kind] ?? 'capture',
       capture: target,
-      ...(target.kind === 'meal' && target.id != null ? { mealId: target.id } : {}),
       ...(ttlSeconds != null ? { ttlSeconds } : {}),
     };
     const res = await firstValueFrom(
-      this.http.post<TetherCommandResponse>(`${this.baseUrl}/tether/device/${deviceId}/command`, body),
+      this.http.post<TetherCommandResponse>(`${this.baseUrl}/tether/command`, body),
     );
     this.track(res.messageId, target.kind, target.id);
     return res.messageId;

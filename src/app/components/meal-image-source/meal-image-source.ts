@@ -151,9 +151,9 @@ export class MealImageSourceComponent {
   readonly busy = signal(false);
   readonly dragOver = signal(false);
   readonly isOwner = computed(() => this.role.hasRole('MealSetOwner'));
-  // Enabled once a phone is REGISTERED (live not required — the command is durable
-  // and the phone picks it up when it next connects).
-  readonly canPhone = computed(() => this.tether.firstDeviceId() != null);
+  // Enabled only when one of the user's phones is LIVE — the enqueue routes to a live
+  // phone and 409s if none is connected, so gate the button on presence.anyLive.
+  readonly canPhone = computed(() => this.tether.anyLive());
 
   /** True after a phone-capture command is sent — shows the "open your phone" panel
    *  until the photo arrives (auto-close) or the user closes it. */
@@ -258,30 +258,29 @@ export class MealImageSourceComponent {
   }
 
   takePhonePic(): void {
-    const deviceId = this.tether.firstDeviceId();
-    if (deviceId == null) {
-      this.notification.show('Register your phone (open Regi on it once) to enable phone capture.', 'warning');
+    if (!this.tether.anyLive()) {
+      this.notification.show('No phone connected — open Regi on your phone and try again.', 'warning');
       return;
     }
     void (async () => {
       try {
-        // Issue OPTIMISTICALLY — the command is durable, so no "device offline"
-        // rejection. The web no longer pops the phone camera; the request waits on
-        // the device's Phone panel. Completion (card flip) / timeout arrive via the
-        // TetherService results poll (rotation.imagedMeal / captureEvent).
+        // USER-LEVEL enqueue — the API routes to whichever phone is live; no deviceId.
+        // The web doesn't pop a camera; the user takes the shot on the phone. Completion
+        // (card flip) / timeout arrive via the results poll (rotation.imagedMeal / captureEvent).
         this.waitStartSeq = this.rotation.imagedMeal()?.seq ?? 0;
-        await this.tether.requestCapture(deviceId, {
+        await this.tether.requestCapture({
           kind: 'meal',
           id: this.data.mealId,
           name: this.data.mealName,
         });
+        this.notification.show('📱 Sent to your phone — open the menu (☰) → Camera to take the picture.', 'info');
         this.phoneWaiting.set(true);
       } catch (err) {
         const status = err instanceof HttpErrorResponse ? err.status : 0;
-        if (status === 503) {
+        if (status === 409) {
+          this.notification.show('No phone connected — open Regi on your phone and try again.', 'warning');
+        } else if (status === 503) {
           this.notification.show('Phone capture is temporarily unavailable. Please try again later.', 'error');
-        } else if (status === 404) {
-          this.notification.show('That phone isn’t linked to your account anymore. Re-open Regi on your phone.', 'error');
         } else {
           this.notification.show('Could not send the request to your phone. Please try again.', 'error');
         }
