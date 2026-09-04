@@ -109,6 +109,15 @@ export class FoodsService {
     );
   }
 
+  /** Kick off async AI image generation for a food. POST /foods/{id}/generate-image
+   *  → 202 (regi-api emits the generation request; regi-image writes foodImage /
+   *  foodImageThumbnail back later). Mirrors the meal generate-image contract; the
+   *  caller polls the food until the image URL appears. NOTE: pending on regi-api —
+   *  404s until that endpoint deploys. */
+  generateFoodImage(foodId: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/foods/${foodId}/generate-image`, null);
+  }
+
   /** Fetch a single canonical Food (Foods table) by id via GET /api/foods/{id}.
    *  This endpoint returns the nested FoodSchema shape directly (unlike the
    *  AllFoods-view endpoints, which return flat AllFoodRow), so no remap is

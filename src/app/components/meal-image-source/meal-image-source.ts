@@ -31,10 +31,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ImageUploadService } from '../../services/image-upload.service';
 import { RotationService } from '../../services/rotation.service';
+import { FoodsService } from '../../services/foods.service';
 import { TetherService } from '../../services/tether.service';
 import { RoleService } from '../../services/role.service';
 import { NotificationService } from '../../services/notification.service';
 import { CaptureKind } from '../../models/tether.models';
+import { firstValueFrom } from 'rxjs';
 
 /** What this dialog is attaching a photo to. `meal` self-applies (rotation store flips
  *  the card); `food` has no store here, so the dialog CLOSES with an ImageSourceResult
@@ -45,13 +47,15 @@ export interface ImageSourceData {
   name: string;
 }
 
-/** Returned via MatDialogRef.close() when a `food` capture succeeds, so the foods
- *  panel can drop the new photo onto its caches (meal closes with no payload — it
- *  self-applies through the rotation store). */
+/** Returned via MatDialogRef.close() for a `food` target so the foods panel can react
+ *  (meal closes with no payload — it self-applies through the rotation store):
+ *   • 'uploaded'   → a photo landed now; `cdnUrl`/`thumbnailUrl` are the stored image.
+ *   • 'generating' → AI creation was queued (backend-async); the panel polls it in. */
 export interface ImageSourceResult {
   kind: 'food';
   id: number;
-  cdnUrl: string;
+  action: 'uploaded' | 'generating';
+  cdnUrl?: string;
   thumbnailUrl?: string;
 }
 
@@ -138,13 +142,17 @@ export interface ImageSourceResult {
             <button
               type="button"
               class="mis-source-btn mis-ai-btn"
-              matTooltip="Generate a photo from this meal"
+              [matTooltip]="'Generate a photo from this ' + data.kind"
               (click)="generateAi()">
               <img src="/images/AI-star-blue.png" alt="AI" class="mis-ai-img" />
             </button>
             <div class="mis-source-text">
-              <span class="mis-source-label">AI Generate meal image</span>
-              <span class="mis-source-sub">created from your ingredients &amp; notes</span>
+              <span class="mis-source-label">AI Generate {{ data.kind }} image</span>
+              <span class="mis-source-sub">{{
+                data.kind === 'meal'
+                  ? 'created from your ingredients &amp; notes'
+                  : 'created from this food’s name'
+              }}</span>
             </div>
           </div>
         }
@@ -159,6 +167,7 @@ export class MealImageSourceComponent {
   readonly data = inject<ImageSourceData>(MAT_DIALOG_DATA);
   private imageUpload = inject(ImageUploadService);
   private rotation = inject(RotationService);
+  private foods = inject(FoodsService);
   private tether = inject(TetherService);
   private role = inject(RoleService);
   private notification = inject(NotificationService);
@@ -166,9 +175,10 @@ export class MealImageSourceComponent {
   readonly busy = signal(false);
   readonly dragOver = signal(false);
   readonly isOwner = computed(() => this.role.hasRole('MealSetOwner'));
-  // AI generation is a meal-only, owner-only affordance (built from the meal's
-  // ingredients + notes); foods bring their own photo, so it's hidden for them.
-  readonly showAi = computed(() => this.data.kind === 'meal' && this.isOwner());
+  // AI generation is a MealSetOwner (mealset-author) affordance for BOTH meals and
+  // foods — a meal builds from its ingredients + notes, a food from its name. Hidden
+  // for non-owners, who bring their own photo.
+  readonly showAi = computed(() => this.isOwner());
   // Enabled only when one of the user's phones is LIVE — the enqueue routes to a live
   // phone and 409s if none is connected, so gate the button on presence.anyLive.
   readonly canPhone = computed(() => this.tether.anyLive());
@@ -212,6 +222,7 @@ export class MealImageSourceComponent {
             this.ref.close({
               kind: 'food',
               id: this.data.id,
+              action: 'uploaded',
               cdnUrl: ev.cdnUrl,
               thumbnailUrl: ev.thumbnailUrl,
             } satisfies ImageSourceResult);
@@ -283,6 +294,7 @@ export class MealImageSourceComponent {
           this.ref.close({
             kind: 'food',
             id: this.data.id,
+            action: 'uploaded',
             cdnUrl: res.cdn_url,
             thumbnailUrl: res.thumbnail_url,
           } satisfies ImageSourceResult);
@@ -333,8 +345,24 @@ export class MealImageSourceComponent {
   }
 
   generateAi(): void {
-    void this.rotation.generateMealImage(this.data.id); // its own snackbar + poll
-    this.ref.close();
+    // Meal self-refreshes through the rotation store (own snackbar + poll). A food has
+    // no store here, so queue generation, then hand 'generating' back so the foods panel
+    // polls the new image in. NOTE: the food endpoint is pending on regi-api — this leg
+    // 404s until it deploys (upload + phone still work).
+    if (this.data.kind === 'meal') {
+      void this.rotation.generateMealImage(this.data.id);
+      this.ref.close();
+      return;
+    }
+    void (async () => {
+      try {
+        await firstValueFrom(this.foods.generateFoodImage(this.data.id));
+        this.notification.show('AI image creation queued — this may take a minute.', 'info', 5000);
+        this.ref.close({ kind: 'food', id: this.data.id, action: 'generating' } satisfies ImageSourceResult);
+      } catch {
+        this.notification.show('Image generation is unavailable — please try again later.', 'error');
+      }
+    })();
   }
 
   close(): void {
