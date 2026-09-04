@@ -116,13 +116,21 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
                   [attr.aria-label]="rotation.binderCollapsed() ? 'Open Notebook' : 'Close Notebook'"
                   [attr.aria-pressed]="!rotation.binderCollapsed()"
                   (click)="rotation.toggleBinderCollapsed()">
+                  <!-- Spiral notebook — rounded page with coils threaded through the
+                       left binding edge. currentColor so it recolors on .active. -->
                   <svg class="notebook-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="4.5" y="5.5" width="15" height="14.5" rx="1.6"
+                    <rect x="7" y="3.5" width="12.5" height="17" rx="1.7"
                           fill="none" stroke="currentColor" stroke-width="1.7" />
-                    <path d="M8 4.2 V7.2 M12 4.2 V7.2 M16 4.2 V7.2"
-                          fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-                    <path d="M8 11 H16 M8 14 H16 M8 17 H13"
-                          fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    <g fill="none" stroke="currentColor" stroke-width="1.4">
+                      <ellipse cx="6.4" cy="5.3" rx="2.4" ry="0.95" />
+                      <ellipse cx="6.4" cy="7.2" rx="2.4" ry="0.95" />
+                      <ellipse cx="6.4" cy="9.1" rx="2.4" ry="0.95" />
+                      <ellipse cx="6.4" cy="11.0" rx="2.4" ry="0.95" />
+                      <ellipse cx="6.4" cy="12.9" rx="2.4" ry="0.95" />
+                      <ellipse cx="6.4" cy="14.8" rx="2.4" ry="0.95" />
+                      <ellipse cx="6.4" cy="16.7" rx="2.4" ry="0.95" />
+                      <ellipse cx="6.4" cy="18.6" rx="2.4" ry="0.95" />
+                    </g>
                   </svg>
                 </button>
                 <!-- Shopping List — toggles the Notebook on the Shopping tab (second
