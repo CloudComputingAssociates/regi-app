@@ -289,7 +289,10 @@
     width: 24px;
     height: 24px;
     display: block;
-    color: #f0f0f0;
+    object-fit: contain;
+    // Artwork is black on transparent; invert so it shows as light (~#f0f0f0) on the
+    // dark button. brightness(0) normalizes to pure black first, then invert → white.
+    filter: brightness(0) invert(0.94);
   }
 
   &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
