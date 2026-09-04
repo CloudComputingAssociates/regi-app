@@ -7,6 +7,7 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from '@angu
 import { MatDialog } from '@angular/material/dialog';
 import { Menu, MealItem, MenuSlot } from '../../models';
 import { RotationService, TEACH_SAVE_LINE } from '../../services/rotation.service';
+import { TabService } from '../../services/tab.service';
 import { MealComponent } from '../meal/meal';
 import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-dialog';
 
@@ -23,7 +24,7 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
             [editing]="isEditing(slot.slotOrder)"
             [resolvingItemId]="resolvingItemId()"
             [dropHighlight]="dropHighlightFor(slot.slotOrder)"
-            (createHere)="onCreateHere(slot)"
+            (buildAMeal)="onBuildAMeal(slot)"
             (placeMeal)="onPlace($event)"
             (removeMeal)="onRemoveMeal($event)"
             (deleteMeal)="onDelete($event)"
@@ -43,6 +44,7 @@ import { WipeConfirmDialogComponent } from '../wipe-confirm-dialog/wipe-confirm-
 })
 export class MenusMealsComponent {
   readonly rotation = inject(RotationService);
+  private tabService = inject(TabService);
   private dialog = inject(MatDialog);
 
   readonly menu = input.required<Menu | undefined>();
@@ -69,12 +71,14 @@ export class MenusMealsComponent {
     return e != null && e.menuId === this.menu()?.id && e.slotOrder === slotOrder;
   }
 
-  /** "Create from scratch" on an empty slot — create a named "Meal N" here right
-   *  away (so a tile appears) and open it for editing (food picker). */
-  onCreateHere(slot: MenuSlot): void {
+  /** "My Foods | Build-a-Meal" on an empty slot — jump to the Foods panel's
+   *  Build-a-Meal, remembering THIS slot so the built meal lands here (and in the
+   *  Binder). Meals are no longer created empty in the board. */
+  onBuildAMeal(slot: MenuSlot): void {
     const menuId = this.menu()?.id;
     if (menuId == null) return;
-    void this.rotation.createMealInSlot(menuId, slot.slotOrder);
+    this.rotation.buildMealRequest.set({ slot: { menuId, slotOrder: slot.slotOrder } });
+    this.tabService.openPanel('foods', 'My Foods');
   }
 
   /** A binder meal was dropped on a slot (empty placeholder or front grid) —

@@ -85,6 +85,14 @@ export class RotationService {
   /** A request to focus a specific Notebook tab (set by the Menus toolbar's
    *  Shopping key). The Binder consumes it and resets to null. */
   readonly requestedBinderTab = signal<'meals' | 'menus' | 'shopping' | null>(null);
+
+  /** A cross-panel request to open the Foods panel's Build-a-Meal workspace. The Foods
+   *  panel consumes it (opens Build-a-Meal, then resets to null). `slot` decides the
+   *  destination of the created meal:
+   *   • { slot: { menuId, slotOrder } } — from an empty slot's "My Foods | Build-a-Meal"
+   *       link: the new meal is pinned to the Binder AND placed into that slot.
+   *   • { slot: null } — from the Notebook "Add Meals" bloom: Binder only, unslotted. */
+  readonly buildMealRequest = signal<{ slot: { menuId: number; slotOrder: number } | null } | null>(null);
   /** The Notebook tab currently shown — mirrored from the Binder so toolbar keys can
    *  toggle a tab open/closed (the Binder owns the source-of-truth signal). */
   readonly activeBinderTab = signal<'meals' | 'menus' | 'shopping'>('meals');
@@ -1108,63 +1116,6 @@ export class RotationService {
       this.selectedMenuId.set(target.menuId);
       await this.selectMenu(target.menuId);
     }
-  }
-
-  /** "Create from scratch" — begin a brand-new empty meal in the next open slot
-   *  (adding a menu if needed, same target the AI create uses) and open the food
-   *  picker so the user builds it up. The meal row is created server-side on the
-   *  first food add (addFoodToEditingMeal). */
-  async createScratchMeal(): Promise<void> {
-    const target = await this.findGenerateTargetSlot();
-    if (!target) {
-      this.notification.show('No open slot to create a meal in.', 'error');
-      return;
-    }
-    if (this.selectedMenuId() !== target.menuId) {
-      this.selectedMenuId.set(target.menuId);
-      await this.selectMenu(target.menuId);
-    }
-    await this.createMealInSlot(target.menuId, target.slotOrder);
-  }
-
-  /** "Create from scratch" on a specific empty slot — immediately create a named
-   *  "Meal N" (next free number in this menu), place it in the slot so a tile
-   *  shows right away, then open it for editing (food picker) so the user builds
-   *  it up. The user renames it later (pencil) or pins it to the Binder. */
-  async createMealInSlot(menuId: number, slotOrder: number): Promise<void> {
-    try {
-      const createBody: CreateMealRequest = { name: this.nextMealName(menuId) };
-      const meal = await firstValueFrom(
-        this.http.post<Meal>(`${this.baseUrl}/meal`, createBody),
-      );
-      await this.addMealToSlot(menuId, slotOrder, meal.id);
-      this.mealsById.update((m) => new Map(m).set(meal.id, meal));
-      // Reload the menu so the new tile appears, then open it for editing.
-      const updated = await firstValueFrom(
-        this.http.get<Menu>(`${this.baseUrl}/menu/${menuId}`),
-      );
-      this.cacheMenu(menuId, updated);
-      this.editingSlot.set({ menuId, slotOrder, mealId: meal.id });
-      this.markMenuComposition(menuId); // slot composition changed → savable back
-    } catch (err) {
-      this.notification.show(this.errMessage(err), 'error');
-    }
-  }
-
-  /** The next free "Meal N" name for a menu — the smallest positive integer not
-   *  already used by a "Meal N"-named meal in that menu's slots. */
-  private nextMealName(menuId: number): string {
-    const used = new Set<number>();
-    const menu = this.menusById().get(menuId);
-    for (const slot of menu?.slots ?? []) {
-      for (const sm of slot.meals ?? []) {
-        const m = /^meal\s+(\d+)$/i.exec((sm.mealName ?? '').trim());
-        if (m) used.add(Number(m[1]));
-      }
-    }
-    let n = 1;
-    while (used.has(n)) n++;
-    return `Meal ${n}`;
   }
 
   /** Names of meals the session already knows — meals placed in the selected

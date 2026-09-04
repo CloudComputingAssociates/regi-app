@@ -477,16 +477,21 @@
       font-weight: 600;
       color: #4da6ff;       // blue, matching "Meal"
     }
+    // Serves — the per-meal output scale. Small centred number field in front of Type.
+    .back-serves-input {
+      flex: 0 0 auto;
+      width: 46px;
+      height: 26px;
+      text-align: center;
+    }
     // Type select — a strict dropdown of the fixed, DB-constrained set (no free
-    // typing). Width is pinned (not content-sized) so its right edge lands at the
-    // right edge of the "313 cals" bubble in the macro row below (~31% of the row);
-    // keys sit right.
+    // typing). Shrunk to make room for the Serves field in front of it; keys sit right.
     .type-combo {
       position: relative;
       flex: 0 1 auto;
       min-width: 0;
-      width: 31%;
-      max-width: 31%;
+      width: 24%;
+      max-width: 24%;
       display: flex;
       align-items: center;
       // Half-button (26px → 13px) of breathing room between the dropdown arrow and

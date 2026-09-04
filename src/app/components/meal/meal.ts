@@ -73,7 +73,7 @@ interface Macro {
           [cdkDropListEnterPredicate]="mealDropPredicate"
           (cdkDropListDropped)="onDropMeal($event)">
           <span class="pick-sub">Double-click or drag <button type="button" class="binder-link" (click)="$event.stopPropagation(); rotation.openBinderTab('meals')">Meals</button>,</span>
-          <span class="pick-sub">or <button type="button" class="create-link" (click)="$event.stopPropagation(); createHere.emit()">Create from Scratch</button></span>
+          <span class="pick-sub">or <button type="button" class="binder-link" (click)="$event.stopPropagation(); buildAMeal.emit()">My Foods | Build-a-Meal</button></span>
         </div>
       } @else {
         <!-- Flip card: FRONT image grid ⇄ BACK single-meal detail. -->
@@ -185,6 +185,23 @@ interface Macro {
                 <!-- Meal TYPE — strict select of the DB-constrained set (no free
                      typing), between the name row and the discs (mirrors the Notebook). -->
                 <div class="back-type-row">
+                  <!-- Serves = the per-meal output SCALE (shopping list + PDF), NOT a
+                       macro multiplier — macros stay per one person. Sits in front of
+                       Type, same blue label. -->
+                  <span
+                    class="back-type-label"
+                    matTooltip="Scale used in Shopping list and Recipe output (PDF)"
+                    matTooltipPosition="above">Serves</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    class="back-serves-input regi-field"
+                    [value]="servesFor(fm.mealId)"
+                    (change)="onMealServesChange(fm.mealId, $any($event.target).value)"
+                    matTooltip="Scale used in Shopping list and Recipe output (PDF)"
+                    matTooltipPosition="above"
+                    aria-label="Servings scale" />
                   <span class="back-type-label">Type</span>
                   <div class="type-combo">
                     <select
@@ -354,9 +371,10 @@ export class MealComponent {
   readonly removeMeal = output<{ slotOrder: number; mealId: number }>();
   /** Header trash — clear the WHOLE slot (all meals). Emits slotOrder. */
   readonly deleteMeal = output<number>();
-  /** "Create from scratch" link on an empty slot — build a new meal here (opens
-   *  the food picker over the Binder). */
-  readonly createHere = output<void>();
+  /** "My Foods | Build-a-Meal" link on an empty slot — jump to the Foods panel's
+   *  Build-a-Meal to build a meal FOR this slot. The result lands in the Binder AND
+   *  in this slot (meals are no longer created empty in the board). */
+  readonly buildAMeal = output<void>();
   /** + on the back — begin adding food to this meal (emits its mealId). */
   readonly toggleAdd = output<number>();
   /** Inline name box committed. */
@@ -565,6 +583,17 @@ export class MealComponent {
   /** Commit the meal's TYPE from the card's strict select (fixed, DB-constrained). */
   onMealTypeChange(mealId: number, value: string): void {
     void this.rotation.updateMealType(mealId, (value ?? '').trim());
+  }
+
+  /** The meal's Serves (output scale). Falls back to 1 until the server default lands. */
+  servesFor(mealId: number): number {
+    return this.rotation.getMeal(mealId)?.servings ?? 1;
+  }
+  /** Commit the meal's Serves — persists `servings`, consumed only by the shopping list
+   *  and PDF output (never by the macros, which stay per one person). */
+  onMealServesChange(mealId: number, value: string): void {
+    const n = Math.max(1, Math.min(100, Math.round(Number(value) || 1)));
+    void this.rotation.updateMealFields(mealId, { servings: n });
   }
 
   openRecipe(url: string): void {

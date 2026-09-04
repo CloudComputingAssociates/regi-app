@@ -73,6 +73,39 @@
   white-space: nowrap;
 }
 
+// Primary "Build-a-Meal with My Foods & AI" key — dark card with a blue accent so the
+// blue AI star reads; leads the bloom above the recipe import.
+.build-a-meal-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  margin: 2px 0 0;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #4da6ff;
+  background: linear-gradient(180deg, #343a44 0%, #2b2f37 100%);
+  border: 1px solid #3a5a86;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.15), 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: filter 0.12s ease, transform 0.05s ease, box-shadow 0.12s ease;
+
+  &:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+  &:active { transform: translateY(1px); }
+
+  .bam-inline-star {
+    width: 18px;
+    height: 18px;
+    vertical-align: -4px;
+  }
+}
+
 // Compact import drop zone — no big graphic, just the two lines of text.
 .import-dropzone {
   display: flex;

@@ -25,6 +25,8 @@ import { environment } from '../../../environments/environment';
 import { RecipeService } from '../../services/recipe.service';
 import { RecipeImportWatcher } from '../../services/recipe-import-watcher.service';
 import { NotificationService } from '../../services/notification.service';
+import { RotationService } from '../../services/rotation.service';
+import { TabService } from '../../services/tab.service';
 
 @Component({
   selector: 'app-ai-create-meal',
@@ -51,8 +53,15 @@ import { NotificationService } from '../../services/notification.service';
           <mat-icon class="bloom-title-icon">restaurant</mat-icon>Add Meals
         </div>
 
-        <!-- Import at the TOP: a compact drop zone (no big graphic) — a valid
-             file autocloses the bloom. -->
+        <!-- Primary path: build a meal from your My Foods with AI. This one goes to
+             the Binder ONLY (unslotted) — the empty-slot link is the slotted path. -->
+        <button type="button" class="build-a-meal-cta" (click)="onBuildAMeal()">
+          Build-a-Meal with My Foods &amp;
+          <img src="/images/AI-star-blue.png" alt="AI" class="bam-inline-star" />AI
+        </button>
+        <div class="glow-divider" aria-hidden="true"></div>
+
+        <!-- Import a recipe: a compact drop zone — a valid file autocloses the bloom. -->
         <span class="section-label import-label">Import a recipe</span>
         <div
           class="import-dropzone"
@@ -108,6 +117,17 @@ export class AiCreateMealComponent {
   private watcher = inject(RecipeImportWatcher);
   private notification = inject(NotificationService);
   private auth = inject(AuthService);
+  private rotation = inject(RotationService);
+  private tabService = inject(TabService);
+
+  /** Build-a-Meal from My Foods — close the bloom and jump to the Foods panel's
+   *  Build-a-Meal workspace. No slot target → the created meal is pinned to the
+   *  Binder ONLY (unslotted). */
+  onBuildAMeal(): void {
+    this.rotation.buildMealRequest.set({ slot: null });
+    this.tabService.openPanel('foods', 'My Foods');
+    this.close.emit();
+  }
 
   /** Current user's email (Auth0 email claim), '' until the profile loads. */
   private readonly userEmail = toSignal(

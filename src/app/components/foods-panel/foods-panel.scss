@@ -1664,6 +1664,11 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
+// Curate Wizard key sits right after the "Edit MyFoods" label with ~an "M"-width gap.
+.edit-overlay-wizard {
+  margin-left: 6px; // on top of the header's 10px flex gap ≈ one "M"
+}
+
 .nf-popup-overlay {
   position: fixed;
   top: 0;

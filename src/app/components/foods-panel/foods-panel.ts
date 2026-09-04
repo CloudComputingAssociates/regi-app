@@ -146,20 +146,23 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 My Foods
               </span>
             </span>
-            <!-- Curate Wizard — the swipe deck for quickly favoriting Regi-approved
-                 foods into MyFoods. -->
+            <!-- Edit My Foods (pencil) — toggles the editor overlay on the RHS (MyFoods
+                 stays on the left). Insets while active. FIRST key. The Curate Wizard
+                 trigger now lives inside that overlay's header. -->
             <button
               type="button"
-              class="bar-icon-btn curate-wizard-btn"
-              (click)="wizardOpen.set(true)"
-              matTooltip="Curate Wizard — swipe to build MyFoods"
+              class="bar-icon-btn"
+              [class.pressed]="editOpen()"
+              [attr.aria-pressed]="editOpen()"
+              (click)="toggleEdit()"
+              [matTooltip]="editOpen() ? 'Close Edit MyFoods' : 'Edit MyFoods'"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350"
-              aria-label="Curate Wizard">
-              <mat-icon aria-hidden="true">auto_fix_high</mat-icon>
+              aria-label="Edit My Foods">
+              <mat-icon aria-hidden="true">edit</mat-icon>
             </button>
             <!-- Build-a-Meal — opens the baskets workspace on the RHS: pick foods,
-                 then generate an AI meal from them. Insets while active. -->
+                 then generate an AI meal from them. SECOND key. -->
             <button
               type="button"
               class="bar-icon-btn"
@@ -171,20 +174,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               [matTooltipShowDelay]="350"
               aria-label="Build-a-Meal">
               <mat-icon aria-hidden="true">restaurant_menu</mat-icon>
-            </button>
-            <!-- Edit My Foods — toggles the editor overlay on the RHS (MyFoods stays
-                 on the left). Insets while active. -->
-            <button
-              type="button"
-              class="bar-icon-btn"
-              [class.pressed]="editOpen()"
-              [attr.aria-pressed]="editOpen()"
-              (click)="toggleEdit()"
-              [matTooltip]="editOpen() ? 'Close Edit MyFoods' : 'Edit MyFoods'"
-              matTooltipPosition="below"
-              [matTooltipShowDelay]="350"
-              aria-label="Edit My Foods">
-              <mat-icon aria-hidden="true">tune</mat-icon>
             </button>
             <!-- Leave-panel key — red X disc (consistent with the Notebook + Menus
                  close). Lives here so it's ALWAYS available to close the panel. -->
@@ -344,15 +333,16 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               <mat-icon aria-hidden="true">clear_all</mat-icon>
             </button>
             <div class="title-right">
-              <!-- Leave-panel key — closes the whole My Foods panel. -->
+              <!-- Close ONLY the Build-a-Meal pane (parks the split) — a white X. The
+                   whole My Foods panel is closed from its own header's red X. -->
               <button
                 type="button"
-                class="bar-icon-btn"
-                matTooltip="Close My Foods panel"
+                class="dialog-disc dialog-disc-cancel"
+                matTooltip="Close Build-a-Meal"
                 matTooltipPosition="below"
-                (click)="tabService.closePanel()"
-                aria-label="Close panel">
-                <mat-icon aria-hidden="true">logout</mat-icon>
+                (click)="focusEditOpen.set(false)"
+                aria-label="Close Build-a-Meal">
+                <mat-icon aria-hidden="true">close</mat-icon>
               </button>
             </div>
           </div>
@@ -605,6 +595,18 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               <div class="edit-overlay-panel">
                 <div class="edit-overlay-header">
                   <span class="edit-overlay-title">Edit MyFoods</span>
+                  <!-- Curate Wizard trigger — moved here from the MyFoods header; an
+                       "M"-width gap after the label, then the wand key. -->
+                  <button
+                    type="button"
+                    class="bar-icon-btn curate-wizard-btn edit-overlay-wizard"
+                    (click)="wizardOpen.set(true)"
+                    matTooltip="Curate Wizard — swipe to build MyFoods"
+                    matTooltipPosition="below"
+                    [matTooltipShowDelay]="350"
+                    aria-label="Curate Wizard">
+                    <mat-icon aria-hidden="true">auto_fix_high</mat-icon>
+                  </button>
                   <div class="dialog-discs">
                     <button
                       type="button"
@@ -1656,6 +1658,22 @@ export class FoodsPanelComponent {
   readonly resultHeightFrac = signal(0.34);
   readonly resultGrown = computed(() => this.resultHeightFrac() > 0.6);
 
+  /** A menu slot we were sent here to build for (from an empty slot's Build-a-Meal
+   *  link). When set, the created meal is placed into this slot as well as the Binder. */
+  private readonly pendingBuildSlot = signal<{ menuId: number; slotOrder: number } | null>(null);
+  /** Consume a cross-panel "build a meal for this slot" request: open the Build-a-Meal
+   *  workspace and remember the target slot for placement on create. */
+  private readonly consumeBuildMealForSlot = effect(
+    () => {
+      const req = this.rotation.buildMealRequest();
+      if (!req) return;
+      this.pendingBuildSlot.set(req.slot); // null = Binder-only (Add Meals); set = slot too
+      this.openBuildMeal();
+      this.rotation.buildMealRequest.set(null); // consume
+    },
+    { allowSignalWrites: true },
+  );
+
   /** Create a meal from the current picks (Simple path only for now): generate, render
    *  the PDF, and open the result region. The server reads the picks from currentPicks. */
   async createBuildMeal(): Promise<void> {
@@ -1669,6 +1687,13 @@ export class FoodsPanelComponent {
       this.buildType.set(meal.mealType || 'Meal');
       this.resultHeightFrac.set(0.34);
       this.buildResult.set({ mealId: meal.id, pdfUrl });
+      // Came here from an empty menu slot → drop the new meal into that slot too
+      // (it's already pinned to the Binder by buildMealFromPicks).
+      const slot = this.pendingBuildSlot();
+      if (slot) {
+        this.pendingBuildSlot.set(null);
+        await this.rotation.placeMealInSlot(slot.menuId, slot.slotOrder, meal.id);
+      }
     } catch {
       this.notificationService.show('Could not build a meal from your picks. Please try again.', 'error');
     } finally {
