@@ -2509,6 +2509,21 @@
 }
 @keyframes bm-spin { to { transform: rotate(360deg); } }
 
+// Gently rocking AI star beside the "Build-a-Meal" title — reuses the Health-Info
+// nf-ai-shimmer (rocks 0°↔28°, white↔yellow). Masked so it colors cleanly.
+.bam-ai-star {
+  align-self: center;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  pointer-events: none;
+  -webkit-mask: url(/images/AI-star-white.png) center / contain no-repeat;
+          mask: url(/images/AI-star-white.png) center / contain no-repeat;
+  background-color: #ffd54f;
+  animation: nf-ai-shimmer 2.4s ease-in-out infinite;
+}
+
 .buildmeal-workspace {
   position: relative;
   flex: 1;
@@ -2519,15 +2534,12 @@
 
 .buildmeal-result {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0; // fill the workspace — covers the baskets until closed with the X
   z-index: 15;
   display: flex;
   flex-direction: column;
   min-height: 0;
   background: #2f2f2f;
-  border-top: 1px solid #555;
   box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.45);
   overflow: hidden;
 }
@@ -2536,17 +2548,18 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 8px;
+  padding: 8px;
   background: #3a3a3a;
   border-bottom: 1px solid #1a1a1a;
-  cursor: ns-resize; // the bar doubles as the drag handle
   user-select: none;
 
-  .regi-field { height: 26px; }
-  .result-title { flex: 1; min-width: 60px; cursor: text; }
-  .result-serves-label { flex: 0 0 auto; font-size: 12px; color: #bbb; }
-  .result-serves { flex: 0 0 52px; width: 52px; text-align: center; }
-  .result-type { flex: 0 0 auto; cursor: pointer; }
+  // Taller fields so the Type dropdown's "Breakfast" isn't clipped; smaller text so the
+  // whole row fits tight.
+  .regi-field { height: 30px; font-size: 12px; }
+  .result-title { flex: 1; min-width: 40px; cursor: text; }
+  .result-serves-label { flex: 0 0 auto; font-size: 11px; color: #bbb; }
+  .result-serves { flex: 0 0 36px; width: 36px; text-align: center; padding: 0 2px; }
+  .result-type { flex: 0 0 auto; max-width: 104px; cursor: pointer; }
 }
 .result-grow {
   flex: 0 0 auto;

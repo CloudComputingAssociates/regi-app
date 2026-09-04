@@ -56,8 +56,8 @@ import { TabService } from '../../services/tab.service';
         <!-- Primary path: build a meal from your My Foods with AI. This one goes to
              the Binder ONLY (unslotted) — the empty-slot link is the slotted path. -->
         <button type="button" class="build-a-meal-cta" (click)="onBuildAMeal()">
-          Build-a-Meal with My Foods &amp;
-          <img src="/images/AI-star-blue.png" alt="AI" class="bam-inline-star" />AI
+          <span class="option-num">1</span>
+          <img src="/images/AI-star-blue.png" alt="" class="bam-inline-star" />Build-a-Meal
         </button>
         <div class="glow-divider" aria-hidden="true"></div>
 
@@ -69,6 +69,7 @@ import { TabService } from '../../services/tab.service';
           (dragover)="onDragOver($event)"
           (dragleave)="onDragLeave($event)"
           (drop)="onDropFile($event)">
+          <span class="option-num">2</span>
           <span class="dz-title">Drag &amp; Drop a Recipe</span>
           <span class="dz-sub">
             PDF, JPEG or PNG — or
@@ -90,15 +91,11 @@ import { TabService } from '../../services/tab.service';
              like any user here, and reach their own MealSet Studio from the hamburger
              left-nav (the authoring entry the left-nav appends for MealSetOwners). -->
         <div class="meal-sets">
+          <span class="option-num">3</span>
           <div class="meal-sets-head">
             <mat-icon class="meal-sets-icon">restaurant_menu</mat-icon>
-            <span class="meal-sets-title">Purchase Additional MealSets</span>
+            <span class="meal-sets-title">Add MealSets from Marketplace</span>
           </div>
-          <div class="meal-sets-price">
-            as low as <strong>$4.99</strong> for <strong>20 meals</strong>
-          </div>
-          <div class="meal-sets-desc">Full recipes, balanced nutrition.</div>
-          <div class="meal-sets-tags">GLP&#8209;1 friendly · Keto · Carnivore · more…</div>
           <a
             class="meal-sets-cta"
             [href]="marketplaceUrl()"

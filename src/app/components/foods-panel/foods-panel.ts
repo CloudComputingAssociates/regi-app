@@ -321,18 +321,22 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 [matTooltipShowDelay]="350">
                 Build-a-Meal
               </span>
+              <!-- Gently rocking AI star — flags this pane as AI-assisted (reuses the
+                   Health-Info nf-ai-shimmer animation). -->
+              <span class="bam-ai-star" aria-hidden="true"></span>
             </span>
-            <!-- Clear-all key — empties all four baskets (auto-persists via persistBuildMealBaskets). -->
-            <button
-              type="button"
-              class="bar-icon-btn"
-              matTooltip="Clear all picked foods"
-              matTooltipPosition="below"
-              (click)="clearAllBaskets()"
-              aria-label="Clear all picked foods">
-              <mat-icon aria-hidden="true">clear_all</mat-icon>
-            </button>
+            <!-- Clear-all + close cluster, right-justified together. -->
             <div class="title-right">
+              <!-- Clear-all key — empties all four baskets (auto-persists via persistBuildMealBaskets). -->
+              <button
+                type="button"
+                class="bar-icon-btn"
+                matTooltip="Clear all picked foods"
+                matTooltipPosition="below"
+                (click)="clearAllBaskets()"
+                aria-label="Clear all picked foods">
+                <mat-icon aria-hidden="true">clear_all</mat-icon>
+              </button>
               <!-- Close ONLY the Build-a-Meal pane (parks the split) — a white X. The
                    whole My Foods panel is closed from its own header's red X. -->
               <button
@@ -506,31 +510,20 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             </div>
             </div>
             @if (buildResult(); as res) {
-              <!-- Generated-meal result — overlays the bottom of the workspace and grows
-                   upward to occlude the baskets. Height is drag-resizable + arrow-toggle. -->
-              <div class="buildmeal-result" [style.height.%]="resultHeightFrac() * 100">
-                <div class="result-bar" (mousedown)="onResultSplitterDown($event)">
-                  <button
-                    type="button"
-                    class="result-grow"
-                    (mousedown)="$event.stopPropagation()"
-                    (click)="toggleResultGrown()"
-                    [matTooltip]="resultGrown() ? 'Restore' : 'Expand'"
-                    matTooltipPosition="above">
-                    <mat-icon>{{ resultGrown() ? 'expand_more' : 'expand_less' }}</mat-icon>
-                  </button>
+              <!-- Generated-meal result — fills the workspace (covers the baskets until
+                   closed with the X). -->
+              <div class="buildmeal-result">
+                <div class="result-bar">
                   <input
                     type="text"
                     class="result-title regi-field"
                     [value]="buildTitle()"
-                    (mousedown)="$event.stopPropagation()"
                     (input)="buildTitle.set($any($event.target).value)"
                     (blur)="commitBuildTitle()"
                     (keydown.enter)="$any($event.target).blur()"
                     aria-label="Meal title" />
                   <select
                     class="result-type regi-field"
-                    (mousedown)="$event.stopPropagation()"
                     (change)="commitBuildType($any($event.target).value)"
                     aria-label="Meal type">
                     @for (t of mealTypeOptions; track t) {
@@ -547,16 +540,14 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     max="100"
                     class="result-serves regi-field"
                     [value]="buildServes()"
-                    (mousedown)="$event.stopPropagation()"
                     (change)="commitBuildServes($any($event.target).value)"
                     matTooltip="Scale used in Shopping list and Recipe output (PDF)"
                     matTooltipPosition="above"
                     aria-label="Servings scale" />
-                  <a class="result-goto" (mousedown)="$event.stopPropagation()" (click)="goToMeals()">Go to Meals</a>
+                  <a class="result-goto" (click)="goToMeals()">Jump to Meals</a>
                   <button
                     type="button"
                     class="icon-disc icon-disc-danger result-discard"
-                    (mousedown)="$event.stopPropagation()"
                     (click)="discardBuildMeal()"
                     matTooltip="Discard this meal"
                     matTooltipPosition="above">
@@ -565,7 +556,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <button
                     type="button"
                     class="dialog-disc dialog-disc-cancel result-close"
-                    (mousedown)="$event.stopPropagation()"
                     (click)="closeBuildResult()"
                     matTooltip="Close"
                     matTooltipPosition="above">
@@ -1653,10 +1643,6 @@ export class FoodsPanelComponent {
   readonly buildServes = signal(1);
   readonly buildType = signal<string>('Meal');
   readonly mealTypeOptions = this.rotation.mealTypeOptions;
-  /** Result region height as a fraction of the workspace (0.34 = bottom third;
-   *  grown occludes the baskets up to the controls row). */
-  readonly resultHeightFrac = signal(0.34);
-  readonly resultGrown = computed(() => this.resultHeightFrac() > 0.6);
 
   /** A menu slot we were sent here to build for (from an empty slot's Build-a-Meal
    *  link). When set, the created meal is placed into this slot as well as the Binder. */
@@ -1685,7 +1671,6 @@ export class FoodsPanelComponent {
       this.buildTitle.set(meal.name ?? '');
       this.buildServes.set(meal.servings ?? 1);
       this.buildType.set(meal.mealType || 'Meal');
-      this.resultHeightFrac.set(0.34);
       this.buildResult.set({ mealId: meal.id, pdfUrl });
       // Came here from an empty menu slot → drop the new meal into that slot too
       // (it's already pinned to the Binder by buildMealFromPicks).
@@ -1724,29 +1709,7 @@ export class FoodsPanelComponent {
     void this.applyResultEdit({ mealType: value as MealType });
   }
 
-  /** Grow the result region to (near) full, or restore it to the bottom third. */
-  toggleResultGrown(): void {
-    this.resultHeightFrac.set(this.resultGrown() ? 0.34 : 1);
-  }
-  /** Drag the result region's top edge to resize it (dragging up grows it). */
-  onResultSplitterDown(e: MouseEvent): void {
-    e.preventDefault();
-    const startY = e.clientY;
-    const startFrac = this.resultHeightFrac();
-    const workspace = (e.target as HTMLElement).closest('.buildmeal-workspace') as HTMLElement | null;
-    const h = workspace?.clientHeight ?? 1;
-    const onMove = (ev: MouseEvent) => {
-      const deltaFrac = (startY - ev.clientY) / h; // drag UP → larger
-      this.resultHeightFrac.set(Math.max(0.2, Math.min(1, startFrac + deltaFrac)));
-    };
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  }
-  /** Close the result region — the meal is KEPT (reachable via "Go to Meals"). */
+  /** Close the result region — the meal is KEPT (reachable via "Jump to Meals"). */
   closeBuildResult(): void {
     this.buildResult.set(null);
   }

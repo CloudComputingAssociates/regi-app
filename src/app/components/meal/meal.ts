@@ -72,8 +72,9 @@ interface Macro {
           cdkDropList
           [cdkDropListEnterPredicate]="mealDropPredicate"
           (cdkDropListDropped)="onDropMeal($event)">
-          <span class="pick-sub">Double-click or drag <button type="button" class="binder-link" (click)="$event.stopPropagation(); rotation.openBinderTab('meals')">Meals</button>,</span>
-          <span class="pick-sub">or <button type="button" class="binder-link" (click)="$event.stopPropagation(); buildAMeal.emit()">My Foods | Build-a-Meal</button></span>
+          <span class="pick-sub">Double-click or drag</span>
+          <span class="pick-sub">from <button type="button" class="binder-link" (click)="$event.stopPropagation(); rotation.openBinderTab('meals')">your Notebook</button>,</span>
+          <span class="pick-sub">or <button type="button" class="binder-link" (click)="$event.stopPropagation(); buildAMeal.emit()">jump to Build-a-Meal</button></span>
         </div>
       } @else {
         <!-- Flip card: FRONT image grid ⇄ BACK single-meal detail. -->
