@@ -1021,6 +1021,53 @@ export class RotationService {
     }
   }
 
+  /** Build-a-Meal (Foods panel): generate a meal from the user's picks — the server
+   *  reads them from currentPicks — pin it into the Binder Meals list so it shows in
+   *  the Notebook, and RETURN the saved meal so the caller can print/preview/discard
+   *  it. Unlike generateMeal(), this owns no toast: the Foods panel drives its own UI.
+   *  Throws on HTTP failure (caller handles). */
+  async buildMealFromPicks(): Promise<Meal> {
+    const body: GenerateMealRequest = { mealType: 'meal', excludeMeals: this.knownMealNames() };
+    const meal = await firstValueFrom(this.http.post<Meal>(`${this.baseUrl}/meal/generate`, body));
+    const saved = await firstValueFrom(
+      this.http.put<Meal>(`${this.baseUrl}/meal/${meal.id}`, { pinned: true } as UpdateMealRequest),
+    );
+    this.mealsById.update((m) => new Map(m).set(saved.id, saved));
+    await this.loadBinder();
+    return saved;
+  }
+
+  /** Patch a meal's editable fields (Build-a-Meal result bar: title / serves / type).
+   *  Returns the updated meal, or null on failure (caller toasts via errMessage). */
+  async updateMealFields(mealId: number, patch: UpdateMealRequest): Promise<Meal | null> {
+    try {
+      const saved = await firstValueFrom(this.http.put<Meal>(`${this.baseUrl}/meal/${mealId}`, patch));
+      this.mealsById.update((m) => new Map(m).set(saved.id, saved));
+      return saved;
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+      return null;
+    }
+  }
+
+  /** DELETE /api/meal/{id} — discard a meal ("don't like it"). Returns true on success
+   *  and refreshes the Binder so the Notebook drops it. */
+  async deleteMeal(mealId: number): Promise<boolean> {
+    try {
+      await firstValueFrom(this.http.delete<void>(`${this.baseUrl}/meal/${mealId}`));
+      this.mealsById.update((m) => {
+        const next = new Map(m);
+        next.delete(mealId);
+        return next;
+      });
+      await this.loadBinder();
+      return true;
+    } catch (err) {
+      this.notification.show(this.errMessage(err), 'error');
+      return false;
+    }
+  }
+
   /** Where a freshly-generated meal lands: the selected menu's first empty,
    *  non-dining-out slot; failing that, add the next-lettered menu (creating one
    *  if the rotation has none) and use its first slot. Null if none can be made. */

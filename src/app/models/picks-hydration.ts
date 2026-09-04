@@ -10,9 +10,9 @@ import { CurrentPick } from './settings.models';
 export type BasketKey = 'Proteins' | 'Fats' | 'Carbs' | 'Other';
 export const BASKET_KEYS: readonly BasketKey[] = ['Proteins', 'Fats', 'Carbs', 'Other'];
 
-export type ThisWeekBaskets = Record<BasketKey, Food[]>;
+export type BuildMealBaskets = Record<BasketKey, Food[]>;
 
-export function emptyBaskets(): ThisWeekBaskets {
+export function emptyBaskets(): BuildMealBaskets {
   return { Proteins: [], Fats: [], Carbs: [], Other: [] };
 }
 
@@ -20,7 +20,7 @@ export function emptyBaskets(): ThisWeekBaskets {
  *  in the allowed set (`kept`), and the picks whose food is no longer in the
  *  allowed set (`dropped` — stale references the caller may choose to prune). */
 export interface HydratedPicks {
-  baskets: ThisWeekBaskets;
+  baskets: BuildMealBaskets;
   kept: CurrentPick[];
   dropped: CurrentPick[];
 }

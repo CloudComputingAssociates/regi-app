@@ -14,6 +14,9 @@ import {
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { CurateWizardComponent } from '../curate-wizard/curate-wizard';
 import { AddFoodPanelComponent } from '../add-food-panel/add-food-panel';
+import { RecipePdfViewerComponent } from '../recipe-pdf-viewer/recipe-pdf-viewer';
+import { RotationService } from '../../services/rotation.service';
+import { Meal, MealType, UpdateMealRequest } from '../../models';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { UserFoodService } from '../../services/user-food.service';
@@ -26,7 +29,7 @@ import { CurrentPick } from '../../models/settings.models';
 import {
   BasketKey,
   BASKET_KEYS,
-  ThisWeekBaskets,
+  BuildMealBaskets,
   emptyBaskets,
   hydratePicks,
 } from '../../models/picks-hydration';
@@ -49,8 +52,8 @@ const LS_MYFOODS = 'regi.foods.myfoods';
 // the constructor and removed; nothing else in the code references it.
 const LS_LEGACY_THISWEEK_BASKETS = 'regi.foods.thisweek.buckets';
 
-// BasketKey / BASKET_KEYS / ThisWeekBaskets / emptyBaskets + the pick hydration
-// now live in ../../models/picks-hydration (shared with the menus food-lookaside).
+// BasketKey / BASKET_KEYS / BuildMealBaskets / emptyBaskets + the pick hydration
+// live in ../../models/picks-hydration. Only Build-a-Meal (this panel) consumes them.
 
 // Food.categoryName → basket. Per the spec: Dairy → Fats, Vegetables/Carbs/Fruits
 // → Carbs, Processed/Condiments → Other.
@@ -110,7 +113,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
 
 @Component({
   selector: 'app-foods-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, NutritionFactsLabelComponent, CurateWizardComponent, AddFoodPanelComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, NutritionFactsLabelComponent, CurateWizardComponent, AddFoodPanelComponent, RecipePdfViewerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="foods-panel-container">
@@ -131,7 +134,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 carousel cards as a single visual unit, mirroring the basket-
                 card on the right pane. -->
         <div class="left-pane" [style.flex]="leftPaneFlex()">
-          <!-- Left-pane header mirrors "Focus Foods" across the way: the
+          <!-- Left-pane header mirrors "Build-a-Meal" across the way: the
                "My Foods" heading + the Edit… button share the section-title bar
                so both pane headers sit on one baseline. -->
           <div class="section-title">
@@ -155,15 +158,29 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               aria-label="Curate Wizard">
               <mat-icon aria-hidden="true">auto_fix_high</mat-icon>
             </button>
-            <!-- Edit My Foods — toggles the editor split on the RHS (MyFoods stays
+            <!-- Build-a-Meal — opens the baskets workspace on the RHS: pick foods,
+                 then generate an AI meal from them. Insets while active. -->
+            <button
+              type="button"
+              class="bar-icon-btn"
+              [class.pressed]="buildMealOpen()"
+              [attr.aria-pressed]="buildMealOpen()"
+              (click)="toggleBuildMeal()"
+              [matTooltip]="buildMealOpen() ? 'Close Build-a-Meal' : 'Build-a-Meal'"
+              matTooltipPosition="below"
+              [matTooltipShowDelay]="350"
+              aria-label="Build-a-Meal">
+              <mat-icon aria-hidden="true">restaurant_menu</mat-icon>
+            </button>
+            <!-- Edit My Foods — toggles the editor overlay on the RHS (MyFoods stays
                  on the left). Insets while active. -->
             <button
               type="button"
               class="bar-icon-btn"
-              [class.pressed]="focusEditOpen()"
-              [attr.aria-pressed]="focusEditOpen()"
+              [class.pressed]="editOpen()"
+              [attr.aria-pressed]="editOpen()"
               (click)="toggleEdit()"
-              [matTooltip]="focusEditOpen() ? 'Close Edit MyFoods' : 'Edit MyFoods'"
+              [matTooltip]="editOpen() ? 'Close Edit MyFoods' : 'Edit MyFoods'"
               matTooltipPosition="below"
               [matTooltipShowDelay]="350"
               aria-label="Edit My Foods">
@@ -291,7 +308,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
 
         <!-- EDIT MODE: MyFoods stays on the LHS; the RHS (with a splitter) holds
              the Edit-My-Foods editor. The Edit button toggles this split. The
-             Focus Foods baskets are parked behind the editor overlay (not shown).
+             Build-a-Meal baskets are parked behind the editor overlay (not shown).
              Nothing deleted — restore that view later by dropping the overlay. -->
         @if (focusEditOpen()) {
         <!-- VERTICAL SPLITTER — drag horizontally to resize the two panes. -->
@@ -302,34 +319,28 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
           (touchstart)="onVSplitterTouchStart($event)">
           <div class="splitter-grip-v"></div>
         </div>
-        <!-- RIGHT PANE — the Edit-My-Foods editor (Focus Foods baskets parked
-             behind its overlay). -->
+        <!-- RIGHT PANE — the Build-a-Meal baskets workspace. The Edit-MyFoods editor
+             overlay covers it when Edit mode is active (addTo==='right'). -->
         <div class="right-pane" [style.flex]="rightPaneFlex()">
-          <!-- RHS title:
-               - Baskets mode (default): just "Baskets (n)" — no close.
-                 Baskets is the home state and can't be dismissed; the user
-                 closes the entire Foods panel via the left-nav.
-               - Curate mode: "Curation (n)" with an X close on the right
-                 that flips back to Baskets. The Curate LHS pill stays in
-                 sync as the same toggle. -->
+          <!-- RHS title: "Build-a-Meal" — pick foods into the four baskets, then
+               generate a meal from them. -->
           <div class="section-title">
             <span class="section-title-text">
               <span
-                matTooltip="You pick 'Focus Foods', as a baseline for Planning your menus"
+                matTooltip="Pick foods into the baskets, then generate a meal from them"
                 matTooltipPosition="below"
                 [matTooltipShowDelay]="350">
-                Focus Foods
+                Build-a-Meal
               </span>
             </span>
-            <!-- Clear-all-focus-foods key — empties all four baskets
-                 (auto-persists via persistThisWeek). -->
+            <!-- Clear-all key — empties all four baskets (auto-persists via persistBuildMealBaskets). -->
             <button
               type="button"
               class="bar-icon-btn"
-              matTooltip="Clear all picks"
+              matTooltip="Clear all picked foods"
               matTooltipPosition="below"
-              (click)="clearAllPicks()"
-              aria-label="Clear all picks">
+              (click)="clearAllBaskets()"
+              aria-label="Clear all picked foods">
               <mat-icon aria-hidden="true">clear_all</mat-icon>
             </button>
             <div class="title-right">
@@ -346,14 +357,54 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             </div>
           </div>
 
-          <!-- 4 baskets in a 2×2 grid — always shown; Edit is now an overlay. -->
+          <!-- Create row: Simple / Full-recipe radios + the AI "Create meal" key. -->
+          <div class="buildmeal-controls">
+            <div class="bm-radio-group" role="group" aria-label="Meal kind">
+              <button
+                type="button"
+                class="category-radio-btn"
+                [class.pressed]="buildMealKind() === 'simple'"
+                [attr.aria-pressed]="buildMealKind() === 'simple'"
+                (click)="buildMealKind.set('simple')">
+                Simple Meal
+              </button>
+              <button
+                type="button"
+                class="category-radio-btn"
+                disabled
+                matTooltip="Full recipe generation is coming soon"
+                matTooltipPosition="below">
+                Full recipe
+              </button>
+            </div>
+            <button
+              type="button"
+              class="bm-create-btn"
+              [disabled]="!canBuildMeal() || buildBusy()"
+              [matTooltip]="canBuildMeal() ? 'Generate a meal from your picked foods' : 'Pick at least one protein first'"
+              matTooltipPosition="below"
+              (click)="createBuildMeal()">
+              @if (buildBusy()) {
+                <mat-icon class="bm-spin">autorenew</mat-icon>
+                <span>Creating…</span>
+              } @else {
+                <img src="/images/AI-star-blue.png" alt="" class="bm-create-star" />
+                <span>Create meal</span>
+              }
+            </button>
+          </div>
+
+          <!-- Workspace: the baskets, with the generated-meal result region overlaying
+               the bottom portion once a meal is created. -->
+          <div class="buildmeal-workspace">
+          <!-- 4 baskets in a 2×2 grid. -->
           <div class="pane-card basket-card">
             <div class="basket-grid">
               @for (key of basketKeys; track key) {
                 <div
                   class="basket"
                   [class.drag-over]="dragOverBasket() === key"
-                  [class.focused]="focusedBasket() === key"
+                  [class.focused]="expandedBasket() === key"
                   (dragenter)="onBasketDragEnter($event, key)"
                   (dragover)="onBasketDragOver($event)"
                   (dragleave)="onBasketDragLeave($event, key)"
@@ -363,7 +414,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                        single centerline. -->
                   <div class="basket-face">
                     <span class="basket-title">
-                      {{ basketLabel(key) }} ({{ thisWeekBaskets()[key].length }})
+                      {{ basketLabel(key) }} ({{ buildMealBaskets()[key].length }})
                     </span>
                     <!-- Pencil + trash CENTERED on the card, deliberately kept
                          away from the collapse/expand discs. -->
@@ -383,7 +434,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                       <button
                         type="button"
                         class="icon-disc icon-disc-danger"
-                        [disabled]="thisWeekBaskets()[key].length === 0"
+                        [disabled]="buildMealBaskets()[key].length === 0"
                         (click)="clearBasket(key)"
                         matTooltip="Empty Basket"
                         matTooltipPosition="above">
@@ -397,8 +448,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                       <button
                         type="button"
                         class="basket-light basket-light-min"
-                        [disabled]="focusedBasket() !== key"
-                        (click)="focusedBasket.set(null)"
+                        [disabled]="expandedBasket() !== key"
+                        (click)="expandedBasket.set(null)"
                         matTooltip="Restore"
                         matTooltipPosition="above">
                       </button>
@@ -406,20 +457,20 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                       <button
                         type="button"
                         class="basket-light basket-light-max"
-                        [disabled]="focusedBasket() === key"
-                        (click)="focusedBasket.set(key)"
+                        [disabled]="expandedBasket() === key"
+                        (click)="expandedBasket.set(key)"
                         matTooltip="Expand"
                         matTooltipPosition="above">
                       </button>
                     </div>
                   </div>
-                  @if (thisWeekBaskets()[key].length === 0) {
+                  @if (buildMealBaskets()[key].length === 0) {
                     <div class="basket-empty-hint">
                       <span class="basket-empty-hint-text">{{ basketEmptyHint(key) }}</span>
                     </div>
                   } @else {
                     <div class="basket-tiles">
-                      @for (food of thisWeekBaskets()[key]; track food.id) {
+                      @for (food of buildMealBaskets()[key]; track food.id) {
                         <div
                           class="basket-mini-card"
                           [class.selected]="selectedBasketFood()?.id === food.id"
@@ -464,10 +515,86 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               }
             </div>
             </div>
+            @if (buildResult(); as res) {
+              <!-- Generated-meal result — overlays the bottom of the workspace and grows
+                   upward to occlude the baskets. Height is drag-resizable + arrow-toggle. -->
+              <div class="buildmeal-result" [style.height.%]="resultHeightFrac() * 100">
+                <div class="result-bar" (mousedown)="onResultSplitterDown($event)">
+                  <button
+                    type="button"
+                    class="result-grow"
+                    (mousedown)="$event.stopPropagation()"
+                    (click)="toggleResultGrown()"
+                    [matTooltip]="resultGrown() ? 'Restore' : 'Expand'"
+                    matTooltipPosition="above">
+                    <mat-icon>{{ resultGrown() ? 'expand_more' : 'expand_less' }}</mat-icon>
+                  </button>
+                  <input
+                    type="text"
+                    class="result-title regi-field"
+                    [value]="buildTitle()"
+                    (mousedown)="$event.stopPropagation()"
+                    (input)="buildTitle.set($any($event.target).value)"
+                    (blur)="commitBuildTitle()"
+                    (keydown.enter)="$any($event.target).blur()"
+                    aria-label="Meal title" />
+                  <label class="result-serves-label">serves</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    class="result-serves regi-field"
+                    [value]="buildServes()"
+                    (mousedown)="$event.stopPropagation()"
+                    (change)="commitBuildServes($any($event.target).value)"
+                    aria-label="Servings" />
+                  <select
+                    class="result-type regi-field"
+                    (mousedown)="$event.stopPropagation()"
+                    (change)="commitBuildType($any($event.target).value)"
+                    aria-label="Meal type">
+                    @for (t of mealTypeOptions; track t) {
+                      <option [value]="t" [selected]="t === buildType()">{{ t }}</option>
+                    }
+                  </select>
+                  <a class="result-goto" (mousedown)="$event.stopPropagation()" (click)="goToMeals()">Go to Meals</a>
+                  <button
+                    type="button"
+                    class="icon-disc icon-disc-danger result-discard"
+                    (mousedown)="$event.stopPropagation()"
+                    (click)="discardBuildMeal()"
+                    matTooltip="Discard this meal"
+                    matTooltipPosition="above">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    class="dialog-disc dialog-disc-cancel result-close"
+                    (mousedown)="$event.stopPropagation()"
+                    (click)="closeBuildResult()"
+                    matTooltip="Close"
+                    matTooltipPosition="above">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+                <div class="result-pdf">
+                  @if (res.pdfUrl) {
+                    @defer (on immediate) {
+                      <app-recipe-pdf-viewer [src]="res.pdfUrl" />
+                    } @placeholder {
+                      <div class="result-pdf-msg">Loading preview…</div>
+                    }
+                  } @else {
+                    <div class="result-pdf-msg">The meal PDF isn’t ready yet.</div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
           @if (addTo() === 'right') {
             <!-- Edit MyFoods overlay — pops over the panel (consistent with the
                  Meals-area edit). Backdrop click or the Red X disc closes it,
-                 revealing Focus Foods again. position:fixed lifts it out of the
+                 revealing Build-a-Meal again. position:fixed lifts it out of the
                  pane flow to cover the whole panel. -->
             <div class="edit-overlay">
               <div class="edit-overlay-panel">
@@ -924,11 +1051,9 @@ export class FoodsPanelComponent {
       },
       error: () => this.availableLists.set([]),
     });
-    // DISABLED — "This Week" picks/baskets feature turned off (no reads/writes,
-    // no warnings, no live paths). Re-enable by uncommenting this line + the
-    // rehydratePicksEffect + persistThisWeek effect + the early-returns in
-    // savePicks / addFoodToBasket.
-    // void this.hydratePicksFromServer();
+    // Build-a-Meal baskets: hydrate the user's saved picks (currentPicks) into the
+    // four baskets on load; write-through on every mutation happens via persistBuildMealBaskets.
+    void this.hydratePicksFromServer();
     // One-shot purge of the pre-server-persistence localStorage cache so
     // users upgrading from the localStorage era don't have a parallel set
     // of picks lingering on disk.
@@ -964,14 +1089,14 @@ export class FoodsPanelComponent {
         await new Promise<void>(r => setTimeout(r, 100));
         allowed = this.serverMyFoods();
       }
-      // Shared hydration (also used by the menus food-lookaside): map picks to
-      // per-basket Food objects. `dropped` = picks whose food is no longer in
+      // Map the persisted picks (currentPicks) to per-basket Food objects. `dropped`
+      // = picks whose food is no longer in
       // the allowed set (stale, un-favorited).
       const { baskets, kept, dropped } = hydratePicks(picks, allowed);
       for (const p of dropped) {
         console.warn('[FoodsPanel] dropping stale pick — food no longer in MyFoods', p);
       }
-      this.thisWeekBaskets.set(baskets);
+      this.buildMealBaskets.set(baskets);
       // Save-back guard. Only push the cleaned list when at least one pick
       // matched. "Had picks but matched zero" is the partial-load signature
       // — saving in that case would silently destroy server-side data.
@@ -1010,7 +1135,7 @@ export class FoodsPanelComponent {
    *  basket-local override; null = no override (follow MyFoods baseline). */
   private picksFromBaskets(): CurrentPick[] {
     const out: CurrentPick[] = [];
-    const baskets = this.thisWeekBaskets();
+    const baskets = this.buildMealBaskets();
     const now = new Date().toISOString();
     for (const k of BASKET_KEYS) {
       for (const f of baskets[k]) {
@@ -1035,15 +1160,13 @@ export class FoodsPanelComponent {
    *  Policy: see CLAUDE.md > Optimizations — no client-side caching or
    *  request coalescing in new code. */
   private async savePicks(): Promise<void> {
-    // DISABLED — "This Week" picks feature off: never write currentPicks. Body
-    // preserved below for easy re-enable.
-    // if (!this.hydrationSucceeded()) return;
-    // try {
-    //   await this.settingsService.saveCurrentPicks(this.picksFromBaskets());
-    // } catch (err) {
-    //   console.error('[FoodsPanel] failed to save currentPicks', err);
-    //   this.notificationService.show('Server unavailable. Try again later.', 'error', 4000);
-    // }
+    if (!this.hydrationSucceeded()) return;
+    try {
+      await this.settingsService.saveCurrentPicks(this.picksFromBaskets());
+    } catch (err) {
+      console.error('[FoodsPanel] failed to save currentPicks', err);
+      this.notificationService.show('Server unavailable. Try again later.', 'error', 4000);
+    }
   }
 
   private async refreshServerMyFoods(): Promise<void> {
@@ -1070,6 +1193,7 @@ export class FoodsPanelComponent {
   protected foodsService = inject(FoodsService);
   private langfusePromptService = inject(LangfusePromptService);
   private settingsService = inject(SettingsService);
+  private rotation = inject(RotationService);
   private dialog = inject(MatDialog);
 
   // Spin carousel state
@@ -1152,7 +1276,7 @@ export class FoodsPanelComponent {
    *  Edit mode so the user isn't squinting at a list filtered by a query
    *  they left in there from the last session.  */
   /** Open the Edit MyFoods library overlay (its own header icon). The overlay is
-   *  a position:fixed popover hosted inside the Focus Foods right pane, so ensure
+   *  a position:fixed popover hosted inside the Build-a-Meal right pane, so ensure
    *  that pane is rendered (focusEditOpen) before showing it. */
   openEditOverlay(): void {
     this.pickerSearchQuery.set('');
@@ -1205,7 +1329,7 @@ export class FoodsPanelComponent {
   addTo = signal<'left' | 'right'>('left');
   myFoodsLocal = signal<Food[]>(this.loadLocal(LS_MYFOODS));
 
-  // Four-basket This Week store (Proteins/Fats/Carbs/Other). Server-backed
+  // Four-basket Build-a-Meal store (Proteins/Fats/Carbs/Other). Server-backed
   // via UserSettings.CurrentPicks — starts empty, hydrated by
   // hydratePicksFromServer() in the constructor once allowed-foods finish
   // loading. Each mutation triggers the debounced save effect below.
@@ -1220,10 +1344,10 @@ export class FoodsPanelComponent {
   // SettingsService.allSettings() keeps it cheap; user may see a sub-100ms
   // empty-basket flash before re-population.
   readonly basketKeys = BASKET_KEYS;
-  thisWeekBaskets = signal<ThisWeekBaskets>(emptyBaskets());
+  buildMealBaskets = signal<BuildMealBaskets>(emptyBaskets());
 
   /** Only flips to true on a CONFIRMED-SUCCESSFUL hydration GET. Gates every
-   *  write path — `persistThisWeek` effect bails when this is false, so a
+   *  write path — `persistBuildMealBaskets` effect bails when this is false, so a
    *  failed hydration cannot trigger a save of empty baskets that would
    *  overwrite the user's good server-side state. This is a data-integrity
    *  guard, not an optimization; do not remove without replacing.
@@ -1231,8 +1355,8 @@ export class FoodsPanelComponent {
   private hydrationSucceeded = signal<boolean>(false);
 
   // Convenience: total foods across all four baskets.
-  thisWeekTotal = computed<number>(() => {
-    const b = this.thisWeekBaskets();
+  buildMealTotal = computed<number>(() => {
+    const b = this.buildMealBaskets();
     return b.Proteins.length + b.Fats.length + b.Carbs.length + b.Other.length;
   });
 
@@ -1247,7 +1371,7 @@ export class FoodsPanelComponent {
   // Which basket (if any) is in "expanded" focus mode. When set, that basket
   // takes the full basket-grid area; the others collapse out of view. Green
   // traffic-light sets it; yellow restores to null (all four visible 2 × 2).
-  focusedBasket = signal<BasketKey | null>(null);
+  expandedBasket = signal<BasketKey | null>(null);
 
   // Health Benefits overlay is shown only when the active filter is a category
   // where macro-grade health claims are meaningful: Proteins, Fats, Dairy,
@@ -1476,20 +1600,137 @@ export class FoodsPanelComponent {
   leftPaneWidthFraction = signal(0.5);
   rightPaneFlex = computed(() => 1 - this.leftPaneWidthFraction());
 
-  /** Focus Foods edit mode. Default OFF: MyFoods fills the panel and the Focus
-   *  Foods pane + splitter are parked. The MyFoods-header pencil toggles it back
-   *  to the 50/50 split. See the FOCUS-FOODS marker in the template. */
+  /** RHS split open. The right pane hosts TWO modes, discriminated by `addTo`:
+   *   • Build-a-Meal (addTo='left') — the baskets workspace, picking active.
+   *   • Edit MyFoods (addTo='right') — the curate overlay covers the baskets.
+   *  Default OFF: MyFoods fills the panel and the split + splitter are parked. */
   readonly focusEditOpen = signal(false);
-  /** LHS flex: full width by default; the draggable split fraction while editing
-   *  (MyFoods stays on the left, the editor takes the RHS). */
+  /** Build-a-Meal workspace: the split is open AND no Edit overlay covers it. */
+  readonly buildMealOpen = computed(() => this.focusEditOpen() && this.addTo() === 'left');
+  /** Edit-MyFoods overlay is showing. */
+  readonly editOpen = computed(() => this.focusEditOpen() && this.addTo() === 'right');
+  /** LHS flex: full width when the split is parked; the draggable fraction while open. */
   readonly leftPaneFlex = computed(() =>
     this.focusEditOpen() ? this.leftPaneWidthFraction() : 1,
   );
 
-  /** Edit button toggle: open the editor split, or close it. */
+  /** Build-a-Meal toggle (MyFoods header): open the baskets workspace, or close it. */
+  toggleBuildMeal(): void {
+    if (this.buildMealOpen()) this.focusEditOpen.set(false);
+    else this.openBuildMeal();
+  }
+  /** Open the split showing the Build-a-Meal baskets (no Edit overlay). Switches away
+   *  from Edit mode if it was open. */
+  openBuildMeal(): void {
+    this.addTo.set('left');
+    this.focusEditOpen.set(true);
+  }
+
+  /** Edit button toggle: open the editor overlay, or close the split. */
   toggleEdit(): void {
-    if (this.focusEditOpen()) this.closeEditOverlay();
+    if (this.editOpen()) this.closeEditOverlay();
     else this.openEditOverlay();
+  }
+
+  // ---- Build-a-Meal: Create + result preview --------------------------------
+  /** Simple AI meal vs full recipe (the recipe path is deferred — inert for now). */
+  readonly buildMealKind = signal<'simple' | 'recipe'>('simple');
+  /** True while a meal is generated + its PDF rendered. */
+  readonly buildBusy = signal(false);
+  /** Can't build a meal without at least one protein pick. */
+  readonly canBuildMeal = computed(() => this.buildMealBaskets().Proteins.length > 0);
+  /** The generated meal being previewed, or null. The result region renders when set. */
+  readonly buildResult = signal<{ mealId: number; pdfUrl: string } | null>(null);
+  /** Editable result-bar fields (persisted back to the meal). */
+  readonly buildTitle = signal('');
+  readonly buildServes = signal(1);
+  readonly buildType = signal<string>('Meal');
+  readonly mealTypeOptions = this.rotation.mealTypeOptions;
+  /** Result region height as a fraction of the workspace (0.34 = bottom third;
+   *  grown occludes the baskets up to the controls row). */
+  readonly resultHeightFrac = signal(0.34);
+  readonly resultGrown = computed(() => this.resultHeightFrac() > 0.6);
+
+  /** Create a meal from the current picks (Simple path only for now): generate, render
+   *  the PDF, and open the result region. The server reads the picks from currentPicks. */
+  async createBuildMeal(): Promise<void> {
+    if (this.buildBusy() || !this.canBuildMeal() || this.buildMealKind() === 'recipe') return;
+    this.buildBusy.set(true);
+    try {
+      const meal: Meal = await this.rotation.buildMealFromPicks();
+      const pdfUrl = await this.rotation.printMealPdf(meal.id);
+      this.buildTitle.set(meal.name ?? '');
+      this.buildServes.set(meal.servings ?? 1);
+      this.buildType.set(meal.mealType || 'Meal');
+      this.resultHeightFrac.set(0.34);
+      this.buildResult.set({ mealId: meal.id, pdfUrl });
+    } catch {
+      this.notificationService.show('Could not build a meal from your picks. Please try again.', 'error');
+    } finally {
+      this.buildBusy.set(false);
+    }
+  }
+
+  /** Persist a result-bar edit (title / serves / type), then re-render the PDF. */
+  private async applyResultEdit(patch: UpdateMealRequest): Promise<void> {
+    const res = this.buildResult();
+    if (!res) return;
+    const saved = await this.rotation.updateMealFields(res.mealId, patch);
+    if (!saved) return;
+    const pdfUrl = await this.rotation.printMealPdf(res.mealId);
+    this.buildResult.set({ mealId: res.mealId, pdfUrl });
+  }
+  commitBuildTitle(): void {
+    const name = this.buildTitle().trim();
+    if (name) void this.applyResultEdit({ name });
+  }
+  commitBuildServes(value: string): void {
+    const n = Math.max(1, Math.min(100, Math.round(Number(value) || 1)));
+    this.buildServes.set(n);
+    void this.applyResultEdit({ servings: n });
+  }
+  commitBuildType(value: string): void {
+    this.buildType.set(value);
+    void this.applyResultEdit({ mealType: value as MealType });
+  }
+
+  /** Grow the result region to (near) full, or restore it to the bottom third. */
+  toggleResultGrown(): void {
+    this.resultHeightFrac.set(this.resultGrown() ? 0.34 : 1);
+  }
+  /** Drag the result region's top edge to resize it (dragging up grows it). */
+  onResultSplitterDown(e: MouseEvent): void {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startFrac = this.resultHeightFrac();
+    const workspace = (e.target as HTMLElement).closest('.buildmeal-workspace') as HTMLElement | null;
+    const h = workspace?.clientHeight ?? 1;
+    const onMove = (ev: MouseEvent) => {
+      const deltaFrac = (startY - ev.clientY) / h; // drag UP → larger
+      this.resultHeightFrac.set(Math.max(0.2, Math.min(1, startFrac + deltaFrac)));
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+  /** Close the result region — the meal is KEPT (reachable via "Go to Meals"). */
+  closeBuildResult(): void {
+    this.buildResult.set(null);
+  }
+  /** Discard the generated meal entirely ("don't like it" → DELETE). */
+  async discardBuildMeal(): Promise<void> {
+    const res = this.buildResult();
+    if (!res) return;
+    if (await this.rotation.deleteMeal(res.mealId)) this.buildResult.set(null);
+  }
+  /** Jump to the Notebook with the Meals tab showing the freshly-built meal (it was
+   *  pinned into the Binder, which auto-sorts newest-first when a meal arrives). */
+  goToMeals(): void {
+    this.tabService.openPanel('menus', 'Menus & Meals');
+    this.rotation.openBinderTab('meals');
   }
   private splitterStartX = 0;
   private splitterStartFraction = 0;
@@ -1519,21 +1760,17 @@ export class FoodsPanelComponent {
   /** Write-through to the server on every basket mutation. The
    *  hydrationSucceeded gate prevents the initial empty-baskets state
    *  (before the GET resolves) from being PUT back as authoritative. */
-  // DISABLED — "This Week" picks/baskets feature turned off. These effects used to
-  // write picks to the server on every basket mutation and re-hydrate them on
-  // load; both are dead now (no DB reads/writes, no live paths). Re-enable with
-  // the hydration call + savePicks / addFoodToBasket early-returns.
-  // private persistThisWeek = effect(() => {
-  //   this.thisWeekBaskets(); // read for dependency tracking
-  //   if (!this.hydrationSucceeded()) return;
-  //   void this.savePicks();
-  // });
-  // private rehydratePicksEffect = effect(() => {
-  //   const ready = this.serverMyFoods().length > 0;
-  //   if (ready && !this.hydrationSucceeded()) {
-  //     void this.hydratePicksFromServer();
-  //   }
-  // }, { allowSignalWrites: true });
+  private persistBuildMealBaskets = effect(() => {
+    this.buildMealBaskets(); // read for dependency tracking
+    if (!this.hydrationSucceeded()) return;
+    void this.savePicks();
+  });
+  private rehydratePicksEffect = effect(() => {
+    const ready = this.serverMyFoods().length > 0;
+    if (ready && !this.hydrationSucceeded()) {
+      void this.hydratePicksFromServer();
+    }
+  }, { allowSignalWrites: true });
 
   // ----- image-carousel: SpinnerItem mapping + outputs -----
 
@@ -1617,7 +1854,7 @@ export class FoodsPanelComponent {
    *  its basket is a silent no-op (addFoodToBasket dedupes by id), so a
    *  trailing double-click won't add the same food twice.
    *
-   *  While the Edit overlay is open the Focus Foods baskets are hidden, so a
+   *  While the Edit overlay is open the Build-a-Meal baskets are hidden, so a
    *  carousel click is view/select-only: it must NOT flip out of edit and must
    *  NOT silently drop the food into a covered basket. The user picks foods
    *  only from the default (non-edit) view. */
@@ -1649,10 +1886,8 @@ export class FoodsPanelComponent {
       this.myFoodTileClickTimer = null;
       const wasSelected = this.selectedFood()?.id === food.id;
       this.selectedFood.set(wasSelected ? null : food);
-      if (wasSelected) return; // 2nd click on the same tile = deselect only
-      if (this.addTo() === 'right') return;
-      const basket = this.basketForFood(food);
-      this.addFoodToBasket(food, basket);
+      // Single-click only SELECTS (yellow halo). Picking a food into a basket is a
+      // DOUBLE-click while the Build-a-Meal workspace is open — see onTileDblClick.
     }, 220);
   }
 
@@ -1672,7 +1907,13 @@ export class FoodsPanelComponent {
    *  units to SCALE the values (the other facts stay read-only), saved as the
    *  food's baseline in MyFoods. Same editor the pencil + RHS list use. */
   onTileDblClick(food: Food): void {
-    this.openNfPopupForFood(food, 'edit', 'myfoods');
+    // In the Build-a-Meal workspace a double-click PICKS the food into its basket;
+    // otherwise it opens the Nutrition Facts editor (serving/units scaling).
+    if (this.buildMealOpen()) {
+      this.addFoodToBasket(food, this.basketForFood(food));
+    } else {
+      this.openNfPopupForFood(food, 'edit', 'myfoods');
+    }
   }
 
   /** Double-click on a row in the Edit MyFoods accordion → open the NF
@@ -2139,10 +2380,10 @@ export class FoodsPanelComponent {
    *  edited. Walks all four baskets so the food gets updated wherever it
    *  lives (currently the UI only allows a food in one basket at a time,
    *  but the helper is defensive). The basket-signal write triggers the
-   *  debounced server PUT via persistThisWeek. */
+   *  debounced server PUT via persistBuildMealBaskets. */
   private setPickServingSize(food: Food, override: number | null): void {
-    this.thisWeekBaskets.update(b => {
-      const next = { ...b } as ThisWeekBaskets;
+    this.buildMealBaskets.update(b => {
+      const next = { ...b } as BuildMealBaskets;
       for (const k of this.basketKeys) {
         next[k] = b[k].map(f =>
           f.id === food.id && (f.foodSource ?? 'food') === (food.foodSource ?? 'food')
@@ -2186,7 +2427,7 @@ export class FoodsPanelComponent {
    *  the four baskets. Retained for any future basket-aware logic, though
    *  the popup itself is view-only on the basket side now. */
   private isFoodFromBasketContext(food: Food): boolean {
-    const baskets = this.thisWeekBaskets();
+    const baskets = this.buildMealBaskets();
     for (const key of this.basketKeys) {
       if (baskets[key].some(f => f.id === food.id)) return true;
     }
@@ -2233,7 +2474,7 @@ export class FoodsPanelComponent {
   isSelectedInBasket(key: BasketKey): boolean {
     const sel = this.selectedBasketFood();
     if (!sel) return false;
-    return this.thisWeekBaskets()[key].some(
+    return this.buildMealBaskets()[key].some(
       f => f.id === sel.id && (f.foodSource ?? 'food') === (sel.foodSource ?? 'food'),
     );
   }
@@ -2271,10 +2512,7 @@ export class FoodsPanelComponent {
   }
 
   private addFoodToBasket(food: Food, key: BasketKey): void {
-    // DISABLED — "This Week" picks feature off: never populate a basket (this fed
-    // the currentPicks persistence). No-op so tile clicks / drops only select.
-    return;
-    const baskets = this.thisWeekBaskets();
+    const baskets = this.buildMealBaskets();
     const exists = baskets[key].some(f => f.id === food.id);
     if (exists) {
       // No-op (silent); user already picked this one for that basket.
@@ -2292,7 +2530,7 @@ export class FoodsPanelComponent {
     // Append (oldest first, newest last) — the basket-tiles flex layout uses
     // `wrap-reverse` so the first item lands bottom-left and the stack grows
     // upward as foods are added.
-    this.thisWeekBaskets.update(b => ({
+    this.buildMealBaskets.update(b => ({
       ...b,
       [key]: [...b[key], stamped],
     }));
@@ -2331,20 +2569,20 @@ export class FoodsPanelComponent {
   }
 
   /** Empty all four Picks baskets at once. Drops the selection and resets to
-   *  empty baskets; the persistThisWeek effect saves the cleared state. */
-  clearAllPicks(): void {
+   *  empty baskets; the persistBuildMealBaskets effect saves the cleared state. */
+  clearAllBaskets(): void {
     this.selectedBasketFood.set(null);
-    this.thisWeekBaskets.set(emptyBaskets());
+    this.buildMealBaskets.set(emptyBaskets());
   }
 
   clearBasket(key: BasketKey): void {
     // Drop the selection if the selected food is about to disappear
     // along with the rest of this basket's contents.
     const selected = this.selectedBasketFood();
-    if (selected && this.thisWeekBaskets()[key].some(f => f.id === selected.id)) {
+    if (selected && this.buildMealBaskets()[key].some(f => f.id === selected.id)) {
       this.selectedBasketFood.set(null);
     }
-    this.thisWeekBaskets.update(b => ({ ...b, [key]: [] }));
+    this.buildMealBaskets.update(b => ({ ...b, [key]: [] }));
   }
 
   removeFoodFromBasket(key: BasketKey, foodId: number): void {
@@ -2353,7 +2591,7 @@ export class FoodsPanelComponent {
     if (this.selectedBasketFood()?.id === foodId) {
       this.selectedBasketFood.set(null);
     }
-    this.thisWeekBaskets.update(b => ({
+    this.buildMealBaskets.update(b => ({
       ...b,
       [key]: b[key].filter(f => f.id !== foodId),
     }));

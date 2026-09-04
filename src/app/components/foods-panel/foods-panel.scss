@@ -1390,7 +1390,7 @@
 // ---- Focus mode ----
 // When any basket is .focused, the grid collapses to a single cell — the
 // focused basket fills it, the rest are hidden. Returns to 2 × 2 the moment
-// focusedBasket is set back to null.
+// expandedBasket is set back to null.
 .basket-grid:has(.basket.focused) {
   grid-template-columns: 1fr;
   grid-template-rows: 1fr;
@@ -2453,4 +2453,135 @@
       font-size: 16px;
     }
   }
+}
+
+// ---- Build-a-Meal: Create controls + result region -------------------------
+.buildmeal-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 8px 6px;
+  padding: 6px 10px;
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+}
+.bm-radio-group {
+  display: inline-flex;
+  gap: 6px;
+}
+.bm-create-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #4a6fa5 0%, #3a5680 100%);
+  border: 1px solid #2a3f5f;
+  border-top-color: #6b8fc0;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: filter 0.12s ease, transform 0.05s ease;
+
+  &:hover:not(:disabled) { filter: brightness(1.1); }
+  &:active:not(:disabled) { transform: translateY(1px); }
+  &:disabled { opacity: 0.45; cursor: default; }
+
+  .bm-create-star { width: 18px; height: 18px; display: block; }
+  .bm-spin {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    animation: bm-spin 0.9s linear infinite;
+  }
+}
+@keyframes bm-spin { to { transform: rotate(360deg); } }
+
+.buildmeal-workspace {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.buildmeal-result {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #2f2f2f;
+  border-top: 1px solid #555;
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.result-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: #3a3a3a;
+  border-bottom: 1px solid #1a1a1a;
+  cursor: ns-resize; // the bar doubles as the drag handle
+  user-select: none;
+
+  .regi-field { height: 26px; }
+  .result-title { flex: 1; min-width: 60px; cursor: text; }
+  .result-serves-label { flex: 0 0 auto; font-size: 12px; color: #bbb; }
+  .result-serves { flex: 0 0 52px; width: 52px; text-align: center; }
+  .result-type { flex: 0 0 auto; cursor: pointer; }
+}
+.result-grow {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-radius: 5px;
+  cursor: pointer;
+
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; }
+  &:hover { filter: brightness(1.1); }
+}
+.result-goto {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: #4da6ff;
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: nowrap;
+  &:hover { color: #6bb6ff; }
+}
+.result-pdf {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: #1e1e1e;
+
+  app-recipe-pdf-viewer { display: block; height: 100%; }
+}
+.result-pdf-msg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
 }
