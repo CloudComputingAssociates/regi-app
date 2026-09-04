@@ -286,13 +286,14 @@
   transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
 
   .notebook-icon {
-    width: 24px;
-    height: 24px;
+    // Slightly bigger than before so the (padded) glyph fills more of the 30px key.
+    width: 26px;
+    height: 26px;
     display: block;
     object-fit: contain;
-    // Artwork is black on transparent; invert so it shows as light (~#f0f0f0) on the
-    // dark button. brightness(0) normalizes to pure black first, then invert → white.
-    filter: brightness(0) invert(0.94);
+    // Artwork is black on transparent. brightness(0) → pure black, invert(1) → pure
+    // WHITE on the dark button. Stroke weight comes from the PNG itself.
+    filter: brightness(0) invert(1);
   }
 
   &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
