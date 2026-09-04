@@ -8,6 +8,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { MealItem } from '../../models';
+import { roundUpTenth } from '../../models/food-display';
 
 @Component({
   selector: 'app-food',
@@ -22,7 +23,7 @@ import { MealItem } from '../../models';
            actions sit outside this split and reveal on hover. Same discs as the
            meal-card header. -->
       <span class="food-name">{{ item().food?.shortDescription?.trim() || item().foodName }}</span>
-      <span class="food-qty">{{ item().quantity }} {{ item().unit }}</span>
+      <span class="food-qty">{{ roundUpTenth(item().quantity) }} {{ item().unit }}</span>
       <!-- Actions suppressed on a read-only (clone/phantom) row — the food is a
            pointer to the origin meal; edits belong on the origin only. -->
       @if (!readonly()) {
@@ -56,6 +57,9 @@ import { MealItem } from '../../models';
   styleUrls: ['./food.scss'],
 })
 export class FoodComponent {
+  /** Display rounding for the item quantity (round UP to a tenth). */
+  protected readonly roundUpTenth = roundUpTenth;
+
   readonly item = input.required<MealItem>();
 
   /** True while this item's food is being fetched to open the serving popup —

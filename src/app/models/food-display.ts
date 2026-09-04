@@ -5,6 +5,19 @@
 import type { Food } from './food.model';
 
 /**
+ * Round a displayed quantity UP to one decimal place (nearest 0.1). Always ceils —
+ * even tiny amounts round up so a scaled-down ingredient never vanishes to 0
+ * (0.01 → 0.1, 0.46 → 0.5), and we never show a misleading second decimal
+ * (0.15 tbsp → 0.2 tbsp). Exact tenths are preserved: a small epsilon absorbs float
+ * noise so 0.3 stays 0.3 rather than ceiling to 0.4. Non-positive / non-finite
+ * inputs pass through untouched.
+ */
+export function roundUpTenth(qty: number): number {
+  if (!Number.isFinite(qty) || qty <= 0) return qty;
+  return Math.ceil(qty * 10 - 1e-6) / 10;
+}
+
+/**
  * Scale factor for the `<regi-nutrition-label>` component. Per-100g macros
  * are multiplied by this scale to land at displayed-serving values.
  *

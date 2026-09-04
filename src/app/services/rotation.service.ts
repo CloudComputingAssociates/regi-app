@@ -71,7 +71,14 @@ export class RotationService {
    *  Toggled from the splitter arrow; reopened via the splitter or the empty
    *  slot's "Drag from Binder" link. */
   readonly binderCollapsed = signal(true); // starts closed — open it when needed
-  toggleBinderCollapsed(): void { this.binderCollapsed.update((v) => !v); }
+  toggleBinderCollapsed(): void {
+    const opening = this.binderCollapsed();
+    this.binderCollapsed.set(!opening);
+    // Opening the Notebook via the top button OR the rail arrow ALWAYS lands on the
+    // meals tab — it never remembers that menus/shop was last focused. (The Shopping
+    // shortcut sets 'shopping' explicitly via openBinderTab, so it's unaffected.)
+    if (opening) this.requestedBinderTab.set('meals');
+  }
   showBinder(): void { this.binderCollapsed.set(false); }
   hideBinder(): void { this.binderCollapsed.set(true); }
 

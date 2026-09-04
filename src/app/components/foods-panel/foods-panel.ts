@@ -538,16 +538,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     (blur)="commitBuildTitle()"
                     (keydown.enter)="$any($event.target).blur()"
                     aria-label="Meal title" />
-                  <label class="result-serves-label">serves</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    class="result-serves regi-field"
-                    [value]="buildServes()"
-                    (mousedown)="$event.stopPropagation()"
-                    (change)="commitBuildServes($any($event.target).value)"
-                    aria-label="Servings" />
                   <select
                     class="result-type regi-field"
                     (mousedown)="$event.stopPropagation()"
@@ -557,6 +547,21 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                       <option [value]="t" [selected]="t === buildType()">{{ t }}</option>
                     }
                   </select>
+                  <label
+                    class="result-serves-label"
+                    matTooltip="Scale used in Shopping list and Recipe output (PDF)"
+                    matTooltipPosition="above">Serves</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    class="result-serves regi-field"
+                    [value]="buildServes()"
+                    (mousedown)="$event.stopPropagation()"
+                    (change)="commitBuildServes($any($event.target).value)"
+                    matTooltip="Scale used in Shopping list and Recipe output (PDF)"
+                    matTooltipPosition="above"
+                    aria-label="Servings scale" />
                   <a class="result-goto" (mousedown)="$event.stopPropagation()" (click)="goToMeals()">Go to Meals</a>
                   <button
                     type="button"

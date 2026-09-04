@@ -276,12 +276,13 @@
   flex: 0 0 auto;
   font-family: 'Calisto MT', Calisto, 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
   font-size: 18px;         // bigger
-  font-weight: 600;        // embolden
+  font-weight: 400;        // regular weight (not bold)
   color: #1a1a1a;
   white-space: nowrap;
-  // Left inset so the "S" sits ~above the "m" in "meals' groceries" below, and some
-  // breathing room after it.
-  padding: 0 12px 0 11px;
+  // Left inset tuned so the "S" lines up over the "m" in "meals' groceries" below
+  // (that banner's text sits at 14px = 2px box border + 12px padding; the strip
+  // already contributes 8px, so 6px here lands the title flush with it).
+  padding: 0 8px 0 6px;
 }
 
 // Print — raised-white sans key. Leads the RIGHT-justified cluster (Print · Scale/

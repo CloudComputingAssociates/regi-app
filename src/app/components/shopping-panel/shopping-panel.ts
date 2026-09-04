@@ -60,11 +60,13 @@ const CAT_RANK: Record<string, number> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel-container">
-      <!-- Quantity basis — either each recipe's own servings, OR an explicit
-           scale factor. The "-or-" makes the either/or unmistakable. -->
       <div class="shopping-top no-print">
-        <!-- Order: "Shopping List" title · Print · Scale/Servings · collapse-all. -->
+        <!-- Title flush left; Print + collapse-all cluster flush right. The old
+             Scale/Servings radio is gone — per-meal Serves now drives quantities. -->
         <span class="shopping-title">Shopping List</span>
+        @if (isSaving()) {
+          <span class="auto-save-indicator">saving...</span>
+        }
         <button
           type="button"
           class="shopping-print-btn"
@@ -73,40 +75,6 @@ const CAT_RANK: Record<string, number> = {
           (click)="print()">
           <mat-icon>print</mat-icon>
         </button>
-        <div class="scale-radio">
-          <label
-            class="scale-opt"
-            [matTooltip]="'Always scale to ' + scaleValue()"
-            matTooltipPosition="below">
-            <input
-              type="radio"
-              name="scaleMode"
-              [checked]="scaleMode() === 'custom'"
-              (change)="scaleMode.set('custom')" />
-            <span>Scale</span>
-            <input
-              type="number"
-              class="scale-input"
-              min="1"
-              [value]="scaleValue()"
-              (focus)="scaleMode.set('custom')"
-              (change)="onScaleInput($event)" />
-          </label>
-          <label
-            class="scale-opt"
-            matTooltip="Use Servings from recipe, and Scale value otherwise"
-            matTooltipPosition="below">
-            <input
-              type="radio"
-              name="scaleMode"
-              [checked]="scaleMode() === 'recipe'"
-              (change)="scaleMode.set('recipe')" />
-            <span>Servings</span>
-          </label>
-        </div>
-        @if (isSaving()) {
-          <span class="auto-save-indicator">saving...</span>
-        }
         <button
           type="button"
           class="shopping-collapse-all"
