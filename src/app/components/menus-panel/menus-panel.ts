@@ -140,7 +140,7 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
                   type="button"
                   class="shop-list-btn"
                   [class.active]="!rotation.binderCollapsed() && rotation.activeBinderTab() === 'shopping'"
-                  matTooltip="Shopping list. Opens '$ buy' tab in your Notebook"
+                  matTooltip="Shopping list. Opens 'shop' tab in your Notebook"
                   matTooltipPosition="above"
                   (click)="rotation.toggleBinderTab('shopping')">
                   <mat-icon class="shop-list-icon" aria-hidden="true">shopping_bag</mat-icon>
@@ -328,6 +328,16 @@ export class MenusPanelComponent implements OnInit {
   });
 
   constructor() {
+    // Closing the Notebook (any trigger — the splitter arrow, the toolbar key)
+    // FORGETS any dragged rail width, so the next open returns at the standard 30%
+    // rather than the last dragged size. Reset-to-default on every close.
+    effect(
+      () => {
+        if (this.rotation.binderCollapsed()) this.railBasisPx.set(null);
+      },
+      { allowSignalWrites: true },
+    );
+
     // Entering the food picker snaps the Menus & Meals rail back to its default
     // 25%, so that side is uniform after an edit and returns at 25% when the
     // picker closes. Re-drag the splitter to resize again.

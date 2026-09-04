@@ -466,6 +466,11 @@
     gap: 6px;
     margin: 2px 0 6px;
 
+    // Right-justify the four keys (+ · camera · notes · print) so Print lands
+    // directly under the upper-right delete trash. The auto margin on the first
+    // key absorbs the free space between the Type dropdown and the cluster.
+    .add-food-btn:first-of-type { margin-left: auto; }
+
     .back-type-label {
       flex: 0 0 auto;
       font-size: 14px;      // same size as the "Meal" label

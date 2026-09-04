@@ -41,7 +41,7 @@ import { RotationService } from '../../services/rotation.service';
         </button>
       }
       <div class="cards" #scroller (scroll)="updateScrollState()">
-        @for (menu of sortedMenus(); track menu.menuId; let i = $index) {
+        @for (menu of orderedMenus(); track menu.menuId; let i = $index) {
           <div
             class="menu-card"
             [class.selected]="menu.menuId === selectedMenuId()"
@@ -235,33 +235,24 @@ export class MenuCardRowComponent {
     return !base || /^menu\s+\d+$/i.test(base);
   }
 
-  /** Display order: UNNAMED (default) menus FIRST — kept in their existing order so
-   *  they letter cleanly as Menu A / B / C — so it's obvious they need a name; then
-   *  the named menus, alphabetically. Purely cosmetic (letters are display-only);
-   *  selection / drag use menuId, so reordering is safe. */
-  /** The Day number of a menu named "Day N", else null. Drives NUMERIC ordering so
-   *  Day 1, Day 2, … Day 10 sort correctly (a plain string sort gives Day 1, 10, 2). */
-  private dayNumber(m: RotationMenuEntry): number | null {
-    const match = /^day\s+(\d+)$/i.exec((m.menuName?.trim() ?? '').replace(/(\s*\(copy\))+\s*$/i, '').trim());
-    return match ? Number(match[1]) : null;
-  }
+  /** Render order = the rotation's OWN menu order (insertion order). We deliberately
+   *  do NOT sort: reordering cards as menus are added/named makes them jump around and
+   *  disorients the user, so a newly added menu simply appends at the END. Selection /
+   *  drag use menuId, so order is purely positional. */
+  readonly orderedMenus = computed<RotationMenuEntry[]>(() => [...this.menus()]);
 
-  readonly sortedMenus = computed<RotationMenuEntry[]>(() =>
-    [...this.menus()].sort((a, b) => {
-      // Day-named menus lead, ordered NUMERICALLY (Day 1 … Day N).
-      const da = this.dayNumber(a);
-      const db = this.dayNumber(b);
-      if (da != null && db != null) return da - db;
-      if (da != null) return -1;
-      if (db != null) return 1;
-      // Then the rest: still-unnamed ("Menu N") first, custom names alphabetical.
-      const ua = this.isUnnamedMenu(a);
-      const ub = this.isUnnamedMenu(b);
-      if (ua !== ub) return ua ? -1 : 1;
-      if (ua && ub) return 0;
-      return (a.menuName ?? '').localeCompare(b.menuName ?? '', undefined, { sensitivity: 'base' });
-    }),
-  );
+  /** Day number for each DEFAULT (unnamed) menu, assigned in render order: the 1st
+   *  default card is "Day 1", the 2nd "Day 2", … Named menus are skipped and never
+   *  consume a Day number. Because order is stable and numbering follows appearance,
+   *  adding a menu shows the next "Day n" at the end and never renumbers existing cards. */
+  readonly dayNumbers = computed<Map<number, number>>(() => {
+    const map = new Map<number, number>();
+    let day = 0;
+    for (const m of this.orderedMenus()) {
+      if (this.isUnnamedMenu(m)) map.set(m.menuId, ++day);
+    }
+    return map;
+  });
 
   /** Baseline menu ids, seeded on the first non-empty load. Null until seeded so
    *  the initial set keeps the default-open state; menus added AFTER start
@@ -296,7 +287,7 @@ export class MenuCardRowComponent {
     // settle before we read scrollWidth/clientWidth.
     afterNextRender(() => this.updateScrollState());
     effect(() => {
-      this.sortedMenus(); // re-run when the card set changes
+      this.orderedMenus(); // re-run when the card set changes
       requestAnimationFrame(() => this.updateScrollState());
     });
   }
@@ -463,9 +454,10 @@ export class MenuCardRowComponent {
       // that noise (the amber badge marks a copy, not the name).
       return base;
     }
-    // Default menus show "Day 1" / "Day 2" … by position (the server's "Menu N"
-    // seed is treated as unnamed; the box shows the friendly Day label instead).
-    return `Day ${index + 1}`;
+    // Default menus show "Day 1" / "Day 2" … numbered by their order among the OTHER
+    // default menus (named menus don't consume a Day number), so the label stays put as
+    // menus are added and never depends on the card's absolute position.
+    return `Day ${this.dayNumbers().get(menu.menuId) ?? index + 1}`;
   }
 
   /** Display label by position: 0→A, 1→B, … Menus are lettered (Menu A/B/C);

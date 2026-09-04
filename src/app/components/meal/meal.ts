@@ -14,6 +14,7 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   input,
   output,
@@ -47,6 +48,9 @@ interface Macro {
   selector: 'app-meal',
   imports: [MatTooltipModule, MatIconModule, FoodComponent, DragDropModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Clicking a card that's clipped at the top/bottom of the meals canvas pulls it
+  // fully into view — no hunting for the scrollbar. See onCardClick.
+  host: { '(click)': 'onCardClick()' },
   template: `
     <div
       class="slot-card"
@@ -192,9 +196,9 @@ interface Macro {
                       }
                     </select>
                   </div>
-                  <!-- Four keys immediately RIGHT of the dropdown, left-clustered:
-                       + · Camera · Notes · Print. (Delete lives alone upper-right.)
-                       Camera opens the 3-way image bloom. -->
+                  <!-- Four keys RIGHT-JUSTIFIED to the row's right edge (+ · Camera ·
+                       Notes · Print), so Print lands directly under the upper-right
+                       delete trash. Camera opens the 3-way image bloom. -->
                   <button
                     type="button"
                     class="add-food-btn"
@@ -314,6 +318,16 @@ export class MealComponent {
   private readonly tabs = inject(TabService);
   private readonly role = inject(RoleService);
   private readonly dialog = inject(MatDialog);
+  private readonly host = inject(ElementRef<HTMLElement>);
+
+  /** Click anywhere on a meal card that's partially clipped by the meals canvas
+   *  (only its top tip peeking above/below the fold) → smooth-scroll it fully into
+   *  view so the user can act on it without finding the scrollbar. `block:'nearest'`
+   *  makes this a NO-OP when the card is already fully visible, so a normal click on
+   *  a visible card never moves the canvas. */
+  onCardClick(): void {
+    this.host.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+  }
 
   /** Camera key → the 3-way image-source bloom (upload · phone · AI). */
   openImageSource(fm: MenuSlotMeal): void {
