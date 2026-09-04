@@ -17,14 +17,14 @@
   min-height: 0;
   display: grid;
   // Responsive WIDTH, capped at 3 COLUMNS (never 4 across): each column's min width
-  // is the larger of 280px and a third of the row, so at most three fit — a 4th tile
-  // wraps to the next row. 280px is the meal DETAIL card's READABLE FLOOR — the width
-  // at which the Type dropdown, the "from recipe" caption, and the ingredient amounts
-  // still fit. Below it the card clipped; instead of shrinking further we DROP a column
-  // and reflow to the next row (e.g. when the Notebook opens and claims width). The
-  // floor is deliberately just under the closed-panel 3-column width, so it does NOT
-  // engage while the Notebook is closed (those columns are already wider).
-  grid-template-columns: repeat(auto-fit, minmax(max(280px, calc((100% - 20px) / 3)), 1fr));
+  // is the larger of 320px and a third of the row, so at most three fit — a 4th tile
+  // wraps to the next row. 320px is the meal DETAIL card's READABLE FLOOR (measured
+  // from the known-good card: the Type dropdown reads "Meal", the "from recipe" caption
+  // and ingredient amounts all fit). A card is NEVER allowed narrower than this — once
+  // the row can't hold N columns at 320px each, the grid DROPS a column and reflows to
+  // the next row (e.g. when the Notebook opens and claims width) rather than shrinking
+  // any card below legibility.
+  grid-template-columns: repeat(auto-fit, minmax(max(320px, calc((100% - 20px) / 3)), 1fr));
   // FIXED, EQUAL row height so EVERY tile is the same size — an empty slot and a
   // slot with a photo are identical, and dragging a meal in NEVER resizes the slot
   // (aspect-ratio + auto rows made a filled tile grow and the others ride up).
