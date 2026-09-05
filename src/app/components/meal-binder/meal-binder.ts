@@ -194,7 +194,7 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                   matTooltip="Add meals to your notebook"
                   matTooltipPosition="above"
                   (click)="createMeal.emit()">
-                  <mat-icon>add</mat-icon><span class="create-word">Add meals</span>
+                  <mat-icon>add</mat-icon><span class="create-word">Add meal</span>
                 </button>
                 <button type="button" class="create-toggle filter-toggle" [class.filter-on]="filterActive()" (click)="toggleFilterPanel()">
                   <span class="create-word">Filter{{ filterActive() ? ' on' : '' }}</span>

@@ -471,15 +471,14 @@
   // Sans-serif (matches the category titles) — the SERIF is reserved for the data
   // rows below. Children (.staple-* labels + NEED) inherit this.
   font-family: Roboto, 'Helvetica Neue', sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700; // bold; NEED (a child) inherits this too
   text-transform: uppercase;
   letter-spacing: 0.4px;
 
   .staple-item { flex: 2; }
-  // Match QTY/UNIT/ITEM exactly: they render at 12px (via .staple-* classes), so
-  // NEED needs 12px too (it was inheriting the header's 11px → looked smaller).
-  .col-need { font-size: 12px; font-weight: 700; }
+  // Match the data rows (now 14px) so NEED doesn't read smaller than QTY/UNIT/ITEM.
+  .col-need { font-size: 13px; font-weight: 700; }
 }
 
 // Category subheader inside the computed list — ALL CAPS.
@@ -814,14 +813,14 @@
 
 // Inline editable fields
 .staple-qty {
-  width: 40px;
+  width: 30px;
   flex-shrink: 0;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 3px;
   color: #ffffff;
-  font-size: 12px;
-  padding: 2px 4px;
+  font-size: 14px;
+  padding: 2px 3px;
   text-align: center;
   font-family: inherit;
   outline: none;
@@ -838,7 +837,8 @@
   border: 1px solid transparent;
   border-radius: 3px;
   color: #ffffff;
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.3;
   padding: 2px 6px;
   font-family: inherit;
   outline: none;
@@ -866,13 +866,13 @@
 
 // Unit field (reuses the persisted `store` slot) — short, right after qty.
 .staple-unit {
-  width: 56px;
+  width: 44px;
   flex-shrink: 0;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 3px;
   color: rgba(255, 255, 255, 0.75);
-  font-size: 12px;
+  font-size: 14px;
   padding: 2px 6px;
   font-family: inherit;
   outline: none;
@@ -1012,11 +1012,11 @@
 
   .staple-row {
     gap: 4px;
-    padding: 3px 8px;
+    padding: 3px 6px;
   }
 
   .staple-qty {
-    width: 32px;
+    width: 28px;
   }
 
   .toggle-slider .toggle-track {

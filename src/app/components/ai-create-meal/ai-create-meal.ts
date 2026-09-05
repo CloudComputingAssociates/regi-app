@@ -27,11 +27,14 @@ import { RecipeImportWatcher } from '../../services/recipe-import-watcher.servic
 import { NotificationService } from '../../services/notification.service';
 import { RotationService } from '../../services/rotation.service';
 import { TabService } from '../../services/tab.service';
+import { TetherService } from '../../services/tether.service';
 
 @Component({
   selector: 'app-ai-create-meal',
   imports: [MatTooltipModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // While the bloom is open, paste (Ctrl+V) an image of a recipe to import it.
+  host: { '(document:paste)': 'onPaste($event)' },
   template: `
     <!-- Backdrop over the board; click outside the bloom cancels. -->
     <div class="ai-create-backdrop" (click)="onCancel()">
@@ -50,12 +53,17 @@ import { TabService } from '../../services/tab.service';
         </div>
 
         <div class="bloom-title">
-          <mat-icon class="bloom-title-icon">restaurant</mat-icon>Add Meals
+          <mat-icon class="bloom-title-icon">restaurant</mat-icon>Add Meal
         </div>
 
         <!-- Primary path: build a meal from your My Foods with AI. This one goes to
              the Binder ONLY (unslotted) — the empty-slot link is the slotted path. -->
-        <button type="button" class="build-a-meal-cta" (click)="onBuildAMeal()">
+        <button
+          type="button"
+          class="build-a-meal-cta"
+          matTooltip="Pick from My Foods and let AI generate a meal and recipe"
+          matTooltipPosition="below"
+          (click)="onBuildAMeal()">
           <span class="option-num">1</span>
           <img src="/images/AI-star-blue.png" alt="" class="bam-inline-star" />Build-a-Meal
         </button>
@@ -66,10 +74,24 @@ import { TabService } from '../../services/tab.service';
         <div
           class="import-dropzone"
           [class.dragging]="dragOver()"
+          matTooltip="Browse your computer or paste a picture of a recipe or PDF file and have it import into a meal"
+          matTooltipPosition="below"
           (dragover)="onDragOver($event)"
           (dragleave)="onDragLeave($event)"
           (drop)="onDropFile($event)">
           <span class="option-num">2</span>
+          <!-- Phone-camera: snap a cookbook/paper recipe and import it. Enabled only
+               when a phone is live; the tooltip shows in both states. -->
+          <button
+            type="button"
+            class="dz-camera"
+            [class.disabled]="!tether.anyLive()"
+            matTooltip="Use phone to take a picture of recipe text from paper or cookbook"
+            matTooltipPosition="below"
+            (click)="onPhoneCapture()"
+            aria-label="Take a photo of a recipe with your phone">
+            <mat-icon>photo_camera</mat-icon>
+          </button>
           <span class="dz-title">Drag &amp; Drop a Recipe</span>
           <span class="dz-sub">
             PDF, JPEG or PNG — or
@@ -94,14 +116,14 @@ import { TabService } from '../../services/tab.service';
           <span class="option-num">3</span>
           <div class="meal-sets-head">
             <mat-icon class="meal-sets-icon">restaurant_menu</mat-icon>
-            <span class="meal-sets-title">Add MealSets from Marketplace</span>
+            <span class="meal-sets-title">Add Free or paid MealSets</span>
           </div>
           <a
             class="meal-sets-cta"
             [href]="marketplaceUrl()"
             target="_blank"
             rel="noopener">
-            <mat-icon>open_in_new</mat-icon>Browse MealSets
+            <mat-icon>open_in_new</mat-icon>Browse Marketplace
           </a>
         </div>
       </div>
@@ -116,6 +138,25 @@ export class AiCreateMealComponent {
   private auth = inject(AuthService);
   private rotation = inject(RotationService);
   private tabService = inject(TabService);
+  protected tether = inject(TetherService);
+
+  /** Phone-camera → recipe import: enqueue a capture on the user's live phone so they
+   *  can snap a paper/cookbook recipe. Guarded on a live phone; the phone app + API
+   *  route the 'recipe' capture into the recipe-import pipeline. */
+  async onPhoneCapture(): Promise<void> {
+    if (!this.tether.anyLive()) return;
+    try {
+      await this.tether.requestCapture({ kind: 'recipe', id: null, name: 'recipe' });
+      this.notification.show(
+        '📱 Sent to your phone — snap the recipe page and it will import into a meal.',
+        'info',
+        6000,
+      );
+      this.close.emit();
+    } catch {
+      this.notification.show('Could not reach your phone. Please try again.', 'error');
+    }
+  }
 
   /** Build-a-Meal from My Foods — close the bloom and jump to the Foods panel's
    *  Build-a-Meal workspace. No slot target → the created meal is pinned to the
@@ -172,6 +213,15 @@ export class AiCreateMealComponent {
     const file = input.files?.[0] ?? null;
     input.value = ''; // let the same file be re-picked after a failure
     if (this.beginImport(file)) this.close.emit();
+  }
+
+  /** Paste (Ctrl+V) an image of a recipe while the bloom is open → import it. */
+  onPaste(ev: ClipboardEvent): void {
+    const file = ev.clipboardData?.files?.[0] ?? null;
+    if (file && this.beginImport(file)) {
+      ev.preventDefault();
+      this.close.emit();
+    }
   }
 
   /** Validate + kick off the upload; returns true when an import actually began

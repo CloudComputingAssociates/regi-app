@@ -122,7 +122,8 @@
   text-align: center;
   transition: background 0.12s ease, box-shadow 0.12s ease;
 
-  .dz-title { font-size: 13px; font-weight: 600; color: #e8e8e8; }
+  // Unified option-title size (matches Build-a-Meal + Add MealSets — no ransom-note mix).
+  .dz-title { font-size: 15px; font-weight: 700; color: #e8e8e8; }
   .dz-sub { font-size: 11px; color: #9aa0a6; }
 
   .dz-link {
@@ -169,8 +170,9 @@
 }
 
 .meal-sets-head {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center; // center the icon + title (matches the centered button)
   gap: 8px;
 
   .meal-sets-icon {
@@ -208,9 +210,10 @@
 // Gold CTA button — gimmicky glow, opens meals.regimenu.com in a new tab.
 .meal-sets-cta {
   margin-top: 6px;
-  align-self: flex-start;
+  align-self: stretch;       // full width so the label centers on the button
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 8px 14px;
   border-radius: 8px;
@@ -246,6 +249,33 @@ button.meal-sets-cta {
 // Numbered step discs (1·2·3), straddling each option box's LEFT border ~1/8" down.
 // Page yellow, OPAQUE so the border doesn't show through; dark 800-weight number in the
 // same font as the Browse MealSets key.
+// Phone-camera key — left side of the import dropzone, vertically centered (in the space
+// under the "2" disc). Enabled only when a phone is live; when not, it dims but STILL
+// takes hover so the tooltip shows (no pointer-events:none).
+.dz-camera {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #4da6ff;
+  background: rgba(77, 166, 255, 0.12);
+  border: 1px solid rgba(77, 166, 255, 0.5);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease, opacity 0.12s ease;
+
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+  &:hover { background: rgba(77, 166, 255, 0.22); }
+  &.disabled { opacity: 0.4; cursor: default; }
+  &.disabled:hover { background: rgba(77, 166, 255, 0.12); }
+}
+
 .option-num {
   position: absolute;
   top: 10px;
