@@ -9,6 +9,16 @@
   z-index: 1000;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   
+  // Logged out: no macros bar / hamburger to bottom-anchor to, so DON'T lift the
+  // RegiMenu title 22px — center it vertically so it lines up with the Login button.
+  .app-bar-content.logged-out {
+    align-items: center;
+    .title-area {
+      align-self: center;
+      padding-bottom: 0;
+    }
+  }
+
   .app-bar-content {
     display: flex;
     // Left group (RegiMenu + macros) bottom-anchors so extra macro top-padding

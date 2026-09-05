@@ -22,7 +22,7 @@ import { map } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="app-bar">
-      <div class="app-bar-content">
+      <div class="app-bar-content" [class.logged-out]="!isAuthenticated()">
         @if (isAuthenticated()) {
           <button
             mat-icon-button
