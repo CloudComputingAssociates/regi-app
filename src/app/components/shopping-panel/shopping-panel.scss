@@ -838,8 +838,13 @@
   border-radius: 3px;
   color: #ffffff;
   font-size: 14px;
-  line-height: 1.3;
+  line-height: 1.2;
   padding: 2px 6px;
+  // One line only — clip prep overflow with an ellipsis (name is already trimmed to
+  // the food in itemName()).
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: inherit;
   outline: none;
 
@@ -1012,7 +1017,7 @@
 
   .staple-row {
     gap: 4px;
-    padding: 3px 6px;
+    padding: 2px 6px; // tighter interline → more items per view (rows are one line now)
   }
 
   .staple-qty {

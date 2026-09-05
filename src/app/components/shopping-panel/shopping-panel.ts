@@ -131,7 +131,7 @@ const CAT_RANK: Record<string, number> = {
                       <span class="pdf-check" aria-hidden="true"></span>
                       <span class="staple-qty">{{ item.quantity }}</span>
                       <span class="staple-unit">{{ item.unit }}</span>
-                      <span class="staple-item">{{ item.name }}</span>
+                      <span class="staple-item">{{ itemName(item.name) }}</span>
                       <label class="toggle-slider no-print" [class.on]="isNeeded(item.key)">
                         <input type="checkbox"
                           [checked]="isNeeded(item.key)"
@@ -314,6 +314,17 @@ export class ShoppingPanelComponent {
     this.scaleTouched = true; // manual override — stop following the People setting
     this.scaleValue.set(n);
     this.scaleMode.set('custom');
+  }
+
+  /** Shopping-list display name: the food ITSELF, not the prep. The server's item name
+   *  carries the AI's full ingredient line ("red bell pepper, cored, seeded, and cut
+   *  into 1-inch strips"); a shopping list only needs "red bell pepper", so drop
+   *  everything from the first comma. CSS clips any remainder to one line. (A cleaner
+   *  fix — the resolved food's shortDescription — would be server-side.) */
+  itemName(name: string): string {
+    const s = (name ?? '').trim();
+    const comma = s.indexOf(',');
+    return comma > 0 ? s.slice(0, comma).trim() : s;
   }
 
   // Refetch whenever the rotation or the basis/factor changes. Server is the
