@@ -346,3 +346,27 @@
     font-size: 13px;
   }
 }
+
+// Seeded suggestion chips (Help greeting) — blue-accented pills under the greeting,
+// aligned under the assistant message content.
+.seed-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 2px 0 10px 44px;
+}
+.seed-chip {
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4da6ff;
+  background: rgba(77, 166, 255, 0.1);
+  border: 1px solid rgba(77, 166, 255, 0.5);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.05s ease;
+
+  &:hover { background: rgba(77, 166, 255, 0.2); }
+  &:active { transform: translateY(1px); }
+}
