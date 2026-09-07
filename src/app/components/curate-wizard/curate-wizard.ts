@@ -165,7 +165,8 @@ export class CurateWizardComponent {
       const resp = await firstValueFrom(this.foods.searchYehApprovedFoods(500));
       const all = resp?.foods ?? [];
       const fresh = all
-        .filter((f) => f['foodSource'] !== 'userfood' && !this.prefs.isAllowed(f.id))
+        // Full RegiApproved root set — curated userfoods included (no foodSource filter).
+        .filter((f) => !this.prefs.isAllowed(f.id))
         .sort((a, b) => (a.categoryName || 'zzz').localeCompare(b.categoryName || 'zzz'));
       this.deck.set(fresh);
     } catch {
@@ -190,7 +191,9 @@ export class CurateWizardComponent {
     const food = this.current();
     if (!food) return;
     if (yes && !this.prefs.isAllowed(food.id)) {
-      this.prefs.toggleFavoriteLocal(food.id);
+      // id as-is (negated for curated userfoods) + explicit source, per the foods-list
+      // convention — the write path keys on (foodId, foodSource).
+      this.prefs.toggleFavoriteLocal(food.id, food['foodSource'] as string | undefined);
       this.addedCount.update((n) => n + 1);
       this.touched = true;
     }

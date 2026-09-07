@@ -1,6 +1,7 @@
 // src/app/components/foods-panel/foods-panel.ts
 import { Component, ChangeDetectionStrategy, signal, computed, inject, viewChild, effect, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,6 +17,7 @@ import { CurateWizardComponent } from '../curate-wizard/curate-wizard';
 import { AddFoodPanelComponent } from '../add-food-panel/add-food-panel';
 import { RecipePdfViewerComponent } from '../recipe-pdf-viewer/recipe-pdf-viewer';
 import { RotationService } from '../../services/rotation.service';
+import { RoleService } from '../../services/role.service';
 import { Meal, MealType, UpdateMealRequest } from '../../models';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
@@ -910,6 +912,17 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     <span class="nf-popup-unit-busy">figuring grams…</span>
                   }
                 </div>
+                @if (showRegiApprovedToggle()) {
+                  <!-- Admin-only: mark this OWNED MyFoods userfood as RegiApproved.
+                       Optimistic PATCH /userfoods/{id}; reverts + toasts on failure. -->
+                  <label class="nf-popup-edit-row nf-regiapproved">
+                    <input
+                      type="checkbox"
+                      [checked]="nfPopupRegiApproved()"
+                      (change)="onRegiApprovedToggle($any($event.target).checked)" />
+                    <span class="nf-popup-cat-label">RegiApproved</span>
+                  </label>
+                }
               }
               <regi-nutrition-label
                 [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
@@ -1191,6 +1204,7 @@ export class FoodsPanelComponent {
   private langfusePromptService = inject(LangfusePromptService);
   private settingsService = inject(SettingsService);
   private rotation = inject(RotationService);
+  protected role = inject(RoleService);
   private dialog = inject(MatDialog);
 
   // Spin carousel state
@@ -1963,6 +1977,16 @@ export class FoodsPanelComponent {
    *  override and (when the draft differs from the baseline) prompts whether
    *  to also update the MyFoods default. */
   nfPopupOrigin = signal<'myfoods' | 'picks' | null>(null);
+  /** RegiApproved toggle state for the open popup (admin-only, owned MyFoods userfoods). */
+  readonly nfPopupRegiApproved = signal<boolean>(false);
+  /** The RegiApproved checkbox renders ONLY for an Admin editing an OWNED MyFoods
+   *  userfood (myfoods origin ⇒ positive id, owned by construction). Curated/negated
+   *  rows never qualify — demote is an admin-tool function by design. */
+  readonly showRegiApprovedToggle = computed(() =>
+    this.role.hasRole('Admin') &&
+    this.nfPopupFood()?.foodSource === 'userfood' &&
+    this.nfPopupOrigin() === 'myfoods',
+  );
 
   /** Open the NF popup for a food and prime the adjustable-serving state.
    *  Initial serving size for a Picks-origin popup starts at the pick's own
@@ -1984,6 +2008,7 @@ export class FoodsPanelComponent {
     this.nfPopupOriginalServingSize.set(initial);
     this.nfPopupMode.set(mode);
     this.nfPopupOrigin.set(origin);
+    this.nfPopupRegiApproved.set(food.regiApproved ?? false);
     this.nfPopupFood.set(food);
     this.nfPopupUnitDirty.set(false);
     this.nfPopupUnitResolving.set(false);
@@ -1995,6 +2020,21 @@ export class FoodsPanelComponent {
     this.nfPopupOriginalCategory.set(cur);
     if (mode === 'edit') {
       void this.foodsService.loadCategories();
+    }
+  }
+
+  /** Admin toggles RegiApproved on an owned MyFoods userfood. Optimistic; PATCHes
+   *  /userfoods/{id}; reverts + toasts on failure (403 included). */
+  async onRegiApprovedToggle(checked: boolean): Promise<void> {
+    const food = this.nfPopupFood();
+    if (!food) return;
+    this.nfPopupRegiApproved.set(checked); // optimistic
+    const ok = await this.userFoodService.setUserFoodRegiApproved(food.id, checked);
+    if (ok) {
+      this.nfPopupFood.update((f) => (f ? { ...f, regiApproved: checked } : f));
+    } else {
+      this.nfPopupRegiApproved.set(!checked); // revert
+      this.notificationService.show('Could not update RegiApproved. Please try again.', 'error');
     }
   }
 
@@ -2690,15 +2730,22 @@ export class FoodsPanelComponent {
     if (!window.confirm(`Do you want to permanently delete "${name}" from MyFoods?`)) {
       return;
     }
-    const ok = await this.userFoodService.deleteUserFood(food.id);
-    if (ok) {
+    try {
+      await this.userFoodService.deleteUserFood(food.id);
       this.notificationService.show('Food deleted', 'success');
       // Drop it from the local cache immediately so the row goes away even
       // before the server refetch lands.
       this.myFoodsLocal.update(list => list.filter(f => f.id !== food.id));
       this.refreshServerMyFoods();
-    } else {
-      this.notificationService.show('Could not delete food', 'error');
+    } catch (err) {
+      // 409 = the food is RegiApproved and can only be removed via the admin tool.
+      const status = err instanceof HttpErrorResponse ? err.status : 0;
+      this.notificationService.show(
+        status === 409
+          ? 'This food is RegiApproved — manage it in the admin tool.'
+          : 'Could not delete food',
+        'error',
+      );
     }
   }
 

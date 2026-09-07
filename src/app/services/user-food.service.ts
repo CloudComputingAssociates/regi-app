@@ -142,26 +142,28 @@ export class UserFoodService {
     }
   }
 
-  async listCommunityFoods(): Promise<UserFood[]> {
-    try {
-      const resp = await firstValueFrom(
-        this.http.get<ListUserFoodsResponse>(`${this.baseUrl}/community`)
-      );
-      return resp.foods || [];
-    } catch {
-      return [];
-    }
-  }
-
-  async deleteUserFood(id: number): Promise<boolean> {
+  /** Admin-only: set a userfood's RegiApproved flag. PATCH /api/userfoods/{id}
+   *  { regiApproved } — honored only for the Admin role (a non-admin gets 403).
+   *  Returns true on success; the caller reverts + toasts on false (403 included). */
+  async setUserFoodRegiApproved(id: number, approved: boolean): Promise<boolean> {
     try {
       await firstValueFrom(
-        this.http.delete(`${this.baseUrl}/${id}`)
+        this.http.patch<UserFood>(`${this.baseUrl}/${id}`, { regiApproved: approved })
       );
-      this.userFoodsSignal.update(list => list.filter(f => f.id !== id));
+      this.userFoodsSignal.update(list =>
+        list.map(f => f.id === id ? { ...f, regiApproved: approved } : f)
+      );
       return true;
     } catch {
       return false;
     }
+  }
+
+  /** DELETE /api/userfoods/{id}. THROWS on failure so the caller can branch on the
+   *  status (409 = the food is RegiApproved — manage it in the admin tool). Removes it
+   *  from the local cache on success. */
+  async deleteUserFood(id: number): Promise<void> {
+    await firstValueFrom(this.http.delete(`${this.baseUrl}/${id}`));
+    this.userFoodsSignal.update(list => list.filter(f => f.id !== id));
   }
 }

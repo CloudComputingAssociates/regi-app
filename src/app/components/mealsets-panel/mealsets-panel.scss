@@ -117,6 +117,10 @@
 // (grey/white .msp-btn) and the chevron simply follows it.
 .msp-newset { margin-left: auto; }
 .msp-newset ~ .msp-collapse { margin-left: 0; }
+// Author-profile Save moved into the header: starts the right cluster; the chevron
+// (if present) follows it.
+.msp-profile-save { margin-left: auto; }
+.msp-profile-save ~ .msp-collapse { margin-left: 0; }
 
 .msp-card-title {
   margin: 0;

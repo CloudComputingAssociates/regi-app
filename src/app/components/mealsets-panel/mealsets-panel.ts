@@ -64,6 +64,13 @@ import { MealSet, MealSetContractView, RecipeSummary } from '../../models';
                 matTooltip="Fill in required fields, and save before you can add MealSets. Information is displayed in the MealSet Gallery on RegiMenu's Website — the area for purchasing MealSets."
                 matTooltipPosition="right">&#9432;</span>
             </h3>
+            <!-- Save at the TOP-right so it's reachable without scrolling this long
+                 form; shown only while the profile is expanded. -->
+            @if (!profileCollapsed()) {
+              <button type="button" class="msp-btn primary msp-profile-save" [disabled]="savingProfile()" (click)="saveProfile()">
+                {{ savingProfile() ? 'Saving…' : 'Save profile' }}
+              </button>
+            }
             @if (profileSaved()) {
               <button type="button" class="msp-collapse"
                 [matTooltip]="profileCollapsed() ? 'Expand profile' : 'Collapse profile'"
@@ -104,11 +111,6 @@ import { MealSet, MealSetContractView, RecipeSummary } from '../../models';
             <div class="msp-field">
               <span class="msp-label">Backlink photo <span class="msp-opt">(optional)</span></span>
               <app-image-drop name="backlink" [value]="backLinkPhoto()" (valueChange)="backLinkPhoto.set($event)" />
-            </div>
-            <div class="msp-actions">
-              <button type="button" class="msp-btn primary" [disabled]="savingProfile()" (click)="saveProfile()">
-                {{ savingProfile() ? 'Saving…' : 'Save profile' }}
-              </button>
             </div>
           }
         </section>

@@ -2603,3 +2603,16 @@
   color: rgba(255, 255, 255, 0.6);
   font-size: 13px;
 }
+
+// Admin-only RegiApproved toggle row inside the NF popup (owned MyFoods userfoods).
+.nf-regiapproved {
+  cursor: pointer;
+  gap: 8px;
+
+  input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    accent-color: #4da6ff;
+    cursor: pointer;
+  }
+}

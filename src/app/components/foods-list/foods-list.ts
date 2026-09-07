@@ -19,7 +19,7 @@ import { UserFood } from '../../models/user-food.model';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
 
-export type FoodFilterType = 'yeh-approved' | 'my-favorites' | 'my-restricted' | 'community' | 'clear';
+export type FoodFilterType = 'yeh-approved' | 'my-favorites' | 'my-restricted' | 'clear';
 
 export interface FoodGroup {
   category: string;
@@ -100,10 +100,6 @@ export interface FoodNotFoundEvent {
               <label class="filter-radio">
                 <input type="radio" name="foodFilter" [checked]="activeFilter() === 'my-restricted'" (change)="onFilterChange('my-restricted')" />
                 <span>Restricted</span>
-              </label>
-              <label class="filter-radio">
-                <input type="radio" name="foodFilter" [checked]="activeFilter() === 'community'" (change)="onFilterChange('community')" />
-                <span>Community</span>
               </label>
               <label class="filter-radio">
                 <input type="radio" name="foodFilter" [checked]="activeFilter() === 'yeh-approved'" (change)="onFilterChange('yeh-approved')" />
@@ -515,7 +511,6 @@ export class FoodsListComponent implements OnInit {
   private favoritesCache = signal<Food[]>([]);
   private combinedCache = signal<Food[]>([]);
   private restrictedCache = signal<Food[]>([]);
-  private communityCache = signal<Food[]>([]);
 
   // Double-click/tap detection
   private lastTapTime = 0;
@@ -604,8 +599,6 @@ export class FoodsListComponent implements OnInit {
         return 'No favorite foods';
       case 'my-restricted':
         return 'No restricted foods';
-      case 'community':
-        return 'No community foods';
       case 'yeh-approved':
         return 'No YEH approved foods';
       default:
@@ -717,27 +710,6 @@ export class FoodsListComponent implements OnInit {
     });
   }
 
-  /** Load community shared foods (ShareApproved = 1) */
-  private async loadCommunity(): Promise<void> {
-    this.isLoading.set(true);
-    try {
-      await this.foodsService.loadCategories();
-      const userFoods = await this.userFoodService.listCommunityFoods();
-      const foods = userFoods.map(uf => this.userFoodToFood(uf));
-      this.communityCache.set(foods);
-      this.setFoods(foods);
-
-      if (foods.length > 0) {
-        this.selectFood(0, false);
-      } else {
-        this.selectedIndex.set(-1);
-      }
-    } catch {
-      this.notificationService.show('Failed to load community foods', 'error');
-    } finally {
-      this.isLoading.set(false);
-    }
-  }
 
   /** Map a UserFood to a Food for display in the list */
   private userFoodToFood(uf: UserFood): Food {
@@ -806,11 +778,6 @@ export class FoodsListComponent implements OnInit {
         this.loadRestricted();
         break;
 
-      case 'community':
-        this.isYehApproved.set(false);
-        this.loadCommunity();
-        break;
-
       case 'clear':
         this.isYehApproved.set(false);
         this.setFoods([]);
@@ -863,9 +830,6 @@ export class FoodsListComponent implements OnInit {
           break;
         case 'my-restricted':
           cache = this.restrictedCache();
-          break;
-        case 'community':
-          cache = this.communityCache();
           break;
         case 'clear':
           return;
@@ -923,7 +887,6 @@ export class FoodsListComponent implements OnInit {
     if (filters.has('yeh-approved')) localLists.push(...this.yehApprovedCache());
     if (filters.has('my-favorites')) localLists.push(...this.favoritesCache());
     if (filters.has('my-restricted')) localLists.push(...this.restrictedCache());
-    if (filters.has('community')) localLists.push(...this.communityCache());
 
     const lowerQuery = query.toLowerCase();
     const localMatch = localLists.some(f =>

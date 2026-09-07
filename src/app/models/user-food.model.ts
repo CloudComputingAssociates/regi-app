@@ -27,8 +27,8 @@ export interface UserFood {
   ingredientsAreAllergens: boolean;
   gtinUpc?: string;
   productPurchaseLink?: string;
-  shareCandidate: boolean;
-  shareApproved: boolean;
+  regiApprovedCandidate: boolean; // renamed from shareCandidate
+  regiApproved: boolean;          // renamed from shareApproved (admin-curated flag)
   createdAt: string;
   updatedAt: string;
   nutritionFacts?: UserNutritionFacts;
@@ -97,5 +97,5 @@ export interface CreateUserFoodRequest {
   ironMG?: number;
   potassiumMG?: number;
   productPurchaseLink?: string;
-  shareCandidate?: boolean;
+  regiApprovedCandidate?: boolean; // renamed from shareCandidate
 }
