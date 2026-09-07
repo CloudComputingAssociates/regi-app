@@ -15,6 +15,7 @@ import { FoodsPanelComponent } from '../foods-panel/foods-panel';
 import { VideoViewerComponent } from '../video-viewer/video-viewer';
 import { RecipeViewerComponent } from '../recipe-viewer/recipe-viewer';
 import { MealsetsPanelComponent } from '../mealsets-panel/mealsets-panel';
+import { HelpPanelComponent } from '../help-panel/help-panel';
 
 @Component({
   selector: 'app-main-body',
@@ -27,7 +28,8 @@ import { MealsetsPanelComponent } from '../mealsets-panel/mealsets-panel';
     FoodsPanelComponent,
     VideoViewerComponent,
     RecipeViewerComponent,
-    MealsetsPanelComponent
+    MealsetsPanelComponent,
+    HelpPanelComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -44,6 +46,7 @@ import { MealsetsPanelComponent } from '../mealsets-panel/mealsets-panel';
         @case ('mealsets') { <app-mealsets-panel /> }
         @case ('video-viewer') { <app-video-viewer /> }
         @case ('web-viewer') { <app-recipe-viewer /> }
+        @case ('help') { <app-help-panel /> }
         @default {
           <div class="empty-state">
             <img src="/images/YEH3.png" alt="You Eating Healthy" class="empty-state-image" />
