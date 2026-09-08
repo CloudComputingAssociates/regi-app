@@ -51,7 +51,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
           matTooltip="Close Help panel"
           matTooltipPosition="above"
           aria-label="Close Help panel"
-          (click)="tabService.closePanel()">
+          (click)="tabService.closeHelp()">
           <mat-icon aria-hidden="true">close</mat-icon>
         </button>
       </div>

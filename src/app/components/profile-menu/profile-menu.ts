@@ -183,7 +183,9 @@ export class ProfileMenuComponent {
   }
 
   toggleHelp(): void {
-    this.tabService.togglePanel('help', 'Help');
+    // Opens Help remembering the current panel; closing (here or via the X)
+    // returns to it instead of the splash.
+    this.tabService.toggleHelp();
   }
 
   toggleBug(): void {

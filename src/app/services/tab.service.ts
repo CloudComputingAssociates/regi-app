@@ -406,6 +406,38 @@ export class TabService {
     }
   }
 
+  // ============================================================
+  // Help — open/close RETURNING to the previous panel.
+  // ============================================================
+  // Help is a transient overlay-style panel: opening it from the app-bar "?" or
+  // the profile menu remembers whatever panel was active, and closing it (toggle
+  // off, or the panel's own X) returns there instead of dropping to the splash.
+  private helpReturnTabId: string | null = null;
+
+  /** Open Help remembering the current panel, or close it (returning) if it's
+   *  already active. Both Help entry points route through here. */
+  toggleHelp(): void {
+    if (this.activeTabId() === 'help') {
+      this.closeHelp();
+    } else {
+      // Remember where we came from (null = splash). Don't record 'help' itself.
+      this.helpReturnTabId = this.activeTabId();
+      this.openPanel('help', 'Help');
+    }
+  }
+
+  /** Close Help, returning to the panel that was active when it opened (or the
+   *  splash if that was the splash / the panel is no longer visited). */
+  closeHelp(): void {
+    const ret = this.helpReturnTabId;
+    this.helpReturnTabId = null;
+    if (ret && ret !== 'help' && this.tabsSignal().some(t => t.id === ret)) {
+      this._switchToTabInternal(ret);
+    } else {
+      this.closePanel();
+    }
+  }
+
 
   switchToChat(): void {
     this.activeTabIndexSignal.set(0);

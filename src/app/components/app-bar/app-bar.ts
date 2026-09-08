@@ -119,8 +119,9 @@ export class AppBarComponent {
     this.menuClick.emit();
   }
 
-  /** Quick-Help "?" in the app bar — toggles the Help panel (second click closes). */
+  /** Quick-Help "?" in the app bar — toggles Help; a second click (or its X) closes
+   *  and returns to the panel that was active when Help opened. */
   onHelpClick(): void {
-    this.tabService.togglePanel('help', 'Help');
+    this.tabService.toggleHelp();
   }
 }
