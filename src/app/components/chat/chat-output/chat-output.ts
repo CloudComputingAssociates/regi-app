@@ -127,7 +127,7 @@ export class MarkdownPipe implements PipeTransform {
             @if (chips().length) {
               <div class="seed-chips">
                 @for (chip of chips(); track $index) {
-                  <button type="button" class="seed-chip" (click)="chipTap.emit(chip)">{{ chip.label }}</button>
+                  <button type="button" class="seed-chip" [disabled]="chipsDisabled()" (click)="chipTap.emit(chip)">{{ chip.label }}</button>
                 }
               </div>
             }
@@ -160,6 +160,9 @@ export class ChatOutputComponent {
    *  (and pre-filters chips to the kinds it can handle). */
   readonly greeting = input<string>('');
   readonly chips = input<FlowChip[]>([]);
+  /** When true, seed chips are non-interactive (an advance is in flight) — prevents
+   *  double-fires while the walk resolves. */
+  readonly chipsDisabled = input(false);
   readonly chipTap = output<FlowChip>();
 
   /** Context-aware computed signals */

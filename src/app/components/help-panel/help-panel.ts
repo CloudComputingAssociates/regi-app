@@ -4,12 +4,21 @@
 // Clear-all key, and the red-X close) over the chat conversation view. No macros
 // bar here (that's gated to the menus tab; Help is its own tab). The persistent
 // chat input at the bottom of the shell drives the conversation.
+//
+// Phase 2: the empty-state preamble is a live FLOW WALK, not just a static greeting.
+// The opener beat comes from `startFlow('help-general')` (cached). `answer` chips
+// advance the walk in place (beat text+chips swap); `flow` chips jump to a fresh
+// flow; `call` chips open a widget and/or fire a server-relayed HTTP action. Flow
+// beats and answers NEVER enter chatState — the walk lives entirely in the preamble.
+// The moment the conversation goes non-empty the walk drops (flows are cheap to
+// restart) and we reset to the opener for the next empty state.
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TabService } from '../../services/tab.service';
 import { ChatService } from '../../services/chat.service';
-import { FlowService, FlowBeat, FlowChip, FlowChipKind } from '../../services/flow.service';
+import { NotificationService } from '../../services/notification.service';
+import { FlowService, FlowBeat, FlowChip, FlowVessel, AdvanceResult } from '../../services/flow.service';
 import { ChatOutputComponent } from '../chat/chat-output/chat-output';
 
 @Component({
@@ -50,6 +59,7 @@ import { ChatOutputComponent } from '../chat/chat-output/chat-output';
       <app-chat-output
         [greeting]="beat()?.text ?? ''"
         [chips]="seedChips()"
+        [chipsDisabled]="advancing()"
         (chipTap)="onChipTap($event)" />
     </div>
   `,
@@ -59,30 +69,54 @@ export class HelpPanelComponent {
   protected tabService = inject(TabService);
   protected chatService = inject(ChatService);
   private flowService = inject(FlowService);
+  private notify = inject(NotificationService);
 
-  /** The 'help-general' opening beat (greeting + chips), or null until fetched. */
+  /** Widget → in-app action. Keyed by widget name; renderIntent is the tiebreaker if
+   *  widget names ever collide. Instance field so the arrows close over `this`. */
+  private readonly WIDGET_DISPATCH: Record<string, () => void> = {
+    'UserSettings': () => this.tabService.openSettings(), // renderIntent 'bloom'
+  };
+
+  /** renderIntents the web has no surface for but the mobile app does. Empty this
+   *  session — the mechanism exists so scanner-type intents land honestly later. */
+  private readonly MOBILE_ONLY_INTENTS = new Set<string>();
+
+  // ---- Walk state: the opener or current mid-walk beat + its session. ----
+  /** The displayed beat (opener, or the current beat mid-walk), or null until fetched. */
   private readonly beatSig = signal<FlowBeat | null>(null);
   protected readonly beat = this.beatSig.asReadonly();
+  /** Session for the active walk. null = single-beat flow (no advance possible). */
+  private readonly sessionId = signal<string | null>(null);
+  /** Name of the flow currently walked — used to restart on a 410. */
+  private readonly currentFlow = signal<string>('help-general');
+  /** True while an advance/start/call is in flight — chips go non-interactive. */
+  protected readonly advancing = signal(false);
   private fetching = false;
 
-  /** Chip kinds wired in Phase 1 — everything else is filtered out of the render (the
-   *  onChipTap switch has stub cases so adding them later touches one place). */
-  private static readonly RENDERABLE_KINDS: readonly FlowChipKind[] = ['message', 'link'];
-  protected readonly seedChips = computed<FlowChip[]>(() =>
-    (this.beat()?.chips ?? []).filter((c) => HelpPanelComponent.RENDERABLE_KINDS.includes(c.kind)),
-  );
+  /** Chips to render. All kinds render now, but `answer` chips need a live session —
+   *  filter them defensively for single-beat flows (the API won't send them there). */
+  protected readonly seedChips = computed<FlowChip[]>(() => {
+    const chips = this.beat()?.chips ?? [];
+    const hasSession = this.sessionId() !== null;
+    return chips.filter((c) => !(c.kind === 'answer' && !hasSession));
+  });
 
   constructor() {
-    // Fetch the greeting the first time the conversation is empty (fresh open, or any
-    // later empty transition while we still have no beat). The beat stays cached, so
-    // Clear-all reuses it with no refetch; a failed fetch leaves it null → retried on
-    // the next empty activation.
     effect(
       () => {
         const empty = this.chatService.messages().length === 0;
-        if (empty && !this.beat() && !this.fetching) {
-          this.fetching = true;
-          void this.loadBeat();
+        if (empty) {
+          // Fetch the opener the first time the conversation is empty with no beat.
+          // The opener caches, so Clear-all reuses it; a failed fetch leaves it null →
+          // retried on the next empty activation.
+          if (!this.beat() && !this.fetching) {
+            this.fetching = true;
+            void this.loadBeat();
+          }
+        } else if (this.sessionId() !== null) {
+          // Conversation went non-empty → an in-progress walk drops. Reset to the
+          // opener so the next empty state shows the greeting, not a stale mid-walk beat.
+          void this.resetWalkToOpener();
         }
       },
       { allowSignalWrites: true },
@@ -91,7 +125,7 @@ export class HelpPanelComponent {
 
   private async loadBeat(): Promise<void> {
     try {
-      this.beatSig.set(await this.flowService.startFlow('help-general'));
+      await this.fetchFlow('help-general', false);
     } catch {
       // Silent — no error UI in Help over a greeting; retried on the next empty activation.
     } finally {
@@ -99,8 +133,30 @@ export class HelpPanelComponent {
     }
   }
 
-  /** Tap a seed chip — one switch; Phase 2 kinds are stubbed (and filtered from render). */
-  onChipTap(chip: FlowChip): void {
+  /** Start (or restart) a flow and adopt its opener as the displayed beat. */
+  private async fetchFlow(name: string, fresh: boolean): Promise<void> {
+    const resp = await this.flowService.startFlow(name, fresh ? { fresh: true } : undefined);
+    this.currentFlow.set(name);
+    this.sessionId.set(resp.sessionId);
+    this.beatSig.set(resp.beat);
+  }
+
+  /** Drop the active walk and fall back to the cached help-general opener. Sets the
+   *  session null first to keep the non-empty effect branch from re-entering. */
+  private async resetWalkToOpener(): Promise<void> {
+    this.sessionId.set(null);
+    try {
+      const resp = await this.flowService.startFlow('help-general');
+      this.currentFlow.set('help-general');
+      this.beatSig.set(resp.beat);
+    } catch {
+      // Silent — leave the last beat; the next empty activation retries.
+    }
+  }
+
+  /** Tap a chip. Guarded against double-fires while an advance is in flight. */
+  async onChipTap(chip: FlowChip): Promise<void> {
+    if (this.advancing()) return;
     switch (chip.kind) {
       case 'message':
         // Same service path as typed text, minus the input's tab-switch → stays on Help.
@@ -109,12 +165,103 @@ export class HelpPanelComponent {
       case 'link':
         if (chip.url) window.open(chip.url, '_blank', 'noopener');
         break;
-      // Phase 2 (renderer filters these out today; wire when the flows land):
-      case 'answer': // TODO(phase-2): inline answer beat
-      case 'call':   // TODO(phase-2): trigger an in-app action
-      case 'flow':   // TODO(phase-2): advance to the next flow beat
+      case 'answer':
+        await this.doAnswer(chip);
+        break;
+      case 'flow':
+        await this.doFlow(chip);
+        break;
+      case 'call':
+        await this.doCall(chip);
         break;
     }
+  }
+
+  /** answer → advance the walk with this value, swapping the displayed beat in place. */
+  private async doAnswer(chip: FlowChip): Promise<void> {
+    const sid = this.sessionId();
+    if (!sid || chip.value === undefined) return;
+    this.advancing.set(true);
+    try {
+      await this.applyAdvance(await this.flowService.advance(sid, { value: chip.value }));
+    } catch {
+      // Silent — leave the current beat in place; the user can retap.
+    } finally {
+      this.advancing.set(false);
+    }
+  }
+
+  /** flow → jump to a fresh flow (always bypasses the opener cache). */
+  private async doFlow(chip: FlowChip): Promise<void> {
+    if (!chip.flowName) return;
+    this.advancing.set(true);
+    try {
+      await this.fetchFlow(chip.flowName, true);
+    } catch {
+      // Silent — leave the current beat in place.
+    } finally {
+      this.advancing.set(false);
+    }
+  }
+
+  /** call → open the mapped widget and/or fire the server-relayed HTTP action. */
+  private async doCall(chip: FlowChip): Promise<void> {
+    this.dispatchWidget(chip.widget, chip.renderIntent);
+    if (chip.call) {
+      this.advancing.set(true);
+      try {
+        await this.flowService.fireCall(chip.call);
+        this.notify.show('Done', 'success');
+      } catch {
+        this.notify.show('That action failed — please try again', 'error');
+      } finally {
+        this.advancing.set(false);
+      }
+    }
+  }
+
+  /** Apply an advance result: replace the beat, finish the walk, or restart on 410. */
+  private async applyAdvance(result: AdvanceResult): Promise<void> {
+    if (result.restart) {
+      await this.fetchFlow(this.currentFlow(), true);
+      return;
+    }
+    if (result.beat) this.beatSig.set(result.beat);
+    if (result.done) {
+      // Walk finished: the final beat (if any) keeps its link/call chips tappable, but
+      // no further answers are possible — drop the session so answer chips filter out.
+      this.sessionId.set(null);
+      if (result.vessel) await this.dispatchVessel(result.vessel);
+    }
+  }
+
+  /** A completed walk's vessel: open its widget and fire its writing call (if any). */
+  private async dispatchVessel(vessel: FlowVessel): Promise<void> {
+    this.dispatchWidget(vessel.widget, vessel.renderIntent);
+    if (vessel.call) {
+      try {
+        await this.flowService.fireCall(vessel.call);
+        this.notify.show('Done', 'success');
+      } catch {
+        this.notify.show('That action failed — please try again', 'error');
+      }
+    }
+  }
+
+  /** Map a widget/renderIntent to an in-app surface. Unmapped → honest toast, no throw. */
+  private dispatchWidget(widget?: string, renderIntent?: string): void {
+    if (!widget && !renderIntent) return;
+    if (renderIntent && this.MOBILE_ONLY_INTENTS.has(renderIntent)) {
+      this.notify.show("That's available in the mobile app", 'info');
+      return;
+    }
+    const action = widget ? this.WIDGET_DISPATCH[widget] : undefined;
+    if (action) {
+      action();
+      return;
+    }
+    console.warn('[flow] no web surface for widget/renderIntent:', widget, renderIntent);
+    this.notify.show("That action isn't available here yet", 'error');
   }
 
   onClearAll(): void {
