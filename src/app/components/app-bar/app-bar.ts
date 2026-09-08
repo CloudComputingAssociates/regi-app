@@ -9,6 +9,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ProfileMenuComponent } from '../profile-menu/profile-menu';
 import { TetherIndicatorComponent } from '../tether-indicator/tether-indicator';
 import { MacrosComponent } from '../macros/macros';
@@ -18,11 +19,11 @@ import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-app-bar',
-  imports: [CommonModule, AsyncPipe, MatIconModule, MatButtonModule, ProfileMenuComponent, TetherIndicatorComponent, MacrosComponent],
+  imports: [CommonModule, AsyncPipe, MatIconModule, MatButtonModule, MatTooltipModule, ProfileMenuComponent, TetherIndicatorComponent, MacrosComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="app-bar">
-      <div class="app-bar-content" [class.logged-out]="!isAuthenticated()" [class.centered-title]="activeTabId() === 'help'">
+      <div class="app-bar-content" [class.logged-out]="!isAuthenticated()" [class.centered-title]="activeTabId() !== 'menus'">
         @if (isAuthenticated()) {
           <button
             mat-icon-button
@@ -57,17 +58,18 @@ import { map } from 'rxjs/operators';
              the far right (the name right-justified up to the circle). -->
         <div class="app-bar-right">
           @if (isAuthenticated()) {
+            <app-tether-indicator />
             <!-- Quick Help entry — a yellow "?" the same size as the RegiMenu mark.
-                 First in the right zone so it floats left of the tether / name cluster
-                 and yields further left as the display name grows. -->
+                 Sits BETWEEN the tether (phone) and the name cluster, equidistant:
+                 the tether's 32px right margin is the left gap, the button's own
+                 32px right margin the right gap. Toggles the Help panel. -->
             <button
               type="button"
               class="help-q-btn"
               matTooltip="Help (AI chat-based help)"
               matTooltipPosition="below"
-              aria-label="Open Help"
+              aria-label="Toggle Help"
               (click)="onHelpClick()">?</button>
-            <app-tether-indicator />
           }
           <app-profile-menu />
         </div>
@@ -117,8 +119,8 @@ export class AppBarComponent {
     this.menuClick.emit();
   }
 
-  /** Quick-Help "?" in the app bar — always opens (focuses) the Help panel. */
+  /** Quick-Help "?" in the app bar — toggles the Help panel (second click closes). */
   onHelpClick(): void {
-    this.tabService.openPanel('help', 'Help');
+    this.tabService.togglePanel('help', 'Help');
   }
 }
