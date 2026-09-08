@@ -159,7 +159,7 @@ export class AppComponent implements OnInit, OnDestroy {
    *  up beside it (the macros belong to Menus & Meals, not the Binder). */
   hasMacros = computed(() => {
     const id = this.tabService.activeTabId();
-    return id !== null && id !== 'foods' && id !== 'chat' && id !== 'menus' && id !== 'mealsets';
+    return id !== null && id !== 'foods' && id !== 'chat' && id !== 'menus' && id !== 'mealsets' && id !== 'help';
   });
 
   /** True when the "bites" tip-of-the-day bar should render. Chat only. */

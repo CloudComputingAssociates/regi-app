@@ -22,7 +22,7 @@ import { map } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="app-bar">
-      <div class="app-bar-content" [class.logged-out]="!isAuthenticated()">
+      <div class="app-bar-content" [class.logged-out]="!isAuthenticated()" [class.centered-title]="activeTabId() === 'help'">
         @if (isAuthenticated()) {
           <button
             mat-icon-button
@@ -57,6 +57,16 @@ import { map } from 'rxjs/operators';
              the far right (the name right-justified up to the circle). -->
         <div class="app-bar-right">
           @if (isAuthenticated()) {
+            <!-- Quick Help entry — a yellow "?" the same size as the RegiMenu mark.
+                 First in the right zone so it floats left of the tether / name cluster
+                 and yields further left as the display name grows. -->
+            <button
+              type="button"
+              class="help-q-btn"
+              matTooltip="Help (AI chat-based help)"
+              matTooltipPosition="below"
+              aria-label="Open Help"
+              (click)="onHelpClick()">?</button>
             <app-tether-indicator />
           }
           <app-profile-menu />
@@ -97,10 +107,18 @@ export class AppBarComponent {
     if (id === 'foods') return null;
     // MealSets has its own "MealSets" header inside the panel — don't repeat it.
     if (id === 'mealsets') return null;
+    // Help shows its own "? Help" header inside the panel — don't repeat it, and
+    // the lone RegiMenu mark then centers on the hamburger (see .centered-title).
+    if (id === 'help') return null;
     return this.tabService.tabs().find(t => t.id === id)?.label ?? null;
   });
 
   onMenuClick(): void {
     this.menuClick.emit();
+  }
+
+  /** Quick-Help "?" in the app bar — always opens (focuses) the Help panel. */
+  onHelpClick(): void {
+    this.tabService.openPanel('help', 'Help');
   }
 }
