@@ -28,9 +28,10 @@ export interface HydratedPicks {
 /** Turn server-persisted currentPicks into per-basket Food objects, using the
  *  user's full allowed-foods list as the lookup. Matching is on the
  *  (foodId, foodSource) composite key, with a missing foodSource normalized to
- *  'food'. Each hydrated Food is stamped with pickAddedAt / pickServingSize /
- *  mealRole from its pick. Entries within a basket are ordered by addedAt
- *  ascending. Pure — no I/O, no side effects. */
+ *  'food'. Each hydrated Food is stamped with pickAddedAt / mealRole from its
+ *  pick. Entries within a basket are ordered by addedAt ascending. Serving
+ *  quantity is NOT carried on the pick — it lives in UserFoodPreferences
+ *  (userServingSize). Pure — no I/O, no side effects. */
 export function hydratePicks(picks: CurrentPick[], allowedFull: Food[]): HydratedPicks {
   const lookup = new Map<string, Food>();
   for (const f of allowedFull) {
@@ -48,7 +49,6 @@ export function hydratePicks(picks: CurrentPick[], allowedFull: Food[]): Hydrate
     baskets[p.basketKey].push({
       ...food,
       pickAddedAt: p.addedAt,
-      pickServingSize: p.pickServingSize,
       mealRole: p.mealRole ?? 'AnyUse',
     });
     kept.push(p);

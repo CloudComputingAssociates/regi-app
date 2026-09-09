@@ -326,7 +326,39 @@ export interface ListMealsRequest {
   [k: string]: unknown;
 }
 /**
- * Request body for POST /api/meal — creates an empty named meal
+ * One constituent food line for the Build-a-Meal manual save path. The server
+ * resolves the food from the AllFoods view by (foodId, foodSource), derives the
+ * display name + item role, and computes all macros from the quantity+unit — the
+ * client sends no name, role, or macro fields.
+ *
+ * This interface was referenced by `MealSchema`'s JSON-Schema
+ * via the `definition` "CreateMealItem".
+ */
+export interface CreateMealItem {
+  /**
+   * Foods.FoodID or UserFoods.UserFoodID, per foodSource
+   */
+  foodId: number;
+  /**
+   * Which table the food lives in
+   */
+  foodSource: "food" | "userfood";
+  /**
+   * Amount of food (must be > 0)
+   */
+  quantity: number;
+  /**
+   * Unit of measurement (serving, oz, g, whole, etc.)
+   */
+  unit: string;
+  [k: string]: unknown;
+}
+/**
+ * Request body for POST /api/meal. With no items it creates an empty named meal
+ * (Pinned=0). With items it is the Build-a-Meal manual save: the server creates
+ * the Meal + MealItems, computes every macro server-side from the foods, and pins
+ * it into the Binder (Pinned=1). All macro fields are server-computed — the
+ * request carries none.
  *
  * This interface was referenced by `MealSchema`'s JSON-Schema
  * via the `definition` "CreateMealRequest".
@@ -341,9 +373,21 @@ export interface CreateMealRequest {
    */
   mealType?: string;
   /**
-   * How many servings this meal yields (1–100). Defaults to 1.
+   * How many servings this meal yields (1–100). Defaults to 1. Ignored on the Build-a-Meal (items present) path, which is always 1-person truth.
    */
   servings?: number;
+  /**
+   * FK to dbo.CookingMethods; null when unset. Persisted on create.
+   */
+  cookingMethodId?: number | null;
+  /**
+   * Free-text meal notes; persisted on create. Feeds the AI image hint + PDF body.
+   */
+  notes?: string | null;
+  /**
+   * Constituent foods for the Build-a-Meal manual save. When present, the meal is created with these items (macros computed server-side) and pinned into the Binder. Omit/empty for the plain empty-meal create.
+   */
+  items?: CreateMealItem[];
   [k: string]: unknown;
 }
 /**

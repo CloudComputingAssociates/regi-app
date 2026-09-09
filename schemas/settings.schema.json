@@ -252,11 +252,6 @@
           "enum": ["Proteins", "Fats", "Carbs", "Other"],
           "description": "Which UI basket this pick belongs to"
         },
-        "pickServingSize": {
-          "type": ["number", "null"],
-          "exclusiveMinimum": 0,
-          "description": "Per-basket serving-size override; null = use the food's baseline serving"
-        },
         "mealRole": {
           "type": "string",
           "enum": ["AnyUse", "PrimaryFood", "SecondaryFood"],

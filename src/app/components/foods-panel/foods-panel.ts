@@ -15,13 +15,13 @@ import {
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
 import { CurateWizardComponent } from '../curate-wizard/curate-wizard';
 import { AddFoodPanelComponent } from '../add-food-panel/add-food-panel';
-import { RecipePdfViewerComponent } from '../recipe-pdf-viewer/recipe-pdf-viewer';
 import { RotationService } from '../../services/rotation.service';
 import { RoleService } from '../../services/role.service';
-import { Meal, MealType, UpdateMealRequest } from '../../models';
+import { CreateMealItem, CreateMealRequest } from '../../models';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
-import { ChatService } from '../../services/chat.service';
+import { RecipeAuthoringService } from '../../services/recipe-authoring.service';
+import { ImageUploadService } from '../../services/image-upload.service';
 import { UserFoodService } from '../../services/user-food.service';
 import { FoodsService, FoodList } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
@@ -116,7 +116,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
 
 @Component({
   selector: 'app-foods-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, NutritionFactsLabelComponent, CurateWizardComponent, AddFoodPanelComponent, RecipePdfViewerComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, NutritionFactsLabelComponent, CurateWizardComponent, AddFoodPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="foods-panel-container">
@@ -354,18 +354,109 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             </div>
           </div>
 
-          <!-- Ask Regi — hand the picked foods over to Chat for preparation &
-               recipe help. Returns to this Build-a-Meal workspace when done. -->
-          <div class="buildmeal-controls">
+          <!-- Build-a-Meal banner — manual meal assembler: name, cooking method,
+               notes preview, a staged photo tile, and Save. ~96px tall. -->
+          <div class="buildmeal-banner">
+            <div class="bm-field bm-field-name">
+              <label class="bm-label" for="bm-name">Name</label>
+              <input
+                id="bm-name"
+                type="text"
+                class="bm-input regi-field"
+                [value]="mealName()"
+                (input)="mealName.set($any($event.target).value)"
+                placeholder="Name your meal…"
+                aria-label="Meal name" />
+            </div>
+
+            <div class="bm-field bm-field-method">
+              <label class="bm-label" for="bm-method">Cooking method</label>
+              <select
+                id="bm-method"
+                class="bm-input regi-field"
+                [ngModel]="cookingMethodId()"
+                (ngModelChange)="cookingMethodId.set($event)"
+                aria-label="Cooking method">
+                <option [ngValue]="null">— none —</option>
+                @for (m of cookingMethods(); track m.id) {
+                  <option [ngValue]="m.id">{{ m.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="bm-field bm-field-notes">
+              <label class="bm-label">Notes</label>
+              <button
+                type="button"
+                class="bm-notes-preview"
+                (click)="notesEditorOpen.set(true)"
+                matTooltip="Edit notes"
+                matTooltipPosition="below"
+                aria-label="Edit meal notes">
+                <span class="bm-notes-text" [class.placeholder]="!mealNotes().trim()">
+                  {{ mealNotes().trim() || 'Add notes…' }}
+                </span>
+                <mat-icon class="bm-notes-pencil">edit</mat-icon>
+              </button>
+            </div>
+
+            <!-- Photo tile — stages a file locally before save; after save it
+                 reuses the shared meal-image dialog (upload · phone · AI). -->
+            <div class="bm-photo">
+              @if (savedMealId() === null) {
+                <div
+                  class="bm-photo-tile"
+                  [class.dragging]="photoDragOver()"
+                  (click)="bmPhotoInput.click()"
+                  (dragover)="onPhotoDragOver($event)"
+                  (dragleave)="onPhotoDragLeave($event)"
+                  (drop)="onPhotoDrop($event)"
+                  matTooltip="Add a photo (staged until you save)"
+                  matTooltipPosition="below">
+                  @if (stagedPhotoPreview(); as src) {
+                    <img [src]="src" alt="" class="bm-photo-img" />
+                  } @else {
+                    <mat-icon class="bm-photo-icon">add_a_photo</mat-icon>
+                  }
+                </div>
+              } @else {
+                <button
+                  type="button"
+                  class="bm-photo-tile"
+                  (click)="openSavedMealImageSource()"
+                  matTooltip="Add or replace this meal's photo"
+                  matTooltipPosition="below"
+                  aria-label="Meal photo">
+                  @if (stagedPhotoPreview(); as src) {
+                    <img [src]="src" alt="" class="bm-photo-img" />
+                  } @else {
+                    <mat-icon class="bm-photo-icon">photo_camera</mat-icon>
+                  }
+                </button>
+              }
+              <input
+                #bmPhotoInput
+                type="file"
+                accept="image/jpeg,image/png,image/heic,image/heif,.heic,.heif"
+                hidden
+                (change)="onPhotoFile(bmPhotoInput)" />
+            </div>
+
+            <!-- Save Meal — enabled once the meal has a name and at least one food. -->
             <button
               type="button"
-              class="bm-create-btn"
-              [disabled]="buildMealTotal() === 0"
-              matTooltip="Preparation and Recipe Help"
+              class="bm-create-btn bm-save-btn"
+              [disabled]="!canSaveMeal() || saving()"
+              matTooltip="Save this meal to your Binder"
               matTooltipPosition="below"
-              (click)="askRegi()">
-              <img src="/images/AI-star-blue.png" alt="" class="bm-create-star" />
-              <span>Ask Regi</span>
+              (click)="saveMeal()">
+              @if (saving()) {
+                <mat-icon class="bm-spin">autorenew</mat-icon>
+                <span>Saving…</span>
+              } @else {
+                <mat-icon class="bm-save-icon">check</mat-icon>
+                <span>Save Meal</span>
+              }
             </button>
           </div>
 
@@ -482,6 +573,17 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                               {{ food.shortDescription || food.description }}
                             </span>
                           </div>
+                          <!-- Quantity · unit — click to open the serving editor
+                               (persists the one serving record, userServingSize). -->
+                          <button
+                            type="button"
+                            class="basket-mini-qty"
+                            (click)="openPickServingEditor(food); $event.stopPropagation()"
+                            matTooltip="Edit quantity"
+                            matTooltipPosition="above"
+                            aria-label="Edit quantity">
+                            {{ pickQtyLabel(food) }}
+                          </button>
                         </div>
                       }
                     </div>
@@ -901,38 +1003,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
         </div>
       }
 
-      <!-- "Make MyFoods default match the pick?" alert dialog. Backdrop click
-           and the red X both behave as "No" — the pick override always
-           saves; the only question is whether the MyFoods baseline tags
-           along. -->
-      @if (baselineDialog(); as d) {
-        <div class="dialog-overlay" (click)="onBaselineDialogNo()">
-          <div class="alert-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-            <div class="alert-dialog-titlebar">
-              <span class="alert-dialog-title">Update MyFoods baseline?</span>
-              <button
-                type="button"
-                class="alert-dialog-close"
-                (click)="onBaselineDialogNo()"
-                aria-label="Close">✕</button>
-            </div>
-            <div class="alert-dialog-body">
-              Make MyFoods default {{ d.draft }} {{ d.unit }} as well?
-            </div>
-            <div class="alert-dialog-actions">
-              <button
-                type="button"
-                class="alert-dialog-btn alert-dialog-btn-yes"
-                (click)="onBaselineDialogYes()">Yes</button>
-              <button
-                type="button"
-                class="alert-dialog-btn alert-dialog-btn-no"
-                (click)="onBaselineDialogNo()">No</button>
-            </div>
-          </div>
-        </div>
-      }
-
       <!-- (The phone-app "Tether Mobile" handoff moved to a global bloom dialog
            opened from the profile menu's "Mobile App" entry — see
            mobile-app-dialog + TabService.mobileAppOpen.) -->
@@ -947,6 +1017,35 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
            add it reloads MyFoods so the new food appears. -->
       @if (addFoodPanelOpen()) {
         <app-add-food-panel (close)="addFoodPanelOpen.set(false)" (added)="onAddFoodAdded()" />
+      }
+
+      <!-- Meal notes editor — plain textarea with internal scroll. Enter (and
+           Ctrl+Enter) insert newlines; Esc, the red X, or a backdrop click
+           return to the banner with the preview updated. -->
+      @if (notesEditorOpen()) {
+        <div class="bam-notes-overlay" (click)="notesEditorOpen.set(false)">
+          <div class="bam-notes-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+            <div class="dialog-discs">
+              <button
+                type="button"
+                class="dialog-disc dialog-disc-cancel"
+                (click)="notesEditorOpen.set(false)"
+                matTooltip="Close"
+                matTooltipPosition="below"
+                aria-label="Close notes">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+            <div class="bam-notes-title">Meal notes</div>
+            <textarea
+              class="bam-notes-textarea regi-field"
+              [value]="mealNotes()"
+              (input)="mealNotes.set($any($event.target).value)"
+              (keydown.escape)="notesEditorOpen.set(false)"
+              placeholder="Preparation notes, substitutions, reminders…"
+              aria-label="Meal notes"></textarea>
+          </div>
+        </div>
       }
     </div>
   `,
@@ -981,12 +1080,15 @@ export class FoodsPanelComponent {
     // users upgrading from the localStorage era don't have a parallel set
     // of picks lingering on disk.
     try { localStorage.removeItem(LS_LEGACY_THISWEEK_BASKETS); } catch { /* ignore */ }
+    // Load the cooking-method vocabulary once for the Build-a-Meal banner picker.
+    void this.recipeAuthoring.ensureCookingMethods();
   }
 
   /** Reads UserSettings via SettingsService, intersects each pick with the
    *  user's allowed-foods cache, builds the four baskets, and stamps each
-   *  basket entry with `pickAddedAt` / `pickServingSize` so the round-trip
-   *  back to the server preserves order and per-basket overrides. Picks that
+   *  basket entry with `pickAddedAt` so the round-trip back to the server
+   *  preserves order. Serving quantity is not carried on picks — it lives once
+   *  in UserFoodPreferences (userServingSize). Picks that
    *  reference foods the user has since un-favorited are silently dropped
    *  (warn-logged) AND a cleaned list is saved back so the dead reference
    *  doesn't keep showing up on every login.
@@ -1054,8 +1156,8 @@ export class FoodsPanelComponent {
 
   /** Serialize the four baskets to the CurrentPicks wire shape. addedAt
    *  defaults to NOW for entries that lack pickAddedAt (newly dropped foods
-   *  that haven't been round-tripped yet). pickServingSize honors the
-   *  basket-local override; null = no override (follow MyFoods baseline). */
+   *  that haven't been round-tripped yet). Serving quantity is NOT sent — it
+   *  lives once in UserFoodPreferences (userServingSize). */
   private picksFromBaskets(): CurrentPick[] {
     const out: CurrentPick[] = [];
     const baskets = this.buildMealBaskets();
@@ -1066,7 +1168,6 @@ export class FoodsPanelComponent {
           foodId: f.id,
           foodSource: (f.foodSource as 'food' | 'userfood') ?? 'food',
           basketKey: k,
-          pickServingSize: f.pickServingSize ?? null,
           mealRole: f.mealRole ?? 'AnyUse',
           addedAt: f.pickAddedAt ?? now,
         });
@@ -1112,7 +1213,8 @@ export class FoodsPanelComponent {
     await this.refreshServerMyFoods();
   }
   private notificationService = inject(NotificationService);
-  private chatService = inject(ChatService);
+  private recipeAuthoring = inject(RecipeAuthoringService);
+  private imageUpload = inject(ImageUploadService);
   private userFoodService = inject(UserFoodService);
   protected foodsService = inject(FoodsService);
   private langfusePromptService = inject(LangfusePromptService);
@@ -1572,36 +1674,175 @@ export class FoodsPanelComponent {
     { allowSignalWrites: true },
   );
 
-  /** Flat list of the picked foods' display names across all four baskets, in
-   *  Proteins → Fats → Carbs → Other order. Used to seed the Ask-Regi prompt. */
-  private pickedFoodNames(): string[] {
-    const b = this.buildMealBaskets();
-    return [...b.Proteins, ...b.Fats, ...b.Carbs, ...b.Other]
-      .map((f) => (f.shortDescription || f.description || '').trim())
-      .filter((n) => n.length > 0);
+  // ---- Build-a-Meal banner: name / cooking method / notes / photo -----------
+  /** Meal name — required to save. */
+  readonly mealName = signal('');
+  /** Selected cooking method id, or null for "none". */
+  readonly cookingMethodId = signal<number | null>(null);
+  /** Free-text meal notes (edited in the notes overlay). */
+  readonly mealNotes = signal('');
+  /** Notes editor overlay open. */
+  readonly notesEditorOpen = signal(false);
+  /** Cooking-method vocabulary for the picker — loaded once, cached in the
+   *  RecipeAuthoringService (GET /api/cookingmethods). */
+  readonly cookingMethods = this.recipeAuthoring.cookingMethods;
+
+  /** Staged photo before save (thumbnail preview + the File to upload after the
+   *  meal id exists). No upload happens until Save lands the meal. */
+  readonly stagedPhotoFile = signal<File | null>(null);
+  readonly stagedPhotoPreview = signal<string | null>(null);
+  readonly photoDragOver = signal(false);
+  /** The meal id once saved — flips the photo tile from "stage a file" to the
+   *  shared image-source dialog (upload · phone · AI) against the real meal. */
+  readonly savedMealId = signal<number | null>(null);
+
+  /** In-flight guard for the Save POST. */
+  readonly saving = signal(false);
+  /** Save is enabled once the meal has a name and at least one picked food, and
+   *  it hasn't already been saved (savedMealId gates a duplicate POST — after a
+   *  save the photo tile switches to the tether/AI affordances for that meal, and
+   *  "Clear all" starts a fresh meal). */
+  readonly canSaveMeal = computed(
+    () => this.mealName().trim().length > 0 && this.buildMealTotal() > 0 && this.savedMealId() === null,
+  );
+
+  // Accepted image types for the staged photo tile (mirrors MealImageSource).
+  private static readonly PHOTO_MIME = /^image\/(jpeg|png|heic|heif)$/i;
+  private static readonly PHOTO_EXT = /\.(jpe?g|png|heic|heif)$/i;
+  private photoAccepted(file: File): boolean {
+    return FoodsPanelComponent.PHOTO_MIME.test(file.type) || FoodsPanelComponent.PHOTO_EXT.test(file.name);
   }
 
-  /** Ask Regi — hand the picked foods to the Chat panel for preparation & recipe
-   *  help, seeding the conversation with the list. Remembers this workspace as the
-   *  origin so the Chat banner's Back returns here (re-opening Build-a-Meal). The
-   *  seeded message is appended to the existing chat (the conversation is not
-   *  cleared). No meal is generated — this replaces the old Create-meal path. */
-  askRegi(): void {
-    const names = this.pickedFoodNames();
-    if (names.length === 0) return;
-    const rotation = this.rotation;
-    const tab = this.tabService;
-    tab.openChatWithOrigin('Build-a-Meal — Preparation & Recipe Help', () => {
-      // Setting the request first means the freshly-mounted foods panel's
-      // consume effect re-opens the Build-a-Meal workspace on arrival.
-      rotation.buildMealRequest.set({ slot: null });
-      tab.openPanel('foods', 'My Foods');
-    });
-    void this.chatService.sendMessage(
-      `I'm putting together a meal from these foods: ${names.join(', ')}. ` +
-        `Please help me with preparation steps and a simple recipe I can make with them.`,
-      'chat',
-    );
+  onPhotoDragOver(ev: DragEvent): void {
+    ev.preventDefault();
+    this.photoDragOver.set(true);
+  }
+  onPhotoDragLeave(ev: DragEvent): void {
+    ev.preventDefault();
+    this.photoDragOver.set(false);
+  }
+  onPhotoDrop(ev: DragEvent): void {
+    ev.preventDefault();
+    this.photoDragOver.set(false);
+    const file = ev.dataTransfer?.files?.[0] ?? null;
+    if (file) this.stagePhoto(file);
+  }
+  onPhotoFile(input: HTMLInputElement): void {
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    if (file) this.stagePhoto(file);
+  }
+
+  /** Stage a chosen/dropped photo locally: keep the File and render a data-URL
+   *  thumbnail. Nothing is uploaded until the meal is saved. */
+  private stagePhoto(file: File): void {
+    if (!this.photoAccepted(file)) {
+      this.notificationService.show('Please use a JPG, PNG, or HEIC image.', 'error');
+      return;
+    }
+    this.stagedPhotoFile.set(file);
+    const reader = new FileReader();
+    reader.onload = () => this.stagedPhotoPreview.set(typeof reader.result === 'string' ? reader.result : null);
+    reader.readAsDataURL(file);
+  }
+
+  /** Post-save: open the shared meal-image dialog (upload · phone tether · AI for
+   *  MealSetOwners) against the saved meal — the same affordance the meal card uses. */
+  openSavedMealImageSource(): void {
+    const id = this.savedMealId();
+    if (id == null) return;
+    const data: ImageSourceData = { kind: 'meal', id, name: this.mealName().trim() || 'meal' };
+    this.dialog.open(MealImageSourceComponent, { panelClass: 'meal-image-dialog-panel', autoFocus: false, data });
+  }
+
+  /** Displayed quantity + unit for a picked food. Quantity is the single
+   *  serving record: the user's UserFoodPreferences override (userServingSize)
+   *  when set, else the food's baseline serving, else 1; unit is the food's
+   *  natural serving unit, else "serving". Reading the userServingSize signal
+   *  makes the chip update live when the serving is edited anywhere. */
+  private pickQty(food: Food): number {
+    return this.preferencesService.userServingSize(food.id) ?? food.servingSize ?? 1;
+  }
+  private pickUnit(food: Food): string {
+    return (food.servingUnit || 'serving').trim() || 'serving';
+  }
+  pickQtyLabel(food: Food): string {
+    return `${this.pickQty(food)} · ${this.pickUnit(food)}`;
+  }
+
+  /** Open the serving editor for a picked food — the same NF popup the MyFoods
+   *  list uses; its steppers persist the one serving record (userServingSize). */
+  openPickServingEditor(food: Food): void {
+    this.selectedBasketFood.set(food);
+    this.openNfPopupForFood(food, 'edit');
+  }
+
+  /** Reset the banner state (name / method / notes / photo / saved-id) so the
+   *  workspace is ready for a fresh meal. Called from "Clear all" — clearing the
+   *  baskets is the natural "start over" gesture, so it also clears the banner. */
+  private resetBuildMealBanner(): void {
+    this.mealName.set('');
+    this.cookingMethodId.set(null);
+    this.mealNotes.set('');
+    this.notesEditorOpen.set(false);
+    this.stagedPhotoFile.set(null);
+    this.stagedPhotoPreview.set(null);
+    this.savedMealId.set(null);
+  }
+
+  /** Save Meal — POST the manual-assembly request. The server creates the Meal +
+   *  MealItems, computes every macro server-side, and pins it into the Binder. On
+   *  success: toast, upload any staged photo, refresh the Binder so it appears
+   *  without a reload, and reset for the next meal. On 400 (bad item, etc.) the
+   *  server message is toasted and the dialog is left intact for correction. */
+  async saveMeal(): Promise<void> {
+    if (this.saving() || !this.canSaveMeal()) return;
+    const baskets = this.buildMealBaskets();
+    const items: CreateMealItem[] = [];
+    for (const k of this.basketKeys) {
+      for (const f of baskets[k]) {
+        items.push({
+          foodId: f.id,
+          foodSource: (f.foodSource as 'food' | 'userfood') ?? 'food',
+          quantity: this.pickQty(f),
+          unit: this.pickUnit(f),
+        });
+      }
+    }
+    const body: CreateMealRequest = {
+      name: this.mealName().trim(),
+      mealType: 'meal',
+      cookingMethodId: this.cookingMethodId(),
+      notes: this.mealNotes().trim() || null,
+      items,
+    };
+    this.saving.set(true);
+    try {
+      const meal = await this.rotation.createBuiltMeal(body);
+      this.savedMealId.set(meal.id);
+      this.notificationService.show(`Saved "${meal.name}" to your Binder.`, 'success');
+      // Upload the staged photo now that the meal id exists (self-applies to the
+      // rotation store so the binder thumbnail updates).
+      const file = this.stagedPhotoFile();
+      if (file) {
+        try {
+          const res = await this.imageUpload.uploadMealImage(meal.id, file);
+          if (res?.cdn_url) this.rotation.applyUploadedMealImage(meal.id, res.cdn_url, res.thumbnail_url);
+        } catch {
+          this.notificationService.show('Meal saved, but the photo upload failed — add it again from the tile.', 'warning');
+        }
+      }
+      // Leave the workspace populated: savedMealId now flips the photo tile to the
+      // shared upload/phone/AI dialog for THIS meal, and Save is disabled (guarding
+      // a duplicate POST). "Clear all" starts a fresh meal.
+    } catch (err) {
+      const msg = err instanceof HttpErrorResponse
+        ? (typeof err.error === 'string' ? err.error : err.error?.message) || err.message
+        : 'Could not save the meal. Please try again.';
+      this.notificationService.show(msg, 'error', 5000);
+    } finally {
+      this.saving.set(false);
+    }
   }
 
   private splitterStartX = 0;
@@ -1694,7 +1935,7 @@ export class FoodsPanelComponent {
   /** Green pencil — edit the selected MyFood's Nutrition Facts. */
   onSelectedMyFoodEdit(): void {
     const food = this.selectedMyFood();
-    if (food) this.openNfPopupForFood(food, 'edit', 'myfoods');
+    if (food) this.openNfPopupForFood(food, 'edit', true);
   }
 
   /** Red trash (top bar) — delete the selected MyFood (user-added only). */
@@ -1766,7 +2007,7 @@ export class FoodsPanelComponent {
   /** Pencil (top bar) — open the Nutrition Facts editor for the highlighted food. */
   onSelectedTileEdit(): void {
     const food = this.selectedFood();
-    if (food) this.openNfPopupForFood(food, 'edit', 'myfoods');
+    if (food) this.openNfPopupForFood(food, 'edit', true);
   }
 
   /** Double-click on a LHS tile is now a no-op for NF popups — edits live
@@ -1784,7 +2025,7 @@ export class FoodsPanelComponent {
     if (this.buildMealOpen()) {
       this.addFoodToBasket(food, this.basketForFood(food));
     } else {
-      this.openNfPopupForFood(food, 'edit', 'myfoods');
+      this.openNfPopupForFood(food, 'edit', true);
     }
   }
 
@@ -1792,7 +2033,7 @@ export class FoodsPanelComponent {
    *  popup in EDIT mode. This is the only path that hands the user the
    *  steppers + Green Save button. */
   onEditMyFoodsRowDblClick(food: Food): void {
-    this.openNfPopupForFood(food, 'edit', 'myfoods');
+    this.openNfPopupForFood(food, 'edit', true);
   }
 
   // ----- Press-and-hold zoom on Edit MyFoods row thumbnail ----------------
@@ -1836,43 +2077,36 @@ export class FoodsPanelComponent {
     event.dataTransfer!.effectAllowed = 'copy';
   }
 
-  /** Where the open Nf popup was opened FROM. Drives Save routing: a
-   *  `'myfoods'`-origin save writes to UserFoodPreferences (the MyFoods
-   *  baseline); a `'picks'`-origin save writes the per-basket pickServingSize
-   *  override and (when the draft differs from the baseline) prompts whether
-   *  to also update the MyFoods default. */
-  nfPopupOrigin = signal<'myfoods' | 'picks' | null>(null);
+  /** True when the open NF popup was launched from the MyFoods list (vs a
+   *  basket). Its ONLY consumer is showRegiApprovedToggle below — the Admin
+   *  RegiApproved control must appear for MyFoods edits but not basket edits,
+   *  and a food can sit in both, so the open-surface has to be recorded. The
+   *  serving save path no longer branches on it (one record, userServingSize). */
+  nfPopupFromMyFoods = signal<boolean>(false);
   /** RegiApproved toggle state for the open popup (admin-only, owned MyFoods userfoods). */
   readonly nfPopupRegiApproved = signal<boolean>(false);
   /** The RegiApproved checkbox renders ONLY for an Admin editing an OWNED MyFoods
-   *  userfood (myfoods origin ⇒ positive id, owned by construction). Curated/negated
+   *  userfood (MyFoods-list open ⇒ positive id, owned by construction). Curated/negated
    *  rows never qualify — demote is an admin-tool function by design. */
   readonly showRegiApprovedToggle = computed(() =>
     this.role.hasRole('Admin') &&
     this.nfPopupFood()?.foodSource === 'userfood' &&
-    this.nfPopupOrigin() === 'myfoods',
+    this.nfPopupFromMyFoods(),
   );
 
-  /** Open the NF popup for a food and prime the adjustable-serving state.
-   *  Initial serving size for a Picks-origin popup starts at the pick's own
-   *  override (`pickServingSize`) when present, then falls through to the
-   *  user's saved MyFoods override (`userServingSize`), then to the food's
-   *  curated `servingSize` baseline, then 1. For a MyFoods-origin popup the
-   *  pickServingSize branch is skipped (the popup is editing the baseline,
-   *  not a pick). */
-  private openNfPopupForFood(food: Food, mode: 'view' | 'edit' = 'view', origin: 'myfoods' | 'picks' | null = null): void {
-    let initial: number;
-    if (origin === 'picks' && food.pickServingSize != null) {
-      initial = food.pickServingSize;
-    } else {
-      initial = this.preferencesService.userServingSize(food.id)
-        ?? food.servingSize
-        ?? 1;
-    }
+  /** Open the NF popup for a food and prime the adjustable-serving state. The
+   *  initial serving size everywhere is the single serving record: the user's
+   *  UserFoodPreferences override (`userServingSize`), else the food's curated
+   *  `servingSize` baseline, else 1. `fromMyFoods` records whether the popup was
+   *  launched from the MyFoods list (only gates the Admin RegiApproved toggle). */
+  private openNfPopupForFood(food: Food, mode: 'view' | 'edit' = 'view', fromMyFoods = false): void {
+    const initial = this.preferencesService.userServingSize(food.id)
+      ?? food.servingSize
+      ?? 1;
     this.nfPopupServingSize.set(initial);
     this.nfPopupOriginalServingSize.set(initial);
     this.nfPopupMode.set(mode);
-    this.nfPopupOrigin.set(origin);
+    this.nfPopupFromMyFoods.set(fromMyFoods);
     this.nfPopupRegiApproved.set(food.regiApproved ?? false);
     this.nfPopupFood.set(food);
     this.nfPopupUnitDirty.set(false);
@@ -2182,115 +2416,8 @@ export class FoodsPanelComponent {
   onNfPopupClose(): void {
     this.nfPopupServingSize.set(this.nfPopupOriginalServingSize());
     this.nfPopupMode.set('view');
-    this.nfPopupOrigin.set(null);
+    this.nfPopupFromMyFoods.set(false);
     this.nfPopupFood.set(null);
-  }
-
-  /** Green Save button handler. Routes by the popup's origin:
-   *
-   *  - `myfoods` (Edit MyFoods row dbl-click) → writes to UserFoodPreferences,
-   *    same as it always has. food.foodSource is passed so the preference row
-   *    gets the correct discriminator (was missing — created duplicate rows
-   *    with FoodSource='food' for UserFoods).
-   *
-   *  - `picks` (basket dbl-click) → writes pickServingSize to the basket
-   *    entry. If the draft differs from the MyFoods baseline, also prompts
-   *    whether to make the MyFoods default match. If the draft matches the
-   *    baseline, the override is cleared (pickServingSize=null) and no
-   *    prompt — there's nothing meaningful to override.
-   *
-   *  Disabled in the template via [disabled]="!nfPopupCanSave()" so this
-   *  shouldn't fire when there's nothing to save. */
-  onNfSave(): void {
-    const food = this.nfPopupFood();
-    if (!food || !this.nfPopupCanSave()) return;
-    const draft = this.nfPopupServingSize();
-    const origin = this.nfPopupOrigin();
-
-    // Persist a category change (userfoods only) via the category-only PATCH.
-    const newCat = this.nfPopupCategory().trim();
-    if (newCat && newCat.toLowerCase() !== this.nfPopupOriginalCategory().trim().toLowerCase()) {
-      const cat = this.foodsService.categories().find(
-        (c) => c.name.toLowerCase() === newCat.toLowerCase(),
-      );
-      if (cat && (food.foodSource ?? 'food') === 'userfood' && food.id != null) {
-        void this.userFoodService.setUserFoodCategory(food.id, cat.id);
-        this.nfPopupFood.update((f) => (f ? { ...f, categoryId: cat.id, categoryName: cat.name } : f));
-        // Reflect the move in the local caches so the accordion regroups the
-        // food immediately — no page refresh — and expand the destination.
-        this.applyLocalCategory(food.id, cat.id, cat.name);
-      }
-      this.nfPopupOriginalCategory.set(newCat);
-    }
-
-    // Persist a UNIT change to the MyFoods copy. serving-geometry teaches a
-    // food-specific unit (cup/tbsp/each…) and forks a system food into a userfood
-    // when needed; it rejects intrinsic weight units, so those are skipped (the
-    // grams-per-unit is fixed — nothing to teach — and the amount baseline below
-    // still carries the change).
-    if (this.nfPopupUnitDirty() && food.id != null) {
-      const unit = food.servingUnit || 'g';
-      const gpu = food.servingGramsPerUnit ?? 0;
-      if (this.massGrams(unit) == null && gpu > 0) {
-        void firstValueFrom(
-          this.foodsService.patchServingGeometry({
-            foodId: food.id,
-            foodSource: food.foodSource === 'userfood' ? 'userfood' : 'food',
-            unitName: unit,
-            gramsPerUnit: gpu,
-            defaultQuantity: this.nfPopupServingSize(),
-          }),
-        )
-          .then(() => this.refreshServerMyFoods())
-          .catch(() => this.notificationService.show('Could not save the unit.', 'error'));
-      }
-      this.nfPopupUnitDirty.set(false);
-    }
-
-    if (origin === 'picks') {
-      const baseline = this.preferencesService.userServingSize(food.id)
-        ?? food.servingSize
-        ?? 1;
-      // If the draft matches the baseline, the user has no real override —
-      // clear pickServingSize so the basket entry follows the baseline going
-      // forward. No prompt — there's nothing to ask about.
-      const newOverride = draft === baseline ? null : draft;
-      this.setPickServingSize(food, newOverride);
-      this.nfPopupOriginalServingSize.set(draft);
-      this.nfPopupMode.set('view');
-      this.nfPopupOrigin.set(null);
-      this.nfPopupFood.set(null);
-      if (newOverride !== null) {
-        this.baselineDialog.set({ food, draft, unit: food.servingUnit ?? 'unit' });
-      }
-      return;
-    }
-
-    // Default / 'myfoods' origin: write the MyFoods baseline directly.
-    this.preferencesService.setUserServingSize(food.id, draft, food.foodSource);
-    this.nfPopupOriginalServingSize.set(draft);
-    this.nfPopupMode.set('view');
-    this.nfPopupOrigin.set(null);
-    this.nfPopupFood.set(null);
-  }
-
-  /** Mutate the basket-local pickServingSize for the food currently being
-   *  edited. Walks all four baskets so the food gets updated wherever it
-   *  lives (currently the UI only allows a food in one basket at a time,
-   *  but the helper is defensive). The basket-signal write triggers the
-   *  debounced server PUT via persistBuildMealBaskets. */
-  private setPickServingSize(food: Food, override: number | null): void {
-    this.buildMealBaskets.update(b => {
-      const next = { ...b } as BuildMealBaskets;
-      for (const k of this.basketKeys) {
-        next[k] = b[k].map(f =>
-          f.id === food.id && (f.foodSource ?? 'food') === (food.foodSource ?? 'food')
-            ? { ...f, pickServingSize: override }
-            : f,
-        );
-      }
-      return next;
-    });
   }
 
   /** Adjust handler from the NF label's ▲ / ▼ steppers — ladder-snap using the
@@ -2350,7 +2477,7 @@ export class FoodsPanelComponent {
       clearTimeout(this.tileClickTimer);
       this.tileClickTimer = null;
       this.selectedBasketFood.set(food);
-      this.openNfPopupForFood(food, 'edit', 'picks');
+      this.openNfPopupForFood(food, 'edit');
       return;
     }
     this.tileClickTimer = setTimeout(() => {
@@ -2364,7 +2491,7 @@ export class FoodsPanelComponent {
   onHeaderEditSelected(): void {
     const food = this.selectedBasketFood();
     if (!food) return;
-    this.openNfPopupForFood(food, 'edit', 'picks');
+    this.openNfPopupForFood(food, 'edit');
   }
 
   /** True when the selected pick lives in the given basket — gates that
@@ -2422,7 +2549,6 @@ export class FoodsPanelComponent {
     const stamped: Food = {
       ...food,
       pickAddedAt: food.pickAddedAt ?? new Date().toISOString(),
-      pickServingSize: food.pickServingSize ?? null,
       mealRole: food.mealRole ?? 'AnyUse',
     };
     // Append (oldest first, newest last) — the basket-tiles flex layout uses
@@ -2471,6 +2597,9 @@ export class FoodsPanelComponent {
   clearAllBaskets(): void {
     this.selectedBasketFood.set(null);
     this.buildMealBaskets.set(emptyBaskets());
+    // Clearing the baskets is "start over" — also reset the banner (name, method,
+    // notes, staged photo, saved-meal state) so the next meal begins fresh.
+    this.resetBuildMealBanner();
   }
 
   clearBasket(key: BasketKey): void {
@@ -2685,22 +2814,6 @@ export class FoodsPanelComponent {
 
   showHealthBenefits = signal(false);
 
-  /** Live "Make MyFoods baseline match the pick override?" dialog state.
-   *  Set when the user saves a Pick whose draft serving differs from the
-   *  MyFoods baseline. Yes → also write the baseline; No/X → only the pick
-   *  override stands. */
-  baselineDialog = signal<{ food: Food; draft: number; unit: string } | null>(null);
-
-  onBaselineDialogYes(): void {
-    const d = this.baselineDialog();
-    if (!d) return;
-    this.preferencesService.setUserServingSize(d.food.id, d.draft, d.food.foodSource);
-    this.baselineDialog.set(null);
-  }
-
-  onBaselineDialogNo(): void {
-    this.baselineDialog.set(null);
-  }
   nfPopupFood = signal<Food | null>(null);
   /** Category dropdown state — bound by NAME (the same value the accordion
    *  groups the food under), so it always reflects the food's real category
@@ -2758,17 +2871,6 @@ export class FoodsPanelComponent {
    *   - detect dirty (current != original → Save enabled),
    *   - revert if the user closes via X without saving. */
   nfPopupOriginalServingSize = signal<number>(1);
-
-  /** Save is enabled iff popup is in edit mode AND the draft differs from
-   *  what we opened at. */
-  // The green Save disc appears ONLY when something actually changed — the two
-  // editable things are serving size and category. No change → no green disc.
-  nfPopupCanSave = computed<boolean>(() =>
-    this.nfPopupMode() === 'edit' &&
-    (this.nfPopupServingSize() !== this.nfPopupOriginalServingSize() ||
-      this.nfPopupCategory().trim() !== this.nfPopupOriginalCategory().trim() ||
-      this.nfPopupUnitDirty())
-  );
 
   /** Scale factor handed to the NF label so it can recompute macros from the
    *  per-100g baseline. Display math is (qty × servingGramsPerUnit) / 100,

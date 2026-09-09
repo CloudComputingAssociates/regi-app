@@ -225,10 +225,6 @@ export interface CurrentPick {
    */
   basketKey: "Proteins" | "Fats" | "Carbs" | "Other";
   /**
-   * Per-basket serving-size override; null = use the food's baseline serving
-   */
-  pickServingSize?: number | null;
-  /**
    * How the generator should use this pick: PrimaryFood = build the meal around it; SecondaryFood = supporting/complementary; AnyUse = no constraint (default).
    */
   mealRole?: "AnyUse" | "PrimaryFood" | "SecondaryFood";

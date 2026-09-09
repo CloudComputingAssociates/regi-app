@@ -1052,6 +1052,18 @@ export class RotationService {
     return saved;
   }
 
+  /** Build-a-Meal manual save: POST /api/meal with the assembled items. The server
+   *  creates the Meal + MealItems, computes every macro server-side, and pins it into
+   *  the Binder (Pinned=1). Refresh the Binder so the meal appears without a reload,
+   *  and RETURN the saved meal. Throws on HTTP failure (the caller toasts the server
+   *  message — e.g. a 400 naming a bad item). */
+  async createBuiltMeal(body: CreateMealRequest): Promise<Meal> {
+    const saved = await firstValueFrom(this.http.post<Meal>(`${this.baseUrl}/meal`, body));
+    this.mealsById.update((m) => new Map(m).set(saved.id, saved));
+    await this.loadBinder();
+    return saved;
+  }
+
   /** Patch a meal's editable fields (Build-a-Meal result bar: title / serves / type).
    *  Returns the updated meal, or null on failure (caller toasts via errMessage). */
   async updateMealFields(mealId: number, patch: UpdateMealRequest): Promise<Meal | null> {

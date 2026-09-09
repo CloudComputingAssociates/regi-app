@@ -101,10 +101,10 @@
         "totalSodiumMg": { "type": "integer" },
         "prepVideoLink": { "type": "string" },
         "recipeLink": { "type": "string" },
-        "notes": { "type": ["string", "null"], "description": "Free-text meal notes for recipe AND non-recipe meals. User-editable via PUT /meal/{id} {notes}. Fed into the AI image-generation prompt as a hint (e.g. 'hard-boiled eggs, not sunny-side up') and rendered on the meal-as-recipe PDF." },
         "mealImage": { "type": "string" },
         "mealImageThumbnail": { "type": "string" },
         "servings": { "type": "integer", "description": "How many servings this meal yields" },
+        "notes": { "type": ["string", "null"], "description": "Free-text meal notes; AI image hint + PDF body." },
         "items": {
           "type": "array",
           "items": { "$ref": "#/definitions/MealItem" }
@@ -162,9 +162,21 @@
       }
     },
 
+    "CreateMealItem": {
+      "type": "object",
+      "description": "One constituent food line for the Build-a-Meal manual save path. The server resolves the food from the AllFoods view by (foodId, foodSource), derives the display name + item role, and computes all macros from the quantity+unit — the client sends no name, role, or macro fields.",
+      "properties": {
+        "foodId": { "type": "integer", "description": "Foods.FoodID or UserFoods.UserFoodID, per foodSource" },
+        "foodSource": { "type": "string", "enum": ["food", "userfood"], "description": "Which table the food lives in" },
+        "quantity": { "type": "number", "exclusiveMinimum": 0, "description": "Amount of food (must be > 0)" },
+        "unit": { "type": "string", "description": "Unit of measurement (serving, oz, g, whole, etc.)" }
+      },
+      "required": ["foodId", "foodSource", "quantity", "unit"]
+    },
+
     "CreateMealRequest": {
       "type": "object",
-      "description": "Request body for POST /api/meal — creates an empty named meal",
+      "description": "Request body for POST /api/meal. With no items it creates an empty named meal (Pinned=0). With items it is the Build-a-Meal manual save: the server creates the Meal + MealItems, computes every macro server-side from the foods, and pins it into the Binder (Pinned=1). All macro fields are server-computed — the request carries none.",
       "properties": {
         "name": {
           "type": "string",
@@ -179,7 +191,20 @@
           "minimum": 1,
           "maximum": 100,
           "default": 1,
-          "description": "How many servings this meal yields (1–100). Defaults to 1."
+          "description": "How many servings this meal yields (1–100). Defaults to 1. Ignored on the Build-a-Meal (items present) path, which is always 1-person truth."
+        },
+        "cookingMethodId": {
+          "type": ["integer", "null"],
+          "description": "FK to dbo.CookingMethods; null when unset. Persisted on create."
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "Free-text meal notes; persisted on create. Feeds the AI image hint + PDF body."
+        },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/CreateMealItem" },
+          "description": "Constituent foods for the Build-a-Meal manual save. When present, the meal is created with these items (macros computed server-side) and pinned into the Binder. Omit/empty for the plain empty-meal create."
         }
       },
       "required": ["name"]
@@ -222,7 +247,7 @@
         },
         "notes": {
           "type": ["string", "null"],
-          "description": "New meal notes (empty string / null clears). Persisted to the meal; also used as an AI image-generation hint and rendered on the meal-as-recipe PDF."
+          "description": "New notes; empty string/null clears."
         },
         "clearClonedFrom": {
           "type": "boolean",
