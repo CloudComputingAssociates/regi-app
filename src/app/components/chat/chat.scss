@@ -15,6 +15,54 @@
   min-height: 0;
   background-color: #000000;
 
+  // Contextual hand-off banner (e.g. Build-a-Meal → Ask Regi). A slim blue bar
+  // above the status header: a Back arrow + the sub-title.
+  .chat-origin-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: linear-gradient(180deg, #123 0%, #0d1b2a 100%);
+    border-bottom: 1px solid #1e3a5f;
+    flex-shrink: 0;
+
+    .chat-origin-back {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: #4da6ff;
+      transition: color 0.2s ease, transform 0.2s ease;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      &:hover {
+        color: #7bc0ff;
+        transform: translateX(-2px);
+      }
+    }
+
+    .chat-origin-title {
+      color: #cfe6ff;
+      font-family: 'Inter', 'Roboto', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+  }
+
   // Status header - permanent toast area at top
   .chat-status-header {
     display: flex;

@@ -438,6 +438,29 @@ export class TabService {
     }
   }
 
+  // ============================================================
+  // Chat hand-off — open Chat contextually with a way BACK to the origin.
+  // ============================================================
+  // A panel (e.g. Build-a-Meal's "Ask Regi") can send the user into the Chat
+  // panel for a focused sub-conversation. The Chat panel renders a small banner
+  // with the sub-title and a Back control; the origin supplies an `onReturn`
+  // that navigates back (and re-opens its workspace). null = ordinary chat.
+  readonly chatOrigin = signal<{ title: string; onReturn: () => void } | null>(null);
+
+  /** Hand off to the Chat panel with a contextual sub-title and a return action. */
+  openChatWithOrigin(title: string, onReturn: () => void): void {
+    this.chatOrigin.set({ title, onReturn });
+    this.openPanel('chat', 'Chat');
+  }
+
+  /** Back out of a contextual Chat hand-off: clear the banner and run the origin's
+   *  return action (which navigates back to where the hand-off began). */
+  returnFromChatOrigin(): void {
+    const origin = this.chatOrigin();
+    this.chatOrigin.set(null);
+    origin?.onReturn();
+  }
+
 
   switchToChat(): void {
     this.activeTabIndexSignal.set(0);

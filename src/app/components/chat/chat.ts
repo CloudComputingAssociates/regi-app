@@ -13,6 +13,24 @@ import { ChatOutputComponent } from './chat-output/chat-output';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="chat-container">
+      <!-- Contextual hand-off banner — shown when another surface (e.g.
+           Build-a-Meal's "Ask Regi") sent the user here. The Back control returns
+           to the origin. Ordinary chat has no banner. -->
+      @if (tabService.chatOrigin(); as origin) {
+        <div class="chat-origin-banner">
+          <button
+            type="button"
+            class="chat-origin-back"
+            (click)="tabService.returnFromChatOrigin()"
+            matTooltip="Back to Build-a-Meal"
+            matTooltipPosition="below"
+            aria-label="Back to Build-a-Meal">
+            <mat-icon>arrow_back</mat-icon>
+          </button>
+          <span class="chat-origin-title">{{ origin.title }}</span>
+        </div>
+      }
+
       <!-- Status line — New / Clear keys inline with the status text on ONE row
            (no separate title row, no wasted vertical space). -->
       <div class="chat-status-header" [class.prompt-mode]="chatService.isPromptMeActive()">
@@ -46,7 +64,7 @@ import { ChatOutputComponent } from './chat-output/chat-output';
   styleUrls: ['./chat.scss']
 })
 export class ChatComponent {
-  private tabService = inject(TabService);
+  protected tabService = inject(TabService);
   chatService = inject(ChatService);
 
   startNewChat(): void {

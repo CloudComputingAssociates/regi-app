@@ -21,6 +21,7 @@ import { RoleService } from '../../services/role.service';
 import { Meal, MealType, UpdateMealRequest } from '../../models';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
+import { ChatService } from '../../services/chat.service';
 import { UserFoodService } from '../../services/user-food.service';
 import { FoodsService, FoodList } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
@@ -353,40 +354,18 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             </div>
           </div>
 
-          <!-- Create row: Simple / Full-recipe radios + the AI "Create meal" key. -->
+          <!-- Ask Regi — hand the picked foods over to Chat for preparation &
+               recipe help. Returns to this Build-a-Meal workspace when done. -->
           <div class="buildmeal-controls">
-            <div class="bm-radio-group" role="group" aria-label="Meal kind">
-              <button
-                type="button"
-                class="category-radio-btn"
-                [class.pressed]="buildMealKind() === 'simple'"
-                [attr.aria-pressed]="buildMealKind() === 'simple'"
-                (click)="buildMealKind.set('simple')">
-                Simple Meal
-              </button>
-              <button
-                type="button"
-                class="category-radio-btn"
-                disabled
-                matTooltip="Full recipe generation is coming soon"
-                matTooltipPosition="below">
-                Full recipe
-              </button>
-            </div>
             <button
               type="button"
               class="bm-create-btn"
-              [disabled]="!canBuildMeal() || buildBusy()"
-              [matTooltip]="canBuildMeal() ? 'Generate a meal from your picked foods' : 'Pick at least one protein first'"
+              [disabled]="buildMealTotal() === 0"
+              matTooltip="Preparation and Recipe Help"
               matTooltipPosition="below"
-              (click)="createBuildMeal()">
-              @if (buildBusy()) {
-                <mat-icon class="bm-spin">autorenew</mat-icon>
-                <span>Creating…</span>
-              } @else {
-                <img src="/images/AI-star-blue.png" alt="" class="bm-create-star" />
-                <span>Create meal</span>
-              }
+              (click)="askRegi()">
+              <img src="/images/AI-star-blue.png" alt="" class="bm-create-star" />
+              <span>Ask Regi</span>
             </button>
           </div>
 
@@ -511,72 +490,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               }
             </div>
             </div>
-            @if (buildResult(); as res) {
-              <!-- Generated-meal result — fills the workspace (covers the baskets until
-                   closed with the X). -->
-              <div class="buildmeal-result">
-                <div class="result-bar">
-                  <input
-                    type="text"
-                    class="result-title regi-field"
-                    [value]="buildTitle()"
-                    (input)="buildTitle.set($any($event.target).value)"
-                    (blur)="commitBuildTitle()"
-                    (keydown.enter)="$any($event.target).blur()"
-                    aria-label="Meal title" />
-                  <select
-                    class="result-type regi-field"
-                    (change)="commitBuildType($any($event.target).value)"
-                    aria-label="Meal type">
-                    @for (t of mealTypeOptions; track t) {
-                      <option [value]="t" [selected]="t === buildType()">{{ t }}</option>
-                    }
-                  </select>
-                  <label
-                    class="result-serves-label"
-                    matTooltip="Scale used in Shopping list and Recipe output (PDF)"
-                    matTooltipPosition="above">Serves</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    class="result-serves regi-field"
-                    [value]="buildServes()"
-                    (change)="commitBuildServes($any($event.target).value)"
-                    matTooltip="Scale used in Shopping list and Recipe output (PDF)"
-                    matTooltipPosition="above"
-                    aria-label="Servings scale" />
-                  <a class="result-goto" (click)="goToMeals()">Jump to Meals</a>
-                  <button
-                    type="button"
-                    class="icon-disc icon-disc-danger result-discard"
-                    (click)="discardBuildMeal()"
-                    matTooltip="Discard this meal"
-                    matTooltipPosition="above">
-                    <mat-icon>delete_outline</mat-icon>
-                  </button>
-                  <button
-                    type="button"
-                    class="dialog-disc dialog-disc-cancel result-close"
-                    (click)="closeBuildResult()"
-                    matTooltip="Close"
-                    matTooltipPosition="above">
-                    <mat-icon>close</mat-icon>
-                  </button>
-                </div>
-                <div class="result-pdf">
-                  @if (res.pdfUrl) {
-                    @defer (on immediate) {
-                      <app-recipe-pdf-viewer [src]="res.pdfUrl" />
-                    } @placeholder {
-                      <div class="result-pdf-msg">Loading preview…</div>
-                    }
-                  } @else {
-                    <div class="result-pdf-msg">The meal PDF isn’t ready yet.</div>
-                  }
-                </div>
-              </div>
-            }
           </div>
           @if (addTo() === 'right') {
             <!-- Edit MyFoods overlay — pops over the panel (consistent with the
@@ -1199,6 +1112,7 @@ export class FoodsPanelComponent {
     await this.refreshServerMyFoods();
   }
   private notificationService = inject(NotificationService);
+  private chatService = inject(ChatService);
   private userFoodService = inject(UserFoodService);
   protected foodsService = inject(FoodsService);
   private langfusePromptService = inject(LangfusePromptService);
@@ -1643,102 +1557,53 @@ export class FoodsPanelComponent {
     else this.openEditOverlay();
   }
 
-  // ---- Build-a-Meal: Create + result preview --------------------------------
-  /** Simple AI meal vs full recipe (the recipe path is deferred — inert for now). */
-  readonly buildMealKind = signal<'simple' | 'recipe'>('simple');
-  /** True while a meal is generated + its PDF rendered. */
-  readonly buildBusy = signal(false);
-  /** Can't build a meal without at least one protein pick. */
-  readonly canBuildMeal = computed(() => this.buildMealBaskets().Proteins.length > 0);
-  /** The generated meal being previewed, or null. The result region renders when set. */
-  readonly buildResult = signal<{ mealId: number; pdfUrl: string } | null>(null);
-  /** Editable result-bar fields (persisted back to the meal). */
-  readonly buildTitle = signal('');
-  readonly buildServes = signal(1);
-  readonly buildType = signal<string>('Meal');
-  readonly mealTypeOptions = this.rotation.mealTypeOptions;
-
-  /** A menu slot we were sent here to build for (from an empty slot's Build-a-Meal
-   *  link). When set, the created meal is placed into this slot as well as the Binder. */
-  private readonly pendingBuildSlot = signal<{ menuId: number; slotOrder: number } | null>(null);
-  /** Consume a cross-panel "build a meal for this slot" request: open the Build-a-Meal
-   *  workspace and remember the target slot for placement on create. */
+  // ---- Build-a-Meal: Ask Regi -----------------------------------------------
+  /** Consume a cross-panel request to open the Build-a-Meal workspace (from the
+   *  Add-Meal bloom's CTA, an empty menu slot, or the Ask-Regi return path). The
+   *  old meal-generation/slot-placement flow was replaced by Ask Regi, so the
+   *  request's `slot` is no longer acted on here — it just opens the workspace. */
   private readonly consumeBuildMealForSlot = effect(
     () => {
       const req = this.rotation.buildMealRequest();
       if (!req) return;
-      this.pendingBuildSlot.set(req.slot); // null = Binder-only (Add Meals); set = slot too
       this.openBuildMeal();
       this.rotation.buildMealRequest.set(null); // consume
     },
     { allowSignalWrites: true },
   );
 
-  /** Create a meal from the current picks (Simple path only for now): generate, render
-   *  the PDF, and open the result region. The server reads the picks from currentPicks. */
-  async createBuildMeal(): Promise<void> {
-    if (this.buildBusy() || !this.canBuildMeal() || this.buildMealKind() === 'recipe') return;
-    this.buildBusy.set(true);
-    try {
-      const meal: Meal = await this.rotation.buildMealFromPicks();
-      const pdfUrl = await this.rotation.printMealPdf(meal.id);
-      this.buildTitle.set(meal.name ?? '');
-      this.buildServes.set(meal.servings ?? 1);
-      this.buildType.set(meal.mealType || 'Meal');
-      this.buildResult.set({ mealId: meal.id, pdfUrl });
-      // Came here from an empty menu slot → drop the new meal into that slot too
-      // (it's already pinned to the Binder by buildMealFromPicks).
-      const slot = this.pendingBuildSlot();
-      if (slot) {
-        this.pendingBuildSlot.set(null);
-        await this.rotation.placeMealInSlot(slot.menuId, slot.slotOrder, meal.id);
-      }
-    } catch {
-      this.notificationService.show('Could not build a meal from your picks. Please try again.', 'error');
-    } finally {
-      this.buildBusy.set(false);
-    }
+  /** Flat list of the picked foods' display names across all four baskets, in
+   *  Proteins → Fats → Carbs → Other order. Used to seed the Ask-Regi prompt. */
+  private pickedFoodNames(): string[] {
+    const b = this.buildMealBaskets();
+    return [...b.Proteins, ...b.Fats, ...b.Carbs, ...b.Other]
+      .map((f) => (f.shortDescription || f.description || '').trim())
+      .filter((n) => n.length > 0);
   }
 
-  /** Persist a result-bar edit (title / serves / type), then re-render the PDF. */
-  private async applyResultEdit(patch: UpdateMealRequest): Promise<void> {
-    const res = this.buildResult();
-    if (!res) return;
-    const saved = await this.rotation.updateMealFields(res.mealId, patch);
-    if (!saved) return;
-    const pdfUrl = await this.rotation.printMealPdf(res.mealId);
-    this.buildResult.set({ mealId: res.mealId, pdfUrl });
-  }
-  commitBuildTitle(): void {
-    const name = this.buildTitle().trim();
-    if (name) void this.applyResultEdit({ name });
-  }
-  commitBuildServes(value: string): void {
-    const n = Math.max(1, Math.min(100, Math.round(Number(value) || 1)));
-    this.buildServes.set(n);
-    void this.applyResultEdit({ servings: n });
-  }
-  commitBuildType(value: string): void {
-    this.buildType.set(value);
-    void this.applyResultEdit({ mealType: value as MealType });
+  /** Ask Regi — hand the picked foods to the Chat panel for preparation & recipe
+   *  help, seeding the conversation with the list. Remembers this workspace as the
+   *  origin so the Chat banner's Back returns here (re-opening Build-a-Meal). The
+   *  seeded message is appended to the existing chat (the conversation is not
+   *  cleared). No meal is generated — this replaces the old Create-meal path. */
+  askRegi(): void {
+    const names = this.pickedFoodNames();
+    if (names.length === 0) return;
+    const rotation = this.rotation;
+    const tab = this.tabService;
+    tab.openChatWithOrigin('Build-a-Meal — Preparation & Recipe Help', () => {
+      // Setting the request first means the freshly-mounted foods panel's
+      // consume effect re-opens the Build-a-Meal workspace on arrival.
+      rotation.buildMealRequest.set({ slot: null });
+      tab.openPanel('foods', 'My Foods');
+    });
+    void this.chatService.sendMessage(
+      `I'm putting together a meal from these foods: ${names.join(', ')}. ` +
+        `Please help me with preparation steps and a simple recipe I can make with them.`,
+      'chat',
+    );
   }
 
-  /** Close the result region — the meal is KEPT (reachable via "Jump to Meals"). */
-  closeBuildResult(): void {
-    this.buildResult.set(null);
-  }
-  /** Discard the generated meal entirely ("don't like it" → DELETE). */
-  async discardBuildMeal(): Promise<void> {
-    const res = this.buildResult();
-    if (!res) return;
-    if (await this.rotation.deleteMeal(res.mealId)) this.buildResult.set(null);
-  }
-  /** Jump to the Notebook with the Meals tab showing the freshly-built meal (it was
-   *  pinned into the Binder, which auto-sorts newest-first when a meal arrives). */
-  goToMeals(): void {
-    this.tabService.openPanel('menus', 'Menus & Meals');
-    this.rotation.openBinderTab('meals');
-  }
   private splitterStartX = 0;
   private splitterStartFraction = 0;
 
