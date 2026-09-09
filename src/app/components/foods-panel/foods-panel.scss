@@ -2368,18 +2368,17 @@
   }
 }
 
-// ---- Build-a-Meal: Create controls + result region -------------------------
-// Build-a-Meal banner — the manual assembler's top controls. ~96px tall (about
-// double the old single-row bar): name, cooking method, notes preview, photo
-// tile, and Save, laid out left → right.
+// ---- Build-a-Meal: banner controls + result region -------------------------
+// Build-a-Meal banner — the manual assembler's top controls in one slim row:
+// Name · Notes (the focus, wide middle) · Cook Method (short) beside the photo
+// drop-zone. Save is a green-check key up in the title bar (see .bam-save-key).
 .buildmeal-banner {
   flex-shrink: 0;
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 10px;
-  min-height: 96px;
   margin: 0 8px 6px;
-  padding: 10px;
+  padding: 6px 10px;
   background: #3a3a3a;
   border: 1px solid #4a4a4a;
   border-radius: 8px;
@@ -2388,29 +2387,27 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
 }
-.bm-field-name { flex: 1 1 auto; }
-.bm-field-method { flex: 0 0 150px; }
-.bm-field-notes { flex: 1 1 auto; }
+.bm-field-name { flex: 1 1 0; }
+.bm-field-notes { flex: 2 1 0; } // Notes is the focus — widest field.
+.bm-field-method { flex: 0 0 116px; } // Cook Method — short, next to the photo.
+.bm-field-photo { flex: 0 0 auto; }
+// Field titles — blue, matching the SEARCH / FILTER labels in MyFoods.
 .bm-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  color: #9a9a9a;
+  @extend %control-bar-label;
 }
 .bm-input {
-  height: 30px;
-  font-size: 13px;
+  height: 28px;
+  font-size: 12px;
   width: 100%;
 }
 .bm-notes-preview {
   display: flex;
   align-items: center;
   gap: 6px;
-  height: 30px;
+  height: 28px;
   padding: 0 8px;
   background: #2c2c2c;
   border: 1px solid #555;
@@ -2440,17 +2437,12 @@
     color: #9ab;
   }
 }
-.bm-photo {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-}
 .bm-photo-tile {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 76px;
-  height: 76px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   background: #2c2c2c;
   border: 1px dashed #666;
@@ -2462,43 +2454,17 @@
   &:hover { border-color: #6b8fc0; }
   &.dragging { border-color: #4da6ff; background: #24303f; }
 
-  .bm-photo-icon { width: 28px; height: 28px; font-size: 28px; color: #8a8a8a; }
+  .bm-photo-icon { width: 22px; height: 22px; font-size: 22px; color: #8a8a8a; }
   .bm-photo-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 }
-.bm-save-btn {
-  align-self: center;
-  .bm-save-icon { width: 18px; height: 18px; font-size: 18px; }
-}
-.bm-create-btn {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 30px;
-  padding: 0 14px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  color: #f0f0f0;
-  background: linear-gradient(180deg, #4a6fa5 0%, #3a5680 100%);
-  border: 1px solid #2a3f5f;
-  border-top-color: #6b8fc0;
-  border-radius: 6px;
-  cursor: pointer;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  transition: filter 0.12s ease, transform 0.05s ease;
 
-  &:hover:not(:disabled) { filter: brightness(1.1); }
-  &:active:not(:disabled) { transform: translateY(1px); }
-  &:disabled { opacity: 0.45; cursor: default; }
-
-  .bm-create-star { width: 18px; height: 18px; display: block; }
-  .bm-spin {
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
-    animation: bm-spin 0.9s linear infinite;
-  }
+// Save-meal toolbar key — the grey .bar-icon-btn chrome with a green check.
+// Dims when there's nothing to save; the check spins while the POST is in flight.
+.bam-save-key {
+  .mat-icon, mat-icon { color: #4caf50; }
+  &:disabled { opacity: 0.4; cursor: default; }
+  &:disabled .mat-icon, &:disabled mat-icon { color: #9a9a9a; }
+  &.saving .mat-icon { animation: bm-spin 0.9s linear infinite; }
 }
 @keyframes bm-spin { to { transform: rotate(360deg); } }
 

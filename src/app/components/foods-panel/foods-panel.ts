@@ -340,6 +340,20 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 aria-label="Clear all picked foods">
                 <mat-icon aria-hidden="true">clear_all</mat-icon>
               </button>
+              <!-- Save meal — green check in the same grey toolbar key. Saves the
+                   assembled meal and closes Build-a-Meal. Dimmed until it has a
+                   name and at least one food. -->
+              <button
+                type="button"
+                class="bar-icon-btn bam-save-key"
+                [class.saving]="saving()"
+                [disabled]="!canSaveMeal() || saving()"
+                matTooltip="Save meal"
+                matTooltipPosition="below"
+                (click)="saveMeal()"
+                aria-label="Save meal">
+                <mat-icon aria-hidden="true">{{ saving() ? 'autorenew' : 'check' }}</mat-icon>
+              </button>
               <!-- Close ONLY the Build-a-Meal pane (parks the split) — a white X. The
                    whole My Foods panel is closed from its own header's red X. -->
               <button
@@ -354,8 +368,9 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             </div>
           </div>
 
-          <!-- Build-a-Meal banner — manual meal assembler: name, cooking method,
-               notes preview, a staged photo tile, and Save. ~96px tall. -->
+          <!-- Build-a-Meal banner — Name · Notes (the focus, wide middle) · Cook
+               Method (short) beside the photo drop-zone. Save lives up in the
+               title bar next to the close X. -->
           <div class="buildmeal-banner">
             <div class="bm-field bm-field-name">
               <label class="bm-label" for="bm-name">Name</label>
@@ -365,23 +380,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 class="bm-input regi-field"
                 [value]="mealName()"
                 (input)="mealName.set($any($event.target).value)"
-                placeholder="Name your meal…"
+                placeholder="Name this meal…"
                 aria-label="Meal name" />
-            </div>
-
-            <div class="bm-field bm-field-method">
-              <label class="bm-label" for="bm-method">Cooking method</label>
-              <select
-                id="bm-method"
-                class="bm-input regi-field"
-                [ngModel]="cookingMethodId()"
-                (ngModelChange)="cookingMethodId.set($event)"
-                aria-label="Cooking method">
-                <option [ngValue]="null">— none —</option>
-                @for (m of cookingMethods(); track m.id) {
-                  <option [ngValue]="m.id">{{ m.name }}</option>
-                }
-              </select>
             </div>
 
             <div class="bm-field bm-field-notes">
@@ -400,40 +400,39 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               </button>
             </div>
 
-            <!-- Photo tile — stages a file locally before save; after save it
-                 reuses the shared meal-image dialog (upload · phone · AI). -->
-            <div class="bm-photo">
-              @if (savedMealId() === null) {
-                <div
-                  class="bm-photo-tile"
-                  [class.dragging]="photoDragOver()"
-                  (click)="bmPhotoInput.click()"
-                  (dragover)="onPhotoDragOver($event)"
-                  (dragleave)="onPhotoDragLeave($event)"
-                  (drop)="onPhotoDrop($event)"
-                  matTooltip="Add a photo (staged until you save)"
-                  matTooltipPosition="below">
-                  @if (stagedPhotoPreview(); as src) {
-                    <img [src]="src" alt="" class="bm-photo-img" />
-                  } @else {
-                    <mat-icon class="bm-photo-icon">add_a_photo</mat-icon>
-                  }
-                </div>
-              } @else {
-                <button
-                  type="button"
-                  class="bm-photo-tile"
-                  (click)="openSavedMealImageSource()"
-                  matTooltip="Add or replace this meal's photo"
-                  matTooltipPosition="below"
-                  aria-label="Meal photo">
-                  @if (stagedPhotoPreview(); as src) {
-                    <img [src]="src" alt="" class="bm-photo-img" />
-                  } @else {
-                    <mat-icon class="bm-photo-icon">photo_camera</mat-icon>
-                  }
-                </button>
-              }
+            <div class="bm-field bm-field-method">
+              <label class="bm-label" for="bm-method">Cook Method</label>
+              <select
+                id="bm-method"
+                class="bm-input regi-field"
+                [ngModel]="cookingMethodId()"
+                (ngModelChange)="cookingMethodId.set($event)"
+                aria-label="Cook method">
+                <option [ngValue]="null">— none —</option>
+                @for (m of cookingMethods(); track m.id) {
+                  <option [ngValue]="m.id">{{ m.name }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Photo drop-zone — stages a file locally (uploaded on Save). -->
+            <div class="bm-field bm-field-photo">
+              <label class="bm-label">Photo</label>
+              <div
+                class="bm-photo-tile"
+                [class.dragging]="photoDragOver()"
+                (click)="bmPhotoInput.click()"
+                (dragover)="onPhotoDragOver($event)"
+                (dragleave)="onPhotoDragLeave($event)"
+                (drop)="onPhotoDrop($event)"
+                matTooltip="Add a photo (staged until you save)"
+                matTooltipPosition="below">
+                @if (stagedPhotoPreview(); as src) {
+                  <img [src]="src" alt="" class="bm-photo-img" />
+                } @else {
+                  <mat-icon class="bm-photo-icon">add_a_photo</mat-icon>
+                }
+              </div>
               <input
                 #bmPhotoInput
                 type="file"
@@ -441,23 +440,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 hidden
                 (change)="onPhotoFile(bmPhotoInput)" />
             </div>
-
-            <!-- Save Meal — enabled once the meal has a name and at least one food. -->
-            <button
-              type="button"
-              class="bm-create-btn bm-save-btn"
-              [disabled]="!canSaveMeal() || saving()"
-              matTooltip="Save this meal to your Binder"
-              matTooltipPosition="below"
-              (click)="saveMeal()">
-              @if (saving()) {
-                <mat-icon class="bm-spin">autorenew</mat-icon>
-                <span>Saving…</span>
-              } @else {
-                <mat-icon class="bm-save-icon">check</mat-icon>
-                <span>Save Meal</span>
-              }
-            </button>
           </div>
 
           <!-- Workspace: the baskets, with the generated-meal result region overlaying
@@ -1687,23 +1669,17 @@ export class FoodsPanelComponent {
    *  RecipeAuthoringService (GET /api/cookingmethods). */
   readonly cookingMethods = this.recipeAuthoring.cookingMethods;
 
-  /** Staged photo before save (thumbnail preview + the File to upload after the
+  /** Staged photo before save (thumbnail preview + the File to upload once the
    *  meal id exists). No upload happens until Save lands the meal. */
   readonly stagedPhotoFile = signal<File | null>(null);
   readonly stagedPhotoPreview = signal<string | null>(null);
   readonly photoDragOver = signal(false);
-  /** The meal id once saved — flips the photo tile from "stage a file" to the
-   *  shared image-source dialog (upload · phone · AI) against the real meal. */
-  readonly savedMealId = signal<number | null>(null);
 
   /** In-flight guard for the Save POST. */
   readonly saving = signal(false);
-  /** Save is enabled once the meal has a name and at least one picked food, and
-   *  it hasn't already been saved (savedMealId gates a duplicate POST — after a
-   *  save the photo tile switches to the tether/AI affordances for that meal, and
-   *  "Clear all" starts a fresh meal). */
+  /** Save is enabled once the meal has a name and at least one picked food. */
   readonly canSaveMeal = computed(
-    () => this.mealName().trim().length > 0 && this.buildMealTotal() > 0 && this.savedMealId() === null,
+    () => this.mealName().trim().length > 0 && this.buildMealTotal() > 0,
   );
 
   // Accepted image types for the staged photo tile (mirrors MealImageSource).
@@ -1746,15 +1722,6 @@ export class FoodsPanelComponent {
     reader.readAsDataURL(file);
   }
 
-  /** Post-save: open the shared meal-image dialog (upload · phone tether · AI for
-   *  MealSetOwners) against the saved meal — the same affordance the meal card uses. */
-  openSavedMealImageSource(): void {
-    const id = this.savedMealId();
-    if (id == null) return;
-    const data: ImageSourceData = { kind: 'meal', id, name: this.mealName().trim() || 'meal' };
-    this.dialog.open(MealImageSourceComponent, { panelClass: 'meal-image-dialog-panel', autoFocus: false, data });
-  }
-
   /** Displayed quantity + unit for a picked food. Quantity is the single
    *  serving record: the user's UserFoodPreferences override (userServingSize)
    *  when set, else the food's baseline serving, else 1; unit is the food's
@@ -1777,9 +1744,8 @@ export class FoodsPanelComponent {
     this.openNfPopupForFood(food, 'edit');
   }
 
-  /** Reset the banner state (name / method / notes / photo / saved-id) so the
-   *  workspace is ready for a fresh meal. Called from "Clear all" — clearing the
-   *  baskets is the natural "start over" gesture, so it also clears the banner. */
+  /** Reset the banner state (name / method / notes / photo) so the workspace is
+   *  ready for a fresh meal. Called from "Clear all" and after a successful save. */
   private resetBuildMealBanner(): void {
     this.mealName.set('');
     this.cookingMethodId.set(null);
@@ -1787,14 +1753,14 @@ export class FoodsPanelComponent {
     this.notesEditorOpen.set(false);
     this.stagedPhotoFile.set(null);
     this.stagedPhotoPreview.set(null);
-    this.savedMealId.set(null);
   }
 
   /** Save Meal — POST the manual-assembly request. The server creates the Meal +
    *  MealItems, computes every macro server-side, and pins it into the Binder. On
    *  success: toast, upload any staged photo, refresh the Binder so it appears
-   *  without a reload, and reset for the next meal. On 400 (bad item, etc.) the
-   *  server message is toasted and the dialog is left intact for correction. */
+   *  without a reload, then reset the banner and CLOSE the Build-a-Meal pane. On
+   *  400 (bad item, etc.) the server message is toasted and the pane stays open
+   *  for correction. */
   async saveMeal(): Promise<void> {
     if (this.saving() || !this.canSaveMeal()) return;
     const baskets = this.buildMealBaskets();
@@ -1819,7 +1785,6 @@ export class FoodsPanelComponent {
     this.saving.set(true);
     try {
       const meal = await this.rotation.createBuiltMeal(body);
-      this.savedMealId.set(meal.id);
       this.notificationService.show(`Saved "${meal.name}" to your Binder.`, 'success');
       // Upload the staged photo now that the meal id exists (self-applies to the
       // rotation store so the binder thumbnail updates).
@@ -1829,12 +1794,13 @@ export class FoodsPanelComponent {
           const res = await this.imageUpload.uploadMealImage(meal.id, file);
           if (res?.cdn_url) this.rotation.applyUploadedMealImage(meal.id, res.cdn_url, res.thumbnail_url);
         } catch {
-          this.notificationService.show('Meal saved, but the photo upload failed — add it again from the tile.', 'warning');
+          this.notificationService.show('Meal saved, but the photo upload failed — add it from the meal card.', 'warning');
         }
       }
-      // Leave the workspace populated: savedMealId now flips the photo tile to the
-      // shared upload/phone/AI dialog for THIS meal, and Save is disabled (guarding
-      // a duplicate POST). "Clear all" starts a fresh meal.
+      // Done — clear the banner and close the Build-a-Meal pane (the meal is
+      // already pinned into the Binder).
+      this.resetBuildMealBanner();
+      this.focusEditOpen.set(false);
     } catch (err) {
       const msg = err instanceof HttpErrorResponse
         ? (typeof err.error === 'string' ? err.error : err.error?.message) || err.message
