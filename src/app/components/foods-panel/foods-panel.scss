@@ -2368,6 +2368,24 @@
   }
 }
 
+// Contextual "(return to Menus & Meals)" backlink — above the banner for the
+// slot / add-meal entry contexts only. Normal-size white text (actionable).
+.bam-backlink-row {
+  flex-shrink: 0;
+  margin: 0 8px 4px;
+}
+.bam-backlink {
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: #ffffff;
+  cursor: pointer;
+
+  &:hover { text-decoration: underline; }
+}
+
 // ---- Build-a-Meal: banner controls + result region -------------------------
 // Build-a-Meal banner — the manual assembler's top controls in one slim row:
 // Name · Notes (the focus, wide middle) · Cook Method (short) beside the photo

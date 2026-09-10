@@ -361,12 +361,23 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 class="dialog-disc dialog-disc-cancel"
                 matTooltip="Close Build-a-Meal"
                 matTooltipPosition="below"
-                (click)="focusEditOpen.set(false)"
+                (click)="closeBuildMeal()"
                 aria-label="Close Build-a-Meal">
                 <mat-icon aria-hidden="true">close</mat-icon>
               </button>
             </div>
           </div>
+
+          <!-- Contextual return — shown ONLY when entered from a Menus & Meals
+               slot ('slot') or the + Add Meal dialog ('menus'); never from a My
+               Foods entry. Abandons (no meal created) and returns to Menus & Meals. -->
+          @if (bamShowBacklink()) {
+            <div class="bam-backlink-row">
+              <button type="button" class="bam-backlink" (click)="returnToMenus()">
+                (return to Menus &amp; Meals)
+              </button>
+            </div>
+          }
 
           <!-- Build-a-Meal banner — Name · Notes (the focus, wide middle) · Cook
                Method (short) beside the photo drop-zone. Save lives up in the
@@ -1623,16 +1634,29 @@ export class FoodsPanelComponent {
     this.focusEditOpen() ? this.leftPaneWidthFraction() : 1,
   );
 
-  /** Build-a-Meal toggle (MyFoods header): open the baskets workspace, or close it. */
+  /** Build-a-Meal toggle (MyFoods header): open the baskets workspace, or close it.
+   *  Opening from here is a MANUAL My Foods open — context-free (no referrer), so
+   *  reset any lingering entry context first. */
   toggleBuildMeal(): void {
-    if (this.buildMealOpen()) this.focusEditOpen.set(false);
-    else this.openBuildMeal();
+    if (this.buildMealOpen()) {
+      this.closeBuildMeal();
+    } else {
+      this.resetBamContext();
+      this.openBuildMeal();
+    }
   }
   /** Open the split showing the Build-a-Meal baskets (no Edit overlay). Switches away
-   *  from Edit mode if it was open. */
+   *  from Edit mode if it was open. Does NOT touch entry context — the caller owns
+   *  that (consume effect sets it; toggle/close reset it). */
   openBuildMeal(): void {
     this.addTo.set('left');
     this.focusEditOpen.set(true);
+  }
+  /** Close the Build-a-Meal pane and drop any entry context so a later My Foods
+   *  open starts clean. */
+  closeBuildMeal(): void {
+    this.resetBamContext();
+    this.focusEditOpen.set(false);
   }
 
   /** Edit button toggle: open the editor overlay, or close the split. */
@@ -1641,20 +1665,67 @@ export class FoodsPanelComponent {
     else this.openEditOverlay();
   }
 
-  // ---- Build-a-Meal: Ask Regi -----------------------------------------------
-  /** Consume a cross-panel request to open the Build-a-Meal workspace (from the
-   *  Add-Meal bloom's CTA, an empty menu slot, or the Ask-Regi return path). The
-   *  old meal-generation/slot-placement flow was replaced by Ask Regi, so the
-   *  request's `slot` is no longer acted on here — it just opens the workspace. */
-  private readonly consumeBuildMealForSlot = effect(
+  // ---- Build-a-Meal: entry context + contextual return ----------------------
+  // Exactly three entry contexts, tracked so the backlink + completion flow
+  // differ by where the user came from:
+  //   'slot'    — an empty Menus & Meals slot (carries the origin menu + slot);
+  //               on save the meal ALSO drops into that slot and we return
+  //               focused on that menu.
+  //   'menus'   — the + Add Meal dialog (return to Menus & Meals, no slot).
+  //   'myfoods' — the My Foods left-nav (no referrer; the DEFAULT and the
+  //               refresh fallback). No backlink, no return flip.
+  readonly bamContext = signal<'slot' | 'menus' | 'myfoods'>('myfoods');
+  private readonly bamOriginSlot = signal<{ menuId: number; slotOrder: number } | null>(null);
+  /** The contextual "(return to Menus & Meals)" backlink shows for 'slot' / 'menus'
+   *  entries only — never for a My Foods entry. */
+  readonly bamShowBacklink = computed(() => this.bamContext() !== 'myfoods');
+
+  /** Reset to the context-free My Foods state. Called on every exit (close /
+   *  abandon / save) and on a manual open, so a later My Foods entry can never
+   *  inherit a stale referrer from the singleton transport. */
+  private resetBamContext(): void {
+    this.bamContext.set('myfoods');
+    this.bamOriginSlot.set(null);
+  }
+
+  /** Consume the cross-panel entry request. RotationService.buildMealRequest is
+   *  the in-memory transport set by the empty-slot link ({slot:{menuId,slotOrder}})
+   *  and the + Add Meal dialog ({slot:null}). Record the context locally, open the
+   *  workspace, and CLEAR the transport immediately so the singleton never holds
+   *  stale referrer state. My Foods entries never set the transport, so this effect
+   *  doesn't fire for them (context stays 'myfoods'). A page refresh drops the
+   *  in-memory transport → the fresh component defaults to 'myfoods' (Context 3):
+   *  the required graceful degrade, no crash. */
+  private readonly consumeBuildMealRequest = effect(
     () => {
       const req = this.rotation.buildMealRequest();
       if (!req) return;
+      if (req.slot) {
+        this.bamContext.set('slot');
+        this.bamOriginSlot.set(req.slot);
+      } else {
+        this.bamContext.set('menus');
+        this.bamOriginSlot.set(null);
+      }
       this.openBuildMeal();
-      this.rotation.buildMealRequest.set(null); // consume
+      this.rotation.buildMealRequest.set(null); // consume the transport
     },
     { allowSignalWrites: true },
   );
+
+  /** Backlink action — abandon: return to Menus & Meals WITHOUT creating a meal.
+   *  For a 'slot' origin, restore focus to that menu so the user lands back where
+   *  they came from. */
+  returnToMenus(): void {
+    const slot = this.bamOriginSlot();
+    this.resetBamContext();
+    this.focusEditOpen.set(false);
+    if (slot) {
+      this.rotation.selectedMenuId.set(slot.menuId);
+      void this.rotation.selectMenu(slot.menuId);
+    }
+    this.tabService.openPanel('menus', 'Menus & Meals');
+  }
 
   // ---- Build-a-Meal banner: name / cooking method / notes / photo -----------
   /** Meal name — required to save. */
@@ -1797,10 +1868,29 @@ export class FoodsPanelComponent {
           this.notificationService.show('Meal saved, but the photo upload failed — add it from the meal card.', 'warning');
         }
       }
-      // Done — clear the banner and close the Build-a-Meal pane (the meal is
-      // already pinned into the Binder).
+      // Completion flow depends on the entry context (snapshot before reset). All
+      // contexts already pinned the meal into the Binder via createBuiltMeal.
+      const ctx = this.bamContext();
+      const slot = this.bamOriginSlot();
+      // Context 1 ('slot') — ALSO drop the meal into the origin slot, reusing the
+      // exact add-meal-to-slot path a drag-from-Notebook uses (placeMealInSlot).
+      if (ctx === 'slot' && slot) {
+        await this.rotation.placeMealInSlot(slot.menuId, slot.slotOrder, meal.id);
+      }
+      // Done — clear the banner + entry context and close the pane.
       this.resetBuildMealBanner();
+      this.resetBamContext();
       this.focusEditOpen.set(false);
+      // Navigate back per context. 'slot' also restores focus to the origin menu
+      // so the user lands looking at the now-filled slot; 'menus' returns with
+      // general focus; 'myfoods' stays put (no return flip).
+      if (ctx === 'slot' && slot) {
+        this.rotation.selectedMenuId.set(slot.menuId);
+        await this.rotation.selectMenu(slot.menuId);
+        this.tabService.openPanel('menus', 'Menus & Meals');
+      } else if (ctx === 'menus') {
+        this.tabService.openPanel('menus', 'Menus & Meals');
+      }
     } catch (err) {
       const msg = err instanceof HttpErrorResponse
         ? (typeof err.error === 'string' ? err.error : err.error?.message) || err.message
