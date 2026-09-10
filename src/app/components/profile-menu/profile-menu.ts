@@ -58,13 +58,13 @@ import { RoleService } from '../../services/role.service';
 
         <!-- Suggestion path for ALL users (the Bug item below is dev/QA-only).
              Both open the same feedback overlay. -->
-        <button mat-menu-item class="menu-item" [class.active]="tabService.bugOpen()" (click)="toggleBug()">
+        <button mat-menu-item class="menu-item" [class.active]="tabService.bugOpen()" (click)="toggleBug('suggestion')">
           <mat-icon>lightbulb_outline</mat-icon>
           <span>Submit suggestion</span>
         </button>
 
         @if (roleService.isDevOrQA()) {
-          <button mat-menu-item class="menu-item" [class.active]="tabService.bugOpen()" (click)="toggleBug()">
+          <button mat-menu-item class="menu-item" [class.active]="tabService.bugOpen()" (click)="toggleBug('bug')">
             <mat-icon>bug_report</mat-icon>
             <span>Bug</span>
           </button>
@@ -192,13 +192,14 @@ export class ProfileMenuComponent {
     this.tabService.toggleHelp();
   }
 
-  toggleBug(): void {
-    // Bug is the overlay (mirrors Settings) — flip the service-level signal
-    // instead of pushing a panel onto the active-panel stack.
+  toggleBug(kind: 'bug' | 'suggestion' = 'suggestion'): void {
+    // Bug/Suggestion share the overlay (mirrors Settings) — flip the service-level
+    // signal instead of pushing a panel onto the active-panel stack. `kind` drives
+    // the overlay title prefix.
     if (this.tabService.bugOpen()) {
       this.tabService.closeBug();
     } else {
-      this.tabService.openBug();
+      this.tabService.openBug(kind);
     }
   }
 }

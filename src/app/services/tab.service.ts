@@ -268,7 +268,13 @@ export class TabService {
   // is active. Profile menu's "Bug" entry flips this; the overlay's own
   // Close button (or backdrop click) flips it back.
   readonly bugOpen = signal(false);
-  openBug(): void { this.bugOpen.set(true); }
+  // Which entry opened the feedback overlay — drives its title prefix
+  // ("Bug — …" vs "Suggestion — …"). Both share one overlay/form.
+  readonly bugKind = signal<'bug' | 'suggestion'>('suggestion');
+  openBug(kind: 'bug' | 'suggestion' = 'suggestion'): void {
+    this.bugKind.set(kind);
+    this.bugOpen.set(true);
+  }
   closeBug(): void { this.bugOpen.set(false); }
 
   // Mobile-app "tether" bloom dialog — a small QR/download nudge floated over
