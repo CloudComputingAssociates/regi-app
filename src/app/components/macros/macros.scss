@@ -198,13 +198,31 @@
   }
 
   .mode-toggle-container {
-    // Inline flex item at the END of the macro row (after fiber), DROPPED to the
-    // bottom so it bottom-aligns with the fats/fiber labels (the macro's bottom).
+    // Inline flex item at the END of the macro row (after fiber). Stacks as a
+    // column so the Build-a-Meal cals pill sits ABOVE the g/% toggle, both
+    // left-aligned; DROPPED to the bottom so the toggle still bottom-aligns with
+    // the fats/fiber labels.
     flex: 0 0 auto;
     align-self: flex-end;
     display: flex;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+
+    // Running-calorie pill (Foods/Build-a-Meal) — grey rounded pill, left-aligned
+    // above the toggle. Same lighter-grey treatment as the meal-card cals pill.
+    .macro-cals-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      font-size: 11px;
+      line-height: 1;
+      color: #ffffff;
+      background: #999999;
+      border-radius: 999px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45);
+      white-space: nowrap;
+    }
 
     .unit-toggle {
       display: flex;

@@ -70,10 +70,14 @@ import { RoleService } from '../../services/role.service';
           </button>
         }
 
-        <button mat-menu-item class="menu-item" [class.active]="isTabOpen('help')" (click)="toggleHelp()">
-          <mat-icon>help_outline</mat-icon>
-          <span>Help</span>
-        </button>
+        <!-- Help DISABLED until the help system is reimplemented — remove the
+             @if (false) wrapper to restore. -->
+        @if (false) {
+          <button mat-menu-item class="menu-item" [class.active]="isTabOpen('help')" (click)="toggleHelp()">
+            <mat-icon>help_outline</mat-icon>
+            <span>Help</span>
+          </button>
+        }
 
         <mat-divider></mat-divider>
 

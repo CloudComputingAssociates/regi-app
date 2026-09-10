@@ -64,14 +64,18 @@ import { map } from 'rxjs/operators';
             <!-- Quick Help entry — a yellow "?" the same size as the RegiMenu mark.
                  Sits BETWEEN the tether (phone) and the name cluster, equidistant:
                  the tether's 32px right margin is the left gap, the button's own
-                 32px right margin the right gap. Toggles the Help panel. -->
-            <button
-              type="button"
-              class="help-q-btn"
-              matTooltip="Help (AI chat-based help)"
-              matTooltipPosition="below"
-              aria-label="Toggle Help"
-              (click)="onHelpClick()">?</button>
+                 32px right margin the right gap. Toggles the Help panel.
+                 DISABLED until the help system is reimplemented — flip @if to
+                 isAuthenticated() to restore. -->
+            @if (false) {
+              <button
+                type="button"
+                class="help-q-btn"
+                matTooltip="Help (AI chat-based help)"
+                matTooltipPosition="below"
+                aria-label="Toggle Help"
+                (click)="onHelpClick()">?</button>
+            }
           }
           <app-profile-menu />
         </div>

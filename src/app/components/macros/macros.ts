@@ -61,8 +61,12 @@ export interface MacroDisplayData {
                 </div>
               </div>
             }
-            <!-- %/g switch — inline AFTER fiber, vertically centered with the bars. -->
+            <!-- %/g switch — inline AFTER fiber. In the Build-a-Meal (Foods)
+                 context the running calories sit ABOVE it, left-aligned with it. -->
             <div class="mode-toggle-container">
+              @if (context() === 'foods') {
+                <span class="macro-cals-pill">{{ buildMealCals() }} cals</span>
+              }
               <button
                 type="button"
                 class="unit-toggle"
@@ -177,6 +181,12 @@ export class MacrosComponent implements OnInit {
    *  in the macros bar just left of the %/g toggle (menu context). */
   readonly totalCals = computed<number>(() =>
     Math.round(this.rotationService.selectedMenuTotals().calories),
+  );
+
+  /** Build-a-Meal running calories (Foods context) — the pill sits above the g/%
+   *  toggle inside the macros bar. */
+  readonly buildMealCals = computed<number>(() =>
+    Math.round(this.thisWeekMacros.totals().calories),
   );
 
   // Signal for subscription-based display data (non-preferences contexts)

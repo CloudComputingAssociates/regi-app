@@ -9,11 +9,12 @@ export interface MacroTotals {
   fiberG: number;
   fatG: number;
   carbG: number;
+  calories: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class ThisWeekMacrosService {
-  private totalsSignal = signal<MacroTotals>({ proteinG: 0, fiberG: 0, fatG: 0, carbG: 0 });
+  private totalsSignal = signal<MacroTotals>({ proteinG: 0, fiberG: 0, fatG: 0, carbG: 0, calories: 0 });
   readonly totals = this.totalsSignal.asReadonly();
 
   // True while a producer (Build-a-Meal) is driving these totals — lets the
@@ -27,7 +28,7 @@ export class ThisWeekMacrosService {
   }
 
   clear(): void {
-    this.totalsSignal.set({ proteinG: 0, fiberG: 0, fatG: 0, carbG: 0 });
+    this.totalsSignal.set({ proteinG: 0, fiberG: 0, fatG: 0, carbG: 0, calories: 0 });
     this.activeSignal.set(false);
   }
 }

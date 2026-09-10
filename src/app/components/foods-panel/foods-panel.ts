@@ -317,7 +317,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
         <div class="right-pane" [style.flex]="rightPaneFlex()">
           <!-- RHS title: "Build-a-Meal" — pick foods into the four baskets, then
                generate a meal from them. -->
-          <div class="section-title bam-title">
+          <div class="section-title">
             <span class="section-title-text">
               <span
                 matTooltip="Pick foods into the baskets, then compose a meal from them"
@@ -331,7 +331,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                    created) and returns to Menus & Meals. -->
               @if (bamShowBacklink()) {
                 <button type="button" class="bam-backlink" (click)="returnToMenus()">
-                  (return to Menus &amp; Meals)
+                  (return to Meals)
                 </button>
               }
             </span>
@@ -347,9 +347,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               aria-label="Clear all picked foods">
               <mat-icon aria-hidden="true">clear_all</mat-icon>
             </button>
-            <!-- Running calorie total — centered grey pill, exactly like the Menus &
-                 Meals toolbar's "N cals" pill. -->
-            <span class="bm-toolbar-cals">{{ buildMealMacros().calories }} cals</span>
             <!-- Save + close cluster, right-justified together. -->
             <div class="title-right">
               <!-- Save meal — green check in the same grey toolbar key. Saves the
@@ -1794,7 +1791,7 @@ export class FoodsPanelComponent {
     () => {
       if (this.buildMealOpen()) {
         const m = this.buildMealMacros();
-        this.thisWeekMacros.setTotals({ proteinG: m.proteinG, carbG: m.carbG, fatG: m.fatG, fiberG: m.fiberG });
+        this.thisWeekMacros.setTotals({ proteinG: m.proteinG, carbG: m.carbG, fatG: m.fatG, fiberG: m.fiberG, calories: m.calories });
       } else {
         this.thisWeekMacros.clear();
       }
