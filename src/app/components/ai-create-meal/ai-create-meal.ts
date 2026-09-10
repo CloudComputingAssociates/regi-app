@@ -61,11 +61,11 @@ import { TetherService } from '../../services/tether.service';
         <button
           type="button"
           class="build-a-meal-cta"
-          matTooltip="Pick from My Foods and let AI generate a meal and recipe"
+          matTooltip="Pick from My Foods and compose a meal"
           matTooltipPosition="below"
           (click)="onBuildAMeal()">
           <span class="option-num">1</span>
-          <img src="/images/AI-star-blue.png" alt="" class="bam-inline-star" />Build-a-Meal
+          Build-a-Meal
         </button>
         <div class="glow-divider" aria-hidden="true"></div>
 

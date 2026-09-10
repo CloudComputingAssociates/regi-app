@@ -99,12 +99,6 @@
     box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.5);
   }
   &:active { transform: translateY(1px); }
-
-  .bam-inline-star {
-    width: 18px;
-    height: 18px;
-    vertical-align: -4px;
-  }
 }
 
 // Compact import drop zone — no big graphic, just the two lines of text.

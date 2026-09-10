@@ -319,14 +319,20 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
           <div class="section-title">
             <span class="section-title-text">
               <span
-                matTooltip="Pick foods into the baskets, then generate a meal from them"
+                matTooltip="Pick foods into the baskets, then compose a meal from them"
                 matTooltipPosition="below"
                 [matTooltipShowDelay]="350">
                 Build-a-Meal
               </span>
-              <!-- Gently rocking AI star — flags this pane as AI-assisted (reuses the
-                   Health-Info nf-ai-shimmer animation). -->
-              <span class="bam-ai-star" aria-hidden="true"></span>
+              <!-- Contextual return — same line as the heading, to its right. Shows
+                   ONLY for a Menus & Meals slot ('slot') or the + Add Meal dialog
+                   ('menus') entry; never from a My Foods entry. Abandons (no meal
+                   created) and returns to Menus & Meals. -->
+              @if (bamShowBacklink()) {
+                <button type="button" class="bam-backlink" (click)="returnToMenus()">
+                  (return to Menus &amp; Meals)
+                </button>
+              }
             </span>
             <!-- Clear-all + close cluster, right-justified together. -->
             <div class="title-right">
@@ -367,17 +373,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               </button>
             </div>
           </div>
-
-          <!-- Contextual return — shown ONLY when entered from a Menus & Meals
-               slot ('slot') or the + Add Meal dialog ('menus'); never from a My
-               Foods entry. Abandons (no meal created) and returns to Menus & Meals. -->
-          @if (bamShowBacklink()) {
-            <div class="bam-backlink-row">
-              <button type="button" class="bam-backlink" (click)="returnToMenus()">
-                (return to Menus &amp; Meals)
-              </button>
-            </div>
-          }
 
           <!-- Build-a-Meal banner — Name · Notes (the focus, wide middle) · Cook
                Method (short) beside the photo drop-zone. Save lives up in the

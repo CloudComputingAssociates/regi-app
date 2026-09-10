@@ -2368,22 +2368,22 @@
   }
 }
 
-// Contextual "(return to Menus & Meals)" backlink — above the banner for the
-// slot / add-meal entry contexts only. Normal-size white text (actionable).
-.bam-backlink-row {
-  flex-shrink: 0;
-  margin: 0 8px 4px;
-}
+// Contextual "(return to Menus & Meals)" backlink — sits on the heading line,
+// just right of the "Build-a-Meal" title, for the slot / add-meal entry
+// contexts only. Styled as a hyperlink: underlined white, normal 13px.
 .bam-backlink {
+  align-self: center;
+  margin-left: 8px;
   padding: 0;
   background: none;
   border: none;
   font-family: inherit;
   font-size: 13px;
   color: #ffffff;
+  text-decoration: underline;
   cursor: pointer;
 
-  &:hover { text-decoration: underline; }
+  &:hover { color: #d6e6ff; }
 }
 
 // ---- Build-a-Meal: banner controls + result region -------------------------
@@ -2485,21 +2485,6 @@
   &.saving .mat-icon { animation: bm-spin 0.9s linear infinite; }
 }
 @keyframes bm-spin { to { transform: rotate(360deg); } }
-
-// Gently rocking AI star beside the "Build-a-Meal" title — reuses the Health-Info
-// nf-ai-shimmer (rocks 0°↔28°, white↔yellow). Masked so it colors cleanly.
-.bam-ai-star {
-  align-self: center;
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  margin-left: 4px;
-  pointer-events: none;
-  -webkit-mask: url(/images/AI-star-white.png) center / contain no-repeat;
-          mask: url(/images/AI-star-white.png) center / contain no-repeat;
-  background-color: #ffd54f;
-  animation: nf-ai-shimmer 2.4s ease-in-out infinite;
-}
 
 .buildmeal-workspace {
   position: relative;
