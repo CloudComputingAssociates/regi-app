@@ -316,15 +316,14 @@ export class ShoppingPanelComponent {
     this.scaleMode.set('custom');
   }
 
-  /** Shopping-list display name: the food ITSELF, not the prep. The server's item name
-   *  carries the AI's full ingredient line ("red bell pepper, cored, seeded, and cut
-   *  into 1-inch strips"); a shopping list only needs "red bell pepper", so drop
-   *  everything from the first comma. CSS clips any remainder to one line. (A cleaner
-   *  fix — the resolved food's shortDescription — would be server-side.) */
+  /** Shopping-list display name. The server ALREADY emits a clean food name
+   *  (canonicalFoodName = the resolved food's ShortDescription/Description, with an
+   *  AI-prep comma-truncation fallback only for unresolved items), so show it
+   *  verbatim. Re-truncating at the comma here was hiding real qualifiers and
+   *  collapsing distinct foods on screen — "Cabbage" vs "Cabbage, red", "tomato" vs
+   *  "tomato, cherry". CSS clips any overflow to one line. */
   itemName(name: string): string {
-    const s = (name ?? '').trim();
-    const comma = s.indexOf(',');
-    return comma > 0 ? s.slice(0, comma).trim() : s;
+    return (name ?? '').trim();
   }
 
   // Refetch whenever the rotation or the basis/factor changes. Server is the
