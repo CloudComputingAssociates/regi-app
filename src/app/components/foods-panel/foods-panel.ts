@@ -334,18 +334,20 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 </button>
               }
             </span>
-            <!-- Clear-all + close cluster, right-justified together. -->
+            <!-- Clear-all key — floats LEFT next to the "Build-a-Meal" title (and,
+                 when the return link is showing, just right of its closing paren).
+                 Empties all four baskets (auto-persists via persistBuildMealBaskets). -->
+            <button
+              type="button"
+              class="bar-icon-btn bam-clear-key"
+              matTooltip="Clear all picked foods"
+              matTooltipPosition="below"
+              (click)="clearAllBaskets()"
+              aria-label="Clear all picked foods">
+              <mat-icon aria-hidden="true">clear_all</mat-icon>
+            </button>
+            <!-- Save + close cluster, right-justified together. -->
             <div class="title-right">
-              <!-- Clear-all key — empties all four baskets (auto-persists via persistBuildMealBaskets). -->
-              <button
-                type="button"
-                class="bar-icon-btn"
-                matTooltip="Clear all picked foods"
-                matTooltipPosition="below"
-                (click)="clearAllBaskets()"
-                aria-label="Clear all picked foods">
-                <mat-icon aria-hidden="true">clear_all</mat-icon>
-              </button>
               <!-- Save meal — green check in the same grey toolbar key. Saves the
                    assembled meal and closes Build-a-Meal. Dimmed until it has a
                    name and at least one food. -->

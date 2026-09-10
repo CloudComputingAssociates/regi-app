@@ -2386,6 +2386,13 @@
   &:hover { color: #d6e6ff; }
 }
 
+// Clear-all key floated left next to the title / return link (the Save + Close
+// cluster still hugs the right edge via .title-right's margin-left:auto).
+.bam-clear-key {
+  align-self: center;
+  margin-left: 8px;
+}
+
 // ---- Build-a-Meal: banner controls + result region -------------------------
 // Build-a-Meal banner — the manual assembler's top controls in one slim row:
 // Name · Notes (the focus, wide middle) · Cook Method (short) beside the photo
