@@ -15,6 +15,7 @@ import { TetherIndicatorComponent } from '../tether-indicator/tether-indicator';
 import { MacrosComponent } from '../macros/macros';
 import { AuthService } from '@auth0/auth0-angular';
 import { TabService } from '../../services/tab.service';
+import { ThisWeekMacrosService } from '../../services/this-week-macros.service';
 import { map } from 'rxjs/operators';
 
 @Component({
@@ -23,7 +24,7 @@ import { map } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="app-bar">
-      <div class="app-bar-content" [class.logged-out]="!isAuthenticated()" [class.centered-title]="activeTabId() !== 'menus'">
+      <div class="app-bar-content" [class.logged-out]="!isAuthenticated()" [class.centered-title]="!showMacrosBar()">
         @if (isAuthenticated()) {
           <button
             mat-icon-button
@@ -46,9 +47,10 @@ import { map } from 'rxjs/operators';
           }
         </div>
 
-        <!-- Macros bar now lives IN the banner (menus tab only), pushed toward the
-             right so it sits in the space before the tether / user name. -->
-        @if (isAuthenticated() && activeTabId() === 'menus') {
+        <!-- Macros bar lives IN the banner on the Menus tab, and on the Foods tab
+             while Build-a-Meal is open — pushed toward the right so it sits in the
+             space before the tether / user name. -->
+        @if (showMacrosBar()) {
           <div class="app-bar-macros"><app-macros /></div>
         }
 
@@ -83,11 +85,21 @@ export class AppBarComponent {
 
   private auth = inject(AuthService);
   protected tabService = inject(TabService);
+  private thisWeekMacros = inject(ThisWeekMacrosService);
 
   isAuthenticated = toSignal(this.auth.isAuthenticated$, { initialValue: false });
 
-  /** Active tab id — drives whether the banner hosts the macros bar (menus only). */
+  /** Active tab id — drives whether the banner hosts the macros bar. */
   readonly activeTabId = this.tabService.activeTabId;
+
+  /** Show the global macros bar on the Menus tab always, and on the Foods tab
+   *  while Build-a-Meal is driving totals (ThisWeekMacrosService.active) — so the
+   *  My Foods + Build-a-Meal view mirrors the Menus & Meals top bar exactly. */
+  readonly showMacrosBar = computed(() =>
+    this.isAuthenticated() &&
+    (this.activeTabId() === 'menus' ||
+      (this.activeTabId() === 'foods' && this.thisWeekMacros.active())),
+  );
 
   // Always render the branded "RegiMenu^SM" mark — logged-in and logged-out
   // states share the same logo treatment so the title strip doesn't shift
