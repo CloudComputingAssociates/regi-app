@@ -37,6 +37,9 @@ const IDLE_MS = 30_000;
   host: {
     '(document:mousemove)': 'onActivity()',
     '(document:keydown)': 'onActivity()',
+    // Esc backs out one step: un-maximize first (so full-screen isn't a trap),
+    // then close on a second press.
+    '(document:keydown.escape)': 'onEsc()',
     // Focus leaving the app window = the user clicked into the iframe → active.
     '(window:blur)': 'onActivity()',
   },
@@ -49,11 +52,15 @@ const IDLE_MS = 30_000;
                  an empty flex spacer keeps the controls right-aligned. -->
             <span class="wv-host">{{ isPdf() ? '' : hostLabel(url) }}</span>
             <div class="wv-controls">
-              <!-- Maximize / restore toggle (one clear button, not two discs). -->
-              <button type="button" class="wv-btn" (click)="maximized.set(!maximized())"
-                [matTooltip]="maximized() ? 'Restore size' : 'Maximize'" matTooltipPosition="below"
+              <!-- Maximize / restore toggle (one clear button, not two discs). When
+                   maximized it turns into a bright, LABELLED "Restore" key so the way
+                   back out of full-screen is unmistakable. -->
+              <button type="button" class="wv-btn" [class.wv-btn-restore]="maximized()"
+                (click)="maximized.set(!maximized())"
+                [matTooltip]="maximized() ? 'Restore size (Esc)' : 'Maximize'" matTooltipPosition="below"
                 [attr.aria-label]="maximized() ? 'Restore size' : 'Maximize'">
                 <mat-icon>{{ maximized() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+                @if (maximized()) { <span class="wv-btn-text">Restore</span> }
               </button>
               <!-- Close. -->
               <button type="button" class="wv-btn wv-btn-close" (click)="close()"
@@ -144,14 +151,22 @@ const IDLE_MS = 30_000;
     .wv-controls { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
     /* Proper app-style buttons (not traffic-light discs). */
     .wv-btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 34px; height: 26px; padding: 0; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+      min-width: 34px; height: 26px; padding: 0 8px; cursor: pointer;
       color: #e8e8e8; background: linear-gradient(180deg, #565656, #434343);
       border: 1px solid #262626; border-top-color: #6f6f6f; border-radius: 6px;
       transition: filter 0.1s ease;
       mat-icon { width: 18px; height: 18px; font-size: 18px; }
     }
     .wv-btn:hover { filter: brightness(1.14); }
+    /* When maximized, the restore key is bright yellow + labelled so the exit from
+       full-screen is obvious against the PDF. */
+    .wv-btn-restore {
+      color: #1a1a1a; font-weight: 700;
+      background: linear-gradient(180deg, #ffdd6e, #f0b400);
+      border-color: #b98700; border-top-color: #fff0bf;
+    }
+    .wv-btn-text { font-size: 12px; font-weight: 700; }
     .wv-btn-close:hover {
       color: #fff; background: linear-gradient(180deg, #e0625f, #c0433f); border-color: #a5322f;
     }
@@ -236,6 +251,14 @@ export class WebViewOverlayComponent {
   close(): void {
     this.clearIdle();
     this.tab.closeWebView();
+  }
+
+  /** Esc backs out one step: a maximized viewer restores to the windowed size first
+   *  (so full-screen is never a dead end); a windowed viewer closes. */
+  onEsc(): void {
+    if (!this.tab.webViewUrl()) return;
+    if (this.maximized()) this.maximized.set(false);
+    else this.close();
   }
 
   hostLabel(url: string): string {
