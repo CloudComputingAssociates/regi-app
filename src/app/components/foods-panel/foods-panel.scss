@@ -1398,56 +1398,6 @@
   .basket:not(.focused) { display: none; }
 }
 
-// Coaching placeholder shown inside an empty basket. Italic + chiffon
-// yellow (paler / more white than the goldenrod halo we use for the bloom).
-// The outer .basket-empty-hint is a flex centerer that fills the available
-// height inside the .basket cell so the text lands in the TRUE middle of
-// the basket, not just floated at the top. The inner .basket-empty-hint-
-// text carries the visual treatment + the 2-line clamp.
-.basket-empty-hint {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 12px;
-  user-select: none;
-}
-
-.basket-empty-hint-text {
-  // Uniform inset area — same recessed coloring as the Search Foods field, one
-  // fixed width + height across every basket, text centered vertically and
-  // horizontally. `\n` in the hint strings breaks the two lines intentionally.
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  // WIDE (not tall) so each \n line stays on ONE row — 2 rows, no wrap-to-3.
-  // Sized for the longest line ("add ideas for seasonings"); every basket uses
-  // this same box.
-  width: 215px;
-  height: 52px;
-  padding: 6px 14px;
-  overflow: hidden;
-  white-space: pre-line;
-  font-family: inherit;
-  font-size: 13px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 1.3;
-  letter-spacing: 0.2px;
-  text-align: center;
-  color: rgba(255, 245, 157, 0.85);
-  // Deep, stepped inset so it clearly reads as a sunken well.
-  background: #3a3a3a;
-  border: 1px solid #555555;
-  border-top-color: #2b2b2b;
-  border-radius: 4px;
-  box-shadow:
-    inset 0 2px 3px rgba(0, 0, 0, 0.8),
-    inset 0 6px 10px rgba(0, 0, 0, 0.45),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
-}
-
 // Mini-cards tile in a flex-wrap grid as foods land in the basket. Each card
 // is ~25% of the carousel-card size (38 x 56). Newest in the top-left;
 // overflow scrolls vertically so a basket with many entries still works.

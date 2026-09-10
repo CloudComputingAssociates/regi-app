@@ -525,11 +525,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                       </button>
                     </div>
                   </div>
-                  @if (buildMealBaskets()[key].length === 0) {
-                    <div class="basket-empty-hint">
-                      <span class="basket-empty-hint-text">{{ basketEmptyHint(key) }}</span>
-                    </div>
-                  } @else {
+                  @if (buildMealBaskets()[key].length > 0) {
                     <div class="basket-tiles">
                       @for (food of buildMealBaskets()[key]; track food.id) {
                         <div
@@ -2617,20 +2613,6 @@ export class FoodsPanelComponent {
   }
 
   // ----- Basket helpers -----
-
-  /** Coaching text shown inside an empty basket. Embedded `\n` characters
-   *  are honored as hard line breaks via `white-space: pre-line` on the
-   *  text span, so the longer strings split intentionally at a chosen
-   *  point instead of wrapping wherever the basket width happens to land.
-   *  The 2-line CSS clamp still applies as a safety net. */
-  basketEmptyHint(key: BasketKey): string {
-    switch (key) {
-      case 'Proteins': return 'Pick 6 or more proteins';
-      case 'Fats':     return 'Add fats you use,\nand dairy will go here';
-      case 'Carbs':    return 'Try for 8+ vegetables,\nand 2+ fruits';
-      case 'Other':    return 'Limit processed foods,\nadd ideas for seasonings';
-    }
-  }
 
   /** Display label for a basket title. Fats holds dairy, and Carbs holds
    *  veggies + fruits in addition to grains/starches, so surface that in
