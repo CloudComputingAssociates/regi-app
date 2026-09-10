@@ -133,7 +133,8 @@ import { Meal, Menu, MealSetSummary } from '../../models';
                   (cdkDragStarted)="rotation.dragging.set('menu'); clearDragHint()"
                   (cdkDragEnded)="rotation.dragging.set(null)"
                   (mousedown)="onCardMouseDown()"
-                  (click)="rotation.selectCard('menu', menu.id ?? -1)">
+                  (click)="rotation.selectCard('menu', menu.id ?? -1)"
+                  (dblclick)="menu.id != null && rotation.addMenuToRotation(menu.id)">
                   <div class="card-head">
                     <!-- Open-book "menu" glyph — a visible grab handle for the drag. -->
                     <mat-icon class="menu-grip" aria-hidden="true">menu_book</mat-icon>

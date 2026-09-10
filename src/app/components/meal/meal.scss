@@ -149,7 +149,7 @@
 
   // Block so inline text + link flow naturally (a trailing comma hugs the link
   // instead of getting a flex gap).
-  .pick-sub { display: block; }
+  .pick-sub { display: block; white-space: nowrap; }
 
   // Inline BLUE hyperlinks in the placeholder: "Meals" (opens the Notebook) and
   // "Create from Scratch" (build a new meal). Same 13px + crisp smoothing so they

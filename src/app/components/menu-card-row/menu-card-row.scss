@@ -309,8 +309,8 @@
   .add-menu-main { font-size: 13px; font-weight: 600; }
   .add-menu-sub { font-size: 13px; font-weight: 400; color: #9aa0a6; }
 
-  // Inline blue links inside the hint — only these are clickable now (the tile
-  // itself no longer is): "click here" adds a menu; "Menu" opens the Menus tab.
+  // Inline blue links inside the hint: "+ Add menu" adds a menu; "Menus" opens
+  // the Notebook Menus tab (dbl-click / drag a saved menu from there).
   .am-link {
     padding: 0;
     border: none;
