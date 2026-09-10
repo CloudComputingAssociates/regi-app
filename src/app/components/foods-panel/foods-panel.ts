@@ -905,6 +905,9 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <select
                     class="nf-popup-category"
                     [value]="nfPopupCategory()"
+                    [disabled]="!canEditNfCategory()"
+                    [matTooltip]="canEditNfCategory() ? '' : 'Category can only be changed on foods you added'"
+                    matTooltipPosition="above"
                     (change)="onNfCategoryChange($any($event.target).value)"
                     aria-label="Food category">
                     @for (name of nfCategoryOptions(); track name) {
@@ -2115,23 +2118,13 @@ export class FoodsPanelComponent {
     if (food) this.openNfPopupForFood(food, 'edit', true);
   }
 
-  /** Double-click on a LHS tile is now a no-op for NF popups — edits live
-   *  under the Edit MyFoods flow only. The first click of the double-click
-   *  already added to the basket; addFoodToBasket's dedupe makes the second
-   *  click a silent no-op, so this method intentionally does nothing.
-   *  Kept as an explicit handler so future intent (e.g. confirmation flash)
-   *  has an obvious home. */
-  /** Double-click a My Food → the Nutrition Facts editor: edit the serving size /
-   *  units to SCALE the values (the other facts stay read-only), saved as the
-   *  food's baseline in MyFoods. Same editor the pencil + RHS list use. */
+  /** Double-click a My Food tile → the Nutrition Facts editor (serving / unit
+   *  scaling, saved as the food's MyFoods baseline). Same editor the top-bar
+   *  pencil and the Edit-MyFoods list use, and it opens regardless of whether the
+   *  Build-a-Meal workspace is open. Picking foods into a basket is done by
+   *  DRAGGING a tile onto a basket (single-click still just selects). */
   onTileDblClick(food: Food): void {
-    // In the Build-a-Meal workspace a double-click PICKS the food into its basket;
-    // otherwise it opens the Nutrition Facts editor (serving/units scaling).
-    if (this.buildMealOpen()) {
-      this.addFoodToBasket(food, this.basketForFood(food));
-    } else {
-      this.openNfPopupForFood(food, 'edit', true);
-    }
+    this.openNfPopupForFood(food, 'edit', true);
   }
 
   /** Double-click on a row in the Edit MyFoods accordion → open the NF
@@ -2198,6 +2191,15 @@ export class FoodsPanelComponent {
     this.nfPopupFood()?.foodSource === 'userfood' &&
     this.nfPopupFromMyFoods(),
   );
+
+  /** The category dropdown is editable ONLY for a food the user OWNS (a userfood),
+   *  unless the user is an Admin. System / Regi-curated foods (foodSource 'food')
+   *  are shared data, so recategorizing them is disabled for ordinary users. */
+  readonly canEditNfCategory = computed<boolean>(() => {
+    const f = this.nfPopupFood();
+    if (!f) return false;
+    return this.isUserAddedFood(f) || this.role.hasRole('Admin');
+  });
 
   /** Open the NF popup for a food and prime the adjustable-serving state. The
    *  initial serving size everywhere is the single serving record: the user's

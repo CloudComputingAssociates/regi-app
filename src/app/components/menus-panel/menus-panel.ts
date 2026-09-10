@@ -100,9 +100,8 @@ import { LangfusePromptService } from '../../services/langfuse-prompt.service';
               <span class="toolbar-title">
                 <mat-icon class="toolbar-title-icon">restaurant</mat-icon>Menus &amp; Meals
               </span>
-              <!-- Selected menu's calorie total — its auto margins center it in the
-                   free space and flush the whole button cluster to the right. -->
-              <span class="toolbar-cals">{{ round(rotation.selectedMenuTotals().calories) }} cals</span>
+              <!-- Calorie total now lives in the macros bar (above the g/% toggle),
+                   matching Build-a-Meal — no longer in this toolbar. -->
               <!-- Right-justified action cluster: Shopping · Notebook · Clear all.
                    A padding gap (on the close X) separates Clear all from the X. -->
               <div class="toolbar-buttons">

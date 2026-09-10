@@ -107,8 +107,8 @@ import { RotationService } from '../../services/rotation.service';
               <span class="dnd-text">Drag &amp; drop<br />a menu here</span>
             } @else {
               <span class="add-menu-text">
-                <span class="add-menu-main"><button type="button" class="am-link" (click)="addMenu.emit()">+ Add menu</button></span>
-                <span class="add-menu-sub">or dbl-click or drag from <button type="button" class="am-link" (click)="rotation.openBinderTab('menus')">Menus</button></span>
+                <span class="add-menu-main"><button type="button" class="am-link" (click)="addMenu.emit()">Create menu</button></span>
+                <span class="add-menu-sub">or from <button type="button" class="am-link" (click)="rotation.openBinderTab('menus')">Menus</button></span>
               </span>
             }
           </div>
