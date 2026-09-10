@@ -1,5 +1,5 @@
 // src/app/components/foods-panel/foods-panel.ts
-import { Component, ChangeDetectionStrategy, signal, computed, inject, viewChild, effect, ElementRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, inject, viewChild, effect, ElementRef, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -22,6 +22,7 @@ import { FoodPreferencesService } from '../../services/food-preferences.service'
 import { NotificationService } from '../../services/notification.service';
 import { RecipeAuthoringService } from '../../services/recipe-authoring.service';
 import { ImageUploadService } from '../../services/image-upload.service';
+import { ThisWeekMacrosService } from '../../services/this-week-macros.service';
 import { UserFoodService } from '../../services/user-food.service';
 import { FoodsService, FoodList } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
@@ -316,7 +317,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
         <div class="right-pane" [style.flex]="rightPaneFlex()">
           <!-- RHS title: "Build-a-Meal" — pick foods into the four baskets, then
                generate a meal from them. -->
-          <div class="section-title">
+          <div class="section-title bam-title">
             <span class="section-title-text">
               <span
                 matTooltip="Pick foods into the baskets, then compose a meal from them"
@@ -346,6 +347,9 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               aria-label="Clear all picked foods">
               <mat-icon aria-hidden="true">clear_all</mat-icon>
             </button>
+            <!-- Running calorie total — centered grey pill, exactly like the Menus &
+                 Meals toolbar's "N cals" pill. -->
+            <span class="bm-toolbar-cals">{{ buildMealMacros().calories }} cals</span>
             <!-- Save + close cluster, right-justified together. -->
             <div class="title-right">
               <!-- Save meal — green check in the same grey toolbar key. Saves the
@@ -377,8 +381,9 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
           </div>
 
           <!-- Build-a-Meal banner — Name · Notes (the focus, wide middle) · Cook
-               Method (short) beside the photo drop-zone. Save lives up in the
-               title bar next to the close X. -->
+               Method (short) beside the photo drop-zone. The running macros live in
+               the GLOBAL RegiMenu top bar (see pushBuildMealMacros) and the calorie
+               pill sits in the title bar — exactly like the Menus & Meals view. -->
           <div class="buildmeal-banner">
             <div class="bm-field bm-field-name">
               <label class="bm-label" for="bm-name">Name</label>
@@ -1205,6 +1210,7 @@ export class FoodsPanelComponent {
   private notificationService = inject(NotificationService);
   private recipeAuthoring = inject(RecipeAuthoringService);
   private imageUpload = inject(ImageUploadService);
+  private thisWeekMacros = inject(ThisWeekMacrosService);
   private userFoodService = inject(UserFoodService);
   protected foodsService = inject(FoodsService);
   private langfusePromptService = inject(LangfusePromptService);
@@ -1749,6 +1755,59 @@ export class FoodsPanelComponent {
   readonly canSaveMeal = computed(
     () => this.mealName().trim().length > 0 && this.buildMealTotal() > 0,
   );
+
+  /** Live macro accumulation of the picked foods — the same running totals the
+   *  Menus & Meals macro banner shows, but summed client-side from the four
+   *  baskets so it updates the moment a food is added/removed or its serving is
+   *  edited. Each food's per-100g nutritionFacts are scaled to its serving via
+   *  nutritionLabelScale (the exact math the Nutrition Facts label uses), where
+   *  the serving quantity is the one serving record (userServingSize ?? baseline
+   *  ?? 1). Foods without nutritionFacts contribute nothing. Reading the
+   *  userServingSize signal keeps this reactive to serving edits. */
+  readonly buildMealMacros = computed(() => {
+    const baskets = this.buildMealBaskets();
+    let calories = 0, proteinG = 0, carbG = 0, fatG = 0, fiberG = 0;
+    for (const k of this.basketKeys) {
+      for (const f of baskets[k]) {
+        const qty = this.preferencesService.userServingSize(f.id) ?? f.servingSize ?? 1;
+        const scale = nutritionLabelScale(f, qty);
+        const nf = f.nutritionFacts;
+        if (!nf) continue;
+        calories += (nf.calories ?? 0) * scale;
+        proteinG += (nf.proteinG ?? 0) * scale;
+        carbG += (nf.totalCarbohydrateG ?? 0) * scale;
+        fatG += (nf.totalFatG ?? 0) * scale;
+        fiberG += (nf.dietaryFiberG ?? 0) * scale;
+      }
+    }
+    return {
+      calories: Math.round(calories),
+      proteinG: Math.round(proteinG),
+      carbG: Math.round(carbG),
+      fatG: Math.round(fatG),
+      fiberG: Math.round(fiberG),
+    };
+  });
+
+  /** Drive the GLOBAL top macro bar (RegiMenu app-bar) from the running basket
+   *  totals — identical placement/component to the Menus & Meals view (its
+   *  'foods' context reads ThisWeekMacrosService). ONLY while Build-a-Meal is open;
+   *  the moment it closes the bar is cleared to empty so the accumulation is no
+   *  longer visible on the My Foods panel. */
+  private readonly pushBuildMealMacros = effect(
+    () => {
+      if (this.buildMealOpen()) {
+        const m = this.buildMealMacros();
+        this.thisWeekMacros.setTotals({ proteinG: m.proteinG, carbG: m.carbG, fatG: m.fatG, fiberG: m.fiberG });
+      } else {
+        this.thisWeekMacros.clear();
+      }
+    },
+    { allowSignalWrites: true },
+  );
+  // Leaving the panel entirely (tab switch) must also clear, so no stale Build-a-Meal
+  // totals linger in the shared bar.
+  private readonly clearMacrosOnDestroy = inject(DestroyRef).onDestroy(() => this.thisWeekMacros.clear());
 
   // Accepted image types for the staged photo tile (mirrors MealImageSource).
   private static readonly PHOTO_MIME = /^image\/(jpeg|png|heic|heif)$/i;

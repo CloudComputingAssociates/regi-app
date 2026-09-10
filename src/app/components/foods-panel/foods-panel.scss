@@ -2386,17 +2386,40 @@
   &:hover { color: #d6e6ff; }
 }
 
-// Clear-all key floated left next to the title / return link (the Save + Close
-// cluster still hugs the right edge via .title-right's margin-left:auto).
+// Clear-all key floated left next to the title / return link.
 .bam-clear-key {
   align-self: center;
   margin-left: 8px;
 }
 
+// Build-a-Meal title bar: the running-calorie pill is the ONLY auto-margin
+// element (so it centres in the gap, exactly like the Menus toolbar); the Save +
+// Close cluster then sits flush right without its own auto margin.
+.bam-title .title-right { margin-left: 0; }
+
+// Running calorie pill — pixel copy of the Menus & Meals toolbar cals pill
+// (.toolbar-cals): lighter-grey rounded pill, inset shadow, centered in the bar.
+.bm-toolbar-cals {
+  flex: 0 0 auto;
+  margin: 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px 4px; // 1px extra above the text
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  color: #ffffff;
+  background: #999999;
+  border-radius: 999px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+
 // ---- Build-a-Meal: banner controls + result region -------------------------
-// Build-a-Meal banner — the manual assembler's top controls in one slim row:
-// Name · Notes (the focus, wide middle) · Cook Method (short) beside the photo
-// drop-zone. Save is a green-check key up in the title bar (see .bam-save-key).
+// Build-a-Meal banner — one slim controls row: Name · Notes (the focus, wide
+// middle) · Cook Method (short) beside the photo drop-zone. The running macros
+// live in the GLOBAL RegiMenu top bar and the cals pill in the title bar (both
+// exactly as the Menus & Meals view does it).
 .buildmeal-banner {
   flex-shrink: 0;
   display: flex;
