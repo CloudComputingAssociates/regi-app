@@ -13,12 +13,13 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { QRCodeComponent } from 'angularx-qrcode';
 
 export type TetherPromptMode = 'not-registered' | 'registered-offline';
 
 @Component({
   selector: 'app-tether-prompt',
-  imports: [MatIconModule, MatTooltipModule],
+  imports: [MatIconModule, MatTooltipModule, QRCodeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="tp-overlay" (click)="close.emit()">
@@ -40,9 +41,11 @@ export type TetherPromptMode = 'not-registered' | 'registered-offline';
         } @else {
           <h2 class="tp-title">Tether Mobile</h2>
           <p class="tp-body">
-            Scan the QR code or download the RegiMenu app to add your own foods.
+            Scan the QR code to install the RegiMenu app on your phone.
           </p>
-          <div class="tp-qr" aria-hidden="true">QR</div>
+          <div class="qr-tile">
+            <qrcode [qrdata]="mobileAppUrl" [width]="180" [errorCorrectionLevel]="'M'" [margin]="2" colorDark="#000000" colorLight="#ffffff"></qrcode>
+          </div>
         }
       </div>
     </div>
@@ -50,6 +53,8 @@ export type TetherPromptMode = 'not-registered' | 'registered-offline';
   styleUrls: ['./tether-prompt.scss'],
 })
 export class TetherPromptComponent {
+  /** Deep link the QR encodes — opens the mobile app install/landing page. */
+  readonly mobileAppUrl = 'https://mobile-app.regimenu.com/?src=qr';
   /** Which copy to show. Chrome is identical across modes. */
   readonly mode = input<TetherPromptMode>('not-registered');
   /** Fired on backdrop click or the red cancel disc. */
