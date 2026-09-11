@@ -55,6 +55,10 @@ export interface RegiMenuSettings {
    */
   persons?: number;
   /**
+   * Number of Menus (days) to plan at once — drives the rotation spanDays
+   */
+  menuDays?: number;
+  /**
    * Day of week that starts a new meal planning week
    */
   weekStartDay?: "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday";
@@ -173,9 +177,9 @@ export interface ShoppingStaple {
    */
   id: string;
   /**
-   * Shopping category
+   * Shopping category. Display buckets map: produce=Vegetables, fruits=Fruits, proteins=Proteins, dairy=Dairy, bulk=Carbs, aisles+non_food=Processed/Aisles.
    */
-  category: "proteins" | "produce" | "bulk" | "dairy" | "aisles" | "non_food";
+  category: "proteins" | "produce" | "bulk" | "dairy" | "aisles" | "non_food" | "fruits";
   /**
    * Item name
    */
@@ -221,9 +225,9 @@ export interface CurrentPick {
    */
   basketKey: "Proteins" | "Fats" | "Carbs" | "Other";
   /**
-   * Per-basket serving-size override; null = use the food's baseline serving
+   * How the generator should use this pick: PrimaryFood = build the meal around it; SecondaryFood = supporting/complementary; AnyUse = no constraint (default).
    */
-  pickServingSize?: number | null;
+  mealRole?: "AnyUse" | "PrimaryFood" | "SecondaryFood";
   /**
    * When the pick was added — used for stable ordering within a basket
    */
@@ -239,9 +243,9 @@ export interface AllSettingsResponse {
   tabs?: TabSettings;
   regiMenu?: RegiMenuSettings;
   /**
-   * Default food list filter
+   * Default food list filter (foodListSource token)
    */
-  defaultFoodList?: "yeh_approved" | "all_foods";
+  defaultFoodList?: "myfoods" | "regi_plus_myfoods" | "all_foods";
   dailyGoals?: DailyGoals;
   personalInfo?: PersonalInfo;
   /**

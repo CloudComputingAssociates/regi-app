@@ -1,0 +1,340 @@
+// src/app/components/food-lookaside/food-lookaside.scss
+//
+// Same rail footprint as the Menus & Meals binder (1/4 of the panel width,
+// min 300px, chrome-grey left divider, dark surface) so swapping in/out of edit
+// mode doesn't shift the layout.
+:host {
+  position: relative;   // anchors the inline Add-Food panel (fills this host)
+  flex: 0 0 25%;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid #4a4a4a;
+  background: #2a2a2a;
+}
+
+.lookaside {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+// Tabs on the left; the red X close disc on the right.
+// Same 44px raised bar as the binder "Meals" header, so swapping binder ↔
+// lookaside doesn't change the header height (no jump). The toggle is a narrow
+// pill centered within it.
+.lookaside-header {
+  flex-shrink: 0;
+  height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  background: #2e2e2e;
+  border-top: 1px solid #4a4a4a;
+  border-bottom: 1px solid #1a1a1a;
+
+  .close-btn {
+    margin-left: auto;
+  }
+
+  // Shown in place of the toggle when there are no picks — just names the list.
+  .lookaside-label {
+    font-size: 15px;
+    font-weight: 500;
+    color: #f1f1f1;
+  }
+
+  // Binder surface title: YEH apple logo + "My Foods", sized like the
+  // "Menus & Meals" toolbar title (20px / 600 / accent blue).
+  .la-title-logo {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+  }
+  .la-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #4da6ff;
+    white-space: nowrap;
+  }
+
+  // Right-aligned cluster: collapse-all + the X.
+  .la-header-tools {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .close-btn { margin-left: 0; }
+  }
+}
+
+// "Quik add +" pill — appears at the end of the Search Foods box when the typed
+// term isn't in My Foods, to add it.
+.quik-add-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 8px 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b7f5c4;
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  .mat-icon, mat-icon { width: 16px; height: 16px; font-size: 16px; }
+  &:hover { border-color: #6a6f75; color: #d3ffdd; }
+}
+
+// Segmented two-button tab toggle — a single raised pill split in two.
+.pane-toggle {
+  display: inline-flex;
+  border: 1px solid #262626;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
+  .toggle-btn {
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #cfcfcf;
+    background: linear-gradient(180deg, #4a4a4a 0%, #3c3c3c 100%);
+    border: none;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+
+    & + .toggle-btn {
+      border-left: 1px solid #262626;
+    }
+
+    &:hover:not(.active) {
+      color: #ffffff;
+    }
+
+    &.active {
+      color: #ffffff;
+      background: linear-gradient(180deg, #4da6ff 0%, #3d86d6 100%);
+    }
+  }
+}
+
+// MyFoods search — same raised dark field as the binder's Twist combo.
+.search-row {
+  flex-shrink: 0;
+  margin: 10px 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+// Collapse/expand-all button beside the search input.
+.la-collapse-all {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0; cursor: pointer;
+  color: #cfcfcf; background: linear-gradient(180deg, #565656, #434343);
+  border: 1px solid #262626; border-top-color: #6f6f6f; border-radius: 6px;
+  .mat-icon, mat-icon { width: 18px; height: 18px; font-size: 18px; }
+  &.active { color: #fff; background: linear-gradient(180deg, #333, #3f3f3f); }
+  &:hover { filter: brightness(1.12); }
+}
+
+.search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #565656 0%, #434343 100%);
+  border: 1px solid #262626;
+  border-top-color: #6f6f6f;
+  border-radius: 6px;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+
+  &::placeholder { color: #9aa0a6; }
+}
+
+.pane-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  // Always reserve the scrollbar gutter so expanding a long vs. short category
+  // never reflows the rows sideways (no jumping / vertigo).
+  scrollbar-gutter: stable;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pane-empty {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #9aa0a6;
+}
+
+// Category accordion header — chevron + plural label + count. Both tabs use it.
+.cat-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px;
+  margin-top: 4px;
+  cursor: pointer;
+  user-select: none;
+
+  &:first-child {
+    margin-top: 0;
+  }
+
+  &:hover .cat-name {
+    color: #ffffff;
+  }
+
+  .cat-caret {
+    flex: 0 0 auto;
+    width: 10px;
+    font-size: 13px;
+    line-height: 1;
+    color: #4da6ff;
+    transition: transform 0.12s ease;
+
+    &.open {
+      transform: rotate(90deg);
+    }
+  }
+
+  .cat-name {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #4da6ff;
+  }
+
+  .cat-count {
+    font-size: 12px;
+    color: #9aa0a6;
+  }
+}
+
+// A food row: [dot] [name, ellipsized] [serving + unit]. No buttons, no
+// selection — the whole row is the click/drag target.
+.la-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: grab;
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: #ffffff0a;
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  // Add in flight — dim and swallow further clicks.
+  &.busy {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
+
+.la-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: transparent;
+
+  // In the editing meal → accent dot.
+  &.on {
+    background: #4da6ff;
+  }
+}
+
+.la-name {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 15px;
+  color: #f1f1f1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Serving size + unit, right-aligned and muted.
+.la-units {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: #9aa0a6;
+  white-space: nowrap;
+}
+
+// CDK drag visuals — match the binder.
+.cdk-drag-preview {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  border-radius: 6px;
+  background: #3a3a3a;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.35;
+}
+
+.cdk-drag-animating {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+// Compact MyFoods sort toggle (Category / Newest) under the search box.
+.sort-row {
+  display: flex;
+  gap: 6px;
+  padding: 0 8px 6px;
+}
+.sort-btn {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #b9bec4;
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  cursor: pointer;
+
+  &.active {
+    color: #ffffff;
+    background: rgba(77, 166, 255, 0.55);
+    border-color: rgba(77, 166, 255, 0.8);
+  }
+  &:hover:not(.active) { border-color: #6a6f75; color: #e0e0e0; }
+}
+
+// "+ Add food" toggle in the MyFoods header + the inline add row.
+.add-food-toggle {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; padding: 0;
+  color: #b7f5c4; background: #3a3a3a; border: 1px solid #4a4a4a; border-radius: 6px; cursor: pointer;
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; }
+  &:hover { border-color: #6a6f75; }
+}
+.add-food-row { padding: 0 8px 8px; }

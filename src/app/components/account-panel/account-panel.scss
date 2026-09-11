@@ -1,80 +1,205 @@
 // src/app/components/account-panel/account-panel.scss
 
-:host {
+// Account is a bloom overlay, not a panel. :host draws nothing itself.
+:host { display: contents; }
+
+.acct-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
   display: flex;
-  height: 100%;
-  width: 100%;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
 }
 
-.panel-container {
+.acct-dialog {
   position: relative;
-  height: 100%;
-  width: 100%;
-  background-color: #3a3a3a;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 48px);
   overflow-y: auto;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
+  box-sizing: border-box;
+  padding: 22px 20px;
+  background: #2a2a2a;
+  border: 2px solid #ffd54f;
+  border-radius: 12px;
+  box-shadow:
+    0 0 16px rgba(255, 213, 79, 0.85),
+    0 0 32px rgba(255, 193, 7, 0.45),
+    0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
-// Action buttons - top right corner (uniform with other panels)
-.action-buttons {
+// ---- Identity (avatar + name + email) -----------------------------------
+.acct-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.acct-avatar {
+  position: relative;          // anchors the X button
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+}
+.acct-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
+  background: #1f1f1f;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+// X to drop the photo (revert to the apple). Sits on the top-right of the circle.
+.acct-avatar-x {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 10;
-  display: flex;
-  gap: 8px;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  background: #ff5f57;         // apple-red, matches the cancel disc
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  color: #4a0000;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 
-  .icon-btn {
-    font-size: 18px;
-    font-weight: 700;
-    color: #ffffff;
-    background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.2s ease;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    border-top: 1px solid #6a6a6a;
-    border-left: 1px solid #5a5a5a;
-    border-right: 1px solid #5a5a5a;
-    border-bottom: 2px solid #1a1a1a;
-    outline: none;
-    font-family: inherit;
-    box-shadow:
-      0 3px 6px rgba(0, 0, 0, 0.4),
-      0 -1px 0 rgba(255, 255, 255, 0.2) inset,
-      0 1px 0 rgba(0, 0, 0, 0.3) inset;
-    padding: 0;
-
-    &:hover {
-      background: linear-gradient(180deg, #606060 0%, #454545 100%);
-      border-top-color: #757575;
-      border-left-color: #656565;
-      border-right-color: #656565;
-      border-bottom-color: #202020;
-      color: rgba(255, 255, 255, 0.9);
-    }
-
-    &:active {
-      background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
-      border-bottom-width: 1px;
-      transform: translateY(1px);
-    }
-  }
+  .mat-icon, mat-icon { width: 14px; height: 14px; font-size: 14px; line-height: 14px; }
+  &:hover { background: #ff7b74; }
 }
-
-.panel-content {
-  flex: 1;
-  padding: 16px;
+.acct-identity-text {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;   // fill the row next to the avatar so the name box is wide
+}
+.acct-name-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  // Recessed field: dark fill + a thick inset shadow reads as a real, obvious
+  // text box (not just plain text).
+  background: #1c1c1c;
+  border: 2px solid #4a4a4a;
+  border-top-color: #333333;         // darker top edge deepens the inset
+  border-radius: 6px;
+  padding: 7px 10px;
+  outline: none;
+  caret-color: #4da6ff;              // a bright, visibly blinking cursor
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6);
+
+  &:hover { border-color: #5f5f5f; }
+  &:focus {
+    border-color: #4da6ff;
+    box-shadow:
+      inset 0 2px 5px rgba(0, 0, 0, 0.6),
+      0 0 0 2px rgba(77, 166, 255, 0.35);   // focus halo
+  }
+  &::placeholder { color: rgba(255, 255, 255, 0.4); }
+}
+.acct-email {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ---- Photo tools ---------------------------------------------------------
+.acct-photo-section {
+  margin-bottom: 16px;
+}
+.acct-section-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
+}
+.acct-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 10px;
+  border: 2px dashed #4da6ff;
+  border-radius: 8px;
+  background: rgba(77, 166, 255, 0.06);
+  color: #cfe4ff;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.12s ease;
+
+  &:hover { background: rgba(77, 166, 255, 0.12); }
+  &:focus-visible { box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.6); }
+  &.busy { cursor: progress; opacity: 0.8; }
+
+  .acct-dropzone-icon { width: 26px; height: 26px; font-size: 26px; }
+  .acct-dropzone-title { font-size: 13px; }
+  .acct-dropzone-sub { font-size: 11px; color: rgba(207, 228, 255, 0.6); }
+}
+.acct-phone-btn {
+  margin-top: 10px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  background: linear-gradient(180deg, #555555 0%, #3a3a3a 100%);
+  border: 1px solid #5a5a5a;
+  border-bottom: 2px solid #1a1a1a;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: inherit;
+
+  .mat-icon, mat-icon { width: 18px; height: 18px; font-size: 18px; }
+  &:hover:not(:disabled) { background: linear-gradient(180deg, #606060 0%, #454545 100%); }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+}
+.acct-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(255, 213, 79, 0.85);
+}
+
+// The break between the "upper two-thirds" and the Danger Zone.
+.acct-divider {
+  border: none;
+  border-top: 1px solid #4a4a4a;
+  margin: 16px 0;
+}
+
+.dialog-discs {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 6px;
+}
+
+.acct-title {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
 }
 
 // Danger Zone Section
@@ -83,7 +208,6 @@
   border: 1px solid rgba(220, 53, 69, 0.3);
   border-radius: 8px;
   padding: 16px;
-  margin-top: auto;
 
   .section-title {
     color: #dc3545;
@@ -140,7 +264,8 @@
   }
 }
 
-// Modal Overlay
+// Modal Overlay — the delete "are you sure?" gate. MUST sit ABOVE the account
+// overlay (z-index 1200), or it renders behind the Account dialog (occluded).
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -151,7 +276,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1300;
   padding: 16px;
 }
 

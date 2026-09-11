@@ -26,6 +26,68 @@
   min-height: 0;
   display: flex;
   flex-direction: row;
+
+  // While dragging the splitter: no text selection, col-resize cursor everywhere.
+  &.splitter-dragging {
+    user-select: none;
+    cursor: col-resize;
+  }
+}
+
+// Splitter — a long vertical line down the page edge; drag to resize, and the
+// centred arrow tab slides the Binder notebook off (→) / back (←).
+.rail-splitter {
+  flex: 0 0 auto;
+  width: 10px;
+  align-self: stretch;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  z-index: 6;
+
+  // The long vertical line.
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: #5a5a5a;
+    transition: background 0.12s ease;
+  }
+  &:hover::before,
+  &.dragging::before { background: #4da6ff; }
+
+  // When the Binder is hidden the splitter only toggles (no resize drag).
+  &.binder-hidden { cursor: pointer; }
+
+  // The arrow tab, centred vertically on the line — a raised pill on the edge.
+  .rail-toggle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 7;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 44px;
+    padding: 0;
+    color: #f0f0f0;
+    background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+    border: 1px solid #262626;
+    border-top-color: #7d7d7d;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    cursor: pointer;
+    transition: background 0.12s ease;
+
+    .mat-icon { width: 20px; height: 20px; font-size: 20px; line-height: 20px; }
+    &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #fff; }
+  }
 }
 
 // The board column — owns the toolbar, menu-card-row and the scrolling meals
@@ -36,109 +98,313 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  position: relative; // anchors the AI Create Meal bloom overlay to the board
+
+  // Macros bar sits at the top of the board column only (spans the Menus & Meals
+  // width, not the Binder). Fixed height; a small gap before the toolbar.
+  > app-macros {
+    flex-shrink: 0;
+    display: block;
+    margin-bottom: 4px;
+  }
 }
 
 // Thin raised toolbar pinned at the very top of the panel. flex-shrink:0 keeps
 // it (and the menu-card-row below it) from scrolling with the meals canvas.
 // Etched in the app chrome grey family: lighter top edge, darker bottom edge,
 // so it stands slightly proud of the #2a2a2a panel surface.
+// Shared header bar — same height / raised shading as the Meals + lookaside
+// headers on the right, so "Scale" lines up with "Meals" and nothing jumps.
 .menus-toolbar {
   flex-shrink: 0;
-  height: 38px;
+  height: 44px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  background: #2e2e2e;
-  border-top: 1px solid #4a4a4a;
-  border-bottom: 1px solid #1a1a1a;
-}
+  gap: 10px;
+  padding: 0 14px;
+  margin: 1px 0 6px; // flush left+right to the board edges; 1px black sliver on top
+  // Match the macro bar: same flat shade, 1px chrome border, 8px rounding, so
+  // it reads as the same "panel" family (the margin lets the corners show).
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
 
-// Spacers place Wipe ~2/3 across while People stays far-left.
-.toolbar-spacer { flex: 2 1 0; }
-.toolbar-spacer-tail { flex: 1 1 0; }
+  // Surface title — same treatment as the Binder header (blue, 20px, 600), with
+  // breathing room from the left edge and the button group.
+  .toolbar-title {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    // No extra left margin — the toolbar's 14px padding is the whole left inset,
+    // matching the Binder header's title (also just its 14px header padding).
+    margin-right: 14px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #4da6ff;
+    white-space: nowrap;
+  }
 
-.people-control {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  // All the action buttons grouped together, tight + equally spaced. The flex
+  // gap is the ONLY spacing (per-button margins were removed) so it stays even.
+  // margin-left:auto flushes the cluster right (the cals pill used to do that
+  // via its own auto margins, but it now lives in the macros bar).
+  .toolbar-buttons {
+    flex: 0 0 auto;
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
 
-  .people-label {
+  // "Hide/Show macros" — text key in the same domed family as the wipe/close keys.
+  .macros-toggle-btn {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 30px;
+    padding: 0 12px;
+    color: #f0f0f0;
+    background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+    border: 1px solid #262626;
+    border-top-color: #7d7d7d;
+    border-radius: 5px;
+    box-shadow:
+      0 2px 3px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
     font-size: 12px;
-    font-weight: 600;
-    color: #9aa0a6;
-    margin-right: 2px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
+
+    &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
+    &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45); }
+
+    // AM-radio "on" (macros shown) — the key stays DEPRESSED (pushed in). Press
+    // again and it pops back out (raised) = macros hidden.
+    &.depressed {
+      background: linear-gradient(180deg, #3c3c3c 0%, #545454 100%); // inverted = inset
+      border-top-color: #2a2a2a;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+      transform: translateY(1px);
+      color: #cfcfcf;
+    }
   }
 
-  .people-count {
-    font-size: 13px;
-    font-weight: 600;
-    color: #f1f1f1;
-    min-width: 16px;
-    text-align: center;
-  }
-
-  .people-step {
+  .toolbar-title-icon {
+    flex: 0 0 auto;
     width: 20px;
     height: 20px;
-    padding: 0;
-    border: 1px solid #4a4a4a;
-    border-radius: 4px;
-    background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
-    color: #d8d8d8;
-    font-size: 14px;
-    line-height: 1;
-    cursor: pointer;
-
-    &:hover:not(:disabled) {
-      border-color: #4da6ff;
-      color: #4da6ff;
-    }
-
-    &:disabled {
-      opacity: 0.4;
-      cursor: default;
-    }
+    font-size: 20px;
+    line-height: 20px;
+    color: #4da6ff;
   }
 }
 
-// Raised/etched app-grey key — no accent colour. Positioned ~2/3 from the left
-// (the left two-thirds is left empty for future controls).
-.wipe-btn {
+// Trailing spacer grows to absorb the rest of the row, so Scale is left-
+// justified and Wipe Menus + the days badge sit at the right edge.
+.toolbar-spacer { flex: 1 1 auto; }
+
+// Close-panel key at the far right, after the days pill. Same raised domed
+// chrome + size (30×30, 18px glyph) as the Print / Wipe keys.
+.close-panel-btn {
   flex: 0 0 auto;
-  height: 26px;
-  padding: 0 14px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #d8d8d8;
-  background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
-  border: 1px solid #1f1f1f;
-  border-top-color: #555555;
+  margin-left: auto; // exit pinned to the FAR RIGHT of the toolbar
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
   border-radius: 5px;
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
+
+  .close-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
 
   &:hover {
-    background: linear-gradient(180deg, #454545 0%, #363636 100%);
+    background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%);
+    color: #ffffff;
+  }
+  &:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  }
+}
+
+// Plain white Material X — pinned far right of the toolbar.
+// Close X — sits after the right-justified button cluster; the left margin is the
+// padding the user wants between the rightmost key (Clear all) and the X.
+.menus-close-disc { flex: 0 0 auto; margin-left: 10px; }
+
+
+// Notebook key — toggles the Binder. Square domed key (same 30×30 chrome as the
+// Shopping/Clear-all keys); it's the middle key of the right-justified cluster.
+.notebook-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
+  border-radius: 5px;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
+
+  .notebook-icon {
+    // Slightly bigger than before so the (padded) glyph fills more of the 30px key.
+    width: 26px;
+    height: 26px;
+    display: block;
+    object-fit: contain;
+    // Artwork is black on transparent. brightness(0) → pure black, invert(1) → pure
+    // WHITE on the dark button. Stroke weight comes from the PNG itself.
+    filter: brightness(0) invert(1);
+  }
+
+  &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
+  &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45); }
+
+  // Notebook is open — pressed-in blue-tinted state so the key reads as "on".
+  // Active (Notebook open) — a LIGHTER raised grey, not blue. Blue is reserved for
+  // labels; this key is actionable, so it stays in the grey key family.
+  &.active {
+    color: #ffffff;
+    background: linear-gradient(180deg, #7a7a7a 0%, #616161 100%);
+    border-top-color: #9a9a9a;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+}
+
+// Shopping List key — a square icon-only domed key with a square list glyph,
+// sitting just left of the Clear-all key. Same 30×30 chrome as the Clear-all key.
+.shop-list-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
+  border-radius: 5px;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
+
+  .shop-list-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+    color: #f0f0f0; // white glyph, matching the Clear-all key
+  }
+
+  &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
+  &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45); }
+
+  // Notebook is open on the Shopping tab — lighter raised grey "on" state, matching
+  // the Notebook key's .active treatment.
+  &.active {
+    color: #ffffff;
+    background: linear-gradient(180deg, #7a7a7a 0%, #616161 100%);
+    border-top-color: #9a9a9a;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+}
+
+// Whole-rotation teardown key at the right end, just left of the days badge.
+// Same domed family as the steppers; a warm hover marks it as destructive.
+.wipe-menus-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
+  border-radius: 5px;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
+
+  // Same glyph size as the Print key (18px).
+  .wipe-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+  }
+
+  &:hover {
+    background: linear-gradient(180deg, #6b5050 0%, #513e3e 100%);
     color: #ffffff;
   }
 
   &:active {
-    background: linear-gradient(180deg, #2c2c2c 0%, #3a3a3a 100%);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
   }
 }
+
 
 // The strip stays pinned (it has its own horizontal scroll); only the body
 // scrolls vertically. min-height:0 lets the flex child shrink below content
 // height so overflow-y actually kicks in.
+// ── Board zoning (A+B) ──────────────────────────────────────────────────────
+// Split the board column into two legible areas so MENUS and MEALS stop reading
+// as one continuous dark field:
+//   A · two-tone — the MENUS strip is a slightly LIGHTER raised "shelf"; the
+//       MEALS region below is a slightly DARKER recessed "workspace".
+//   B · a single embossed SEAM at the join (dark ledge line + highlight under it,
+//       plus a soft inner top-shadow so MEALS reads as dropped below the shelf).
+app-menu-card-row {
+  position: relative;
+  z-index: 1; // the shelf sits above the recessed region so the seam reads cleanly
+  background: #2f2f2f; // MENUS shelf — a hair lighter than the #2a2a2a board
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035); // faint top-light on the shelf
+  border-bottom: 1px solid #161616; // the seam's dark ledge line
+}
+
 .panel-body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  background: #242424; // MEALS workspace — recessed, darker than the shelf
+  // Ledge highlight just under the seam line + a soft inner top-shadow so the
+  // region reads as dropped below the shelf.
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 8px 12px -10px rgba(0, 0, 0, 0.55);
 }
 
 // Loading / empty / error states — centered in the panel, dark theme.
@@ -197,5 +463,161 @@
 @keyframes menus-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+// ---- Per-item serving popup (nutrition label + serving adjuster) ----------
+// Mirrors the foods-panel NF popup chrome (yellow-glow dark card) but carries
+// ONLY the label + serving adjuster — no category dropdown, no health badge,
+// no data-trace. The .dialog-disc discs themselves are global (styles.scss).
+.nf-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nf-popup {
+  position: relative;
+  width: 310px;
+  box-sizing: border-box;
+  padding: 12px;
+  background: #2a2a2a;
+  border-radius: 8px;
+  border: 2px solid #ffd54f;
+  box-shadow:
+    0 0 16px rgba(255, 213, 79, 0.85),
+    0 0 32px rgba(255, 193, 7, 0.45),
+    0 8px 24px rgba(0, 0, 0, 0.5);
+  overflow: visible;
+}
+
+.nf-popup-inner {
+  max-height: 70vh;
+  overflow-y: auto;
+  &::-webkit-scrollbar { display: none; }
+  scrollbar-width: none;
+}
+
+.nf-popup-header {
+  display: flex;
+  align-items: center;
+  margin: 4px 0 12px;
+  padding-right: 38px; // clear the discs
+  overflow: hidden;
+}
+
+.nf-popup-title {
+  flex: 1;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nf-popup-unit-busy {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  font-size: 12px;
+  font-style: italic;
+  color: #b9bec4;
+  white-space: nowrap;
+}
+
+.dialog-discs {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 5;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 3px;
+}
+
+// Center-screen "drag" encourager — appears while a Binder card is held down
+// (before motion), a yellow bloom pill with an arrow. pointer-events:none so it
+// never blocks the drag.
+.drag-encourager {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  color: #2a2a2a;
+  background: #ffd54f;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 3px rgba(255, 213, 79, 0.35),
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    0 0 34px rgba(255, 213, 79, 0.6);
+  pointer-events: none;
+  animation: drag-encourage-pulse 1s ease-in-out infinite;
+
+  .drag-word {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .mat-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 28px;
+  }
+}
+
+@keyframes drag-encourage-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.06); }
+}
+
+// My Foods bloom — floats the food-lookaside over the panel while a meal is being
+// edited, so the Notebook rail stays visible behind it. Yellow-glow window +
+// dim backdrop, matching the Shopping List / Settings blooms. Closed by the
+// lookaside's own X (stops editing) or a backdrop click.
+.myfoods-bloom-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+.myfoods-bloom-window {
+  position: relative;
+  width: 400px;
+  max-width: 92vw;
+  height: 78vh;
+  max-height: 820px;
+  display: flex;
+  background: #2a2a2a;
+  border: 1.5px solid rgba(255, 213, 79, 0.6);
+  border-radius: 14px;
+  box-shadow:
+    0 0 18px 2px rgba(255, 213, 79, 0.42),
+    0 0 36px 8px rgba(255, 193, 7, 0.25),
+    0 12px 36px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+
+  // The lookaside is authored as a rail item (flex-basis 25%, left divider). In
+  // the bloom, fill the window and drop the rail chrome.
+  ::ng-deep app-food-lookaside {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    border-left: none;
+    border-radius: 14px;
+    overflow: hidden;
   }
 }

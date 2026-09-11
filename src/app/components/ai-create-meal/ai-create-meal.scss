@@ -1,0 +1,292 @@
+// src/app/components/ai-create-meal/ai-create-meal.scss
+
+// Backdrop covers the board (the host is placed inside .menus-main, which is
+// position:relative), dimming it and centering the bloom.
+.ai-create-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+// The bloom card — yellow glow, matching the app's established blooms.
+.ai-create-bloom {
+  position: relative;
+  width: 340px;
+  max-width: calc(100% - 32px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 16px 16px 18px;
+  border-radius: 10px;
+  border: 2px solid #ffd54f;
+  background: #2f2f2f;
+  box-shadow:
+    0 0 16px rgba(255, 213, 79, 0.85),
+    0 0 32px rgba(255, 193, 7, 0.45),
+    0 12px 30px rgba(0, 0, 0, 0.55);
+}
+
+// Title row — blue, with a fork & knife glyph.
+.bloom-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 34px; // clear the cancel disc
+  font-size: 18px;
+  font-weight: 600;
+  color: #4da6ff;
+
+  .bloom-title-icon {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    line-height: 20px;
+    color: #4da6ff;
+  }
+}
+
+// Cancel disc cluster, top-right (uses the global .dialog-disc chrome).
+.dialog-discs {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+// Blue section captions.
+.section-label {
+  flex-shrink: 0;
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4da6ff;
+  white-space: nowrap;
+}
+
+// Primary "Build-a-Meal with My Foods & AI" key — dark card with a blue accent so the
+// blue AI star reads; leads the bloom above the recipe import.
+.build-a-meal-cta {
+  position: relative; // anchor for the numbered disc
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  margin: 2px 0 0;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #4da6ff;
+  background: linear-gradient(180deg, #343a44 0%, #2b2f37 100%);
+  border: 1px solid #3a5a86;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.15), 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: filter 0.12s ease, transform 0.05s ease, box-shadow 0.12s ease;
+
+  &:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+  &:active { transform: translateY(1px); }
+}
+
+// Compact import drop zone — no big graphic, just the two lines of text.
+.import-dropzone {
+  position: relative; // anchor for the numbered disc
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 2px dashed #4da6ff;
+  border-radius: 8px;
+  background: rgba(77, 166, 255, 0.06);
+  text-align: center;
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+
+  // Unified option-title size (matches Build-a-Meal + Add MealSets — no ransom-note mix).
+  .dz-title { font-size: 15px; font-weight: 700; color: #e8e8e8; }
+  .dz-sub { font-size: 11px; color: #9aa0a6; }
+
+  .dz-link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: #4da6ff;
+    text-decoration: underline;
+    font: inherit;
+    cursor: pointer;
+    &:hover { color: #7fbfff; }
+  }
+
+  &.dragging {
+    background: rgba(77, 166, 255, 0.16);
+    box-shadow: 0 0 0 2px #4da6ff, 0 0 14px rgba(77, 166, 255, 0.6);
+  }
+}
+
+// Glowing gold separator between Import and the Meal Sets upsell.
+.glow-divider {
+  height: 2px;
+  margin: 6px 2px 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #ffd54f 20%, #ffe58a 50%, #ffd54f 80%, transparent);
+  box-shadow:
+    0 0 8px rgba(255, 213, 79, 0.85),
+    0 0 16px rgba(255, 193, 7, 0.45);
+}
+
+// ---- Purchase Additional Meal Sets (upsell) --------------------------------
+.meal-sets {
+  position: relative; // anchor for the numbered disc
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 8px;
+  // Warm, enticing panel — a subtle amber wash so it reads as "premium".
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(255, 213, 79, 0.12), transparent 60%),
+    #333030;
+  border: 1px solid rgba(255, 213, 79, 0.35);
+}
+
+.meal-sets-head {
+  display: flex;
+  align-items: center;
+  justify-content: center; // center the icon + title (matches the centered button)
+  gap: 8px;
+
+  .meal-sets-icon {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    font-size: 22px;
+    line-height: 22px;
+    color: #ffd54f;
+  }
+  .meal-sets-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffe58a;
+  }
+}
+
+.meal-sets-price {
+  font-size: 13px;
+  color: #f1f1f1;
+  strong { color: #ffd54f; font-weight: 800; }
+}
+
+.meal-sets-desc {
+  font-size: 12px;
+  color: #d8d8d8;
+}
+
+.meal-sets-tags {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9fd0a0; // healthy green — GLP-1 / Keto / Carnivore hook
+}
+
+// Gold CTA button — gimmicky glow, opens meals.regimenu.com in a new tab.
+.meal-sets-cta {
+  margin-top: 6px;
+  align-self: stretch;       // full width so the label centers on the button
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffe07a 0%, #f4b400 100%);
+  color: #2a2419;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow:
+    0 2px 8px rgba(255, 193, 7, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: box-shadow 0.15s ease, transform 0.05s ease, filter 0.15s ease;
+
+  .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; }
+
+  &:hover {
+    filter: brightness(1.05);
+    box-shadow:
+      0 2px 12px rgba(255, 193, 7, 0.85),
+      0 0 18px rgba(255, 213, 79, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  &:active { transform: translateY(1px); }
+}
+
+// Author view: the Studio card's CTA is a <button>, not an <a> — normalize it.
+button.meal-sets-cta {
+  font: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+
+// Numbered step discs (1·2·3), straddling each option box's LEFT border ~1/8" down.
+// Page yellow, OPAQUE so the border doesn't show through; dark 800-weight number in the
+// same font as the Browse MealSets key.
+// Phone-camera key — left side of the import dropzone, vertically centered (in the space
+// under the "2" disc). Enabled only when a phone is live; when not, it dims but STILL
+// takes hover so the tooltip shows (no pointer-events:none).
+.dz-camera {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #4da6ff;
+  background: rgba(77, 166, 255, 0.12);
+  border: 1px solid rgba(77, 166, 255, 0.5);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease, opacity 0.12s ease;
+
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+  &:hover { background: rgba(77, 166, 255, 0.22); }
+  &.disabled { opacity: 0.4; cursor: default; }
+  &.disabled:hover { background: rgba(77, 166, 255, 0.12); }
+}
+
+.option-num {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffd54f;
+  color: #2a2419;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}

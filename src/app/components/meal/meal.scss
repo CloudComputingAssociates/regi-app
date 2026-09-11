@@ -1,140 +1,737 @@
 // src/app/components/meal/meal.scss
 
+// Fill the grid cell so a filled tile sizes to the available height (the board
+// grid distributes height across rows) instead of its width (4:3), which made
+// tiles overflow a short viewport.
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
 .slot-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
+  height: 100%;        // fill the cell
+  box-sizing: border-box;
+  gap: 8px;
+  padding: 4px 8px; // trimmed top/bottom black on the collapsed meal cards
   border: 1px solid #4a4a4a;
   border-radius: 8px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
+  background: #3a3a3a;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 
   &.empty {
     background: #333;
     border-style: dashed;
   }
+
+  &.editing {
+    border-color: #4da6ff;
+    border-style: solid;
+    box-shadow: 0 0 0 1px #4da6ff, 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  // Filled slot: the photo fills the whole frame — no header, no padding — and
+  // the Clear key + flip button overlay the picture.
+  &.filled {
+    padding: 0;
+    gap: 0;
+    overflow: hidden; // clip the photo to the rounded corners
+    border-color: #1c1c1c;
+
+    .flip { width: 100%; }
+    .flip-front,
+    .flip-back { border-radius: 0; }
+  }
 }
 
+// Grey square "remove this meal" key — the destructive control lives ONLY on the
+// back (detail) face, top-right of its title row. Replaces the old red disc.
+// Clear-meal affordance: a white wastebasket in a grey key (same chrome as the
+// + Add key), so it reads as "remove this meal" — NOT an X, which too many people
+// mistake for "close the panel" instead of flipping the card.
+.back-clear-x {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // 26×26 matches the vertical action keys (.add-food-btn), right-aligned to the
+  // same edge so it centers over that button column.
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  // Red trash glyph so the DELETE key stands out from the grey action keys now
+  // crowding the card (Notes / Print / Camera / +).
+  color: #ff5f57;
+  background: #555555;
+  border: 1px solid #6a6a6a;
+  border-radius: 2px;
+  cursor: pointer;
+
+  .mat-icon { width: 17px; height: 17px; font-size: 17px; line-height: 17px; }
+  &:hover { background: #616161; color: #ff8079; }
+  &:active { transform: translateY(1px); }
+}
+
+// ---- Header: title + summed macro strip + clear-all -----------------------
 .slot-header {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 5px;
 
   .slot-title {
-    font-size: 13px;
+    flex: 0 0 auto;
+    font-size: 14px; // uniform with the macros labels / meal names
     font-weight: 600;
     color: #4da6ff;
     white-space: nowrap;
   }
 
-  .meal-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: #f1f1f1;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .slot-cals {
+    flex: 0 0 auto;
+    font-size: 12px;
+    color: #4da6ff;
     white-space: nowrap;
-    flex: 1 1 auto;
   }
 
-  .edit-affordance {
+  .clear-slot {
     margin-left: auto;
-    flex: 0 0 auto;
-    width: 22px;
-    height: 22px;
-    border: 1px solid #4a4a4a;
-    border-radius: 4px;
-    background: #2a2a2a;
-    color: #9aa0a6;
-    font-size: 12px;
-    line-height: 1;
-    cursor: pointer;
-
-    &:hover {
-      color: #4da6ff;
-      border-color: #4da6ff;
-    }
-  }
-
-  .delete-affordance {
-    flex: 0 0 auto;
-    width: 22px;
-    height: 22px;
-    border: 1px solid #4a4a4a;
-    border-radius: 4px;
-    background: #2a2a2a;
-    color: #9aa0a6;
-    font-size: 12px;
-    line-height: 1;
-    cursor: pointer;
-
-    &:hover {
-      color: #ef5350;
-      border-color: #ef5350;
-    }
   }
 }
 
-.macro-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+// Macro discs — shared by the header strip and the back macro row.
+.chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.82);
 
-  .chip {
-    font-size: 12px;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 10px;
-    color: #ffffff;
-
-    &.protein {
-      background: #41ac17;
-    }
-    &.carb {
-      background: #ef5350;
-    }
-    &.fat {
-      background: #c060ff;
-    }
-    &.fiber {
-      background: #e67300;
-    }
-  }
+  &.protein { background: #34781a; }
+  &.carb { background: #a8541a; }
+  &.fat { background: #8a55ab; }
+  &.fiber { background: #5e4021; }
 }
 
-.food-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
+// ---- Placeholders ---------------------------------------------------------
 .slot-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 72px;
+  gap: 8px;
+  // FILL the rest of the slot (below the header) so the drop zone is the whole
+  // slot, not just a ~96px band. Content stays centered.
+  flex: 1 1 auto;
+  min-height: 96px;
   color: #9aa0a6;
   font-size: 13px;
+  border-radius: 6px;
 
   &.dining-out {
     flex-direction: row;
-    gap: 8px;
+    .placeholder-icon { font-size: 18px; }
+  }
 
-    .placeholder-icon {
-      font-size: 18px;
+  &.pick {
+    transition: box-shadow 0.12s ease, background 0.12s ease;
+
+    &.bloom {
+      background: rgba(255, 213, 79, 0.08);
+      box-shadow: 0 0 0 2px #ffd54f, 0 0 12px rgba(255, 213, 79, 0.55);
     }
   }
 
-  .add-stub {
-    padding: 4px 12px;
-    border: 1px dashed #5a5a5a;
-    border-radius: 6px;
-    background: transparent;
-    color: #6a6f75;
-    font-size: 12px;
-    cursor: not-allowed;
+  // Block so inline text + link flow naturally (a trailing comma hugs the link
+  // instead of getting a flex gap).
+  .pick-sub { display: block; white-space: nowrap; }
+
+  // Inline BLUE hyperlinks in the placeholder: "Meals" (opens the Notebook) and
+  // "Create from Scratch" (build a new meal). Same 13px + crisp smoothing so they
+  // don't render blurry; mirror the app-bar "Hi, {name}!" link.
+  .create-link,
+  .binder-link {
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 400; // de-emboldened — bold blue read fuzzy on the dark card
+    color: #4da6ff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+
+    &:hover { color: #7fbfff; }
   }
+
+}
+
+// ---- Flip card ------------------------------------------------------------
+// The card body is a fixed 4:3 frame so both faces occupy the same box and the
+// flip doesn't reflow the board. FRONT (image grid) and BACK (one-meal detail)
+// are absolutely stacked; rotating .flip-inner swaps them.
+.flip {
+  perspective: 1200px;
+  // In a filled tile, fill the card height (which fills the grid cell) instead of
+  // letting the 4:3 aspect drive an over-tall card.
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.flip-inner {
+  position: relative;
+  height: 100%; // fill the card; was aspect-ratio: 4/3 (width-driven → too tall)
+  transform-style: preserve-3d;
+  transition: transform 0.4s ease;
+}
+
+.flip.flipped .flip-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-front,
+.flip-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+// ---- FRONT: image grid ----------------------------------------------------
+.flip-front {
+  display: grid;
+  gap: 2px;
+  background: #1c1c1c;
+}
+.flip-front[data-count='1'] { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+.flip-front[data-count='2'] { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+.flip-front[data-count='3'],
+.flip-front[data-count='4'] { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+
+.flip-front.cdk-drop-list-receiving,
+.flip-front.cdk-drop-list-dragging {
+  outline: 2px solid #4da6ff;
+  outline-offset: -2px;
+}
+
+.meal-tile {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+  background: #333;
+
+  .tile-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+
+  .tile-noimg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    text-align: center;
+    color: #cfcfcf;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .tile-scrim {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 46%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0));
+    pointer-events: none;
+  }
+
+  .tile-name {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    bottom: 5px;
+    color: #fff;
+    font-size: 14px;      // bumped from 12px
+    font-weight: 500;     // de-emboldened from 600 — crisper over the photo
+    letter-spacing: 0.2px;
+    // Tighter, higher-contrast shadow so edges read sharp (the soft 3px blur
+    // read as fuzzy over a busy photo).
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 1px rgba(0, 0, 0, 0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &.tile-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2f2f2f;
+    border: 1px dashed #55585c;
+
+    span {
+      color: #7a7f85;
+      font-size: 11px;
+    }
+  }
+}
+
+// Tile corner buttons — flip (⤢) top-LEFT, delete (🗑) top-RIGHT (red, matching
+// the app's danger discs). The BACK flip sits in the same top-left spot, mirrored.
+.tile-btn {
+  position: absolute;
+  top: 6px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  cursor: pointer;
+  // A light ring + drop shadow so it stays visible over black photos.
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.7),
+    0 0 0 1.5px rgba(255, 255, 255, 0.35);
+  transition: background 0.12s ease;
+
+  &:hover { background: rgba(0, 0, 0, 0.85); }
+
+  .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; }
+}
+// Flip ⟳ — bottom-right corner on BOTH faces (front tiles + the back), so the two
+// flip keys line up. All edits (remove/save) live on the back title row.
+.tile-flip {
+  top: auto;
+  bottom: 6px;
+  right: 6px;
+}
+// AI meal-image camera (square [+]-style key) — disabled while generating.
+.genimg-btn {
+  &:disabled { opacity: 0.75; cursor: default; }
+}
+// "Generating image…" placeholder on the front tile.
+.tile-generating {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #cfcfcf;
+  .mat-icon, mat-icon { width: 18px; height: 18px; font-size: 18px; }
+}
+.spin { animation: meal-spin 0.9s linear infinite; }
+@keyframes meal-spin { to { transform: rotate(360deg); } }
+
+// Drag cursor preview for a slot photo being relocated/cleared.
+.drag-tile-preview {
+  position: relative;
+  width: 132px;
+  height: 99px; // 4:3
+  border-radius: 6px;
+  overflow: hidden;
+  background: #333;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+
+  .dtp-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .dtp-scrim {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 50%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0));
+  }
+  .dtp-name {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    bottom: 5px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// ---- BACK: one-meal detail ------------------------------------------------
+.flip-back {
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  background: #3a3a3a;
+  overflow: hidden; // the inner .back-scroll scrolls → keeps the flip button pinned
+
+  // Scrolls the meal detail; the flip button stays put (it's absolute to the
+  // non-scrolling .flip-back, so it no longer scrolls up with the content).
+  .back-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .back-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    // Blue "Meal" caption — same size as the menu card's "Menu" label.
+    .name-label {
+      flex: 0 0 auto;
+      font-size: 14px;
+      font-weight: 600;
+      color: #4da6ff;
+    }
+
+    // Input-group: the title input + trailing save addon share ONE border, bg,
+    // inset shadow, and rounding so they read as a single adjoined control.
+    .name-field {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      align-items: stretch;
+      background: #3a3a3a;
+      border: 1px solid #1c1c1c;
+      border-top-color: #4a4a4a;
+      border-radius: 6px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7);
+      overflow: hidden; // clip the addon's corners to the group's rounding
+    }
+
+    // Input fills the group; the GROUP now owns the border/bg/shadow/rounding.
+    .meal-name-box {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 4px 8px 4px 6px;
+      font-size: 14px;
+      color: #f0f0f0;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      outline: none;
+    }
+
+    // Save = a square trailing addon flush against the input, sharing the group's
+    // right rounding (clipped by the group). Divider line on its left. Its dirty
+    // (green) / disabled states carry over from .icon-disc(-confirm).
+    .save-disc {
+      align-self: stretch;
+      width: 28px;
+      height: auto;
+      border: none;
+      border-left: 1px solid #1c1c1c;
+      border-radius: 0;
+      box-shadow: none;
+      &:disabled { opacity: 0.4; cursor: default; }
+    }
+  }
+
+  // Meal TYPE row — pick-or-type, between the name and the disc/macro row.
+  .back-type-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 2px 0 6px;
+
+    // Right-justify the four keys (+ · camera · notes · print) so Print lands
+    // directly under the upper-right delete trash. The auto margin on the first
+    // key absorbs the free space between the Type dropdown and the cluster.
+    .add-food-btn:first-of-type { margin-left: auto; }
+
+    .back-type-label {
+      flex: 0 0 auto;
+      font-size: 14px;      // same size as the "Meal" label
+      font-weight: 600;
+      color: #4da6ff;       // blue, matching "Meal"
+    }
+    // Serves — the per-meal output scale. Small centred number field in front of Type.
+    .back-serves-input {
+      flex: 0 0 auto;
+      width: 46px;
+      height: 26px;
+      text-align: center;
+    }
+    // Type select — a strict dropdown of the fixed, DB-constrained set (no free
+    // typing). Shrunk to make room for the Serves field in front of it; keys sit right.
+    .type-combo {
+      position: relative;
+      flex: 0 1 auto;
+      min-width: 0;
+      width: 24%;
+      max-width: 24%;
+      display: flex;
+      align-items: center;
+      // Half-button (26px → 13px) of breathing room between the dropdown arrow and
+      // the first + key: 6px row gap + 7px margin ≈ 13px.
+      margin-right: 7px;
+    }
+    .back-type-input {
+      // Fills the combo; same vertical metrics as the Meal name box so the two
+      // boxes match height.
+      flex: 1 1 auto;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 4px 22px 4px 8px;
+      font-size: 14px;    // matches the "Meal" name box
+      color: #f0f0f0;
+      background-color: #3a3a3a;
+      border: 1px solid #1c1c1c;
+      border-top-color: #4a4a4a;
+      border-radius: 6px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+      outline: none;
+      &:focus { border-color: #4da6ff; }
+    }
+    .back-type-select { cursor: pointer; }
+  }
+
+  .macro-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 5px;
+    // Left-justified (cals leads the row now — no indent).
+
+    // Calories readout — grey pill (same as the Binder cals pills). Sits inline
+    // right after the macro chips (no auto margin — the action keys moved up to
+    // the Type row, so this row is chips · cals, left-justified).
+    .slot-cals {
+      color: #ffffff;
+      background: #999999;
+      font-size: 11px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    // Provenance caption for recipe-imported meals — blue italic, INLINE right after
+    // the cals bubble. RESPONSIVE: shrinks and ellipsizes against the card's right
+    // edge instead of overflowing. Same 13px as the food-row serving text.
+    .imported-tag {
+      flex: 0 1 auto;
+      min-width: 0;
+      margin-left: 6px;
+      font-size: 13px;
+      font-style: italic;
+      color: #4da6ff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  // "Add food" — square [+] key, right-pinned on the macro row. Deliberately
+  // matches the Clear Meal key (.back-clear-btn) so the two align visually.
+  .add-food-btn {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    color: #e0e0e0;
+    background: #555555;
+    border: 1px solid #6a6a6a;
+    border-radius: 2px;
+    cursor: pointer;
+
+    .mat-icon { width: 17px; height: 17px; font-size: 17px; line-height: 17px; }
+    &:hover { background: #616161; color: #ffffff; }
+    &:active { transform: translateY(1px); }
+  }
+
+  // Notes key — same grey key family; when the drawer is open it reads "on".
+  .notes-btn.on {
+    background: #6f6f6f;
+    color: #ffffff;
+    border-color: #8a8a8a;
+  }
+
+  // Notes drawer — bottom of the card, cordoned by a top rule; the textarea
+  // fills the width and grows downward (~bottom quarter of the card).
+  .notes-drawer {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #3a3a3a;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .notes-label {
+      font-size: 14px; // same size as the "Meal" / "Type" labels
+      font-weight: 600;
+      color: #4da6ff; // blue label, matching "Meal" / "Type"
+    }
+    .notes-box {
+      width: 100%;
+      box-sizing: border-box;
+      resize: vertical;
+      min-height: 56px;
+      padding: 4px 6px;
+      font-size: 12px;
+      color: #f0f0f0;
+      background: #3a3a3a;
+      border: 1px solid #1c1c1c;
+      border-top-color: #4a4a4a;
+      border-radius: 6px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+      outline: none;
+      &::placeholder { color: #8a8f94; font-style: italic; }
+      &:focus { border-color: #4da6ff; }
+    }
+  }
+}
+
+// Bare green check (save) — muted until dirty.
+.save-check {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #6a6a6a;
+  cursor: pointer;
+
+  .mat-icon { width: 20px; height: 20px; font-size: 20px; line-height: 20px; }
+  &:hover { color: #8a8a8a; }
+  &.active { color: #28c941; &:hover { color: #34d651; } }
+}
+
+// Delete — right after the save check in the back title row. Bare red icon
+// (matches the app's danger discs), sized like the check.
+.back-delete {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #ff6b63;
+  cursor: pointer;
+
+  .mat-icon { width: 20px; height: 20px; font-size: 20px; line-height: 20px; }
+  &:hover { color: #ff5f57; }
+}
+
+// Provenance line — same size/family as the cals label but white, non-bold,
+// left-justified (only shown for imports).
+.meal-source {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 400;
+  color: #ffffff;
+}
+
+// Foods section header: blue "My Foods" label (left) + recipe link (right).
+.foods-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .foods-label {
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 600;
+    color: #4da6ff;
+  }
+}
+
+// Ingredient list — tight interline rhythm. Zero inter-row gap, and shave a pixel
+// off each row's own vertical padding (3px → 2px) so the list packs tighter.
+// Scoped to the back face so other food lists (lookaside / search) keep their
+// standard row height.
+.food-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  ::ng-deep .food-row {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+}
+
+// A just-added food row eases in a brief yellow/gold "bloom" glow, then fades.
+// Box-shadow only → no layout shift. The class is cleared on animationend.
+.food-row-wrap {
+  border-radius: 6px;
+}
+.food-row-wrap.bloom-row {
+  animation: food-bloom 800ms ease-in-out;
+}
+@keyframes food-bloom {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 213, 79, 0); }
+  30%  { box-shadow: 0 0 11px 2px rgba(255, 213, 79, 0.85); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 213, 79, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .food-row-wrap.bloom-row { animation: none; }
+}
+
+// Dynamic-ingredients accordion (back).
+.dyn-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .dyn-head {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    border: none;
+    background: none;
+    color: #9aa0a6;
+    font-size: 12px;
+    cursor: pointer;
+    &:hover { color: #cfcfcf; }
+
+    .dyn-chevron { flex: 0 0 auto; width: 16px; height: 16px; font-size: 16px; line-height: 16px; }
+    .dyn-label { font-style: italic; }
+    .dyn-count { flex: 0 0 auto; font-size: 11px; color: #7a7f85; }
+  }
+
+  .dyn-rows { padding-left: 16px; }
 }

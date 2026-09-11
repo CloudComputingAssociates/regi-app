@@ -1,17 +1,17 @@
 // src/app/components/shopping-panel/shopping-panel.scss
 
 :host {
-  display: flex;
-  height: 100%;
+  display: block;
   width: 100%;
+  // Flow to content height — the Notebook rail's scroll is the ONE vertical scroll
+  // (no inner panel scroll).
 }
 
 .panel-container {
   position: relative;
-  height: 100%;
   width: 100%;
   background-color: #3a3a3a;
-  overflow: hidden;
+  overflow: visible;   // no inner clip → the rail scrolls the whole panel
   display: flex;
   flex-direction: column;
 }
@@ -252,21 +252,325 @@
 // ============================================
 // Bottom pane: Staples
 // ============================================
-.shopping-placeholder {
+// Top row: source note (left) + Scale stepper (right).
+// Controls strip — Recipe Servings / Scale + Print. Cordoned at the top in ONE
+// compact row (minimal vertical space). SANS-serif (these are app controls, like
+// everywhere else); only the LIST content below is serif.
+.shopping-top {
   flex: 0 0 auto;
-  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; // Print + scale cluster left; collapse-all pushed right
+  gap: 8px; // tightened so Print isn't clipped
+  // A touch more top/bottom for levity; the title's own left padding handles its
+  // alignment with the "meals' groceries" banner below.
+  padding: 7px 8px;
   border-bottom: 1px solid #4a4a4a;
-  color: #9aa0a6;
-  font-size: 14px;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  font-size: 13px; // the shared "controls" size (tabs use 16px)
+}
+
+// "Shopping List" — leads the controls row in the Notebook TITLE font (Calisto),
+// sized to match the "Meals" tab (16px).
+.shopping-title {
+  flex: 0 0 auto;
+  font-family: 'Calisto MT', Calisto, 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  font-size: 18px;         // bigger
+  font-weight: 400;        // regular weight (not bold)
+  color: #1a1a1a;
+  white-space: nowrap;
+  // Left inset tuned so the "S" lines up over the "m" in "meals' groceries" below
+  // (that banner's text sits at 14px = 2px box border + 12px padding; the strip
+  // already contributes 8px, so 6px here lands the title flush with it).
+  padding: 0 8px 0 6px;
+}
+
+// Print — raised-white sans key. Leads the RIGHT-justified cluster (Print · Scale/
+// Servings · collapse-all); margin-left:auto pushes the whole cluster right.
+.shopping-print-btn {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px; // icon-only (the "Print" word was dropped — the glyph says it)
+  height: 26px;
+  padding: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  font-size: 13px;
+  color: #1a1a1a;
+  background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
+  border: 1px solid #b7bcc4;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  .mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; color: #3a3f45; }
+  &:hover { background: linear-gradient(180deg, #ffffff 0%, #dde1e7 100%); }
+  &:active { transform: translateY(1px); }
+}
+
+// Collapse-all — the tail of the right-justified cluster (Print pushes it right now).
+.shopping-collapse-all {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  color: #3a3f45;
+  background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
+  border: 1px solid #b7bcc4;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+  &:hover { background: linear-gradient(180deg, #ffffff 0%, #dde1e7 100%); }
+  &:active { transform: translateY(1px); }
+}
+
+// Quantity-basis radio: Recipe Servings | Scale: [n]
+.scale-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px; // tightened between Scale and Servings
+  // Boxed as ONE toggle group — SOLID white (no ruled lines behind it), with the
+  // SAME raised-key border + shadow as the Print / collapse-all buttons.
+  height: 26px;
+  padding: 0 7px;
+  background: #ffffff;
+  border: 1px solid #b7bcc4;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+
+  .scale-opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px; // tighter between the radio and its label
+    font-size: 13px; // shared controls size
+    color: #1a1a1a;  // dark text on the white box
+    cursor: pointer;
+
+    input[type='radio'] {
+      accent-color: #000000; // black radio
+      cursor: pointer;
+    }
+  }
+
+  // Scale value: WHITE field with a BLACK value.
+  .scale-input {
+    width: 24px;
+    background: #ffffff;
+    border: 1px solid #b7bcc4;
+    border-radius: 4px;
+    color: #1a1a1a;
+    font-size: 13px;
+    padding: 2px 4px;
+    text-align: center;
+    outline: none;
+
+    &:focus { border-color: #4da6ff; }
+  }
+
+  // The explicit either/or divider between the two scale modes.
+  .scale-or {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #8a8f96;
+    user-select: none;
+  }
+}
+
+// ============================================
+// Computed shopping list (from the rotation)
+// ============================================
+.list-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto; // flow to content — the rail owns the scroll
+  overflow: visible;
+
+  .staples-content { flex: 0 0 auto; overflow: visible; }
+}
+
+// Meals / Staples areas each sit inside their own 2px green box, led by a deep-green
+// collapsible banner — the visual separator between the two.
+.section-box {
+  border: 2px solid #218a5d; // deep green, matching the active Notebook tab
+  border-radius: 8px;
+  overflow: hidden; // clip the banner to the rounded top corners
+  // Full width — the box IS the edge now (the sheet's own outline was dropped on the
+  // shopping tab), so no nested "line within a line". Bottom gap separates the two.
+  margin: 0 0 8px 0;
+}
+
+// Deep-green collapsible header for a section box (Meals / Staples). Reads like the
+// highlighted (active) Notebook tab.
+.section-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 12px;
+  background: #218a5d; // active-tab green
+  border: none;
+  cursor: pointer;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+
+  .section-banner-title {
+    flex: 1 1 auto;
+    text-align: left;
+    font-size: 16px;
+    font-weight: 400; // de-emboldened — bold white on green read fuzzy
+    color: #ffffff;
+    white-space: nowrap;
+    // Crisper white-on-green text (kills the sub-pixel fuzz on the bold weight).
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  .accordion-arrow {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    line-height: 20px;
+    color: #ffffff;
+    transition: transform 0.2s ease;
+    &.open { transform: rotate(180deg); } // expand_more → flip up when open
+  }
+  &:hover { background: #1e7d54; }
+}
+
+.list-msg {
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+
+  .link-btn {
+    background: none;
+    border: none;
+    color: #4da6ff;
+    font: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
+}
+
+// Column header for the computed rows (screen only).
+.list-col-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px; // tightened — no vertical padding
+  color: rgba(255, 255, 255, 0.5);
+  // Sans-serif (matches the category titles) — the SERIF is reserved for the data
+  // rows below. Children (.staple-* labels + NEED) inherit this.
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  font-size: 12px;
+  font-weight: 700; // bold; NEED (a child) inherits this too
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+
+  .staple-item { flex: 2; }
+  // Match the data rows (now 14px) so NEED doesn't read smaller than QTY/UNIT/ITEM.
+  .col-need { font-size: 13px; font-weight: 700; }
+}
+
+// Category subheader inside the computed list — ALL CAPS.
+.list-cat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 12px; // tightened
+  background: transparent;
+  border: none;
+  color: #4da6ff;
+  // Sans-serif, a touch bigger than the QTY/UNIT/ITEM header and de-emboldened.
+  // Initial Caps (CAT_LABEL already caps).
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  text-align: left;
+  cursor: pointer;
+
+  .cat-label { flex: 0 1 auto; white-space: nowrap; }
+
+  // Rule that connects the label to the caret on the right — bottom-aligned with
+  // the text / caret baseline (not floating mid-line).
+  .cat-rule {
+    flex: 1 1 auto;
+    align-self: flex-end;
+    height: 0;
+    margin-bottom: 4px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.3);
+  }
+
+  .cat-caret {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    line-height: 20px;
+    transition: transform 0.15s ease;
+    &.open { transform: rotate(180deg); } // expand_more → flip up when open
+  }
+}
+
+// "NEED" column heading — sits on the QTY/UNIT/ITEM row, over the per-row toggle
+// (rightmost). Fixed width matches the toggle footprint so the Item column lines
+// up between the header and the rows. (Uppercased by .list-col-head.)
+.col-need {
+  flex: 0 0 auto;
+  width: 34px;
+  text-align: center;
+}
+
+// ============================================
+// Demoted staples pane
+// ============================================
+.staples-collapse {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 12px; // tightened
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  // Same treatment as the category headers: sans, tab-size, label left, rule, caret.
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+
+  .staples-title { flex: 0 1 auto; font-size: 16px; font-weight: 500; white-space: nowrap; }
+  .cat-rule { flex: 1 1 auto; align-self: flex-end; height: 0; margin-bottom: 4px; border-bottom: 2px solid rgba(0, 0, 0, 0.3); }
+
+  .accordion-arrow {
+    flex: 0 0 auto;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    transition: transform 0.2s ease;
+    &.open { transform: rotate(180deg); } // expand_more → flip up when open
+  }
 }
 
 .staples-pane {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  min-height: 60px;
-  flex: 1 1 auto; // was driven by the now-removed splitter's bottomFlex binding
+  flex: 0 0 auto; // flow to content — no inner scroll (the rail scrolls it)
+  overflow: visible;
+
+  .staples-content { max-height: none; overflow: visible; }
 }
+
+// (Staple sub-categories are now collapsible .list-cat headers — same chrome as the
+// computed-list meal categories; the old static .accordion-title-row is retired.)
 
 .staples-header {
   display: flex;
@@ -407,15 +711,18 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 12px;
+  padding: 0 12px; // tightened — no vertical padding
+  line-height: 1.1;
   transition: background 0.15s ease;
 
   &:hover {
     background: rgba(255, 255, 255, 0.03);
   }
 
+  // Not-needed: the row stays fully READABLE (item + unit at normal ink). Only the
+  // QTY reads muted until the user flips the Need slider on.
   &.not-needed {
-    opacity: 0.45;
+    .staple-qty { color: #9aa0a6; }
   }
 
   &.picked-up {
@@ -506,14 +813,14 @@
 
 // Inline editable fields
 .staple-qty {
-  width: 40px;
+  width: 30px;
   flex-shrink: 0;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 3px;
   color: #ffffff;
-  font-size: 12px;
-  padding: 2px 4px;
+  font-size: 14px;
+  padding: 2px 3px;
   text-align: center;
   font-family: inherit;
   outline: none;
@@ -530,8 +837,14 @@
   border: 1px solid transparent;
   border-radius: 3px;
   color: #ffffff;
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.2;
   padding: 2px 6px;
+  // One line only — clip prep overflow with an ellipsis (name is already trimmed to
+  // the food in itemName()).
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: inherit;
   outline: none;
 
@@ -554,6 +867,30 @@
   &:hover { border-color: #555555; }
   &:focus { border-color: #4da6ff; background: #2a2a2a; }
   &::placeholder { color: rgba(255, 255, 255, 0.2); }
+}
+
+// Unit field (reuses the persisted `store` slot) — short, right after qty.
+.staple-unit {
+  width: 44px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+  padding: 2px 6px;
+  font-family: inherit;
+  outline: none;
+
+  &:hover { border-color: #555555; }
+  &:focus { border-color: #4da6ff; background: #2a2a2a; }
+  &::placeholder { color: rgba(255, 255, 255, 0.2); }
+}
+
+// Print-only checkbox square — hidden on screen, revealed in the PDF in front of
+// the quantity (see the @media print block in styles.scss).
+.pdf-check {
+  display: none;
 }
 
 // Delete button
@@ -680,11 +1017,11 @@
 
   .staple-row {
     gap: 4px;
-    padding: 3px 8px;
+    padding: 2px 6px; // tighter interline → more items per view (rows are one line now)
   }
 
   .staple-qty {
-    width: 32px;
+    width: 28px;
   }
 
   .toggle-slider .toggle-track {
@@ -699,5 +1036,67 @@
 
   .toggle-slider.on .toggle-thumb {
     left: 16px;
+  }
+}
+
+// ============================================================================
+// NOTEBOOK INTEGRATION — the Shopping surface now lives INSIDE the ruled-paper
+// Binder (not the old dark bloom). Make the panel transparent so the serif list
+// content reads like handwritten meal entries on the lines, and recolor the ink
+// dark for the paper. Scoped under .panel-container so it wins on specificity.
+// The controls strip (.shopping-top) keeps its own compact sans styling above.
+// ============================================================================
+.panel-container {
+  background: transparent;
+
+  // Drop the dark fills off the header bands / category rows → paper shows through.
+  .staples-header,
+  .list-col-head,
+  .list-cat,
+  .staple-row,
+  .accordion-header,
+  .accordion-section,
+  .accordion-body { background: transparent; }
+
+  // Serif list content → dark ink on the paper.
+  .staples-title,
+  .buy-column-label,
+  .list-cat,
+  .accordion-title,
+  .staple-item,
+  .staple-qty,
+  .staple-unit { color: #1f1f1f; }
+
+  .list-col-head { color: rgba(0, 0, 0, 0.7); } // dark + bold QTY/UNIT/ITEM/NEED
+  .list-msg { color: rgba(0, 0, 0, 0.6); }
+  .staples-header { border-bottom-color: rgba(0, 0, 0, 0.18); }
+  .list-cat { border-color: rgba(0, 0, 0, 0.12); }
+
+  // Editable staple fields (One-time & staples) → white inputs, dark text.
+  .staples-pane {
+    .add-input,
+    .staple-qty,
+    .staple-unit,
+    .staple-item {
+      background: #ffffff;
+      border-color: #b7bcc4;
+      color: #1f1f1f;
+      &::placeholder { color: #8a8f94; }
+    }
+    // Item + Unit stay dark/readable even when not needed; only the QTY greys out
+    // until the Need slider is flipped on.
+    .staple-row.not-needed .staple-qty { color: #9aa0a6; }
+    .accordion-title { color: #1f1f1f; }
+    // The only .accordion-arrow left in the staples pane is the green banner's —
+    // keep it white to match the "meals' groceries" banner.
+    .accordion-arrow { color: #ffffff; }
+    .accordion-header:hover { background: rgba(0, 0, 0, 0.05); }
+  }
+
+  // Controls strip: dark ink over the paper (the strip itself stays sans).
+  .shopping-top {
+    border-bottom-color: rgba(0, 0, 0, 0.18);
+    .scale-opt { color: #1f1f1f; }
+    .scale-or { color: #6a6f75; }
   }
 }

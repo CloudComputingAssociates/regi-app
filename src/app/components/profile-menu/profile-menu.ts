@@ -1,4 +1,8 @@
-import { Component, Input, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs/operators';
+import { ProfileImageService } from '../../services/profile-image.service';
+import { UserProfileService } from '../../services/user-profile.service';
 import { AsyncPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,28 +25,30 @@ import { RoleService } from '../../services/role.service';
       <!-- While Auth0 is loading, show nothing to avoid flicker -->
       <div class="auth-loading"></div>
     } @else if (auth.isAuthenticated$ | async) {
-      <!-- Greeting moved out to app-bar so the centered title isn't pushed off
-           center by the trailing text. Avatar button still opens the menu. -->
-      <button class="profile-btn" [matMenuTriggerFor]="menu">
-        <img [src]="defaultImage" alt="Profile" class="profile-img" />
-      </button>
+      <!-- Display name (underlined link) + the avatar; BOTH open the RH nav menu.
+           The name falls back to the email when Auth0 has no display name (email/
+           password sign-ups), and is hidden entirely if neither is known. -->
+      <div class="profile-trigger">
+        <button type="button" class="profile-name-btn" [matMenuTriggerFor]="menu" aria-label="Open menu">
+          <span class="profile-name-text">{{ nameLinkText() }}</span>
+        </button>
+        <button class="profile-btn" [matMenuTriggerFor]="menu" aria-label="Open menu">
+          <img [src]="avatarSrc()" alt="Profile" class="profile-img" />
+        </button>
+      </div>
 
       <mat-menu #menu="matMenu" class="profile-menu" [overlapTrigger]="false">
-        @if (auth.user$ | async; as user) {
-          <div class="user-info">
-            <img [src]="defaultImage" alt="Profile" class="menu-img" />
-            <div class="details">
-              <div class="name">{{ user.name }}</div>
-              <div class="email">{{ user.email }}</div>
-            </div>
-          </div>
-        }
+        <!-- Tuxedo-black spacer bar at the top of the menu (just a spacer). -->
+        <div class="menu-tux-spacer"></div>
 
-        <mat-divider></mat-divider>
-
-        <button mat-menu-item class="menu-item" [class.active]="isTabOpen('account')" (click)="toggleAccount()">
+        <button mat-menu-item class="menu-item" [class.active]="tabService.accountOpen()" (click)="toggleAccount()">
           <mat-icon>person</mat-icon>
           <span>Account</span>
+        </button>
+
+        <button mat-menu-item class="menu-item" [class.active]="tabService.mobileAppOpen()" (click)="toggleMobileApp()">
+          <mat-icon>phone_android</mat-icon>
+          <span>Mobile App</span>
         </button>
 
         <button mat-menu-item class="menu-item" [class.active]="isTabOpen('preferences')" (click)="toggleSettings()">
@@ -50,17 +56,28 @@ import { RoleService } from '../../services/role.service';
           <span>Settings</span>
         </button>
 
+        <!-- Suggestion path for ALL users (the Bug item below is dev/QA-only).
+             Both open the same feedback overlay. -->
+        <button mat-menu-item class="menu-item" [class.active]="tabService.bugOpen()" (click)="toggleBug('suggestion')">
+          <mat-icon>lightbulb_outline</mat-icon>
+          <span>Submit suggestion</span>
+        </button>
+
         @if (roleService.isDevOrQA()) {
-          <button mat-menu-item class="menu-item" [class.active]="tabService.bugOpen()" (click)="toggleBug()">
+          <button mat-menu-item class="menu-item" [class.active]="tabService.bugOpen()" (click)="toggleBug('bug')">
             <mat-icon>bug_report</mat-icon>
             <span>Bug</span>
           </button>
         }
 
-        <button mat-menu-item class="menu-item" [class.active]="isTabOpen('help')" (click)="toggleHelp()">
-          <mat-icon>help_outline</mat-icon>
-          <span>Help</span>
-        </button>
+        <!-- Help DISABLED until the help system is reimplemented — remove the
+             @if (false) wrapper to restore. -->
+        @if (false) {
+          <button mat-menu-item class="menu-item" [class.active]="isTabOpen('help')" (click)="toggleHelp()">
+            <mat-icon>help_outline</mat-icon>
+            <span>Help</span>
+          </button>
+        }
 
         <mat-divider></mat-divider>
 
@@ -80,6 +97,29 @@ import { RoleService } from '../../services/role.service';
 export class ProfileMenuComponent {
   @Input() defaultImage = 'images/yeh_logo_dark.png';
   auth = inject(AuthService);
+  private profileImage = inject(ProfileImageService);
+
+  /** The user's avatar (session preview or persisted) or the default apple logo. */
+  readonly avatarSrc = computed(() => this.profileImage.avatarUrl() ?? this.defaultImage);
+
+  private userProfile = inject(UserProfileService);
+  /** Auth0's name/email — the fallback when the user hasn't set a display name. */
+  private readonly authName = toSignal(
+    this.auth.user$.pipe(map((u) => u?.name?.trim() || u?.email?.trim() || null)),
+    { initialValue: null },
+  );
+  /** The display name shown in the app-bar → the user's edited/persisted name
+   *  wins (UserProfileService), else Auth0's name/email, else null (hide). Both
+   *  this link and the avatar open the same RH nav menu. */
+  readonly displayName = computed(() => this.userProfile.displayName() || this.authName());
+
+  /** App-bar link text: a "Hi, {name}!" greeting ONLY when a real avatar photo is
+   *  set; when it's the default apple logo, show "Account" instead of an
+   *  underscored name. (The Notebook always uses the display name — different rule.) */
+  readonly nameLinkText = computed<string>(() => {
+    const name = this.profileImage.avatarUrl() != null ? this.displayName() : null;
+    return name ? `Hi, ${name}!` : 'Account';
+  });
   subscriptionService = inject(SubscriptionService);
   roleService = inject(RoleService);
   // Public so the template can read tabService.bugOpen() for the Bug menu
@@ -121,7 +161,11 @@ export class ProfileMenuComponent {
   }
 
   toggleAccount(): void {
-    this.tabService.togglePanel('account', 'Account');
+    if (this.tabService.accountOpen()) {
+      this.tabService.closeAccount();
+    } else {
+      this.tabService.openAccount();
+    }
   }
 
   toggleSettings(): void {
@@ -134,17 +178,28 @@ export class ProfileMenuComponent {
     }
   }
 
-  toggleHelp(): void {
-    this.tabService.togglePanel('help', 'Help');
+  toggleMobileApp(): void {
+    if (this.tabService.mobileAppOpen()) {
+      this.tabService.closeMobileApp();
+    } else {
+      this.tabService.openMobileApp();
+    }
   }
 
-  toggleBug(): void {
-    // Bug is the overlay (mirrors Settings) — flip the service-level signal
-    // instead of pushing a panel onto the active-panel stack.
+  toggleHelp(): void {
+    // Opens Help remembering the current panel; closing (here or via the X)
+    // returns to it instead of the splash.
+    this.tabService.toggleHelp();
+  }
+
+  toggleBug(kind: 'bug' | 'suggestion' = 'suggestion'): void {
+    // Bug/Suggestion share the overlay (mirrors Settings) — flip the service-level
+    // signal instead of pushing a panel onto the active-panel stack. `kind` drives
+    // the overlay title prefix.
     if (this.tabService.bugOpen()) {
       this.tabService.closeBug();
     } else {
-      this.tabService.openBug();
+      this.tabService.openBug(kind);
     }
   }
 }

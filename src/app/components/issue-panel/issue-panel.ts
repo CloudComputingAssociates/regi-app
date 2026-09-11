@@ -63,7 +63,7 @@ const APP_AREAS = [
           <div class="form-group readonly-group">
             <div class="readonly-row">
               <span class="readonly-label">Label:</span>
-              <span class="readonly-value">bug</span>
+              <span class="readonly-value">{{ label() }}</span>
             </div>
             <div class="readonly-row">
               <span class="readonly-label">Status:</span>
@@ -91,6 +91,10 @@ export class IssuePanelComponent {
   private notificationService = inject(NotificationService);
 
   appAreas = APP_AREAS;
+
+  /** The issue label shown on the form — mirrors which entry opened the overlay
+   *  (Bug vs Suggestion). Display-only; the server assigns the actual label. */
+  readonly label = computed(() => (this.tabService.bugKind() === 'suggestion' ? 'suggestion' : 'bug'));
 
   // model() signals so the wrapping BugOverlayComponent's green-check disc
   // can reactively gate on form validity via the public canSubmit computed

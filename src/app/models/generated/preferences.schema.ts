@@ -42,13 +42,17 @@ export interface UserPreferencesSchema {
    */
   repeatMeals?: number | null;
   /**
+   * Number of Menus (days) to plan at once
+   */
+  menuDays?: number | null;
+  /**
    * Day of week that starts a new meal planning week
    */
   weekStartDay?: "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | null;
   /**
    * Source of foods for meal planning
    */
-  foodListSource?: "yeh_plus_myfoods" | "yeh" | "myfoods" | null;
+  foodListSource?: "myfoods" | "regi_plus_myfoods" | "all_foods" | null;
   /**
    * When preferences were created
    */
@@ -125,13 +129,17 @@ export interface GetPreferencesResponse {
    */
   repeatMeals?: number | null;
   /**
+   * Number of Menus (days) to plan at once
+   */
+  menuDays?: number | null;
+  /**
    * Day of week that starts a new meal planning week
    */
   weekStartDay?: "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | null;
   /**
    * Source of foods for meal planning
    */
-  foodListSource?: "yeh_plus_myfoods" | "yeh" | "myfoods" | null;
+  foodListSource?: "myfoods" | "regi_plus_myfoods" | "all_foods" | null;
 }
 /**
  * Request body for PUT /api/user/preferences
@@ -165,11 +173,15 @@ export interface UpdatePreferencesRequest {
    */
   repeatMeals?: number;
   /**
+   * Number of Menus (days) to plan at once
+   */
+  menuDays?: number;
+  /**
    * Day of week that starts a new meal planning week
    */
   weekStartDay?: "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday";
   /**
    * Source of foods for meal planning
    */
-  foodListSource?: "yeh_plus_myfoods" | "yeh" | "myfoods";
+  foodListSource?: "myfoods" | "regi_plus_myfoods" | "all_foods";
 }

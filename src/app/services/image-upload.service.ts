@@ -1,14 +1,25 @@
 // src/app/services/image-upload.service.ts
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
+import {
+  ImageUrlLookupResponse,
+  OpenFoodFactsSearchResponse,
+} from '../models/image-url.model';
 
 export interface ProductUploadResponse {
   success: boolean;
   cdn_url: string;
   thumbnail_url: string;
   food_id: number;
+}
+
+/** POST /api/image/upload/avatar response — keyed off the JWT user, so no food_id. */
+export interface AvatarUploadResponse {
+  success: boolean;
+  cdn_url: string;
+  thumbnail_url: string;
 }
 
 interface NutritionUploadResponse {
@@ -24,6 +35,62 @@ interface NutritionUploadResponse {
 export class ImageUploadService {
   private http = inject(HttpClient);
   private imageApiUrl = environment.imageApiUrl;
+
+  /** GET /api/image/url?description= — look up an existing CDN product photo for
+   *  a food by (fuzzy) description. Used by the Add-Food panel to SUGGEST a photo
+   *  for a just-added food that has none. Fields are '' when nothing matched. */
+  async lookupImageUrl(description: string): Promise<ImageUrlLookupResponse> {
+    const params = new HttpParams().set('description', description);
+    return firstValueFrom(
+      this.http.get<ImageUrlLookupResponse>(
+        `${this.imageApiUrl}/api/image/url`,
+        { params },
+      ),
+    );
+  }
+
+  /** Best-effort photo SUGGESTION by name from Open Food Facts (.org). Used when
+   *  our own CDN has no image for a just-added food — regi-api only pulls OFF
+   *  images by GTIN, so a name-add with no barcode never gets one server-side.
+   *  Public + CORS-enabled + no auth. Returns the best front image URL, or ''. */
+  async searchOpenFoodFactsImage(description: string): Promise<string> {
+    const params = new HttpParams()
+      .set('search_terms', description)
+      .set('search_simple', '1')
+      .set('action', 'process')
+      .set('json', '1')
+      .set('page_size', '5')
+      .set('fields', 'product_name,image_front_url,image_url');
+    try {
+      const res = await firstValueFrom(
+        this.http.get<OpenFoodFactsSearchResponse>(
+          'https://world.openfoodfacts.org/cgi/search.pl',
+          { params },
+        ),
+      );
+      const hit = (res?.products ?? []).find((p) => p.image_front_url || p.image_url);
+      return hit?.image_front_url || hit?.image_url || '';
+    } catch {
+      return '';
+    }
+  }
+
+  /** POST /api/image/upload/avatar — set the authenticated user's avatar (keyed
+   *  by the JWT, no id in the body). Returns the CDN + thumbnail urls. NOTE: this
+   *  endpoint is part of the pending avatar handoff; until it deploys the call
+   *  404s and callers fall back to a local preview. */
+  async uploadUserAvatar(image: File): Promise<AvatarUploadResponse> {
+    const formData = new FormData();
+    formData.append('source', 'user');
+    formData.append('image', image);
+
+    return firstValueFrom(
+      this.http.post<AvatarUploadResponse>(
+        `${this.imageApiUrl}/api/image/upload/avatar`,
+        formData,
+      ),
+    );
+  }
 
   async uploadProductImage(foodId: number, image: File): Promise<ProductUploadResponse> {
     const formData = new FormData();

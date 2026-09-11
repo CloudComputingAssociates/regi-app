@@ -4,8 +4,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TabService } from '../../services/tab.service';
 import { NotificationService } from '../../services/notification.service';
-import { PreferencesService, MealsPerDay, DailyGoals, WeekStartDay } from '../../services/preferences.service';
+import { PreferencesService, MealsPerDay, DailyGoals } from '../../services/preferences.service';
 import { SettingsService } from '../../services/settings.service';
+import { RotationService } from '../../services/rotation.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 @Component({
@@ -62,7 +63,7 @@ import { MatIconModule } from '@angular/material/icon';
             <div class="accordion-section">
               <button class="accordion-header" (click)="personalInfoOpen.set(!personalInfoOpen())">
                 <mat-icon class="accordion-arrow" [class.open]="personalInfoOpen()">chevron_right</mat-icon>
-                <span class="accordion-title">Personal Info</span>
+                <span class="accordion-title">Personal info</span>
                 <span class="accordion-control" (click)="$event.stopPropagation()">
                   <span class="pi-scale-label">Units</span>
                   <button class="unit-toggle" (click)="toggleUnits()">
@@ -129,6 +130,7 @@ import { MatIconModule } from '@angular/material/icon';
                     }
                   </div>
                 </div>
+                <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
                 <div class="pi-row">
                   <label class="setting-label">Activity</label>
                   <select class="setting-select"
@@ -143,8 +145,53 @@ import { MatIconModule } from '@angular/material/icon';
                     <option value="extremely_active">Ext. Active (2×/day, physical job)</option>
                   </select>
                 </div>
-                <div class="pi-bmr">{{ bmrTdeeLabel() }}</div>
-                <div class="pi-last-updated">last updated {{ lastComputedDate() }}</div>
+                <div class="pi-bmr pi-bmr-top"><span class="pi-label">BMR</span><span class="pi-value">{{ bmrTdeeLabel() }}</span><span class="info-icon info-icon-trailing"
+                        #bmrTooltip="matTooltip"
+                        matTooltip="Activity adjusted Base Metabolic Rate (BMR) daily calories. Baseline in parenthesis."
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="0"
+                        (click)="bmrTooltip.toggle()">&#9432;</span></div>
+                <div class="pi-bmr"><span class="pi-label">BMI</span><span class="pi-value">{{ bmiLabel() }}</span><span class="info-icon info-icon-trailing"
+                        #bmiTooltip="matTooltip"
+                        matTooltip="Current (Target)"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="0"
+                        (click)="bmiTooltip.toggle()">&#9432;</span>
+                  <span class="bmi-desc">
+                    <button class="bmi-desc-btn" type="button"
+                      (mousedown)="bmiDescOpen.set(true)"
+                      (mouseup)="bmiDescOpen.set(false)"
+                      (mouseleave)="bmiDescOpen.set(false)"
+                      (touchstart)="bmiDescOpen.set(true)"
+                      (touchend)="bmiDescOpen.set(false)">Chart</button>
+                    @if (bmiDescOpen()) {
+                      <div class="bmi-scale-popup">
+                        <div class="bmi-scale-labels">
+                          @for (band of bmiScaleBands(); track band.label) {
+                            <span class="bmi-scale-label" [style.top.%]="band.top">{{ band.label }}</span>
+                          }
+                        </div>
+                        <div class="bmi-scale-bar">
+                          @for (tick of bmiScaleTicks(); track tick.lb) {
+                            <span class="bmi-scale-tick" [style.top.%]="tick.top">
+                              <span class="bmi-tick-weight">{{ tick.lb }}</span>
+                            </span>
+                          }
+                          @if (bmiCurrentTop() !== null) {
+                            <span class="bmi-scale-marker current" [style.top.%]="bmiCurrentTop()!">
+                              <span class="bmi-marker-tag">Current</span>
+                            </span>
+                          }
+                          @if (bmiTargetTop() !== null) {
+                            <span class="bmi-scale-marker goal" [style.top.%]="bmiTargetTop()!">
+                              <span class="bmi-marker-tag">Target</span>
+                            </span>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </span>
+                </div>
               </div>
             </div>
             </div>
@@ -155,13 +202,13 @@ import { MatIconModule } from '@angular/material/icon';
             <div class="accordion-section">
               <button class="accordion-header" (click)="nutritionTargetsOpen.set(!nutritionTargetsOpen())">
                 <mat-icon class="accordion-arrow" [class.open]="nutritionTargetsOpen()">chevron_right</mat-icon>
-                <span class="accordion-title">Nutrition Targets</span>
+                <span class="accordion-title">Nutrition targets</span>
                 <span class="accordion-control" (click)="$event.stopPropagation()">
                   <label class="override-label">
                     <input type="checkbox"
                       [ngModel]="userSettingsService.dailyGoals().isOverridden"
                       (ngModelChange)="onOverrideChange($event)" />
-                    User Overridden
+                    User Override
                   </label>
                   <span class="info-icon"
                         #overrideTooltip="matTooltip"
@@ -176,17 +223,6 @@ import { MatIconModule } from '@angular/material/icon';
               <div class="settings-section">
               <div class="targets-column">
                 <div class="targets-body" [class.targets-disabled]="!userSettingsService.dailyGoals().isOverridden">
-                  <!-- Carb scale slider -->
-                  <div class="macro-control-row">
-                    <label class="setting-label">Carbs</label>
-                    <input type="range" class="carb-slider"
-                      [min]="0"
-                      [max]="carbSliderMax()"
-                      [ngModel]="carbSliderValue()"
-                      (ngModelChange)="onCarbScaleChange($event)"
-                      [disabled]="!userSettingsService.dailyGoals().isOverridden" />
-                    <span class="slider-value">{{ carbSliderLabel() }}</span>
-                  </div>
                   <!-- Protein ratio dropdown + direct-grams shortcut.
                        The dropdown is one rung from {0.5..1.2 g/lb}. The
                        grams input next to it lets the user type a target
@@ -220,6 +256,17 @@ import { MatIconModule } from '@angular/material/icon';
                       (blur)="onProteinGramsBlur()" />
                     <span class="grams-suffix">g</span>
                   </div>
+                  <!-- Carb scale slider -->
+                  <div class="macro-control-row">
+                    <label class="setting-label">Carbs</label>
+                    <input type="range" class="carb-slider"
+                      [min]="0"
+                      [max]="carbSliderMax()"
+                      [ngModel]="carbSliderValue()"
+                      (ngModelChange)="onCarbScaleChange($event)"
+                      [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                    <span class="slider-value">{{ carbSliderLabel() }}</span>
+                  </div>
                   <div class="macro-separator"></div>
                   <div class="calories-label-row">
                     <label>Calories</label>
@@ -245,16 +292,16 @@ import { MatIconModule } from '@angular/material/icon';
                              (focus)="onProteinGramsFocus()"
                              (blur)="onProteinGramsBlur()" />
                     </div>
-                    <div class="target-field macro-fat">
-                      <label>Fats {{ userSettingsService.showPercent() ? '%' : 'g' }}</label>
-                      <input type="number" [ngModel]="fatDisplay()"
-                             (ngModelChange)="onMacroFieldChange('fat', $event)"
-                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
-                    </div>
                     <div class="target-field macro-carbs">
                       <label>Carbs {{ userSettingsService.showPercent() ? '%' : 'g' }}</label>
                       <input type="number" [ngModel]="carbsDisplay()"
                              (ngModelChange)="onMacroFieldChange('carbs', $event)"
+                             [disabled]="!userSettingsService.dailyGoals().isOverridden" />
+                    </div>
+                    <div class="target-field macro-fat">
+                      <label>Fats {{ userSettingsService.showPercent() ? '%' : 'g' }}</label>
+                      <input type="number" [ngModel]="fatDisplay()"
+                             (ngModelChange)="onMacroFieldChange('fat', $event)"
                              [disabled]="!userSettingsService.dailyGoals().isOverridden" />
                     </div>
                     <svg viewBox="0 0 60 60" class="macro-pie" xmlns="http://www.w3.org/2000/svg">
@@ -338,14 +385,26 @@ import { MatIconModule } from '@angular/material/icon';
             <div class="accordion-section">
               <button class="accordion-header" (click)="planningOpen.set(!planningOpen())">
                 <mat-icon class="accordion-arrow" [class.open]="planningOpen()">chevron_right</mat-icon>
-                <span class="accordion-title">Menu</span>
+                <span class="accordion-title">Menu settings</span>
               </button>
               @if (planningOpen()) {
               <div class="accordion-body">
             <div class="settings-section bottom-row">
               <div class="plan-column">
                 <div class="setting-row">
-                  <label class="setting-label">Meals</label>
+                  <label class="setting-label">Menu-days</label>
+                  <input type="number" min="2" max="9" class="setting-number"
+                    [ngModel]="userSettingsService.menuDays()"
+                    (input)="onMenuDaysChange($event)" />
+                  <span class="info-icon"
+                        #menuDaysTooltip="matTooltip"
+                        matTooltip="Number of Menu slots, or days planned (max 9)"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="0"
+                        (click)="menuDaysTooltip.toggle()">&#9432;</span>
+                </div>
+                <div class="setting-row">
+                  <label class="setting-label">Slots for</label>
                   <select
                     class="setting-select"
                     [ngModel]="userSettingsService.mealsPerDay()"
@@ -364,38 +423,16 @@ import { MatIconModule } from '@angular/material/icon';
 
               <div class="regimenu-column">
                 <div class="setting-row">
-                  <label class="setting-label">Start Day</label>
-                  <select
-                    class="setting-select"
-                    [ngModel]="userSettingsService.weekStartDay()"
-                    (ngModelChange)="onWeekStartDayChange($event)">
-                    <option value="sunday">Sunday</option>
-                    <option value="monday">Monday</option>
-                    <option value="tuesday">Tuesday</option>
-                    <option value="wednesday">Wednesday</option>
-                    <option value="thursday">Thursday</option>
-                    <option value="friday">Friday</option>
-                    <option value="saturday">Saturday</option>
-                  </select>
-                </div>
-                <div class="setting-row">
-                  <label class="setting-label">Persons</label>
+                  <label class="setting-label">People</label>
                   <input type="number" min="1" class="setting-number"
                     [ngModel]="userSettingsService.persons()"
-                    (change)="onPersonsChange($event)" />
-                </div>
-                <div class="setting-row">
-                  <label class="setting-label">Meal Repeats</label>
-                  <input type="number" min="1" class="setting-number"
-                    [ngModel]="userSettingsService.repeatMeals()"
-                    (change)="onRepeatMealsChange($event)" />
-                  <span class="setting-hint">per week</span>
+                    (input)="onPersonsChange($event)" />
                   <span class="info-icon"
-                        #repeatTooltip="matTooltip"
-                        matTooltip="By repeating day plans, you optimize grocery lists and reduce waste"
+                        #personsTooltip="matTooltip"
+                        matTooltip="In Menus, scale shopping list for this number of people"
                         matTooltipPosition="above"
                         [matTooltipShowDelay]="0"
-                        (click)="repeatTooltip.toggle()">&#9432;</span>
+                        (click)="personsTooltip.toggle()">&#9432;</span>
                 </div>
               </div>
             </div>
@@ -452,18 +489,18 @@ import { MatIconModule } from '@angular/material/icon';
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
                         [ngModel]="(userSettingsService.glp1().startDose || {}).dose"
-                        (change)="onGlp1DoseChange('startDose', 'dose', $event)" />
+                        (input)="onGlp1DoseChange('startDose', 'dose', $event)" />
                       <span class="glp1-unit">mg</span>
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
                         [ngModel]="(userSettingsService.glp1().startDose || {}).units"
-                        (change)="onGlp1DoseChange('startDose', 'units', $event)" />
+                        (input)="onGlp1DoseChange('startDose', 'units', $event)" />
                       <span class="glp1-unit">units</span>
                       <span class="glp1-every">every</span>
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled || startDoseLocked()"
                         [ngModel]="(userSettingsService.glp1().startDose || {}).intervalDays"
-                        (change)="onGlp1DoseChange('startDose', 'intervalDays', $event)" />
+                        (input)="onGlp1DoseChange('startDose', 'intervalDays', $event)" />
                       <span class="glp1-unit">days</span>
                       <span class="glp1-every">Start date</span>
                       <input type="date" class="glp1-date"
@@ -500,18 +537,18 @@ import { MatIconModule } from '@angular/material/icon';
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled"
                         [ngModel]="(userSettingsService.glp1().currentDose || {}).dose"
-                        (change)="onGlp1DoseChange('currentDose', 'dose', $event)" />
+                        (input)="onGlp1DoseChange('currentDose', 'dose', $event)" />
                       <span class="glp1-unit">mg</span>
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled"
                         [ngModel]="(userSettingsService.glp1().currentDose || {}).units"
-                        (change)="onGlp1DoseChange('currentDose', 'units', $event)" />
+                        (input)="onGlp1DoseChange('currentDose', 'units', $event)" />
                       <span class="glp1-unit">units</span>
                       <span class="glp1-every">every</span>
                       <input type="number" min="0" class="glp1-num"
                         [disabled]="!userSettingsService.glp1().enabled"
                         [ngModel]="(userSettingsService.glp1().currentDose || {}).intervalDays"
-                        (change)="onGlp1DoseChange('currentDose', 'intervalDays', $event)" />
+                        (input)="onGlp1DoseChange('currentDose', 'intervalDays', $event)" />
                       <span class="glp1-unit">days</span>
                       <label class="glp1-maint-check">
                         <input type="checkbox"
@@ -538,6 +575,7 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   private tabService = inject(TabService);
   protected userSettingsService = inject(PreferencesService);
   private settingsService = inject(SettingsService);
+  private rotationService = inject(RotationService);
   private notificationService = inject(NotificationService);
   private el = inject(ElementRef);
 
@@ -796,24 +834,25 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
   /** Pie chart segments for P/F/C calorie distribution */
   pieChartSegments = computed(() => {
     const dg = this.userSettingsService.dailyGoals();
-    const proteinCals = dg.protein * 4;
-    const fatCals = dg.fat * 9;
-    const carbsCals = dg.carbs * 4;
-    const total = proteinCals + fatCals + carbsCals;
+    // Pure gram share: each macro's grams as a fraction of total macro grams
+    // (NOT calorie-weighted — protein/fat/carbs are compared gram-for-gram).
+    const total = dg.protein + dg.fat + dg.carbs;
     if (total <= 0) return [];
 
     const raw = [
-      { pct: proteinCals / total, color: '#41ac17', label: 'P' },
-      { pct: fatCals / total, color: '#902ee3', label: 'F' },
-      { pct: carbsCals / total, color: '#e67300', label: 'C' }
+      { pct: dg.protein / total, color: '#41ac17', label: 'P' },
+      { pct: dg.fat / total, color: '#902ee3', label: 'F' },
+      { pct: dg.carbs / total, color: '#e67300', label: 'C' }
     ];
 
     const cx = 30, cy = 30, r = 25;
+    // Sweep COUNTER-clockwise from the top so the first segment (Proteins)
+    // lands on the LEFT half of the pie.
     let angle = -Math.PI / 2;
     return raw.filter(s => s.pct > 0.001).map(seg => {
       const start = angle;
       const sweep = seg.pct * 2 * Math.PI;
-      const end = start + sweep;
+      const end = start - sweep;
       const x1 = cx + r * Math.cos(start);
       const y1 = cy + r * Math.sin(start);
       const x2 = cx + r * Math.cos(end);
@@ -821,9 +860,9 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
       const large = sweep > Math.PI ? 1 : 0;
       // For near-full circle, nudge end point slightly to avoid collapsed arc
       const path = seg.pct > 0.999
-        ? `M ${cx},${cy - r} A ${r},${r} 0 1,1 ${cx - 0.01},${cy - r} Z`
-        : `M ${cx},${cy} L ${x1},${y1} A ${r},${r} 0 ${large},1 ${x2},${y2} Z`;
-      const mid = start + sweep / 2;
+        ? `M ${cx},${cy - r} A ${r},${r} 0 1,0 ${cx - 0.01},${cy - r} Z`
+        : `M ${cx},${cy} L ${x1},${y1} A ${r},${r} 0 ${large},0 ${x2},${y2} Z`;
+      const mid = start - sweep / 2;
       const lr = r * 0.6;
       angle = end;
       return { path, color: seg.color, label: seg.label, labelX: cx + lr * Math.cos(mid), labelY: cy + lr * Math.sin(mid) };
@@ -1036,19 +1075,112 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     extremely_active: 1.9,
   };
 
-  /** BMR + activity-adjusted readout under the Activity dropdown. Format:
-   *  "BMR: 2,656 cals (Activity adjusted: 4,117)". Em-dash short-circuit
-   *  when BMR inputs are missing; suppresses the parenthetical until the
-   *  user picks an Activity level. */
+  /** BMR readout: the ACTIVITY-ADJUSTED daily calories, with the baseline BMR in
+   *  parentheses — e.g. "3,920 (2,675)". Before an Activity level is picked there
+   *  is no adjustment, so just the baseline shows. Em-dash until inputs exist. */
   bmrTdeeLabel = computed<string>(() => {
     const bmr = this.userSettingsService.computedBMR();
-    if (bmr === null) return 'BMR: — cals';
+    if (bmr === null) return '—';
     const activity = this.userSettingsService.personalInfo().activityLevel;
     const bmrStr = bmr.toLocaleString();
-    if (!activity) return `BMR: ${bmrStr} cals`;
+    if (!activity) return bmrStr;
     const mult = PreferencesPanelComponent.ACTIVITY_MULTIPLIERS[activity] ?? 1;
     const tdee = Math.round(bmr * mult);
-    return `BMR: ${bmrStr} cals (Activity adjusted: ${tdee.toLocaleString()})`;
+    return `${tdee.toLocaleString()} (${bmrStr})`;
+  });
+
+  /** BMI = weightKg / heightM². Null until height + current weight are known. */
+  private rawBmi = computed<number | null>(() => {
+    const pi = this.userSettingsService.personalInfo();
+    if (!pi.heightCm || !pi.currentWeightKg) return null;
+    const h = pi.heightCm / 100;
+    return pi.currentWeightKg / (h * h);
+  });
+
+  /** BMI at the target weight. Null until height + target weight are known. */
+  private rawTargetBmi = computed<number | null>(() => {
+    const pi = this.userSettingsService.personalInfo();
+    if (!pi.heightCm || !pi.targetWeightKg) return null;
+    const h = pi.heightCm / 100;
+    return pi.targetWeightKg / (h * h);
+  });
+
+  /** BMI numeric readout only — the category words moved into the press-and-
+   *  hold Description popup. Format: "51.2 (target: 30.2)". Em-dash until data
+   *  exists; suppresses the parenthetical until a target weight is known. */
+  bmiLabel = computed<string>(() => {
+    const bmi = this.rawBmi();
+    if (bmi === null) return '—';
+    const cur = bmi.toFixed(1);
+    const t = this.rawTargetBmi();
+    return t === null ? cur : `${cur} (${t.toFixed(1)})`;
+  });
+
+  // ----- BMI "View" popup (visible only while the button is held) -----
+  // The bar is a fixed WEIGHT scale (0 lb at the bottom → 500 lb at the top),
+  // so markers sit proportionally by pounds. The BMI category boundaries are
+  // converted to weights for this person's height and drawn as labeled lines.
+
+  bmiDescOpen = signal(false);
+
+  private static readonly LB_PER_KG = 2.20462;
+  private static readonly WEIGHT_SCALE_MAX = 500; // lb — top of the bar
+  private static readonly BMI_BOUNDS = [18.5, 25, 30, 35, 40];
+  private static readonly BMI_BAND_LABELS = // bottom → top
+    ['Underweight', 'Normal', 'Overweight', 'Obese', 'Obese II', 'Severe Obese III'];
+
+  /** Map a weight (lb) to a top-offset % on the scale (0% = top = 500 lb). */
+  private static weightTopPct(lb: number): number {
+    const max = PreferencesPanelComponent.WEIGHT_SCALE_MAX;
+    const c = Math.max(0, Math.min(max, lb));
+    return ((max - c) / max) * 100;
+  }
+
+  /** The BMI category boundaries expressed as weights (lb) for this height. */
+  private boundaryWeightsLb = computed<number[]>(() => {
+    const h = this.userSettingsService.personalInfo().heightCm;
+    if (!h) return [];
+    const m = h / 100;
+    return PreferencesPanelComponent.BMI_BOUNDS.map(
+      bmi => bmi * m * m * PreferencesPanelComponent.LB_PER_KG,
+    );
+  });
+
+  /** Category words placed at each band's midpoint weight, down the left. */
+  readonly bmiScaleBands = computed<{ label: string; top: number }[]>(() => {
+    const bounds = this.boundaryWeightsLb();
+    if (!bounds.length) return [];
+    const edges = [0, ...bounds, PreferencesPanelComponent.WEIGHT_SCALE_MAX];
+    return PreferencesPanelComponent.BMI_BAND_LABELS.map((label, i) => ({
+      label,
+      top: PreferencesPanelComponent.weightTopPct((edges[i] + edges[i + 1]) / 2),
+    }));
+  });
+
+  /** Boundary lines, each tagged with its weight (lb) for this height, plus
+   *  the scale endpoints (0 lb bottom, 500 lb top) for base/top reference. */
+  readonly bmiScaleTicks = computed<{ top: number; lb: number }[]>(() => {
+    const bounds = this.boundaryWeightsLb().map(lb => ({
+      top: PreferencesPanelComponent.weightTopPct(lb),
+      lb: Math.round(lb),
+    }));
+    return [
+      { top: 0, lb: PreferencesPanelComponent.WEIGHT_SCALE_MAX },
+      ...bounds,
+      { top: 100, lb: 0 },
+    ];
+  });
+
+  /** Current-weight marker position (yellow), or null when no data. */
+  readonly bmiCurrentTop = computed<number | null>(() => {
+    const kg = this.userSettingsService.personalInfo().currentWeightKg;
+    return kg ? PreferencesPanelComponent.weightTopPct(kg * PreferencesPanelComponent.LB_PER_KG) : null;
+  });
+
+  /** Goal-weight marker position (green), or null when no target. */
+  readonly bmiTargetTop = computed<number | null>(() => {
+    const kg = this.userSettingsService.personalInfo().targetWeightKg;
+    return kg ? PreferencesPanelComponent.weightTopPct(kg * PreferencesPanelComponent.LB_PER_KG) : null;
   });
 
   /** Focus of either grams input — snapshot the pre-edit state once. The
@@ -1276,11 +1408,6 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     this.settingsChanged.set(true);
   }
 
-  onRepeatMealsChange(event: Event): void {
-    const raw = +(event.target as HTMLInputElement).value;
-    this.userSettingsService.setRepeatMeals(raw);
-    this.settingsChanged.set(true);
-  }
 
   onPersonsChange(event: Event): void {
     const raw = +(event.target as HTMLInputElement).value;
@@ -1288,10 +1415,23 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
     this.settingsChanged.set(true);
   }
 
-  onWeekStartDayChange(value: WeekStartDay): void {
-    this.userSettingsService.setWeekStartDay(value);
+  /** Menu-Days: persist the preference (drives new rotations) AND push the new
+   *  span to the active rotation so the "n / span days" badge updates live. */
+  onMenuDaysChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    let raw = +input.value;
+    if (!raw) return;
+    // Hard cap at 9 (keeps Day names single-digit) — warn + clamp if they exceed it.
+    if (raw > 9) {
+      raw = 9;
+      input.value = '9';
+      this.notificationService.show('Menu-days is capped at 9 — set to 9.', 'warning');
+    }
+    this.userSettingsService.setMenuDays(raw);
     this.settingsChanged.set(true);
+    void this.rotationService.setRotationSpanDays(this.userSettingsService.menuDays());
   }
+
 
   onGlp1EnabledChange(value: boolean): void {
     this.userSettingsService.setGlp1Enabled(value);

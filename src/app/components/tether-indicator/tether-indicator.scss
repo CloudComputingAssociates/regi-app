@@ -1,0 +1,99 @@
+:host {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  // The phone floats just left of the display-name link, with ~1/3in of padding
+  // so it reads as separate from the name.
+  margin-right: 32px;
+}
+
+.ti-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+// Phone glyph = a CSS-masked shape. The transparent PNG (same 404x380 canvas
+// for both states) supplies the silhouette via the mask; the FILL colour is set
+// in code, so the same weight/chunkiness reads in both states.
+//   Not connected: plain phone, light grey.
+//   Connected:     phone + signal, vibrant green.
+.ti-glyph {
+  display: block;
+  width: 28px;
+  height: 28px;
+  background-color: #bcbcbc; // light grey — not connected
+  -webkit-mask: url('/images/mobile-not-connected.png') no-repeat center / contain;
+          mask: url('/images/mobile-not-connected.png') no-repeat center / contain;
+  transition: background-color 0.15s ease;
+}
+.ti-btn:hover .ti-glyph { background-color: #dcdcdc; }
+
+.ti-btn.live .ti-glyph {
+  background-color: #2ecc40; // vibrant green — connected
+  -webkit-mask-image: url('/images/mobile-connected.png');
+          mask-image: url('/images/mobile-connected.png');
+}
+.ti-btn.live:hover .ti-glyph { background-color: #3ee055; }
+
+// Device popover — a small absolutely-positioned card under the icon.
+.ti-pop-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1199;
+}
+
+.ti-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1200;
+  min-width: 180px;
+  padding: 6px;
+  background: #2a2a2a;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.ti-pop-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+  color: #e8e8e8;
+}
+
+.ti-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #58c858;
+  box-shadow: 0 0 6px rgba(88, 200, 88, 0.8);
+}
+
+.ti-pop-name { font-weight: 600; }
+
+.ti-pop-platform {
+  margin-left: auto;
+  font-size: 11px;
+  color: #9aa0a6;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.ti-pop-empty {
+  padding: 8px;
+  font-size: 12px;
+  font-style: italic;
+  color: #9aa0a6;
+}

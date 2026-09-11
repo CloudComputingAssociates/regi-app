@@ -1,11 +1,12 @@
 // src/app/components/left-nav/left-nav.ts
-import { Component, EventEmitter, Output, ViewChild, inject } from '@angular/core';
+import { Component, EventEmitter, Output, ViewChild, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { TabService } from '../../services/tab.service';
+import { RoleService } from '../../services/role.service';
 import { AuthService } from '@auth0/auth0-angular';
 import { map } from 'rxjs/operators';
 
@@ -13,6 +14,8 @@ interface MenuItem {
   label: string;
   icon?: string;  // Emoji icon
   iconImage?: string;  // Image path for logo
+  matIcon?: string;  // Material icon name (monochrome, tintable via `color`)
+  color?: string;    // Tint for the matIcon
   tabId: string;
 }
 
@@ -37,10 +40,7 @@ interface MenuItem {
               class="drawer-profile-image" />
             <div class="user-details">
               <h3 class="user-name">RegiMenu<sup class="sm">SM</sup></h3>
-              <p class="user-subtitle">
-                <img src="images/AI-star-blue.png" alt="" class="subtitle-ai-icon" />
-                AI-driven Nutrition Planner
-              </p>
+              <p class="user-subtitle">Stop tracking, start planning</p>
             </div>
           </div>
           <button
@@ -56,12 +56,14 @@ interface MenuItem {
         @if (isAuthenticated()) {
           <mat-nav-list class="menu-list">
             <mat-list-item
-              *ngFor="let item of menuItems"
+              *ngFor="let item of menuItems()"
               (click)="navigateTo(item.tabId, drawer)"
               class="menu-item"
               [class.active]="isTabOpen(item.tabId)">
               <div class="menu-item-content">
-                @if (item.iconImage) {
+                @if (item.matIcon) {
+                  <mat-icon class="menu-mat-icon" [style.color]="item.color">{{ item.matIcon }}</mat-icon>
+                } @else if (item.iconImage) {
                   <img [src]="item.iconImage" [alt]="item.label" class="menu-icon-image" />
                 } @else {
                   <span class="menu-icon">{{ item.icon }}</span>
@@ -102,12 +104,24 @@ export class LeftNavComponent {
     })
   );
 
-  menuItems: MenuItem[] = [
-    { label: 'Chat', iconImage: 'images/AI-star.png', tabId: 'chat' },
-    { label: 'Menus', iconImage: 'images/AI-star.png', tabId: 'menus' },
-    { label: 'Foods', iconImage: 'favicon.ico', tabId: 'foods' },
-    { label: 'Shopping List', icon: '🛒', tabId: 'shop' }
+  private roleService = inject(RoleService);
+
+  // Shopping List is no longer a left-nav panel on the web app — it's a bloom
+  // launched from the Menus & Meals toolbar. (It stays a first-class nav item on
+  // the mobile app.)
+  private readonly baseMenuItems: MenuItem[] = [
+    { label: 'My Foods', iconImage: 'favicon.ico', tabId: 'foods' },
+    { label: 'Menus & Meals', matIcon: 'restaurant', color: '#43c13a', tabId: 'menus' },
+    { label: 'Chat', matIcon: 'forum', color: '#ff8c1a', tabId: 'chat' }
   ];
+
+  /** Nav items — the MealSets authoring entry is appended only for MealSetOwners
+   *  (cosmetic; the server enforces the role on every owner endpoint). */
+  readonly menuItems = computed<MenuItem[]>(() =>
+    this.roleService.hasRole('MealSetOwner')
+      ? [...this.baseMenuItems, { label: 'MealSet Studio', matIcon: 'restaurant_menu', color: '#ffd54f', tabId: 'mealsets' }]
+      : this.baseMenuItems
+  );
 
   tabService = inject(TabService);
 
@@ -130,7 +144,7 @@ export class LeftNavComponent {
    *   - Otherwise → open it (mounts on first visit, swaps to it on later).
    *  Panel state is preserved across hide/show via the visited set. */
   navigateTo(tabId: string, drawer: MatSidenav): void {
-    const menuItem = this.menuItems.find(item => item.tabId === tabId);
+    const menuItem = this.menuItems().find(item => item.tabId === tabId);
     if (menuItem) {
       this.tabService.togglePanel(tabId, menuItem.label);
     }

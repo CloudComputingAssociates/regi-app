@@ -14,12 +14,19 @@ import { PaywallComponent } from './components/paywall/paywall';
 import { LoadingOverlayComponent } from './components/loading-overlay/loading-overlay';
 import { SettingsOverlayComponent } from './components/settings-overlay/settings-overlay';
 import { BugOverlayComponent } from './components/bug-overlay/bug-overlay';
+import { TetherPromptComponent } from './components/tether-prompt/tether-prompt';
+import { WebViewOverlayComponent } from './components/web-view-overlay/web-view-overlay';
+import { AccountPanelComponent } from './components/account-panel/account-panel';
+import { RecipeEditorPanelComponent } from './components/recipe-editor-panel/recipe-editor-panel';
+import { MealsetEditorPanelComponent } from './components/mealset-editor-panel/mealset-editor-panel';
 import { NotificationComponent } from './components/notification/notification';
 import { SubscriptionService } from './services/subscription.service';
 import { SettingsService } from './services/settings.service';
 import { TabService } from './services/tab.service';
 import { ChatService } from './services/chat.service';
 import { NotificationService } from './services/notification.service';
+import { RotationService } from './services/rotation.service';
+import { RecipeImportWatcher, RecipeImportEvent } from './services/recipe-import-watcher.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { NutritionTipService } from './services/nutrition-tip.service';
 
@@ -30,7 +37,7 @@ const LEFT_NAV_PANEL_IDS = new Set([
   'chat',
   'menus',
   'foods',
-  'shop',
+  'mealsets',
 ]);
 
 @Component({
@@ -46,6 +53,11 @@ const LEFT_NAV_PANEL_IDS = new Set([
     LoadingOverlayComponent,
     SettingsOverlayComponent,
     BugOverlayComponent,
+    TetherPromptComponent,
+    WebViewOverlayComponent,
+    AccountPanelComponent,
+    RecipeEditorPanelComponent,
+    MealsetEditorPanelComponent,
     NotificationComponent,
     MatTooltipModule
   ],
@@ -75,6 +87,9 @@ const LEFT_NAV_PANEL_IDS = new Set([
                     @if (tip.imageUrl) {
                       <img [src]="tip.imageUrl" alt="" class="tip-bar-thumb" />
                     }
+                    <!-- Opens in a NEW TAB (the app tab stays alive). Many
+                         article sites send X-Frame-Options and refuse to load
+                         in the in-app iframe viewer, so we don't use it here. -->
                     <a [href]="tip.articleUrl" target="_blank" rel="noopener" class="tip-bar-title">{{ tip.title }}</a>
                   </div>
                   <button class="tip-bar-close" (click)="dismissTip()">✕</button>
@@ -99,6 +114,18 @@ const LEFT_NAV_PANEL_IDS = new Set([
            open state lives on TabService so any UI element can flip it. -->
       <app-settings-overlay />
       <app-bug-overlay />
+      <!-- foods-panel's "add food" nudge routes through the shared tether prompt
+           (mode not-registered), gated on the existing TabService signal. -->
+      @if (tabService.mobileAppOpen()) {
+        <app-tether-prompt mode="not-registered" (close)="tabService.closeMobileApp()" />
+      }
+      <app-web-view-overlay />
+      <app-account-panel />
+      <!-- Recipe authoring editor (MealSetOwner) — full-screen overlay, self-gates
+           on TabService.recipeEditorOpen; launched from the Author Studio's
+           RecipeBox. No Angular Router in this app. -->
+      <app-recipe-editor-panel />
+      <app-mealset-editor-panel />
       <!-- Notification toast lives at the app root (not inside main-body)
            so its z-index: 9999 punches above the overlays' z-index: 1100.
            Mounted inside main-body, it was trapped in main-body's stacking
@@ -118,16 +145,21 @@ export class AppComponent implements OnInit, OnDestroy {
   tabService = inject(TabService);
   private chatService = inject(ChatService);
   private notification = inject(NotificationService);
+  private rotation = inject(RotationService);
+  private recipeWatcher = inject(RecipeImportWatcher);
   private errorSub?: Subscription;
+  private recipeSub?: Subscription;
 
   tipDismissed = signal(this.isTipDismissedToday());
 
-  /** True when the active panel should render the macros bar above it.
-   *  False on splash, Foods (reclaims the vertical space), and Chat
-   *  (no macros context applies). */
+  /** True when the active panel should render the app-level (full-width) macros
+   *  bar above it. False on splash, Foods (reclaims the vertical space), Chat
+   *  (no macros context), and Menus — Menus renders its OWN macros bar INSIDE the
+   *  board column so it spans only the Menus & Meals width and the Binder grows
+   *  up beside it (the macros belong to Menus & Meals, not the Binder). */
   hasMacros = computed(() => {
     const id = this.tabService.activeTabId();
-    return id !== null && id !== 'foods' && id !== 'chat';
+    return id !== null && id !== 'foods' && id !== 'chat' && id !== 'menus' && id !== 'mealsets' && id !== 'help';
   });
 
   /** True when the "bites" tip-of-the-day bar should render. Chat only. */
@@ -137,7 +169,7 @@ export class AppComponent implements OnInit, OnDestroy {
    *  False on splash, Foods (reclaims the vertical space), and Menus. */
   hasChatInput = computed(() => {
     const id = this.tabService.activeTabId();
-    return id !== null && id !== 'foods' && id !== 'menus';
+    return id !== null && id !== 'foods' && id !== 'menus' && id !== 'mealsets';
   });
 
   // ------------------------------------------------------------------
@@ -191,10 +223,44 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.errorSub?.unsubscribe();
+    this.recipeSub?.unsubscribe();
     if (this.autoSavePanelTimer) clearTimeout(this.autoSavePanelTimer);
   }
 
+  /** Handle a recipe-import completion event (see RecipeImportWatcher).
+   *  - parsed:  ALWAYS refresh the Binder (same path as a successful pin), then
+   *             show the ingest toast unless the user suppressed it.
+   *  - failed:  ALWAYS toast the error (suppression never applies), no refresh.
+   *  - timeout: warn and refresh the Binder. */
+  private onRecipeEvent(ev: RecipeImportEvent): void {
+    if (ev.kind === 'parsed') {
+      void this.rotation.loadBinder();
+      if (!this.recipeWatcher.isToastSuppressed()) {
+        const name = ev.mealName?.trim() || 'your imported meal';
+        this.notification.showIngest(
+          `Recipe Ingested to Saved Meal, ${name}`,
+          dontShowAgain => {
+            if (dontShowAgain) this.recipeWatcher.setToastSuppressed();
+          },
+        );
+      }
+    } else if (ev.kind === 'failed') {
+      this.notification.show(`Recipe import failed — ${ev.parseError ?? 'unknown error'}`, 'error');
+    } else {
+      this.notification.show(
+        'Recipe import failed — it timed out after 4 minutes. Please try again.',
+        'error',
+      );
+      void this.rotation.loadBinder();
+    }
+  }
+
   ngOnInit(): void {
+    // Recipe-import completions. The watcher self-resumes persisted imports once
+    // the auth0 sub is known, so subscribing here covers both live imports and
+    // ones resumed after a mid-import browser refresh.
+    this.recipeSub = this.recipeWatcher.events.subscribe(ev => this.onRecipeEvent(ev));
+
     // Listen for Auth0 errors (e.g. missing/expired refresh token) and auto-logout
     this.errorSub = this.auth.error$.subscribe(error => {
       console.error('[Auth0] Error:', error);

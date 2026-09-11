@@ -9,7 +9,7 @@ import { filter, take } from 'rxjs/operators';
 // e.g., api.idToken.setCustomClaim('https://api.regimenu.net/roles', event.authorization?.roles || [])
 const ROLES_CLAIM = 'https://api.regimenu.net/roles';
 
-export type AppRole = 'Admin' | 'Developer' | 'QA';
+export type AppRole = 'Admin' | 'Developer' | 'QA' | 'MealSetOwner';
 
 @Injectable({ providedIn: 'root' })
 export class RoleService {

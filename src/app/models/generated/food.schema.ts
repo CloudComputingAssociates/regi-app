@@ -26,6 +26,10 @@ export interface FoodSchema {
    */
   foodRequestType: "brand" | "whole" | "recipe" | "unknown";
   /**
+   * Food category FK (Categories.CategoryID) — bind category dropdowns by this, not the name
+   */
+  categoryId?: number | null;
+  /**
    * Food category name (e.g., Protein, Carbohydrate)
    */
   categoryName?: string | null;

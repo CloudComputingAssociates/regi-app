@@ -59,6 +59,13 @@
           "default": 1,
           "description": "Number of people the meal plan serves"
         },
+        "menuDays": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10,
+          "default": 7,
+          "description": "Number of Menus (days) to plan at once — drives the rotation spanDays"
+        },
         "weekStartDay": {
           "type": "string",
           "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
@@ -192,8 +199,8 @@
         },
         "category": {
           "type": "string",
-          "enum": ["proteins", "produce", "bulk", "dairy", "aisles", "non_food"],
-          "description": "Shopping category"
+          "enum": ["proteins", "produce", "bulk", "dairy", "aisles", "non_food", "fruits"],
+          "description": "Shopping category. Display buckets map: produce=Vegetables, fruits=Fruits, proteins=Proteins, dairy=Dairy, bulk=Carbs, aisles+non_food=Processed/Aisles."
         },
         "item": {
           "type": "string",
@@ -245,10 +252,11 @@
           "enum": ["Proteins", "Fats", "Carbs", "Other"],
           "description": "Which UI basket this pick belongs to"
         },
-        "pickServingSize": {
-          "type": ["number", "null"],
-          "exclusiveMinimum": 0,
-          "description": "Per-basket serving-size override; null = use the food's baseline serving"
+        "mealRole": {
+          "type": "string",
+          "enum": ["AnyUse", "PrimaryFood", "SecondaryFood"],
+          "default": "AnyUse",
+          "description": "How the generator should use this pick: PrimaryFood = build the meal around it; SecondaryFood = supporting/complementary; AnyUse = no constraint (default)."
         },
         "addedAt": {
           "type": "string",
@@ -267,8 +275,8 @@
         "regiMenu": { "$ref": "#/definitions/RegiMenuSettings" },
         "defaultFoodList": {
           "type": "string",
-          "enum": ["yeh_approved", "all_foods"],
-          "description": "Default food list filter"
+          "enum": ["myfoods", "regi_plus_myfoods", "all_foods"],
+          "description": "Default food list filter (foodListSource token)"
         },
         "dailyGoals": { "$ref": "#/definitions/DailyGoals" },
         "personalInfo": { "$ref": "#/definitions/PersonalInfo" },

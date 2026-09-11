@@ -8,14 +8,7 @@
 
     "MealType": {
       "type": "string",
-      "description": "Whether the meal is treated as a full meal or a snack",
-      "enum": ["meal", "snack"]
-    },
-
-    "MealStatus": {
-      "type": "string",
-      "description": "Lifecycle state of a Meal",
-      "enum": ["active", "archived"]
+      "description": "Free-text meal label chosen by the user (e.g. 'meal', 'snack', 'Breakfast', 'Lunch/Dinner'). Used to package MealSets. Trimmed and capped at 40 chars on write; no fixed enum."
     },
 
     "FoodSource": {
@@ -32,31 +25,58 @@
 
     "MealItem": {
       "type": "object",
-      "description": "A food item within a meal",
+      "description": "A meal line: quantity + unit + role + per-item scaled macro totals, plus the FULL resolved food record nested under `food`. `food` is null for pending/unresolved AI items (foodName still carries the display name). The per-item calories/proteinG/… are the amounts for THIS quantity; food.calories/proteinG/… are the food's per-serving baseline.",
       "properties": {
         "id": { "type": "integer", "description": "MealItem ID (omit for new items)" },
-        "foodId": { "type": "integer", "description": "Reference to the Food row" },
-        "foodName": { "type": "string", "description": "Denormalized food name for display" },
-        "foodSource": { "$ref": "#/definitions/FoodSource" },
+        "foodName": { "type": "string", "description": "Display name — always present. Mirrors food.description when resolved; the AI-proposed name when pending." },
         "itemRole": { "$ref": "#/definitions/ItemRole" },
         "isTracked": { "type": "boolean", "description": "True when the item contributes to macro totals and shopping list" },
         "quantity": { "type": "number", "description": "Amount of food" },
         "unit": { "type": "string", "description": "Unit of measurement (serving, oz, g, etc.)" },
-        "calories": { "type": "integer" },
-        "proteinG": { "type": "number" },
-        "fatG": { "type": "number" },
-        "carbG": { "type": "number" },
-        "fiberG": { "type": "number" },
-        "sodiumMg": { "type": "integer" },
+        "calories": { "type": "integer", "description": "Per-item scaled calories for this quantity" },
+        "proteinG": { "type": "number", "description": "Per-item scaled protein (g) for this quantity" },
+        "fatG": { "type": "number", "description": "Per-item scaled fat (g) for this quantity" },
+        "carbG": { "type": "number", "description": "Per-item scaled carbohydrate (g) for this quantity" },
+        "fiberG": { "type": "number", "description": "Per-item scaled fiber (g) for this quantity" },
+        "sodiumMg": { "type": "integer", "description": "Per-item scaled sodium (mg) for this quantity" },
         "sortOrder": { "type": "integer", "description": "Display order within the meal" },
-        "servingSizeG": { "type": "number" },
-        "servingGramsPerUnit": { "type": "number" },
-        "foodImageThumbnail": { "type": "string" },
-        "shortDescription": { "type": "string" },
-        "categoryName": { "type": "string" },
-        "productPurchaseLink": { "type": "string", "description": "Optional pre-baked purchase link (e.g., Amazon URL)" }
+        "food": {
+          "oneOf": [
+            { "$ref": "#/definitions/MealItemFood" },
+            { "type": "null" }
+          ],
+          "description": "The complete resolved Food/UserFood record from the AllFoods view; null for pending/unresolved AI items."
+        }
       },
-      "required": ["foodId", "foodName", "foodSource", "itemRole", "isTracked", "quantity", "unit"]
+      "required": ["foodName", "itemRole", "isTracked", "quantity", "unit"]
+    },
+
+    "MealItemFood": {
+      "type": "object",
+      "description": "The full resolved food record for a meal item, mirroring the AllFoods view (union of Foods + UserFoods with nutrition). Base per-serving values — the meal line scales these by quantity into MealItem's own macro fields.",
+      "properties": {
+        "foodId": { "type": "integer", "description": "Foods.FoodID or UserFoods.UserFoodID" },
+        "foodSource": { "type": "string", "enum": ["food", "userfood"], "description": "Which table the food came from" },
+        "description": { "type": "string", "description": "Full food description" },
+        "shortDescription": { "type": ["string", "null"], "description": "Short display name" },
+        "categoryName": { "type": ["string", "null"], "description": "Food category (e.g. Produce, Protein)" },
+        "dataSource": { "type": ["string", "null"], "description": "Provenance (e.g. USDA, branded)" },
+        "foodImage": { "type": ["string", "null"] },
+        "foodImageThumbnail": { "type": ["string", "null"] },
+        "servingSize": { "type": ["number", "null"], "description": "Baseline serving size (in servingUnit)" },
+        "servingUnit": { "type": ["string", "null"] },
+        "servingGramsPerUnit": { "type": ["number", "null"] },
+        "servingSizeG": { "type": ["number", "null"], "description": "Baseline serving size in grams" },
+        "calories": { "type": ["number", "null"], "description": "Per-serving calories" },
+        "proteinG": { "type": ["number", "null"], "description": "Per-serving protein (g)" },
+        "fatG": { "type": ["number", "null"], "description": "Per-serving fat (g)" },
+        "carbG": { "type": ["number", "null"], "description": "Per-serving carbohydrate (g)" },
+        "fiberG": { "type": ["number", "null"], "description": "Per-serving fiber (g)" },
+        "sodiumMg": { "type": ["number", "null"], "description": "Per-serving sodium (mg)" },
+        "productPurchaseLink": { "type": ["string", "null"], "description": "Optional pre-baked purchase link (e.g., Amazon URL)" },
+        "dynamicIngredient": { "type": "boolean", "description": "True for UserFoods rows auto-created during recipe import for an unmatched ingredient line; drives the app's Dynamic Ingredients accordion. False for curated MyFoods / REGI-approved foods." }
+      },
+      "required": ["foodId", "foodSource", "description"]
     },
 
     "Meal": {
@@ -69,10 +89,10 @@
         "mealSeqNum": { "type": "integer", "description": "Per-user counter since signup" },
         "primaryProteinFoodId": { "type": ["integer", "null"] },
         "primaryProteinName": { "type": ["string", "null"], "description": "Denormalized for UI" },
-        "isRegiApproved": { "type": "boolean", "description": "True when this is an admin-curated, REGI-approved meal visible to all users" },
-        "isFavorite": { "type": "boolean" },
-        "isSaved": { "type": "boolean", "description": "Throwaway flag — false until the user names/saves the meal" },
-        "status": { "$ref": "#/definitions/MealStatus" },
+        "pinned": { "type": "boolean", "description": "Binder flag — 1 = in the user's Binder (survives context teardown; only explicit delete kills it), 0 = disposable (dies with its context)" },
+        "cloned": { "type": "boolean", "description": "Set once at fork-on-place; immutable after. Divergence from the source is derived as updatedAt > createdAt" },
+        "clonedFromMealId": { "type": ["integer", "null"], "description": "Source meal id when this is a fork (fork-on-place/edit); null for originals. Back-pointer the client resolves for the original's recipeLink/image — RecipeLink itself is NOT copied, so one-recipe→one-meal cascade-delete is untouched" },
+        "rating": { "type": ["integer", "null"], "minimum": 1, "maximum": 5, "description": "User rating 1–5, or null" },
         "totalCalories": { "type": "integer" },
         "totalProteinG": { "type": "number" },
         "totalFatG": { "type": "number" },
@@ -84,16 +104,22 @@
         "mealImage": { "type": "string" },
         "mealImageThumbnail": { "type": "string" },
         "servings": { "type": "integer", "description": "How many servings this meal yields" },
-        "shareCandidate": { "type": "boolean" },
-        "shareApproved": { "type": "boolean" },
+        "notes": { "type": ["string", "null"], "description": "Free-text meal notes; AI image hint + PDF body." },
         "items": {
           "type": "array",
           "items": { "$ref": "#/definitions/MealItem" }
         },
+        "ingredientNames": { "type": "string", "description": "Space-joined, lowercased MealItems.foodName values for client-side ingredient search. Populated only on the list (scope=binder/folder) response; empty/absent when the meal has no items or on item-hydrated reads." },
+        "mealSetId": { "type": ["integer", "null"], "description": "Set this meal was sourced from in a set-filtered list (mealSetIds); absent for caller-owned meals" },
+        "mealSetName": { "type": ["string", "null"], "description": "Name of the source meal set; paired with mealSetId" },
+        "sourceMealSetId": { "type": ["integer", "null"], "readOnly": true, "description": "The MealSet this meal was materialized from at purchase/grant time; null for non-set meals. Server-owned (stamped by grant materialization). Its presence gates the 'Restore original' affordance and disables clearClonedFrom (use detach instead)." },
+        "sourceMealSetName": { "type": ["string", "null"], "readOnly": true, "description": "Display name of sourceMealSetId, joined through it at query time. Never stored; present only where the read path decorates it (binder list)." },
+        "cookingMethodId": { "type": ["integer", "null"], "description": "FK to dbo.CookingMethods; null when unset" },
+        "cookingMethodName": { "type": ["string", "null"], "description": "Denormalized cooking-method name for display; joined through cookingMethodId, never stored on the meal" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "mealType", "mealSeqNum", "isRegiApproved", "isFavorite", "isSaved", "status", "servings", "shareCandidate", "shareApproved", "createdAt", "updatedAt"]
+      "required": ["id", "name", "mealType", "mealSeqNum", "pinned", "cloned", "servings", "createdAt", "updatedAt"]
     },
 
     "MealSummary": {
@@ -105,9 +131,7 @@
         "mealSeqNum": { "type": "integer" },
         "primaryProteinFoodId": { "type": ["integer", "null"] },
         "primaryProteinName": { "type": ["string", "null"] },
-        "isRegiApproved": { "type": "boolean" },
-        "isFavorite": { "type": "boolean" },
-        "status": { "type": "string" },
+        "pinned": { "type": "boolean" },
         "totalCalories": { "type": "integer" },
         "totalProteinG": { "type": "number" },
         "totalFatG": { "type": "number" },
@@ -116,29 +140,43 @@
         "totalSodiumMg": { "type": "integer" },
         "mealImageThumbnail": { "type": "string" },
         "servings": { "type": "integer" },
-        "shareCandidate": { "type": "boolean" },
+        "mealSetId": { "type": ["integer", "null"], "description": "Set this meal was sourced from in a set-filtered list; absent for caller-owned meals" },
+        "mealSetName": { "type": ["string", "null"], "description": "Name of the source meal set; paired with mealSetId" },
+        "cookingMethodId": { "type": ["integer", "null"], "description": "FK to dbo.CookingMethods; null when unset" },
+        "cookingMethodName": { "type": ["string", "null"], "description": "Denormalized cooking-method name for display; joined through cookingMethodId, never stored on the meal" },
         "userName": { "type": "string" },
         "userEmail": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "mealSeqNum", "isRegiApproved", "isFavorite", "status", "servings", "shareCandidate", "createdAt"]
+      "required": ["id", "name", "mealSeqNum", "servings", "createdAt"]
     },
 
     "ListMealsRequest": {
       "type": "object",
       "description": "Query parameters for GET /api/meal",
       "properties": {
-        "status": { "type": "string", "description": "Filter by status" },
-        "isFavorite": { "type": "boolean", "description": "Filter to favorites only" },
-        "includeYeh": { "type": "boolean", "description": "Include admin-curated YEH meals" },
+        "scope": { "type": "string", "enum": ["folder", "binder"], "description": "folder = disposable, unplaced meals (Pinned=0, not in any menu); binder = pinned meals (Pinned=1); omitted = current behavior" },
+        "mealSetIds": { "type": "array", "items": { "type": "integer" }, "description": "CSV in the query string. Union the caller's own meals with meals junctioned into these sets; unentitled set ids are silently dropped" },
         "limit": { "type": "integer", "description": "Max results (default 20, max 100)" },
         "offset": { "type": "integer", "description": "Results offset for pagination" }
       }
     },
 
+    "CreateMealItem": {
+      "type": "object",
+      "description": "One constituent food line for the Build-a-Meal manual save path. The server resolves the food from the AllFoods view by (foodId, foodSource), derives the display name + item role, and computes all macros from the quantity+unit — the client sends no name, role, or macro fields.",
+      "properties": {
+        "foodId": { "type": "integer", "description": "Foods.FoodID or UserFoods.UserFoodID, per foodSource" },
+        "foodSource": { "type": "string", "enum": ["food", "userfood"], "description": "Which table the food lives in" },
+        "quantity": { "type": "number", "exclusiveMinimum": 0, "description": "Amount of food (must be > 0)" },
+        "unit": { "type": "string", "description": "Unit of measurement (serving, oz, g, whole, etc.)" }
+      },
+      "required": ["foodId", "foodSource", "quantity", "unit"]
+    },
+
     "CreateMealRequest": {
       "type": "object",
-      "description": "Request body for POST /api/meal — creates an empty named meal",
+      "description": "Request body for POST /api/meal. With no items it creates an empty named meal (Pinned=0). With items it is the Build-a-Meal manual save: the server creates the Meal + MealItems, computes every macro server-side from the foods, and pins it into the Binder (Pinned=1). All macro fields are server-computed — the request carries none.",
       "properties": {
         "name": {
           "type": "string",
@@ -153,7 +191,20 @@
           "minimum": 1,
           "maximum": 100,
           "default": 1,
-          "description": "How many servings this meal yields (1–100). Defaults to 1."
+          "description": "How many servings this meal yields (1–100). Defaults to 1. Ignored on the Build-a-Meal (items present) path, which is always 1-person truth."
+        },
+        "cookingMethodId": {
+          "type": ["integer", "null"],
+          "description": "FK to dbo.CookingMethods; null when unset. Persisted on create."
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "Free-text meal notes; persisted on create. Feeds the AI image hint + PDF body."
+        },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/CreateMealItem" },
+          "description": "Constituent foods for the Build-a-Meal manual save. When present, the meal is created with these items (macros computed server-side) and pinned into the Binder. Omit/empty for the plain empty-meal create."
         }
       },
       "required": ["name"]
@@ -176,16 +227,15 @@
           "maximum": 100,
           "description": "New servings count (1–100)"
         },
-        "isFavorite": {
+        "pinned": {
           "type": "boolean",
-          "description": "New favorite flag"
+          "description": "Pin (1) into the Binder or unpin (0). Flipping 0→1 applies a Binder name-collision postfix."
         },
-        "isSaved": {
-          "type": "boolean",
-          "description": "Whether the meal is saved to the user's library"
-        },
-        "status": {
-          "$ref": "#/definitions/MealStatus"
+        "rating": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 5,
+          "description": "User rating 1–5, or null to clear"
         },
         "prepVideoLink": {
           "type": "string",
@@ -194,6 +244,18 @@
         "recipeLink": {
           "type": "string",
           "description": "New recipe URL (empty string clears the link)"
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "New notes; empty string/null clears."
+        },
+        "clearClonedFrom": {
+          "type": "boolean",
+          "description": "Clear-only: when true, sets clonedFromMealId to NULL so a copy pinned AS A NEW binder meal (renamed / from-scratch) becomes independent. Never sets a value — ClonedFromMealID stays server-owned (only DuplicateMeal writes it non-null). No-op when the meal's sourceMealSetId is non-null (a set-materialized meal keeps its lineage for Restore original; use POST /api/meal/{id}/detach to sever a set meal)."
+        },
+        "cookingMethodId": {
+          "type": ["integer", "null"],
+          "description": "FK to dbo.CookingMethods. Provide a positive id to set; provide 0 (or a non-positive value) to clear to NULL. Omit to leave unchanged."
         }
       }
     },
@@ -302,7 +364,7 @@
         "item": {
           "type": ["object", "null"],
           "additionalProperties": true,
-          "description": "When found, shape matches MealItem from meal.schema.json (foodId, foodName, foodSource, quantity, unit, plus optional macros)"
+          "description": "When found, the resolved food record (shape mirrors MealItemFood: foodId, foodSource, description, nutrition, etc.)"
         }
       },
       "required": ["found", "userFoodCreated"]
@@ -418,6 +480,11 @@
           "type": "array",
           "items": { "type": "string" },
           "description": "Names or descriptions of meals already generated this session, so the AI produces something different."
+        },
+        "excludeFoods": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Food names already used in the day's other meals, so the AI varies vegetables and fats instead of repeating them (e.g. avocado in every meal). Meal names alone can't drive this — the model needs the actual foods. Cross-day repetition is fine; only pass the current day's foods."
         },
         "mealType": {
           "$ref": "#/definitions/MealType",

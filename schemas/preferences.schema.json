@@ -78,6 +78,13 @@
           "maximum": 4,
           "description": "Number of times to repeat meal plan (1-4)"
         },
+        "menuDays": {
+          "type": ["integer", "null"],
+          "minimum": 2,
+          "maximum": 10,
+          "default": 7,
+          "description": "Number of Menus (days) to plan at once"
+        },
         "weekStartDay": {
           "type": ["string", "null"],
           "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", null],
@@ -86,7 +93,7 @@
         },
         "foodListSource": {
           "type": ["string", "null"],
-          "enum": ["yeh_plus_myfoods", "yeh", "myfoods", null],
+          "enum": ["myfoods", "regi_plus_myfoods", "all_foods", null],
           "description": "Source of foods for meal planning"
         }
       },
@@ -127,6 +134,13 @@
           "maximum": 4,
           "description": "Number of times to repeat meal plan (1-4)"
         },
+        "menuDays": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10,
+          "default": 7,
+          "description": "Number of Menus (days) to plan at once"
+        },
         "weekStartDay": {
           "type": "string",
           "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
@@ -135,7 +149,7 @@
         },
         "foodListSource": {
           "type": "string",
-          "enum": ["yeh_plus_myfoods", "yeh", "myfoods"],
+          "enum": ["myfoods", "regi_plus_myfoods", "all_foods"],
           "description": "Source of foods for meal planning"
         }
       },
@@ -186,6 +200,13 @@
       "maximum": 4,
       "description": "Number of times to repeat meal plan (1-4)"
     },
+    "menuDays": {
+      "type": ["integer", "null"],
+      "minimum": 2,
+      "maximum": 10,
+      "default": 7,
+      "description": "Number of Menus (days) to plan at once"
+    },
     "weekStartDay": {
       "type": ["string", "null"],
       "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", null],
@@ -194,7 +215,7 @@
     },
     "foodListSource": {
       "type": ["string", "null"],
-      "enum": ["yeh_plus_myfoods", "yeh", "myfoods", null],
+      "enum": ["myfoods", "regi_plus_myfoods", "all_foods", null],
       "description": "Source of foods for meal planning"
     },
     "createdAt": {

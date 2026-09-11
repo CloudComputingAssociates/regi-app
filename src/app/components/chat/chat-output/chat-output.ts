@@ -7,12 +7,14 @@ import {
   viewChild,
   effect,
   input,
+  output,
   computed,
   Pipe,
   PipeTransform
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ChatService, ChatContext } from '../../../services/chat.service';
+import { FlowChip } from '../../../services/flow.service';
 
 /**
  * Simple markdown pipe for basic formatting
@@ -78,7 +80,7 @@ export class MarkdownPipe implements PipeTransform {
           <div class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
             @if (message.role === 'assistant') {
               <div class="message-avatar">
-                <img src="/images/AI-star.png" alt="AI" class="avatar-img" />
+                <img src="/images/AI-star.png" alt="AI" class="avatar-img" /><span class="avatar-regi">Regi</span>
               </div>
             }
             <div class="message-content" [innerHTML]="message.content | markdown"></div>
@@ -89,7 +91,7 @@ export class MarkdownPipe implements PipeTransform {
         @if (contextStreamingContent()) {
           <div class="message assistant streaming">
             <div class="message-avatar">
-              <img src="/images/AI-star.png" alt="AI" class="avatar-img" />
+              <img src="/images/AI-star.png" alt="AI" class="avatar-img" /><span class="avatar-regi">Regi</span>
             </div>
             <div class="message-content" [innerHTML]="contextStreamingContent() | markdown">
             </div>
@@ -101,7 +103,7 @@ export class MarkdownPipe implements PipeTransform {
         @if (contextIsLoading() && !contextStreamingContent()) {
           <div class="message assistant loading">
             <div class="message-avatar">
-              <img src="/images/AI-star.png" alt="AI" class="avatar-img" />
+              <img src="/images/AI-star.png" alt="AI" class="avatar-img" /><span class="avatar-regi">Regi</span>
             </div>
             <div class="message-content">
               <span class="loading-dots">
@@ -111,11 +113,29 @@ export class MarkdownPipe implements PipeTransform {
           </div>
         }
 
-        <!-- Empty state (only for full chat, not condensed) -->
+        <!-- Empty state (only for full chat, not condensed). When a greeting seed is
+             supplied (Help), render it as a DISPLAY-ONLY assistant message + chips —
+             never part of the message array. -->
         @if (!condensed() && contextMessages().length === 0 && !contextIsLoading()) {
-          <div class="empty-state">
-            <p class="empty-text">Ask me anything about nutrition!</p>
-          </div>
+          @if (greeting()) {
+            <div class="message assistant">
+              <div class="message-avatar">
+                <img src="/images/AI-star.png" alt="AI" class="avatar-img" /><span class="avatar-regi">Regi</span>
+              </div>
+              <div class="message-content" [innerHTML]="greeting() | markdown"></div>
+            </div>
+            @if (chips().length) {
+              <div class="seed-chips">
+                @for (chip of chips(); track $index) {
+                  <button type="button" class="seed-chip" [disabled]="chipsDisabled()" (click)="chipTap.emit(chip)">{{ chip.label }}</button>
+                }
+              </div>
+            }
+          } @else {
+            <div class="empty-state">
+              <p class="empty-text">Ask me anything about nutrition!</p>
+            </div>
+          }
         }
       </div>
     </div>
@@ -133,6 +153,17 @@ export class ChatOutputComponent {
 
   /** Whether to use condensed styling */
   condensed = input(false);
+
+  /** Optional EMPTY-STATE seed — a display-only greeting + tappable chips (Help). These
+   *  are NEVER inserted into the message array, so they never reach the API or traces;
+   *  shown only while the conversation is empty. The host owns chip behavior via chipTap
+   *  (and pre-filters chips to the kinds it can handle). */
+  readonly greeting = input<string>('');
+  readonly chips = input<FlowChip[]>([]);
+  /** When true, seed chips are non-interactive (an advance is in flight) — prevents
+   *  double-fires while the walk resolves. */
+  readonly chipsDisabled = input(false);
+  readonly chipTap = output<FlowChip>();
 
   /** Context-aware computed signals */
   contextMessages = computed(() => {

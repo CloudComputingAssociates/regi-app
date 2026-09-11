@@ -28,11 +28,19 @@ export type Food = FoodSchema & {
   // Pick-state metadata — only meaningful when the Food blob is sitting
   // inside a Picks basket. `pickAddedAt` is the ISO timestamp captured when
   // the food was first dropped into the basket (round-trips via CurrentPicks
-  // for stable ordering across devices). `pickServingSize` is the per-basket
-  // serving override; null means "no override; follow the MyFoods baseline".
+  // for stable ordering across devices). Serving quantity is NOT a pick
+  // property — it lives once in UserFoodPreferences (userServingSize).
   pickAddedAt?: string;
-  pickServingSize?: number | null;
+  // Per-pick meal role (round-trips via CurrentPicks). Drives how the meal
+  // generator uses the pick: PrimaryFood = build the meal around it,
+  // SecondaryFood = supporting, AnyUse = unconstrained (default).
+  mealRole?: MealRole;
+  // When the row was created (on the UserFood wire; absent for curated/USDA
+  // rows). Drives the MyFoods "Newest" sort in the food lookaside.
+  createdAt?: string | null;
 };
+
+export type MealRole = 'AnyUse' | 'PrimaryFood' | 'SecondaryFood';
 export type FoodSearchResponse = GeneratedFoodSearchResponse;
 
 // Extract nested types for standalone use if needed

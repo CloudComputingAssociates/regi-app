@@ -5,6 +5,10 @@ import { Observable, firstValueFrom } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Food, FoodSearchResponse } from '../models/food.model';
+import {
+  ServingGeometryPatchRequest,
+  ServingGeometryPatchResponse,
+} from '../models/serving-geometry.model';
 
 // Raw shape returned by the AllFoods-view endpoints (e.g. /api/lists/{name}/items).
 // Differs from FoodSchema in two ways: the id key is `foodId`, and nutrition
@@ -92,6 +96,40 @@ export class FoodsService {
     return this.http.get<FoodSearchResponse>(url);
   }
 
+  /** PATCH /api/foods/serving-geometry — set/teach a food's portion geometry
+   *  (unit + grams-per-unit + optional default quantity). A system food is
+   *  CLONED to a UserFood first (response.cloned=true, userFoodId is the clone),
+   *  a userfood is edited in place. Used by the Add-Food panel to ratify units. */
+  patchServingGeometry(
+    body: ServingGeometryPatchRequest,
+  ): Observable<ServingGeometryPatchResponse> {
+    return this.http.patch<ServingGeometryPatchResponse>(
+      `${this.baseUrl}/foods/serving-geometry`,
+      body,
+    );
+  }
+
+  /** Kick off async AI image generation for a food. POST /foods/{id}/generate-image
+   *  → 202 (regi-api emits the generation request; regi-image writes foodImage /
+   *  foodImageThumbnail back later). Mirrors the meal generate-image contract; the
+   *  caller polls the food until the image URL appears. NOTE: pending on regi-api —
+   *  404s until that endpoint deploys. */
+  generateFoodImage(foodId: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/foods/${foodId}/generate-image`, null);
+  }
+
+  /** Fetch a single canonical Food (Foods table) by id via GET /api/foods/{id}.
+   *  This endpoint returns the nested FoodSchema shape directly (unlike the
+   *  AllFoods-view endpoints, which return flat AllFoodRow), so no remap is
+   *  needed — just stamp the foodSource discriminator. Used to resolve a meal
+   *  item's full Food (per-100g values) when it isn't in the user's
+   *  allowed-foods set (e.g. a generated-meal item that was never favorited). */
+  getFoodById(id: number): Observable<Food> {
+    return this.http.get<Food>(`${this.baseUrl}/foods/${id}`).pipe(
+      map((food) => ({ ...food, foodSource: 'food' as const })),
+    );
+  }
+
   // All curated lists (for the dropdown). Optional foodId adds an `assigned`
   // flag per list — not needed here, used by the detail-panel work.
   getLists(foodId?: number, foodSource: string = 'food'): Observable<{ lists: FoodList[]; count: number }> {
@@ -126,6 +164,7 @@ export class FoodsService {
       id: row.foodId,
       description: row.description,
       shortDescription: row.shortDescription,
+      categoryId: row.categoryId,
       categoryName: row.categoryName,
       foodRequestType: 'unknown',
       foodSource: row.foodSource === 'userfood' ? 'userfood' : 'food',

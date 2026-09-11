@@ -2,36 +2,91 @@
 
 // Pinned row: never shrink, never absorb the vertical scroll.
 :host {
+  position: relative; // anchors the dead-center watermark
   display: block;
   flex-shrink: 0;
 }
 
 .strip {
+  position: relative;
+  z-index: 1; // cards sit above the watermark (which may show through / be covered)
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 20px;
-  border-bottom: 1px solid #4a4a4a;
-  overflow-x: auto;
+  gap: 8px;
+  padding: 1px 6px 4px 4px; // flush left; a touch of room below the selected card's blue border
+  border-bottom: none; // no divider — the blue line got lost in the ruled paper
 }
 
+// The cards themselves are the horizontal scroller now (the tall < / > bars flank
+// it and drive the scroll); cards keep their min-width so they overflow and scroll.
 .cards {
   display: flex;
   align-items: stretch;
   gap: 12px;
   flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  // Scrollbar hidden — the < / > bars are the only scroll affordance now. The
+  // component animates scrollLeft itself, so no native scroll-behavior here.
+  scrollbar-width: none;          // Firefox
+  -ms-overflow-style: none;       // old Edge/IE
+  &::-webkit-scrollbar { display: none; } // Chrome/Safari
+}
+
+// Tall left/right nav bars — full strip height ("long"), a chevron centered.
+.strip-nav {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  padding: 0;
+  color: #cfcfcf;
+  background: linear-gradient(180deg, #4d4d4d 0%, #3a3a3a 100%);
+  border: 1px solid #262626;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
+
+  .mat-icon { width: 22px; height: 22px; font-size: 22px; line-height: 22px; }
+  &:hover { background: linear-gradient(180deg, #5a5a5a 0%, #464646 100%); color: #ffffff; }
+  &:active { transform: translateY(1px); }
+}
+
+.area-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0; // behind the cards; tiles may cover it
+  font-family: 'Fredoka', sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  text-transform: lowercase;
+  color: #55585c;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .menu-card {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 120px;
-  padding: 10px 14px;
+  justify-content: center; // vertically center the row in the taller card
+  // Responsive: cards SHARE the strip width and shrink as more days are planned
+  // (e.g. 7 menus), down to a usable floor, then the < / > bars scroll the overflow.
+  flex: 1 1 210px;
+  min-width: 180px; // stays usable — "Menu" label + name box + keys
+  max-width: 260px; // don't over-grow when only a few
+  min-height: 42px; // 3/4 of the taller drop-target height — roomy but not huge
+  padding: 7px 8px;
   border: 2px solid #4a4a4a;
   border-radius: 8px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
+  background: #3a3a3a; // match the macro bar shade for a uniform card family
   color: #f1f1f1;
   text-align: left;
   cursor: pointer;
@@ -39,122 +94,327 @@
 
   &:hover {
     border-color: #6a6f75;
-
-    .menu-delete {
-      opacity: 1;
-    }
   }
 
   &.selected {
     border-color: #4da6ff;
   }
 
-  .menu-name {
-    font-size: 14px;
-    font-weight: 600;
-  }
-
-  .menu-days {
+  // Single centered row: [Menu label][name box (grows)][clear][save].
+  .card-top {
     display: flex;
     align-items: center;
     gap: 6px;
+  }
 
-    .days-value {
-      font-size: 12px;
-      color: #9aa0a6;
-      min-width: 46px;
-      text-align: center;
-    }
+  // Blue "Menu" caption leading the row.
+  .menu-label {
+    flex: 0 0 auto;
+    font-size: 14px; // uniform readable size (matches meal names)
+    font-weight: 600;
+    color: #4da6ff;
+  }
 
-    .days-step {
-      width: 18px;
-      height: 18px;
-      padding: 0;
-      border: 1px solid #4a4a4a;
-      border-radius: 4px;
-      background: #2a2a2a;
-      color: #d8d8d8;
-      font-size: 13px;
-      line-height: 1;
-      cursor: pointer;
-
-      &:hover:not(:disabled) {
-        border-color: #4da6ff;
-        color: #4da6ff;
-      }
-
-      &:disabled {
-        opacity: 0.4;
-        cursor: default;
-      }
+  // Name box — a clearly-visible WHITE field (dark ink) so the typed name reads
+  // sharp on the dark card. Grows to fill the row. Slim padding/size to keep the
+  // card's original single-row height.
+  .menu-name-box {
+    flex: 1 1 auto;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 4px 8px 4px 6px; // same as the meal name box
+    font-family: inherit;
+    font-size: 14px;
+    color: #f0f0f0; // white text — reversed out on grey
+    background: #3a3a3a; // the macros grey
+    border: 1px solid #1c1c1c;
+    border-top-color: #4a4a4a;
+    border-radius: 6px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7); // obvious inset shading
+    outline: none;
+    cursor: text;
+    &::selection { background: rgba(77, 166, 255, 0.4); }
+    &:focus {
+      border-color: #4da6ff;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(77, 166, 255, 0.4);
     }
   }
-}
 
-// Trash sits in the tile's top-right, revealed on hover.
-.menu-delete {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: #9aa0a6;
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.12s ease, color 0.12s ease;
+  // Save + Clear — the same raised DOMED key family as the board toolbar keys
+  // (wipe / close): square, grey top-lit gradient, rim + inner highlight, drop
+  // shadow, radius 5. Check (save) leads; Clear follows.
+  .menu-save,
+  .menu-save-original,
+  .menu-clear {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    color: #ffffff; // white trash-can glyph
+    background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+    border: 1px solid #262626;
+    border-top-color: #7d7d7d;
+    border-radius: 5px;
+    box-shadow:
+      0 2px 3px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
 
-  &:hover {
-    color: #ef5350;
+    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+    &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
+    &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45); }
   }
+
+  // Save — the domed key turns GREEN (still domed) when active; inert when disabled.
+  .menu-save {
+    &.active {
+      color: #ffffff;
+      background: linear-gradient(180deg, #34d651 0%, #23b23a 100%);
+      border-color: #1f7a2e;
+      border-top-color: #57e06e;
+      &:hover { background: linear-gradient(180deg, #3fe05b 0%, #28c941 100%); }
+    }
+    &:disabled { opacity: 0.45; cursor: default; }
+  }
+
+  // Chevron that reveals/hides the macro line — sits on the title row's far right.
+  .card-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #9aa0a6;
+    cursor: pointer;
+
+    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+    &:hover { color: #ffffff; }
+  }
+
+  // Rename box — the flexing middle of the top strip. Flex row so the commit
+  // disc sits just OUTSIDE the box.
+  .name-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  // CR-LF (enter) arrow — a round disc just OUTSIDE the box, styled like the other
+  // discs (same raised .icon-disc chrome) so it reads as one of the family. GREY
+  // raised at rest; standard confirm-green (.active) while the title is edited.
+  .name-commit {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid #262626;
+    border-top-color: #6a6a6a;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #4d4d4d 0%, #3a3a3a 100%);
+    color: #cfcfcf;
+    cursor: pointer;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    transition: background 0.12s ease, color 0.12s ease;
+
+    &:hover { color: #ffffff; }
+
+    &.active {
+      border-color: #1f7a2e;
+      background: #28c941;
+      color: #ffffff;
+      &:hover { background: #23b23a; }
+    }
+
+    .mat-icon {
+      width: 14px;
+      height: 14px;
+      font-size: 14px;
+      line-height: 14px;
+    }
+  }
+
 }
 
-// Live "+ Add menu" — dashed area, white clickable text.
+// Menu discs use the shared raised .icon-disc chrome. Pin leads the top strip
+// (lined-sheet icon; yellow when pinned via .icon-disc-pinned); the Copy + trash
+// discs are grouped in the foot (.foot-actions carries margin-left:auto).
+
+// "Save me" nudge on the green check — a brief pulse fired only when the menu is
+// RENAMED while still unsaved, inviting the user to commit it to the Binder.
+.menu-save.save-hint {
+  animation: menu-save-pulse 1s ease-in-out infinite;
+}
+
+@keyframes menu-save-pulse {
+  0%, 100% { transform: scale(1); filter: none; }
+  50% { transform: scale(1.22); filter: drop-shadow(0 0 5px rgba(40, 201, 65, 0.9)); }
+}
+
+// Live "+ Add menu" — dashed area, white clickable text; also a drop target for
+// a Binder menu dragged from the rail.
 .add-menu-link {
-  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  // SAME responsive sizing as a menu card (so the drop zone matches Day 1's box).
+  flex: 1 1 210px;
+  min-width: 180px;
+  max-width: 260px;
+  // Taller than a menu card — the empty menus strip (just this drop zone, before any
+  // menu is added) read too skinny. The whole strip stretches to this height.
+  min-height: 64px;
+  box-sizing: border-box;
   border: 2px dashed #5a5a5a;
   border-radius: 8px;
   background: transparent;
-  color: #f1f1f1;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.12s ease, color 0.12s ease;
+  color: #4da6ff; // blue label — matches the meal drag-area instructions
+  font-size: 13px; // smaller
+  font-weight: 400; // not bold
+  cursor: default; // the tile itself isn't clickable — only its inline links / drop
+  transition: border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
 
-  &:hover {
-    border-color: #4da6ff;
+  // Two-line prompt — SAME type vocabulary as an empty meal slot: a blue 14/600
+  // action over a grey 13/400 hint, with the meal-slot's line gap. One family, one
+  // grey, one blue — nothing else.
+  .add-menu-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px; // tight inter-line — the tile's vertical centering gives the space above/below
+    text-align: center;
+    padding: 4px 10px;
+    line-height: 1.3;
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  // Both lines are the SAME 13px (the smaller one). "+ Add menu" is a blue label;
+  // the hint is grey with two inline blue links ("click here" · "Menu").
+  .add-menu-main { font-size: 13px; font-weight: 600; }
+  .add-menu-sub { font-size: 13px; font-weight: 400; color: #9aa0a6; }
+
+  // Inline blue links inside the hint: "+ Add menu" adds a menu; "Menus" opens
+  // the Notebook Menus tab (dbl-click / drag a saved menu from there).
+  .am-link {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
     color: #4da6ff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    &:hover { color: #7fbfff; }
+  }
+
+  // Bloom — solid gold glow ring + faint gold wash; the drop prompt is small,
+  // light, WHITE and two lines.
+  &.bloom {
+    color: #ffffff;
+    background: rgba(255, 213, 79, 0.08);
+    box-shadow:
+      0 0 0 2px #ffd54f,
+      0 0 12px rgba(255, 213, 79, 0.55);
+  }
+
+  // Two-line drop prompt — smaller + lighter than the "+ Add menu" label.
+  .dnd-text {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 300;
+    line-height: 1.25;
   }
 }
 
-.span-badge {
+// The macro line (ONE row), shown only when the card is expanded — orig/copy tag
+// then P/C/F/F chips, all on a single row (cals live up on the name line now).
+.menu-foot {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+}
+
+// Calories sit on the menu (name) line — .name-wrap's flex:1 pushes the trailing
+// cluster (delete · cals · chevron) to the right, so cals reads right-justified
+// just before the expand chevron.
+.menu-cals {
   flex: 0 0 auto;
-  padding: 6px 12px;
-  border: 1px solid #4a4a4a;
-  border-radius: 16px;
-  background: #333;
-  color: #9aa0a6;
-  font-size: 13px;
-  font-weight: 500;
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #4da6ff;
   white-space: nowrap;
+}
 
-  .check {
-    color: #6a6f75;
-  }
+// Duplicate — icon-only disc (shared raised .icon-disc chrome), blue-tinted copy
+// glyph; sits in the top-right corner next to the trash. Greyed when disabled
+// (a copy isn't re-copyable) — never hidden, so the corner layout is stable.
+.menu-copy {
+  flex: 0 0 auto;
 
-  &.complete {
-    color: #f1f1f1;
-
-    .check {
-      color: #41ac17;
-    }
+  .mat-icon { color: #7fbfff; }
+  &:hover:not(:disabled) { color: #ffffff; }
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+    .mat-icon { color: #9aa0a6; }
   }
 }
+
+// orig / copy tag — small pill in the chevron reveal, only rendered when a
+// duplicate exists. Origin reads quiet blue; copy reads neutral grey (matches the
+// meal orig/clone). Thin, clean type (no heavy/uppercase/letter-spacing blur).
+.copy-badge {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 8px;
+  color: #cfe4ff;
+  background: rgba(77, 166, 255, 0.18);
+  border: 1px solid rgba(77, 166, 255, 0.35);
+  white-space: nowrap;
+  user-select: none;
+
+  &.is-copy {
+    color: #cfcfcf;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+// Macro discs — shared by the menu foot line. Same muted palette + P/C/F/F order
+// as the Binder card. Compact so P/C/F/F fit on one row.
+.chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.82);
+
+  &.protein { background: #34781a; }
+  &.carb { background: #a8541a; }
+  &.fat { background: #8a55ab; }
+  &.fiber { background: #5e4021; }
+}
+

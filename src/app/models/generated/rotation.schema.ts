@@ -67,6 +67,10 @@ export interface Rotation {
    * When the rotation was last modified
    */
   updatedAt?: string;
+  /**
+   * Read-only: shopping-list item keys the user has checked off ('have it'), parsed from Rotation.ShoppingProgress. [] when none saved. Written via PUT /api/rotation/{id}/shopping-progress.
+   */
+  shoppingProgress?: string[];
   [k: string]: unknown;
 }
 /**
@@ -96,60 +100,6 @@ export interface CreateRotationRequest {
    * Optional calendar anchor date (YYYY-MM-DD).
    */
   pinDate?: string | null;
-  [k: string]: unknown;
-}
-/**
- * A single slot on a single day that the user wants the generator to skip (eating out)
- *
- * This interface was referenced by `RotationSchema`'s JSON-Schema
- * via the `definition` "DiningOutSlot".
- */
-export interface DiningOutSlot {
-  /**
-   * Zero-based day offset from the rotation startDate (0–9)
-   */
-  dayOffset: number;
-  /**
-   * 1-based slot order within the day's menu (1–10)
-   */
-  slotOrder: number;
-  [k: string]: unknown;
-}
-/**
- * Request body for POST /api/rotation/generate — creates a rotation skeleton AND populates it with AI-generated menus and meals
- *
- * This interface was referenced by `RotationSchema`'s JSON-Schema
- * via the `definition` "GenerateRotationRequest".
- */
-export interface GenerateRotationRequest {
-  /**
-   * Display name for the rotation
-   */
-  name?: string;
-  /**
-   * How many days the rotation covers (2–10)
-   */
-  spanDays: number;
-  /**
-   * Number of people the menus are sized for (1–10). Defaults to 1.
-   */
-  peopleCount?: number;
-  /**
-   * Day of week the user typically starts (e.g. 'Monday'). Optional.
-   */
-  pinDay?: string | null;
-  /**
-   * Optional calendar anchor date (YYYY-MM-DD).
-   */
-  pinDate?: string | null;
-  /**
-   * How much menu variety to aim for: how many distinct menus the rotation should contain (0 = let server pick, up to 5)
-   */
-  distinctMeals?: number;
-  /**
-   * Slots that should be marked dining-out and left unfilled by the generator
-   */
-  diningOutSlots?: DiningOutSlot[];
   [k: string]: unknown;
 }
 /**
@@ -222,6 +172,10 @@ export interface RotationMenuEntry {
    * Denormalized menu name for display
    */
   menuName?: string;
+  /**
+   * Whether the referenced Menu is Pinned (in the Binder)
+   */
+  pinned: boolean;
   /**
    * How many times this Menu appears in the rotation
    */
@@ -296,6 +250,10 @@ export interface RotationDetail {
    * The Menus in this rotation and their consumption counts
    */
   menus: RotationMenuEntry[];
+  /**
+   * Read-only: shopping-list item keys the user has checked off ('have it'), parsed from Rotation.ShoppingProgress. [] when none saved. Written via PUT /api/rotation/{id}/shopping-progress.
+   */
+  shoppingProgress?: string[];
   [k: string]: unknown;
 }
 /**
@@ -370,6 +328,22 @@ export interface MenuMacros {
   [k: string]: unknown;
 }
 /**
+ * One meal stacked in a slot (position 0–3), denormalized for display.
+ *
+ * This interface was referenced by `RotationSchema`'s JSON-Schema
+ * via the `definition` "MenuSlotMeal".
+ */
+export interface MenuSlotMeal {
+  position: number;
+  mealId: number;
+  mealName?: string | null;
+  mealType?: string | null;
+  mealImageThumbnail?: string | null;
+  clonedFromMealId?: number | null;
+  macros?: MenuMacros;
+  [k: string]: unknown;
+}
+/**
  * One slot in a Menu. Slot order maps 1→A, 2→B, … 10→J via SlotOrderToLabel.
  *
  * This interface was referenced by `RotationSchema`'s JSON-Schema
@@ -389,22 +363,44 @@ export interface MenuSlot {
    */
   slotName?: string | null;
   /**
-   * Meal attached to this slot. Null when empty or dining-out.
-   */
-  mealId?: number | null;
-  /**
-   * Denormalized meal name for display. Null when no meal is attached.
-   */
-  mealName?: string | null;
-  /**
-   * Denormalized meal type for display. Null when no meal is attached.
-   */
-  mealType?: string | null;
-  /**
    * True when the user marked this slot as dining out — the slot is intentionally empty
    */
   isDiningOut: boolean;
-  macros?: MenuMacros;
+  /**
+   * Meals stacked in this slot (0–4), ordered by position. Empty when the slot is empty or dining-out.
+   */
+  meals: MenuSlotMeal[];
+  macros?: MenuMacros1;
+  [k: string]: unknown;
+}
+/**
+ * Aggregate macro totals for a menu or a slot
+ */
+export interface MenuMacros1 {
+  /**
+   * Total calories
+   */
+  calories: number;
+  /**
+   * Total protein in grams
+   */
+  proteinG: number;
+  /**
+   * Total carbohydrate in grams
+   */
+  carbG: number;
+  /**
+   * Total fat in grams
+   */
+  fatG: number;
+  /**
+   * Total fiber in grams
+   */
+  fiberG: number;
+  /**
+   * Total sodium in milligrams
+   */
+  sodiumMg: number;
   [k: string]: unknown;
 }
 /**
@@ -439,9 +435,13 @@ export interface Menu {
    */
   isFavorite: boolean;
   /**
-   * True when the user has named or explicitly saved this Menu. Saved Menus appear in the library for reuse across Rotations. False (default) means throwaway — not in pick lists, candidate for cleanup expunge.
+   * Binder flag — 1 = pinned menu (survives rotation teardown; only explicit delete kills it), 0 = disposable
    */
-  isSaved?: boolean;
+  pinned: boolean;
+  /**
+   * Source menu id when this menu is a copy minted by POST /menu/{id}/duplicate (fork-on-place into a rotation); null for originals. Back-pointer the client resolves to offer 'save my slot changes back to the original notebook menu' via PUT /menu/{id}/save-to-original. Mirrors clonedFromMealId on MenuSlotMeal.
+   */
+  clonedFromMenuId?: number | null;
   /**
    * Cached total calories across all slots
    */
@@ -538,23 +538,40 @@ export interface UpdateMenuRequest {
    * New favorite flag
    */
   isFavorite?: boolean;
+  /**
+   * Pin (1) into the Binder or unpin (0). Flipping 0→1 cascades Pinned=1 to every meal the menu's slots reference.
+   */
+  pinned?: boolean;
   [k: string]: unknown;
 }
 /**
- * Request body for POST /api/menu/{id}/slots/{slotOrder}/meal — attaches an existing meal to a slot
+ * Request body for POST /api/menu/{id}/slot/{slotOrder}/meals — appends an existing meal to the slot at the next free position (0–3).
  *
  * This interface was referenced by `RotationSchema`'s JSON-Schema
- * via the `definition` "AssignMealToSlotRequest".
+ * via the `definition` "AddMealToSlotRequest".
  */
-export interface AssignMealToSlotRequest {
+export interface AddMealToSlotRequest {
   /**
-   * 1-based slot order within the menu (1–10)
-   */
-  slotOrder: number;
-  /**
-   * ID of the Meal to attach
+   * ID of the Meal to append to the slot
    */
   mealId: number;
+  [k: string]: unknown;
+}
+/**
+ * 409 body for PUT /api/menu/{id}/save-to-original. Returned when the copy holds one or more disposable (non-pinned/non-Binder) slotted meals, which must not be dragged into the saved original. The client should prompt the user to save those meals into the Binder first, then retry.
+ *
+ * This interface was referenced by `RotationSchema`'s JSON-Schema
+ * via the `definition` "SaveMenuToOriginalConflict".
+ */
+export interface SaveMenuToOriginalConflict {
+  /**
+   * Human-readable conflict reason
+   */
+  error: string;
+  /**
+   * Display names of the copy's slotted meals that are not pinned/Binder meals
+   */
+  unsavedMeals: string[];
   [k: string]: unknown;
 }
 /**
@@ -581,104 +598,5 @@ export interface SetDiningOutRequest {
    * True to mark the slot as dining out; false to clear the flag
    */
   isDiningOut: boolean;
-  [k: string]: unknown;
-}
-/**
- * One line item on a shopping list
- *
- * This interface was referenced by `RotationSchema`'s JSON-Schema
- * via the `definition` "ShoppingItem".
- */
-export interface ShoppingItem {
-  /**
-   * Food name as it should appear on the list
-   */
-  foodName: string;
-  /**
-   * Quantity scaled by rotation peopleCount and meal servings
-   */
-  scaledQuantity: number;
-  /**
-   * Unit of measurement
-   */
-  unit: string;
-  /**
-   * Optional list of meal names that contribute to this quantity
-   */
-  usedInMeals?: string[];
-  /**
-   * Optional list of menu names that contribute to this quantity
-   */
-  usedInMenus?: string[];
-  /**
-   * Optional pre-baked purchase link (e.g., Amazon URL)
-   */
-  productPurchaseLink?: string;
-  /**
-   * True when the item is a pantry staple
-   */
-  isStaple: boolean;
-  /**
-   * True when the item is an untracked freeform entry
-   */
-  isUntracked: boolean;
-  /**
-   * Optional shopper-facing note
-   */
-  note?: string;
-  [k: string]: unknown;
-}
-/**
- * A named grouping of shopping items (e.g., 'Produce', 'Protein')
- *
- * This interface was referenced by `RotationSchema`'s JSON-Schema
- * via the `definition` "ShoppingCategory".
- */
-export interface ShoppingCategory {
-  /**
-   * Display name of the category
-   */
-  categoryName: string;
-  /**
-   * Items in this category
-   */
-  items: ShoppingItem[];
-  [k: string]: unknown;
-}
-/**
- * GET /api/rotation/{id}/shopping-list response
- *
- * This interface was referenced by `RotationSchema`'s JSON-Schema
- * via the `definition` "ShoppingList".
- */
-export interface ShoppingList {
-  /**
-   * ID of the source rotation
-   */
-  rotationId: number;
-  /**
-   * Display name of the source rotation
-   */
-  rotationName: string;
-  /**
-   * People count the quantities were scaled to
-   */
-  peopleCount: number;
-  /**
-   * When the shopping list was generated
-   */
-  generatedAt: string;
-  /**
-   * Tracked items, grouped by category
-   */
-  categories: ShoppingCategory[];
-  /**
-   * Freeform untracked items collected from meals
-   */
-  untrackedItems: ShoppingItem[];
-  /**
-   * Pantry staple items pulled in from user prefs / curated lists
-   */
-  stapleItems: ShoppingItem[];
   [k: string]: unknown;
 }

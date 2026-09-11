@@ -6,19 +6,12 @@
  */
 
 /**
- * Whether the meal is treated as a full meal or a snack
+ * Free-text meal label chosen by the user (e.g. 'meal', 'snack', 'Breakfast', 'Lunch/Dinner'). Used to package MealSets. Trimmed and capped at 40 chars on write; no fixed enum.
  *
  * This interface was referenced by `MealSchema`'s JSON-Schema
  * via the `definition` "MealType".
  */
-export type MealType = "meal" | "snack";
-/**
- * Lifecycle state of a Meal
- *
- * This interface was referenced by `MealSchema`'s JSON-Schema
- * via the `definition` "MealStatus".
- */
-export type MealStatus = "active" | "archived";
+export type MealType = string;
 /**
  * Where a meal item's food record lives. 'food' = Food DB (USDA/brand), 'userfood' = user-owned UserFoods row, 'pending' = looked up on the fly, not yet saved to UserFoods; name is stored for the shopping list, IsTracked is false until resolved
  *
@@ -41,7 +34,7 @@ export interface MealSchema {
   [k: string]: unknown;
 }
 /**
- * A food item within a meal
+ * A meal line: quantity + unit + role + per-item scaled macro totals, plus the FULL resolved food record nested under `food`. `food` is null for pending/unresolved AI items (foodName still carries the display name). The per-item calories/proteinG/… are the amounts for THIS quantity; food.calories/proteinG/… are the food's per-serving baseline.
  *
  * This interface was referenced by `MealSchema`'s JSON-Schema
  * via the `definition` "MealItem".
@@ -52,14 +45,9 @@ export interface MealItem {
    */
   id?: number;
   /**
-   * Reference to the Food row
-   */
-  foodId: number;
-  /**
-   * Denormalized food name for display
+   * Display name — always present. Mirrors food.description when resolved; the AI-proposed name when pending.
    */
   foodName: string;
-  foodSource: FoodSource;
   itemRole: ItemRole;
   /**
    * True when the item contributes to macro totals and shopping list
@@ -73,25 +61,115 @@ export interface MealItem {
    * Unit of measurement (serving, oz, g, etc.)
    */
   unit: string;
+  /**
+   * Per-item scaled calories for this quantity
+   */
   calories?: number;
+  /**
+   * Per-item scaled protein (g) for this quantity
+   */
   proteinG?: number;
+  /**
+   * Per-item scaled fat (g) for this quantity
+   */
   fatG?: number;
+  /**
+   * Per-item scaled carbohydrate (g) for this quantity
+   */
   carbG?: number;
+  /**
+   * Per-item scaled fiber (g) for this quantity
+   */
   fiberG?: number;
+  /**
+   * Per-item scaled sodium (mg) for this quantity
+   */
   sodiumMg?: number;
   /**
    * Display order within the meal
    */
   sortOrder?: number;
-  servingSizeG?: number;
-  servingGramsPerUnit?: number;
-  foodImageThumbnail?: string;
-  shortDescription?: string;
-  categoryName?: string;
+  /**
+   * The complete resolved Food/UserFood record from the AllFoods view; null for pending/unresolved AI items.
+   */
+  food?: MealItemFood | null;
+  [k: string]: unknown;
+}
+/**
+ * The full resolved food record for a meal item, mirroring the AllFoods view (union of Foods + UserFoods with nutrition). Base per-serving values — the meal line scales these by quantity into MealItem's own macro fields.
+ *
+ * This interface was referenced by `MealSchema`'s JSON-Schema
+ * via the `definition` "MealItemFood".
+ */
+export interface MealItemFood {
+  /**
+   * Foods.FoodID or UserFoods.UserFoodID
+   */
+  foodId: number;
+  /**
+   * Which table the food came from
+   */
+  foodSource: "food" | "userfood";
+  /**
+   * Full food description
+   */
+  description: string;
+  /**
+   * Short display name
+   */
+  shortDescription?: string | null;
+  /**
+   * Food category (e.g. Produce, Protein)
+   */
+  categoryName?: string | null;
+  /**
+   * Provenance (e.g. USDA, branded)
+   */
+  dataSource?: string | null;
+  foodImage?: string | null;
+  foodImageThumbnail?: string | null;
+  /**
+   * Baseline serving size (in servingUnit)
+   */
+  servingSize?: number | null;
+  servingUnit?: string | null;
+  servingGramsPerUnit?: number | null;
+  /**
+   * Baseline serving size in grams
+   */
+  servingSizeG?: number | null;
+  /**
+   * Per-serving calories
+   */
+  calories?: number | null;
+  /**
+   * Per-serving protein (g)
+   */
+  proteinG?: number | null;
+  /**
+   * Per-serving fat (g)
+   */
+  fatG?: number | null;
+  /**
+   * Per-serving carbohydrate (g)
+   */
+  carbG?: number | null;
+  /**
+   * Per-serving fiber (g)
+   */
+  fiberG?: number | null;
+  /**
+   * Per-serving sodium (mg)
+   */
+  sodiumMg?: number | null;
   /**
    * Optional pre-baked purchase link (e.g., Amazon URL)
    */
-  productPurchaseLink?: string;
+  productPurchaseLink?: string | null;
+  /**
+   * True for UserFoods rows auto-created during recipe import for an unmatched ingredient line; drives the app's Dynamic Ingredients accordion. False for curated MyFoods / REGI-approved foods.
+   */
+  dynamicIngredient?: boolean;
   [k: string]: unknown;
 }
 /**
@@ -114,15 +192,21 @@ export interface Meal {
    */
   primaryProteinName?: string | null;
   /**
-   * True when this is an admin-curated, REGI-approved meal visible to all users
+   * Binder flag — 1 = in the user's Binder (survives context teardown; only explicit delete kills it), 0 = disposable (dies with its context)
    */
-  isRegiApproved: boolean;
-  isFavorite: boolean;
+  pinned: boolean;
   /**
-   * Throwaway flag — false until the user names/saves the meal
+   * Set once at fork-on-place; immutable after. Divergence from the source is derived as updatedAt > createdAt
    */
-  isSaved: boolean;
-  status: MealStatus;
+  cloned: boolean;
+  /**
+   * Source meal id when this is a fork (fork-on-place/edit); null for originals. Back-pointer the client resolves for the original's recipeLink/image — RecipeLink itself is NOT copied, so one-recipe→one-meal cascade-delete is untouched
+   */
+  clonedFromMealId?: number | null;
+  /**
+   * User rating 1–5, or null
+   */
+  rating?: number | null;
   totalCalories?: number;
   totalProteinG?: number;
   totalFatG?: number;
@@ -131,15 +215,45 @@ export interface Meal {
   totalSodiumMg?: number;
   prepVideoLink?: string;
   recipeLink?: string;
+  /**
+   * Free-text meal notes for recipe AND non-recipe meals. User-editable via PUT /meal/{id} {notes}. Fed into the AI image-generation prompt as a hint (e.g. 'hard-boiled eggs, not sunny-side up') and rendered on the meal-as-recipe PDF.
+   */
+  notes?: string | null;
   mealImage?: string;
   mealImageThumbnail?: string;
   /**
    * How many servings this meal yields
    */
   servings: number;
-  shareCandidate: boolean;
-  shareApproved: boolean;
   items?: MealItem[];
+  /**
+   * Space-joined, lowercased MealItems.foodName values for client-side ingredient search. Populated only on the list (scope=binder/folder) response; empty/absent when the meal has no items or on item-hydrated reads.
+   */
+  ingredientNames?: string;
+  /**
+   * Set this meal was sourced from in a set-filtered list (mealSetIds); absent for caller-owned meals
+   */
+  mealSetId?: number | null;
+  /**
+   * Name of the source meal set; paired with mealSetId
+   */
+  mealSetName?: string | null;
+  /**
+   * The MealSet this meal was materialized from at purchase/grant time; null for non-set meals. Server-owned (stamped by grant materialization). Its presence gates the 'Restore original' affordance and disables clearClonedFrom (use detach instead).
+   */
+  sourceMealSetId?: number | null;
+  /**
+   * Display name of sourceMealSetId, joined through it at query time. Never stored; present only where the read path decorates it (binder list).
+   */
+  sourceMealSetName?: string | null;
+  /**
+   * FK to dbo.CookingMethods; null when unset
+   */
+  cookingMethodId?: number | null;
+  /**
+   * Denormalized cooking-method name for display; joined through cookingMethodId, never stored on the meal
+   */
+  cookingMethodName?: string | null;
   createdAt: string;
   updatedAt: string;
   [k: string]: unknown;
@@ -156,9 +270,7 @@ export interface MealSummary {
   mealSeqNum: number;
   primaryProteinFoodId?: number | null;
   primaryProteinName?: string | null;
-  isRegiApproved: boolean;
-  isFavorite: boolean;
-  status: string;
+  pinned?: boolean;
   totalCalories?: number;
   totalProteinG?: number;
   totalFatG?: number;
@@ -167,7 +279,22 @@ export interface MealSummary {
   totalSodiumMg?: number;
   mealImageThumbnail?: string;
   servings: number;
-  shareCandidate: boolean;
+  /**
+   * Set this meal was sourced from in a set-filtered list; absent for caller-owned meals
+   */
+  mealSetId?: number | null;
+  /**
+   * Name of the source meal set; paired with mealSetId
+   */
+  mealSetName?: string | null;
+  /**
+   * FK to dbo.CookingMethods; null when unset
+   */
+  cookingMethodId?: number | null;
+  /**
+   * Denormalized cooking-method name for display; joined through cookingMethodId, never stored on the meal
+   */
+  cookingMethodName?: string | null;
   userName?: string;
   userEmail?: string;
   createdAt: string;
@@ -181,17 +308,13 @@ export interface MealSummary {
  */
 export interface ListMealsRequest {
   /**
-   * Filter by status
+   * folder = disposable, unplaced meals (Pinned=0, not in any menu); binder = pinned meals (Pinned=1); omitted = current behavior
    */
-  status?: string;
+  scope?: "folder" | "binder";
   /**
-   * Filter to favorites only
+   * CSV in the query string. Union the caller's own meals with meals junctioned into these sets; unentitled set ids are silently dropped
    */
-  isFavorite?: boolean;
-  /**
-   * Include admin-curated YEH meals
-   */
-  includeYeh?: boolean;
+  mealSetIds?: number[];
   /**
    * Max results (default 20, max 100)
    */
@@ -203,7 +326,39 @@ export interface ListMealsRequest {
   [k: string]: unknown;
 }
 /**
- * Request body for POST /api/meal — creates an empty named meal
+ * One constituent food line for the Build-a-Meal manual save path. The server
+ * resolves the food from the AllFoods view by (foodId, foodSource), derives the
+ * display name + item role, and computes all macros from the quantity+unit — the
+ * client sends no name, role, or macro fields.
+ *
+ * This interface was referenced by `MealSchema`'s JSON-Schema
+ * via the `definition` "CreateMealItem".
+ */
+export interface CreateMealItem {
+  /**
+   * Foods.FoodID or UserFoods.UserFoodID, per foodSource
+   */
+  foodId: number;
+  /**
+   * Which table the food lives in
+   */
+  foodSource: "food" | "userfood";
+  /**
+   * Amount of food (must be > 0)
+   */
+  quantity: number;
+  /**
+   * Unit of measurement (serving, oz, g, whole, etc.)
+   */
+  unit: string;
+  [k: string]: unknown;
+}
+/**
+ * Request body for POST /api/meal. With no items it creates an empty named meal
+ * (Pinned=0). With items it is the Build-a-Meal manual save: the server creates
+ * the Meal + MealItems, computes every macro server-side from the foods, and pins
+ * it into the Binder (Pinned=1). All macro fields are server-computed — the
+ * request carries none.
  *
  * This interface was referenced by `MealSchema`'s JSON-Schema
  * via the `definition` "CreateMealRequest".
@@ -214,13 +369,25 @@ export interface CreateMealRequest {
    */
   name: string;
   /**
-   * Whether the meal is treated as a full meal or a snack
+   * Free-text meal label chosen by the user (e.g. 'meal', 'snack', 'Breakfast', 'Lunch/Dinner'). Used to package MealSets. Trimmed and capped at 40 chars on write; no fixed enum.
    */
-  mealType?: "meal" | "snack";
+  mealType?: string;
   /**
-   * How many servings this meal yields (1–100). Defaults to 1.
+   * How many servings this meal yields (1–100). Defaults to 1. Ignored on the Build-a-Meal (items present) path, which is always 1-person truth.
    */
   servings?: number;
+  /**
+   * FK to dbo.CookingMethods; null when unset. Persisted on create.
+   */
+  cookingMethodId?: number | null;
+  /**
+   * Free-text meal notes; persisted on create. Feeds the AI image hint + PDF body.
+   */
+  notes?: string | null;
+  /**
+   * Constituent foods for the Build-a-Meal manual save. When present, the meal is created with these items (macros computed server-side) and pinned into the Binder. Omit/empty for the plain empty-meal create.
+   */
+  items?: CreateMealItem[];
   [k: string]: unknown;
 }
 /**
@@ -240,14 +407,13 @@ export interface UpdateMealRequest {
    */
   servings?: number;
   /**
-   * New favorite flag
+   * Pin (1) into the Binder or unpin (0). Flipping 0→1 applies a Binder name-collision postfix.
    */
-  isFavorite?: boolean;
+  pinned?: boolean;
   /**
-   * Whether the meal is saved to the user's library
+   * User rating 1–5, or null to clear
    */
-  isSaved?: boolean;
-  status?: MealStatus;
+  rating?: number | null;
   /**
    * New prep video URL (empty string clears the link)
    */
@@ -256,6 +422,18 @@ export interface UpdateMealRequest {
    * New recipe URL (empty string clears the link)
    */
   recipeLink?: string;
+  /**
+   * New meal notes (empty string / null clears). Persisted to the meal; also used as an AI image-generation hint and rendered on the meal-as-recipe PDF.
+   */
+  notes?: string | null;
+  /**
+   * Clear-only: when true, sets clonedFromMealId to NULL so a copy pinned AS A NEW binder meal (renamed / from-scratch) becomes independent. Never sets a value — ClonedFromMealID stays server-owned (only DuplicateMeal writes it non-null). No-op when the meal's sourceMealSetId is non-null (a set-materialized meal keeps its lineage for Restore original; use POST /api/meal/{id}/detach to sever a set meal).
+   */
+  clearClonedFrom?: boolean;
+  /**
+   * FK to dbo.CookingMethods. Provide a positive id to set; provide 0 (or a non-positive value) to clear to NULL. Omit to leave unchanged.
+   */
+  cookingMethodId?: number | null;
   [k: string]: unknown;
 }
 /**
@@ -360,7 +538,7 @@ export interface FoodLookupResponse {
    */
   userFoodId?: number | null;
   /**
-   * When found, shape matches MealItem from meal.schema.json (foodId, foodName, foodSource, quantity, unit, plus optional macros)
+   * When found, the resolved food record (shape mirrors MealItemFood: foodId, foodSource, description, nutrition, etc.)
    */
   item?: {
     [k: string]: unknown;
@@ -484,8 +662,12 @@ export interface GenerateMealRequest {
    */
   excludeMeals?: string[];
   /**
-   * Whether the meal is treated as a full meal or a snack
+   * Food names already used in the day's other meals, so the AI varies vegetables and fats instead of repeating them (e.g. avocado in every meal). Meal names alone can't drive this — the model needs the actual foods. Cross-day repetition is fine; only pass the current day's foods.
    */
-  mealType?: "meal" | "snack";
+  excludeFoods?: string[];
+  /**
+   * Free-text meal label chosen by the user (e.g. 'meal', 'snack', 'Breakfast', 'Lunch/Dinner'). Used to package MealSets. Trimmed and capped at 40 chars on write; no fixed enum.
+   */
+  mealType?: string;
   [k: string]: unknown;
 }

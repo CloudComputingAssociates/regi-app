@@ -32,42 +32,41 @@ import { TabService } from '../../services/tab.service';
                present but disabled until dirty so the label reinforces
                what the disc means once it materializes. Both pulse in
                sync when active. -->
-          <div class="dialog-discs">
-            <button
-              type="button"
-              class="settings-save-btn"
-              [class.is-dirty]="preferencesService.hasDirtyGroups()"
-              [disabled]="!preferencesService.hasDirtyGroups()"
-              (click)="onSave()"
-              aria-label="Save settings">
-              Save
-            </button>
-            @if (preferencesService.hasDirtyGroups()) {
-              <button
-                type="button"
-                class="dialog-disc dialog-disc-confirm is-dirty"
-                (click)="onSave()"
-                matTooltip="Save"
-                matTooltipPosition="below"
-                [matTooltipShowDelay]="300"
-                aria-label="Save settings">
-                <mat-icon>check</mat-icon>
-              </button>
-            }
-            <button
-              type="button"
-              class="dialog-disc dialog-disc-cancel"
-              (click)="onClose()"
-              matTooltip="Close"
-              matTooltipPosition="below"
-              [matTooltipShowDelay]="300"
-              aria-label="Close settings">
-              <mat-icon>close</mat-icon>
-            </button>
-          </div>
-
           <div class="settings-header">
             <span class="settings-title">Settings</span>
+            <div class="dialog-discs">
+              <button
+                type="button"
+                class="settings-save-btn"
+                [class.is-dirty]="preferencesService.hasDirtyGroups()"
+                [disabled]="!preferencesService.hasDirtyGroups()"
+                (click)="onApply()"
+                aria-label="Apply settings">
+                Save
+              </button>
+              @if (preferencesService.hasDirtyGroups()) {
+                <button
+                  type="button"
+                  class="dialog-disc dialog-disc-confirm is-dirty"
+                  (click)="onSave()"
+                  matTooltip="Save"
+                  matTooltipPosition="below"
+                  [matTooltipShowDelay]="300"
+                  aria-label="Save settings">
+                  <mat-icon>check</mat-icon>
+                </button>
+              }
+              <button
+                type="button"
+                class="dialog-disc dialog-disc-cancel"
+                (click)="onClose()"
+                matTooltip="Close"
+                matTooltipPosition="below"
+                [matTooltipShowDelay]="300"
+                aria-label="Close settings">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
           </div>
           <div class="settings-body">
             <app-preferences-panel #panel />
@@ -142,10 +141,18 @@ export class SettingsOverlayComponent {
     this.tabService.closeSettings();
   }
 
+  /** Green-check disc: Save AND close the window. */
   async onSave(): Promise<void> {
     if (!this.preferencesService.hasDirtyGroups()) return;
     await this.runSave();
     this.tabService.closeSettings();
+  }
+
+  /** "Save" text button: Apply (persist) but leave the window open — Save
+   *  reads as Apply, not a commit-and-dismiss. Only the green check closes. */
+  async onApply(): Promise<void> {
+    if (!this.preferencesService.hasDirtyGroups()) return;
+    await this.runSave();
   }
 
   private async runSave(): Promise<void> {

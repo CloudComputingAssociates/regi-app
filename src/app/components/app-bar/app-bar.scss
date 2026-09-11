@@ -9,15 +9,123 @@
   z-index: 1000;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   
+  // Logged out: no macros bar / hamburger to bottom-anchor to, so DON'T lift the
+  // RegiMenu title 22px — center it vertically so it lines up with the Login button.
+  .app-bar-content.logged-out {
+    align-items: center;
+    .title-area {
+      align-self: center;
+      padding-bottom: 0;
+    }
+  }
+
+  // Any state WITHOUT banner macros (everything but the menus tab): drop the 22px
+  // lift and center the RegiMenu mark on the hamburger (matches the logged-out rule).
+  // Only the menus tab keeps the lift, to align RegiMenu with the banner macro bars.
+  .app-bar-content.centered-title {
+    align-items: center;
+    .title-area {
+      align-self: center;
+      padding-bottom: 0;
+    }
+  }
+
   .app-bar-content {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    // Left group (RegiMenu + macros) bottom-anchors so extra macro top-padding
+    // pushes the bars DOWN toward the RegiMenu line; RegiMenu is lifted to the
+    // bars' bottom (labels hang below). The right zone opts into its own centering.
+    align-items: flex-end;
+    // Pack left so RegiMenu stays pinned next to the hamburger. The right zone
+    // is pushed over with margin-left:auto — NOT space-between, which would
+    // center the title whenever the macros bar is absent (closed / other tabs).
+    justify-content: flex-start;
     position: relative;
-    padding: 4px 8px 4px 4px;
+    padding: 3px 8px 3px 4px;  // top/bottom trimmed ~25% to reclaim vertical space
     max-width: 100%;
     margin: 0 auto;
-    min-height: 30px;  // Reduced from 60px (50% reduction)
+    min-height: 38px;  // a touch taller so the macros have room to drop down
+  }
+
+  // Macros bar hosted in the banner (menus tab). Pushed toward the right so it sits
+  // in the space before the tether / user name, laying directly on the black banner.
+  // Right zone ≈ the notebook rail (30%), tether + logo right-aligned in it — so
+  // the macros to its left ends at the notebook's left edge.
+  .app-bar-right {
+    flex: 0 0 26%; // a bit wider so the display name has room to grow leftward
+    margin-left: auto; // pin to the far right; keeps title left when macros is absent
+    min-width: 0;
+    display: flex;
+    align-self: center; // center the right zone with the row
+    // CENTER the tether glyph, the "Hi {name}" link, and the avatar together so
+    // they share one midline (their boxes are very different heights).
+    align-items: center;
+    // Everything hugs the far right: [tether] · [name] [avatar]. The tether floats
+    // just left of the name; its own margin-right sets the ~1/3in gap.
+    justify-content: flex-end;
+  }
+
+  .app-bar-macros {
+    flex: 1 1 auto;      // fill from the title to the right zone (notebook edge)
+    min-width: 0;
+    margin-left: 24px;   // small gap after the RegiMenu title
+    margin-right: 12px;
+    align-self: flex-end;  // bottom-anchored: extra top-padding pushes bars down
+
+    // Restyle the macros to lay on black: no component chrome, grey per-bar tracks
+    // so the fill boundary reads against black, darker %/g button.
+    ::ng-deep {
+      .macros-container {
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        // Black lives ABOVE the bars (top padding); ZERO below. The labels + %/g
+        // toggle sit at the block bottom, so the BARS' bottom lands ~one label-height
+        // up — the line RegiMenu is lifted to (below). More top padding = more black
+        // above + a taller banner (the bars stay bottom-anchored).
+        padding-top: 22px;
+        padding-bottom: 2px; // a sliver of black below to balance the top
+        overflow: visible;
+        &::before { display: none; } // drop the sheen / backlight glow
+      }
+      .mat-mdc-card,
+      .mat-mdc-card-content { overflow: visible; }
+      .custom-progress-track { background: #3a3a3a; } // grey track shows on black
+      .macro-row { padding: 3px 8px 0; }    // +1 top / no bottom → nudge down, squeeze bottom black
+    }
+  }
+
+  // Quick-Help "?" — yellow, same font/size as the RegiMenu mark. Vertically
+  // centered by .app-bar-right's align-items:center; margin-right gives a gap
+  // before the tether. flex-shrink:0 so it never collapses when the name is long.
+  .help-q-btn {
+    flex-shrink: 0;
+    align-self: center;
+    background: none;
+    border: none;
+    padding: 0;
+    // Equidistant between the phone and the name: the tether's own 32px right
+    // margin is the left gap; this matches it for the right gap.
+    margin-right: 32px;
+    cursor: pointer;
+    color: #ffd400;
+    font-family: 'Inter', 'Roboto', sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    line-height: 1;
+    transition: color 0.2s ease, transform 0.2s ease;
+
+    &:hover {
+      color: #ffe14d;
+      transform: scale(1.1);
+    }
+
+    &:focus-visible {
+      outline: 2px solid #0066CC;
+      outline-offset: 2px;
+    }
   }
 
   .menu-button-placeholder {
@@ -27,6 +135,7 @@
 
   .menu-button {
     flex-shrink: 0;
+    align-self: center;  // stay centered even though the row bottom-aligns
     color: #ffffff;  // White - clickable
     z-index: 1;  // Keep hamburger above title
 
@@ -46,7 +155,9 @@
   // breathing room. Active panel name renders in the same font and size
   // as the logo (per spec) so it reads as a sibling, not a subtitle.
   .title-area {
-    flex: 1;
+    flex: 0 1 auto; // don't GROW — was flex:1, which ate the space and shoved macros right
+    align-self: flex-end;       // bottom-anchored…
+    padding-bottom: 22px;       // …then lifted to the macro BARS' bottom line (labels hang below)
     display: flex;
     flex-direction: row;
     align-items: baseline;
@@ -86,9 +197,12 @@
     min-width: 0;
   }
 
-  // Profile menu wrapper
+  // Profile menu wrapper — allowed to shrink so the display name can ellipsize
+  // in a tight banner; the avatar inside stays fixed (flex:0 0 auto), so only the
+  // name yields and the circle never leaves the screen.
   app-profile-menu {
-    flex-shrink: 0;
+    flex: 0 1 auto;
+    min-width: 0;
   }
 
   .profile-button {
@@ -97,8 +211,8 @@
     border: none;
     padding: 0;
     cursor: pointer;
-    width: 48px;
-    height: 48px;
+    width: 36px;   // ~25% smaller avatar (was 48px) to match the shorter banner
+    height: 36px;
     border-radius: 50%;
     overflow: hidden;
     transition: all 0.2s ease;

@@ -8,9 +8,17 @@
 .wipe-dialog {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
   padding: 20px 22px;
   color: #f1f1f1;
+}
+
+.wipe-dialog-title {
+  margin: 0;
+  // +1px and non-bold — bold at 15px was rendering slightly blurry.
+  font-size: 16px;
+  font-weight: 400;
+  color: #ffffff;
 }
 
 .wipe-dialog-prompt {
@@ -18,6 +26,15 @@
   font-size: 14px;
   line-height: 1.45;
   color: #f1f1f1;
+}
+
+// Step-9 teach line: emphasized, warm accent so it reads as guidance.
+.wipe-dialog-teach {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #ffcc80;
+  white-space: pre-line; // honor explicit \n breaks in the teach text
 }
 
 .wipe-dialog-actions {

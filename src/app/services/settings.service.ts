@@ -75,7 +75,19 @@ export class SettingsService {
       method: 'PUT',
       body: JSON.stringify(settings)
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) {
+      // Surface the API's error body — a bare status hides WHY it rejected
+      // (e.g. a response-schema validation that fails even though the DB
+      // upsert succeeded, per the Grafana logs).
+      const body = await response.text().catch(() => '');
+      console.error(
+        '[SettingsService] PUT /user/settings failed',
+        response.status,
+        'sent:', settings,
+        'response body:', body,
+      );
+      throw new Error(`HTTP ${response.status}: ${body}`);
+    }
     const saved: AllSettings = await response.json();
     this.allSettingsSignal.set(saved);
     console.log('[SettingsService] Saved all settings:', saved);
@@ -114,6 +126,14 @@ export class SettingsService {
   async saveShoppingStaples(data: ShoppingStaple[]): Promise<ShoppingStaple[]> {
     const saved = await this.saveSettings({ shoppingStaples: data });
     return saved.shoppingStaples || data;
+  }
+
+  /** Flip every shopping staple back to NOT needed (and un-pick) — a fresh trip.
+   *  Used by the Wipe-Menus teardown. No-op when there are no staples. */
+  async resetShoppingStapleNeeds(): Promise<void> {
+    const current = this.allSettings()?.shoppingStaples ?? [];
+    if (current.length === 0) return;
+    await this.saveShoppingStaples(current.map((s) => ({ ...s, needed: false, pickedUp: false })));
   }
 
   async saveGlp1Settings(data: Glp1Settings): Promise<Glp1Settings> {

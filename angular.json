@@ -1,6 +1,9 @@
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
+  "cli": {
+    "packageManager": "npm"
+  },
   "newProjectRoot": "projects",
   "projects": {
     "regi-app": {
@@ -24,10 +27,18 @@
             ],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
+            "allowedCommonJsDependencies": [
+              "qrcode"
+            ],
             "assets": [
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/ngx-extended-pdf-viewer/assets/",
+                "output": "/assets/"
               }
             ],
             "styles": [
@@ -51,7 +62,7 @@
                 {
                   "type": "anyComponentStyle",
                   "maximumWarning": "24kB",
-                  "maximumError": "32kB"
+                  "maximumError": "40kB"
                 }
               ],
               "outputHashing": "all"
@@ -72,7 +83,7 @@
                 {
                   "type": "anyComponentStyle",
                   "maximumWarning": "24kB",
-                  "maximumError": "32kB"
+                  "maximumError": "40kB"
                 }
               ],
               "outputHashing": "all"

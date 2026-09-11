@@ -1,14 +1,56 @@
 // src/app/components/menus-meals/menus-meals.scss
 
-// Block host so the grid lays out and scrolls inside the panel-body region.
+// Flex-column host so the grid sits at the top and the area watermark fills the
+// blank space below it (inside the panel-body region).
 :host {
-  display: block;
+  position: relative; // anchors the dead-center watermark
+  display: flex;
+  flex-direction: column;
+  height: 100%; // fill the panel-body so the grid can size its rows to fit
+  min-height: 0;
 }
 
 .canvas-grid {
+  position: relative;
+  z-index: 1; // meal cards sit above the watermark
+  flex: 1 1 auto;   // FILL the board height so tiles fit vertically (no page scroll)
+  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 14px;
-  padding: 16px 20px;
-  align-content: start;
+  // Responsive WIDTH, capped at 3 COLUMNS (never 4 across): each column's min width
+  // is the larger of 320px and a third of the row, so at most three fit — a 4th tile
+  // wraps to the next row. 320px is the meal DETAIL card's READABLE FLOOR (measured
+  // from the known-good card: the Type dropdown reads "Meal", the "from recipe" caption
+  // and ingredient amounts all fit). A card is NEVER allowed narrower than this — once
+  // the row can't hold N columns at 320px each, the grid DROPS a column and reflows to
+  // the next row (e.g. when the Notebook opens and claims width) rather than shrinking
+  // any card below legibility.
+  grid-template-columns: repeat(auto-fit, minmax(max(320px, calc((100% - 20px) / 3)), 1fr));
+  // FIXED, EQUAL row height so EVERY tile is the same size — an empty slot and a
+  // slot with a photo are identical, and dragging a meal in NEVER resizes the slot
+  // (aspect-ratio + auto rows made a filled tile grow and the others ride up).
+  grid-auto-rows: 300px;
+  gap: 10px;
+  padding: 3px 6px 8px 4px; // flush left; a sliver above the cards so the strip separator shows
+  align-content: start; // pack tiles at the top; don't stretch to fill the board
+}
+
+// Embossed (debossed) area watermark pinned DEAD CENTER of the meal region (fixed
+// — vertically + horizontally centered so it lines up with the "menus" watermark
+// above; the meal tiles simply overlay it as a one-time training cue). Lowercase
+// Fredoka to match the macro-bar labels; sunken gray so it reads as carved in.
+.area-watermark {
+  position: absolute;
+  // Sit in the LOWER third of the board area, not vertically centered.
+  top: 82%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  text-transform: lowercase;
+  color: #55585c;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
+  user-select: none;
+  pointer-events: none;
 }

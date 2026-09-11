@@ -16,14 +16,14 @@ export interface AllSettings {
 // Basket-staged foods picked for the next planning round. Persisted as a JSON
 // array on UserSettings.CurrentPicks. foodId + foodSource is the AllFoods view's
 // composite key (the discriminator decides USDA Foods vs UserFoods). basketKey
-// places the pick into one of the four UI baskets. pickServingSize=null means
-// "no override; follow the MyFoods baseline"; a number is the per-basket
-// override quantity in `food.servingUnit` units.
+// places the pick into one of the four UI baskets. Serving quantity is NOT
+// carried here — it lives once in UserFoodPreferences.ServingSize (the
+// userServingSize override); every surface reads/writes that single record.
 export interface CurrentPick {
   foodId: number;
   foodSource: 'food' | 'userfood';
   basketKey: 'Proteins' | 'Fats' | 'Carbs' | 'Other';
-  pickServingSize: number | null;
+  mealRole?: 'AnyUse' | 'PrimaryFood' | 'SecondaryFood';
   addedAt: string; // ISO 8601
 }
 
@@ -36,11 +36,10 @@ export interface TabSettings {
 // GET/PUT /api/user/settings/regimenu
 export interface RegiMenuSettings {
   mealsPerDay?: number;
-  fastingType?: string;
-  eatingStartTime?: string;
   repeatMeals?: number;
   weekStartDay?: string;
   persons?: number;
+  menuDays?: number;
 }
 
 // GLP-1 dose tier (start / current / maintenance)
@@ -98,7 +97,7 @@ export interface PersonalInfo {
 // Shopping staple item
 export interface ShoppingStaple {
   id: string;
-  category: 'proteins' | 'produce' | 'bulk' | 'dairy' | 'aisles' | 'non_food';
+  category: 'proteins' | 'produce' | 'bulk' | 'dairy' | 'aisles' | 'non_food' | 'fruits';
   item: string;
   qty?: string;
   store?: string;

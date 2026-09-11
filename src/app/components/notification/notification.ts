@@ -1,5 +1,5 @@
 // src/app/components/notification/notification.ts
-import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, computed, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { NotificationService } from '../../services/notification.service';
@@ -20,8 +20,21 @@ import { NotificationService } from '../../services/notification.service';
             @for (line of messageLines(); track $index) {
               <span class="message-line">{{ line }}</span>
             }
+            @if (notification.ingest; as ingest) {
+              <label class="ingest-optout">
+                <input
+                  type="checkbox"
+                  [checked]="dontShowAgain()"
+                  (change)="dontShowAgain.set($any($event.target).checked)" />
+                <span>{{ ingest.checkboxLabel }}</span>
+              </label>
+            }
           </div>
-          @if (isConfirmation()) {
+          @if (notification.ingest; as ingest) {
+            <button class="ingest-ok" (click)="notificationService.ingestOk(dontShowAgain())">
+              {{ ingest.okLabel }}
+            </button>
+          } @else if (isConfirmation()) {
             <div class="confirm-buttons">
               <button class="confirm-btn confirm-ok" (click)="notificationService.confirm()" aria-label="Proceed">
                 <mat-icon>check</mat-icon>
@@ -43,6 +56,19 @@ import { NotificationService } from '../../services/notification.service';
 })
 export class NotificationComponent {
   notificationService = inject(NotificationService);
+
+  /** Local checkbox state for the ingest toast. Reset to false each time a fresh
+   *  ingest toast appears so a prior "checked" never carries over. */
+  readonly dontShowAgain = signal(false);
+
+  constructor() {
+    effect(
+      () => {
+        if (this.notificationService.notification()?.ingest) this.dontShowAgain.set(false);
+      },
+      { allowSignalWrites: true },
+    );
+  }
 
   isConfirmation = computed(() => {
     const n = this.notificationService.notification();

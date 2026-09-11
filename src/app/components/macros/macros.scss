@@ -11,6 +11,38 @@
   border: 1px solid #4a4a4a;
   position: relative;
 
+  // Backlit "screen" glow: a soft INNER luminance (like a TV's ambient backlight)
+  // rather than a surrounding bloom, so the macro bar reads as gently self-lit.
+  box-shadow:
+    inset 0 0 26px rgba(70, 120, 150, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 14px rgba(70, 120, 150, 0.14);
+
+  // Faint iridescent sheen — a low-opacity teal→indigo→magenta wash on `screen`
+  // blend gives an oil-slick shimmer WITHOUT reading as a rainbow. pointer-events
+  // none so it never blocks a click.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      115deg,
+      rgba(56, 132, 148, 0.12) 0%,
+      rgba(78, 96, 160, 0.07) 45%,
+      rgba(140, 84, 150, 0.1) 100%
+    );
+    mix-blend-mode: screen;
+  }
+
+  // Keep the actual content above the sheen.
+  .indicators-card,
+  .macro-row {
+    position: relative;
+    z-index: 1;
+  }
+
   .indicators-card {
     padding: 0 !important;
     margin: 0;
@@ -37,7 +69,7 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 10px 12px 8px 16px;
+    padding: 13px 12px 6px 16px;  // more TOP room so the sliders read freely
     width: 100%;
     box-sizing: border-box;
   }
@@ -54,7 +86,7 @@
 
       .custom-progress-track {
         width: 100%;
-        height: 25px;
+        height: 19px;  // ~25% shorter bars (was 25px)
         background-color: #2a2a2a;
         border-radius: 8px;
         overflow: hidden;
@@ -76,7 +108,7 @@
           overflow: hidden;
 
           .bar-value {
-            font-size: 14px;
+            font-size: 11px;
             font-weight: 500;
             color: #ffffff;
             line-height: 1;
@@ -89,7 +121,7 @@
           left: 50%;
           top: 50%;
           transform: translate(-50%, -50%);
-          font-size: 14px;
+          font-size: 11px;
           font-weight: 500;
           color: #ffffff;
           line-height: 1;
@@ -104,12 +136,13 @@
         justify-content: flex-start;
         width: 100%;
         margin-top: 1px;
-        min-height: 25px;
+        min-height: 19px;
       }
 
       .bar-label {
-        font-family: 'Fredoka', sans-serif;
-        font-size: 20px;
+        // Uniform with the rest of the board (Meal Slot titles, etc.) — was Fredoka.
+        font-family: Roboto, 'Helvetica Neue', sans-serif;
+        font-size: 16px; // one size up (line-height:1 keeps the row from growing)
         font-weight: 500;
         line-height: 1;
         white-space: nowrap;
@@ -117,36 +150,106 @@
         text-align: left;
         text-transform: lowercase;
       }
+
+      // Rolled-up menu total calories — an inset read-only box that sits just
+      // left of the %/g pill and is vertically centered with it (same height,
+      // dropped to the bottom). Nudged left for a little more breathing room.
+      .menu-cals {
+        position: absolute;
+        bottom: 3px;
+        right: 64px;
+        height: 19px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        padding: 0 8px;
+        font-size: 13px;
+        color: #4da6ff;
+        white-space: nowrap;
+        background: #2f2f2f;
+        border: 1px solid #1c1c1c;
+        border-radius: 4px;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+      }
     }
   }
 
-  .mode-toggle-container {
+  // Total-cals pill — centered horizontally on the macros area (relative to
+  // .macro-row, which spans the full width), dropped into the dark band. Sits in
+  // the carbs↔fats gap, just LEFT of the fats label so it never overlays it.
+  // DARKER grey since calories rank below macros.
+  .macro-cals {
     position: absolute;
     bottom: 3px;
-    right: 3px;
-    display: flex;
+    left: 42%; // LEFT of center, in the carbs↔fats gap — clears the fats label
+    transform: translateX(-50%);
+    display: inline-flex;
     align-items: center;
+    justify-content: center; // centre the cals text
+    text-align: center;
+    // Same grey pill as the meal-card cals (.slot-cals): #999999, 11px, pill.
+    font-size: 11px;
+    color: #ffffff;
+    background: #999999;
+    padding: 1px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+    z-index: 3;
+  }
+
+  .mode-toggle-container {
+    // Inline flex item at the END of the macro row (after fiber). Stacks as a
+    // column so the Build-a-Meal cals pill sits ABOVE the g/% toggle, both
+    // left-aligned; DROPPED to the bottom so the toggle still bottom-aligns with
+    // the fats/fiber labels.
+    flex: 0 0 auto;
+    align-self: flex-end;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+
+    // Running-calorie pill (Foods/Build-a-Meal) — grey rounded pill, left-aligned
+    // above the toggle. Same lighter-grey treatment as the meal-card cals pill.
+    .macro-cals-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      font-size: 11px;
+      line-height: 1;
+      color: #ffffff;
+      background: #999999;
+      border-radius: 999px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45);
+      white-space: nowrap;
+    }
 
     .unit-toggle {
       display: flex;
       align-items: center;
-      height: 25px;
-      border-radius: 13px;
-      border: 1px solid #333333;
+      height: 19px;
+      border-radius: 10px;
+      border: 1px solid #2a2a2a;
+      border-top-color: #6a6a6a; // lighter rim = RAISED
       padding: 0;
       cursor: pointer;
-      background: #999999;
+      // Accent RED (the %/g "% background" color) — the ONE control we colour
+      // over grey, because macros rank above calories. Raised/domed, not inset.
+      background: linear-gradient(180deg, #9e1229 0%, #740415 100%);
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
       position: relative;
-      width: 50px;
+      width: 40px; // shrunk — the %/g switch was wider than it needed to be
       outline: none;
       transition: background 0.2s ease;
 
       &:hover {
-        background: #aaaaaa;
+        background: linear-gradient(180deg, #b01a33 0%, #82101f 100%);
       }
 
       &:active {
-        background: #888888;
+        background: linear-gradient(180deg, #7a0f22 0%, #5e0313 100%);
       }
 
       .unit-label {
@@ -168,18 +271,18 @@
 
       .unit-thumb {
         position: absolute;
-        width: 23px;
-        height: 23px;
+        width: 17px;
+        height: 17px;
         border-radius: 50%;
-        background: #83051a;
-        border: 1px solid #333333;
+        background: #f2f2f2; // light knob — reads against the red track
+        border: 1px solid #5a0410;
         left: 0;
         top: 0;
         transition: left 0.2s ease;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 
         &.right {
-          left: 25px;
+          left: 21px; // flush-right in the 40px-wide toggle (was 31px at 50px)
         }
       }
     }

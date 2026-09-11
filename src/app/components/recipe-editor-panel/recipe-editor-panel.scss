@@ -1,0 +1,232 @@
+.rep-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.rep-panel {
+  width: 100%;
+  max-width: 1180px;
+  display: flex;
+  flex-direction: column;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  color: #f0f0f0;
+  overflow: hidden;
+}
+
+/* ---- Header ---- */
+.rep-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #3a3a3a;
+  background: #232323;
+
+  .rep-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 17px;
+    font-weight: 600;
+    color: #4da6ff;
+    mat-icon { color: #4da6ff; }
+  }
+  .rep-mylink { margin-left: auto; color: #8ec5ff; font-size: 13px; cursor: pointer; text-decoration: underline; }
+  .rep-close {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; padding: 0; color: #c9c9c9; background: none; border: none; cursor: pointer;
+    &:hover { color: #ffffff; }
+  }
+}
+
+.rep-badge {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;
+  padding: 2px 6px; border-radius: 6px; border: 1px solid transparent;
+  &.regi { color: #e6d3ff; background: rgba(170,120,255,0.16); border-color: rgba(170,120,255,0.4); }
+}
+
+/* ---- Body: two columns — form/ingredients (left) + docked food search (right) ---- */
+.rep-body { display: flex; min-height: 0; flex: 1 1 auto; }
+.rep-main { flex: 1 1 auto; min-width: 0; padding: 14px 16px; overflow-y: auto; }
+.rep-dock {
+  flex: 0 0 340px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid #3a3a3a;
+  background: #262626;
+
+  // Keep the host a flex column (its :host sets display:flex) so the inner
+  // .lookaside can take height and .pane-body (min-height:0; overflow-y:auto)
+  // scrolls. Overriding display to block was what killed the scroll here.
+  app-food-lookaside { flex: 1 1 auto; min-height: 0; }
+}
+/* Collapsed dock — a slim vertical rail that reopens the food search. */
+.rep-dock-reopen {
+  flex: 0 0 34px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 12px 0; cursor: pointer;
+  color: #8ec5ff; background: #262626; border: none; border-left: 1px solid #3a3a3a;
+  mat-icon { width: 20px; height: 20px; font-size: 20px; }
+  span { writing-mode: vertical-rl; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
+  &:hover { color: #ffffff; background: #2c2c2c; }
+}
+.rep-dock-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #b9bec4;
+  border-bottom: 1px solid #3a3a3a;
+  mat-icon { width: 16px; height: 16px; font-size: 16px; color: #8ec5ff; }
+}
+
+/* PDF status beside the state chip — server truth only. */
+.rep-pdfstatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  mat-icon { width: 16px; height: 16px; font-size: 16px; }
+  &.ok { color: #b7f5c4; }
+  &.pending { color: #b9bec4; font-weight: 500; font-style: italic; }
+  &.refreshing { color: #8ec5ff; font-weight: 500; }
+}
+.rep-pdf-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 0; font-size: 12px; font-weight: 600; cursor: pointer;
+  color: #b7f5c4; background: none; border: none; text-decoration: none;
+  mat-icon { color: #34d651; }
+  &:hover { color: #ffffff; text-decoration: underline; }
+}
+.rep-pdf-sep { color: #6a6f75; }
+.rep-pdf-refresh {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+  color: #8ec5ff; background: none; border: none; border-radius: 5px;
+  mat-icon { color: #8ec5ff; }
+  &:hover:not(:disabled) { background: rgba(142, 197, 255, 0.14); color: #ffffff; mat-icon { color: #ffffff; } }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+// Spinner text glyph for the "refreshing…" state.
+.rep-pdfstatus .spin { animation: rep-spin 0.9s linear infinite; color: #8ec5ff; }
+@keyframes rep-spin { to { transform: rotate(360deg); } }
+
+/* Ingredient bind states */
+.rep-ing.selected { border-color: #4da6ff; box-shadow: 0 0 0 1px #4da6ff; }
+.rep-ing.bound { border-color: #2f7a3a; }
+
+// Left-edge status marker — fixed width so every row's fields align whether or
+// not the ✓ is present.
+.rep-ing-check {
+  flex: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  mat-icon { width: 18px; height: 18px; font-size: 18px; color: #34d651; }
+}
+.rep-ing-btn.clear { color: #e6b3b3; &:hover { background: #5a2d2d; color: #fff; } }
+
+// Amber "needs a food" hint — only on a saved line with text but no food.
+.rep-ing-hint {
+  display: flex; align-items: center; gap: 4px;
+  margin: 5px 0 1px 24px; font-size: 12px; color: #ffd8a8;
+  mat-icon { width: 15px; height: 15px; font-size: 15px; color: #e0916b; }
+}
+
+.rep-field { display: block; margin-bottom: 12px; }
+.rep-row3 { display: flex; gap: 12px; .rep-field { flex: 1 1 0; } }
+.rep-label {
+  display: block; font-size: 12px; font-weight: 600; color: #b9bec4; margin-bottom: 4px;
+  em { color: #ff8a8a; font-style: normal; }
+}
+
+.rep-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #565656 0%, #434343 100%);
+  border: 1px solid #262626;
+  border-top-color: #6f6f6f;
+  border-radius: 6px;
+  outline: none;
+  &::placeholder { color: #9aa0a6; }
+  &:focus { box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.6); }
+}
+.rep-textarea { resize: vertical; white-space: pre-wrap; font-family: inherit; }
+
+.rep-collapse {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 0; background: none; border: none; color: #8ec5ff; font-size: 13px; cursor: pointer;
+}
+.rep-macros {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px;
+  label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #b9bec4; width: 90px; }
+}
+
+/* ---- Ingredients ---- */
+.rep-ings { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rep-ing {
+  background: #333333; border: 1px solid #3f3f3f; border-radius: 8px; padding: 6px;
+}
+.rep-ing-main { display: flex; align-items: center; gap: 6px; }
+.rep-ing-main .amt-qty { flex: 0 0 62px; }
+.rep-ing-main .amt-unit { flex: 0 0 80px; }
+.rep-ing-main .amt-name { flex: 1 1 auto; min-width: 0; }
+.rep-ing-main .note { flex: 0 0 128px; }
+.rep-ing-btn.cam { color: #ffd8a8; &:hover { background: #4a4436; } }
+.rep-display-as { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #b9bec4; flex: 1 1 220px; min-width: 0;
+  .rep-input { width: 100%; } }
+.rep-ing-btn, .rep-add-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0; border: 1px solid #4a4a4a; border-radius: 5px; background: #555; color: #e0e0e0; cursor: pointer;
+  mat-icon { width: 18px; height: 18px; font-size: 18px; }
+}
+.rep-ing-btn { width: 28px; height: 28px; flex: 0 0 auto; &.del:hover { background: #7a2d2d; } &:disabled { opacity: 0.4; cursor: default; } }
+.rep-ing-num { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; padding-left: 2px;
+  label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #b9bec4; flex: 1 1 220px; min-width: 0; } }
+
+// Add row mirrors the real row's grid exactly (identical child widths).
+.rep-ing-add { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.rep-ing-add .amt-qty { flex: 0 0 62px; }
+.rep-ing-add .amt-unit { flex: 0 0 80px; }
+.rep-ing-add .amt-name { flex: 1 1 auto; min-width: 0; }
+.rep-ing-add .note { flex: 0 0 128px; }
+.rep-add-btn { gap: 4px; height: 30px; padding: 0 10px; font-size: 13px; background: linear-gradient(180deg,#4d4d4d,#3a3a3a);
+  &:disabled { opacity: 0.4; cursor: default; } }
+
+.rep-inline-err { color: #ff9a9a; font-size: 12px; margin: 4px 2px; &.foot { margin: 0; } }
+// Footer "still needs a food" hint — amber, sits left of the button cluster.
+.rep-foot-hint { color: #ffd8a8; font-size: 12px; }
+
+/* ---- Footer ---- */
+.rep-foot {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-top: 1px solid #3a3a3a; background: #232323;
+}
+.rep-foot-btns { margin-left: auto; display: inline-flex; gap: 8px; }
+.rep-btn {
+  padding: 7px 14px; font-size: 13px; font-weight: 500; border-radius: 6px; cursor: pointer;
+  color: #f0f0f0; background: linear-gradient(180deg,#565656,#434343); border: 1px solid #262626; border-top-color: #6f6f6f;
+  &:disabled { opacity: 0.45; cursor: default; }
+  &.primary { color: #fff; background: linear-gradient(180deg,#4da6ff,#2f83db); border-color: #1f6ac0; }
+  &.publish { color: #fff; background: linear-gradient(180deg,#34d651,#23b23a); border-color: #1f7a2e; }
+  &.ghost { background: none; border-color: #4a4a4a; }
+  // Delete — danger, far left, isolated from the primary cluster.
+  &.danger { color: #fff; background: linear-gradient(180deg,#e0625f,#c0433f); border-color: #a5322f;
+    &:hover:not(:disabled) { background: linear-gradient(180deg,#e8726f,#c94a46); } }
+}

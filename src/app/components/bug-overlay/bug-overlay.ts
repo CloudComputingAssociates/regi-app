@@ -50,7 +50,7 @@ import { TabService } from '../../services/tab.service';
             </button>
           </div>
           <div class="bug-header">
-            <span class="bug-title">Bug — Ticket Submission Form</span>
+            <span class="bug-title">{{ kind() === 'suggestion' ? 'Suggestion' : 'Bug' }} — Ticket Submission Form</span>
           </div>
           <div class="bug-body">
             <app-issue-panel #issuePanel />
@@ -65,6 +65,8 @@ export class BugOverlayComponent {
   private tabService = inject(TabService);
 
   isOpen = this.tabService.bugOpen;
+  /** Which entry opened the overlay — drives the title prefix. */
+  kind = this.tabService.bugKind;
 
   onBackdropClick(): void {
     this.tabService.closeBug();

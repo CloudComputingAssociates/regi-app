@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.youeatinghealthy.com/schemas/shopping.schema.json",
+  "title": "Rotation Shopping List Schema",
+  "description": "Consolidated, retail-rounded shopping list computed from a rotation. HAND-MAINTAINED: Go models in models/generated/shopping.schema.go are edited by hand to match (the pinned go-jsonschema rewrites all allowlisted files). ShoppingStaple lives in settings.schema.json.",
+  "type": "object",
+  "definitions": {
+    "ShoppingListItem": {
+      "type": "object",
+      "properties": {
+        "name":        { "type": "string" },
+        "quantity":    { "type": "number" },
+        "unit":        { "type": "string" },
+        "sourceCount": { "type": "integer", "description": "How many meal lines rolled into this row" },
+        "foodId":      { "type": ["integer", "null"] },
+        "foodSource":  { "type": ["string", "null"], "enum": ["food", "userfood", null] }
+      },
+      "required": ["name", "quantity", "unit"],
+      "additionalProperties": false
+    },
+    "ShoppingListCategory": {
+      "type": "object",
+      "properties": {
+        "category": { "type": "string", "enum": ["proteins", "produce", "fruits", "dairy", "bulk", "aisles"] },
+        "items":    { "type": "array", "items": { "$ref": "#/definitions/ShoppingListItem" } }
+      },
+      "required": ["category", "items"],
+      "additionalProperties": false
+    },
+    "ShoppingListResponse": {
+      "type": "object",
+      "properties": {
+        "basis":  { "type": "string", "enum": ["recipe", "scale"] },
+        "factor": { "type": "number", "minimum": 1 },
+        "categories": { "type": "array", "items": { "$ref": "#/definitions/ShoppingListCategory" } }
+      },
+      "required": ["categories"],
+      "additionalProperties": false
+    },
+    "ShoppingListPdfRequest": {
+      "type": "object",
+      "properties": {
+        "basis":   { "type": "string", "enum": ["recipe", "scale"] },
+        "factor":  { "type": "number", "minimum": 1 },
+        "staples": { "type": "array", "items": { "$ref": "#/definitions/ShoppingStaple" } }
+      },
+      "additionalProperties": false
+    },
+    "ShoppingStaple": {
+      "type": "object",
+      "description": "A single shopping staple item. Inlined here (vs. the external $ref the API schema uses to settings.schema.json) so the downstream app copy is self-contained for json2ts. Kept in sync with settings.schema.json#/definitions/ShoppingStaple.",
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string", "enum": ["proteins", "produce", "bulk", "dairy", "aisles", "non_food", "fruits"] },
+        "item": { "type": "string" },
+        "qty": { "type": "string" },
+        "store": { "type": "string" },
+        "needed": { "type": "boolean", "default": true },
+        "pickedUp": { "type": "boolean", "default": false },
+        "sortOrder": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

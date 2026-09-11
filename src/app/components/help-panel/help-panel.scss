@@ -1,0 +1,91 @@
+// src/app/components/help-panel/help-panel.scss
+
+.help-panel-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+// Header bar — same chrome as the Menus & Meals toolbar (44px, flat grey, 1px
+// border, 8px rounding) so Help reads as the same panel family.
+.help-toolbar {
+  flex-shrink: 0;
+  height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  margin: 1px 0 6px;
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+
+  // Title — same blue/weight as the Menus & Meals title.
+  .toolbar-title {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Inter', 'Roboto', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #4da6ff;
+    white-space: nowrap;
+  }
+
+  // Big "?" glyph in front of "Help" — a touch larger than the title so it reads
+  // as the Help mark (parallels the fork/knife icon on Menus & Meals).
+  .help-q {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+    color: #4da6ff;
+  }
+
+  // Push the Clear-all + X cluster to the right.
+  .toolbar-buttons {
+    flex: 0 0 auto;
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+// Clear-all key — same raised-grey chrome as the Menus wipe key.
+.wipe-help-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
+  border-radius: 5px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.05s ease;
+
+  .wipe-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+  &:hover:not(:disabled) { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
+  &:active:not(:disabled) { transform: translateY(1px); }
+  &:disabled { opacity: 0.4; cursor: default; }
+}
+
+// Close X — after the button cluster; left margin separates it from Clear-all.
+.help-close-disc { flex: 0 0 auto; margin-left: 10px; }
+
+// The conversation area fills the rest of the panel.
+app-chat-output {
+  flex: 1;
+  min-height: 0;
+  display: block;
+}

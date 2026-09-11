@@ -57,25 +57,30 @@ export interface MacroDisplayData {
                   </div>
                   <div class="label-row">
                     <span class="bar-label" [style.color]="getLabelColor(macro.name)">{{ macro.name }}</span>
-                    @if ($last) {
-                      <div class="mode-toggle-container">
-                        <button
-                          type="button"
-                          class="unit-toggle"
-                          (click)="toggleDisplayMode()"
-                          matTooltip="Percent/Grams"
-                          matTooltipPosition="above"
-                          [matTooltipShowDelay]="300">
-                          <span class="unit-label left">%</span>
-                          <span class="unit-thumb" [class.right]="!showPercent"></span>
-                          <span class="unit-label right">g</span>
-                        </button>
-                      </div>
-                    }
                   </div>
                 </div>
               </div>
             }
+            <!-- %/g switch — inline AFTER fiber. The calories pill sits ABOVE it,
+                 left-aligned (Menus + Build-a-Meal contexts). -->
+            <div class="mode-toggle-container">
+              @if (showCalsPill()) {
+                <span class="macro-cals-pill">{{ contextCals() }} cals</span>
+              }
+              <button
+                type="button"
+                class="unit-toggle"
+                (click)="toggleDisplayMode()"
+                matTooltip="Click to switch between percent and grams"
+                matTooltipPosition="above"
+                [matTooltipShowDelay]="300">
+                <!-- g/% flipped: the thumb covers the OTHER unit, so the label left
+                     visible is the CURRENT setting (percent → "%", grams → "g"). -->
+                <span class="unit-label left">g</span>
+                <span class="unit-thumb" [class.right]="!showPercent"></span>
+                <span class="unit-label right">%</span>
+              </button>
+            </div>
           </div>
 
         </mat-card-content>
@@ -122,9 +127,9 @@ export class MacrosComponent implements OnInit {
     return {
       macros: [
         { name: 'proteins', actual: 0, target: goals?.protein ?? 0, percentage: 100 },
-        { name: 'fiber', actual: 0, target: goals?.fiber ?? 0, percentage: 100 },
+        { name: 'carbs', actual: 0, target: goals?.carbs ?? 0, percentage: 100 },
         { name: 'fats', actual: 0, target: goals?.fat ?? 0, percentage: 100 },
-        { name: 'carbs', actual: 0, target: goals?.carbs ?? 0, percentage: 100 }
+        { name: 'fiber', actual: 0, target: goals?.fiber ?? 0, percentage: 100 }
       ],
       timePeriod: 'day'
     };
@@ -143,9 +148,9 @@ export class MacrosComponent implements OnInit {
     return {
       macros: [
         { name: 'proteins', actual: Math.round(totals.proteinG), target: targetP, percentage: this.calculatePercentage(totals.proteinG, targetP) },
-        { name: 'fiber', actual: Math.round(totals.fiberG), target: targetFiber, percentage: this.calculatePercentage(totals.fiberG, targetFiber) },
-        { name: 'fats', actual: Math.round(totals.fatG), target: targetF, percentage: this.calculatePercentage(totals.fatG, targetF) },
         { name: 'carbs', actual: Math.round(totals.carbG), target: targetC, percentage: this.calculatePercentage(totals.carbG, targetC) },
+        { name: 'fats', actual: Math.round(totals.fatG), target: targetF, percentage: this.calculatePercentage(totals.fatG, targetF) },
+        { name: 'fiber', actual: Math.round(totals.fiberG), target: targetFiber, percentage: this.calculatePercentage(totals.fiberG, targetFiber) },
       ],
       timePeriod: 'day'
     };
@@ -164,12 +169,28 @@ export class MacrosComponent implements OnInit {
     return {
       macros: [
         { name: 'proteins', actual: Math.round(totals.proteinG), target: targetP, percentage: this.calculatePercentage(totals.proteinG, targetP) },
-        { name: 'fiber', actual: Math.round(totals.fiberG), target: targetFiber, percentage: this.calculatePercentage(totals.fiberG, targetFiber) },
-        { name: 'fats', actual: Math.round(totals.fatG), target: targetF, percentage: this.calculatePercentage(totals.fatG, targetF) },
         { name: 'carbs', actual: Math.round(totals.carbG), target: targetC, percentage: this.calculatePercentage(totals.carbG, targetC) },
+        { name: 'fats', actual: Math.round(totals.fatG), target: targetF, percentage: this.calculatePercentage(totals.fatG, targetF) },
+        { name: 'fiber', actual: Math.round(totals.fiberG), target: targetFiber, percentage: this.calculatePercentage(totals.fiberG, targetFiber) },
       ],
       timePeriod: 'day'
     };
+  });
+
+  /** Calories for the cals pill, which sits ABOVE the g/% toggle inside the
+   *  macros bar (left-aligned): the selected menu's rolled-up total in the Menus
+   *  context, the running basket total in the Build-a-Meal (Foods) context. */
+  readonly contextCals = computed<number>(() => {
+    const ctx = this.context();
+    if (ctx === 'menu') return Math.round(this.rotationService.selectedMenuTotals().calories);
+    if (ctx === 'foods') return Math.round(this.thisWeekMacros.totals().calories);
+    return 0;
+  });
+
+  /** The cals pill shows in the Menus and Build-a-Meal (Foods) contexts only. */
+  readonly showCalsPill = computed<boolean>(() => {
+    const ctx = this.context();
+    return ctx === 'menu' || ctx === 'foods';
   });
 
   // Signal for subscription-based display data (non-preferences contexts)
@@ -180,9 +201,9 @@ export class MacrosComponent implements OnInit {
   private static readonly ZERO_MACROS: MacroDisplayData = {
     macros: [
       { name: 'proteins', actual: 0, target: 0, percentage: 0 },
-      { name: 'fiber', actual: 0, target: 0, percentage: 0 },
+      { name: 'carbs', actual: 0, target: 0, percentage: 0 },
       { name: 'fats', actual: 0, target: 0, percentage: 0 },
-      { name: 'carbs', actual: 0, target: 0, percentage: 0 }
+      { name: 'fiber', actual: 0, target: 0, percentage: 0 }
     ],
     timePeriod: 'day'
   };
@@ -218,10 +239,10 @@ export class MacrosComponent implements OnInit {
         percentage: this.calculatePercentage(data.nutrients.protein['actual-day'], data.nutrients.protein['target-grams'])
       },
       {
-        name: 'fiber',
-        actual: data.nutrients.fiber['actual-day'],
-        target: data.nutrients.fiber['target-grams'],
-        percentage: this.calculatePercentage(data.nutrients.fiber['actual-day'], data.nutrients.fiber['target-grams'])
+        name: 'carbs',
+        actual: data.nutrients.carb['actual-day'],
+        target: data.nutrients.carb['target-grams'],
+        percentage: this.calculatePercentage(data.nutrients.carb['actual-day'], data.nutrients.carb['target-grams'])
       },
       {
         name: 'fats',
@@ -230,10 +251,10 @@ export class MacrosComponent implements OnInit {
         percentage: this.calculatePercentage(data.nutrients.fat['actual-day'], data.nutrients.fat['target-grams'])
       },
       {
-        name: 'carbs',
-        actual: data.nutrients.carb['actual-day'],
-        target: data.nutrients.carb['target-grams'],
-        percentage: this.calculatePercentage(data.nutrients.carb['actual-day'], data.nutrients.carb['target-grams'])
+        name: 'fiber',
+        actual: data.nutrients.fiber['actual-day'],
+        target: data.nutrients.fiber['target-grams'],
+        percentage: this.calculatePercentage(data.nutrients.fiber['actual-day'], data.nutrients.fiber['target-grams'])
       }
     ];
 
@@ -285,9 +306,9 @@ export class MacrosComponent implements OnInit {
   getMacroColor(macroName: string): string {
     switch (macroName) {
       case 'proteins': return '#41ac17';
-      case 'fiber':    return '#e67300';
+      case 'carbs':    return '#e67300'; // orange (people think protein/carbs/fats first)
       case 'fats':     return '#902ee3';
-      case 'carbs':    return '#b3261e';
+      case 'fiber':    return '#795227'; // brown — fiber sits last
       default:         return '#5a62b3';
     }
   }
@@ -303,9 +324,9 @@ export class MacrosComponent implements OnInit {
   getLabelColor(macroName: string): string {
     switch (macroName) {
       case 'proteins': return '#41ac17';
-      case 'fiber':    return '#ffb347';
+      case 'carbs':    return '#ff9838'; // brighter orange
       case 'fats':     return '#c060ff';
-      case 'carbs':    return '#e85a4a';
+      case 'fiber':    return '#c79a6a'; // lighter brown, legible on dark
       default:         return '#5a62b3';
     }
   }

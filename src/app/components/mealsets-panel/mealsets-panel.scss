@@ -1,0 +1,503 @@
+// src/app/components/mealsets-panel/mealsets-panel.scss
+
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.msp {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: #2a2a2a;
+  color: #f1f1f1;
+}
+
+// ---- Header (matches the Menus & Meals toolbar family) ----
+.msp-header {
+  flex-shrink: 0;
+  height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  margin: 1px 6px 6px;
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+}
+
+.msp-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #4da6ff;
+
+  .msp-title-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    line-height: 20px;
+    color: #ffd54f;
+  }
+}
+
+// Header buttons (collapse-all, close) — grey with light glyph.
+.msp-header-tools { display: inline-flex; align-items: center; gap: 8px; }
+.msp-header-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
+  border-radius: 5px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  .mat-icon, mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+  &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #fff; }
+}
+
+// ---- Scrolling body: a responsive column of cards ----
+.msp-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px 14px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.msp-card {
+  background: #333;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+// Whole-card disabled: greyed + inert (title, (i) tooltip and button all dead)
+// until the gate condition clears. pointer-events:none also kills the tooltip.
+.msp-card.msp-disabled {
+  opacity: 0.5;
+  filter: grayscale(0.9);
+  pointer-events: none;
+  user-select: none;
+
+  // Don't double-dim the button — the card already greys everything uniformly.
+  .msp-btn:disabled { opacity: 1; filter: none; }
+}
+
+.msp-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+// The collapse chevron right-aligns by default (Author profile's lone chevron).
+.msp-collapse { margin-left: auto; }
+// Where a "+ New MealSet" action precedes it, the button starts the right cluster
+// (grey/white .msp-btn) and the chevron simply follows it.
+.msp-newset { margin-left: auto; }
+.msp-newset ~ .msp-collapse { margin-left: 0; }
+// Author-profile Save moved into the header: starts the right cluster; the chevron
+// (if present) follows it.
+.msp-profile-save { margin-left: auto; }
+.msp-profile-save ~ .msp-collapse { margin-left: 0; }
+
+.msp-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #4da6ff;
+}
+
+// Collapse/expand chevron on the Author-profile card header.
+.msp-collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: #9aa0a6;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  .mat-icon { width: 20px; height: 20px; font-size: 20px; line-height: 20px; }
+  &:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+}
+
+// One-line summary shown when the Author profile is collapsed.
+.msp-collapsed-summary {
+  font-size: 13px;
+  color: #d8d8d8;
+  font-weight: 500;
+}
+
+// ---- Fields ----
+.msp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.msp-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9aa0a6;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+// "* required" marker on mandatory profile fields.
+.msp-req {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #e0916b;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+// Muted "(optional)" / helper note on a field label.
+.msp-opt {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #7f858b;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+// (i) info bubble — non-interactive hint carrier (tooltip on hover).
+.msp-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #4da6ff;
+  cursor: help;
+  user-select: none;
+}
+
+.msp-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #565656 0%, #434343 100%);
+  border: 1px solid #262626;
+  border-top-color: #6f6f6f;
+  border-radius: 6px;
+  outline: none;
+  &::placeholder { color: #9aa0a6; }
+  &:focus { box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.6); }
+}
+
+.msp-textarea {
+  resize: vertical;
+  min-height: 40px;
+}
+
+// ---- Buttons ----
+.msp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #e8e8e8;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
+  border-radius: 6px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: background 0.12s ease, filter 0.12s ease;
+
+  &:hover:not(:disabled) { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #fff; }
+  // Clearly dimmed when disabled — obviously non-actionable next to the
+  // full-brightness titles/text around it.
+  &:disabled { opacity: 0.32; filter: grayscale(0.6); cursor: not-allowed; }
+
+  // Actionable = white raised button (matches the app's white action buttons).
+  &.primary {
+    color: #1a1a1a;
+    background: linear-gradient(180deg, #ffffff 0%, #e4e4e4 100%);
+    border-color: #b6b6b6;
+    border-top-color: #ffffff;
+    font-weight: 700;
+    &:hover:not(:disabled) { filter: brightness(1.03); background: linear-gradient(180deg, #ffffff 0%, #ededed 100%); }
+  }
+
+  &.small { padding: 3px 8px; font-size: 12px; }
+}
+
+.msp-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+// ---- Deal panel ----
+.msp-deal {
+  border-color: rgba(255, 213, 79, 0.4);
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(255, 213, 79, 0.1), transparent 60%),
+    #333030;
+  .msp-card-title { color: #ffe58a; }
+}
+
+.msp-deal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.msp-deal-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffd54f;
+}
+
+// ---- My Sets list ----
+.msp-set-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.msp-set-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
+  cursor: pointer;
+  transition: border-color 0.12s ease;
+
+  &:hover { border-color: #6a6f75; }
+}
+
+.msp-set-name { flex: 0 0 auto; font-size: 14px; font-weight: 600; color: #f1f1f1; }
+// Genre chip — shared by the MealSet tiles.
+.msp-set-genre {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: #cfe4ff;
+  background: rgba(77, 166, 255, 0.18);
+  border: 1px solid rgba(77, 166, 255, 0.35);
+  border-radius: 8px;
+  padding: 2px 6px;
+}
+.msp-set-flags { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+// ---- My MealSets tiles (promo-photo cards → editor overlay) ----------------
+// A single horizontal row that scrolls left↔right — tiles never wrap or push the
+// region down; new sets extend the scroll, they don't grow the card's height.
+.msp-tiles {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+.msp-tile {
+  flex: 0 0 168px;   // fixed width, no grow/shrink → row scrolls instead of wrapping
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  text-align: left;
+  background: #383838;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  &:hover { border-color: #4da6ff; box-shadow: 0 0 0 1px rgba(77, 166, 255, 0.5); }
+}
+.msp-tile-cover {
+  display: flex; align-items: center; justify-content: center;
+  aspect-ratio: 16 / 10; width: 100%; overflow: hidden;
+  background: #2a2a2a; border: 1px solid #4a4a4a; border-radius: 6px;
+  img { width: 100%; height: 100%; object-fit: cover; }
+  .mat-icon, mat-icon { width: 28px; height: 28px; font-size: 28px; color: #6a6f75; }
+}
+.msp-tile-name { font-size: 14px; font-weight: 600; color: #f1f1f1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msp-tile-genres { display: flex; flex-wrap: wrap; gap: 4px; }
+.msp-tile-flags { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.msp-tile-by { font-size: 11px; color: #9aa0a6; }
+.msp-tile-author {
+  color: #8ec5ff; cursor: pointer; text-decoration: none; font-weight: 600;
+  &:hover { color: #cfe4ff; text-decoration: underline; }
+}
+
+// ---- Author bio bloom ----
+.msp-bio-backdrop {
+  position: fixed; inset: 0; z-index: 1400;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.msp-bio {
+  position: relative;
+  width: 100%; max-width: 380px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 22px 20px 20px;
+  background: #2a2a2a; border: 1px solid #4a4a4a; border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  color: #f0f0f0; text-align: center;
+}
+.msp-bio-close {
+  position: absolute; top: 8px; right: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; padding: 0; color: #c9c9c9; background: none; border: none; cursor: pointer;
+  .mat-icon, mat-icon { width: 18px; height: 18px; font-size: 18px; }
+  &:hover { color: #fff; }
+}
+.msp-bio-pic {
+  width: 96px; height: 96px; border-radius: 50%; object-fit: cover;
+  border: 2px solid #4da6ff; background: #333;
+  &.placeholder {
+    display: inline-flex; align-items: center; justify-content: center;
+    .mat-icon, mat-icon { width: 44px; height: 44px; font-size: 44px; color: #6a6f75; }
+  }
+}
+.msp-bio-name { margin: 2px 0 0; font-size: 18px; font-weight: 700; color: #4da6ff; }
+.msp-bio-text { margin: 0; font-size: 13px; line-height: 1.5; color: #dcdcdc; }
+.msp-bio-cred { margin: 0; font-size: 12px; font-style: italic; color: #9aa0a6; }
+.msp-bio-link {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 4px;
+  padding: 6px 12px; font-size: 13px; font-weight: 600; text-decoration: none;
+  color: #cfe4ff; background: rgba(77, 166, 255, 0.16);
+  border: 1px solid rgba(77, 166, 255, 0.4); border-radius: 8px;
+  img { width: 24px; height: 24px; border-radius: 4px; object-fit: cover; }
+  span { display: inline-flex; align-items: center; gap: 3px; }
+  .mat-icon, mat-icon { width: 15px; height: 15px; font-size: 15px; }
+  &:hover { background: rgba(77, 166, 255, 0.26); color: #fff; }
+}
+
+// Status / price pills. Live = green, Inactive = muted.
+.msp-flag {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 8px;
+  border-radius: 10px;
+  color: #cfcfcf;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  &.on {
+    color: #b6f0b8;
+    background: rgba(65, 172, 23, 0.22);
+    border-color: rgba(65, 172, 23, 0.5);
+  }
+  &.price {
+    color: #ffd54f;
+    background: rgba(255, 213, 79, 0.14);
+    border-color: rgba(255, 213, 79, 0.35);
+  }
+}
+
+.msp-empty {
+  margin: 0;
+  font-size: 13px;
+  font-style: italic;
+  color: #9aa0a6;
+}
+
+// Recipe row number prefix.
+.rb-num { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: #8a8f95; min-width: 20px; }
+
+// RecipeBox search — a compact filter row with a leading icon + clear button.
+.rb-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .rb-search-icon {
+    position: absolute;
+    left: 8px;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    color: #9aa0a6;
+    pointer-events: none;
+  }
+  .rb-search-input {
+    padding-left: 32px;
+    padding-right: 30px;
+  }
+  .rb-search-clear {
+    position: absolute;
+    right: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    color: #c9c9c9;
+    background: none;
+    border: none;
+    cursor: pointer;
+    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+    &:hover { color: #fff; }
+  }
+}
+
+// RecipeBox intake — two modes side by side: import a PDF  — or —  author.
+.rb-intake { display: flex; align-items: stretch; gap: 12px; }
+.rb-dropzone,
+.rb-create {
+  flex: 1 1 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  padding: 18px 14px; text-align: center;
+  background: #2c2c2c; border: 1px dashed #5a5a5a; border-radius: 10px; cursor: pointer;
+  color: #cfcfcf;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+  .mat-icon, mat-icon { width: 26px; height: 26px; font-size: 26px; color: #8ec5ff; }
+  &:hover { border-color: #4da6ff; background: rgba(77, 166, 255, 0.08); }
+}
+.rb-create { border-style: solid; border-color: #4a4a4a; background: #333; }
+.rb-dropzone.dragover { border-color: #4da6ff; background: rgba(77, 166, 255, 0.12); color: #cfe4ff; }
+.rb-dz-title { font-size: 13px; font-weight: 600; color: #f1f1f1; }
+.rb-dz-sub { font-size: 11px; color: #9aa0a6; }
+.rb-or {
+  flex: 0 0 auto; align-self: center; position: relative;
+  span {
+    display: inline-block; padding: 4px 6px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em; color: #9aa0a6;
+  }
+}

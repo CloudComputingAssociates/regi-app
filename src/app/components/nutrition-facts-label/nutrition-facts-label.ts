@@ -58,7 +58,30 @@ function dvPercent(actual: number | undefined | null, reference: number): number
               </button>
             </div>
           }
-          @if (editable() && editing()) {
+          @if (editable() && unitOptions().length) {
+            <!-- Inline serving editor: a fixed-position amount input + unit
+                 dropdown. No grams parenthetical and no separate commit button —
+                 Enter or blur auto-commits (the parent write-through saves). The
+                 input is ALWAYS rendered (never a tap-to-swap span) so entering a
+                 number never reflows the row. -->
+            <input
+              type="number"
+              inputmode="decimal"
+              class="nf-serving-edit-input"
+              [value]="displayQuantity()"
+              (change)="onInlineCommit($any($event.target).value)"
+              (keydown.enter)="onInlineCommit($any($event.target).value)"
+              aria-label="Serving size value" />
+            <select
+              class="nf-serving-unit-select"
+              [value]="displayUnit()"
+              (change)="onUnitSelect($any($event.target).value)"
+              aria-label="Serving unit">
+              @for (u of unitOptions(); track u) {
+                <option [value]="u" [selected]="u === displayUnit()">{{ u }}</option>
+              }
+            </select>
+          } @else if (editable() && editing()) {
             <input
               #editInput
               type="number"
@@ -262,7 +285,10 @@ function dvPercent(actual: number | undefined | null, reference: number): number
     .nf-serving-size {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      // Left-packed: "Serving size" · steppers · value, all tight to the left.
+      // The value (and its recalculating "(130g)") grows RIGHTWARD into free
+      // space, so the steppers never shift as you press up/down.
+      justify-content: flex-start;
       gap: 6px;
       font-weight: 700;
       font-size: 13px;
@@ -271,13 +297,14 @@ function dvPercent(actual: number | undefined | null, reference: number): number
     // Up / down arrow pair, vertically stacked, sized small so they sit
     // between "Serving size" and the displayed quantity without inflating
     // the row height significantly. Pure CSS — no Material dep — so the
-    // label stays self-contained.
+    // label stays self-contained. Left-attached (no margin-left:auto) so the
+    // steppers hold their position regardless of the value's changing width.
     .nf-serving-steppers {
       display: inline-flex;
       flex-direction: column;
       align-items: center;
       gap: 1px;
-      margin-left: auto;
+      flex: 0 0 auto;
     }
 
     .nf-serving-step {
@@ -322,6 +349,25 @@ function dvPercent(actual: number | undefined | null, reference: number): number
       border-bottom: 1px dotted rgba(0, 0, 0, 0.45);
       padding-bottom: 1px;
     }
+
+    // Inline UNIT dropdown on the serving line — a compact white select that sits
+    // between the amount and the "(28g)". Black-on-white to match the NF label.
+    .nf-serving-unit-select {
+      flex-shrink: 0;
+      margin: 0 2px;
+      padding: 1px 2px 1px 4px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      color: #000;
+      background: #fff;
+      border: 1px solid #777;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      &:focus { border-color: #4da6ff; }
+    }
+    .nf-serving-grams { flex-shrink: 0; }
 
     // Edit-mode input. Sized to match the displayed value's footprint so
     // the row doesn't reflow as the user toggles in and out of edit. Strip
@@ -503,6 +549,28 @@ export class NutritionFactsLabelComponent {
   // Display unit and quantity (shown on serving size line)
   displayUnit = input<string>('g');
   displayQuantity = input<number | null>(null);
+
+  // Inline UNIT selector on the serving-size line. When editable AND unitOptions
+  // is non-empty, the unit renders as a dropdown right after the amount; changing
+  // it emits `unitChange` and the parent does the conversion + persistence. Empty
+  // (the default) keeps the plain read-only unit text — so view usages are
+  // untouched. The label stays dumb about unit semantics.
+  unitOptions = input<string[]>([]);
+  unitChange = output<string>();
+
+  onUnitSelect(unit: string): void {
+    if (unit && unit !== this.displayUnit()) this.unitChange.emit(unit);
+  }
+
+  /** Inline amount input committed (Enter / blur). Emits a positive numeric
+   *  quantity; ignores blanks, non-numbers, and no-op re-commits of the same
+   *  value. The parent write-through saves. */
+  onInlineCommit(raw: string): void {
+    const n = Number((raw ?? '').trim());
+    if (!Number.isFinite(n) || n <= 0) return;
+    if (n === this.displayQuantity()) return;
+    this.commit.emit(n);
+  }
 
   // Editable mode renders ▲ / ▼ stepper buttons next to the serving-size
   // line AND makes the value tap-to-edit. The label is intentionally dumb

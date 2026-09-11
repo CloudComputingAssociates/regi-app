@@ -70,6 +70,12 @@
           "format": "date-time",
           "description": "When the rotation was last modified",
           "readOnly": true
+        },
+        "shoppingProgress": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Read-only: shopping-list item keys the user has checked off ('have it'), parsed from Rotation.ShoppingProgress. [] when none saved. Written via PUT /api/rotation/{id}/shopping-progress.",
+          "readOnly": true
         }
       },
       "required": ["name", "spanDays", "peopleCount", "status", "isFavorite"]
@@ -104,71 +110,6 @@
           "type": ["string", "null"],
           "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
           "description": "Optional calendar anchor date (YYYY-MM-DD)."
-        }
-      },
-      "required": ["spanDays"]
-    },
-
-    "DiningOutSlot": {
-      "type": "object",
-      "description": "A single slot on a single day that the user wants the generator to skip (eating out)",
-      "properties": {
-        "dayOffset": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9,
-          "description": "Zero-based day offset from the rotation startDate (0–9)"
-        },
-        "slotOrder": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 10,
-          "description": "1-based slot order within the day's menu (1–10)"
-        }
-      },
-      "required": ["dayOffset", "slotOrder"]
-    },
-
-    "GenerateRotationRequest": {
-      "type": "object",
-      "description": "Request body for POST /api/rotation/generate — creates a rotation skeleton AND populates it with AI-generated menus and meals",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Display name for the rotation"
-        },
-        "spanDays": {
-          "type": "integer",
-          "minimum": 2,
-          "maximum": 10,
-          "description": "How many days the rotation covers (2–10)"
-        },
-        "peopleCount": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 10,
-          "default": 1,
-          "description": "Number of people the menus are sized for (1–10). Defaults to 1."
-        },
-        "pinDay": {
-          "type": ["string", "null"],
-          "description": "Day of week the user typically starts (e.g. 'Monday'). Optional."
-        },
-        "pinDate": {
-          "type": ["string", "null"],
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
-          "description": "Optional calendar anchor date (YYYY-MM-DD)."
-        },
-        "distinctMeals": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 5,
-          "description": "How much menu variety to aim for: how many distinct menus the rotation should contain (0 = let server pick, up to 5)"
-        },
-        "diningOutSlots": {
-          "type": "array",
-          "items": { "$ref": "#/definitions/DiningOutSlot" },
-          "description": "Slots that should be marked dining-out and left unfilled by the generator"
         }
       },
       "required": ["spanDays"]
@@ -244,6 +185,10 @@
           "type": "string",
           "description": "Denormalized menu name for display"
         },
+        "pinned": {
+          "type": "boolean",
+          "description": "Whether the referenced Menu is Pinned (in the Binder)"
+        },
         "plannedCount": {
           "type": "integer",
           "minimum": 1,
@@ -271,7 +216,7 @@
           "readOnly": true
         }
       },
-      "required": ["menuId", "plannedCount", "consumedCount"]
+      "required": ["menuId", "plannedCount", "consumedCount", "pinned"]
     },
 
     "RotationDetail": {
@@ -336,6 +281,12 @@
           "type": "array",
           "items": { "$ref": "#/definitions/RotationMenuEntry" },
           "description": "The Menus in this rotation and their consumption counts"
+        },
+        "shoppingProgress": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Read-only: shopping-list item keys the user has checked off ('have it'), parsed from Rotation.ShoppingProgress. [] when none saved. Written via PUT /api/rotation/{id}/shopping-progress.",
+          "readOnly": true
         }
       },
       "required": ["name", "spanDays", "peopleCount", "status", "isFavorite", "menus"]
@@ -395,6 +346,21 @@
       "required": ["calories", "proteinG", "carbG", "fatG", "fiberG", "sodiumMg"]
     },
 
+    "MenuSlotMeal": {
+      "type": "object",
+      "description": "One meal stacked in a slot (position 0–3), denormalized for display.",
+      "properties": {
+        "position": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "mealId": { "type": "integer" },
+        "mealName": { "type": ["string", "null"] },
+        "mealType": { "type": ["string", "null"] },
+        "mealImageThumbnail": { "type": ["string", "null"] },
+        "clonedFromMealId": { "type": ["integer", "null"] },
+        "macros": { "$ref": "#/definitions/MenuMacros" }
+      },
+      "required": ["position", "mealId"]
+    },
+
     "MenuSlot": {
       "type": "object",
       "description": "One slot in a Menu. Slot order maps 1→A, 2→B, … 10→J via SlotOrderToLabel.",
@@ -414,27 +380,21 @@
           "type": ["string", "null"],
           "description": "Optional user-set label for the slot (e.g., 'breakfast', 'lunch'). Null when unnamed."
         },
-        "mealId": {
-          "type": ["integer", "null"],
-          "description": "Meal attached to this slot. Null when empty or dining-out."
-        },
-        "mealName": {
-          "type": ["string", "null"],
-          "description": "Denormalized meal name for display. Null when no meal is attached."
-        },
-        "mealType": {
-          "type": ["string", "null"],
-          "description": "Denormalized meal type for display. Null when no meal is attached."
-        },
         "isDiningOut": {
           "type": "boolean",
           "description": "True when the user marked this slot as dining out — the slot is intentionally empty"
         },
+        "meals": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/MenuSlotMeal" },
+          "description": "Meals stacked in this slot (0–4), ordered by position. Empty when the slot is empty or dining-out."
+        },
         "macros": {
-          "$ref": "#/definitions/MenuMacros"
+          "$ref": "#/definitions/MenuMacros",
+          "description": "Sum across meals[]."
         }
       },
-      "required": ["slotOrder", "slotLabel", "isDiningOut"]
+      "required": ["slotOrder", "slotLabel", "isDiningOut", "meals"]
     },
 
     "Menu": {
@@ -469,10 +429,14 @@
           "type": "boolean",
           "description": "User-saved favorite flag"
         },
-        "isSaved": {
+        "pinned": {
           "type": "boolean",
-          "default": false,
-          "description": "True when the user has named or explicitly saved this Menu. Saved Menus appear in the library for reuse across Rotations. False (default) means throwaway — not in pick lists, candidate for cleanup expunge."
+          "description": "Binder flag — 1 = pinned menu (survives rotation teardown; only explicit delete kills it), 0 = disposable"
+        },
+        "clonedFromMenuId": {
+          "type": ["integer", "null"],
+          "description": "Source menu id when this menu is a copy minted by POST /menu/{id}/duplicate (fork-on-place into a rotation); null for originals. Back-pointer the client resolves to offer 'save my slot changes back to the original notebook menu' via PUT /menu/{id}/save-to-original. Mirrors clonedFromMealId on MenuSlotMeal.",
+          "readOnly": true
         },
         "totalCalories": {
           "type": ["number", "null"],
@@ -516,7 +480,7 @@
           "readOnly": true
         }
       },
-      "required": ["name", "slotCount", "isYeh", "isFavorite", "slots"]
+      "required": ["name", "slotCount", "isYeh", "isFavorite", "pinned", "slots"]
     },
 
     "MenuSummary": {
@@ -576,26 +540,41 @@
         "isFavorite": {
           "type": "boolean",
           "description": "New favorite flag"
+        },
+        "pinned": {
+          "type": "boolean",
+          "description": "Pin (1) into the Binder or unpin (0). Flipping 0→1 cascades Pinned=1 to every meal the menu's slots reference."
         }
       }
     },
 
-    "AssignMealToSlotRequest": {
+    "AddMealToSlotRequest": {
       "type": "object",
-      "description": "Request body for POST /api/menu/{id}/slots/{slotOrder}/meal — attaches an existing meal to a slot",
+      "description": "Request body for POST /api/menu/{id}/slot/{slotOrder}/meals — appends an existing meal to the slot at the next free position (0–3).",
       "properties": {
-        "slotOrder": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 10,
-          "description": "1-based slot order within the menu (1–10)"
-        },
         "mealId": {
           "type": "integer",
-          "description": "ID of the Meal to attach"
+          "description": "ID of the Meal to append to the slot"
         }
       },
-      "required": ["slotOrder", "mealId"]
+      "required": ["mealId"]
+    },
+
+    "SaveMenuToOriginalConflict": {
+      "type": "object",
+      "description": "409 body for PUT /api/menu/{id}/save-to-original. Returned when the copy holds one or more disposable (non-pinned/non-Binder) slotted meals, which must not be dragged into the saved original. The client should prompt the user to save those meals into the Binder first, then retry.",
+      "properties": {
+        "error": {
+          "type": "string",
+          "description": "Human-readable conflict reason"
+        },
+        "unsavedMeals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Display names of the copy's slotted meals that are not pinned/Binder meals"
+        }
+      },
+      "required": ["error", "unsavedMeals"]
     },
 
     "SetSlotNameRequest": {
@@ -619,111 +598,6 @@
         }
       },
       "required": ["isDiningOut"]
-    },
-
-    "ShoppingItem": {
-      "type": "object",
-      "description": "One line item on a shopping list",
-      "properties": {
-        "foodName": {
-          "type": "string",
-          "description": "Food name as it should appear on the list"
-        },
-        "scaledQuantity": {
-          "type": "number",
-          "description": "Quantity scaled by rotation peopleCount and meal servings"
-        },
-        "unit": {
-          "type": "string",
-          "description": "Unit of measurement"
-        },
-        "usedInMeals": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "Optional list of meal names that contribute to this quantity"
-        },
-        "usedInMenus": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "Optional list of menu names that contribute to this quantity"
-        },
-        "productPurchaseLink": {
-          "type": "string",
-          "description": "Optional pre-baked purchase link (e.g., Amazon URL)"
-        },
-        "isStaple": {
-          "type": "boolean",
-          "description": "True when the item is a pantry staple"
-        },
-        "isUntracked": {
-          "type": "boolean",
-          "description": "True when the item is an untracked freeform entry"
-        },
-        "note": {
-          "type": "string",
-          "description": "Optional shopper-facing note"
-        }
-      },
-      "required": ["foodName", "scaledQuantity", "unit", "isStaple", "isUntracked"]
-    },
-
-    "ShoppingCategory": {
-      "type": "object",
-      "description": "A named grouping of shopping items (e.g., 'Produce', 'Protein')",
-      "properties": {
-        "categoryName": {
-          "type": "string",
-          "description": "Display name of the category"
-        },
-        "items": {
-          "type": "array",
-          "items": { "$ref": "#/definitions/ShoppingItem" },
-          "description": "Items in this category"
-        }
-      },
-      "required": ["categoryName", "items"]
-    },
-
-    "ShoppingList": {
-      "type": "object",
-      "description": "GET /api/rotation/{id}/shopping-list response",
-      "properties": {
-        "rotationId": {
-          "type": "integer",
-          "description": "ID of the source rotation"
-        },
-        "rotationName": {
-          "type": "string",
-          "description": "Display name of the source rotation"
-        },
-        "peopleCount": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 10,
-          "description": "People count the quantities were scaled to"
-        },
-        "generatedAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "When the shopping list was generated"
-        },
-        "categories": {
-          "type": "array",
-          "items": { "$ref": "#/definitions/ShoppingCategory" },
-          "description": "Tracked items, grouped by category"
-        },
-        "untrackedItems": {
-          "type": "array",
-          "items": { "$ref": "#/definitions/ShoppingItem" },
-          "description": "Freeform untracked items collected from meals"
-        },
-        "stapleItems": {
-          "type": "array",
-          "items": { "$ref": "#/definitions/ShoppingItem" },
-          "description": "Pantry staple items pulled in from user prefs / curated lists"
-        }
-      },
-      "required": ["rotationId", "rotationName", "peopleCount", "generatedAt", "categories", "untrackedItems", "stapleItems"]
     }
   }
 }

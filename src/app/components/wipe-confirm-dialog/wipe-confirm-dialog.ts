@@ -1,13 +1,28 @@
 // src/app/components/wipe-confirm-dialog/wipe-confirm-dialog.ts
 //
-// Confirm dialog for the menus-panel "Wipe" action. Dark-themed Material
-// dialog (opened with panelClass 'wipe-dialog-panel' — see src/styles.scss
-// for the dark surface override so there's no white default flash).
+// Shared dark-themed confirm dialog for the Menus surface teardown actions
+// (opened with panelClass 'wipe-dialog-panel' — see src/styles.scss for the
+// dark surface override so there's no white default flash).
 //
-// PHASE: all three buttons just close the dialog and do nothing. The wipe
-// endpoint is not wired yet.
+// One dialog, many callers: each passes its own title / message / confirm-label
+// / teach-line and a confirm action. With no data it falls back to clearing the
+// selected menu's slots.
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { RotationService } from '../../services/rotation.service';
+
+interface WipeDialogData {
+  title?: string;
+  message?: string;
+  /** Step-9 teach line, shown emphasized under the message when set. */
+  teachLine?: string;
+  confirmLabel?: string;
+  onConfirm?: () => void;
+  /** Optional MIDDLE action → renders a three-button Yes / No / Cancel row
+   *  (confirm = Yes, secondary = No, Cancel closes). */
+  secondaryLabel?: string;
+  onSecondary?: () => void;
+}
 
 @Component({
   selector: 'app-wipe-confirm-dialog',
@@ -15,12 +30,18 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="wipe-dialog">
-      <p class="wipe-dialog-prompt">
-        Wipe all menus and start fresh — generate a new AI set of menus and meals?
-      </p>
+      @if (title) {
+        <p class="wipe-dialog-title">{{ title }}</p>
+      }
+      <p class="wipe-dialog-prompt">{{ message }}</p>
+      @if (teachLine) {
+        <p class="wipe-dialog-teach">{{ teachLine }}</p>
+      }
       <div class="wipe-dialog-actions">
-        <button type="button" class="wipe-action" (click)="onYes()">Yes</button>
-        <button type="button" class="wipe-action" (click)="onNo()">No</button>
+        <button type="button" class="wipe-action" (click)="onDelete()">{{ confirmLabel }}</button>
+        @if (secondaryLabel) {
+          <button type="button" class="wipe-action" (click)="onSecondaryClick()">{{ secondaryLabel }}</button>
+        }
         <button type="button" class="wipe-action" (click)="onCancel()">Cancel</button>
       </div>
     </div>
@@ -29,17 +50,30 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 })
 export class WipeConfirmDialogComponent {
   private dialogRef = inject(MatDialogRef<WipeConfirmDialogComponent>);
+  private rotation = inject(RotationService);
+  private data = inject<WipeDialogData | null>(MAT_DIALOG_DATA, { optional: true });
 
-  /** Yes — wipe then regenerate.
-   *  TODO: PUT /rotation/{id}/wipe, then call the generate flow to build a
-   *  fresh AI set of menus and meals. */
-  onYes(): void {
+  readonly title = this.data?.title ?? '';
+  readonly message =
+    this.data?.message ?? 'Delete all meals from the selected menu? The menu stays; its slots are emptied.';
+  readonly teachLine = this.data?.teachLine ?? '';
+  readonly confirmLabel = this.data?.confirmLabel ?? 'Delete';
+  readonly secondaryLabel = this.data?.secondaryLabel ?? '';
+
+  /** Run the confirm action (default: clear the selected menu's slots), close. */
+  onDelete(): void {
+    if (this.data?.onConfirm) {
+      this.data.onConfirm();
+    } else {
+      const menuId = this.rotation.selectedMenuId();
+      if (menuId != null) void this.rotation.clearMenuMeals(menuId);
+    }
     this.dialogRef.close();
   }
 
-  /** No — wipe but leave empty so the user hand-builds.
-   *  TODO: PUT /rotation/{id}/wipe (no regenerate). */
-  onNo(): void {
+  /** Middle "No" action (three-button variant). */
+  onSecondaryClick(): void {
+    this.data?.onSecondary?.();
     this.dialogRef.close();
   }
 

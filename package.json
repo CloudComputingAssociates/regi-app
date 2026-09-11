@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "schemas:copy": "cp ../yeh-api/schemas/*.schema.json ./schemas/",
+    "schemas:copy": "cp ../regi-api/schemas/*.schema.json ./schemas/",
     "schemas:generate": "json2ts -i \"schemas/*.schema.json\" -o src/app/models/generated/ --unreachableDefinitions && node -e \"const fs=require('fs'),p=require('path'),d='src/app/models/generated';fs.readdirSync(d).filter(f=>f.endsWith('.d.ts')).forEach(f=>fs.renameSync(p.join(d,f),p.join(d,f.replace('.d.ts','.ts'))))\""
   },
   "prettier": {
@@ -25,14 +25,16 @@
   "private": true,
   "dependencies": {
     "@angular/cdk": "20.2.5",
-    "@angular/common": "^20.3.0",
-    "@angular/compiler": "^20.3.0",
-    "@angular/core": "^20.3.0",
-    "@angular/forms": "^20.3.0",
+    "@angular/common": "^20.3.31",
+    "@angular/compiler": "^20.3.31",
+    "@angular/core": "^20.3.31",
+    "@angular/forms": "^20.3.31",
     "@angular/material": "20.2.5",
-    "@angular/platform-browser": "^20.3.0",
-    "@angular/router": "^20.3.0",
+    "@angular/platform-browser": "^20.3.31",
+    "@angular/router": "^20.3.31",
     "@auth0/auth0-angular": "^2.3.0",
+    "angularx-qrcode": "^20.0.0",
+    "ngx-extended-pdf-viewer": "^29.0.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
@@ -40,7 +42,7 @@
   "devDependencies": {
     "@angular/build": "^20.1.6",
     "@angular/cli": "^20.3.2",
-    "@angular/compiler-cli": "^20.3.0",
+    "@angular/compiler-cli": "^20.3.31",
     "@types/jasmine": "~5.1.0",
     "baseline-browser-mapping": "^2.10.20",
     "jasmine-core": "~5.9.0",

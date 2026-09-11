@@ -32,6 +32,12 @@
   &:hover { color: #82c8ff; }
 }
 
+// When the disc trails the value at the end of a line (BMR/BMI), give it the
+// same ~6px breathing room used between "User Override" and its disc.
+.info-icon-trailing {
+  margin-left: 6px;
+}
+
 :host {
   display: flex;
   height: 100%;
@@ -418,7 +424,7 @@
     align-items: flex-start;
     background: #2a2a2a;
     border: 1px solid #4a4a4a;
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 10px 12px;
   }
 
@@ -895,11 +901,51 @@
       gap: 6px;
     }
 
+    // Fixed width sized to the longest label ("Meal Repeats") so every control
+    // to its right lines up in one vertical column.
     .setting-label {
       color: #ffffff;
       font-size: 12px;
       font-weight: 500;
-      min-width: 45px;
+      width: 78px;
+      flex-shrink: 0;
+    }
+
+    // "Meals" row checkboxes (Community / Regi-approved) — inline with the label.
+    .meal-source-opt {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #ffffff;
+      font-size: 12px;
+      white-space: nowrap;
+      cursor: pointer;
+
+      input { cursor: pointer; }
+    }
+
+    // Compact numeric input (Meal Repeats) — small, since it holds one digit.
+    .setting-number {
+      width: 38px;
+      padding: 4px 6px;
+      font-size: 12px;
+      font-family: inherit;
+      color: #ffffff;
+      background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+      border: 1px solid #5a5a5a;
+      border-radius: 4px;
+      outline: none;
+      box-sizing: border-box;
+
+      &:hover { border-color: #6a6a6a; }
+      &:focus {
+        border-color: #4da6ff;
+        box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.2);
+      }
+
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      -moz-appearance: textfield;
     }
 
     .setting-select {
@@ -1071,6 +1117,21 @@
     font-style: normal;
     text-align: left;
     padding: 0 0 0 2px;
+
+    // Tab-stop layout: fixed-width label column so the BMR/BMI numeric values
+    // line up on the left regardless of the label glyph widths (BMR vs BMI).
+    .pi-label {
+      display: inline-block;
+      width: 2.6em;
+    }
+    .pi-value { }
+  }
+
+  // Nudge the BMR line down 2px and pull the BMI line up by the same, so BMR
+  // drops closer to BMI (the pi-column gap is otherwise uniform).
+  .pi-bmr-top {
+    margin-top: 2px;
+    margin-bottom: -2px;
   }
 
   .pi-last-updated {
@@ -1335,7 +1396,7 @@
     border-radius: 50%;
     border: 1px solid #1f8c2f;
     background: linear-gradient(180deg, #3fd055 0%, #28c941 100%);
-    color: #ffffff;
+    color: #000000; // black arrow reads on the bright confirm-green
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -1448,7 +1509,7 @@
 
       .setting-label {
         font-size: 10px;
-        min-width: 38px;
+        width: 66px;
       }
 
       .setting-select {
@@ -1456,6 +1517,11 @@
         padding: 3px 16px 3px 4px;
         min-width: 0;
         width: auto;
+      }
+
+      .setting-number {
+        font-size: 10px;
+        width: 34px;
       }
     }
 
@@ -1519,5 +1585,140 @@
 
   .chat-pane-label {
     font-size: 12px;
+  }
+}
+
+// ---- BMI "View" press-and-hold popup ----
+// The blue "View" button reveals a compact vertical BMI scale only while held
+// down (mousedown/touchstart shows, release/leave hides). Category words run
+// down the left; a grey-gradient bar (darker = heavier, at top) runs down the
+// right with boundary hash marks and a yellow Current + green Target marker,
+// each tagged to its left.
+.bmi-desc {
+  position: relative;
+  display: inline-block;
+  margin-left: 8px;
+}
+
+.bmi-desc-btn {
+  font-size: 11px;
+  padding: 1px 8px;
+  border: 1px solid #4da6ff;
+  border-radius: 4px;
+  background: transparent;
+  color: #4da6ff;
+  cursor: pointer;
+  user-select: none;
+  vertical-align: middle;
+
+  &:active {
+    background: rgba(77, 166, 255, 0.15);
+  }
+}
+
+.bmi-scale-popup {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 60;
+  display: flex;
+  gap: 7px;
+  width: 172px;
+  height: 200px;
+  // Extra right padding leaves room for the per-line weight numbers that hang
+  // off the right of the bar.
+  padding: 10px 32px 10px 10px;
+  background: #ffffff;
+  border: 1px solid #cfd8e0;
+  border-radius: 6px;
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.22);
+  cursor: default;
+}
+
+.bmi-scale-labels {
+  position: relative;
+  flex: 0 0 90px;
+  height: 100%;
+}
+
+.bmi-scale-label {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+  color: #55606b;
+}
+
+.bmi-scale-bar {
+  position: relative;
+  flex-shrink: 0;
+  width: 20px;
+  height: 100%;
+  border-radius: 3px;
+  border: 1px solid #c4c4c4;
+  // Darker grey (heaviest, top) → light grey/white (lightest, bottom).
+  background: linear-gradient(to bottom, #6d6d6d 0%, #f6f6f6 100%);
+}
+
+.bmi-scale-tick {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.4);
+  transform: translateY(-0.5px);
+}
+
+// Weight (lb) printed just right of the bar at each boundary line.
+.bmi-tick-weight {
+  position: absolute;
+  left: calc(100% + 3px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  line-height: 1;
+  white-space: nowrap;
+  color: #55606b;
+}
+
+.bmi-scale-marker {
+  position: absolute;
+  left: -5px;
+  right: -5px;
+  height: 0;
+  transform: translateY(-1.5px);
+
+  &.current {
+    border-top: 3px solid #f5c000; // yellow — reads on both dark and light bar
+  }
+
+  &.goal {
+    border-top: 3px solid #1fa14e;
+  }
+}
+
+// "Current" / "Target" tag sits just left of its marker, on a white pill so
+// it stays legible over the category words behind it.
+.bmi-marker-tag {
+  position: absolute;
+  right: calc(100% + 2px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  padding: 1px 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.9);
+
+  .current & {
+    color: #b8860b;
+  }
+
+  .goal & {
+    color: #1fa14e;
   }
 }

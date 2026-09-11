@@ -1,73 +1,329 @@
 // src/app/components/meal/meal.ts
 //
-// One meal slot on the menus-meals grid. Header reads "Meal {slotOrder}
-// ({slotLabel})" with a visual-only inline-edit affordance. Body shows
-// macro chips (P/C/F/Fi grams — never calories) and the food rows. Handles
-// three states: filled, empty (pick a meal), and dining-out.
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+// One slot on the menus-meals grid — now a MULTI-MEAL slot (0–4 stacked meals).
+// It's a flip card:
+//   FRONT = an image grid of the stacked meals (all visible at once). Each tile
+//           carries the meal photo + name, a top-RIGHT ⤢ to flip to that meal's
+//           detail, and a top-LEFT 🗑 to remove just that meal. A filled,
+//           non-full slot is also a drop target to APPEND another meal.
+//   BACK  = ONE meal (the one whose tile ⤢ was pressed) at full-card detail:
+//           name, macro chips, recipe link, food rows.
+// A slim summed-macro strip + the whole-slot clear 🗑 live on the front header.
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
-import { MealItem, MenuSlot } from '../../models';
+import { MatIconModule } from '@angular/material/icon';
+import { CdkDrag, CdkDragDrop, CdkDragEnd, DragDropModule } from '@angular/cdk/drag-drop';
+import { MealItem, MenuSlot, MenuSlotMeal } from '../../models';
+import { Food } from '../../models/food.model';
 import { FoodComponent } from '../food/food';
+import { RotationService } from '../../services/rotation.service';
+import { TabService } from '../../services/tab.service';
+import { MatDialog } from '@angular/material/dialog';
+import { RoleService } from '../../services/role.service';
+import {
+  MealImageSourceComponent,
+  ImageSourceData,
+} from '../meal-image-source/meal-image-source';
 
-interface SlotMacros {
+interface Macro {
   proteinG: number;
   carbG: number;
   fatG: number;
   fiberG: number;
+  calories: number;
 }
 
 @Component({
   selector: 'app-meal',
-  imports: [MatTooltipModule, FoodComponent, DragDropModule],
+  imports: [MatTooltipModule, MatIconModule, FoodComponent, DragDropModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Clicking a card that's clipped at the top/bottom of the meals canvas pulls it
+  // fully into view — no hunting for the scrollbar. See onCardClick.
+  host: { '(click)': 'onCardClick()' },
   template: `
-    <div class="slot-card" [class.empty]="isEmpty()">
-      <div class="slot-header">
-        <span class="slot-title">Meal {{ slot().slotOrder }}</span>
-        @if (title()) {
-          <span class="meal-name">{{ title() }}</span>
-        }
-        <button
-          type="button"
-          class="edit-affordance"
-          matTooltip="Edit meal name"
-          matTooltipPosition="above">
-          ✎
-        </button>
-        @if (slot().mealId != null) {
-          <button
-            type="button"
-            class="delete-affordance"
-            matTooltip="Remove meal from slot"
-            matTooltipPosition="above"
-            (click)="deleteMeal.emit(slot().slotOrder)">
-            🗑
-          </button>
-        }
-      </div>
-
+    <div
+      class="slot-card"
+      [class.empty]="isEmpty()"
+      [class.editing]="editing()"
+      [class.filled]="!isEmpty() && !slot().isDiningOut"
+      [attr.data-slot-order]="slot().slotOrder"
+      [attr.data-slot-empty]="isEmpty()">
       @if (slot().isDiningOut) {
+        <div class="slot-header"><span class="slot-title">Meal slot {{ slot().slotOrder }}</span></div>
         <div class="slot-placeholder dining-out">
-          <span class="placeholder-icon">🍽️</span>
-          <span>Dining out</span>
+          <span class="placeholder-icon">🍽️</span><span>Dining out</span>
         </div>
       } @else if (isEmpty()) {
-        <div class="slot-placeholder" cdkDropList (cdkDropListDropped)="onDrop($event)">
-          <span>empty slot — pick a meal</span>
-          <button type="button" class="add-stub" disabled>+ from lookaside</button>
+        <div class="slot-header"><span class="slot-title">Meal slot {{ slot().slotOrder }}</span></div>
+        <div
+          class="slot-placeholder pick"
+          [class.bloom]="dropHighlight()"
+          cdkDropList
+          [cdkDropListEnterPredicate]="mealDropPredicate"
+          (cdkDropListDropped)="onDropMeal($event)">
+          <span class="pick-sub">Dbl-click or drag from <button type="button" class="binder-link" (click)="$event.stopPropagation(); rotation.openBinderTab('meals')">Notebook</button>,</span>
+          <span class="pick-sub">or <button type="button" class="binder-link" (click)="$event.stopPropagation(); buildAMeal.emit()">Build-a-Meal</button></span>
         </div>
       } @else {
-        <div class="macro-chips">
-          <span class="chip protein">P {{ round(macros().proteinG) }}</span>
-          <span class="chip fiber">F {{ round(macros().fiberG) }}</span>
-          <span class="chip fat">F {{ round(macros().fatG) }}</span>
-          <span class="chip carb">C {{ round(macros().carbG) }}</span>
-        </div>
-        <div class="food-rows">
-          @for (item of items(); track item.id) {
-            <app-food [item]="item" />
-          }
+        <!-- Flip card: FRONT image grid ⇄ BACK single-meal detail. -->
+        <div class="flip" [class.flipped]="flippedMeal() != null">
+          <div class="flip-inner">
+            <!-- FRONT: grid of the stacked meals; also a drop target to append. -->
+            <div
+              class="flip-front"
+              [attr.data-count]="gridCount()"
+              cdkDropList
+              [cdkDropListEnterPredicate]="appendPredicate"
+              (cdkDropListDropped)="onDropMeal($event)">
+              @for (m of meals(); track m.mealId) {
+                <!-- The photo is draggable: drop it on an EMPTY slot to move it,
+                     on "+ Add menu" to start a new menu with it, or out of the
+                     slot area (macro bar / dead space) to clear the slot. A drop
+                     on the same/occupied slot is a no-op. Routing is geometric in
+                     onTileDragEnded — no drop list consumes this drag. -->
+                <div
+                  class="meal-tile"
+                  cdkDrag
+                  [cdkDragData]="{ fromSlot: true, slotOrder: slot().slotOrder, mealId: m.mealId }"
+                  (cdkDragStarted)="rotation.dragging.set('meal')"
+                  (cdkDragEnded)="onTileDragEnded(m.mealId, $event)">
+                  @if (tileImage(m); as src) {
+                    <img class="tile-img" [src]="src" alt="" />
+                  } @else {
+                    <div class="tile-noimg"><span>{{ clean(m.mealName) }}</span></div>
+                  }
+                  <div class="tile-scrim"></div>
+                  <span class="tile-name">{{ clean(m.mealName) }}</span>
+                  <button
+                    type="button"
+                    class="tile-btn tile-flip"
+                    matTooltip="Flip to ingredients"
+                    (click)="flipTo(m.mealId, $event)">
+                    <mat-icon>flip_camera_android</mat-icon>
+                  </button>
+                  <!-- Drag cursor shows the meal photo (name over a scrim). -->
+                  <div class="drag-tile-preview" *cdkDragPreview>
+                    @if (tileImage(m); as src) {
+                      <img [src]="src" alt="" class="dtp-img" />
+                      <div class="dtp-scrim"></div>
+                    }
+                    <span class="dtp-name">{{ clean(m.mealName) }}</span>
+                  </div>
+                </div>
+              }
+              @if (meals().length === 3) {
+                <div class="meal-tile tile-empty"><span>drop a 4th</span></div>
+              }
+            </div>
+
+            <!-- BACK: the one flipped meal, full detail. -->
+            <div
+              class="flip-back"
+              cdkDropList
+              [cdkDropListEnterPredicate]="foodDropPredicate"
+              (cdkDropListDropped)="onDropMeal($event)">
+              @if (flippedMeal(); as fm) {
+                <!-- Same ">" control, same bottom-right corner as the FRONT tiles. -->
+                <button
+                  type="button"
+                  class="tile-btn tile-flip"
+                  matTooltip="Flip to photo"
+                  (click)="flipHome()">
+                  <mat-icon>flip_camera_android</mat-icon>
+                </button>
+                <!-- Everything below scrolls; the flip button stays pinned to the
+                     card (it's absolute to the non-scrolling .flip-back). -->
+                <div class="back-scroll">
+                <div class="back-head">
+                  <span class="name-label">Meal</span>
+                  <!-- Title field + save, adjoined as one input-group control: the
+                       input and the trailing save addon share a border + rounding.
+                       (Save still persists ANY recipe change, not just the name.) -->
+                  <div class="name-field">
+                    <input
+                      #nameBox
+                      type="text"
+                      class="meal-name-box regi-field"
+                      [value]="clean(fm.mealName)"
+                      (input)="onNameInput(fm.mealId, nameBox.value)"
+                      (keydown.enter)="nameBox.blur()"
+                      (keydown.escape)="nameBox.value = clean(fm.mealName); onNameInput(fm.mealId, nameBox.value); nameBox.blur()"
+                      (blur)="commitName(fm, nameBox.value)"
+                      aria-label="Meal name" />
+                    <!-- Save addon lights on unsaved FOOD changes OR a pending name
+                         edit. Clicking persists the meal (name + food) to the Binder. -->
+                    <button
+                      type="button"
+                      class="icon-disc save-disc"
+                      [class.icon-disc-confirm]="rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm) || notesDirty(fm)"
+                      [disabled]="!(rotation.hasUnsavedFoodChanges(fm.mealId) || nameDirty(fm) || notesDirty(fm))"
+                      matTooltip="Save changes to your notebook"
+                      (click)="pinMeal.emit(fm.mealId)">
+                      <mat-icon>check</mat-icon>
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    class="back-clear-x"
+                    [matTooltip]="'Clear meal from Slot ' + slot().slotOrder"
+                    (click)="removeMeal.emit({ slotOrder: slot().slotOrder, mealId: fm.mealId })">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+
+                <!-- Meal TYPE — strict select of the DB-constrained set (no free
+                     typing), between the name row and the discs (mirrors the Notebook). -->
+                <div class="back-type-row">
+                  <!-- Serves = the per-meal output SCALE (shopping list + PDF), NOT a
+                       macro multiplier — macros stay per one person. Sits in front of
+                       Type, same blue label. -->
+                  <span
+                    class="back-type-label"
+                    matTooltip="Scale used in Shopping list and Recipe output (PDF)"
+                    matTooltipPosition="above">Serves</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    class="back-serves-input regi-field"
+                    [value]="servesFor(fm.mealId)"
+                    (change)="onMealServesChange(fm.mealId, $any($event.target).value)"
+                    matTooltip="Scale used in Shopping list and Recipe output (PDF)"
+                    matTooltipPosition="above"
+                    aria-label="Servings scale" />
+                  <span class="back-type-label">Type</span>
+                  <div class="type-combo">
+                    <select
+                      class="back-type-input back-type-select"
+                      (change)="onMealTypeChange(fm.mealId, $any($event.target).value)">
+                      @if (!fm.mealType) { <option value="" disabled selected>Type…</option> }
+                      @for (t of rotation.mealTypeOptions; track t) {
+                        <option [value]="t" [selected]="t === fm.mealType">{{ t }}</option>
+                      }
+                    </select>
+                  </div>
+                  <!-- Four keys RIGHT-JUSTIFIED to the row's right edge (+ · Camera ·
+                       Notes · Print), so Print lands directly under the upper-right
+                       delete trash. Camera opens the 3-way image bloom. -->
+                  <button
+                    type="button"
+                    class="add-food-btn"
+                    matTooltip="Add food to meal"
+                    (click)="toggleAdd.emit(fm.mealId)">
+                    <mat-icon>add</mat-icon>
+                  </button>
+                  <!-- Camera — opens the 3-way image-source bloom (upload / phone /
+                       AI). Shown to EVERYONE; the AI option inside is owner-gated. -->
+                  <button
+                    type="button"
+                    class="add-food-btn genimg-btn"
+                    matTooltip="Add a meal photo"
+                    (click)="openImageSource(fm)">
+                    <mat-icon>photo_camera</mat-icon>
+                  </button>
+                  <!-- Notes — toggles the notes drawer (auto-opens when a note
+                       exists). Sits between the Camera and the Print key. -->
+                  <button
+                    type="button"
+                    class="add-food-btn notes-btn"
+                    [class.on]="notesIsOpen(fm.mealId)"
+                    matTooltip="Meal notes"
+                    (click)="toggleNotes(fm.mealId)">
+                    <mat-icon>sticky_note_2</mat-icon>
+                  </button>
+                  <!-- Print — ambidextrous: opens the recipe if one exists, else
+                       renders the meal to a PDF. Last in the cluster. -->
+                  <button
+                    type="button"
+                    class="add-food-btn print-meal-btn"
+                    [matTooltip]="recipeLinkFor(fm.mealId) ? 'Open the recipe (PDF)' : 'Print this meal as a PDF'"
+                    (click)="printMeal(fm.mealId)">
+                    <mat-icon>print</mat-icon>
+                  </button>
+                </div>
+
+                <!-- Order: Protein, Carbs, Fats, Fiber, Cals, then (for recipe-imported
+                     meals) the "imported from recipe" caption INLINE — keeps it on the
+                     macro line to save vertical space. -->
+                <div class="macro-row">
+                  <span class="chip protein">P {{ round(mac(fm.macros).proteinG) }}</span>
+                  <span class="chip carb">C {{ round(mac(fm.macros).carbG) }}</span>
+                  <span class="chip fat">F {{ round(mac(fm.macros).fatG) }}</span>
+                  <span class="chip fiber">F {{ round(mac(fm.macros).fiberG) }}</span>
+                  <span class="slot-cals">{{ round(mac(fm.macros).calories) }} cals</span>
+                  @if (recipeLinkFor(fm.mealId)) {
+                    <span class="imported-tag">from recipe</span>
+                  }
+                </div>
+
+                <div class="food-rows">
+                  @for (item of mainItemsFor(fm.mealId); track item.id) {
+                    <div
+                      class="food-row-wrap"
+                      [class.bloom-row]="item.food?.foodId === bloomFoodId()"
+                      (animationend)="onBloomDone($event)">
+                      <app-food
+                        [item]="item"
+                        [resolving]="resolvingItemId() === item.id"
+                        (editItem)="editItem.emit({ mealId: fm.mealId, item: $event })"
+                        (removeItem)="removeItem.emit({ mealId: fm.mealId, item: $event })" />
+                    </div>
+                  }
+                </div>
+                @if (dynamicItemsFor(fm.mealId).length > 0) {
+                  <div class="dyn-accordion">
+                    <button
+                      type="button"
+                      class="dyn-head"
+                      (click)="dynamicOpen.set(!dynamicOpen())">
+                      <mat-icon class="dyn-chevron">{{ dynamicOpen() ? 'expand_more' : 'chevron_right' }}</mat-icon>
+                      <span class="dyn-label">Dynamic Ingredients added</span>
+                      <span class="dyn-count">{{ dynamicItemsFor(fm.mealId).length }}</span>
+                    </button>
+                    @if (dynamicOpen()) {
+                      <div class="food-rows dyn-rows">
+                        @for (item of dynamicItemsFor(fm.mealId); track item.id) {
+                          <app-food
+                            [item]="item"
+                            [resolving]="resolvingItemId() === item.id"
+                            (editItem)="editItem.emit({ mealId: fm.mealId, item: $event })"
+                            (removeItem)="removeItem.emit({ mealId: fm.mealId, item: $event })" />
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- Notes drawer — bottom quarter of the card, toggled by the Notes
+                     key. Free text; persists on blur and feeds the AI image + PDF. -->
+                @if (notesIsOpen(fm.mealId)) {
+                  <div class="notes-drawer">
+                    <span class="notes-label">Notes</span>
+                    <textarea
+                      #notesBox
+                      class="notes-box regi-field"
+                      rows="3"
+                      placeholder="e.g. hard-boiled eggs (not sunny-side up)…"
+                      [value]="notesFor(fm.mealId)"
+                      (input)="onNotesInput(fm.mealId, notesBox.value)"
+                      (blur)="commitNotes(fm.mealId, notesBox.value)"></textarea>
+                  </div>
+                }
+                </div>
+              }
+            </div>
+          </div>
         </div>
       }
     </div>
@@ -75,50 +331,362 @@ interface SlotMacros {
   styleUrls: ['./meal.scss'],
 })
 export class MealComponent {
-  readonly slot = input.required<MenuSlot>();
-  readonly items = input.required<MealItem[]>();
+  protected readonly rotation = inject(RotationService);
+  private readonly tabs = inject(TabService);
+  private readonly role = inject(RoleService);
+  private readonly dialog = inject(MatDialog);
+  private readonly host = inject(ElementRef<HTMLElement>);
 
-  /** Emitted when a binder meal is dropped on this (empty) slot. The parent
-   *  supplies the menuId and calls the assign endpoint. */
-  readonly placeMeal = output<{ slotOrder: number; mealId: number }>();
-
-  /** Emitted (with this slot's slotOrder) when the trash is clicked. */
-  readonly deleteMeal = output<number>();
-
-  readonly isEmpty = computed(() => !this.slot().isDiningOut && this.slot().mealId == null);
-
-  // Title = the primary protein's short name (shortDescription, else foodName),
-  // from the meal's items (streamed in, so it refines once they load). Falls
-  // back to the slot's meal name with the generator's trailing " meal" stripped.
-  readonly title = computed<string>(() => {
-    const items = this.items();
-    const primary = items.find((i) => i.itemRole === 'primary') ?? items[0];
-    if (primary) return (primary.shortDescription?.trim() || primary.foodName?.trim()) ?? '';
-    return (this.slot().mealName ?? '').replace(/\s+meal$/i, '').trim();
-  });
-
-  /** CDK drop handler for an empty slot — copy semantics (no array mutation),
-   *  so the dragged meal stays in the binder. */
-  onDrop(event: CdkDragDrop<unknown>): void {
-    const meal = event.item.data as { id?: number } | undefined;
-    if (meal?.id == null) return;
-    this.placeMeal.emit({ slotOrder: this.slot().slotOrder, mealId: meal.id });
+  /** Click anywhere on a meal card that's partially clipped by the meals canvas
+   *  (only its top tip peeking above/below the fold) → smooth-scroll it fully into
+   *  view so the user can act on it without finding the scrollbar. `block:'nearest'`
+   *  makes this a NO-OP when the card is already fully visible, so a normal click on
+   *  a visible card never moves the canvas. */
+  onCardClick(): void {
+    this.host.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   }
 
-  // Chips read from the server-computed slot macros (same source as the top
-  // bars) — accurate and present the moment the menu loads, rather than summing
-  // per-item macros that stream in later and are null for AI 'pending' items.
-  readonly macros = computed<SlotMacros>(() => {
-    const m = this.slot().macros;
+  /** Camera key → the 3-way image-source bloom (upload · phone · AI). */
+  openImageSource(fm: MenuSlotMeal): void {
+    const data: ImageSourceData = { kind: 'meal', id: fm.mealId, name: this.clean(fm.mealName) };
+    this.dialog.open(MealImageSourceComponent, {
+      panelClass: 'meal-image-dialog-panel',
+      autoFocus: false,
+      data,
+    });
+  }
+
+  /** MealSetOwner-only affordances (e.g. the AI meal-image camera button). */
+  readonly isMealSetOwner = computed(() => this.role.hasRole('MealSetOwner'));
+
+  readonly slot = input.required<MenuSlot>();
+  readonly editing = input<boolean>(false);
+  readonly resolvingItemId = input<number | null>(null);
+  readonly dropHighlight = input<boolean>(false);
+
+
+  /** A binder meal was dropped on this slot — append it (parent calls place). */
+  readonly placeMeal = output<{ slotOrder: number; mealId: number }>();
+  /** Per-tile trash — remove just this meal from the slot. */
+  readonly removeMeal = output<{ slotOrder: number; mealId: number }>();
+  /** Header trash — clear the WHOLE slot (all meals). Emits slotOrder. */
+  readonly deleteMeal = output<number>();
+  /** "My Foods | Build-a-Meal" link on an empty slot — jump to the Foods panel's
+   *  Build-a-Meal to build a meal FOR this slot. The result lands in the Binder AND
+   *  in this slot (meals are no longer created empty in the board). */
+  readonly buildAMeal = output<void>();
+  /** + on the back — begin adding food to this meal (emits its mealId). */
+  readonly toggleAdd = output<number>();
+  /** Inline name box committed. */
+  readonly renameMeal = output<{ mealId: number; name: string }>();
+  /** Green check — save this meal (parent routes fork/first-save). */
+  readonly pinMeal = output<number>();
+  /** ✎ on a food row. */
+  readonly editItem = output<{ mealId: number; item: MealItem }>();
+  /** ✕ on a food row. */
+  readonly removeItem = output<{ mealId: number; item: MealItem }>();
+  /** A lookaside food dropped on this meal (kept for the editing food-add flow). */
+  readonly dropFood = output<{ food: Food; serving: number }>();
+  /** The slot photo was dragged and released — the parent (which owns the menu
+   *  id + rotation ops) geometrically routes it: move to an empty slot, start a
+   *  new menu, clear the slot, or no-op. `point` is the release position. */
+  readonly slotDragEnded = output<{ slotOrder: number; mealId: number; point: { x: number; y: number } }>();
+
+  /** Stacked meals, ordered by position. */
+  readonly meals = computed<MenuSlotMeal[]>(() =>
+    [...(this.slot().meals ?? [])].sort((a, b) => a.position - b.position),
+  );
+  readonly isEmpty = computed(() => !this.slot().isDiningOut && this.meals().length === 0);
+  readonly isFull = computed(() => this.meals().length >= 4);
+
+  /** True when this specific tiled meal is KNOWN-modified (loaded + pinned !==
+   *  true) — not a Binder meal yet, so it blocks the menu save under the
+   *  all-Binder rule. Unknown (not-yet-loaded) meals are NOT flagged, to avoid a
+   *  flash during prefetch; the menu save gate (menuAllSlotsClean) still treats
+   *  unknown as not-savable. Drives the "(modified)" tag on the tile name. */
+  isMealModified(m: MenuSlotMeal): boolean {
+    const meal = this.rotation.getMeal(m.mealId);
+    return meal != null && meal.pinned !== true;
+  }
+  /** Grid divisions: 1 (full), 2 (halves), 3–4 (quarters). */
+  readonly gridCount = computed(() => Math.min(4, Math.max(this.meals().length, 1)));
+
+  /** Which meal is zoomed to the back face — null = showing the front grid. */
+  readonly flippedMealId = signal<number | null>(null);
+  /** The flipped meal, or null. Derived (not stored) so a removed meal auto-
+   *  un-flips the moment meals[] no longer contains it. */
+  readonly flippedMeal = computed<MenuSlotMeal | null>(
+    () => this.meals().find((m) => m.mealId === this.flippedMealId()) ?? null,
+  );
+
+  /** Dynamic-ingredients accordion open state (back face). */
+  readonly dynamicOpen = signal(false);
+
+  /** Explicit user open/close overrides for the bottom Notes drawer, per meal.
+   *  Absent → use the DEFAULT: open when the meal already has notes (so existing
+   *  notes reveal themselves without a click), closed when it has none. */
+  readonly notesOverride = signal<Map<number, boolean>>(new Map());
+  notesIsOpen(mealId: number): boolean {
+    const o = this.notesOverride().get(mealId);
+    return o ?? this.notesFor(mealId).trim() !== '';
+  }
+  toggleNotes(mealId: number): void {
+    const next = !this.notesIsOpen(mealId);
+    this.notesOverride.update((m) => new Map(m).set(mealId, next));
+  }
+  /** Current persisted notes for a meal (read through the full Meal row). */
+  notesFor(mealId: number): string {
+    return this.rotation.getMeal(mealId)?.notes ?? '';
+  }
+  /** Live notes-edit tracking so the green save-check lights while the typed notes
+   *  differ from the saved ones — mirrors the name-edit dirty flow. */
+  readonly notesDraft = signal<{ id: number; val: string } | null>(null);
+  onNotesInput(mealId: number, val: string): void {
+    this.notesDraft.set({ id: mealId, val });
+  }
+  notesDirty(fm: MenuSlotMeal): boolean {
+    const d = this.notesDraft();
+    if (!d || d.id !== fm.mealId) return false;
+    return d.val.trim() !== this.notesFor(fm.mealId).trim();
+  }
+  commitNotes(mealId: number, value: string): void {
+    this.notesDraft.set(null);
+    void this.rotation.updateMealNotes(mealId, value);
+  }
+
+  /** foodId of a just-added row to glow once; null = nothing blooming. */
+  readonly bloomFoodId = signal<number | null>(null);
+
+  constructor() {
+    // Adding a food to a SAVED meal forks it (copy-on-write → a new mealId). The
+    // flip is keyed by mealId, so FOLLOW the fork — otherwise the flipped meal
+    // vanishes from meals() and the card snaps back to the photo. Manual flip
+    // (flipTo/flipHome) is untouched; this only re-points an already-open flip.
+    effect(
+      () => {
+        const id = this.flippedMealId();
+        if (id == null || this.meals().some((m) => m.mealId === id)) return;
+        const fork = this.meals().find(
+          (m) => this.rotation.getMeal(m.mealId)?.clonedFromMealId === id,
+        );
+        if (fork) this.flippedMealId.set(fork.mealId);
+      },
+      { allowSignalWrites: true },
+    );
+
+    // Bloom the newly-added row once, when a food lands in one of this card's meals.
+    effect(
+      () => {
+        const la = this.rotation.lastAdd();
+        if (la && this.meals().some((m) => m.mealId === la.mealId)) {
+          this.bloomFoodId.set(la.foodId);
+        }
+      },
+      { allowSignalWrites: true },
+    );
+
+    // When an AI image lands for a meal on THIS card, flip it back to the photo so
+    // the fresh image reveals itself. Only `imagedMeal` is a dependency (untracked
+    // reads of flip/meals) so a manual flip doesn't retrigger this.
+    effect(
+      () => {
+        const done = this.rotation.imagedMeal();
+        if (!done) return;
+        untracked(() => {
+          if (this.meals().some((m) => m.mealId === done.id)) {
+            this.flippedMealId.set(null); // flip home → show the new photo
+          }
+        });
+      },
+      { allowSignalWrites: true },
+    );
+  }
+
+  /** Bloom animation finished → clear the one-shot flag so it never re-fires. */
+  onBloomDone(ev: AnimationEvent): void {
+    if (ev.animationName && ev.animationName !== 'food-bloom') return;
+    this.bloomFoodId.set(null);
+    this.rotation.lastAdd.set(null);
+  }
+
+  /** The ONLY flip trigger: a tile's ⤢ opens that meal's detail. */
+  flipTo(mealId: number, ev: Event): void {
+    ev.stopPropagation();
+    ev.preventDefault();
+    this.flippedMealId.set(mealId);
+  }
+
+  flipHome(): void {
+    this.flippedMealId.set(null);
+  }
+
+  /** The slot photo drag ended — clear the drag affordance and bubble the release
+   *  point up so the parent can route the outcome (move / new menu / clear). Use
+   *  the native event's VIEWPORT (client) coordinates so they line up with the
+   *  parent's document.elementFromPoint hit-test (dropPoint can be page-space and
+   *  drift under scroll). */
+  onTileDragEnded(mealId: number, event: CdkDragEnd): void {
+    this.rotation.dragging.set(null);
+    const native = event.event as MouseEvent & Partial<TouchEvent>;
+    const touch = native.changedTouches?.[0];
+    const x = touch?.clientX ?? (native as MouseEvent).clientX ?? event.dropPoint.x;
+    const y = touch?.clientY ?? (native as MouseEvent).clientY ?? event.dropPoint.y;
+    this.slotDragEnded.emit({ slotOrder: this.slot().slotOrder, mealId, point: { x, y } });
+  }
+
+  /** Summed slot macros (front strip). */
+  readonly macros = computed<Macro>(() => this.mac(this.slot().macros));
+
+  /** Safe macro accessor (nullable MenuMacros → zeroed Macro). */
+  mac(m: MenuSlotMeal['macros'] | undefined): Macro {
     return {
       proteinG: m?.proteinG ?? 0,
       carbG: m?.carbG ?? 0,
       fatG: m?.fatG ?? 0,
       fiberG: m?.fiberG ?? 0,
+      calories: m?.calories ?? 0,
     };
-  });
+  }
 
-  round(n: number): number {
-    return Math.round(n);
+  /** Food rows for a stacked meal, split into real foods and dynamic ingredients. */
+  mainItemsFor(mealId: number): MealItem[] {
+    return this.rotation.slotItems(mealId).filter((i) => i.food?.dynamicIngredient !== true);
+  }
+  dynamicItemsFor(mealId: number): MealItem[] {
+    return this.rotation.slotItems(mealId).filter((i) => i.food?.dynamicIngredient === true);
+  }
+
+  /** Tile image: prefer the FULL image (from the cached Meal) — the tile is large,
+   *  so the small thumbnail upscales and blurs. Fall back to the slot's thumbnail
+   *  (before the full Meal has streamed in), then '' → neutral tile. */
+  tileImage(m: MenuSlotMeal): string {
+    // Priority: the meal's ASSIGNED photo (own / fork original) → the meal's
+    // assigned SLOT thumbnail → the protein-derived default LAST → neutral tile.
+    // The assigned thumbnail MUST beat the protein default: adding a food loads
+    // the meal's items, which would otherwise let the primary-protein image
+    // (e.g. a chicken breast) override the meal's real thumbnail (the bug).
+    return (
+      this.rotation.assignedImageFor(m.mealId) ||
+      m.mealImageThumbnail?.trim() ||
+      this.rotation.proteinImageFor(m.mealId) ||
+      ''
+    );
+  }
+
+  /** Source recipe URL for a stacked meal, from the cached full Meal. */
+  recipeLinkFor(mealId: number): string {
+    // Delegates to the service, which falls back to the fork source's link (a
+    // forked/placed imported meal drops its own RecipeLink server-side).
+    return this.rotation.recipeLinkFor(mealId);
+  }
+
+  /** Commit the meal's TYPE from the card's strict select (fixed, DB-constrained). */
+  onMealTypeChange(mealId: number, value: string): void {
+    void this.rotation.updateMealType(mealId, (value ?? '').trim());
+  }
+
+  /** The meal's Serves (output scale). Falls back to 1 until the server default lands. */
+  servesFor(mealId: number): number {
+    return this.rotation.getMeal(mealId)?.servings ?? 1;
+  }
+  /** Commit the meal's Serves — persists `servings`, consumed only by the shopping list
+   *  and PDF output (never by the macros, which stay per one person). */
+  onMealServesChange(mealId: number, value: string): void {
+    const n = Math.max(1, Math.min(100, Math.round(Number(value) || 1)));
+    void this.rotation.updateMealFields(mealId, { servings: n });
+  }
+
+  openRecipe(url: string): void {
+    // In-app viewer overlay — it renders the PDF via Google's Docs Viewer (Google
+    // fetches server-side), the only path that displays these download-served,
+    // CORS-blocked GCS PDFs inline instead of downloading them.
+    if (url) this.tabs.openWebView(url);
+  }
+
+  /** Print key — ambidextrous. IFF the meal has a recipe link, open THAT recipe
+   *  (the real recipe always wins — never a generated stand-in). Only when no recipe
+   *  link exists do we render the meal to a print-formatted PDF. Both open in the
+   *  same in-app viewer (not a browser download). */
+  async printMeal(mealId: number): Promise<void> {
+    const recipe = this.recipeLinkFor(mealId);
+    if (recipe) {
+      this.openRecipe(recipe);
+      return;
+    }
+    const url = await this.rotation.printMealPdf(mealId);
+    if (url) this.tabs.openWebView(url);
+  }
+
+  isDirty(mealId: number): boolean {
+    return this.rotation.isMealDirty(mealId);
+  }
+
+  /** Live name-edit tracking so the green save-check lights while the typed name
+   *  differs from the saved one — independent of the pin/dirty state. */
+  readonly editingName = signal<{ id: number; val: string } | null>(null);
+
+  onNameInput(mealId: number, val: string): void {
+    this.editingName.set({ id: mealId, val });
+  }
+
+  nameDirty(fm: MenuSlotMeal): boolean {
+    const e = this.editingName();
+    if (!e || e.id !== fm.mealId) return false;
+    const v = e.val.trim();
+    return v !== '' && v !== this.clean(fm.mealName);
+  }
+
+  /** Strip the server's trailing " (copy)" (from copy-on-write forks) for display. */
+  clean(name: string | null | undefined): string {
+    return (name ?? '').replace(/(\s*\(copy\))+\s*$/i, '').trim();
+  }
+
+  commitName(fm: MenuSlotMeal, value: string): void {
+    this.editingName.set(null);
+    const name = value.trim();
+    if (!name || name === this.clean(fm.mealName)) return;
+    this.renameMeal.emit({ mealId: fm.mealId, name });
+  }
+
+  round(n: number | null | undefined): number {
+    return Math.round(n ?? 0);
+  }
+
+  // ---- Drag/drop -------------------------------------------------------
+  private isMealDrag(d: unknown): boolean {
+    return !!d && typeof d === 'object' && 'id' in d && !('food' in d) && !('slots' in d);
+  }
+
+  /** A food dragged from the lookaside carries { food, serving }. */
+  private isFoodDrag(d: unknown): d is { food: Food; serving: number } {
+    return !!d && typeof d === 'object' && 'food' in d;
+  }
+
+  /** Empty-slot placeholder accepts a binder meal drag; while this slot is being
+   *  edited it also accepts a food dragged from the lookaside. */
+  readonly mealDropPredicate = (drag: CdkDrag): boolean =>
+    this.isFoodDrag(drag.data) ? this.editing() : this.isMealDrag(drag.data);
+
+  /** Front grid accepts a meal append (room + not dining-out) OR, while editing,
+   *  a food dragged from the lookaside. */
+  readonly appendPredicate = (drag: CdkDrag): boolean =>
+    this.isFoodDrag(drag.data)
+      ? this.editing()
+      : !this.isFull() && !this.slot().isDiningOut && this.isMealDrag(drag.data);
+
+  /** Back-face (ingredient list) accepts a food drop while editing. */
+  readonly foodDropPredicate = (drag: CdkDrag): boolean =>
+    this.isFoodDrag(drag.data) && this.editing();
+
+  onDropMeal(event: CdkDragDrop<unknown>): void {
+    // A food dragged from the lookaside → add it to the editing meal.
+    if (this.isFoodDrag(event.item.data)) {
+      const { food, serving } = event.item.data;
+      this.dropFood.emit({ food, serving: serving ?? 1 });
+      return;
+    }
+    const meal = event.item.data as { id?: number } | undefined;
+    if (meal?.id == null) return;
+    this.placeMeal.emit({ slotOrder: this.slot().slotOrder, mealId: meal.id });
   }
 }

@@ -3,73 +3,67 @@
 .food-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
-  padding: 4px 6px;
+  padding: 3px 6px;
   border-radius: 4px;
 
   &:hover {
     background: #ffffff0a;
 
-    .swap-btn {
+    .food-actions {
       opacity: 1;
       pointer-events: auto;
     }
   }
+
+  // Editable rows (resolved food) double-click to open the serving popup; hint it
+  // and stop the double-click from text-selecting the name.
+  &.editable {
+    cursor: pointer;
+    user-select: none;
+  }
 }
 
-.food-text {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
+// Name gets 2/3, serving 1/3 of the row minus the fixed-width actions; both
+// clip with an ellipsis so long names/units never shove the buttons off.
+.food-name {
+  flex: 2 1 0;
+  min-width: 0;
   font-size: 13px;
   color: #f1f1f1;
-  min-width: 0;
-
-  .qty {
-    color: #9aa0a6;
-    white-space: nowrap;
-  }
-
-  .dot {
-    color: #6a6f75;
-  }
-
-  .name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.swap-btn {
+.food-qty {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 13px;
+  color: #9aa0a6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Hover-revealed wrapper; the buttons themselves are the shared .icon-disc
+// (same size as the meal-card header discs). Reserve a fixed pencil+delete width
+// (right-aligned) so the serving column lines up whether or not a row offers the
+// pencil (AI/unresolved items have no pencil, only the trash).
+.food-actions {
   opacity: 0;
   pointer-events: none;
   flex: 0 0 auto;
+  min-width: 52px; // 24 (pencil) + 4 gap + 24 (trash)
+  justify-content: flex-end;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 22px;
-  padding: 0 8px;
-  border: 1px solid #4a4a4a;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
-  color: #d8d8d8;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: opacity 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  gap: 4px;
+  transition: opacity 0.12s ease;
 
-  &:hover {
-    border-color: #4da6ff;
-    color: #ffffff;
-  }
-
-  .swap-icon {
-    width: 13px;
-    height: 13px;
-    object-fit: contain;
+  // Resolving the item's food to open the popup — brief busy state.
+  .icon-disc.busy {
+    opacity: 0.5;
+    cursor: progress;
   }
 }

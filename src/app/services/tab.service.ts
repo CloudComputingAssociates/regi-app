@@ -95,7 +95,7 @@ export class TabService {
   // Define menu order - this determines tab insertion order
   // Left nav: chat, menus (Menus), foods (Food Preferences), shop (Shopping List)
   // Right nav (profile menu): account, preferences (Settings), help
-  private menuOrder = ['chat', 'menus', 'foods', 'shop', 'video-viewer', 'web-viewer', 'issue', 'preferences', 'account', 'help'];
+  private menuOrder = ['chat', 'menus', 'foods', 'shop', 'mealsets', 'video-viewer', 'web-viewer', 'issue', 'preferences', 'account', 'help'];
 
   /** URL for the video-viewer tab (set before opening the tab) */
   videoViewerUrl: WritableSignal<string> = signal('');
@@ -268,8 +268,93 @@ export class TabService {
   // is active. Profile menu's "Bug" entry flips this; the overlay's own
   // Close button (or backdrop click) flips it back.
   readonly bugOpen = signal(false);
-  openBug(): void { this.bugOpen.set(true); }
+  // Which entry opened the feedback overlay — drives its title prefix
+  // ("Bug — …" vs "Suggestion — …"). Both share one overlay/form.
+  readonly bugKind = signal<'bug' | 'suggestion'>('suggestion');
+  openBug(kind: 'bug' | 'suggestion' = 'suggestion'): void {
+    this.bugKind.set(kind);
+    this.bugOpen.set(true);
+  }
   closeBug(): void { this.bugOpen.set(false); }
+
+  // Mobile-app "tether" bloom dialog — a small QR/download nudge floated over
+  // the app. Profile menu's "Mobile App" entry flips this; the dialog's red X
+  // (or backdrop click) flips it back.
+  readonly mobileAppOpen = signal(false);
+  openMobileApp(): void { this.mobileAppOpen.set(true); }
+  closeMobileApp(): void { this.mobileAppOpen.set(false); }
+
+  // Account — a small bloom overlay (limited to "delete account" for now), NOT
+  // a full left-nav-style panel. Profile menu's "Account" flips this.
+  readonly accountOpen = signal(false);
+  openAccount(): void { this.accountOpen.set(true); }
+  closeAccount(): void { this.accountOpen.set(false); }
+
+  // Recipe authoring editor — a full-screen overlay launched from the Author
+  // Studio's RecipeBox section (the list lives there now, not in a panel).
+  // recipeAuthorEditorId: the recipe being edited (null = a new draft).
+  readonly recipeEditorOpen = signal(false);
+  readonly recipeAuthorEditorId = signal<number | null>(null);
+  openRecipeEditor(id: number | null): void {
+    this.recipeAuthorEditorId.set(id);
+    this.recipeEditorOpen.set(true);
+  }
+  closeRecipeEditor(): void { this.recipeEditorOpen.set(false); }
+
+  // MealSet editor — a full-screen overlay launched from the MealSet Studio hub
+  // (mirrors the recipe editor seam). mealsetEditorId: the set being edited
+  // (null = a new set). Close flips only the flag so the hub can reload async.
+  readonly mealsetEditorOpen = signal(false);
+  readonly mealsetEditorId = signal<number | null>(null);
+  openMealsetEditor(id: number | null): void {
+    this.mealsetEditorId.set(id);
+    this.mealsetEditorOpen.set(true);
+  }
+  closeMealsetEditor(): void { this.mealsetEditorOpen.set(false); }
+
+  // Shopping List — a bloom overlay floated over the Menus & Meals board,
+  // launched from that toolbar (no longer a left-nav panel on web). The bloom's
+  // X / backdrop click flips it back.
+  readonly shoppingOpen = signal(false);
+  openShopping(): void { this.shoppingOpen.set(true); }
+  closeShopping(): void { this.shoppingOpen.set(false); }
+
+  // In-app web viewer — opens an external page (or a PDF) in a bloom overlay
+  // instead of a new browser tab (so the user never leaves the app). null = closed.
+  readonly webViewUrl = signal<string | null>(null);
+  /** Force the PDF.js viewer (with its print/download toolbar) even when the URL
+   *  has no .pdf extension — e.g. a `blob:` URL for a generated PDF. */
+  readonly webViewIsPdf = signal(false);
+  private webViewBlobUrl: string | null = null;
+
+  openWebView(url: string): void {
+    this.revokeWebViewBlob();
+    this.webViewIsPdf.set(false);
+    this.webViewUrl.set(url);
+  }
+
+  /** Open a PDF in the SAME bloom viewer used for recipe PDFs — fully rendered,
+   *  with a print button. Pass `ownsBlobUrl: true` for a `blob:` URL so it's
+   *  revoked when the viewer closes. Consolidates all PDF viewing on one surface. */
+  openPdf(url: string, ownsBlobUrl = false): void {
+    this.revokeWebViewBlob();
+    this.webViewBlobUrl = ownsBlobUrl ? url : null;
+    this.webViewIsPdf.set(true);
+    this.webViewUrl.set(url);
+  }
+
+  closeWebView(): void {
+    this.webViewUrl.set(null);
+    this.webViewIsPdf.set(false);
+    this.revokeWebViewBlob();
+  }
+
+  private revokeWebViewBlob(): void {
+    if (this.webViewBlobUrl) {
+      URL.revokeObjectURL(this.webViewBlobUrl);
+      this.webViewBlobUrl = null;
+    }
+  }
 
   // ============================================================
   // Single-active panel APIs (replaces the mat-tab strip model)
@@ -325,6 +410,61 @@ export class TabService {
     } else {
       this.openPanel(tabId, label);
     }
+  }
+
+  // ============================================================
+  // Help — open/close RETURNING to the previous panel.
+  // ============================================================
+  // Help is a transient overlay-style panel: opening it from the app-bar "?" or
+  // the profile menu remembers whatever panel was active, and closing it (toggle
+  // off, or the panel's own X) returns there instead of dropping to the splash.
+  private helpReturnTabId: string | null = null;
+
+  /** Open Help remembering the current panel, or close it (returning) if it's
+   *  already active. Both Help entry points route through here. */
+  toggleHelp(): void {
+    if (this.activeTabId() === 'help') {
+      this.closeHelp();
+    } else {
+      // Remember where we came from (null = splash). Don't record 'help' itself.
+      this.helpReturnTabId = this.activeTabId();
+      this.openPanel('help', 'Help');
+    }
+  }
+
+  /** Close Help, returning to the panel that was active when it opened (or the
+   *  splash if that was the splash / the panel is no longer visited). */
+  closeHelp(): void {
+    const ret = this.helpReturnTabId;
+    this.helpReturnTabId = null;
+    if (ret && ret !== 'help' && this.tabsSignal().some(t => t.id === ret)) {
+      this._switchToTabInternal(ret);
+    } else {
+      this.closePanel();
+    }
+  }
+
+  // ============================================================
+  // Chat hand-off — open Chat contextually with a way BACK to the origin.
+  // ============================================================
+  // A panel (e.g. Build-a-Meal's "Ask Regi") can send the user into the Chat
+  // panel for a focused sub-conversation. The Chat panel renders a small banner
+  // with the sub-title and a Back control; the origin supplies an `onReturn`
+  // that navigates back (and re-opens its workspace). null = ordinary chat.
+  readonly chatOrigin = signal<{ title: string; onReturn: () => void } | null>(null);
+
+  /** Hand off to the Chat panel with a contextual sub-title and a return action. */
+  openChatWithOrigin(title: string, onReturn: () => void): void {
+    this.chatOrigin.set({ title, onReturn });
+    this.openPanel('chat', 'Chat');
+  }
+
+  /** Back out of a contextual Chat hand-off: clear the banner and run the origin's
+   *  return action (which navigates back to where the hand-off began). */
+  returnFromChatOrigin(): void {
+    const origin = this.chatOrigin();
+    this.chatOrigin.set(null);
+    origin?.onReturn();
   }
 
 
@@ -389,9 +529,10 @@ export class TabService {
     // Map of tab ID to label
     const tabLabels: Record<string, string> = {
       'chat': 'Chat',
-      'menus': 'Menus',
+      'menus': 'Menus & Meals',
       'shop': 'Shopping List',
-      'foods': 'Foods',
+      'foods': 'My Foods',
+      'mealsets': 'MealSets Studio',
       'preferences': 'Settings',
       'account': 'Account',
       'help': 'Help',

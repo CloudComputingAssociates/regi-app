@@ -27,8 +27,8 @@ export interface UserFood {
   ingredientsAreAllergens: boolean;
   gtinUpc?: string;
   productPurchaseLink?: string;
-  shareCandidate: boolean;
-  shareApproved: boolean;
+  regiApprovedCandidate: boolean; // renamed from shareCandidate
+  regiApproved: boolean;          // renamed from shareApproved (admin-curated flag)
   createdAt: string;
   updatedAt: string;
   nutritionFacts?: UserNutritionFacts;
@@ -57,6 +57,11 @@ export interface UserNutritionFacts {
   ironMG?: number;
   potassiumMG?: number;
   createdAt: string;
+}
+
+// Body for PATCH /userfoods/{id}/category — updates ONLY the category.
+export interface UpdateUserFoodCategoryRequest {
+  categoryId: number;
 }
 
 export interface CreateUserFoodRequest {
@@ -92,5 +97,5 @@ export interface CreateUserFoodRequest {
   ironMG?: number;
   potassiumMG?: number;
   productPurchaseLink?: string;
-  shareCandidate?: boolean;
+  regiApprovedCandidate?: boolean; // renamed from shareCandidate
 }

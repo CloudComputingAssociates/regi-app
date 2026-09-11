@@ -1,21 +1,43 @@
 // src/app/components/foods-panel/foods-panel.ts
-import { Component, ChangeDetectionStrategy, signal, computed, inject, viewChild, effect, ElementRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, inject, viewChild, effect, ElementRef, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
+import {
+  MealImageSourceComponent,
+  ImageSourceData,
+  ImageSourceResult,
+} from '../meal-image-source/meal-image-source';
 import { NutritionFactsLabelComponent } from '../nutrition-facts-label/nutrition-facts-label';
+import { CurateWizardComponent } from '../curate-wizard/curate-wizard';
+import { AddFoodPanelComponent } from '../add-food-panel/add-food-panel';
+import { RotationService } from '../../services/rotation.service';
+import { RoleService } from '../../services/role.service';
+import { CreateMealItem, CreateMealRequest } from '../../models';
 import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
+import { RecipeAuthoringService } from '../../services/recipe-authoring.service';
+import { ImageUploadService } from '../../services/image-upload.service';
+import { ThisWeekMacrosService } from '../../services/this-week-macros.service';
 import { UserFoodService } from '../../services/user-food.service';
 import { FoodsService, FoodList } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
 import { LangfusePromptService, LangfusePromptError } from '../../services/langfuse-prompt.service';
 import { SettingsService } from '../../services/settings.service';
-import { Food } from '../../models/food.model';
+import { Food, MealRole } from '../../models/food.model';
 import { CurrentPick } from '../../models/settings.models';
-import { nutritionLabelScale } from '../../models/food-display';
+import {
+  BasketKey,
+  BASKET_KEYS,
+  BuildMealBaskets,
+  emptyBaskets,
+  hydratePicks,
+} from '../../models/picks-hydration';
+import { nutritionLabelScale, snapServing, snapServingForUnit } from '../../models/food-display';
 
 // 'myfoods' and 'restricted' are special: they pull from the user-preferences
 // service. Any other value is treated as the handle of a curated list and
@@ -34,8 +56,8 @@ const LS_MYFOODS = 'regi.foods.myfoods';
 // the constructor and removed; nothing else in the code references it.
 const LS_LEGACY_THISWEEK_BASKETS = 'regi.foods.thisweek.buckets';
 
-type BasketKey = 'Proteins' | 'Fats' | 'Carbs' | 'Other';
-const BASKET_KEYS: readonly BasketKey[] = ['Proteins', 'Fats', 'Carbs', 'Other'];
+// BasketKey / BASKET_KEYS / BuildMealBaskets / emptyBaskets + the pick hydration
+// live in ../../models/picks-hydration. Only Build-a-Meal (this panel) consumes them.
 
 // Food.categoryName → basket. Per the spec: Dairy → Fats, Vegetables/Carbs/Fruits
 // → Carbs, Processed/Condiments → Other.
@@ -49,11 +71,6 @@ const CATEGORY_TO_BASKET: Record<string, BasketKey> = {
   Processed: 'Other',
   Condiment: 'Other',
 };
-
-type ThisWeekBaskets = Record<BasketKey, Food[]>;
-function emptyBaskets(): ThisWeekBaskets {
-  return { Proteins: [], Fats: [], Carbs: [], Other: [] };
-}
 
 // Labels for the two preference-driven sources. Curated lists are labelled
 // dynamically from their .description (see typeLabel computed below).
@@ -73,6 +90,15 @@ const CATEGORY_PLURALS: Record<string, string> = {
   Condiment: 'Seasonings',
 };
 
+// Category aliasing — fold non-standard categories into an existing bucket so no
+// food is lost from the grouping / filters. Beverages → Processed for now (newly
+// added drinks like almond milk carry categoryName "Beverage").
+const CATEGORY_ALIAS: Record<string, string> = { Beverage: 'Processed', Beverages: 'Processed' };
+function normalizeCategory(name: string | null | undefined): string {
+  const raw = (name ?? '').trim();
+  return CATEGORY_ALIAS[raw] ?? raw;
+}
+
 // Filter-bar groups. Each group is a single button that toggles one or more
 // raw categories together. We combine Fat+Dairy and Vegetable+Fruit so the
 // filter UI nudges users to think of them as paired choices — dairy belongs
@@ -91,7 +117,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
 
 @Component({
   selector: 'app-foods-panel',
-  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, NutritionFactsLabelComponent],
+  imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule, NutritionFactsLabelComponent, CurateWizardComponent, AddFoodPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="foods-panel-container">
@@ -111,38 +137,60 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
              3. Rounded carousel "card" that holds the search row + the
                 carousel cards as a single visual unit, mirroring the basket-
                 card on the right pane. -->
-        <div class="left-pane" [style.flex]="leftPaneWidthFraction()">
+        <div class="left-pane" [style.flex]="leftPaneFlex()">
+          <!-- Left-pane header mirrors "Build-a-Meal" across the way: the
+               "My Foods" heading + the Edit… button share the section-title bar
+               so both pane headers sit on one baseline. -->
           <div class="section-title">
-            <span class="section-title-text">MyFoods</span>
-            <!-- Curate MyFoods pill — blue text on the LHS. Toggles the RHS
-                 between its default Baskets view and the Curate overlay.
-                 Active state inverts to a filled blue chip so the user can
-                 tell at a glance which view is on the right. -->
+            <span class="section-title-text">
+              <span
+                matTooltip="Your food library — the foods Planning draws from"
+                matTooltipPosition="below"
+                [matTooltipShowDelay]="350">
+                My Foods
+              </span>
+            </span>
+            <!-- Edit My Foods (pencil) — toggles the editor overlay on the RHS (MyFoods
+                 stays on the left). Insets while active. FIRST key. The Curate Wizard
+                 trigger now lives inside that overlay's header. -->
             <button
               type="button"
-              class="curate-toggle"
-              [class.pressed]="addTo() === 'right'"
-              (click)="toggleEditMyFoods()"
-              matTooltip="Edit ... MyFoods, further curate faves, edit Serving Sizes, delete foods you entered"
+              class="bar-icon-btn"
+              [class.pressed]="editOpen()"
+              [attr.aria-pressed]="editOpen()"
+              (click)="toggleEdit()"
+              [matTooltip]="editOpen() ? 'Close Edit MyFoods' : 'Edit MyFoods'"
               matTooltipPosition="below"
-              [matTooltipShowDelay]="350">
-              Edit...
+              [matTooltipShowDelay]="350"
+              aria-label="Edit My Foods">
+              <mat-icon aria-hidden="true">edit</mat-icon>
             </button>
-          </div>
-
-          <div class="filter-bar">
-            <span class="filter-bar-label">FILTER</span>
-            <div class="category-radio-panel" role="group" aria-label="Category filter">
-              @for (group of filterGroups; track group.key) {
-                <button
-                  type="button"
-                  class="category-radio-btn"
-                  [class.pressed]="isFilterGroupActive(group)"
-                  [attr.aria-pressed]="isFilterGroupActive(group)"
-                  (click)="toggleFilterGroup(group)">
-                  {{ group.label }}
-                </button>
-              }
+            <!-- Build-a-Meal — opens the baskets workspace on the RHS: pick foods,
+                 then generate an AI meal from them. SECOND key. -->
+            <button
+              type="button"
+              class="bar-icon-btn"
+              [class.pressed]="buildMealOpen()"
+              [attr.aria-pressed]="buildMealOpen()"
+              (click)="toggleBuildMeal()"
+              [matTooltip]="buildMealOpen() ? 'Close Build-a-Meal' : 'Build-a-Meal'"
+              matTooltipPosition="below"
+              [matTooltipShowDelay]="350"
+              aria-label="Build-a-Meal">
+              <mat-icon aria-hidden="true">restaurant_menu</mat-icon>
+            </button>
+            <!-- Leave-panel key — red X disc (consistent with the Notebook + Menus
+                 close). Lives here so it's ALWAYS available to close the panel. -->
+            <div class="title-right">
+              <button
+                type="button"
+                class="dialog-disc dialog-disc-cancel myfoods-close-disc"
+                matTooltip="Close My Foods panel"
+                matTooltipPosition="below"
+                (click)="tabService.closePanel()"
+                aria-label="Close panel">
+                <mat-icon aria-hidden="true">close</mat-icon>
+              </button>
             </div>
           </div>
 
@@ -151,10 +199,10 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               <span class="search-label">SEARCH</span>
               <input
                 type="text"
-                class="carousel-search-input"
+                class="carousel-search-input regi-field"
                 [value]="searchQuery()"
                 (input)="onSearchInput($any($event.target).value)"
-                placeholder="Search foods…" />
+                placeholder="type food name…" />
               @if (searchQuery()) {
                 <button
                   type="button"
@@ -166,15 +214,59 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <mat-icon>cancel</mat-icon>
                 </button>
               }
-              <!-- LHS top bar is intentionally lean now — no NF Label or
-                   Health Info button. Nutrition Facts is offered via a
-                   delayed "Click for Facts" bloom on RHS basket tiles
-                   (see .nf-bloom in foods-panel.scss). -->
               <span class="top-bar-spacer"></span>
+              <!-- Edit Nutrition Facts (scale serving/units) for the highlighted
+                   food — a pencil just LEFT of the trash. -->
+              <button
+                type="button"
+                class="bar-icon-btn myfoods-edit"
+                [disabled]="!selectedFood()"
+                (click)="onSelectedTileEdit()"
+                matTooltip="Edit nutrition facts"
+                matTooltipPosition="below"
+                aria-label="Edit nutrition facts">
+                <mat-icon aria-hidden="true">edit</mat-icon>
+              </button>
+              <!-- Remove-from-MyFoods trashcan — greyed until a food is highlighted;
+                   then a grey button with a red trashcan to pare the list down. -->
+              <button
+                type="button"
+                class="bar-icon-btn myfoods-remove"
+                [disabled]="!selectedFood()"
+                (click)="removeSelectedFromMyFoods($event)"
+                matTooltip="Remove from MyFoods"
+                matTooltipPosition="below"
+                aria-label="Remove from MyFoods">
+                <mat-icon aria-hidden="true">delete_outline</mat-icon>
+              </button>
               <span class="top-bar-total">Total ({{ carouselSpinnerFoods().length }})</span>
-              <!-- Absolute-centered tagline lives OUTSIDE the flex flow so
-                   its position is unaffected by the SEARCH / TOTAL widths. -->
-              <span class="top-bar-tagline">Curated MyFoods</span>
+            </div>
+            <!-- Category filters — moved beneath the search, inside the card. -->
+            <div class="carousel-filter-row">
+              <span class="filter-bar-label">FILTER</span>
+              <div class="category-radio-panel" role="group" aria-label="Category filter">
+                <!-- Clear all filters — icon key in front of the first category. -->
+                <button
+                  type="button"
+                  class="category-radio-btn filter-clear-btn"
+                  matTooltip="Clear filter"
+                  matTooltipPosition="below"
+                  [matTooltipShowDelay]="350"
+                  (click)="clearFilters()"
+                  aria-label="Clear filter">
+                  <mat-icon aria-hidden="true">filter_alt_off</mat-icon>
+                </button>
+                @for (group of filterGroups; track group.key) {
+                  <button
+                    type="button"
+                    class="category-radio-btn"
+                    [class.pressed]="isFilterGroupActive(group)"
+                    [attr.aria-pressed]="isFilterGroupActive(group)"
+                    (click)="toggleFilterGroup(group)">
+                    {{ group.label }}
+                  </button>
+                }
+              </div>
             </div>
             <!-- Tile grid replaces the old spinning carousel. Tiles fill
                  left-to-right and wrap to the next row; the grid scrolls
@@ -188,13 +280,12 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 <div
                   class="food-tile"
                   [class.selected]="selectedFood()?.id === food.id"
-                  [draggable]="true"
+                  [draggable]="addTo() !== 'right'"
                   (click)="onTileClick(food)"
-                  (dblclick)="onTileDblClick(food)"
                   (dragstart)="onTileDragStart(food, $event)">
                   <div class="food-tile-image">
-                    @if (food.foodImageThumbnail) {
-                      <img [src]="food.foodImageThumbnail" alt="" draggable="false" />
+                    @if (foodThumb(food); as src) {
+                      <img [src]="src" alt="" draggable="false" />
                     }
                   </div>
                   <div class="food-tile-label">
@@ -208,7 +299,12 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
           </div>
         </div>
 
-        <!-- VERTICAL SPLITTER — drag horizontally to resize the panes. -->
+        <!-- EDIT MODE: MyFoods stays on the LHS; the RHS (with a splitter) holds
+             the Edit-My-Foods editor. The Edit button toggles this split. The
+             Build-a-Meal baskets are parked behind the editor overlay (not shown).
+             Nothing deleted — restore that view later by dropping the overlay. -->
+        @if (focusEditOpen()) {
+        <!-- VERTICAL SPLITTER — drag horizontally to resize the two panes. -->
         <div
           #vSplitter
           class="pane-splitter-v"
@@ -216,207 +312,219 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
           (touchstart)="onVSplitterTouchStart($event)">
           <div class="splitter-grip-v"></div>
         </div>
-
-        <!-- RIGHT PANE: blue section title at top ("Baskets" in This Week
-             mode, the collection name in Curate mode), DISPLAY toggle, then
-             (in Curate mode only) the TYPE dropdown, then the content. -->
+        <!-- RIGHT PANE — the Build-a-Meal baskets workspace. The Edit-MyFoods editor
+             overlay covers it when Edit mode is active (addTo==='right'). -->
         <div class="right-pane" [style.flex]="rightPaneFlex()">
-          <!-- RHS title:
-               - Baskets mode (default): just "Baskets (n)" — no close.
-                 Baskets is the home state and can't be dismissed; the user
-                 closes the entire Foods panel via the left-nav.
-               - Curate mode: "Curation (n)" with an X close on the right
-                 that flips back to Baskets. The Curate LHS pill stays in
-                 sync as the same toggle. -->
+          <!-- RHS title: "Build-a-Meal" — pick foods into the four baskets, then
+               generate a meal from them. -->
           <div class="section-title">
             <span class="section-title-text">
-              @if (addTo() === 'left') {
-                <span
-                  matTooltip="You pick foods, as a baseline for Planning your menus"
-                  matTooltipPosition="below"
-                  [matTooltipShowDelay]="350">
-                  Food Picks
-                </span>
-              } @else {
-                <span
-                  matTooltip="Edit MyFoods — click 'star' to Favorite, 'circle-line' to Restrict. Double-click a row to edit its Serving Size, single-press-and-hold the picture to zoom."
-                  matTooltipPosition="below"
-                  [matTooltipShowDelay]="350">
-                  Edit MyFoods
-                </span>
+              <span
+                matTooltip="Pick foods into the baskets, then compose a meal from them"
+                matTooltipPosition="below"
+                [matTooltipShowDelay]="350">
+                Build-a-Meal
+              </span>
+              <!-- Contextual return — same line as the heading, to its right. Shows
+                   ONLY for a Menus & Meals slot ('slot') or the + Add Meal dialog
+                   ('menus') entry; never from a My Foods entry. Abandons (no meal
+                   created) and returns to Menus & Meals. -->
+              @if (bamShowBacklink()) {
+                <button type="button" class="bam-backlink" (click)="returnToMenus()">
+                  (return to Meals)
+                </button>
               }
             </span>
-            <span class="section-title-count">
-              @if (addTo() === 'left') { Total ({{ thisWeekTotal() }}) }
-              @else { Total ({{ bottomListLength() }}) }
-            </span>
-            @if (addTo() === 'right') {
+            <!-- Clear-all key — floats LEFT next to the "Build-a-Meal" title (and,
+                 when the return link is showing, just right of its closing paren).
+                 Empties all four baskets (auto-persists via persistBuildMealBaskets). -->
+            <button
+              type="button"
+              class="bar-icon-btn bam-clear-key"
+              matTooltip="Clear all picked foods"
+              matTooltipPosition="below"
+              (click)="clearAllBaskets()"
+              aria-label="Clear all picked foods">
+              <mat-icon aria-hidden="true">clear_all</mat-icon>
+            </button>
+            <!-- Save + close cluster, right-justified together. -->
+            <div class="title-right">
+              <!-- Save meal — green check in the same grey toolbar key. Saves the
+                   assembled meal and closes Build-a-Meal. Dimmed until it has a
+                   name and at least one food. -->
               <button
                 type="button"
-                class="section-title-close"
-                (click)="addTo.set('left')"
-                matTooltip="Back to Food Picks"
+                class="bar-icon-btn bam-save-key"
+                [class.saving]="saving()"
+                [disabled]="!canSaveMeal() || saving()"
+                matTooltip="Save meal"
                 matTooltipPosition="below"
-                aria-label="Close Edit">
-                ✕
+                (click)="saveMeal()"
+                aria-label="Save meal">
+                <mat-icon aria-hidden="true">{{ saving() ? 'autorenew' : 'check' }}</mat-icon>
               </button>
-            }
+              <!-- Close ONLY the Build-a-Meal pane (parks the split) — a white X. The
+                   whole My Foods panel is closed from its own header's red X. -->
+              <button
+                type="button"
+                class="dialog-disc dialog-disc-cancel"
+                matTooltip="Close Build-a-Meal"
+                matTooltipPosition="below"
+                (click)="closeBuildMeal()"
+                aria-label="Close Build-a-Meal">
+                <mat-icon aria-hidden="true">close</mat-icon>
+              </button>
+            </div>
           </div>
 
-          @if (addTo() === 'right') {
-            <!-- TYPE dropdown sits directly above the curated list — it
-                 predicates WHICH collection the user is curating. The Add
-                 Food (+) button on the right is gated by TYPE=MyFoods (only
-                 MyFoods can be added to). It's stubbed gray because the
-                 real Add flow lives in the phone app. -->
-            <div class="type-row">
-              <span class="type-row-label">Food List</span>
+          <!-- Build-a-Meal banner — Name · Notes (the focus, wide middle) · Cook
+               Method (short) beside the photo drop-zone. The running macros live in
+               the GLOBAL RegiMenu top bar (see pushBuildMealMacros) and the calorie
+               pill sits in the title bar — exactly like the Menus & Meals view. -->
+          <div class="buildmeal-banner">
+            <div class="bm-field bm-field-name">
+              <label class="bm-label" for="bm-name">Name</label>
+              <input
+                id="bm-name"
+                type="text"
+                class="bm-input regi-field"
+                [value]="mealName()"
+                (input)="mealName.set($any($event.target).value)"
+                placeholder="Name this meal…"
+                aria-label="Meal name" />
+            </div>
+
+            <div class="bm-field bm-field-notes">
+              <label class="bm-label">Notes</label>
+              <button
+                type="button"
+                class="bm-notes-preview"
+                (click)="notesEditorOpen.set(true)"
+                matTooltip="Edit notes"
+                matTooltipPosition="below"
+                aria-label="Edit meal notes">
+                <span class="bm-notes-text" [class.placeholder]="!mealNotes().trim()">
+                  {{ mealNotes().trim() || 'Add notes…' }}
+                </span>
+                <mat-icon class="bm-notes-pencil">edit</mat-icon>
+              </button>
+            </div>
+
+            <div class="bm-field bm-field-method">
+              <label class="bm-label" for="bm-method">Cook Method</label>
               <select
-                class="spin-source-select"
-                [ngModel]="spinSource()"
-                (ngModelChange)="onSpinSourceChange($event)">
-                <option value="myfoods">My Foods</option>
-                <option value="restricted">My Restricted Foods</option>
-                <!-- Visual separator between the two user-preference sources
-                     above and the curated lists pulled from /api/lists
-                     below. Disabled so it can't be picked. -->
-                <option disabled>──────────────</option>
-                @for (list of availableLists(); track list.name) {
-                  <option [value]="list.name">{{ list.description }}</option>
+                id="bm-method"
+                class="bm-input regi-field"
+                [ngModel]="cookingMethodId()"
+                (ngModelChange)="cookingMethodId.set($event)"
+                aria-label="Cook method">
+                <option [ngValue]="null">— none —</option>
+                @for (m of cookingMethods(); track m.id) {
+                  <option [ngValue]="m.id">{{ m.name }}</option>
                 }
               </select>
-              <!-- Collapse/expand controls for the accordion below. Minus
-                   collapses every category (the default state), plus
-                   expands them all. They're a pair so users can flip the
-                   whole list in one click. -->
-              <button
-                type="button"
-                class="picker-fold-btn"
-                [class.pressed]="allCategoriesCollapsed()"
-                (click)="collapseAllCategories()"
-                matTooltip="Collapse all categories"
-                matTooltipPosition="above"
-                aria-label="Collapse all">
-                −
-              </button>
-              <button
-                type="button"
-                class="picker-fold-btn"
-                [class.pressed]="!allCategoriesCollapsed()"
-                (click)="expandAllCategories()"
-                matTooltip="Expand all categories"
-                matTooltipPosition="above"
-                aria-label="Expand all">
-                +
-              </button>
-              <span class="column-hint">{{ columnHeaderText() }}</span>
-              @if (spinSource() === 'myfoods') {
-                <!-- Phone-then-label combo button. Whole pill is one click
-                     target so the user can tap either the icon or the text
-                     to open the phone-app placeholder dialog. margin-left:
-                     auto on the wrapper pushes the pair to the right edge
-                     of the type-row. -->
-                <button
-                  type="button"
-                  class="mobile-app-combo"
-                  (click)="openAddDialog()"
-                  matTooltip="Add foods with the mobile app (QR download)"
-                  matTooltipPosition="above"
-                  [matTooltipShowDelay]="350"
-                  aria-label="Add foods with mobile app">
-                  <span class="mobile-app-btn" aria-hidden="true">
-                    <mat-icon class="mobile-app-icon">phone_android</mat-icon>
-                  </span>
-                  <span class="mobile-app-label">Add foods w/ mobile</span>
-                </button>
-              }
             </div>
-            <!-- Picker-side type-ahead. Independent from the carousel SEARCH;
-                 filters the accordion rows below as the user types so they
-                 can find a specific food without scrolling. -->
-            <div class="picker-search-row">
-              <span class="picker-search-label">SEARCH</span>
-              <input
-                type="text"
-                class="picker-search-input"
-                [value]="pickerSearchQuery()"
-                (input)="onPickerSearchInput($any($event.target).value)"
-                placeholder="Search foods…" />
-              @if (pickerSearchQuery()) {
-                <button
-                  type="button"
-                  class="picker-search-clear"
-                  (click)="pickerSearchQuery.set('')"
-                  matTooltip="Clear search"
-                  matTooltipPosition="below"
-                  aria-label="Clear search">
-                  ✕
-                </button>
-              }
-              <span class="top-bar-total picker-search-total">Total ({{ bottomListLength() }})</span>
-            </div>
-          }
 
-          @if (addTo() === 'left') {
-            <!-- Invisible spacer that mirrors the LHS FILTER bar's vertical
-                 footprint so the rounded basket card below starts at the
-                 same Y as the LHS carousel card. Marked aria-hidden +
-                 inert so it never leaks into accessibility / focus order. -->
-            <div class="filter-bar-placeholder" aria-hidden="true"></div>
-            <!-- 4 baskets in a 2×2 grid wrapped in the same rounded card
-                 chrome as the carousel side, so the two panes feel balanced. -->
-            <div class="pane-card basket-card">
+            <!-- Photo drop-zone — stages a file locally (uploaded on Save). -->
+            <div class="bm-field bm-field-photo">
+              <label class="bm-label">Photo</label>
+              <div
+                class="bm-photo-tile"
+                [class.dragging]="photoDragOver()"
+                (click)="bmPhotoInput.click()"
+                (dragover)="onPhotoDragOver($event)"
+                (dragleave)="onPhotoDragLeave($event)"
+                (drop)="onPhotoDrop($event)"
+                matTooltip="Add a photo (staged until you save)"
+                matTooltipPosition="below">
+                @if (stagedPhotoPreview(); as src) {
+                  <img [src]="src" alt="" class="bm-photo-img" />
+                } @else {
+                  <mat-icon class="bm-photo-icon">add_a_photo</mat-icon>
+                }
+              </div>
+              <input
+                #bmPhotoInput
+                type="file"
+                accept="image/jpeg,image/png,image/heic,image/heif,.heic,.heif"
+                hidden
+                (change)="onPhotoFile(bmPhotoInput)" />
+            </div>
+          </div>
+
+          <!-- Workspace: the baskets, with the generated-meal result region overlaying
+               the bottom portion once a meal is created. -->
+          <div class="buildmeal-workspace">
+          <!-- 4 baskets in a 2×2 grid. -->
+          <div class="pane-card basket-card">
             <div class="basket-grid">
               @for (key of basketKeys; track key) {
                 <div
                   class="basket"
                   [class.drag-over]="dragOverBasket() === key"
-                  [class.focused]="focusedBasket() === key"
+                  [class.focused]="expandedBasket() === key"
                   (dragenter)="onBasketDragEnter($event, key)"
                   (dragover)="onBasketDragOver($event)"
                   (dragleave)="onBasketDragLeave($event, key)"
                   (drop)="onBasketDrop($event, key)">
-                  <!-- Header row: blue title "PROTEINS (6)" + inline trash on
-                       the LEFT, traffic-light pair (yellow restore, green
-                       expand) anchored to the top-RIGHT. -->
+                  <!-- Header row: blue title + one right-aligned control cluster
+                       (pencil, trash, then the collapse/expand discs) sharing a
+                       single centerline. -->
                   <div class="basket-face">
                     <span class="basket-title">
-                      {{ basketLabel(key) }} ({{ thisWeekBaskets()[key].length }})
+                      {{ basketLabel(key) }} ({{ buildMealBaskets()[key].length }})
                     </span>
-                    @if (thisWeekBaskets()[key].length > 0) {
+                    <!-- Pencil + trash CENTERED on the card, deliberately kept
+                         away from the collapse/expand discs. -->
+                    <div class="basket-center-controls">
                       <button
                         type="button"
-                        class="basket-trash"
+                        class="basket-ctl basket-ctl-edit"
+                        [disabled]="!isSelectedInBasket(key)"
+                        (click)="onHeaderEditSelected()"
+                        matTooltip="Edit nutrition & serving"
+                        matTooltipPosition="above">
+                        <mat-icon class="basket-ctl-icon">edit</mat-icon>
+                      </button>
+                      <!-- Empty-basket delete — same red icon-disc as the Menus
+                           & Meals card delete. Always present; disabled (dimmed)
+                           when the basket is empty, exactly like the pencil. -->
+                      <button
+                        type="button"
+                        class="icon-disc icon-disc-danger"
+                        [disabled]="buildMealBaskets()[key].length === 0"
                         (click)="clearBasket(key)"
                         matTooltip="Empty Basket"
                         matTooltipPosition="above">
-                        <mat-icon class="basket-trash-icon">delete_outline</mat-icon>
+                        <mat-icon>delete_outline</mat-icon>
                       </button>
-                    }
-                  </div>
-                  <div class="basket-lights-right">
-                    <button
-                      type="button"
-                      class="basket-light basket-light-min"
-                      (click)="focusedBasket.set(null)"
-                      matTooltip="Restore"
-                      matTooltipPosition="above">
-                    </button>
-                    <button
-                      type="button"
-                      class="basket-light basket-light-max"
-                      (click)="focusedBasket.set(key)"
-                      matTooltip="Expand"
-                      matTooltipPosition="above">
-                    </button>
-                  </div>
-                  @if (thisWeekBaskets()[key].length === 0) {
-                    <div class="basket-empty-hint">
-                      <span class="basket-empty-hint-text">{{ basketEmptyHint(key) }}</span>
                     </div>
-                  } @else {
+                    <!-- Collapse/expand discs pinned at the right, on the same
+                         centerline as the centered pencil/trash. -->
+                    <div class="basket-lights">
+                      <!-- Collapse (−): disabled until the basket is expanded. -->
+                      <button
+                        type="button"
+                        class="basket-light basket-light-min"
+                        [disabled]="expandedBasket() !== key"
+                        (click)="expandedBasket.set(null)"
+                        matTooltip="Restore"
+                        matTooltipPosition="above">
+                      </button>
+                      <!-- Expand (+): grows the basket, then disables itself. -->
+                      <button
+                        type="button"
+                        class="basket-light basket-light-max"
+                        [disabled]="expandedBasket() === key"
+                        (click)="expandedBasket.set(key)"
+                        matTooltip="Expand"
+                        matTooltipPosition="above">
+                      </button>
+                    </div>
+                  </div>
+                  @if (buildMealBaskets()[key].length > 0) {
                     <div class="basket-tiles">
-                      @for (food of thisWeekBaskets()[key]; track food.id) {
+                      @for (food of buildMealBaskets()[key]; track food.id) {
                         <div
                           class="basket-mini-card"
                           [class.selected]="selectedBasketFood()?.id === food.id"
@@ -425,8 +533,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                           [draggable]="true"
                           (dragstart)="onBasketTileDragStart(food, key, $event)"
                           (dragend)="onBasketTileDragEnd($event)"
-                          (click)="onBasketFoodClick(food)"
-                          (dblclick)="onBasketFoodDblClick(food)">
+                          (click)="onBasketTileClick(food)">
                           <!-- Hover-revealed red X — explicit remove affordance.
                                stopPropagation so clicking it doesn't fire the
                                card's (click) select handler. -->
@@ -440,15 +547,31 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                             ✕
                           </button>
                           <div class="basket-mini-card-image">
-                            @if (food.foodImageThumbnail) {
-                              <img [src]="food.foodImageThumbnail" alt="" />
+                            @if (foodThumb(food); as src) {
+                              <img [src]="src" alt="" />
                             }
                           </div>
+                          <!-- Meal-role overlay: hollow yellow-glow P/S over the
+                               image (AnyUse shows nothing). -->
+                          @if (food.mealRole === 'PrimaryFood' || food.mealRole === 'SecondaryFood') {
+                            <span class="basket-role-badge">{{ food.mealRole === 'PrimaryFood' ? 'P' : 'S' }}</span>
+                          }
                           <div class="basket-mini-card-label">
                             <span class="basket-mini-card-label-text">
                               {{ food.shortDescription || food.description }}
                             </span>
                           </div>
+                          <!-- Quantity · unit — click to open the serving editor
+                               (persists the one serving record, userServingSize). -->
+                          <button
+                            type="button"
+                            class="basket-mini-qty"
+                            (click)="openPickServingEditor(food); $event.stopPropagation()"
+                            matTooltip="Edit quantity"
+                            matTooltipPosition="above"
+                            aria-label="Edit quantity">
+                            {{ pickQtyLabel(food) }}
+                          </button>
                         </div>
                       }
                     </div>
@@ -457,7 +580,100 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               }
             </div>
             </div>
-          } @else {
+          </div>
+          @if (addTo() === 'right') {
+            <!-- Edit MyFoods overlay — pops over the panel (consistent with the
+                 Meals-area edit). Backdrop click or the Red X disc closes it,
+                 revealing Build-a-Meal again. position:fixed lifts it out of the
+                 pane flow to cover the whole panel. -->
+            <div class="edit-overlay">
+              <div class="edit-overlay-panel">
+                <div class="edit-overlay-header">
+                  <span class="edit-overlay-title">Edit MyFoods</span>
+                  <!-- Curate Wizard trigger — moved here from the MyFoods header; an
+                       "M"-width gap after the label, then the wand key. -->
+                  <button
+                    type="button"
+                    class="bar-icon-btn curate-wizard-btn edit-overlay-wizard"
+                    (click)="wizardOpen.set(true)"
+                    matTooltip="Curate Wizard — swipe to build MyFoods"
+                    matTooltipPosition="below"
+                    [matTooltipShowDelay]="350"
+                    aria-label="Curate Wizard">
+                    <mat-icon aria-hidden="true">auto_fix_high</mat-icon>
+                  </button>
+                  <div class="dialog-discs">
+                    <button
+                      type="button"
+                      class="dialog-disc dialog-disc-cancel"
+                      (click)="closeEditOverlay()"
+                      matTooltip="Close Edit"
+                      matTooltipPosition="below"
+                      aria-label="Close Edit">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <!-- TYPE row: LIST · dropdown · + · Search · Total. -->
+                <div class="type-row">
+                  <span class="type-row-label">LIST</span>
+                  <select
+                    class="spin-source-select regi-field"
+                    [ngModel]="spinSource()"
+                    (ngModelChange)="onSpinSourceChange($event)">
+                    <!-- Order: My Foods (default) · curated lists (Regi/YEH
+                         Approved, GLP-1 favorites) · separator · Restricted. -->
+                    <option value="myfoods">My Foods</option>
+                    @for (list of orderedLists(); track list.name) {
+                      <option [value]="list.name">{{ list.description }}</option>
+                    }
+                    <option disabled>──────────────</option>
+                    <option value="restricted">Restricted</option>
+                  </select>
+                  <!-- Add a food to MyFoods — opens the shared Add-Food dialog.
+                       Only meaningful for the MyFoods list. -->
+                  @if (spinSource() === 'myfoods') {
+                    <button
+                      type="button"
+                      class="bar-icon-btn add-food-btn"
+                      (click)="onAddFood()"
+                      matTooltip="Add a food to My Foods"
+                      matTooltipPosition="below"
+                      aria-label="Add a food to My Foods">
+                      <mat-icon aria-hidden="true">add</mat-icon>
+                    </button>
+                  }
+                  <input
+                    type="text"
+                    class="picker-search-input regi-field"
+                    [value]="pickerSearchQuery()"
+                    (input)="onPickerSearchInput($any($event.target).value)"
+                    placeholder="Search foods…" />
+                  @if (pickerSearchQuery()) {
+                    <button
+                      type="button"
+                      class="picker-search-clear"
+                      (click)="pickerSearchQuery.set('')"
+                      matTooltip="Clear search"
+                      matTooltipPosition="below"
+                      aria-label="Clear search">
+                      ✕
+                    </button>
+                  }
+                  <!-- Collapse/expand ALL category accordions for the current list
+                       (works for any list — MyFoods, curated, Restricted). -->
+                  <button
+                    type="button"
+                    class="bar-icon-btn curate-collapse-all"
+                    [class.pressed]="allCategoriesCollapsed()"
+                    (click)="allCategoriesCollapsed() ? expandAllCategories() : collapseAllCategories()"
+                    [matTooltip]="allCategoriesCollapsed() ? 'Expand all categories' : 'Collapse all categories'"
+                    matTooltipPosition="below"
+                    aria-label="Collapse or expand all categories">
+                    <mat-icon aria-hidden="true">{{ allCategoriesCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
+                  </button>
+                  <span class="top-bar-total picker-search-total">Total ({{ bottomListLength() }})</span>
+                </div>
             <div class="pane-card list-card">
             <div class="right-pane-list" #bottomList>
               @if (spinSource() === 'myfoods') {
@@ -473,15 +689,30 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <mat-icon class="collapse-icon" [class.collapsed]="group.collapsed">expand_more</mat-icon>
                   <span class="category-name">{{ categoryLabel(group.category) }}</span>
                   <span class="category-count">({{ group.foods.length }})</span>
-                  @if (i === 0) {
-                    <span class="category-edit-hint">double-click to edit food</span>
-                  }
                   <span class="category-action-hint">{{ columnHeaderText() }}</span>
                 </div>
                 @if (!group.collapsed) {
                   @for (food of group.foods; track food.id) {
                     <div class="selected-food-row"
-                         (dblclick)="onEditMyFoodsRowDblClick(food)">
+                         [class.selected]="selectedMyFood()?.id === food.id"
+                         (click)="onMyFoodRowClick(food)">
+                      @if (selectedMyFood()?.id === food.id) {
+                        <!-- Centered AI Health Info badge overlay (row doesn't
+                             grow — it overlays the row). Edit/Delete live in the
+                             row's action strip below. -->
+                        <div class="myfood-select-overlay">
+                          <button
+                            type="button"
+                            class="myfood-health-info"
+                            (click)="$event.stopPropagation(); openHealthBenefits(food)"
+                            matTooltip="Click for AI Health Info"
+                            matTooltipPosition="above"
+                            aria-label="Health info">
+                            <img src="/images/Health%20Benefits.png" alt="Health Info" class="myfood-health-info-bg" />
+                            <span class="myfood-health-info-ai" aria-hidden="true"></span>
+                          </button>
+                        </div>
+                      }
                       <div class="selected-food-thumb"
                            (mousedown)="onThumbHoldStart($event, food)"
                            (mouseup)="onThumbHoldEnd()"
@@ -489,8 +720,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                            (touchstart)="onThumbHoldStart($event, food)"
                            (touchend)="onThumbHoldEnd()"
                            (touchcancel)="onThumbHoldEnd()">
-                        @if (food.foodImageThumbnail) {
-                          <img [src]="food.foodImageThumbnail" alt="" draggable="false" />
+                        @if (foodThumb(food); as src) {
+                          <img [src]="src" alt="" draggable="false" />
                         } @else {
                           <div class="selected-food-thumb-placeholder"></div>
                         }
@@ -498,11 +729,28 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                       <span class="selected-food-name">
                         {{ food.shortDescription || food.description }}
                       </span>
+                      @if (selectedMyFood()?.id === food.id) {
+                        <mat-icon
+                          class="row-action edit"
+                          (click)="$event.stopPropagation(); onSelectedMyFoodEdit()"
+                          matTooltip="Edit food"
+                          matTooltipPosition="above">edit</mat-icon>
+                        @if (isUserAddedFood(food)) {
+                          <mat-icon
+                            class="row-action trash"
+                            (click)="$event.stopPropagation(); onSelectedMyFoodDelete($event)"
+                            matTooltip="Delete food"
+                            matTooltipPosition="above">delete</mat-icon>
+                        }
+                      }
                       <mat-icon
                         class="row-action favorite"
                         [class.active]="preferencesService.isAllowed(food.id)"
-                        (click)="toggleFavorite($event, food)"
-                        matTooltip="Favorite"
+                        [class.disabled]="isUserAddedFood(food)"
+                        (click)="isUserAddedFood(food) ? $event.stopPropagation() : toggleFavorite($event, food)"
+                        [matTooltip]="isUserAddedFood(food)
+                          ? 'A food you added stays favorited — restrict it to exclude, or delete it'
+                          : 'Favorite'"
                         matTooltipPosition="left">
                         {{ preferencesService.isAllowed(food.id) ? 'star' : 'star_border' }}
                       </mat-icon>
@@ -514,21 +762,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                         matTooltipPosition="left">
                         block
                       </mat-icon>
-                      <!-- DELETE is only meaningful for foods the USER added
-                           (food.userId != null). YEH-base foods can be
-                           un-favorited via the star but never deleted from the
-                           database. Disabled state styles as muted gray; the
-                           tooltip explains why. -->
-                      <mat-icon
-                        class="row-action trash"
-                        [class.disabled]="!isUserAddedFood(food)"
-                        (click)="deleteUserFood($event, food)"
-                        [matTooltip]="isUserAddedFood(food)
-                          ? 'Delete this food'
-                          : 'Only foods you added can be deleted'"
-                        matTooltipPosition="left">
-                        delete
-                      </mat-icon>
+                      <!-- Per-row trash removed — deletion is now the top-bar
+                           red trash acting on the single-selected row. -->
                     </div>
                   }
                 }
@@ -560,8 +795,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   @for (food of group.foods; track food.id) {
                     <div class="selected-food-row">
                       <div class="selected-food-thumb">
-                        @if (food.foodImageThumbnail) {
-                          <img [src]="food.foodImageThumbnail" alt="" />
+                        @if (foodThumb(food); as src) {
+                          <img [src]="src" alt="" />
                         } @else {
                           <div class="selected-food-thumb-placeholder"></div>
                         }
@@ -593,8 +828,11 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               }
             </div>
             </div>
+              </div>
+            </div>
           }
         </div>
+        }
       </div>
 
       <!-- Nutrition Facts popup. Opens in view mode by default (read-only).
@@ -603,29 +841,41 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
       @if (nfPopupFood()) {
         <div class="nf-popup-overlay" (click)="onNfPopupClose()">
           <div class="nf-popup" (click)="$event.stopPropagation()">
-            <button class="nf-popup-close" (click)="onNfPopupClose()" aria-label="Close">✕</button>
-            <!-- Health Info button — overhangs the popup's upper edge so it
-                 advertises the AI explainer affordance on every NF popup.
-                 Always rendered (the previous filter-gate would silently
-                 hide it whenever no LHS category was pressed). The AI
-                 star sits on top of the green badge to make the AI
-                 provenance unmistakable. -->
-            <button
-              type="button"
-              class="health-benefits-btn nf-popup-health-info"
-              (click)="openHealthBenefits()"
-              matTooltip="Click for AI Health Info"
-              matTooltipPosition="above"
-              aria-label="Health info">
-              <img src="/images/Health%20Benefits.png" alt="Health Info" class="nf-popup-health-info-bg" />
-              <span class="nf-popup-health-info-ai" aria-hidden="true"></span>
-            </button>
+            <!-- Canonical confirm/cancel discs (see CLAUDE.md > Dialog
+                 conventions): green confirm LEFT of red cancel, red in the
+                 corner. Health Info is shifted left to make room. -->
+            <!-- Auto-save editor: unit / serving size / category all persist on
+                 change, so there's no green Save disc — just the red close X. -->
+            <div class="dialog-discs">
+              <button
+                type="button"
+                class="dialog-disc dialog-disc-cancel"
+                (click)="onNfPopupClose()"
+                matTooltip="Close"
+                matTooltipPosition="below"
+                aria-label="Close">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+            <!-- Health Info badge intentionally removed from the NF popup — it
+                 now lives centered on a selected Edit-MyFoods row. -->
             <!-- Scroll lives on this inner wrapper so the outer .nf-popup can
                  be overflow:visible and let the Health Info badge overhang
                  above without being clipped. -->
             <div class="nf-popup-inner">
               <div class="nf-popup-header">
-                @if (nfPopupFood()!.productPurchaseLink) {
+                @if (nfPopupMode() === 'edit') {
+                  <!-- Editable food NAME. Auto-saves on blur/Enter (forks a system
+                       food into a MyFoods copy first, like the other NF edits). -->
+                  <input
+                    #nfTitleBox
+                    type="text"
+                    class="nf-popup-title nf-popup-title-input"
+                    [value]="nfPopupFood()!.shortDescription || nfPopupFood()!.description"
+                    (keydown.enter)="nfTitleBox.blur()"
+                    (blur)="onNfTitleCommit(nfTitleBox.value)"
+                    aria-label="Food name" />
+                } @else if (nfPopupFood()!.productPurchaseLink) {
                   <a class="nf-popup-title nf-popup-title-link"
                      (click)="openProductLink(nfPopupFood()!)">
                     {{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}
@@ -635,17 +885,62 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     {{ nfPopupFood()!.shortDescription || nfPopupFood()!.description }}
                   </span>
                 }
+                <!-- Photo key — same 3-way image-source dialog the meal card uses
+                     (upload · phone). Sits at the end of the name, clear of the X. -->
+                <button
+                  type="button"
+                  class="nf-photo-btn"
+                  matTooltip="Add or replace this food's photo"
+                  matTooltipPosition="below"
+                  aria-label="Add a food photo"
+                  (click)="openFoodImageSource()">
+                  <mat-icon>photo_camera</mat-icon>
+                </button>
               </div>
+              @if (nfPopupMode() === 'edit') {
+                <!-- Category on its own line, labelled. Auto-saves on change.
+                     (The UNIT now lives inline on the serving line in the label.) -->
+                <div class="nf-popup-edit-row">
+                  <span class="nf-popup-cat-label">Category</span>
+                  <select
+                    class="nf-popup-category"
+                    [value]="nfPopupCategory()"
+                    [disabled]="!canEditNfCategory()"
+                    [matTooltip]="canEditNfCategory() ? '' : 'Category can only be changed on foods you added'"
+                    matTooltipPosition="above"
+                    (change)="onNfCategoryChange($any($event.target).value)"
+                    aria-label="Food category">
+                    @for (name of nfCategoryOptions(); track name) {
+                      <option [value]="name">{{ name }}</option>
+                    }
+                  </select>
+                  @if (nfPopupUnitResolving()) {
+                    <span class="nf-popup-unit-busy">figuring grams…</span>
+                  }
+                </div>
+                @if (showRegiApprovedToggle()) {
+                  <!-- Admin-only: mark this OWNED MyFoods userfood as RegiApproved.
+                       Optimistic PATCH /userfoods/{id}; reverts + toasts on failure. -->
+                  <label class="nf-popup-edit-row nf-regiapproved">
+                    <input
+                      type="checkbox"
+                      [checked]="nfPopupRegiApproved()"
+                      (change)="onRegiApprovedToggle($any($event.target).checked)" />
+                    <span class="nf-popup-cat-label">RegiApproved</span>
+                  </label>
+                }
+              }
               <regi-nutrition-label
                 [nutritionFacts]="nfPopupFood()!.nutritionFacts ?? null"
                 [scale]="nfPopupScale()"
                 [displayUnit]="nfPopupFood()!.servingUnit || 'g'"
                 [displayQuantity]="nfPopupServingSize()"
                 [editable]="nfPopupMode() === 'edit'"
-                [showSave]="nfPopupCanSave()"
+                [unitOptions]="nfPopupMode() === 'edit' ? nfPopupUnitOptions() : []"
+                [showSave]="false"
                 (adjust)="onNfAdjust($event)"
                 (commit)="onNfCommit($event)"
-                (save)="onNfSave()" />
+                (unitChange)="onNfUnitChange($event)" />
             </div>
             <!-- Dev-side data-trace, OUTSIDE the inner scroll area so it
                  rides on the popup's dark bottom chrome instead of inside
@@ -699,60 +994,47 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
         </div>
       }
 
-      <!-- "Make MyFoods default match the pick?" alert dialog. Backdrop click
-           and the red X both behave as "No" — the pick override always
-           saves; the only question is whether the MyFoods baseline tags
-           along. -->
-      @if (baselineDialog(); as d) {
-        <div class="dialog-overlay" (click)="onBaselineDialogNo()">
-          <div class="alert-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-            <div class="alert-dialog-titlebar">
-              <span class="alert-dialog-title">Update MyFoods baseline?</span>
-              <button
-                type="button"
-                class="alert-dialog-close"
-                (click)="onBaselineDialogNo()"
-                aria-label="Close">✕</button>
-            </div>
-            <div class="alert-dialog-body">
-              Make MyFoods default {{ d.draft }} {{ d.unit }} as well?
-            </div>
-            <div class="alert-dialog-actions">
-              <button
-                type="button"
-                class="alert-dialog-btn alert-dialog-btn-yes"
-                (click)="onBaselineDialogYes()">Yes</button>
-              <button
-                type="button"
-                class="alert-dialog-btn alert-dialog-btn-no"
-                (click)="onBaselineDialogNo()">No</button>
-            </div>
-          </div>
-        </div>
+      <!-- (The phone-app "Tether Mobile" handoff moved to a global bloom dialog
+           opened from the profile menu's "Mobile App" entry — see
+           mobile-app-dialog + TabService.mobileAppOpen.) -->
+
+      <!-- Curate Wizard — swipe deck over the panel. On close it reloads MyFoods
+           so newly-favorited foods appear. -->
+      @if (wizardOpen()) {
+        <app-curate-wizard (close)="onWizardClose()" />
       }
 
-      <!-- Add Food → phone-app handoff placeholder. The actual flow runs in
-           the phone app; this just nudges the user toward the QR / download. -->
-      @if (showAddDialog()) {
-        <div class="dialog-overlay" (click)="closeAddDialog()">
-          <div class="phone-app-dialog" (click)="$event.stopPropagation()">
-            <button
-              type="button"
-              class="dialog-close"
-              (click)="closeAddDialog()"
-              aria-label="Close">✕</button>
-            <div class="phone-app-icon">📱</div>
-            <h2 class="phone-app-title">Adding food requires the phone app</h2>
-            <p class="phone-app-body">
-              Scan the QR code or download the RegiMenu app to add your own foods.
-            </p>
-            <div class="phone-app-qr-placeholder" aria-hidden="true">QR</div>
-            <button
-              type="button"
-              class="phone-app-cta"
-              (click)="closeAddDialog()">
-              Got it
-            </button>
+      <!-- Shared Add-Food dialog — the same panel the binder's "+" opens. On
+           add it reloads MyFoods so the new food appears. -->
+      @if (addFoodPanelOpen()) {
+        <app-add-food-panel (close)="addFoodPanelOpen.set(false)" (added)="onAddFoodAdded()" />
+      }
+
+      <!-- Meal notes editor — plain textarea with internal scroll. Enter (and
+           Ctrl+Enter) insert newlines; Esc, the red X, or a backdrop click
+           return to the banner with the preview updated. -->
+      @if (notesEditorOpen()) {
+        <div class="bam-notes-overlay" (click)="notesEditorOpen.set(false)">
+          <div class="bam-notes-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+            <div class="dialog-discs">
+              <button
+                type="button"
+                class="dialog-disc dialog-disc-cancel"
+                (click)="notesEditorOpen.set(false)"
+                matTooltip="Close"
+                matTooltipPosition="below"
+                aria-label="Close notes">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+            <div class="bam-notes-title">Meal notes</div>
+            <textarea
+              class="bam-notes-textarea regi-field"
+              [value]="mealNotes()"
+              (input)="mealNotes.set($any($event.target).value)"
+              (keydown.escape)="notesEditorOpen.set(false)"
+              placeholder="Preparation notes, substitutions, reminders…"
+              aria-label="Meal notes"></textarea>
           </div>
         </div>
       }
@@ -774,23 +1056,30 @@ export class FoodsPanelComponent {
     // Pull the curated-list catalog so the Food List dropdown can show
     // every list the API publishes (regi-approved, glp-1-friendly, …).
     this.foodsService.getLists().subscribe({
-      next: (resp) => this.availableLists.set(resp?.lists ?? []),
+      next: (resp) => {
+        const lists = resp?.lists ?? [];
+        this.availableLists.set(lists);
+        // LIST dropdown defaults to My Foods (top of the menu) — do NOT auto-switch
+        // to the Regi Approved list; the user selects a curated list explicitly.
+      },
       error: () => this.availableLists.set([]),
     });
-    // Hydrate baskets from server-side CurrentPicks. Sequenced after the
-    // allowed-foods load so we can intersect picks with the user's actual
-    // MyFoods set and silently drop stale (un-favorited) entries.
+    // Build-a-Meal baskets: hydrate the user's saved picks (currentPicks) into the
+    // four baskets on load; write-through on every mutation happens via persistBuildMealBaskets.
     void this.hydratePicksFromServer();
     // One-shot purge of the pre-server-persistence localStorage cache so
     // users upgrading from the localStorage era don't have a parallel set
     // of picks lingering on disk.
     try { localStorage.removeItem(LS_LEGACY_THISWEEK_BASKETS); } catch { /* ignore */ }
+    // Load the cooking-method vocabulary once for the Build-a-Meal banner picker.
+    void this.recipeAuthoring.ensureCookingMethods();
   }
 
   /** Reads UserSettings via SettingsService, intersects each pick with the
    *  user's allowed-foods cache, builds the four baskets, and stamps each
-   *  basket entry with `pickAddedAt` / `pickServingSize` so the round-trip
-   *  back to the server preserves order and per-basket overrides. Picks that
+   *  basket entry with `pickAddedAt` so the round-trip back to the server
+   *  preserves order. Serving quantity is not carried on picks — it lives once
+   *  in UserFoodPreferences (userServingSize). Picks that
    *  reference foods the user has since un-favorited are silently dropped
    *  (warn-logged) AND a cleaned list is saved back so the dead reference
    *  doesn't keep showing up on every login.
@@ -816,51 +1105,35 @@ export class FoodsPanelComponent {
         await new Promise<void>(r => setTimeout(r, 100));
         allowed = this.serverMyFoods();
       }
-      const lookup = new Map<string, Food>();
-      for (const f of allowed) {
-        lookup.set(`${f.id}:${f.foodSource ?? 'food'}`, f);
+      // Map the persisted picks (currentPicks) to per-basket Food objects. `dropped`
+      // = picks whose food is no longer in
+      // the allowed set (stale, un-favorited).
+      const { baskets, kept, dropped } = hydratePicks(picks, allowed);
+      for (const p of dropped) {
+        console.warn('[FoodsPanel] dropping stale pick — food no longer in MyFoods', p);
       }
-      const baskets = emptyBaskets();
-      const kept: CurrentPick[] = [];
-      let dropped = 0;
-      for (const p of picks) {
-        const food = lookup.get(`${p.foodId}:${p.foodSource}`);
-        if (!food) {
-          dropped++;
-          console.warn('[FoodsPanel] dropping stale pick — food no longer in MyFoods', p);
-          continue;
-        }
-        const enriched: Food = {
-          ...food,
-          pickAddedAt: p.addedAt,
-          pickServingSize: p.pickServingSize,
-        };
-        baskets[p.basketKey].push(enriched);
-        kept.push(p);
-      }
-      // Order entries within each basket by addedAt ascending so the visual
-      // bottom-up stack matches the order foods were originally added.
-      for (const k of BASKET_KEYS) {
-        baskets[k].sort((a, b) => (a.pickAddedAt ?? '').localeCompare(b.pickAddedAt ?? ''));
-      }
-      this.thisWeekBaskets.set(baskets);
+      this.buildMealBaskets.set(baskets);
       // Save-back guard. Only push the cleaned list when at least one pick
       // matched. "Had picks but matched zero" is the partial-load signature
       // — saving in that case would silently destroy server-side data.
-      if (dropped > 0 && kept.length > 0) {
+      if (dropped.length > 0 && kept.length > 0) {
         void this.settingsService.saveCurrentPicks(kept).catch(err => {
           console.warn('[FoodsPanel] failed to save cleaned pick list', err);
         });
         this.hydrationSucceeded.set(true);
-      } else if (dropped > 0 && kept.length === 0 && picks.length > 0) {
-        // Partial-load signature — leave server alone. Leave hydration flag
-        // FALSE so any user interaction is gated out (no risk of wiping the
-        // real server data with empty baskets). User must refresh to retry.
-        console.warn(
-          `[FoodsPanel] hydration matched 0 of ${picks.length} picks — ` +
-          `assuming partial allowed-foods load, NOT saving back. Refresh to retry.`,
-        );
-        this.notificationService.show('Couldn\'t load your picks. Refresh to retry.', 'error', 4000);
+      } else if (dropped.length > 0 && kept.length === 0 && picks.length > 0) {
+        if (allowed.length === 0) {
+          // Genuine partial load — the MyFoods/allowed-foods list hasn't arrived
+          // yet. Stay SILENT and leave hydration ungated; the reactive re-hydrate
+          // (rehydratePicksEffect) re-runs the moment the list loads. No toast —
+          // this was the spurious "Couldn't load your picks" the user hit.
+          console.warn('[FoodsPanel] picks hydration deferred — allowed-foods not loaded yet');
+        } else {
+          // MyFoods DID load and none of the picks matched → they're genuinely
+          // stale. Accept the empty baskets and mark hydrated (no toast, no wipe).
+          console.warn(`[FoodsPanel] ${picks.length} pick(s) no longer in MyFoods — showing empty`);
+          this.hydrationSucceeded.set(true);
+        }
       } else {
         this.hydrationSucceeded.set(true);
       }
@@ -874,11 +1147,11 @@ export class FoodsPanelComponent {
 
   /** Serialize the four baskets to the CurrentPicks wire shape. addedAt
    *  defaults to NOW for entries that lack pickAddedAt (newly dropped foods
-   *  that haven't been round-tripped yet). pickServingSize honors the
-   *  basket-local override; null = no override (follow MyFoods baseline). */
+   *  that haven't been round-tripped yet). Serving quantity is NOT sent — it
+   *  lives once in UserFoodPreferences (userServingSize). */
   private picksFromBaskets(): CurrentPick[] {
     const out: CurrentPick[] = [];
-    const baskets = this.thisWeekBaskets();
+    const baskets = this.buildMealBaskets();
     const now = new Date().toISOString();
     for (const k of BASKET_KEYS) {
       for (const f of baskets[k]) {
@@ -886,7 +1159,7 @@ export class FoodsPanelComponent {
           foodId: f.id,
           foodSource: (f.foodSource as 'food' | 'userfood') ?? 'food',
           basketKey: k,
-          pickServingSize: f.pickServingSize ?? null,
+          mealRole: f.mealRole ?? 'AnyUse',
           addedAt: f.pickAddedAt ?? now,
         });
       }
@@ -920,13 +1193,27 @@ export class FoodsPanelComponent {
     }
   }
 
-  private tabService = inject(TabService);
+  protected tabService = inject(TabService);
   protected preferencesService = inject(FoodPreferencesService);
+
+  /** Curate Wizard swipe-deck bloom. */
+  readonly wizardOpen = signal(false);
+  /** On close, reload MyFoods so newly-favorited foods appear immediately. */
+  async onWizardClose(): Promise<void> {
+    this.wizardOpen.set(false);
+    await this.refreshServerMyFoods();
+  }
   private notificationService = inject(NotificationService);
+  private recipeAuthoring = inject(RecipeAuthoringService);
+  private imageUpload = inject(ImageUploadService);
+  private thisWeekMacros = inject(ThisWeekMacrosService);
   private userFoodService = inject(UserFoodService);
-  private foodsService = inject(FoodsService);
+  protected foodsService = inject(FoodsService);
   private langfusePromptService = inject(LangfusePromptService);
   private settingsService = inject(SettingsService);
+  private rotation = inject(RotationService);
+  protected role = inject(RoleService);
+  private dialog = inject(MatDialog);
 
   // Spin carousel state
   readonly carouselCategories = CAROUSEL_CATEGORIES;
@@ -949,6 +1236,18 @@ export class FoodsPanelComponent {
     const src = this.spinSource();
     if (TYPE_LABELS[src]) return TYPE_LABELS[src];
     return this.availableLists().find(l => l.name === src)?.description ?? src;
+  });
+
+  // Curated-list order for the LIST dropdown: Regi Approved first (default +
+  // top), then GLP-1 Friendly, then any others.
+  readonly orderedLists = computed<FoodList[]>(() => {
+    const rank = (l: FoodList): number => {
+      const d = (l.description || '').toLowerCase();
+      if (/regi|approved/.test(d)) return 0;
+      if (/glp/.test(d)) return 1;
+      return 2;
+    };
+    return [...this.availableLists()].sort((a, b) => rank(a) - rank(b));
   });
 
   // Count shown next to the right-pane section title. Honors the picker
@@ -977,9 +1276,7 @@ export class FoodsPanelComponent {
   // Hint label shown above the action-icon column at the right edge of each
   // row. MyFoods rows also have a delete column; curated lists do not, so
   // the heading shrinks to "Fave / Restrict" when delete isn't applicable.
-  columnHeaderText = computed<string>(() =>
-    this.spinSource() === 'myfoods' ? 'Fave / Restrict / Delete' : 'Fave / Restrict'
-  );
+  columnHeaderText = computed<string>(() => 'LIKE / BAN');
 
   // Search: filters the carousel locally (no API round-trip per keystroke)
   searchQuery = signal('');
@@ -997,12 +1294,20 @@ export class FoodsPanelComponent {
   /** Edit MyFoods toggle. Clears the picker search bar every time we *enter*
    *  Edit mode so the user isn't squinting at a list filtered by a query
    *  they left in there from the last session.  */
-  toggleEditMyFoods(): void {
-    const entering = this.addTo() !== 'right';
-    if (entering) {
-      this.pickerSearchQuery.set('');
-    }
-    this.addTo.set(entering ? 'right' : 'left');
+  /** Open the Edit MyFoods library overlay (its own header icon). The overlay is
+   *  a position:fixed popover hosted inside the Build-a-Meal right pane, so ensure
+   *  that pane is rendered (focusEditOpen) before showing it. */
+  openEditOverlay(): void {
+    this.pickerSearchQuery.set('');
+    this.focusEditOpen.set(true);
+    this.addTo.set('right');
+  }
+
+  /** Close the Edit overlay back to the default full-width MyFoods view (Focus
+   *  Foods stays parked — un-render its host pane). */
+  closeEditOverlay(): void {
+    this.addTo.set('left');
+    this.focusEditOpen.set(false);
   }
 
   /** Substring match against description + shortDescription, case-insensitive.
@@ -1043,7 +1348,7 @@ export class FoodsPanelComponent {
   addTo = signal<'left' | 'right'>('left');
   myFoodsLocal = signal<Food[]>(this.loadLocal(LS_MYFOODS));
 
-  // Four-basket This Week store (Proteins/Fats/Carbs/Other). Server-backed
+  // Four-basket Build-a-Meal store (Proteins/Fats/Carbs/Other). Server-backed
   // via UserSettings.CurrentPicks — starts empty, hydrated by
   // hydratePicksFromServer() in the constructor once allowed-foods finish
   // loading. Each mutation triggers the debounced save effect below.
@@ -1058,10 +1363,10 @@ export class FoodsPanelComponent {
   // SettingsService.allSettings() keeps it cheap; user may see a sub-100ms
   // empty-basket flash before re-population.
   readonly basketKeys = BASKET_KEYS;
-  thisWeekBaskets = signal<ThisWeekBaskets>(emptyBaskets());
+  buildMealBaskets = signal<BuildMealBaskets>(emptyBaskets());
 
   /** Only flips to true on a CONFIRMED-SUCCESSFUL hydration GET. Gates every
-   *  write path — `persistThisWeek` effect bails when this is false, so a
+   *  write path — `persistBuildMealBaskets` effect bails when this is false, so a
    *  failed hydration cannot trigger a save of empty baskets that would
    *  overwrite the user's good server-side state. This is a data-integrity
    *  guard, not an optimization; do not remove without replacing.
@@ -1069,8 +1374,8 @@ export class FoodsPanelComponent {
   private hydrationSucceeded = signal<boolean>(false);
 
   // Convenience: total foods across all four baskets.
-  thisWeekTotal = computed<number>(() => {
-    const b = this.thisWeekBaskets();
+  buildMealTotal = computed<number>(() => {
+    const b = this.buildMealBaskets();
     return b.Proteins.length + b.Fats.length + b.Carbs.length + b.Other.length;
   });
 
@@ -1085,7 +1390,7 @@ export class FoodsPanelComponent {
   // Which basket (if any) is in "expanded" focus mode. When set, that basket
   // takes the full basket-grid area; the others collapse out of view. Green
   // traffic-light sets it; yellow restores to null (all four visible 2 × 2).
-  focusedBasket = signal<BasketKey | null>(null);
+  expandedBasket = signal<BasketKey | null>(null);
 
   // Health Benefits overlay is shown only when the active filter is a category
   // where macro-grade health claims are meaningful: Proteins, Fats, Dairy,
@@ -1155,7 +1460,7 @@ export class FoodsPanelComponent {
     const all = this.allMyFoods();
     const cats = this.selectedCategories();
     if (cats.size === 0 || cats.size === CAROUSEL_CATEGORIES.length) return all;
-    return all.filter(f => cats.has(f.categoryName ?? ''));
+    return all.filter(f => cats.has(normalizeCategory(f.categoryName)));
   });
 
   // Group ALL MyFoods (not filteredMyFoods) by category for the accordion
@@ -1170,11 +1475,13 @@ export class FoodsPanelComponent {
   groupedMyFoods = computed<Array<{ category: string; foods: Food[]; collapsed: boolean }>>(() => {
     const all = this.allMyFoods();
     const collapsed = this.collapsedMyFoodsCategories();
+    // While a search is active, force every category open so matches show live.
+    const searching = this.pickerSearchQuery().trim() !== '';
     const map = new Map<string, Food[]>();
     for (const food of all) {
       // Pre-filter by the picker's type-ahead so the accordion narrows live.
       if (!this.matchesPickerSearch(food)) continue;
-      const cat = food.categoryName || 'Uncategorized';
+      const cat = normalizeCategory(food.categoryName) || 'Uncategorized';
       const arr = map.get(cat);
       if (arr) arr.push(food);
       else map.set(cat, [food]);
@@ -1183,12 +1490,12 @@ export class FoodsPanelComponent {
     for (const cat of CAROUSEL_CATEGORIES) {
       const foods = map.get(cat);
       if (foods && foods.length > 0) {
-        result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+        result.push({ category: cat, foods, collapsed: searching ? false : collapsed.has(cat) });
         map.delete(cat);
       }
     }
     for (const [cat, foods] of map.entries()) {
-      result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+      result.push({ category: cat, foods, collapsed: searching ? false : collapsed.has(cat) });
     }
     return result;
   });
@@ -1212,9 +1519,11 @@ export class FoodsPanelComponent {
   groupedCarouselFoods = computed<Array<{ category: string; foods: Food[]; collapsed: boolean }>>(() => {
     const all = this.carouselFoods();
     const collapsed = this.collapsedCarouselCategories();
+    // While a search is active, force every category open so matches show live.
+    const searching = this.pickerSearchQuery().trim() !== '';
     const map = new Map<string, Food[]>();
     for (const food of all) {
-      const cat = food.categoryName || 'Uncategorized';
+      const cat = normalizeCategory(food.categoryName) || 'Uncategorized';
       const arr = map.get(cat);
       if (arr) arr.push(food);
       else map.set(cat, [food]);
@@ -1223,12 +1532,12 @@ export class FoodsPanelComponent {
     for (const cat of CAROUSEL_CATEGORIES) {
       const foods = map.get(cat);
       if (foods && foods.length > 0) {
-        result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+        result.push({ category: cat, foods, collapsed: searching ? false : collapsed.has(cat) });
         map.delete(cat);
       }
     }
     for (const [cat, foods] of map.entries()) {
-      result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+      result.push({ category: cat, foods, collapsed: searching ? false : collapsed.has(cat) });
     }
     return result;
   });
@@ -1274,8 +1583,24 @@ export class FoodsPanelComponent {
 
   /** Food List dropdown change handler. Picking a new list opens that list's
    *  accordion fully expanded so the user sees every category right away. */
+  /** Add food (+): flip the list to MyFoods, then open the shared Add-Food
+   *  dialog (the same panel the binder's "+" opens). Search a food, ratify its
+   *  serving/units + photo, and it lands in MyFoods. */
+  readonly addFoodPanelOpen = signal(false);
+  onAddFood(): void {
+    this.onSpinSourceChange('myfoods');
+    this.addFoodPanelOpen.set(true);
+  }
+  /** The Add-Food dialog added/changed a food — reload MyFoods so it appears. */
+  async onAddFoodAdded(): Promise<void> {
+    await this.refreshServerMyFoods();
+  }
+
   onSpinSourceChange(value: SpinSource): void {
     this.spinSource.set(value);
+    // Clear the search so the previous list's type-ahead doesn't silently
+    // keep auto-filtering (and auto-expanding) the new list.
+    this.pickerSearchQuery.set('');
     // Expand against the NEW value, not the prior one — clear both sets so
     // whichever accordion renders is wide open.
     const empty = new Set<string>();
@@ -1293,6 +1618,341 @@ export class FoodsPanelComponent {
   // (0.1 … 0.9). Defaults to 0.5 so the panes start equally sized.
   leftPaneWidthFraction = signal(0.5);
   rightPaneFlex = computed(() => 1 - this.leftPaneWidthFraction());
+
+  /** RHS split open. The right pane hosts TWO modes, discriminated by `addTo`:
+   *   • Build-a-Meal (addTo='left') — the baskets workspace, picking active.
+   *   • Edit MyFoods (addTo='right') — the curate overlay covers the baskets.
+   *  Default OFF: MyFoods fills the panel and the split + splitter are parked. */
+  readonly focusEditOpen = signal(false);
+  /** Build-a-Meal workspace: the split is open AND no Edit overlay covers it. */
+  readonly buildMealOpen = computed(() => this.focusEditOpen() && this.addTo() === 'left');
+  /** Edit-MyFoods overlay is showing. */
+  readonly editOpen = computed(() => this.focusEditOpen() && this.addTo() === 'right');
+  /** LHS flex: full width when the split is parked; the draggable fraction while open. */
+  readonly leftPaneFlex = computed(() =>
+    this.focusEditOpen() ? this.leftPaneWidthFraction() : 1,
+  );
+
+  /** Build-a-Meal toggle (MyFoods header): open the baskets workspace, or close it.
+   *  Opening from here is a MANUAL My Foods open — context-free (no referrer), so
+   *  reset any lingering entry context first. */
+  toggleBuildMeal(): void {
+    if (this.buildMealOpen()) {
+      this.closeBuildMeal();
+    } else {
+      this.resetBamContext();
+      this.openBuildMeal();
+    }
+  }
+  /** Open the split showing the Build-a-Meal baskets (no Edit overlay). Switches away
+   *  from Edit mode if it was open. Does NOT touch entry context — the caller owns
+   *  that (consume effect sets it; toggle/close reset it). */
+  openBuildMeal(): void {
+    this.addTo.set('left');
+    this.focusEditOpen.set(true);
+  }
+  /** Close the Build-a-Meal pane and drop any entry context so a later My Foods
+   *  open starts clean. */
+  closeBuildMeal(): void {
+    this.resetBamContext();
+    this.focusEditOpen.set(false);
+  }
+
+  /** Edit button toggle: open the editor overlay, or close the split. */
+  toggleEdit(): void {
+    if (this.editOpen()) this.closeEditOverlay();
+    else this.openEditOverlay();
+  }
+
+  // ---- Build-a-Meal: entry context + contextual return ----------------------
+  // Exactly three entry contexts, tracked so the backlink + completion flow
+  // differ by where the user came from:
+  //   'slot'    — an empty Menus & Meals slot (carries the origin menu + slot);
+  //               on save the meal ALSO drops into that slot and we return
+  //               focused on that menu.
+  //   'menus'   — the + Add Meal dialog (return to Menus & Meals, no slot).
+  //   'myfoods' — the My Foods left-nav (no referrer; the DEFAULT and the
+  //               refresh fallback). No backlink, no return flip.
+  readonly bamContext = signal<'slot' | 'menus' | 'myfoods'>('myfoods');
+  private readonly bamOriginSlot = signal<{ menuId: number; slotOrder: number } | null>(null);
+  /** The contextual "(return to Menus & Meals)" backlink shows for 'slot' / 'menus'
+   *  entries only — never for a My Foods entry. */
+  readonly bamShowBacklink = computed(() => this.bamContext() !== 'myfoods');
+
+  /** Reset to the context-free My Foods state. Called on every exit (close /
+   *  abandon / save) and on a manual open, so a later My Foods entry can never
+   *  inherit a stale referrer from the singleton transport. */
+  private resetBamContext(): void {
+    this.bamContext.set('myfoods');
+    this.bamOriginSlot.set(null);
+  }
+
+  /** Consume the cross-panel entry request. RotationService.buildMealRequest is
+   *  the in-memory transport set by the empty-slot link ({slot:{menuId,slotOrder}})
+   *  and the + Add Meal dialog ({slot:null}). Record the context locally, open the
+   *  workspace, and CLEAR the transport immediately so the singleton never holds
+   *  stale referrer state. My Foods entries never set the transport, so this effect
+   *  doesn't fire for them (context stays 'myfoods'). A page refresh drops the
+   *  in-memory transport → the fresh component defaults to 'myfoods' (Context 3):
+   *  the required graceful degrade, no crash. */
+  private readonly consumeBuildMealRequest = effect(
+    () => {
+      const req = this.rotation.buildMealRequest();
+      if (!req) return;
+      if (req.slot) {
+        this.bamContext.set('slot');
+        this.bamOriginSlot.set(req.slot);
+      } else {
+        this.bamContext.set('menus');
+        this.bamOriginSlot.set(null);
+      }
+      this.openBuildMeal();
+      this.rotation.buildMealRequest.set(null); // consume the transport
+    },
+    { allowSignalWrites: true },
+  );
+
+  /** Backlink action — abandon: return to Menus & Meals WITHOUT creating a meal.
+   *  For a 'slot' origin, restore focus to that menu so the user lands back where
+   *  they came from. */
+  returnToMenus(): void {
+    const slot = this.bamOriginSlot();
+    this.resetBamContext();
+    this.focusEditOpen.set(false);
+    if (slot) {
+      this.rotation.selectedMenuId.set(slot.menuId);
+      void this.rotation.selectMenu(slot.menuId);
+    }
+    this.tabService.openPanel('menus', 'Menus & Meals');
+  }
+
+  // ---- Build-a-Meal banner: name / cooking method / notes / photo -----------
+  /** Meal name — required to save. */
+  readonly mealName = signal('');
+  /** Selected cooking method id, or null for "none". */
+  readonly cookingMethodId = signal<number | null>(null);
+  /** Free-text meal notes (edited in the notes overlay). */
+  readonly mealNotes = signal('');
+  /** Notes editor overlay open. */
+  readonly notesEditorOpen = signal(false);
+  /** Cooking-method vocabulary for the picker — loaded once, cached in the
+   *  RecipeAuthoringService (GET /api/cookingmethods). */
+  readonly cookingMethods = this.recipeAuthoring.cookingMethods;
+
+  /** Staged photo before save (thumbnail preview + the File to upload once the
+   *  meal id exists). No upload happens until Save lands the meal. */
+  readonly stagedPhotoFile = signal<File | null>(null);
+  readonly stagedPhotoPreview = signal<string | null>(null);
+  readonly photoDragOver = signal(false);
+
+  /** In-flight guard for the Save POST. */
+  readonly saving = signal(false);
+  /** Save is enabled once the meal has a name and at least one picked food. */
+  readonly canSaveMeal = computed(
+    () => this.mealName().trim().length > 0 && this.buildMealTotal() > 0,
+  );
+
+  /** Live macro accumulation of the picked foods — the same running totals the
+   *  Menus & Meals macro banner shows, but summed client-side from the four
+   *  baskets so it updates the moment a food is added/removed or its serving is
+   *  edited. Each food's per-100g nutritionFacts are scaled to its serving via
+   *  nutritionLabelScale (the exact math the Nutrition Facts label uses), where
+   *  the serving quantity is the one serving record (userServingSize ?? baseline
+   *  ?? 1). Foods without nutritionFacts contribute nothing. Reading the
+   *  userServingSize signal keeps this reactive to serving edits. */
+  readonly buildMealMacros = computed(() => {
+    const baskets = this.buildMealBaskets();
+    let calories = 0, proteinG = 0, carbG = 0, fatG = 0, fiberG = 0;
+    for (const k of this.basketKeys) {
+      for (const f of baskets[k]) {
+        const qty = this.preferencesService.userServingSize(f.id) ?? f.servingSize ?? 1;
+        const scale = nutritionLabelScale(f, qty);
+        const nf = f.nutritionFacts;
+        if (!nf) continue;
+        calories += (nf.calories ?? 0) * scale;
+        proteinG += (nf.proteinG ?? 0) * scale;
+        carbG += (nf.totalCarbohydrateG ?? 0) * scale;
+        fatG += (nf.totalFatG ?? 0) * scale;
+        fiberG += (nf.dietaryFiberG ?? 0) * scale;
+      }
+    }
+    return {
+      calories: Math.round(calories),
+      proteinG: Math.round(proteinG),
+      carbG: Math.round(carbG),
+      fatG: Math.round(fatG),
+      fiberG: Math.round(fiberG),
+    };
+  });
+
+  /** Drive the GLOBAL top macro bar (RegiMenu app-bar) from the running basket
+   *  totals — identical placement/component to the Menus & Meals view (its
+   *  'foods' context reads ThisWeekMacrosService). ONLY while Build-a-Meal is open;
+   *  the moment it closes the bar is cleared to empty so the accumulation is no
+   *  longer visible on the My Foods panel. */
+  private readonly pushBuildMealMacros = effect(
+    () => {
+      if (this.buildMealOpen()) {
+        const m = this.buildMealMacros();
+        this.thisWeekMacros.setTotals({ proteinG: m.proteinG, carbG: m.carbG, fatG: m.fatG, fiberG: m.fiberG, calories: m.calories });
+      } else {
+        this.thisWeekMacros.clear();
+      }
+    },
+    { allowSignalWrites: true },
+  );
+  // Leaving the panel entirely (tab switch) must also clear, so no stale Build-a-Meal
+  // totals linger in the shared bar.
+  private readonly clearMacrosOnDestroy = inject(DestroyRef).onDestroy(() => this.thisWeekMacros.clear());
+
+  // Accepted image types for the staged photo tile (mirrors MealImageSource).
+  private static readonly PHOTO_MIME = /^image\/(jpeg|png|heic|heif)$/i;
+  private static readonly PHOTO_EXT = /\.(jpe?g|png|heic|heif)$/i;
+  private photoAccepted(file: File): boolean {
+    return FoodsPanelComponent.PHOTO_MIME.test(file.type) || FoodsPanelComponent.PHOTO_EXT.test(file.name);
+  }
+
+  onPhotoDragOver(ev: DragEvent): void {
+    ev.preventDefault();
+    this.photoDragOver.set(true);
+  }
+  onPhotoDragLeave(ev: DragEvent): void {
+    ev.preventDefault();
+    this.photoDragOver.set(false);
+  }
+  onPhotoDrop(ev: DragEvent): void {
+    ev.preventDefault();
+    this.photoDragOver.set(false);
+    const file = ev.dataTransfer?.files?.[0] ?? null;
+    if (file) this.stagePhoto(file);
+  }
+  onPhotoFile(input: HTMLInputElement): void {
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    if (file) this.stagePhoto(file);
+  }
+
+  /** Stage a chosen/dropped photo locally: keep the File and render a data-URL
+   *  thumbnail. Nothing is uploaded until the meal is saved. */
+  private stagePhoto(file: File): void {
+    if (!this.photoAccepted(file)) {
+      this.notificationService.show('Please use a JPG, PNG, or HEIC image.', 'error');
+      return;
+    }
+    this.stagedPhotoFile.set(file);
+    const reader = new FileReader();
+    reader.onload = () => this.stagedPhotoPreview.set(typeof reader.result === 'string' ? reader.result : null);
+    reader.readAsDataURL(file);
+  }
+
+  /** Displayed quantity + unit for a picked food. Quantity is the single
+   *  serving record: the user's UserFoodPreferences override (userServingSize)
+   *  when set, else the food's baseline serving, else 1; unit is the food's
+   *  natural serving unit, else "serving". Reading the userServingSize signal
+   *  makes the chip update live when the serving is edited anywhere. */
+  private pickQty(food: Food): number {
+    return this.preferencesService.userServingSize(food.id) ?? food.servingSize ?? 1;
+  }
+  private pickUnit(food: Food): string {
+    return (food.servingUnit || 'serving').trim() || 'serving';
+  }
+  pickQtyLabel(food: Food): string {
+    return `${this.pickQty(food)} · ${this.pickUnit(food)}`;
+  }
+
+  /** Open the serving editor for a picked food — the same NF popup the MyFoods
+   *  list uses; its steppers persist the one serving record (userServingSize). */
+  openPickServingEditor(food: Food): void {
+    this.selectedBasketFood.set(food);
+    this.openNfPopupForFood(food, 'edit');
+  }
+
+  /** Reset the banner state (name / method / notes / photo) so the workspace is
+   *  ready for a fresh meal. Called from "Clear all" and after a successful save. */
+  private resetBuildMealBanner(): void {
+    this.mealName.set('');
+    this.cookingMethodId.set(null);
+    this.mealNotes.set('');
+    this.notesEditorOpen.set(false);
+    this.stagedPhotoFile.set(null);
+    this.stagedPhotoPreview.set(null);
+  }
+
+  /** Save Meal — POST the manual-assembly request. The server creates the Meal +
+   *  MealItems, computes every macro server-side, and pins it into the Binder. On
+   *  success: toast, upload any staged photo, refresh the Binder so it appears
+   *  without a reload, then reset the banner and CLOSE the Build-a-Meal pane. On
+   *  400 (bad item, etc.) the server message is toasted and the pane stays open
+   *  for correction. */
+  async saveMeal(): Promise<void> {
+    if (this.saving() || !this.canSaveMeal()) return;
+    const baskets = this.buildMealBaskets();
+    const items: CreateMealItem[] = [];
+    for (const k of this.basketKeys) {
+      for (const f of baskets[k]) {
+        items.push({
+          foodId: f.id,
+          foodSource: (f.foodSource as 'food' | 'userfood') ?? 'food',
+          quantity: this.pickQty(f),
+          unit: this.pickUnit(f),
+        });
+      }
+    }
+    const body: CreateMealRequest = {
+      name: this.mealName().trim(),
+      mealType: 'meal',
+      cookingMethodId: this.cookingMethodId(),
+      notes: this.mealNotes().trim() || null,
+      items,
+    };
+    this.saving.set(true);
+    try {
+      const meal = await this.rotation.createBuiltMeal(body);
+      this.notificationService.show(`Saved "${meal.name}" to your Binder.`, 'success');
+      // Upload the staged photo now that the meal id exists (self-applies to the
+      // rotation store so the binder thumbnail updates).
+      const file = this.stagedPhotoFile();
+      if (file) {
+        try {
+          const res = await this.imageUpload.uploadMealImage(meal.id, file);
+          if (res?.cdn_url) this.rotation.applyUploadedMealImage(meal.id, res.cdn_url, res.thumbnail_url);
+        } catch {
+          this.notificationService.show('Meal saved, but the photo upload failed — add it from the meal card.', 'warning');
+        }
+      }
+      // Completion flow depends on the entry context (snapshot before reset). All
+      // contexts already pinned the meal into the Binder via createBuiltMeal.
+      const ctx = this.bamContext();
+      const slot = this.bamOriginSlot();
+      // Context 1 ('slot') — ALSO drop the meal into the origin slot, reusing the
+      // exact add-meal-to-slot path a drag-from-Notebook uses (placeMealInSlot).
+      if (ctx === 'slot' && slot) {
+        await this.rotation.placeMealInSlot(slot.menuId, slot.slotOrder, meal.id);
+      }
+      // Done — clear the banner + entry context and close the pane.
+      this.resetBuildMealBanner();
+      this.resetBamContext();
+      this.focusEditOpen.set(false);
+      // Navigate back per context. 'slot' also restores focus to the origin menu
+      // so the user lands looking at the now-filled slot; 'menus' returns with
+      // general focus; 'myfoods' stays put (no return flip).
+      if (ctx === 'slot' && slot) {
+        this.rotation.selectedMenuId.set(slot.menuId);
+        await this.rotation.selectMenu(slot.menuId);
+        this.tabService.openPanel('menus', 'Menus & Meals');
+      } else if (ctx === 'menus') {
+        this.tabService.openPanel('menus', 'Menus & Meals');
+      }
+    } catch (err) {
+      const msg = err instanceof HttpErrorResponse
+        ? (typeof err.error === 'string' ? err.error : err.error?.message) || err.message
+        : 'Could not save the meal. Please try again.';
+      this.notificationService.show(msg, 'error', 5000);
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
   private splitterStartX = 0;
   private splitterStartFraction = 0;
 
@@ -1321,11 +1981,17 @@ export class FoodsPanelComponent {
   /** Write-through to the server on every basket mutation. The
    *  hydrationSucceeded gate prevents the initial empty-baskets state
    *  (before the GET resolves) from being PUT back as authoritative. */
-  private persistThisWeek = effect(() => {
-    this.thisWeekBaskets(); // read for dependency tracking
+  private persistBuildMealBaskets = effect(() => {
+    this.buildMealBaskets(); // read for dependency tracking
     if (!this.hydrationSucceeded()) return;
     void this.savePicks();
   });
+  private rehydratePicksEffect = effect(() => {
+    const ready = this.serverMyFoods().length > 0;
+    if (ready && !this.hydrationSucceeded()) {
+      void this.hydratePicksFromServer();
+    }
+  }, { allowSignalWrites: true });
 
   // ----- image-carousel: SpinnerItem mapping + outputs -----
 
@@ -1349,36 +2015,123 @@ export class FoodsPanelComponent {
    *  buttons in the top bar act on this food. */
   selectedFood = signal<Food | null>(null);
 
+  /** Single-click selection for the RHS "Edit MyFoods" list rows. Drives the
+   *  row highlight, the centered Health Info overlay, and the top-bar
+   *  edit-pencil / delete-trash (grey → green/red when a row is selected). */
+  selectedMyFood = signal<Food | null>(null);
+
+  private myFoodClickTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Single vs double click on an Edit-MyFoods row. A lone click (after a short
+   *  window) toggles selection — revealing the edit/delete actions + Health
+   *  Info badge. A fast second click is a DOUBLE-click: it opens the NF editor
+   *  directly and does NOT select (no actions/badge flash). */
+  onMyFoodRowClick(food: Food): void {
+    if (this.myFoodClickTimer) {
+      clearTimeout(this.myFoodClickTimer);
+      this.myFoodClickTimer = null;
+      this.selectedMyFood.set(null); // double-click never leaves it selected
+      this.onEditMyFoodsRowDblClick(food);
+      return;
+    }
+    this.myFoodClickTimer = setTimeout(() => {
+      this.myFoodClickTimer = null;
+      this.selectedMyFood.update((cur) => (cur?.id === food.id ? null : food));
+    }, 220);
+  }
+
+  /** Green pencil — edit the selected MyFood's Nutrition Facts. */
+  onSelectedMyFoodEdit(): void {
+    const food = this.selectedMyFood();
+    if (food) this.openNfPopupForFood(food, 'edit', true);
+  }
+
+  /** Red trash (top bar) — delete the selected MyFood (user-added only). */
+  onSelectedMyFoodDelete(event: Event): void {
+    const food = this.selectedMyFood();
+    if (!food || !this.isUserAddedFood(food)) return;
+    void this.deleteUserFood(event, food);
+    this.selectedMyFood.set(null);
+  }
+
+  /** Carousel trashcan — pare the highlighted food out of MyFoods. A brought-in
+   *  (user-added) food is PERMANENTLY deleted after a confirm (deleteUserFood);
+   *  a system food is simply un-favorited (removed from the MyFoods allowed list). */
+  removeSelectedFromMyFoods(event: Event): void {
+    const food = this.selectedFood();
+    if (!food) return;
+    if (this.isUserAddedFood(food)) {
+      void this.deleteUserFood(event, food).then(() => this.selectedFood.set(null));
+      return;
+    }
+    if (this.preferencesService.isAllowed(food.id)) {
+      this.toggleFavorite(event, food); // currently allowed → toggles OFF (removes)
+    }
+    this.selectedFood.set(null);
+  }
+
   /** Single-click on a LHS food tile = "Pick this" → drops it straight into
    *  the appropriate basket. Idempotent: clicking a food that's already in
    *  its basket is a silent no-op (addFoodToBasket dedupes by id), so a
-   *  trailing double-click won't add the same food twice. If the right
-   *  pane is in Curate mode it flips back to Picks so the user sees where
-   *  the food landed. */
-  onTileClick(food: Food): void {
-    this.selectedFood.set(food);
-    if (this.addTo() === 'right') {
-      this.addTo.set('left');
-    }
-    const basket = this.basketForFood(food);
-    this.addFoodToBasket(food, basket);
+   *  trailing double-click won't add the same food twice.
+   *
+   *  While the Edit overlay is open the Build-a-Meal baskets are hidden, so a
+   *  carousel click is view/select-only: it must NOT flip out of edit and must
+   *  NOT silently drop the food into a covered basket. The user picks foods
+   *  only from the default (non-edit) view. */
+  /** Image source for a food tile/row: prefer the small thumbnail, but fall
+   *  back to the full image when the thumbnail is missing. FoodImage and
+   *  FoodImageThumbnail are independent nullable columns server-side, so some
+   *  foods carry a picture with no generated thumbnail — without this fallback
+   *  those tiles render blank even though an image exists. */
+  protected foodThumb(food: Food): string | null | undefined {
+    return food.foodImageThumbnail || food.foodImage;
   }
 
-  /** Double-click on a LHS tile is now a no-op for NF popups — edits live
-   *  under the Edit MyFoods flow only. The first click of the double-click
-   *  already added to the basket; addFoodToBasket's dedupe makes the second
-   *  click a silent no-op, so this method intentionally does nothing.
-   *  Kept as an explicit handler so future intent (e.g. confirmation flash)
-   *  has an obvious home. */
-  onTileDblClick(_food: Food): void {
-    // No NF popup from the LHS picks display — edits require Edit mode.
+  private myFoodTileClickTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Single vs double click on a My Foods tile. A lone click (after a short
+   *  window) TOGGLES selection — a 2nd click on the SAME tile deselects — and, on
+   *  select, drops the food into its basket (unless we're in select-only mode). A
+   *  fast second click is a DOUBLE-click: it opens the Nutrition Facts editor and
+   *  never leaves the tile selected. */
+  onTileClick(food: Food): void {
+    if (this.myFoodTileClickTimer) {
+      clearTimeout(this.myFoodTileClickTimer);
+      this.myFoodTileClickTimer = null;
+      this.selectedFood.set(null); // a double-click never leaves it selected
+      this.onTileDblClick(food);
+      return;
+    }
+    this.myFoodTileClickTimer = setTimeout(() => {
+      this.myFoodTileClickTimer = null;
+      const wasSelected = this.selectedFood()?.id === food.id;
+      this.selectedFood.set(wasSelected ? null : food);
+      // Single-click only SELECTS (yellow halo). Picking a food into a basket is a
+      // DOUBLE-click while the Build-a-Meal workspace is open — see onTileDblClick.
+    }, 220);
+  }
+
+  /** Pencil (top bar) — open the Nutrition Facts editor for the highlighted food. */
+  onSelectedTileEdit(): void {
+    const food = this.selectedFood();
+    if (food) this.openNfPopupForFood(food, 'edit', true);
+  }
+
+  /** Double-click a My Food tile → the Nutrition Facts editor (serving / unit
+   *  scaling, saved as the food's MyFoods baseline). Same editor the top-bar
+   *  pencil and the Edit-MyFoods list use, and it opens regardless of whether the
+   *  Build-a-Meal workspace is open. Picking foods into a basket is done by
+   *  DRAGGING a tile onto a basket (single-click still just selects). */
+  onTileDblClick(food: Food): void {
+    this.openNfPopupForFood(food, 'edit', true);
   }
 
   /** Double-click on a row in the Edit MyFoods accordion → open the NF
    *  popup in EDIT mode. This is the only path that hands the user the
    *  steppers + Green Save button. */
   onEditMyFoodsRowDblClick(food: Food): void {
-    this.openNfPopupForFood(food, 'edit', 'myfoods');
+    this.openNfPopupForFood(food, 'edit', true);
   }
 
   // ----- Press-and-hold zoom on Edit MyFoods row thumbnail ----------------
@@ -1422,34 +2175,346 @@ export class FoodsPanelComponent {
     event.dataTransfer!.effectAllowed = 'copy';
   }
 
-  /** Where the open Nf popup was opened FROM. Drives Save routing: a
-   *  `'myfoods'`-origin save writes to UserFoodPreferences (the MyFoods
-   *  baseline); a `'picks'`-origin save writes the per-basket pickServingSize
-   *  override and (when the draft differs from the baseline) prompts whether
-   *  to also update the MyFoods default. */
-  nfPopupOrigin = signal<'myfoods' | 'picks' | null>(null);
+  /** True when the open NF popup was launched from the MyFoods list (vs a
+   *  basket). Its ONLY consumer is showRegiApprovedToggle below — the Admin
+   *  RegiApproved control must appear for MyFoods edits but not basket edits,
+   *  and a food can sit in both, so the open-surface has to be recorded. The
+   *  serving save path no longer branches on it (one record, userServingSize). */
+  nfPopupFromMyFoods = signal<boolean>(false);
+  /** RegiApproved toggle state for the open popup (admin-only, owned MyFoods userfoods). */
+  readonly nfPopupRegiApproved = signal<boolean>(false);
+  /** The RegiApproved checkbox renders ONLY for an Admin editing an OWNED MyFoods
+   *  userfood (MyFoods-list open ⇒ positive id, owned by construction). Curated/negated
+   *  rows never qualify — demote is an admin-tool function by design. */
+  readonly showRegiApprovedToggle = computed(() =>
+    this.role.hasRole('Admin') &&
+    this.nfPopupFood()?.foodSource === 'userfood' &&
+    this.nfPopupFromMyFoods(),
+  );
 
-  /** Open the NF popup for a food and prime the adjustable-serving state.
-   *  Initial serving size for a Picks-origin popup starts at the pick's own
-   *  override (`pickServingSize`) when present, then falls through to the
-   *  user's saved MyFoods override (`userServingSize`), then to the food's
-   *  curated `servingSize` baseline, then 1. For a MyFoods-origin popup the
-   *  pickServingSize branch is skipped (the popup is editing the baseline,
-   *  not a pick). */
-  private openNfPopupForFood(food: Food, mode: 'view' | 'edit' = 'view', origin: 'myfoods' | 'picks' | null = null): void {
-    let initial: number;
-    if (origin === 'picks' && food.pickServingSize != null) {
-      initial = food.pickServingSize;
-    } else {
-      initial = this.preferencesService.userServingSize(food.id)
-        ?? food.servingSize
-        ?? 1;
-    }
+  /** The category dropdown is editable ONLY for a food the user OWNS (a userfood),
+   *  unless the user is an Admin. System / Regi-curated foods (foodSource 'food')
+   *  are shared data, so recategorizing them is disabled for ordinary users. */
+  readonly canEditNfCategory = computed<boolean>(() => {
+    const f = this.nfPopupFood();
+    if (!f) return false;
+    return this.isUserAddedFood(f) || this.role.hasRole('Admin');
+  });
+
+  /** Open the NF popup for a food and prime the adjustable-serving state. The
+   *  initial serving size everywhere is the single serving record: the user's
+   *  UserFoodPreferences override (`userServingSize`), else the food's curated
+   *  `servingSize` baseline, else 1. `fromMyFoods` records whether the popup was
+   *  launched from the MyFoods list (only gates the Admin RegiApproved toggle). */
+  private openNfPopupForFood(food: Food, mode: 'view' | 'edit' = 'view', fromMyFoods = false): void {
+    const initial = this.preferencesService.userServingSize(food.id)
+      ?? food.servingSize
+      ?? 1;
     this.nfPopupServingSize.set(initial);
     this.nfPopupOriginalServingSize.set(initial);
     this.nfPopupMode.set(mode);
-    this.nfPopupOrigin.set(origin);
+    this.nfPopupFromMyFoods.set(fromMyFoods);
+    this.nfPopupRegiApproved.set(food.regiApproved ?? false);
     this.nfPopupFood.set(food);
+    this.nfPopupUnitDirty.set(false);
+    this.nfPopupUnitResolving.set(false);
+
+    // Edit mode: seed the dropdown from the food's actual category name (the
+    // same value the accordion groups it under) and load the options list.
+    const cur = (food.categoryName ?? '').trim();
+    this.nfPopupCategory.set(cur);
+    this.nfPopupOriginalCategory.set(cur);
+    if (mode === 'edit') {
+      void this.foodsService.loadCategories();
+    }
+  }
+
+  /** Admin toggles RegiApproved on an owned MyFoods userfood. Optimistic; PATCHes
+   *  /userfoods/{id}; reverts + toasts on failure (403 included). */
+  async onRegiApprovedToggle(checked: boolean): Promise<void> {
+    const food = this.nfPopupFood();
+    if (!food) return;
+    this.nfPopupRegiApproved.set(checked); // optimistic
+    const ok = await this.userFoodService.setUserFoodRegiApproved(food.id, checked);
+    if (ok) {
+      this.nfPopupFood.update((f) => (f ? { ...f, regiApproved: checked } : f));
+    } else {
+      this.nfPopupRegiApproved.set(!checked); // revert
+      this.notificationService.show('Could not update RegiApproved. Please try again.', 'error');
+    }
+  }
+
+  /** Category dropdown change (edit mode) — AUTO-SAVES to the MyFoods copy
+   *  (userfoods only) via the category-only PATCH; no green disc. */
+  async onNfCategoryChange(name: string): Promise<void> {
+    const food = this.nfPopupFood();
+    if (!name || !food || food.id == null) return;
+    const cat = this.foodsService.categories().find((c) => c.name.toLowerCase() === name.toLowerCase());
+    if (!cat) return;
+    this.nfPopupCategory.set(name);
+
+    // A userfood is recategorized in place. A Regi/system food has no editable
+    // category, so it's FORKED into a MyFoods copy first (the same fork-on-edit the
+    // inline unit editor uses), then the category is set on that fork.
+    let targetId = food.id;
+    if ((food.foodSource ?? 'food') !== 'userfood') {
+      try {
+        const res = await firstValueFrom(
+          this.foodsService.patchServingGeometry({
+            foodId: food.id,
+            foodSource: 'food',
+            unitName: food.servingUnit || 'g',
+            gramsPerUnit:
+              food.servingGramsPerUnit && food.servingGramsPerUnit > 0
+                ? food.servingGramsPerUnit
+                : (this.massGrams(food.servingUnit) ?? 1),
+            defaultQuantity: food.servingSize ?? this.nfPopupServingSize(),
+          }),
+        );
+        if (res?.cloned && res.userFoodId) {
+          targetId = res.userFoodId;
+          this.nfPopupFood.update((f) => (f ? { ...f, id: res.userFoodId, foodSource: 'userfood' } : f));
+        } else {
+          this.notificationService.show('Could not create your editable copy to recategorize.', 'error');
+          return;
+        }
+      } catch {
+        this.notificationService.show('Could not recategorize this food.', 'error');
+        return;
+      }
+    }
+
+    void this.userFoodService.setUserFoodCategory(targetId, cat.id);
+    this.nfPopupFood.update((f) => (f ? { ...f, categoryId: cat.id, categoryName: cat.name } : f));
+    this.applyLocalCategory(targetId, cat.id, cat.name);
+    await this.refreshServerMyFoods();
+  }
+
+  /** Commit an edited food NAME (blur / Enter). A Regi/system food has no editable
+   *  name, so it's FORKED into a MyFoods copy first (same fork-on-edit as unit /
+   *  category), then renamed. Auto-saves; write-through. */
+  async onNfTitleCommit(name: string): Promise<void> {
+    const food = this.nfPopupFood();
+    const trimmed = (name ?? '').trim();
+    if (!food || food.id == null || !trimmed) return;
+    const current = (food.shortDescription || food.description || '').trim();
+    if (trimmed === current) return;
+
+    let targetId = food.id;
+    if ((food.foodSource ?? 'food') !== 'userfood') {
+      try {
+        const res = await firstValueFrom(
+          this.foodsService.patchServingGeometry({
+            foodId: food.id,
+            foodSource: 'food',
+            unitName: food.servingUnit || 'g',
+            gramsPerUnit:
+              food.servingGramsPerUnit && food.servingGramsPerUnit > 0
+                ? food.servingGramsPerUnit
+                : (this.massGrams(food.servingUnit) ?? 1),
+            defaultQuantity: food.servingSize ?? this.nfPopupServingSize(),
+          }),
+        );
+        if (res?.cloned && res.userFoodId) {
+          targetId = res.userFoodId;
+          this.nfPopupFood.update((f) => (f ? { ...f, id: res.userFoodId, foodSource: 'userfood' } : f));
+        } else {
+          this.notificationService.show('Could not create your editable copy to rename.', 'error');
+          return;
+        }
+      } catch {
+        this.notificationService.show('Could not rename this food.', 'error');
+        return;
+      }
+    }
+
+    void this.userFoodService.setUserFoodName(targetId, trimmed);
+    this.nfPopupFood.update((f) => (f ? { ...f, shortDescription: trimmed } : f));
+    this.applyLocalName(targetId, trimmed);
+    await this.refreshServerMyFoods();
+  }
+
+  /** Update a food's name in the local MyFoods caches so the accordion relabels it
+   *  live (mirrors applyLocalCategory). */
+  private applyLocalName(foodId: number, name: string): void {
+    const patch = (f: Food): Food => (f.id === foodId ? { ...f, shortDescription: name } : f);
+    this.myFoodsLocal.update((list) => list.map(patch));
+    this.serverMyFoods.update((list) => list.map(patch));
+  }
+
+  /** Photo key in the NF popup → the same 3-way image-source bloom the meal card
+   *  uses (upload · phone · —no AI for foods). A Regi/system food is FORKED into a
+   *  MyFoods copy first (same fork-on-edit as name/category) so the photo lands on a
+   *  food the user owns; the dialog returns the uploaded image and we drop it onto the
+   *  local caches + the popup. Phone capture stays inert until the API/mobile capture
+   *  changes deploy — the upload path works today. */
+  async openFoodImageSource(): Promise<void> {
+    const food = this.nfPopupFood();
+    if (!food || food.id == null) return;
+    const targetId = await this.forkToUserFoodIfNeeded(food);
+    if (targetId == null) {
+      this.notificationService.show('Could not prepare your editable copy for a photo.', 'error');
+      return;
+    }
+    const name = (food.shortDescription || food.description || 'Food').trim();
+    const ref = this.dialog.open(MealImageSourceComponent, {
+      panelClass: 'meal-image-dialog-panel',
+      autoFocus: false,
+      data: { kind: 'food', id: targetId, name } as ImageSourceData,
+    });
+    const result = (await firstValueFrom(ref.afterClosed())) as ImageSourceResult | undefined;
+    if (result?.kind === 'food' && result.cdnUrl) {
+      this.applyLocalImage(targetId, result.cdnUrl, result.thumbnailUrl ?? result.cdnUrl);
+      await this.refreshServerMyFoods();
+    }
+  }
+
+  /** Ensure we have a MyFoods (userfood) copy to attach edits/photos to. Returns the
+   *  target userfood id — the food's own id when it's already a userfood, else the id
+   *  of a freshly-forked copy (mirrors the fork in onNfTitleCommit/onNfCategoryChange).
+   *  Returns null if the fork failed. */
+  private async forkToUserFoodIfNeeded(food: Food): Promise<number | null> {
+    if (food.id == null) return null;
+    if ((food.foodSource ?? 'food') === 'userfood') return food.id;
+    try {
+      const res = await firstValueFrom(
+        this.foodsService.patchServingGeometry({
+          foodId: food.id,
+          foodSource: 'food',
+          unitName: food.servingUnit || 'g',
+          gramsPerUnit:
+            food.servingGramsPerUnit && food.servingGramsPerUnit > 0
+              ? food.servingGramsPerUnit
+              : (this.massGrams(food.servingUnit) ?? 1),
+          defaultQuantity: food.servingSize ?? this.nfPopupServingSize(),
+        }),
+      );
+      if (res?.cloned && res.userFoodId) {
+        this.nfPopupFood.update((f) => (f ? { ...f, id: res.userFoodId, foodSource: 'userfood' } : f));
+        return res.userFoodId;
+      }
+    } catch {
+      /* fall through to null */
+    }
+    return null;
+  }
+
+  /** Drop a just-uploaded food photo onto the local caches + the open popup so the
+   *  picture shows immediately (mirrors applyLocalName; refreshServerMyFoods then
+   *  reconciles from the server). */
+  private applyLocalImage(foodId: number, foodImage: string, foodImageThumbnail: string): void {
+    const patch = (f: Food): Food =>
+      f.id === foodId ? { ...f, foodImage, foodImageThumbnail } : f;
+    this.myFoodsLocal.update((list) => list.map(patch));
+    this.serverMyFoods.update((list) => list.map(patch));
+    this.nfPopupFood.update((f) => (f && f.id === foodId ? { ...f, foodImage, foodImageThumbnail } : f));
+  }
+
+  /** Grams in one WEIGHT unit (deterministic), or null for a food-specific unit. */
+  private massGrams(unit: string | null | undefined): number | null {
+    const g = FoodsPanelComponent.MASS_GRAMS[(unit ?? '').toLowerCase()];
+    return g != null ? g : null;
+  }
+
+  /** Serving-UNIT change (edit mode). Converts the displayed amount so total grams
+   *  — and therefore the nutrition — stay EQUATED: newAmount = (oldAmount ×
+   *  oldGramsPerUnit) / newGramsPerUnit. Weight units use a fixed table; a
+   *  food-specific unit (cup/tbsp/each) uses the food's own grams-per-unit, else
+   *  the AI (Langfuse `grams-per-unit`). AUTO-SAVES to the MyFoods copy. */
+  async onNfUnitChange(newUnit: string): Promise<void> {
+    const food = this.nfPopupFood();
+    if (!food) return;
+    const curUnit = food.servingUnit || 'g';
+    if (!newUnit || newUnit === curUnit) return;
+
+    // Current grams-per-unit: the food's own, else a weight-table value, else ask
+    // the AI (a food already in a food-specific unit with no stored grams).
+    let curGpu = food.servingGramsPerUnit && food.servingGramsPerUnit > 0
+      ? food.servingGramsPerUnit
+      : (this.massGrams(curUnit) ?? 0);
+    if (curGpu <= 0) {
+      this.nfPopupUnitResolving.set(true);
+      curGpu = (await this.resolveGramsPerUnitAI(food, curUnit)) ?? 0;
+      this.nfPopupUnitResolving.set(false);
+    }
+    const curGrams = curGpu > 0 ? this.nfPopupServingSize() * curGpu : 0;
+
+    // New grams-per-unit: weight table (instant), else the AI (food-specific).
+    let newGpu = this.massGrams(newUnit);
+    if (newGpu == null) {
+      this.nfPopupUnitResolving.set(true);
+      newGpu = await this.resolveGramsPerUnitAI(food, newUnit);
+      this.nfPopupUnitResolving.set(false);
+    }
+    if (newGpu == null || newGpu <= 0) {
+      this.notificationService.show(`Couldn't work out grams per ${newUnit} — pick another unit.`, 'error');
+      return;
+    }
+
+    const newServing = curGrams > 0 ? Number((curGrams / newGpu).toFixed(3)) : this.nfPopupServingSize();
+    this.nfPopupFood.update((f) => (f ? { ...f, servingUnit: newUnit, servingGramsPerUnit: newGpu as number } : f));
+    this.nfPopupServingSize.set(newServing);
+
+    // Auto-save unit + grams + converted quantity to the MyFoods copy. The relaxed
+    // serving-geometry endpoint accepts weight units too and forks a system food
+    // into a userfood — retarget the popup to that fork so later edits land on it.
+    if (food.id != null) {
+      try {
+        const res = await firstValueFrom(
+          this.foodsService.patchServingGeometry({
+            foodId: food.id,
+            foodSource: food.foodSource === 'userfood' ? 'userfood' : 'food',
+            unitName: newUnit,
+            gramsPerUnit: newGpu,
+            defaultQuantity: newServing,
+          }),
+        );
+        if (res?.cloned && res.userFoodId) {
+          this.nfPopupFood.update((f) => (f ? { ...f, id: res.userFoodId, foodSource: 'userfood' } : f));
+        }
+        await this.refreshServerMyFoods();
+      } catch {
+        this.notificationService.show('Could not save the unit.', 'error');
+      }
+    }
+  }
+
+  /** Ask the AI (Langfuse `grams-per-unit`) for grams in one `unit` of this food.
+   *  Null on any failure so the caller can warn and leave the unit unchanged. */
+  private async resolveGramsPerUnitAI(food: Food, unit: string): Promise<number | null> {
+    const name = (food.shortDescription?.trim() || food.description || '').trim();
+    if (!name) return null;
+    try {
+      const res = await this.langfusePromptService.run('grams-per-unit', { food: name, unit });
+      const parsed = this.parseJsonLoose(res.text);
+      const g = Number(parsed?.gramsPerUnit);
+      return Number.isFinite(g) && g > 0 ? g : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Parse a JSON object from an LLM response, tolerating stray prose / fences. */
+  private parseJsonLoose(text: string): { gramsPerUnit?: number; confidence?: string } | null {
+    try { return JSON.parse(text); } catch { /* fall through */ }
+    const m = text.match(/\{[\s\S]*\}/);
+    if (m) { try { return JSON.parse(m[0]); } catch { /* give up */ } }
+    return null;
+  }
+
+  /** Update a food's category in the local MyFoods caches (local + server) so
+   *  the accordion regroups it live, and expand the destination category so the
+   *  moved food is visible without a page refresh. */
+  private applyLocalCategory(foodId: number, categoryId: number, categoryName: string): void {
+    const patch = (f: Food): Food =>
+      f.id === foodId ? { ...f, categoryId, categoryName } : f;
+    this.myFoodsLocal.update((list) => list.map(patch));
+    this.serverMyFoods.update((list) => list.map(patch));
+    this.collapsedMyFoodsCategories.update((set) => {
+      const next = new Set(set);
+      next.delete(categoryName);
+      return next;
+    });
   }
 
   /** Close handler for the NF popup. Always reverts the draft to the
@@ -1458,173 +2523,95 @@ export class FoodsPanelComponent {
   onNfPopupClose(): void {
     this.nfPopupServingSize.set(this.nfPopupOriginalServingSize());
     this.nfPopupMode.set('view');
-    this.nfPopupOrigin.set(null);
+    this.nfPopupFromMyFoods.set(false);
     this.nfPopupFood.set(null);
   }
 
-  /** Green Save button handler. Routes by the popup's origin:
-   *
-   *  - `myfoods` (Edit MyFoods row dbl-click) → writes to UserFoodPreferences,
-   *    same as it always has. food.foodSource is passed so the preference row
-   *    gets the correct discriminator (was missing — created duplicate rows
-   *    with FoodSource='food' for UserFoods).
-   *
-   *  - `picks` (basket dbl-click) → writes pickServingSize to the basket
-   *    entry. If the draft differs from the MyFoods baseline, also prompts
-   *    whether to make the MyFoods default match. If the draft matches the
-   *    baseline, the override is cleared (pickServingSize=null) and no
-   *    prompt — there's nothing meaningful to override.
-   *
-   *  Disabled in the template via [disabled]="!nfPopupCanSave()" so this
-   *  shouldn't fire when there's nothing to save. */
-  onNfSave(): void {
-    const food = this.nfPopupFood();
-    if (!food || !this.nfPopupCanSave()) return;
-    const draft = this.nfPopupServingSize();
-    const origin = this.nfPopupOrigin();
-
-    if (origin === 'picks') {
-      const baseline = this.preferencesService.userServingSize(food.id)
-        ?? food.servingSize
-        ?? 1;
-      // If the draft matches the baseline, the user has no real override —
-      // clear pickServingSize so the basket entry follows the baseline going
-      // forward. No prompt — there's nothing to ask about.
-      const newOverride = draft === baseline ? null : draft;
-      this.setPickServingSize(food, newOverride);
-      this.nfPopupOriginalServingSize.set(draft);
-      this.nfPopupMode.set('view');
-      this.nfPopupOrigin.set(null);
-      this.nfPopupFood.set(null);
-      if (newOverride !== null) {
-        this.baselineDialog.set({ food, draft, unit: food.servingUnit ?? 'unit' });
-      }
-      return;
-    }
-
-    // Default / 'myfoods' origin: write the MyFoods baseline directly.
-    this.preferencesService.setUserServingSize(food.id, draft, food.foodSource);
-    this.nfPopupOriginalServingSize.set(draft);
-    this.nfPopupMode.set('view');
-    this.nfPopupOrigin.set(null);
-    this.nfPopupFood.set(null);
-  }
-
-  /** Mutate the basket-local pickServingSize for the food currently being
-   *  edited. Walks all four baskets so the food gets updated wherever it
-   *  lives (currently the UI only allows a food in one basket at a time,
-   *  but the helper is defensive). The basket-signal write triggers the
-   *  debounced server PUT via persistThisWeek. */
-  private setPickServingSize(food: Food, override: number | null): void {
-    this.thisWeekBaskets.update(b => {
-      const next = { ...b } as ThisWeekBaskets;
-      for (const k of this.basketKeys) {
-        next[k] = b[k].map(f =>
-          f.id === food.id && (f.foodSource ?? 'food') === (food.foodSource ?? 'food')
-            ? { ...f, pickServingSize: override }
-            : f,
-        );
-      }
-      return next;
-    });
-  }
-
-  /** Curated ladder of "sensible" serving sizes, used by the ▲ / ▼ buttons.
-   *  Off-ladder values (e.g. a curator-saved 0.625 whole) snap to the next
-   *  ladder rung in the direction the user pressed — they're NOT force-
-   *  snapped on display, only on click. The ladder is unit-agnostic by
-   *  design: stepping math is the same whether the unit is "oz", "whole",
-   *  "cup", or "g". This is intentional — users think "next bigger /
-   *  smaller portion", not "delta of N grams". */
-  private static readonly SERVING_SIZE_LADDER: readonly number[] = [
-    0.25, 0.5, 0.75,
-    1, 1.25, 1.5, 1.75,
-    2, 2.5, 3, 3.5,
-    4, 5, 6, 8, 10, 12, 15, 20,
-  ];
-
-  /** Adjust handler emitted by the NF label's ▲ / ▼ steppers. Ladder-snap:
-   *  up = smallest ladder entry strictly > current; down = largest entry
-   *  strictly < current. No-op if already at the bound. Updates the DRAFT
-   *  signal only — Save persists. */
+  /** Adjust handler from the NF label's ▲ / ▼ steppers — ladder-snap using the
+   *  ladder that fits the CURRENT unit (grams step coarsely, count by wholes),
+   *  then AUTO-SAVE the new baseline (no green disc / two-step). */
   onNfAdjust(direction: 'up' | 'down'): void {
-    if (!this.nfPopupFood() || this.nfPopupMode() !== 'edit') return;
-    const current = this.nfPopupServingSize();
-    const ladder = FoodsPanelComponent.SERVING_SIZE_LADDER;
-
-    let next: number | undefined;
-    if (direction === 'up') {
-      next = ladder.find(v => v > current);
-    } else {
-      // Largest value strictly less than current. Walk the ladder right-to-left.
-      for (let i = ladder.length - 1; i >= 0; i--) {
-        if (ladder[i] < current) { next = ladder[i]; break; }
-      }
-    }
+    const food = this.nfPopupFood();
+    if (!food || this.nfPopupMode() !== 'edit') return;
+    const next = snapServingForUnit(this.nfPopupServingSize(), direction, food.servingUnit || 'g');
     if (next === undefined) return; // already at the top or bottom of the ladder
-
-    this.nfPopupServingSize.set(Number(next.toFixed(4)));
+    const val = Number(next.toFixed(4));
+    this.nfPopupServingSize.set(val);
+    this.persistServingBaseline(food, val);
   }
 
-  /** Commit handler emitted by the NF label's typed-input mode. The label
-   *  has already validated the value is a positive number; we accept off-
-   *  ladder typed values (e.g. 0.4, 1.3) since the ladder is for the
-   *  steppers only. Updates the draft only — Save persists. */
+  /** Commit handler from the NF label's typed-input mode (off-ladder values ok).
+   *  AUTO-SAVES the new baseline. */
   onNfCommit(value: number): void {
-    if (!this.nfPopupFood() || this.nfPopupMode() !== 'edit') return;
-    this.nfPopupServingSize.set(Number(value.toFixed(4)));
+    const food = this.nfPopupFood();
+    if (!food || this.nfPopupMode() !== 'edit') return;
+    const val = Number(value.toFixed(4));
+    this.nfPopupServingSize.set(val);
+    this.persistServingBaseline(food, val);
+  }
+
+  /** Write-through save of the serving-size baseline for the MyFoods copy. */
+  private persistServingBaseline(food: Food, val: number): void {
+    if (food.id != null) this.preferencesService.setUserServingSize(food.id, val, food.foodSource);
   }
 
   /** Returns true when the NF popup was opened on a food sitting in one of
    *  the four baskets. Retained for any future basket-aware logic, though
    *  the popup itself is view-only on the basket side now. */
   private isFoodFromBasketContext(food: Food): boolean {
-    const baskets = this.thisWeekBaskets();
+    const baskets = this.buildMealBaskets();
     for (const key of this.basketKeys) {
       if (baskets[key].some(f => f.id === food.id)) return true;
     }
     return false;
   }
 
-  // ----- RHS basket-tile selection + "Click for Facts" bloom -----
+  // ----- RHS basket-tile selection + P/S meal-role designation -----
 
-  /** The currently-selected food in a basket on the right pane. Drives the
-   *  yellow halo and the delayed bloom timer. */
+  /** The currently-selected food in a basket on the right pane (yellow halo). */
   selectedBasketFood = signal<Food | null>(null);
 
-  /** Single click on a basket food = toggle selection (yellow halo). No
-   *  bloom, no auto-popup — that's all double-click now. Click an already-
-   *  selected card to deselect. Deletion is the red X only. */
-  onBasketFoodClick(food: Food): void {
-    const current = this.selectedBasketFood();
-    this.selectedBasketFood.set(current?.id === food.id ? null : food);
+  /** Single-vs-double click discrimination. A tight window catches the expert
+   *  double-click (→ Nutrition Facts) vs. a lone select/deselect click. */
+  private tileClickTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Basket tile click. A fast second click (within the tight window) is a
+   *  double-click → Nutrition Facts (edit serving). A lone click just toggles
+   *  the tile's selection (yellow halo). Meal-role (Primary/Secondary) is set
+   *  by AI later, not by clicking through here. */
+  onBasketTileClick(food: Food): void {
+    if (this.tileClickTimer) {
+      clearTimeout(this.tileClickTimer);
+      this.tileClickTimer = null;
+      this.selectedBasketFood.set(food);
+      this.openNfPopupForFood(food, 'edit');
+      return;
+    }
+    this.tileClickTimer = setTimeout(() => {
+      this.tileClickTimer = null;
+      const selected = this.selectedBasketFood();
+      this.selectedBasketFood.set(selected?.id === food.id ? null : food);
+    }, 220);
   }
 
-  /** Double-click on a basket food = open the Nutrition Facts popup in
-   *  EDIT mode, with steppers and the Green Save button. Save persists
-   *  through the same UserFoodPreferences.ServingSize path as the Edit
-   *  MyFoods flow — adjusting a Pick is currently the same gesture as
-   *  adjusting the MyFoods baseline. */
-  onBasketFoodDblClick(food: Food): void {
-    this.selectedBasketFood.set(food);
-    this.openNfPopupForFood(food, 'edit', 'picks');
+  /** Header pencil — open Nutrition Facts (edit serving) for the selected pick. */
+  onHeaderEditSelected(): void {
+    const food = this.selectedBasketFood();
+    if (!food) return;
+    this.openNfPopupForFood(food, 'edit');
+  }
+
+  /** True when the selected pick lives in the given basket — gates that
+   *  basket's P / S / pencil header controls. */
+  isSelectedInBasket(key: BasketKey): boolean {
+    const sel = this.selectedBasketFood();
+    if (!sel) return false;
+    return this.buildMealBaskets()[key].some(
+      f => f.id === sel.id && (f.foodSource ?? 'food') === (sel.foodSource ?? 'food'),
+    );
   }
 
   // ----- Basket helpers -----
-
-  /** Coaching text shown inside an empty basket. Embedded `\n` characters
-   *  are honored as hard line breaks via `white-space: pre-line` on the
-   *  text span, so the longer strings split intentionally at a chosen
-   *  point instead of wrapping wherever the basket width happens to land.
-   *  The 2-line CSS clamp still applies as a safety net. */
-  basketEmptyHint(key: BasketKey): string {
-    switch (key) {
-      case 'Proteins': return 'Pick 6 or more proteins';
-      case 'Fats':     return 'Pick 5 or more fats,\nand dairy foods';
-      case 'Carbs':    return 'Pick 8+ vegetables,\nand 2+ fruits';
-      case 'Other':    return 'Limit processed foods,\nadd ideas for seasonings';
-    }
-  }
 
   /** Display label for a basket title. Fats holds dairy, and Carbs holds
    *  veggies + fruits in addition to grains/starches, so surface that in
@@ -1632,18 +2619,18 @@ export class FoodsPanelComponent {
    *  green-vegetable allowance. */
   basketLabel(key: BasketKey): string {
     switch (key) {
-      case 'Fats':  return 'Fats & Dairy';
-      case 'Carbs': return 'Fruits, Veggies & Carbs';
+      case 'Fats':  return 'Fats';
+      case 'Carbs': return 'Carbs';
       default:      return key;
     }
   }
 
   private basketForFood(food: Food): BasketKey {
-    return CATEGORY_TO_BASKET[food.categoryName ?? ''] ?? 'Other';
+    return CATEGORY_TO_BASKET[normalizeCategory(food.categoryName)] ?? 'Other';
   }
 
   private addFoodToBasket(food: Food, key: BasketKey): void {
-    const baskets = this.thisWeekBaskets();
+    const baskets = this.buildMealBaskets();
     const exists = baskets[key].some(f => f.id === food.id);
     if (exists) {
       // No-op (silent); user already picked this one for that basket.
@@ -1655,12 +2642,12 @@ export class FoodsPanelComponent {
     const stamped: Food = {
       ...food,
       pickAddedAt: food.pickAddedAt ?? new Date().toISOString(),
-      pickServingSize: food.pickServingSize ?? null,
+      mealRole: food.mealRole ?? 'AnyUse',
     };
     // Append (oldest first, newest last) — the basket-tiles flex layout uses
     // `wrap-reverse` so the first item lands bottom-left and the stack grows
     // upward as foods are added.
-    this.thisWeekBaskets.update(b => ({
+    this.buildMealBaskets.update(b => ({
       ...b,
       [key]: [...b[key], stamped],
     }));
@@ -1698,14 +2685,24 @@ export class FoodsPanelComponent {
     });
   }
 
+  /** Empty all four Picks baskets at once. Drops the selection and resets to
+   *  empty baskets; the persistBuildMealBaskets effect saves the cleared state. */
+  clearAllBaskets(): void {
+    this.selectedBasketFood.set(null);
+    this.buildMealBaskets.set(emptyBaskets());
+    // Clearing the baskets is "start over" — also reset the banner (name, method,
+    // notes, staged photo, saved-meal state) so the next meal begins fresh.
+    this.resetBuildMealBanner();
+  }
+
   clearBasket(key: BasketKey): void {
     // Drop the selection if the selected food is about to disappear
     // along with the rest of this basket's contents.
     const selected = this.selectedBasketFood();
-    if (selected && this.thisWeekBaskets()[key].some(f => f.id === selected.id)) {
+    if (selected && this.buildMealBaskets()[key].some(f => f.id === selected.id)) {
       this.selectedBasketFood.set(null);
     }
-    this.thisWeekBaskets.update(b => ({ ...b, [key]: [] }));
+    this.buildMealBaskets.update(b => ({ ...b, [key]: [] }));
   }
 
   removeFoodFromBasket(key: BasketKey, foodId: number): void {
@@ -1714,7 +2711,7 @@ export class FoodsPanelComponent {
     if (this.selectedBasketFood()?.id === foodId) {
       this.selectedBasketFood.set(null);
     }
-    this.thisWeekBaskets.update(b => ({
+    this.buildMealBaskets.update(b => ({
       ...b,
       [key]: b[key].filter(f => f.id !== foodId),
     }));
@@ -1817,18 +2814,25 @@ export class FoodsPanelComponent {
     event.stopPropagation();
     if (!this.isUserAddedFood(food)) return; // hard guard for keyboard activation
     const name = food.shortDescription || food.description;
-    if (!window.confirm(`Delete "${name}"? This will permanently remove it from your MyFoods.`)) {
+    if (!window.confirm(`Do you want to permanently delete "${name}" from MyFoods?`)) {
       return;
     }
-    const ok = await this.userFoodService.deleteUserFood(food.id);
-    if (ok) {
+    try {
+      await this.userFoodService.deleteUserFood(food.id);
       this.notificationService.show('Food deleted', 'success');
       // Drop it from the local cache immediately so the row goes away even
       // before the server refetch lands.
       this.myFoodsLocal.update(list => list.filter(f => f.id !== food.id));
       this.refreshServerMyFoods();
-    } else {
-      this.notificationService.show('Could not delete food', 'error');
+    } catch (err) {
+      // 409 = the food is RegiApproved and can only be removed via the admin tool.
+      const status = err instanceof HttpErrorResponse ? err.status : 0;
+      this.notificationService.show(
+        status === 409
+          ? 'This food is RegiApproved — manage it in the admin tool.'
+          : 'Could not delete food',
+        'error',
+      );
     }
   }
 
@@ -1901,26 +2905,46 @@ export class FoodsPanelComponent {
     }
   }
 
-  showAddDialog = signal(false);
   showHealthBenefits = signal(false);
 
-  /** Live "Make MyFoods baseline match the pick override?" dialog state.
-   *  Set when the user saves a Pick whose draft serving differs from the
-   *  MyFoods baseline. Yes → also write the baseline; No/X → only the pick
-   *  override stands. */
-  baselineDialog = signal<{ food: Food; draft: number; unit: string } | null>(null);
-
-  onBaselineDialogYes(): void {
-    const d = this.baselineDialog();
-    if (!d) return;
-    this.preferencesService.setUserServingSize(d.food.id, d.draft, d.food.foodSource);
-    this.baselineDialog.set(null);
-  }
-
-  onBaselineDialogNo(): void {
-    this.baselineDialog.set(null);
-  }
   nfPopupFood = signal<Food | null>(null);
+  /** Category dropdown state — bound by NAME (the same value the accordion
+   *  groups the food under), so it always reflects the food's real category
+   *  with no resolution/placeholder. Original tracks the opened-at value for
+   *  the dirty check. */
+  nfPopupCategory = signal<string>('');
+  nfPopupOriginalCategory = signal<string>('');
+
+  /** Serving-UNIT edit state. `Dirty` drives the green Save disc; `Resolving` is
+   *  true while the AI (grams-per-unit) estimates a food-specific unit. */
+  nfPopupUnitDirty = signal(false);
+  nfPopupUnitResolving = signal(false);
+
+  /** Units offered in the NF editor. Weight units convert deterministically; the
+   *  rest are food-specific (grams from the food's data or the AI). */
+  private static readonly NF_UNIT_CHOICES = ['g', 'oz', 'lb', 'cup', 'tbsp', 'tsp', 'each'];
+  /** Grams in ONE of each weight unit — deterministic, food-independent. */
+  private static readonly MASS_GRAMS: Record<string, number> = {
+    g: 1, gram: 1, grams: 1, mg: 0.001, kg: 1000, oz: 28.3495, lb: 453.592,
+  };
+  /** Unit dropdown options — the standard set, plus the food's current unit if
+   *  it isn't already in it (so the current value is always selectable). */
+  readonly nfPopupUnitOptions = computed<string[]>(() => {
+    const cur = (this.nfPopupFood()?.servingUnit || 'g').toLowerCase();
+    const base = [...FoodsPanelComponent.NF_UNIT_CHOICES];
+    return base.includes(cur) ? base : [cur, ...base];
+  });
+
+  /** Dropdown options: the category vocabulary, plus the food's own category
+   *  if it isn't in that list (so the current value is always selectable). */
+  readonly nfCategoryOptions = computed<string[]>(() => {
+    const names = this.foodsService.categories().map((c) => c.name);
+    const cur = this.nfPopupFood()?.categoryName?.trim();
+    if (cur && !names.some((n) => n.toLowerCase() === cur.toLowerCase())) {
+      return [cur, ...names];
+    }
+    return names;
+  });
 
   /** Current effective serving size displayed inside the NF popup, in food
    *  units (e.g. 4 = "4 oz" of beef). Starts at the user's saved override
@@ -1940,13 +2964,6 @@ export class FoodsPanelComponent {
    *   - detect dirty (current != original → Save enabled),
    *   - revert if the user closes via X without saving. */
   nfPopupOriginalServingSize = signal<number>(1);
-
-  /** Save is enabled iff popup is in edit mode AND the draft differs from
-   *  what we opened at. */
-  nfPopupCanSave = computed<boolean>(() => {
-    if (this.nfPopupMode() !== 'edit') return false;
-    return this.nfPopupServingSize() !== this.nfPopupOriginalServingSize();
-  });
 
   /** Scale factor handed to the NF label so it can recompute macros from the
    *  per-100g baseline. Display math is (qty × servingGramsPerUnit) / 100,
@@ -1969,11 +2986,11 @@ export class FoodsPanelComponent {
   healthBenefitsError = signal<string | null>(null);
   private healthBenefitsRequestId = 0;
 
-  async openHealthBenefits(): Promise<void> {
-    // Prefer the NF popup's food (if it's open) so the Health Info button
-    // inside that dialog stays consistent; otherwise act on whichever tile
-    // is currently selected in the grid.
-    const food = this.nfPopupFood() ?? this.selectedFood();
+  async openHealthBenefits(target?: Food): Promise<void> {
+    // Explicit target wins (e.g. the Health Info overlay on a selected Edit-
+    // MyFoods row); otherwise prefer the NF popup's food, then the selected
+    // MyFood row, then whichever LHS tile is selected.
+    const food = target ?? this.nfPopupFood() ?? this.selectedMyFood() ?? this.selectedFood();
     if (!food) return;
     this.healthBenefitsFood.set(food);
     this.healthBenefitsText.set(null);
@@ -2065,16 +3082,6 @@ export class FoodsPanelComponent {
     }
   }
 
-  // The "Add My Food" flow runs in the phone app. The web "+" button just
-  // surfaces a placeholder that points users at the QR / download.
-  openAddDialog(): void {
-    this.showAddDialog.set(true);
-  }
-
-  closeAddDialog(): void {
-    this.showAddDialog.set(false);
-  }
-
   // ---- Spin carousel ----
 
   // A filter group is "pressed" when its categories exactly match the active
@@ -2095,6 +3102,11 @@ export class FoodsPanelComponent {
       if (this.isFilterGroupActive(group)) return new Set();
       return new Set(group.cats);
     });
+  }
+
+  /** Clear all category filters → show everything. */
+  clearFilters(): void {
+    this.selectedCategories.set(new Set());
   }
 
   private loadRequestId = 0;

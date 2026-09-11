@@ -1,41 +1,89 @@
 // src/app/components/food/food.ts
 //
-// One food line inside a meal card: "{quantity} {unit} · {foodName}".
-// Hovering reveals a "swap" affordance — a NO-OP stub this phase; it gets
-// wired to the lookaside food picker in Phase 4.
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+// One food line inside a meal card: "{name} … {quantity} {unit}". Hovering
+// reveals two affordances that operate on the food DIRECTLY (no meal edit
+// mode): a pencil (edit — opens the serving popup for this item) and an ✕
+// (remove — deletes this food line from the meal).
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatIconModule } from '@angular/material/icon';
 import { MealItem } from '../../models';
+import { roundUpTenth } from '../../models/food-display';
 
 @Component({
   selector: 'app-food',
-  imports: [MatTooltipModule],
+  imports: [MatTooltipModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="food-row">
-      <span class="food-text">
-        <span class="qty">{{ item().quantity }} {{ item().unit }}</span>
-        <span class="dot">·</span>
-        <span class="name">{{ item().foodName }}</span>
+    <div
+      class="food-row"
+      [class.editable]="!readonly() && canEditServing()"
+      (dblclick)="onDblClick()">
+      <!-- Name first (2/3, clipped) then serving (1/3, clipped); the edit/remove
+           actions sit outside this split and reveal on hover. Same discs as the
+           meal-card header. -->
+      <span class="food-name">{{ item().food?.shortDescription?.trim() || item().foodName }}</span>
+      <span class="food-qty">{{ roundUpTenth(item().quantity) }} {{ item().unit }}</span>
+      <!-- Actions suppressed on a read-only (clone/phantom) row — the food is a
+           pointer to the origin meal; edits belong on the origin only. -->
+      @if (!readonly()) {
+      <span class="food-actions">
+        <!-- Pencil hidden for items whose food can't be resolved to a full
+             Food (e.g. foodSource 'pending' — no persisted row to price). -->
+        @if (canEditServing()) {
+          <button
+            type="button"
+            class="icon-disc icon-disc-edit"
+            [class.busy]="resolving()"
+            [disabled]="resolving()"
+            matTooltip="Edit serving"
+            matTooltipPosition="left"
+            (click)="editItem.emit(item())">
+            <mat-icon>edit</mat-icon>
+          </button>
+        }
+        <button
+          type="button"
+          class="icon-disc icon-disc-danger"
+          matTooltip="Remove food from meal"
+          matTooltipPosition="left"
+          (click)="removeItem.emit(item())">
+          <mat-icon>delete_outline</mat-icon>
+        </button>
       </span>
-      <button
-        type="button"
-        class="swap-btn"
-        matTooltip="AI Swap Food"
-        matTooltipPosition="left"
-        (click)="onSwap()">
-        <img src="images/AI-star.png" alt="" class="swap-icon" />
-        <span class="swap-text">AI Swap Food</span>
-      </button>
+      }
     </div>
   `,
   styleUrls: ['./food.scss'],
 })
 export class FoodComponent {
+  /** Display rounding for the item quantity (round UP to a tenth). */
+  protected readonly roundUpTenth = roundUpTenth;
+
   readonly item = input.required<MealItem>();
 
-  /** Phase 4 affordance — intentionally a no-op for now. */
-  onSwap(): void {
-    // no-op stub
+  /** True while this item's food is being fetched to open the serving popup —
+   *  the ✎ pencil shows a brief busy state and can't be re-clicked. */
+  readonly resolving = input<boolean>(false);
+
+  /** Read-only row — hides the edit/remove affordances. Set on clone (phantom)
+   *  meal slots, whose food is a shared pointer to the origin meal. */
+  readonly readonly = input<boolean>(false);
+
+  /** ✎ — open the serving popup for this exact item. */
+  readonly editItem = output<MealItem>();
+
+  /** ✕ — remove this food line from the meal. */
+  readonly removeItem = output<MealItem>();
+
+  /** Whether the edit-serving pencil is offered. Pending items carry no
+   *  resolved food record (`food` is null), so there's nothing to price. */
+  readonly canEditServing = computed<boolean>(() => this.item().food != null);
+
+  /** Double-click a row → same as the pencil (open the serving/nutrition popup).
+   *  No-op on read-only rows or unresolved items (nothing to price). */
+  onDblClick(): void {
+    if (this.readonly() || !this.canEditServing()) return;
+    this.editItem.emit(this.item());
   }
 }

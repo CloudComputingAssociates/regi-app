@@ -5,28 +5,26 @@
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { SettingsService } from './settings.service';
 import {
-  DailyGoals, RegiMenuSettings, PersonalInfo, Glp1Settings, Glp1Dose
+  AllSettings, DailyGoals, RegiMenuSettings, PersonalInfo, Glp1Settings, Glp1Dose
 } from '../models/settings.models';
 
 // Narrower types for UI
 export type MealsPerDay = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
-export type FastingType = 'none' | '16_8' | '18_6' | '20_4' | 'omad';
 export type RepeatMeals = number;
-export type FoodListSource = 'yeh' | 'myfoods' | 'yeh_plus_myfoods';
+export type FoodListSource = 'myfoods' | 'regi_plus_myfoods' | 'all_foods';
 export type WeekStartDay = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
 
 export type { DailyGoals, PersonalInfo, Glp1Settings, Glp1Dose };
 
 export interface Preferences {
   mealsPerDay: MealsPerDay;
-  fastingType: FastingType;
   dailyGoals: DailyGoals;
-  eatingStartTime: string;
   repeatMeals: RepeatMeals;
   foodListSource: FoodListSource;
   personalInfo: PersonalInfo;
   weekStartDay: WeekStartDay;
   persons: number;
+  menuDays: number;
   glp1: Glp1Settings;
 }
 
@@ -35,7 +33,7 @@ const DEFAULT_DAILY_GOALS: DailyGoals = {
   protein: 150,
   carbs: 200,
   fat: 65,
-  fiber: 30,
+  fiber: 35,
   sodium: 2300,
   isOverridden: false
 };
@@ -43,26 +41,22 @@ const DEFAULT_DAILY_GOALS: DailyGoals = {
 const DEFAULT_PERSONAL_INFO: PersonalInfo = {};
 
 // Validation thresholds (used by validateOnSave)
-const CALORIE_MISMATCH_TOLERANCE = 10;   // cal difference before warning
-const MACRO_BALANCE_TOLERANCE = 10;       // cal difference before warning
 const GOAL_LOSS_AMBITIOUS_PCT = 15;       // % loss → ambitious warning
 const GOAL_LOSS_AGGRESSIVE_PCT = 25;      // % loss → aggressive warning
 const GOAL_LOSS_EXTREME_PCT = 50;         // % loss → medical warning
 const GOAL_GAIN_WARN_PCT = 10;            // % gain → consult warning
-const FIBER_TO_CARB_RATIO = 0.25;         // fiber > carbs * this → warning
 
 const DEFAULT_GLP1: Glp1Settings = { enabled: false };
 
 const DEFAULT_PREFERENCES: Preferences = {
   mealsPerDay: 3,
-  fastingType: 'none',
   dailyGoals: DEFAULT_DAILY_GOALS,
-  eatingStartTime: '08:00',
   repeatMeals: 1,
   foodListSource: 'myfoods',
   personalInfo: DEFAULT_PERSONAL_INFO,
   weekStartDay: 'sunday',
   persons: 1,
+  menuDays: 7,
   glp1: DEFAULT_GLP1
 };
 
@@ -112,14 +106,17 @@ export class PreferencesService {
 
   // Convenience accessors
   readonly mealsPerDay = computed(() => this.preferencesSignal().mealsPerDay);
-  readonly fastingType = computed(() => this.preferencesSignal().fastingType);
   readonly dailyGoals = computed(() => this.preferencesSignal().dailyGoals);
-  readonly eatingStartTime = computed(() => this.preferencesSignal().eatingStartTime);
   readonly repeatMeals = computed(() => this.preferencesSignal().repeatMeals);
-  readonly foodListSource = computed(() => this.preferencesSignal().foodListSource);
+  // "Foods from" setting retired — planning always draws from MyFoods only. The
+  // persisted defaultFoodList/foodListSource token is ignored app-side (and being
+  // disabled server-side). Consumers that branched on 'regi_plus_myfoods' now stay
+  // MyFoods-only.
+  readonly foodListSource = computed<FoodListSource>(() => 'myfoods');
   readonly personalInfo = computed(() => this.preferencesSignal().personalInfo);
   readonly weekStartDay = computed(() => this.preferencesSignal().weekStartDay);
   readonly persons = computed(() => this.preferencesSignal().persons);
+  readonly menuDays = computed(() => this.preferencesSignal().menuDays);
   readonly glp1 = computed(() => this.preferencesSignal().glp1);
 
   // ========================================================
@@ -375,17 +372,13 @@ export class PreferencesService {
 
     const prefs: Preferences = {
       mealsPerDay: (rm?.mealsPerDay as MealsPerDay) || DEFAULT_PREFERENCES.mealsPerDay,
-      fastingType: (rm?.fastingType as FastingType) || DEFAULT_PREFERENCES.fastingType,
-      eatingStartTime: rm?.eatingStartTime || DEFAULT_PREFERENCES.eatingStartTime,
       repeatMeals: rm?.repeatMeals ?? DEFAULT_PREFERENCES.repeatMeals,
       weekStartDay: (rm?.weekStartDay as WeekStartDay) || DEFAULT_PREFERENCES.weekStartDay,
-      // Foods-from UI is removed — the source is always MyFoods now. We still
-      // flow this through the defaultFoodList save so the server's persisted
-      // value stays in sync with the app's actual behavior.
-      foodListSource: 'myfoods',
+      foodListSource: this.mapDefaultFoodList(all.defaultFoodList),
       dailyGoals: dg ?? DEFAULT_DAILY_GOALS,
       personalInfo: pi ?? DEFAULT_PERSONAL_INFO,
       persons: rm?.persons ?? DEFAULT_PREFERENCES.persons,
+      menuDays: rm?.menuDays ?? DEFAULT_PREFERENCES.menuDays,
       glp1: all.glp1 ?? { enabled: false }
     };
 
@@ -408,41 +401,32 @@ export class PreferencesService {
   async savePreferences(): Promise<void> {
     const current = this.preferencesSignal();
     const dirty = this.dirtyGroups();
-    const promises: Promise<unknown>[] = [];
+
+    // ONE atomic PUT with every dirty group combined — NOT one concurrent PUT per
+    // group. Firing 5 parallel PUTs at /user/settings raced and, if any single one
+    // failed (or its response failed to parse), rejected the whole save with a
+    // "Failed to save preferences" toast even though the other writes had already
+    // landed (the spurious-failure-but-it-saved symptom).
+    const partial: Partial<AllSettings> = {};
 
     if (dirty.regiMenu) {
       const data: RegiMenuSettings = {
         mealsPerDay: current.mealsPerDay,
-        fastingType: current.fastingType,
-        eatingStartTime: current.eatingStartTime,
         repeatMeals: current.repeatMeals,
         weekStartDay: current.weekStartDay,
-        persons: current.persons
+        persons: current.persons,
+        menuDays: current.menuDays
       };
-      promises.push(this.settingsService.saveRegiMenuSettings(data));
+      partial.regiMenu = data;
     }
+    if (dirty.dailyGoals) partial.dailyGoals = current.dailyGoals;
+    if (dirty.defaultFoodList) partial.defaultFoodList = this.mapFoodListSourceToApi(current.foodListSource);
+    if (dirty.personalInfo) partial.personalInfo = current.personalInfo;
+    if (dirty.glp1) partial.glp1 = current.glp1;
 
-    if (dirty.dailyGoals) {
-      promises.push(this.settingsService.saveDailyGoals(current.dailyGoals));
-    }
+    if (Object.keys(partial).length === 0) return;
 
-    if (dirty.defaultFoodList) {
-      promises.push(this.settingsService.saveDefaultFoodList(
-        this.mapFoodListSourceToApi(current.foodListSource)
-      ));
-    }
-
-    if (dirty.personalInfo) {
-      promises.push(this.settingsService.savePersonalInfo(current.personalInfo));
-    }
-
-    if (dirty.glp1) {
-      promises.push(this.settingsService.saveGlp1Settings(current.glp1));
-    }
-
-    if (promises.length === 0) return;
-
-    await Promise.all(promises);
+    await this.settingsService.saveSettings(partial);
     this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false, glp1: false });
   }
 
@@ -455,16 +439,6 @@ export class PreferencesService {
     this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
   }
 
-  setFastingType(value: FastingType): void {
-    this.preferencesSignal.update(p => ({ ...p, fastingType: value }));
-    this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
-  }
-
-  setEatingStartTime(value: string): void {
-    this.preferencesSignal.update(p => ({ ...p, eatingStartTime: value }));
-    this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
-  }
-
   setRepeatMeals(value: number): void {
     const clamped = Math.max(1, Math.floor(Number(value) || 1));
     this.preferencesSignal.update(p => ({ ...p, repeatMeals: clamped }));
@@ -474,6 +448,14 @@ export class PreferencesService {
   setPersons(value: number): void {
     const clamped = Math.max(1, Math.floor(Number(value) || 1));
     this.preferencesSignal.update(p => ({ ...p, persons: clamped }));
+    this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
+  }
+
+  /** Menu-Days — how many Menus (days) the rotation plans at once. Drives the
+   *  rotation spanDays; clamped to the API's 2–10 range. */
+  setMenuDays(value: number): void {
+    const clamped = Math.max(2, Math.min(10, Math.floor(Number(value) || 7)));
+    this.preferencesSignal.update(p => ({ ...p, menuDays: clamped }));
     this.dirtyGroups.update(d => ({ ...d, regiMenu: true }));
   }
 
@@ -695,7 +677,11 @@ export class PreferencesService {
    *  Called before save — empty array means no warnings. */
   validateOnSave(): string[] {
     const warnings: string[] = [];
-    const dg = this.dailyGoals();
+    // Only surface the weight-goal acknowledgement when the goal actually
+    // changed this session. Saving (Continue) clears the personalInfo dirty
+    // flag, so once acknowledged it never re-nags on unrelated saves — it only
+    // returns when the user edits the goal again.
+    if (!this.dirtyGroups().personalInfo) return warnings;
     const pi = this.personalInfo();
 
     // 1. Unrealistic goal weight
@@ -771,19 +757,23 @@ export class PreferencesService {
 
   private mapDefaultFoodList(value?: string): FoodListSource {
     switch (value) {
-      case 'yeh_approved': return 'yeh';
       case 'myfoods': return 'myfoods';
-      case 'yeh_plus_myfoods': return 'yeh_plus_myfoods';
+      case 'regi_plus_myfoods': return 'regi_plus_myfoods';
+      case 'all_foods': return 'all_foods';
+      // Back-compat: read legacy persisted tokens from before the enum rename.
+      case 'yeh_plus_myfoods': return 'regi_plus_myfoods';
+      case 'yeh':
+      case 'yeh_approved': return 'regi_plus_myfoods';
       default: return DEFAULT_PREFERENCES.foodListSource;
     }
   }
 
   private mapFoodListSourceToApi(value: FoodListSource): string {
     switch (value) {
-      case 'yeh': return 'yeh_approved';
       case 'myfoods': return 'myfoods';
-      case 'yeh_plus_myfoods': return 'yeh_plus_myfoods';
-      default: return 'yeh_approved';
+      case 'regi_plus_myfoods': return 'regi_plus_myfoods';
+      case 'all_foods': return 'all_foods';
+      default: return 'myfoods';
     }
   }
 }

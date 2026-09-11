@@ -1,14 +1,37 @@
 // src/app/components/meal-binder/meal-binder.scss
 
-// Fixed-width right column with its own vertical scroll, independent of the
-// canvas. Matches the panel's dark surface with a chrome-grey left divider.
+// Right column: 1/4 of the panel width (proportional — grows on browser resize
+// so menu/meal names stay readable), with its own vertical scroll. Holds a
+// sensible minimum on narrow viewports. Chrome-grey left divider.
 :host {
-  flex: 0 0 300px;
+  flex: 0 0 30%;
+  min-width: 300px;
+  // Thumbnail / menu-icon size GROWS responsively: ~22px at ~1024px wide (our
+  // baseline), scaling up with the viewport to a 36px ceiling. (Another 25%
+  // smaller — shorter rows, less vertical padding.)
+  --thumb: clamp(22px, 2.2vw, 36px);
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-left: 1px solid #4a4a4a;
-  background: #2a2a2a;
+  // No left border — the paper (and its spiral binding) runs flush to the very
+  // left edge with nothing over it.
+  // Spiral-bound notebook paper across the whole Binder. Fill behind the PNG is a
+  // LIGHT grey (not white) so the dark metal coils have enough contrast to read on
+  // the left, and the same shade fills any transparent gap on the right edge.
+  background-color: #c4c8cc;
+  background-image: url('/images/paper-spiral-bound.png');
+  background-repeat: no-repeat; // one notebook, no tiling seam
+  background-size: 100% 100%; // grow to fill the rail height
+  background-position: top left;
+  // Animate the slide-off / slide-back-in of the whole notebook.
+  overflow: hidden;
+  transition: flex-basis 0.32s ease;
+}
+
+// Collapsed = slid off to the right (flex-basis is driven to 0 inline); allow it
+// to shrink past its min-width so it fully disappears.
+:host(.binder-collapsed) {
+  min-width: 0;
 }
 
 .binder {
@@ -16,79 +39,751 @@
   flex-direction: column;
   min-height: 0;
   flex: 1;
+  // Left gutter is a PERCENTAGE so it scales with the spiral: the spiral-paper PNG
+  // stretches to the rail width (background-size: 100% 100%), so its coils + red
+  // margin line grow proportionally — a fixed px gutter drifted off them at wide
+  // sizes. 13% keeps the content clear of the spiral at any width.
+  padding: 0 2px 0 13%;
+  // SERIF body for the Binder — Calisto MT (elegant transitional serif on Windows/
+  // Office), with graceful Palatino/Georgia fallbacks elsewhere. No webfont (CSP-
+  // safe). Tabs, the "Binder" title, and the controls override this back to sans.
+  font-family: 'Calisto MT', Calisto, 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
+// Matches the menus toolbar + lookaside header: one 44px raised bar, content
+// vertically centered so "Meals" lines up with "Scale" and swaps don't jump.
 .binder-header {
+  position: relative; // anchor the collapse-all corner
   flex-shrink: 0;
-  padding: 12px 14px;
-  border-bottom: 1px solid #4a4a4a;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center; // "binder" centered at the top
+  padding: 2px 4px; // 2px above + below the title → slides the title (and content) down
+  margin: 12px 4px 8px 0; // "binder" a touch lower; more room below before menus
+  background: transparent;
+  border: none;
 
   .binder-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: #f1f1f1;
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    // Calisto, 400 — the Notebook TITLE only is bumped ~2pt (16→19px) for presence.
+    font-family: 'Calisto MT', Calisto, 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+    font-size: 19px;
+    font-weight: 400;
+    color: #1a1a1a;
+  }
+
+  // Plain dark Material X (on-light) — pinned to the top-RIGHT corner of the Notebook.
+  .binder-close-disc {
+    position: absolute;
+    top: -2px;
+    right: 4px;
   }
 }
 
-.genmeal-btn {
+// Menus tab row: the tab grows; the collapse-all key sits at the right, in line
+// with the menus tab.
+.section-head-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  .section-head { flex: 1 1 auto; }
+}
+
+// Collapse-all key — raised white key, now on the menus-tab row.
+.collapse-all-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  color: #3a3f45;
+  background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
+  border: 1px solid #b7bcc4;
+  border-radius: 8px;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.32),
+    0 1px 1px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  transition: background 0.12s ease, box-shadow 0.1s ease, transform 0.05s ease;
+
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+  &:hover { background: linear-gradient(180deg, #ffffff 0%, #dde1e7 100%); }
+  &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2); }
+}
+
+// Meal search — now lives on the meals-tab line; GROWS to fill between the tab and
+// the Add/Filter keys, shrinks on narrow rails.
+.header-search {
+  // Shrink the search first (down to ~30px) so the Add + Filter keys are never
+  // pushed off a narrow rail — the middle squeezes, the buttons stay.
+  flex: 1 1 30px;
+  min-width: 0;
+  align-self: flex-end; // bottom-align with the tab + Add/Filter keys
+  height: 26px;
+  box-sizing: border-box;
+  padding: 3px 8px;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  font-size: 13px;
+  color: #1a1a1a;
+  background: #ffffff;
+  border: 1px solid #9a9ea3;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.16);
+  outline: none;
+  &::placeholder { color: #8a8f94; font-style: italic; }
+  &:focus {
+    border-color: #4da6ff;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 2px rgba(77, 166, 255, 0.35);
+  }
+}
+
+// Menus | Meals real tab bar — the two tabs sit side by side on top of the shared
+// list sheet. The active tab is solid; the inactive one recedes.
+.binder-tabs {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px; // inter-tab spacing (restored)
+  // Mirror the SHEET's bounds — it has a 4px right margin and no left margin — then
+  // inset the tabs 4px on BOTH sides. So the first tab clears the left corner curve
+  // by the same amount the last tab clears the right one (symmetric, no overhang).
+  margin: 2px 4px -2px 0;
+  padding: 0 4px;
+  position: relative;
+  // No z-index here (no stacking context) so each tab layers RELATIVE TO THE SHEET:
+  // the active tab sits IN FRONT of it, the inactive tabs BEHIND — folder style.
+  position: relative;
+}
+.binder-tab {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  flex: 1 1 0; // three tabs share the rail width equally
+  min-width: 0;
+  padding: 6px 8px; // 1px trimmed top + bottom → 2px shorter tab
+  box-sizing: border-box;
+  border: none;
+  border-radius: 12px 12px 0 0;
+  background: #7cc6a9; // inactive: LIGHT calming green (clear contrast vs active)
+  cursor: pointer;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  transition: background 0.12s ease;
+  outline: none;
+  // Inactive tabs sit BEHIND the sheet (z 2) — the sheet's green top border passes
+  // in FRONT of their bottom edge, so they read as tucked behind the foreground.
+  position: relative;
+  z-index: 1;
+
+  .section-label { color: #ffffff; font-size: 16px; font-weight: 400; line-height: 20px; }
+  .section-count { color: rgba(255, 255, 255, 0.9); font-size: 11px; font-weight: 400; line-height: 20px; }
+
+  &:hover { background: #8ccfb5; }
+  // Active: a much DEEPER green so the selected tab clearly separates from the
+  // light inactive ones. z 3 → IN FRONT of the sheet, its bottom melding into it.
+  &.active {
+    background: #218a5d;
+    box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.22);
+    z-index: 3;
+  }
+  &:focus-visible { box-shadow: 0 0 0 2px rgba(33, 138, 93, 0.6); }
+}
+
+// Shopping tab wrapper. Intentionally sets NO font-family: the LIST content (item
+// names, categories, the "Need" heading) inherits the Notebook's serif (Calisto)
+// so it reads like the meal entries on the ruled paper; the panel forces sans only
+// on its controls (scale radios / Print) itself.
+.shopping-section { min-width: 0; }
+// Shopping tab: the meals'-groceries + staples boxes ARE the green enclosures, so
+// drop the sheet's own green outline here — otherwise it's a "line within a line".
+.rail-section.shopping-section {
+  border: none;
+  background: transparent;
+}
+
+// Meals-tab controls — two stacked rows below the tab bar (Search + collapse-all,
+// then Filter + Add meals).
+.meals-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 6px 6px;
+
+  .meals-ctrl-row {
+    display: flex;
+    align-items: center;
+    gap: 4px; // tightened so collapse-all isn't clipped
+  }
+
+  // Raised white key chrome (moved here from the old .section-head scope so the
+  // Filter / Add keys still render now that they live on the meals rows).
+  .create-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 26px;
+    box-sizing: border-box;
+    padding: 0 8px;
+    color: #1a1a1a;
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
+    border: 1px solid #b7bcc4;
+    border-radius: 8px;
+    box-shadow:
+      0 2px 5px rgba(0, 0, 0, 0.32),
+      0 1px 1px rgba(0, 0, 0, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    cursor: pointer;
+    transition: background 0.12s ease, box-shadow 0.1s ease, transform 0.05s ease;
+
+    .create-word { color: #1a1a1a; white-space: nowrap; }
+    .mat-icon,
+    .create-chevron {
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
+      line-height: 16px;
+      color: #3a3f45;
+    }
+
+    &:hover { background: linear-gradient(180deg, #ffffff 0%, #dde1e7 100%); }
+    &:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2); }
+  }
+
+  .filter-toggle.filter-on {
+    background: linear-gradient(180deg, #eef1f5 0%, #d7dde5 100%);
+    .create-word { text-decoration: underline; text-underline-offset: 2px; }
+  }
+
+  // Actions row: Filter (left) · ＋ Add meals (centered) · collapse-all (flush right).
+  .meals-ctrl-actions {
+    // Sort · Filter · + Add meals cluster LEFT; collapse-all is pushed to the far right.
+    .add-meals-btn .mat-icon { color: #2f6f3f; } // green + to signal "add"
+    .collapse-all-btn { margin-left: auto; }
+  }
+
+  // Sort — first-class control styled as a raised-white key (matches Filter / Add).
+  .sort-inline {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 26px;
+    padding: 0 4px 0 6px;
+    background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
+    border: 1px solid #b7bcc4;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
+    font-size: 12px;
+
+    .sort-inline-label { font-weight: 500; color: #3a3f45; }
+    .sort-inline-select {
+      // Narrow: the option labels are short (Off / Protein / Fiber / Recipes /
+      // By Date / Newest), so cap the control instead of letting it auto-size wide.
+      width: 66px;
+      max-width: 66px;
+      border: none;
+      background: transparent;
+      font: inherit;
+      color: #1a1a1a;
+      outline: none;
+      cursor: pointer;
+      padding: 0 1px;
+    }
+  }
+}
+
+// Right-justified AI Meal Assistant TITLE on the "Binder" line (was a dropdown
+// toggle). Static star + label, no chevron; the AI row below is always shown and
+// sits directly under this title.
+// Recipe-import row directly under the header — a single "From recipe…" button.
+.binder-subhead {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  padding: 0 12px;
+  margin: 0 6px 4px;
+
+  .recipe-import-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border: 1px solid #4a4a4a;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
+    color: #d8d8d8;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.12s ease, color 0.12s ease, opacity 0.12s ease;
+
+    mat-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+      line-height: 18px;
+      color: #e06666; // PDF red accent
+    }
+
+    &:hover:not(:disabled) {
+      border-color: #4da6ff;
+      color: #4da6ff;
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+  }
+}
+
+.ai-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  // The star is a raster PNG — mask it and fill blue so the symbol matches the
+  // blue heading (a plain <img> can't be recolored).
+  .ai-logo {
+    width: 18px;
+    height: 18px;
+    background-color: #4da6ff;
+    -webkit-mask: url('/images/AI-star.png') center / contain no-repeat;
+    mask: url('/images/AI-star.png') center / contain no-repeat;
+    &.spinning { animation: binder-spin 1s linear infinite; }
+  }
+  .ai-title-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #4da6ff; // reads as a title, matching Binder / the accordion labels
+  }
+}
+
+// Star icon in the AI accordion header (peer to .section-icon on Menus/Meals).
+.section-ai-logo {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  &.spinning { animation: binder-spin 1s linear infinite; }
+}
+
+// AI row — ONE line always: Twist (left) + New meal (right). No wrap; the Twist
+// dropdown shrinks instead of dropping to a second row.
+// "Create new" body: stacked — the generate row (From picks + Cuisine) on top,
+// the Import-recipe button below.
+// The open Create area gets a blue BLOOM border so it reads as a distinct panel.
+.create-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin: 4px 8px 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(77, 166, 255, 0.6);
+  background: rgba(77, 166, 255, 0.05);
+  box-shadow:
+    0 0 0 1px rgba(77, 166, 255, 0.35),
+    0 0 12px rgba(77, 166, 255, 0.4);
+}
+
+// Filter panel — a clean, SOLID-WHITE card so the ruled paper lines don't bleed
+// through, and fully monochrome (the macros own colour; this stays black / white
+// / grey). Legend + labels are black; the controls are plain white form fields.
+.filter-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin: 1px 8px 3px; // tight top + bottom — meals-list real estate is precious
+  font-family: Roboto, 'Helvetica Neue', sans-serif; // filter is a control — stay sans
+
+  .filter-fieldset {
+    margin: 0;
+    padding: 4px 10px 6px; // trimmed inner padding
+    background: #ffffff; // opaque white — no line bleed-through
+    border: 1px solid #2a2a2a; // one clean dark outline
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+    display: flex;
+    flex-direction: column;
+    gap: 6px; // tighter inter-control spacing
+
+    legend {
+      padding: 0 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #1a1a1a; // black, not blue
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+  }
+
+  // Every filter row must be able to shrink below its content's intrinsic width
+  // (the native selects size to their longest option) so nothing overflows the
+  // narrow rail — the Binder clips horizontal overflow (overflow-x: hidden).
+  .filter-fieldset,
+  .sort-row,
+  .mealset-row { min-width: 0; max-width: 100%; }
+
+  // Sort row: label + compact white select + Clear key (pinned right).
+  .sort-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  // MealSet row: label + white listbox (or the empty note).
+  .mealset-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  // Row labels ("SORT" / "MEALSET") — black, uppercase, fixed width so both rows'
+  // controls line up in a column.
+  .filter-label {
+    flex: 0 0 58px;
+    padding-top: 5px; // baseline-align with the field text
+    font-size: 11px;
+    font-weight: 700;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  // Plain white data-entry controls — squared corners + thin grey line, matching
+  // the header search field.
+  .sort-select,
+  .mealset-select {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box; // borders/padding count inside the capped width
+    padding: 4px 8px;
+    font-family: inherit;
+    font-size: 13px;
+    color: #1a1a1a;
+    background: #ffffff;
+    border: 1px solid #9a9ea3;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.3); }
+
+    option { background: #ffffff; color: #1a1a1a; }
+    option:checked { background: #dbe8fb; color: #1a1a1a; }
+  }
+  .sort-select { flex: 0 0 auto; max-width: 60%; } // sort stays compact but capped
+  // Listbox fills the row and is HARD-capped to it: flex-basis 0 + min-width 0 so a
+  // long option ("Mexi Meals — GLP-1 Friendly…") scrolls INSIDE the box instead of
+  // stretching it past the rail's right edge.
+  .mealset-select { flex: 1 1 0; width: 100%; }
+
+  .mealset-empty {
+    flex: 1 1 auto;
+    align-self: center;
+    font-size: 12px;
+    font-style: italic;
+    color: #6a6f75; // darker grey — legible on white
+  }
+
+  // Clear-filter sits on its own right-aligned row now that Sort moved out.
+  // Search is the first control inside the filter: grows full-width, clear key at
+  // its right edge.
+  .filter-search-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .filter-search {
+      flex: 1 1 auto;
+      min-width: 0;
+      height: 26px;
+      box-sizing: border-box;
+      padding: 3px 8px;
+      font-family: Roboto, 'Helvetica Neue', sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      background: #ffffff;
+      border: 1px solid #9a9ea3;
+      border-radius: 2px;
+      outline: none;
+      &::placeholder { color: #8a8f94; font-style: italic; }
+      &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.3); }
+    }
+  }
+
+  // "From MealSet" fills its row (full-width) — its own dropdown, all the way across.
+  .mealset-row .sort-select { flex: 1 1 auto; max-width: none; }
+
+  // Clear key — a clean white bordered key with a dark glyph ("Remove filters").
+  .filter-clear {
+    flex: 0 0 auto;
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 26px;
+    padding: 0;
+    color: #1a1a1a;
+    background: #ffffff;
+    border: 1px solid #9a9ea3;
+    border-radius: 2px;
+    cursor: pointer;
+
+    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+    &:hover { background: #f0f0f0; }
+    &:active { transform: translateY(1px); }
+  }
+}
+
+// Centered "-or-" between the Create row and the recipe drop zone.
+.or-divider {
+  align-self: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #9aa0a6;
+  letter-spacing: 0.04em;
+}
+
+// Generate row: From picks button + Cuisine dropdown, side by side.
+.ai-body {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
   gap: 8px;
-  margin: 12px 14px 0;
-  padding: 8px 12px;
+
+  // Locked out while a recipe import is in flight (the drop zone below shows
+  // the processing status) — dimmed + non-interactive.
+  &.area-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+}
+
+// Import-recipe drop zone — dashed blue border; drag & drop a file or browse.
+.import-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border: 2px dashed #4da6ff;
+  border-radius: 8px;
+  background: rgba(77, 166, 255, 0.06);
+  text-align: center;
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+
+  .dz-icon { width: 22px; height: 22px; font-size: 22px; line-height: 22px; color: #4da6ff; }
+  // Spinning AI star shown while a recipe is processing ("AI processing…").
+  .dz-ai-spin {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    animation: binder-spin 1.15s linear infinite;
+  }
+  .dz-title { font-size: 13px; font-weight: 600; color: #e8e8e8; }
+  .dz-sub { font-size: 11px; color: #9aa0a6; }
+
+  .dz-link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: #4da6ff;
+    text-decoration: underline;
+    font: inherit;
+    cursor: pointer;
+    &:hover { color: #7fbfff; }
+  }
+
+  // Bloom while a file is dragged over it.
+  &.dragging {
+    background: rgba(77, 166, 255, 0.16);
+    box-shadow: 0 0 0 2px #4da6ff, 0 0 14px rgba(77, 166, 255, 0.6);
+  }
+  // Processing: keep the zone bright (the spinning star carries the motion) and
+  // block the pointer so it reads as locked to one import at a time.
+  &.busy { cursor: default; }
+}
+
+// The ✦ star inside the Create button.
+.btn-star {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+// "AI from food picks" text label leading the AI row. Generation now fires from
+// the raised green check disc (.genmeal-go) at the end of the twist group.
+// "Create" and "Import" — blue section labels, left-aligned so they read as
+// "Create -or- Import" down the panel.
+.genmeal-label {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
   font-size: 13px;
   font-weight: 600;
-  color: #d8d8d8;
-  background: linear-gradient(180deg, #3a3a3a 0%, #2c2c2c 100%);
-  border: 1px solid #1f1f1f;
-  border-top-color: #555555;
-  border-radius: 6px;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
-
-  &:hover {
-    background: linear-gradient(180deg, #454545 0%, #363636 100%);
-    color: #ffffff;
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
-
-  .genmeal-icon {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
-  }
+  color: #4da6ff;
+  white-space: nowrap;
 }
 
-// Candidate region — holds the generation progress indicator.
-.binder-candidates {
+.import-label {
+  align-self: flex-start;
+}
+
+// Raised green check that triggers meal generation — sits after the dropdown.
+// While generating it drops the green and gives depth so the star can spin in 3D.
+.genmeal-go {
+  flex: 0 0 auto;
+  perspective: 60px;
+}
+
+// While generating, the check is swapped for the AI star spinning about its
+// VERTICAL axis (rotateY) — like the earth turning on its equator.
+.genmeal-spin {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  animation: ai-globe-spin 1.4s linear infinite;
+}
+
+@keyframes ai-globe-spin {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+
+// ---- Second row: cuisine "Twist" combobox ----
+.twist-row {
   flex-shrink: 0;
-}
-
-.generating {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 12px 14px 0;
+  margin: 8px 14px 0;
+}
+
+// Twist label + dropdown as ONE unit, pushed to the RIGHT of the AI row (the AI
+// create button leads on the left). The group may shrink so it never wraps.
+.twist-group {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.twist-label {
+  flex-shrink: 0; // label stays intact; only the combo shrinks
+  display: inline-flex;
+  align-items: center;
+  gap: 2px; // tight space between the squiggle icon and the "Twist" word
+
+  .twist-word {
+    font-size: 14px;
+    font-weight: 500;
+    color: #d8d8d8;
+  }
+}
+
+// Reserved slot after the dropdown for the Twist squiggle (SVG is 17px wide). The
+// width is held even when empty, so selecting or clearing a twist never shifts the
+// row; the logo only renders once a real twist is chosen.
+.twist-mark {
+  flex: 0 0 auto;
+  width: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.twist-combo {
+  position: relative;
+  flex: 0 1 150px; // 150px ideal, but shrinks (with the input) to stay on one row
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+
+  // Same raised shading family as the buttons.
+  background: linear-gradient(180deg, #565656 0%, #434343 100%);
+  border: 1px solid #262626;
+  border-top-color: #6f6f6f;
+  border-radius: 6px;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.twist-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 8px;
+  font-family: inherit;
   font-size: 13px;
-  color: #9aa0a6;
+  color: #f0f0f0;
+  background: transparent;
+  border: none;
+  border-radius: 6px 0 0 6px;
+  outline: none;
 
-  .generating-icon {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
-  }
+  &::placeholder { color: #9aa0a6; }
+}
 
-  .spin {
-    animation: binder-spin 1s linear infinite;
-  }
+.twist-chevron {
+  flex-shrink: 0;
+  width: 24px;
+  padding: 0;
+  font-size: 12px;
+  color: #d8d8d8;
+  background: transparent;
+  border: none;
+  border-left: 1px solid rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+
+  &:hover { color: #ffffff; }
+}
+
+.twist-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #3a3a3a;
+  border: 1px solid #1f1f1f;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+.twist-opt {
+  padding: 5px 8px;
+  font-size: 13px;
+  color: #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover { background: #4a4a4a; color: #ffffff; }
+
+  &.selected { color: #4da6ff; }
 }
 
 @keyframes binder-spin {
@@ -97,14 +792,564 @@
   }
 }
 
-.binder-list {
-  flex: 1;
+// ---- Collapsible Folder / Binder sections ----
+// One scrollbar for the whole rail — the sections size to content and this
+// wrapper scrolls, so nothing is stranded off-screen on a short viewport.
+.rail-scroll {
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding: 12px 14px;
+  overflow-x: hidden; // never a horizontal scrollbar in the Binder
+}
+
+.rail-section {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  min-height: 0;
+  margin: 0 4px 0 0; // no top gap — the active tab overlaps the sheet's top edge
+  // Layered BETWEEN the tabs: its green top border paints in front of the inactive
+  // tabs (z 1) but behind the active tab (z 3), so the active tab reads foreground.
+  position: relative;
+  z-index: 2;
+  // A faint translucent "page" so the cards sit on a defined sheet (the ruled
+  // paper still shows through), outlined so each section reads as its own area
+  // instead of floating.
+  background: rgba(255, 255, 255, 0.32);
+  // 2px green outline (the tab focus/active green) so the sheet reads as belonging
+  // to the active tab above it — the tab + its contents as one enclosed area.
+  border: 2px solid #218a5d;
+  border-radius: 8px;
+  padding-bottom: 4px;
+}
+
+// Detached grey divider — a thin inset line (same 14px inset as the section rows)
+// closing off the AI Meal Assistant area above the Menus / Meals sections.
+.rail-divider {
+  flex-shrink: 0;
+  height: 1px;
+  margin: 12px 14px 0;
+  background: #4a4a4a;
+}
+
+.section-head {
+  display: flex;
+  align-items: flex-end; // the tab sits on top of its sheet; controls align to its base
+  gap: 4px; // squeezed — frees space for the search field's default width
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0; // the tab bleeds to the left content edge, flush with its sheet
+  background: transparent;
+  border: none;
+  color: #3a3f45;
+  cursor: pointer;
+  text-align: left;
+
+  // Menus / Meals as a real binder tab: a solid COLOURED tab (blue = Menus,
+  // green = Meals) with a rounded top, sitting flush on top of its list sheet
+  // (1px overlap) so the sheet reads as beginning underneath it.
+  .section-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center; // center the label
+    gap: 4px;
+    flex: 0 0 92px; // FIXED width, no grow/shrink → both tabs identical size
+    padding: 6px 9px 4px; // nudged the label UP ~2px (was 8/2) — sat too low
+    box-sizing: border-box;
+    border: none;
+    border-radius: 12px 12px 0 0;
+    margin-bottom: -1px; // overlap the sheet's top edge → reads as "attached"
+    box-shadow: none; // no depth — the drop shadow made the tab read odd-shaped
+    font-family: Roboto, 'Helvetica Neue', sans-serif; // back to sans
+
+    &.menus { background: rgba(59, 125, 224, 0.6); } // blue, 60% solid
+    &.meals { background: rgba(59, 125, 224, 0.6); } // blue too (both tabs blue)
+
+    // De-emboldened (was 700) + integer line-height so the white label / number
+    // render crisp on the saturated tab (heavy-white-on-colour read blurry).
+    .section-label {
+      color: #ffffff;
+      font-size: 16px; // +1 for legibility
+      font-weight: 500;
+      line-height: 20px;
+      text-shadow: none;
+    }
+    .section-count {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 11px; // +1
+      font-weight: 400;
+      line-height: 20px;
+      text-shadow: none;
+    }
+  }
+
+  // Always-expanded header (Meals) — a label, not a toggle.
+  &.section-head-static { cursor: default; }
+
+  // "Create" toggle — right-justified on the Meals header. A raised button (same
+  // domed chrome as From picks) with the word + chevron; clicking the word OR the
+  // chevron toggles. Not bold, so the label stays crisp (not blurry).
+  // The Create + Filter toggles cluster on the right of the Meals header.
+  .header-toggles {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  // Create = a Material "+" icon key. SAME raised domed chrome + size (30×30,
+  // 18px glyph, radius 5) as the board toolbar keys (.wipe-menus-btn /
+  // .close-panel-btn). Sits just after "Meals (n)" — the 6px flex gap + this 8px
+  // margin ≈ the 14px the Menus & Meals title leaves before its own keys.
+  // Add / Filter are lightweight GHOST controls — no box, no outline — so they
+  // stay subordinate to the outlined white section tabs. Black text + icon on the
+  // paper; a faint pill appears only on hover / when active.
+  // Add + Filter are a CLUSTER pinned to the right — raised, OPAQUE keys with a
+  // little depth (no ruled lines showing through). Add pushes the pair right;
+  // Filter sits snug against it.
+  // Layout: [tab] [+] [search grows] [Filter]. Search fills the gap, so no
+  // margin-left auto.
+  .create-icon-btn,
+  .create-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 26px;
+    box-sizing: border-box;
+    padding: 0 8px;
+    color: #1a1a1a;
+    font-family: Roboto, 'Helvetica Neue', sans-serif; // controls stay SANS
+    font-size: 12px;
+    font-weight: 400; // not bold
+    // Opaque top-lit gradient + rim + inner highlight = a raised physical key.
+    background: linear-gradient(180deg, #ffffff 0%, #e7eaef 100%);
+    border: 1px solid #b7bcc4;
+    border-radius: 8px;
+    box-shadow:
+      0 2px 5px rgba(0, 0, 0, 0.32), // pronounced drop so the key lifts off
+      0 1px 1px rgba(0, 0, 0, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    cursor: pointer;
+    transition: background 0.12s ease, box-shadow 0.1s ease, transform 0.05s ease;
+
+    .create-word { color: #1a1a1a; white-space: nowrap; }
+    .mat-icon,
+    .create-chevron {
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
+      line-height: 16px;
+      color: #3a3f45;
+    }
+
+    &:hover { background: linear-gradient(180deg, #ffffff 0%, #dde1e7 100%); }
+    &:active {
+      transform: translateY(1px);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  // Add — a compact SQUARE [+] key (just the icon).
+  .create-icon-btn {
+    width: 26px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  // "Filter (ON)" — a soft tint + underline marks it active.
+  .filter-toggle.filter-on {
+    background: linear-gradient(180deg, #eef1f5 0%, #d7dde5 100%);
+    .create-word { text-decoration: underline; text-underline-offset: 2px; }
+  }
+
+
+  .section-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    color: #9aa0a6;
+  }
+  // Yellow "in your Binder" indicator on the Menus / Meals headings, in the SAME
+  // disc (circle + rim) as the meal save discs. The per-item pins were removed as
+  // redundant — everything under these IS saved.
+  .section-icon-binder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    font-size: 15px;
+    line-height: 15px;
+    color: #ffd54f;
+    background: linear-gradient(180deg, #4d4d4d 0%, #3a3a3a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    border-radius: 50%;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+  .section-label {
+    flex: 0 0 auto; // don't grow — keep the count right next to the title
+    font-size: 15px; // same size as the "Binder" title
+    font-weight: 600;
+    color: #4da6ff; // blue titles (Menus / Meals / AI)
+  }
+  // Count sits right next to the title, blue, small.
+  .section-count {
+    flex: 0 0 auto;
+    margin-left: -2px;
+    font-size: 11px;
+    font-weight: 400;
+    color: #4da6ff;
+  }
+  // Menus accordion chevron — a quiet grey glyph on the paper (no dark disc).
+  .section-chevron {
+    margin-left: auto; // pushed to the far right; the count stays by the title
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    font-size: 18px;
+    line-height: 18px;
+    color: #6a6f75;
+    background: transparent;
+    border-radius: 50%;
+    &:hover { background: rgba(0, 0, 0, 0.06); color: #333; }
+  }
+
+  &:hover {
+    .section-icon:not(.section-icon-binder) { color: #c8c8c8; }
+  }
+}
+
+// TRANSLUCENT list — the ruled notebook paper shows THROUGH (a solid white sheet
+// read as pasted-on, not part of the page). No fill / border / shadow; rows are
+// transparent and separated by faint hairlines, only a selected row tints.
+.section-body {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  // Extra TOP room so the first row clears the tab; 2px LEFT so the meal thumbnails
+  // don't touch the sheet's green edge.
+  padding: 12px 10px 2px 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+// ---- Rows inside the sheet (Menus / Meals) ----
+// Flat rows — no per-row box/outline/shadow; a hairline divider separates them.
+.binder-menu-card,
+.binder-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 1px 2px 1px 0; // very tight rows — thumbnails almost touch (~2px gap)
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+// The .stacked-card dark slab has no place in the flat sheet — remove it.
+.binder-menu-card.stacked-card::before,
+.binder-menu-card.selected::before {
+  content: none;
+}
+
+.binder-menu-card,
+.binder-card {
+  cursor: grab;
+}
+
+// Translucent amber tint (30%, so the ruled lines still read through) shown BOTH
+// the instant you press down (:active) AND while the row is selected — for menu +
+// meal rows alike. So the highlight appears on down-click, not only after release.
+.binder-menu-card:active,
+.binder-card:active,
+.binder-menu-card.selected,
+.binder-card.selected {
+  background: rgba(255, 213, 79, 0.3);
+  border-radius: 6px;
+}
+.binder-menu-card:active,
+.binder-card:active { cursor: grabbing; }
+
+// The grab frame (menu icon box / meal thumbnail) is blue at rest and goes YELLOW
+// on press + while selected — tying the frame to the drag/selection.
+.binder-menu-card:active .menu-grip,
+.binder-menu-card.selected .menu-grip {
+  border-color: #ffd54f;
+}
+// Thumbnail has no rest border — show the yellow as an inset OUTLINE on select so
+// there's no frame at rest and no size shift.
+.binder-card:active .card-thumb,
+.binder-card.selected .card-thumb {
+  outline: 2px solid #ffd54f;
+  outline-offset: -2px;
+}
+
+// Open-book "menu" glyph in a blue BOX — a clear 30px grab target that mirrors
+// the meal thumbnails (same 30px box, blue frame instead of green), so menu + meal
+// rows line up and the box reads as the grab handle.
+.menu-grip {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: var(--thumb);
+  height: var(--thumb);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--thumb) * 0.7); // glyph scales with the box
+  line-height: 1;
+  color: #6a6f75; // neutral grey (blue removed)
+  border: 2px solid transparent; // no frame at rest; turns yellow on press/select
+  border-radius: 4px;
+  margin-right: 6px; // gap after the icon so the red margin line reads as a divider
+  cursor: grab;
+}
+
+// Binder action discs (delete / edit / save) — WHITE instead of the global dark
+// disc chrome. The coloured glyphs (red trash, green check/pencil) read on white.
+.binder .icon-disc {
+  background: #ffffff;
+  border-color: #c3c7cd;
+  border-top-color: #d5d8dd;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+// Icon-only sort squares for the Binder MENUS list — small white squares that
+// fill blue when active; the alpha icon flips vertically to indicate Z→A.
+.binder-sort-row {
+  display: flex;
+  gap: 5px;
+  padding: 2px 2px 5px 2px;
+}
+.sort-square {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #c3c7cd;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #5a5f66;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: background 0.12s ease, color 0.12s ease;
+
+  &.active {
+    background: rgba(59, 125, 224, 0.6);
+    border-color: rgba(59, 125, 224, 0.8);
+    color: #ffffff;
+  }
+  &:hover { border-color: #9aa0a8; }
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+    &.flip { transform: scaleY(-1); }
+  }
+}
+
+// "Remove all from binder" — compact danger-tinted text button, sits next to the
+// "From MealSet" select and only when a specific set is chosen.
+// Compact red trash-can — matches the menu/meal delete affordance instead of the
+// old wide pink text button that read like a filter control. The tooltip carries
+// the full "remove all N of {set}" meaning.
+.wipe-set-btn {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid #d68a8a;
+  border-radius: 5px;
+  background: #fff5f5;
+  color: #c0392b; // red trash glyph
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+
+  .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; }
+  &:hover { background: #f6dede; color: #8f2d2d; }
+  &:active { transform: translateY(1px); }
+}
+
+// One row: [name (grows)][chevron][P][Fiber][trash]. The chevron leads the
+// browse-by summary discs; discs are the shared raised style, flowing inline.
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  // Square thumbnail leading the collapsed row — sized to the row with tight
+  // padding. Empty variant is a muted placeholder square.
+  .card-thumb {
+    flex: 0 0 auto;
+    width: var(--thumb);
+    height: var(--thumb);
+    box-sizing: border-box;
+    border-radius: 4px;
+    object-fit: cover;
+    background: transparent;
+    margin-right: 6px; // gap after the pic so the red margin line reads as a divider
+    // No border / shadow at rest — clean photo; yellow ring appears on select.
+  }
+  .card-thumb-empty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #3a3a3a;
+    background: #2a2a2a;
+
+    .card-thumb-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+      line-height: 18px;
+      color: #7a7a7a;
+    }
+  }
+
+  .binder-card-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 16px; // one size bigger
+    font-weight: 400; // NOT bold — Calisto reads elegant at regular weight
+    color: #1a1a1a; // black text on the see-through white card
+    text-decoration: none; // no pseudo-hyperlink underline
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // Meal TYPE row — pick-or-type, indented under the title (past the thumbnail).
+  .meal-type-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 1px 0 4px 42px;
+
+    .meal-type-label {
+      flex: 0 0 auto;
+      font-family: Roboto, 'Helvetica Neue', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      color: #6a6f75;
+    }
+    .meal-type-input {
+      flex: 1 1 auto;
+      min-width: 0;
+      height: 22px;
+      box-sizing: border-box;
+      padding: 2px 6px;
+      font-family: Roboto, 'Helvetica Neue', sans-serif;
+      font-size: 12px;
+      color: #1a1a1a;
+      background: #ffffff;
+      border: 1px solid #9a9ea3;
+      border-radius: 3px;
+      outline: none;
+      &::placeholder { color: #a0a4a8; font-style: italic; }
+      &:focus { border-color: #4da6ff; box-shadow: 0 0 0 2px rgba(77, 166, 255, 0.3); }
+    }
+  }
+
+  // Set-source badge on a set-sourced meal card (read-only meal from a Meal Set).
+  .set-badge {
+    flex: 0 0 auto;
+    max-width: 96px;
+    // Sans-serif to match the tabs (the Binder body is serif Calisto). De-emboldened
+    // + a size up: bold 10px on the saturated blue read fuzzy/unreadable.
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    padding: 3px 7px;
+    border-radius: 8px;
+    // The same light green as the UNSELECTED tabs (was blue) + white text.
+    color: #ffffff;
+    background: #7cc6a9;
+    border: 1px solid #5fb094;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // Inline rename input — takes the title's place while editing.
+  .name-edit {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 3px 6px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: #f1f1f1;
+    background: #2a2a2a;
+    border: 1px solid #4da6ff;
+    border-radius: 4px;
+    outline: none;
+  }
+
+  // Rename pencil (only when a card is expanded) and its green confirm sibling.
+  .rename-pencil,
+  .rename-go {
+    flex: 0 0 auto;
+  }
+
+  // Calories on the head line — a small dark-grey oblong pill (macros-component
+  // grey), white non-bold sans text. Kept small so it doesn't outshine the title.
+  .binder-cals {
+    flex: 0 0 auto;
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    color: #ffffff;
+    background: #999999; // lighter grey (cals pill)
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4); // inset shaded (sunk in)
+    padding: 1px 7px;
+    border-radius: 999px; // oblong bubble
+    white-space: nowrap;
+  }
+
+  // Chevron that shows/hides the extra macros — a quiet grey glyph (no dark disc).
+  .card-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #6a6f75;
+    cursor: pointer;
+
+    .mat-icon { width: 18px; height: 18px; font-size: 18px; line-height: 18px; color: #6a6f75; }
+    &:hover { background: #f0f1f3; color: #333333; }
+  }
+
+  // Extra breathing room before the trash so a user aiming for the chevron
+  // doesn't fat-finger the delete.
+  .card-delete { margin-left: 8px; }
 }
 
 .binder-empty {
@@ -114,77 +1359,88 @@
   color: #9aa0a6;
 }
 
-.binder-card {
-  position: relative;
+// Macro rows (the always-visible P/Fiber/cals row + the Carb/Fat reveal). Both
+// left-aligned under the name so the discs stack into a uniform 2×2 quadrant.
+.binder-chips {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid #4a4a4a;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  cursor: grab;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
 
-  &:active {
-    cursor: grabbing;
+  // Responsive discs — size to their own text (no uniform min-width) so they
+  // don't push the cals out of the cell.
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
   }
 
-  &:hover .card-delete {
-    opacity: 1;
+  // Cals on the meal reveal row — same small dark-grey pill as the menu head cals.
+  .binder-cals {
+    flex: 0 0 auto;
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    color: #ffffff;
+    background: #999999; // lighter grey (cals pill)
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4); // inset shaded (sunk in)
+    padding: 1px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
   }
 
+  // Delete lives in the reveal (flush right), not up in the head — fewer trash cans.
   .card-delete {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 20px;
-    height: 20px;
-    padding: 0;
-    border: none;
-    border-radius: 4px;
-    background: transparent;
-    color: #9aa0a6;
-    font-size: 12px;
-    line-height: 1;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.12s ease, color 0.12s ease;
-
-    &:hover {
-      color: #ef5350;
-    }
-  }
-
-  // Freshly generated, unplaced — accent so it reads as new.
-  &.candidate {
-    border-color: #4da6ff;
-  }
-
-  .binder-card-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: #f1f1f1;
+    flex: 0 0 auto;
+    margin-left: auto;
   }
 }
 
-.binder-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+// Menus cards still use the always-visible summary row just under the name.
+.card-macros {
+  margin-top: 2px;
+}
 
-  .chip {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 2px 7px;
-    border-radius: 10px;
-    color: #ffffff;
+// The Meals reveal row holds every macro in order (P, C, F, fiber, cals) then
+// the delete flush right — all on ONE line (same as the Menus summary row).
+// Chips + gaps are tightened so the four discs, cals and the trash all fit.
+.card-reveal {
+  flex-wrap: wrap; // never overflow the cell — wrap before a horizontal scrollbar
+  gap: 4px;
+  margin-top: 6px;
+  // Expanded = a blue box + bloom-style glow (the tab blue) so the user sees
+  // clearly that they dropped this card open.
+  align-items: center;
+  padding: 6px 8px;
+  border: 1px solid rgba(59, 125, 224, 0.75);
+  border-radius: 8px;
+  background: rgba(59, 125, 224, 0.1);
+  box-shadow: 0 0 10px rgba(59, 125, 224, 0.55), inset 0 0 0 1px rgba(59, 125, 224, 0.22);
 
-    &.protein { background: #41ac17; }
-    &.carb { background: #ef5350; }
-    &.fat { background: #c060ff; }
-    &.fiber { background: #e67300; }
-  }
+  .chip { min-width: 0; }
+  .binder-cals { margin-left: 2px; font-size: 11px; }
+
+  // Delete stays UNIFORM with Print/Restore — a white disc with a red glyph that
+  // fills red on hover (the standard icon-disc-danger), not a solid-red disc.
+}
+
+// Macro discs — shared by the summary head + the reveal. Muted palette so the
+// chips recede. FIXED size: never shrink, never wrap the label.
+.chip {
+  flex: 0 0 auto;
+  font-family: Roboto, 'Helvetica Neue', sans-serif; // sans (not the binder serif)
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500; // lighter so chips recede
+  padding: 2px 7px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.82); // softened white so it doesn't pop
+
+  &.protein { background: #34781a; } // green
+  &.carb { background: #a8541a; } // orange
+  &.fat { background: #8a55ab; } // purple
+  &.fiber { background: #5e4021; } // brown
 }
 
 // CDK drag visuals.
@@ -199,4 +1455,28 @@
 
 .cdk-drag-animating {
   transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+// ONE right-aligned row of uniform action discs (Print · Restore · Delete) on a
+// Binder meal's reveal row — all the same 24px icon-disc, evenly spaced + aligned.
+.card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto; // push the whole row right; the discs stay adjacent
+  flex: 0 0 auto;
+
+  // The row owns the alignment, so the delete disc doesn't add its own.
+  .card-delete { margin-left: 0; }
+}
+
+// Print (PDF) disc — blue glyph at rest, fills blue on hover (matches the edit/
+// danger disc pattern). Was the old "(PDF)" text link.
+.binder .card-pdf {
+  color: #4da6ff;
+  &:hover:not(:disabled) {
+    background: #4da6ff;
+    border-color: #4da6ff;
+    color: #ffffff;
+  }
 }
