@@ -2021,14 +2021,26 @@
   // edge of the divider, where it sits roughly above the star/restrict/delete
   // icons in the food rows beneath. Smaller and dimmer than the title so the
   // category name stays the dominant element.
+  // Two-word action-column header: "Fave" and "Restrict" each centered over the
+  // favorite (star) and restrict (block) icon columns beneath. The two 22px
+  // cells + 8px gap + the header's own 8px right padding mirror the food rows'
+  // trailing icon geometry exactly, so each word sits over its icon (wider words
+  // overflow their cell symmetrically, staying centered).
   .category-action-hint {
     flex-shrink: 0;
     margin-left: auto;
-    padding-right: 4px;
+    display: flex;
+    gap: 8px;
     font-size: 10px;
     font-weight: 500;
     letter-spacing: 0.3px;
     color: rgba(77, 166, 255, 0.55);
+
+    .hint-col {
+      flex: 0 0 22px;
+      text-align: center;
+      white-space: nowrap;
+    }
   }
 
   // "double-click to edit food" hint, rendered only on the FIRST divider
