@@ -176,11 +176,6 @@
   }
 }
 
-// Look comes from the global .regi-field; keep only the pointer cursor.
-.spin-source-select {
-  cursor: pointer;
-}
-
 // Category filters relocated beneath the carousel search, inside the card.
 // Lightweight row (no control-bar chrome) so it reads as part of the card, not
 // a floating bar above it.
@@ -718,12 +713,25 @@
 
 .type-row-label {
   flex-shrink: 0;
-  // Hugs the dropdown now (no reserved slot) — tight LIST · dropdown spacing.
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: #4da6ff;
+}
+
+// Two-button segmented FILTER control (MyFoods | Restricted), replacing the old
+// LIST dropdown. Reuses the .category-radio-btn chrome (raised / pressed);
+// text-transform:none keeps the "MyFoods" brand casing (the pills are uppercase).
+.filter-seg {
+  flex-shrink: 0;
+  display: inline-flex;
+  gap: 4px;
+
+  .category-radio-btn {
+    text-transform: none;
+    height: 30px; // match the row's 30px control height
+  }
 }
 
 // Compact collapse/expand pair sitting to the right of the TYPE dropdown.

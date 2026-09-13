@@ -130,16 +130,6 @@ export class FoodsService {
     );
   }
 
-  // All curated lists (for the dropdown). Optional foodId adds an `assigned`
-  // flag per list — not needed here, used by the detail-panel work.
-  getLists(foodId?: number, foodSource: string = 'food'): Observable<{ lists: FoodList[]; count: number }> {
-    let url = `${this.baseUrl}/lists`;
-    if (foodId != null) {
-      url += `?foodId=${foodId}&foodSource=${foodSource}`;
-    }
-    return this.http.get<{ lists: FoodList[]; count: number }>(url);
-  }
-
   // Hydrated foods in a list. The server returns AllFoodRow shape (foodId,
   // flat macros) rather than the FoodSchema shape (id, nested
   // nutritionFacts) — without remapping, `food.id` is undefined for every

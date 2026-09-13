@@ -142,20 +142,9 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 My Foods
               </span>
             </span>
-            <!-- Curate Wizard — swipe deck to build MyFoods. Sits right after the
-                 "My Foods" title (moved here from the Edit overlay). FIRST key. -->
-            <button
-              type="button"
-              class="bar-icon-btn curate-wizard-btn"
-              (click)="wizardOpen.set(true)"
-              matTooltip="Curate Wizard — swipe to build MyFoods"
-              matTooltipPosition="below"
-              [matTooltipShowDelay]="350"
-              aria-label="Curate Wizard">
-              <mat-icon aria-hidden="true">auto_fix_high</mat-icon>
-            </button>
             <!-- Edit My Foods (pencil) — toggles the editor overlay on the RHS (MyFoods
-                 stays on the left). Insets while active. To the right of Curate. -->
+                 stays on the left). Insets while active. The Curate Wizard wand now
+                 lives inside that overlay's header. -->
             <button
               type="button"
               class="bar-icon-btn"
@@ -579,8 +568,20 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               <div class="edit-overlay-panel">
                 <div class="edit-overlay-header">
                   <span class="edit-overlay-title">Edit MyFoods</span>
-                  <!-- Add a food to MyFoods — the shared Add-Food dialog. Moved up
-                       here from the old filter row. -->
+                  <!-- Curate Wizard — swipe deck to build MyFoods. Sits right of the
+                       title, left of the + add key. -->
+                  <button
+                    type="button"
+                    class="bar-icon-btn curate-wizard-btn"
+                    (click)="wizardOpen.set(true)"
+                    matTooltip="Curate Wizard — swipe to build MyFoods"
+                    matTooltipPosition="below"
+                    [matTooltipShowDelay]="350"
+                    aria-label="Curate Wizard">
+                    <mat-icon aria-hidden="true">auto_fix_high</mat-icon>
+                  </button>
+                  <!-- Add a food to MyFoods — the shared Add-Food dialog. Right of
+                       the wand. -->
                   <button
                     type="button"
                     class="bar-icon-btn edit-overlay-add"
@@ -603,18 +604,28 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     </button>
                   </div>
                 </div>
-                <!-- Filter row: Favorited / Restricted · collapse-all · Total.
-                     (The old "LIST" concept with curated lists + inline search is
-                     gone — this is purely a Favorited/Restricted filter now.) -->
+                <!-- Filter row: FILTER · [MyFoods | Restricted] segmented control ·
+                     collapse-all · Total. (No curated lists, no dropdown, no search.) -->
                 <div class="type-row">
                   <span class="type-row-label">FILTER</span>
-                  <select
-                    class="spin-source-select regi-field"
-                    [ngModel]="spinSource()"
-                    (ngModelChange)="onSpinSourceChange($event)">
-                    <option value="myfoods">Favorited</option>
-                    <option value="restricted">Restricted</option>
-                  </select>
+                  <div class="filter-seg" role="group" aria-label="Filter foods">
+                    <button
+                      type="button"
+                      class="category-radio-btn"
+                      [class.pressed]="spinSource() === 'myfoods'"
+                      [attr.aria-pressed]="spinSource() === 'myfoods'"
+                      (click)="onSpinSourceChange('myfoods')">
+                      MyFoods
+                    </button>
+                    <button
+                      type="button"
+                      class="category-radio-btn"
+                      [class.pressed]="spinSource() === 'restricted'"
+                      [attr.aria-pressed]="spinSource() === 'restricted'"
+                      (click)="onSpinSourceChange('restricted')">
+                      Restricted
+                    </button>
+                  </div>
                   <!-- Collapse/expand ALL category accordions. -->
                   <button
                     type="button"
