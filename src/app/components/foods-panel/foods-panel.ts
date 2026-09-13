@@ -150,9 +150,20 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                 My Foods
               </span>
             </span>
+            <!-- Curate Wizard — swipe deck to build MyFoods. Sits right after the
+                 "My Foods" title (moved here from the Edit overlay). FIRST key. -->
+            <button
+              type="button"
+              class="bar-icon-btn curate-wizard-btn"
+              (click)="wizardOpen.set(true)"
+              matTooltip="Curate Wizard — swipe to build MyFoods"
+              matTooltipPosition="below"
+              [matTooltipShowDelay]="350"
+              aria-label="Curate Wizard">
+              <mat-icon aria-hidden="true">auto_fix_high</mat-icon>
+            </button>
             <!-- Edit My Foods (pencil) — toggles the editor overlay on the RHS (MyFoods
-                 stays on the left). Insets while active. FIRST key. The Curate Wizard
-                 trigger now lives inside that overlay's header. -->
+                 stays on the left). Insets while active. To the right of Curate. -->
             <button
               type="button"
               class="bar-icon-btn"
@@ -164,20 +175,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               [matTooltipShowDelay]="350"
               aria-label="Edit My Foods">
               <mat-icon aria-hidden="true">edit</mat-icon>
-            </button>
-            <!-- Build-a-Meal — opens the baskets workspace on the RHS: pick foods,
-                 then generate an AI meal from them. SECOND key. -->
-            <button
-              type="button"
-              class="bar-icon-btn"
-              [class.pressed]="buildMealOpen()"
-              [attr.aria-pressed]="buildMealOpen()"
-              (click)="toggleBuildMeal()"
-              [matTooltip]="buildMealOpen() ? 'Close Build-a-Meal' : 'Build-a-Meal'"
-              matTooltipPosition="below"
-              [matTooltipShowDelay]="350"
-              aria-label="Build-a-Meal">
-              <mat-icon aria-hidden="true">restaurant_menu</mat-icon>
             </button>
             <!-- Leave-panel key — red X disc (consistent with the Notebook + Menus
                  close). Lives here so it's ALWAYS available to close the panel. -->
@@ -590,18 +587,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               <div class="edit-overlay-panel">
                 <div class="edit-overlay-header">
                   <span class="edit-overlay-title">Edit MyFoods</span>
-                  <!-- Curate Wizard trigger — moved here from the MyFoods header; an
-                       "M"-width gap after the label, then the wand key. -->
-                  <button
-                    type="button"
-                    class="bar-icon-btn curate-wizard-btn edit-overlay-wizard"
-                    (click)="wizardOpen.set(true)"
-                    matTooltip="Curate Wizard — swipe to build MyFoods"
-                    matTooltipPosition="below"
-                    [matTooltipShowDelay]="350"
-                    aria-label="Curate Wizard">
-                    <mat-icon aria-hidden="true">auto_fix_high</mat-icon>
-                  </button>
+                  <!-- Curate Wizard moved to the MyFoods header (next to the title). -->
                   <div class="dialog-discs">
                     <button
                       type="button"
