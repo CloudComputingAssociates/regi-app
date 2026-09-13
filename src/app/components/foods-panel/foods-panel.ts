@@ -643,10 +643,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <mat-icon class="collapse-icon" [class.collapsed]="group.collapsed">expand_more</mat-icon>
                   <span class="category-name">{{ categoryLabel(group.category) }}</span>
                   <span class="category-count">({{ group.foods.length }})</span>
-                  <span class="category-action-hint">
-                    <span class="hint-col">Fave</span>
-                    <span class="hint-col">Restrict</span>
-                  </span>
+                  <span class="category-action-hint">Fave / Restrict</span>
                 </div>
                 @if (!group.collapsed) {
                   @for (food of group.foods; track food.id) {
@@ -740,10 +737,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <mat-icon class="collapse-icon" [class.collapsed]="group.collapsed">expand_more</mat-icon>
                   <span class="category-name">{{ categoryLabel(group.category) }}</span>
                   <span class="category-count">({{ group.foods.length }})</span>
-                  <span class="category-action-hint">
-                    <span class="hint-col">Fave</span>
-                    <span class="hint-col">Restrict</span>
-                  </span>
+                  <span class="category-action-hint">Fave / Restrict</span>
                 </div>
                 @if (!group.collapsed) {
                   @for (food of group.foods; track food.id) {

@@ -2021,26 +2021,19 @@
   // edge of the divider, where it sits roughly above the star/restrict/delete
   // icons in the food rows beneath. Smaller and dimmer than the title so the
   // category name stays the dominant element.
-  // Two-word action-column header: "Fave" and "Restrict" each centered over the
-  // favorite (star) and restrict (block) icon columns beneath. The two 22px
-  // cells + 8px gap + the header's own 8px right padding mirror the food rows'
-  // trailing icon geometry exactly, so each word sits over its icon (wider words
-  // overflow their cell symmetrically, staying centered).
+  // "Fave / Restrict" action-column header, right-aligned to sit over the
+  // favorite (star) + restrict (block) icons in the rows below. The rows pull
+  // those icons left via .row-action.restrict's right padding; this hint carries
+  // the matching right padding so label and icons line up.
   .category-action-hint {
     flex-shrink: 0;
     margin-left: auto;
-    display: flex;
-    gap: 8px;
+    padding-right: 18px;
     font-size: 10px;
     font-weight: 500;
     letter-spacing: 0.3px;
     color: rgba(77, 166, 255, 0.55);
-
-    .hint-col {
-      flex: 0 0 22px;
-      text-align: center;
-      white-space: nowrap;
-    }
+    white-space: nowrap;
   }
 
   // "double-click to edit food" hint, rendered only on the FIRST divider
@@ -2156,7 +2149,12 @@
     }
   }
 
+  // Right padding pulls the restrict (and, ahead of it, the favorite) glyphs
+  // LEFT off the row's right edge so they line up under the "Fave / Restrict"
+  // header (which carries a matching right padding).
   &.restrict {
+    box-sizing: content-box;
+    padding-right: 18px;
     &:hover, &.active { color: #ff7676; }
   }
 
