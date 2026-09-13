@@ -2021,14 +2021,13 @@
   // edge of the divider, where it sits roughly above the star/restrict/delete
   // icons in the food rows beneath. Smaller and dimmer than the title so the
   // category name stays the dominant element.
-  // "Fave / Restrict" action-column header, right-aligned to sit over the
-  // favorite (star) + restrict (block) icons in the rows below. The rows pull
-  // those icons left via .row-action.restrict's right padding; this hint carries
-  // the matching right padding so label and icons line up.
+  // "Fave / Restrict" action-column header, right-aligned. It stays put; the rows
+  // pull their favorite/restrict icons LEFT (see .row-action.restrict padding) so
+  // the icons slide under this label.
   .category-action-hint {
     flex-shrink: 0;
     margin-left: auto;
-    padding-right: 18px;
+    padding-right: 4px;
     font-size: 10px;
     font-weight: 500;
     letter-spacing: 0.3px;
@@ -2150,11 +2149,11 @@
   }
 
   // Right padding pulls the restrict (and, ahead of it, the favorite) glyphs
-  // LEFT off the row's right edge so they line up under the "Fave / Restrict"
-  // header (which carries a matching right padding).
+  // LEFT off the row's right edge so they slide under the stationary
+  // "Fave / Restrict" header. This is the ONE knob to tune the alignment.
   &.restrict {
     box-sizing: content-box;
-    padding-right: 18px;
+    padding-right: 40px;
     &:hover, &.active { color: #ff7676; }
   }
 
