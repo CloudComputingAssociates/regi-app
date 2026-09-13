@@ -2153,7 +2153,7 @@
   // "Fave / Restrict" header. This is the ONE knob to tune the alignment.
   &.restrict {
     box-sizing: content-box;
-    padding-right: 40px;
+    padding-right: 24px;
     &:hover, &.active { color: #ff7676; }
   }
 
