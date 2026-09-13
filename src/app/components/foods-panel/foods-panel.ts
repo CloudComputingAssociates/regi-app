@@ -1929,8 +1929,11 @@ export class FoodsPanelComponent {
       if (ctx === 'slot' && slot) {
         await this.rotation.placeMealInSlot(slot.menuId, slot.slotOrder, meal.id);
       }
-      // Done — clear the banner + entry context and close the pane.
-      this.resetBuildMealBanner();
+      // Done — empty the baskets (the picks are now a saved meal, so the user
+      // shouldn't have to clear them by hand), clear the banner + entry context,
+      // and close the pane. clearAllBaskets also resets the banner and persists
+      // the now-empty picks.
+      this.clearAllBaskets();
       this.resetBamContext();
       this.focusEditOpen.set(false);
       // Navigate back per context. 'slot' also restores focus to the origin menu
