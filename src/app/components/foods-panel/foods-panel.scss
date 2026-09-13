@@ -720,18 +720,13 @@
   color: #4da6ff;
 }
 
-// Two-button segmented FILTER control (MyFoods | Restricted), replacing the old
-// LIST dropdown. Reuses the .category-radio-btn chrome (raised / pressed);
-// text-transform:none keeps the "MyFoods" brand casing (the pills are uppercase).
-.filter-seg {
-  flex-shrink: 0;
-  display: inline-flex;
-  gap: 4px;
-
-  .category-radio-btn {
-    text-transform: none;
-    height: 30px; // match the row's 30px control height
-  }
+// Compact FILTER dropdown (MyFoods | Restricted). Look comes from the global
+// .regi-field; keep only the pointer cursor + a tight width so it doesn't hog
+// the row (SEARCH sits to its right).
+.spin-source-select {
+  flex: 0 0 auto;
+  width: 108px;
+  cursor: pointer;
 }
 
 // Compact collapse/expand pair sitting to the right of the TYPE dropdown.

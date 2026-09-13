@@ -604,28 +604,34 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     </button>
                   </div>
                 </div>
-                <!-- Filter row: FILTER · [MyFoods | Restricted] segmented control ·
-                     collapse-all · Total. (No curated lists, no dropdown, no search.) -->
+                <!-- Filter row: FILTER dropdown · SEARCH box · collapse-all · Total. -->
                 <div class="type-row">
                   <span class="type-row-label">FILTER</span>
-                  <div class="filter-seg" role="group" aria-label="Filter foods">
+                  <select
+                    class="spin-source-select regi-field"
+                    [ngModel]="spinSource()"
+                    (ngModelChange)="onSpinSourceChange($event)">
+                    <option value="myfoods">MyFoods</option>
+                    <option value="restricted">Restricted</option>
+                  </select>
+                  <span class="type-row-label">SEARCH</span>
+                  <input
+                    type="text"
+                    class="picker-search-input regi-field"
+                    [value]="pickerSearchQuery()"
+                    (input)="onPickerSearchInput($any($event.target).value)"
+                    placeholder="Type food name…" />
+                  @if (pickerSearchQuery()) {
                     <button
                       type="button"
-                      class="category-radio-btn"
-                      [class.pressed]="spinSource() === 'myfoods'"
-                      [attr.aria-pressed]="spinSource() === 'myfoods'"
-                      (click)="onSpinSourceChange('myfoods')">
-                      MyFoods
+                      class="picker-search-clear"
+                      (click)="pickerSearchQuery.set('')"
+                      matTooltip="Clear search"
+                      matTooltipPosition="below"
+                      aria-label="Clear search">
+                      ✕
                     </button>
-                    <button
-                      type="button"
-                      class="category-radio-btn"
-                      [class.pressed]="spinSource() === 'restricted'"
-                      [attr.aria-pressed]="spinSource() === 'restricted'"
-                      (click)="onSpinSourceChange('restricted')">
-                      Restricted
-                    </button>
-                  </div>
+                  }
                   <!-- Collapse/expand ALL category accordions. -->
                   <button
                     type="button"
@@ -1172,19 +1178,42 @@ export class FoodsPanelComponent {
   selectedCategories = signal<Set<string>>(new Set());
   private rawCarouselFoods = signal<Food[]>([]);
 
-  // Count shown next to the right-pane section title: Favorited → allMyFoods,
-  // Restricted → carouselFoods.
-  bottomListLength = computed<number>(() =>
-    this.spinSource() === 'myfoods' ? this.allMyFoods().length : this.carouselFoods().length,
-  );
+  // Count shown next to the right-pane section title. Honors the SEARCH box so
+  // the number matches what's rendered: Favorited → the search-filtered subset of
+  // allMyFoods; Restricted → carouselFoods (already search-filtered).
+  bottomListLength = computed<number>(() => {
+    if (this.spinSource() === 'myfoods') {
+      const q = this.pickerSearchQuery().trim();
+      return q ? this.allMyFoods().filter(f => this.matchesPickerSearch(f)).length : this.allMyFoods().length;
+    }
+    return this.carouselFoods().length;
+  });
 
   // Search: filters the LHS carousel locally (no API round-trip per keystroke).
   searchQuery = signal('');
 
-  /** Open the Edit MyFoods library overlay (its own header icon). The overlay is
-   *  a position:fixed popover hosted inside the Build-a-Meal right pane, so ensure
-   *  that pane is rendered (focusEditOpen) before showing it. */
+  // SEARCH box for the Edit-MyFoods accordion (RHS). Independent of the LHS
+  // carousel search so the two don't entangle.
+  pickerSearchQuery = signal('');
+  onPickerSearchInput(value: string): void {
+    this.pickerSearchQuery.set(value);
+  }
+
+  /** Substring match against description + shortDescription, case-insensitive.
+   *  Used by both RHS accordions to narrow live as the user types. */
+  private matchesPickerSearch(food: Food): boolean {
+    const q = this.pickerSearchQuery().trim().toLowerCase();
+    if (!q) return true;
+    return food.description.toLowerCase().includes(q)
+      || (food.shortDescription?.toLowerCase().includes(q) ?? false);
+  }
+
+  /** Open the Edit MyFoods library overlay (its own header icon). Clears the
+   *  SEARCH box on entry so the user isn't looking at a stale-filtered list. The
+   *  overlay is a position:fixed popover hosted inside the Build-a-Meal right pane,
+   *  so ensure that pane is rendered (focusEditOpen) before showing it. */
   openEditOverlay(): void {
+    this.pickerSearchQuery.set('');
     this.focusEditOpen.set(true);
     this.addTo.set('right');
   }
@@ -1196,15 +1225,16 @@ export class FoodsPanelComponent {
     this.focusEditOpen.set(false);
   }
 
-  // RHS Restricted list, sorted alphabetically by the label the UI shows so it
-  // reads in alpha order regardless of API insertion order, stable across
-  // favorite/restrict toggles.
+  // RHS Restricted list — narrowed by the SEARCH box, then sorted alphabetically
+  // by the label the UI shows (stable across favorite/restrict toggles).
   carouselFoods = computed<Food[]>(() => {
-    return [...this.rawCarouselFoods()].sort((a, b) => {
-      const aName = (a.shortDescription || a.description || '').toLowerCase();
-      const bName = (b.shortDescription || b.description || '').toLowerCase();
-      return aName.localeCompare(bName);
-    });
+    return [...this.rawCarouselFoods()]
+      .filter(f => this.matchesPickerSearch(f))
+      .sort((a, b) => {
+        const aName = (a.shortDescription || a.description || '').toLowerCase();
+        const bName = (b.shortDescription || b.description || '').toLowerCase();
+        return aName.localeCompare(bName);
+      });
   });
 
   // Carousel destination + local lists (persisted to localStorage).
@@ -1341,8 +1371,11 @@ export class FoodsPanelComponent {
   groupedMyFoods = computed<Array<{ category: string; foods: Food[]; collapsed: boolean }>>(() => {
     const all = this.allMyFoods();
     const collapsed = this.collapsedMyFoodsCategories();
+    // While a search is active, force every category open so matches show live.
+    const searching = this.pickerSearchQuery().trim() !== '';
     const map = new Map<string, Food[]>();
     for (const food of all) {
+      if (!this.matchesPickerSearch(food)) continue; // narrow live to the SEARCH box
       const cat = normalizeCategory(food.categoryName) || 'Uncategorized';
       const arr = map.get(cat);
       if (arr) arr.push(food);
@@ -1352,12 +1385,12 @@ export class FoodsPanelComponent {
     for (const cat of CAROUSEL_CATEGORIES) {
       const foods = map.get(cat);
       if (foods && foods.length > 0) {
-        result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+        result.push({ category: cat, foods, collapsed: searching ? false : collapsed.has(cat) });
         map.delete(cat);
       }
     }
     for (const [cat, foods] of map.entries()) {
-      result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+      result.push({ category: cat, foods, collapsed: searching ? false : collapsed.has(cat) });
     }
     return result;
   });
@@ -1379,8 +1412,10 @@ export class FoodsPanelComponent {
   collapsedCarouselCategories = signal<Set<string>>(new Set(CAROUSEL_CATEGORIES));
 
   groupedCarouselFoods = computed<Array<{ category: string; foods: Food[]; collapsed: boolean }>>(() => {
-    const all = this.carouselFoods();
+    const all = this.carouselFoods(); // already search-filtered
     const collapsed = this.collapsedCarouselCategories();
+    // While a search is active, force every category open so matches show live.
+    const searching = this.pickerSearchQuery().trim() !== '';
     const map = new Map<string, Food[]>();
     for (const food of all) {
       const cat = normalizeCategory(food.categoryName) || 'Uncategorized';
@@ -1392,12 +1427,12 @@ export class FoodsPanelComponent {
     for (const cat of CAROUSEL_CATEGORIES) {
       const foods = map.get(cat);
       if (foods && foods.length > 0) {
-        result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+        result.push({ category: cat, foods, collapsed: searching ? false : collapsed.has(cat) });
         map.delete(cat);
       }
     }
     for (const [cat, foods] of map.entries()) {
-      result.push({ category: cat, foods, collapsed: collapsed.has(cat) });
+      result.push({ category: cat, foods, collapsed: searching ? false : collapsed.has(cat) });
     }
     return result;
   });
@@ -1458,6 +1493,9 @@ export class FoodsPanelComponent {
 
   onSpinSourceChange(value: SpinSource): void {
     this.spinSource.set(value);
+    // Clear the SEARCH so the previous filter's query doesn't silently keep
+    // narrowing (and force-expanding) the new list.
+    this.pickerSearchQuery.set('');
     // Expand against the NEW filter — clear both collapse sets so whichever
     // accordion renders is wide open.
     const empty = new Set<string>();
