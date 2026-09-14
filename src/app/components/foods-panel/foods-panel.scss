@@ -565,9 +565,9 @@
 .picker-search-total {
   margin-left: auto;
 }
-// Collapse-all button clusters at the right, just left of the Total.
-.curate-collapse-all { margin-left: auto; }
-.curate-collapse-all + .picker-search-total { margin-left: 8px; }
+// Collapse-all now LEADS the filter row (over the section arrows), so it sits at
+// the start — no auto margin. The Total keeps margin-left:auto to hug the right.
+.curate-collapse-all { flex: 0 0 auto; }
 
 // Nutrition Facts + Health Info action buttons — right-justified in the
 // top bar above the tile grid. Doubled from the previous size (60 × 72 →
@@ -726,6 +726,7 @@
 .spin-source-select {
   flex: 0 0 auto;
   width: 108px;
+  margin-right: 14px; // ~an "M" of breathing room before the SEARCH label
   cursor: pointer;
 }
 

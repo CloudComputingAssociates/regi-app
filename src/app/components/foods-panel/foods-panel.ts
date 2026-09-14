@@ -39,10 +39,11 @@ import {
 } from '../../models/picks-hydration';
 import { nutritionLabelScale, snapServing, snapServingForUnit } from '../../models/food-display';
 
-// The Edit-MyFoods filter has exactly two states: 'myfoods' (the user's
-// Favorited foods) and 'restricted' (their Restricted foods). Both pull from the
-// user-preferences service. (The old curated-"lists" concept was removed.)
-type SpinSource = 'myfoods' | 'restricted';
+// The Edit-MyFoods filter has three states: 'myfoods' (the user's Favorited
+// foods), 'restricted' (their Restricted foods), and 'none' — no filter, the
+// universal set of all the user's foods (favorited + restricted), which the
+// SEARCH box auto-selects so a search spans everything regardless of the filter.
+type SpinSource = 'myfoods' | 'restricted' | 'none';
 
 const CAROUSEL_CATEGORIES = [
   'Protein', 'Fat', 'Dairy', 'Vegetable',
@@ -604,8 +605,21 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     </button>
                   </div>
                 </div>
-                <!-- Filter row: FILTER dropdown · SEARCH box · collapse-all · Total. -->
+                <!-- Filter row: collapse-all (first, over the section arrows) ·
+                     FILTER dropdown · SEARCH box · Total. -->
                 <div class="type-row">
+                  <!-- Collapse/expand ALL category accordions — leads the row so it
+                       sits above the per-section arrows (which are on the left). -->
+                  <button
+                    type="button"
+                    class="bar-icon-btn curate-collapse-all"
+                    [class.pressed]="allCategoriesCollapsed()"
+                    (click)="allCategoriesCollapsed() ? expandAllCategories() : collapseAllCategories()"
+                    [matTooltip]="allCategoriesCollapsed() ? 'Expand all categories' : 'Collapse all categories'"
+                    matTooltipPosition="below"
+                    aria-label="Collapse or expand all categories">
+                    <mat-icon aria-hidden="true">{{ allCategoriesCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
+                  </button>
                   <span class="type-row-label">FILTER</span>
                   <select
                     class="spin-source-select regi-field"
@@ -613,6 +627,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     (ngModelChange)="onSpinSourceChange($event)">
                     <option value="myfoods">MyFoods</option>
                     <option value="restricted">Restricted</option>
+                    <option value="none">None</option>
                   </select>
                   <span class="type-row-label">SEARCH</span>
                   <input
@@ -625,24 +640,13 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     <button
                       type="button"
                       class="picker-search-clear"
-                      (click)="pickerSearchQuery.set('')"
+                      (click)="onPickerSearchInput('')"
                       matTooltip="Clear search"
                       matTooltipPosition="below"
                       aria-label="Clear search">
                       ✕
                     </button>
                   }
-                  <!-- Collapse/expand ALL category accordions. -->
-                  <button
-                    type="button"
-                    class="bar-icon-btn curate-collapse-all"
-                    [class.pressed]="allCategoriesCollapsed()"
-                    (click)="allCategoriesCollapsed() ? expandAllCategories() : collapseAllCategories()"
-                    [matTooltip]="allCategoriesCollapsed() ? 'Expand all categories' : 'Collapse all categories'"
-                    matTooltipPosition="below"
-                    aria-label="Collapse or expand all categories">
-                    <mat-icon aria-hidden="true">{{ allCategoriesCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
-                  </button>
                   <span class="top-bar-total picker-search-total">Total ({{ bottomListLength() }})</span>
                 </div>
             <div class="pane-card list-card">
@@ -746,7 +750,15 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                  MyFoods view above so the curate experience feels consistent
                  regardless of which TYPE is selected. -->
             @if (carouselFoods().length === 0) {
-              <div class="bottom-empty">No restricted foods yet.</div>
+              <div class="bottom-empty">
+                @if (pickerSearchQuery().trim()) {
+                  No foods match your search.
+                } @else if (spinSource() === 'restricted') {
+                  No restricted foods yet.
+                } @else {
+                  No foods yet.
+                }
+              </div>
             } @else {
               @for (group of groupedCarouselFoods(); track group.category) {
                 <div class="category-header"
@@ -1197,6 +1209,16 @@ export class FoodsPanelComponent {
   pickerSearchQuery = signal('');
   onPickerSearchInput(value: string): void {
     this.pickerSearchQuery.set(value);
+    const q = value.trim();
+    // SEARCH is universal: typing flips the FILTER to 'none' so the search spans
+    // ALL the user's foods (favorited + restricted), regardless of the filter;
+    // clearing it drops back to the default MyFoods filter. Set spinSource
+    // DIRECTLY (not via onSpinSourceChange, which would wipe the query).
+    if (q && this.spinSource() !== 'none') {
+      this.spinSource.set('none');
+    } else if (!q && this.spinSource() === 'none') {
+      this.spinSource.set('myfoods');
+    }
   }
 
   /** Substring match against description + shortDescription, case-insensitive.
@@ -1214,6 +1236,7 @@ export class FoodsPanelComponent {
    *  so ensure that pane is rendered (focusEditOpen) before showing it. */
   openEditOverlay(): void {
     this.pickerSearchQuery.set('');
+    this.spinSource.set('myfoods'); // always open on the MyFoods filter
     this.focusEditOpen.set(true);
     this.addTo.set('right');
   }
@@ -1528,17 +1551,6 @@ export class FoodsPanelComponent {
     this.focusEditOpen() ? this.leftPaneWidthFraction() : 1,
   );
 
-  /** Build-a-Meal toggle (MyFoods header): open the baskets workspace, or close it.
-   *  Opening from here is a MANUAL My Foods open — context-free (no referrer), so
-   *  reset any lingering entry context first. */
-  toggleBuildMeal(): void {
-    if (this.buildMealOpen()) {
-      this.closeBuildMeal();
-    } else {
-      this.resetBamContext();
-      this.openBuildMeal();
-    }
-  }
   /** Open the split showing the Build-a-Meal baskets (no Edit overlay). Switches away
    *  from Edit mode if it was open. Does NOT touch entry context — the caller owns
    *  that (consume effect sets it; toggle/close reset it). */
@@ -2453,17 +2465,6 @@ export class FoodsPanelComponent {
     if (food.id != null) this.preferencesService.setUserServingSize(food.id, val, food.foodSource);
   }
 
-  /** Returns true when the NF popup was opened on a food sitting in one of
-   *  the four baskets. Retained for any future basket-aware logic, though
-   *  the popup itself is view-only on the basket side now. */
-  private isFoodFromBasketContext(food: Food): boolean {
-    const baskets = this.buildMealBaskets();
-    for (const key of this.basketKeys) {
-      if (baskets[key].some(f => f.id === food.id)) return true;
-    }
-    return false;
-  }
-
   // ----- RHS basket-tile selection + P/S meal-role designation -----
 
   /** The currently-selected food in a basket on the right pane (yellow halo). */
@@ -2549,28 +2550,6 @@ export class FoodsPanelComponent {
       ...b,
       [key]: [...b[key], stamped],
     }));
-  }
-
-  private onRightSideAdd(food: Food): void {
-    if (this.spinSource() === 'myfoods') {
-      this.myFoodsLocal.update(list => {
-        const filtered = list.filter(f => f.id !== food.id);
-        return [food, ...filtered];
-      });
-    } else {
-      // 'restricted' — un-restrict + favorite it back into MyFoods.
-      if (this.preferencesService.isRestricted(food.id)) {
-        this.preferencesService.toggleRestrictedLocal(food.id);
-      }
-      if (!this.preferencesService.isAllowed(food.id)) {
-        this.preferencesService.toggleFavoriteLocal(food.id);
-      }
-      this.refreshServerMyFoods();
-      this.notificationService.show(`${food.shortDescription || food.description} → MyFoods`, 'success');
-    }
-    queueMicrotask(() => {
-      this.bottomListRef()?.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
-    });
   }
 
   /** Empty all four Picks baskets at once. Drops the selection and resets to
@@ -3011,9 +2990,17 @@ export class FoodsPanelComponent {
         // effect-driven path would re-trigger autoLoadCarousel (it tracks
         // allMyFoods) and spin into an infinite loop that locks up the UI.
         foods = this.allMyFoods();
-      } else {
-        // 'restricted'
+      } else if (source === 'restricted') {
         foods = await firstValueFrom(this.preferencesService.getRestrictedFoodsFull());
+      } else {
+        // 'none' — the universal set: ALL the user's foods (favorited + restricted),
+        // deduped by id, so a SEARCH spans everything.
+        const restricted = await firstValueFrom(this.preferencesService.getRestrictedFoodsFull());
+        const seen = new Set<number>();
+        foods = [];
+        for (const f of [...this.allMyFoods(), ...restricted]) {
+          if (!seen.has(f.id)) { seen.add(f.id); foods.push(f); }
+        }
       }
 
       // Stale-result guard: discard if a newer load has started
