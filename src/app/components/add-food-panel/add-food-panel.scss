@@ -199,6 +199,220 @@
   span { font-size: 11px; line-height: 1.35; }
 }
 
+// Stage B widens the window so the splitter + Nutrition Facts have room.
+.afp-window.stage-b { width: 820px; }
+.afp-window.inline.stage-b { width: 100%; }
+
+// ---- Stage A / rail: options ---------------------------------------------
+.afp-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.afp-options.compact { gap: 8px; }
+
+.afp-option {
+  position: relative; // anchor for the numbered disc
+  padding-left: 6px;
+}
+// Numbered yellow disc — mirrors the Add Meal dialog's .option-num.
+.option-num {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffd54f;
+  color: #2a2419;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+.afp-opt-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #9aa0a6;
+  margin: 0 0 6px 4px;
+}
+.afp-search { width: 100%; box-sizing: border-box; }
+
+.afp-scan-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #4a6fa5 0%, #3a5680 100%);
+  border: 1px solid #2a3f5f;
+  border-top-color: #6b8fc0;
+  border-radius: 8px;
+  cursor: pointer;
+  &:hover:not(.disabled) { filter: brightness(1.1); }
+  &.disabled { opacity: 0.45; cursor: not-allowed; }
+  .mat-icon, mat-icon { width: 20px; height: 20px; font-size: 20px; }
+}
+
+.afp-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 14px 12px;
+  text-align: center;
+  border: 2px dashed #4da6ff;
+  border-radius: 8px;
+  background: rgba(77, 166, 255, 0.06);
+  cursor: pointer;
+  &:hover { background: rgba(77, 166, 255, 0.12); }
+  &.busy { opacity: 0.7; pointer-events: none; }
+  .afp-drop-icon { width: 26px; height: 26px; font-size: 26px; color: #4da6ff; }
+  .afp-drop-title { font-size: 14px; font-weight: 600; color: #e6e6e6; }
+  .afp-drop-sub { font-size: 12px; color: #9aa0a6; }
+}
+.afp-link {
+  padding: 0; border: none; background: none; font: inherit;
+  color: #4da6ff; text-decoration: underline; cursor: pointer;
+}
+
+.afp-waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px;
+  text-align: center;
+  background: #262626;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  .afp-wait-icon { width: 30px; height: 30px; font-size: 30px; color: #4da6ff; }
+  .afp-wait-title { font-size: 14px; font-weight: 600; color: #f0f0f0; }
+  .afp-wait-sub { font-size: 12px; color: #9aa0a6; line-height: 1.4; }
+  .afp-wait-btn {
+    margin-top: 4px; padding: 5px 14px; font: inherit; font-size: 12px;
+    color: #e6e6e6; background: #3a3a3a; border: 1px solid #555; border-radius: 6px; cursor: pointer;
+  }
+}
+
+.afp-identified {
+  font-size: 13px;
+  color: #cfcfcf;
+  .afp-conf {
+    margin-left: 8px; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 700;
+  }
+  .afp-conf-high { background: rgba(40, 201, 65, 0.2); color: #7ee08a; }
+  .afp-conf-medium { background: rgba(255, 213, 79, 0.2); color: #ffd54f; }
+  .afp-conf-low { background: rgba(255, 95, 87, 0.2); color: #ff9a94; }
+}
+.afp-brand { color: #9aa0a6; }
+
+.afp-results {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.afp-res-head {
+  margin: 8px 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #4da6ff;
+}
+.afp-res-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  font: inherit;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #404040 0%, #383838 100%);
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  cursor: pointer;
+  &:hover { border-color: #6b8fc0; }
+  .afp-res-name { flex: 1; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .afp-res-sub { flex: 0 0 auto; font-size: 11px; color: #9aa0a6; }
+  .afp-res-badge { flex: 0 0 auto; width: 16px; height: 16px; font-size: 16px; color: #41c941; }
+}
+
+// ---- Stage B split -------------------------------------------------------
+.afp-split {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
+}
+.afp-rail {
+  min-width: 0;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+.afp-splitter {
+  flex: 0 0 auto;
+  width: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  .afp-splitter-grip {
+    width: 2px;
+    height: 40px;
+    border-radius: 2px;
+    background: rgba(255, 213, 79, 0.5);
+  }
+}
+.afp-nf {
+  min-width: 0;
+  overflow-y: auto;
+  padding-left: 8px;
+}
+.afp-nf-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.afp-nf-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #9aa0a6;
+}
+.afp-longdesc {
+  font-size: 12px;
+  color: #9aa0a6;
+  line-height: 1.4;
+}
+.afp-photo-empty {
+  display: flex; align-items: center; justify-content: center;
+  color: #6a6a6a;
+  .mat-icon, mat-icon { width: 36px; height: 36px; font-size: 36px; }
+}
+.afp-photo-change {
+  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+  padding: 6px 12px; font: inherit; font-size: 13px;
+  color: #e6e6e6; background: #3a3a3a; border: 1px solid #555; border-radius: 6px; cursor: pointer;
+  &:hover { filter: brightness(1.12); }
+  .mat-icon, mat-icon { width: 18px; height: 18px; font-size: 18px; }
+}
+
 // Inline mode — the panel lives INSIDE another dialog (the My Foods bloom), so it
 // fills the host with no backdrop dim and no second glow window (one dialog).
 .afp-backdrop.inline {

@@ -27,6 +27,7 @@ import {
   TetherResult,
   TetherResultsResponse,
 } from '../models/tether.models';
+import { FoodAddResult } from '../models/fatsecret.model';
 import { RotationService } from './rotation.service';
 import { UserProfileService } from './user-profile.service';
 import { NotificationService } from './notification.service';
@@ -42,6 +43,10 @@ export interface TetherCaptureEvent {
    *  with no server-side store of its own (e.g. a food) can apply the photo directly. */
   cdnUrl?: string;
   thumbnailUrl?: string;
+  /** 'scan' kind, 'done' — the food the phone's barcode scan produced. */
+  foodResult?: FoodAddResult;
+  /** 'scan' kind, 'failed' — why the scan produced no food. */
+  reason?: 'notFound' | 'cancelled' | 'error';
 }
 
 @Injectable({ providedIn: 'root' })
@@ -115,6 +120,7 @@ export class TetherService {
     food: 'captureFood',
     avatar: 'captureAvatar',
     mealset: 'captureMealset',
+    scan: 'scanBarcode',
   };
 
   /** POST /api/tether/command — USER-LEVEL enqueue of a photo capture for ANY target
@@ -191,10 +197,22 @@ export class TetherService {
         status: 'done',
         cdnUrl: r.result?.cdnUrl,
         thumbnailUrl: r.result?.thumbnailUrl,
+        // 'scan' kind carries a parsed food instead of an image receipt.
+        foodResult: r.result?.foodResult,
       });
     } else {
-      this.notification.show('Your phone couldn’t take the photo. Please try again.', 'error');
-      this.captureEvent.set({ messageId: r.messageId, kind: cmd.kind, id: cmd.id, status: 'failed' });
+      // A 'scan' failure is surfaced by the initiating component (with a reason),
+      // so don't double-toast it here; image captures keep the generic toast.
+      if (cmd.kind !== 'scan') {
+        this.notification.show('Your phone couldn’t take the photo. Please try again.', 'error');
+      }
+      this.captureEvent.set({
+        messageId: r.messageId,
+        kind: cmd.kind,
+        id: cmd.id,
+        status: 'failed',
+        reason: r.result?.reason,
+      });
     }
   }
 
