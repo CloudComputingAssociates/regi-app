@@ -535,10 +535,12 @@ export class AddFoodPanelComponent implements OnInit {
   }
   private resolveFromRegi(f: Food): void {
     this.resolved.set({ id: f.id, ownedId: null, foodSource: 'food' });
+    // Suggest a photo even for a Regi pick when it has none — a Regi food with its
+    // own image keeps it (image non-empty → no suggestion).
     this.seed(
       f.shortDescription ?? '', f.description ?? '',
       f.categoryId ?? null, f.servingUnit ?? '', f.servingGramsPerUnit ?? null,
-      f.servingSizeMultiplicand ?? 1, f.foodImage ?? '', f.nutritionFacts, /* suggest */ false,
+      f.servingSizeMultiplicand ?? 1, f.foodImage ?? '', f.nutritionFacts, /* suggest */ true,
     );
   }
 
@@ -572,24 +574,28 @@ export class AddFoodPanelComponent implements OnInit {
     }
   }
 
-  /** Suggest a photo (CDN → Open Food Facts) for a food with none. */
+  /** Suggest a photo for a food with none: our CDN by description first, then Open
+   *  Food Facts (.org) by name. The two lookups are INDEPENDENTLY guarded — a CDN
+   *  miss (which throws) must not skip the .org fallback. */
   private async suggestPhoto(term: string): Promise<void> {
     const q = (term || '').trim();
     if (!q) return;
     this.photoSearching.set(true);
+    let url = '';
     try {
       const cdn = await this.imageUpload.lookupImageUrl(q);
-      let url = cdn?.product_image_url || '';
-      if (!url) url = await this.imageUpload.searchOpenFoodFactsImage(q);
-      if (url) {
-        this.photoUrl.set(url);
-        this.photoIsSuggestion.set(true);
-      }
+      url = cdn?.product_image_url || '';
     } catch {
-      /* no suggestion — the user can add one */
-    } finally {
-      this.photoSearching.set(false);
+      /* CDN has no image (throws on 404) — fall through to Open Food Facts */
     }
+    if (!url) {
+      url = await this.imageUpload.searchOpenFoodFactsImage(q); // own try/catch, returns ''
+    }
+    if (url) {
+      this.photoUrl.set(url);
+      this.photoIsSuggestion.set(true);
+    }
+    this.photoSearching.set(false);
   }
 
   readonly per100 = computed<{ cal: number; protein: number; fat: number; carbs: number } | null>(() => {
