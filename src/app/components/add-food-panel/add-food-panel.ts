@@ -202,8 +202,14 @@ interface Resolved {
               }
             }
           </div>
+        } @else if (searching()) {
+          <p class="afp-hint">Searching…</p>
+        } @else if (searchError()) {
+          <p class="afp-hint afp-error">{{ searchError() }}</p>
         } @else if (resolving()) {
           <p class="afp-hint">Adding…</p>
+        } @else if (searchQuery().trim().length >= 2) {
+          <p class="afp-hint">No matches — try a different name, scan a barcode, or identify from a photo.</p>
         }
       </div>
     </ng-template>
@@ -326,6 +332,10 @@ export class AddFoodPanelComponent implements OnInit {
   readonly regiResults = signal<Food[]>([]);
   readonly fsResults = signal<FatSecretCandidate[]>([]);
   readonly resolving = signal(false);
+  /** True while a search's HTTP calls are in flight (drives the "Searching…" line). */
+  readonly searching = signal(false);
+  /** Set when both searches failed, so the user sees why instead of a dead box. */
+  readonly searchError = signal<string | null>(null);
   private searchSeq = 0;
 
   onSearchInput(value: string): void {
@@ -335,6 +345,8 @@ export class AddFoodPanelComponent implements OnInit {
     if (q.length < 2) {
       this.regiResults.set([]);
       this.fsResults.set([]);
+      this.searching.set(false);
+      this.searchError.set(null);
       return;
     }
     void this.runSearch(q);
@@ -342,13 +354,25 @@ export class AddFoodPanelComponent implements OnInit {
 
   private async runSearch(q: string): Promise<void> {
     const seq = ++this.searchSeq;
+    this.searching.set(true);
+    this.searchError.set(null);
     const [regi, fs] = await Promise.allSettled([
       firstValueFrom(this.foodsService.searchRegiApproved(q, 8)),
       firstValueFrom(this.userFoods.searchFatSecret(q, 8)),
     ]);
-    if (seq !== this.searchSeq) return; // a newer search started
-    this.regiResults.set(regi.status === 'fulfilled' ? (regi.value.foods ?? []) : []);
-    this.fsResults.set(fs.status === 'fulfilled' ? (fs.value.candidates ?? []) : []);
+    if (seq !== this.searchSeq) return; // a newer search superseded this one
+    const regiFoods = regi.status === 'fulfilled' ? (regi.value.foods ?? []) : [];
+    const fsCands = fs.status === 'fulfilled' ? (fs.value.candidates ?? []) : [];
+    this.regiResults.set(regiFoods);
+    this.fsResults.set(fsCands);
+    // Surface a backend failure only when it left us with nothing to show — a
+    // partial failure (one section returned) still renders the good half.
+    if (!regiFoods.length && !fsCands.length && (regi.status === 'rejected' || fs.status === 'rejected')) {
+      this.searchError.set('Couldn’t reach the food search — please try again.');
+      if (regi.status === 'rejected') console.warn('[AddFood] Regi search failed', regi.reason);
+      if (fs.status === 'rejected') console.warn('[AddFood] FatSecret search failed', fs.reason);
+    }
+    this.searching.set(false);
   }
 
   // ---- Option 2: tethered barcode scan -------------------------------------
