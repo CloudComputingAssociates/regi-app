@@ -1214,51 +1214,18 @@ export class FoodsPanelComponent {
   // SEARCH box for the Edit-MyFoods accordion (RHS). Independent of the LHS
   // carousel search so the two don't entangle.
   pickerSearchQuery = signal('');
-  // Regi-approved discovery: while the SEARCH box has a query, we also hit the
-  // catalog (GET /foods/search?yehApproved=true&query=) per keystroke (debounced)
-  // and merge the hits into the searched set so the user can find & favorite a
-  // Regi-approved food that isn't in their MyFoods yet. Empty query → cleared,
-  // so the idle 'none' list stays favorited + restricted only.
-  private regiSearchResults = signal<Food[]>([]);
-  private regiSearchSeq = 0;
-  private regiSearchDebounce: ReturnType<typeof setTimeout> | null = null;
-
   onPickerSearchInput(value: string): void {
     this.pickerSearchQuery.set(value);
     const q = value.trim();
     // SEARCH is universal: typing flips the FILTER to 'none' so the search spans
-    // ALL the user's foods (favorited + restricted), regardless of the filter;
-    // clearing it drops back to the default MyFoods filter. Set spinSource
-    // DIRECTLY (not via onSpinSourceChange, which would wipe the query).
+    // the whole browse set (favorited + restricted + the Regi-approved catalog),
+    // regardless of the filter; clearing it drops back to the default MyFoods
+    // filter. Set spinSource DIRECTLY (not via onSpinSourceChange, which would
+    // wipe the query).
     if (q && this.spinSource() !== 'none') {
       this.spinSource.set('none');
     } else if (!q && this.spinSource() === 'none') {
       this.spinSource.set('myfoods');
-    }
-    // Regi-approved catalog search — 300 ms debounce, min 2 chars.
-    if (this.regiSearchDebounce) { clearTimeout(this.regiSearchDebounce); this.regiSearchDebounce = null; }
-    if (q.length < 2) {
-      this.regiSearchSeq++; // cancel any in-flight result
-      this.regiSearchResults.set([]);
-      return;
-    }
-    this.regiSearchDebounce = setTimeout(() => {
-      this.regiSearchDebounce = null;
-      void this.runRegiSearch(q);
-    }, 300);
-  }
-
-  /** Query the Regi-approved catalog and stash the hits (stamped foodSource:'food').
-   *  Seq-guarded so a slow response can't overwrite a newer search. */
-  private async runRegiSearch(q: string): Promise<void> {
-    const seq = ++this.regiSearchSeq;
-    try {
-      const resp = await firstValueFrom(this.foodsService.searchRegiApproved(q, 25));
-      if (seq !== this.regiSearchSeq) return;
-      this.regiSearchResults.set((resp.foods ?? []).map(f => ({ ...f, foodSource: 'food' as const })));
-    } catch {
-      if (seq !== this.regiSearchSeq) return;
-      this.regiSearchResults.set([]);
     }
   }
 
@@ -1289,25 +1256,20 @@ export class FoodsPanelComponent {
     this.focusEditOpen.set(false);
   }
 
-  // RHS Restricted list — narrowed by the SEARCH box, then sorted alphabetically
-  // by the label the UI shows (stable across favorite/restrict toggles). While a
-  // query is active, Regi-approved catalog hits (server-searched) are appended,
-  // deduped against the user's own foods by id — that's how a not-yet-favorited
-  // Regi food surfaces here to be favorited (green badge on the row).
+  // RHS Restricted / None list — narrowed by the SEARCH box, then sorted
+  // alphabetically by the label the UI shows (stable across favorite/restrict
+  // toggles). For FILTER=None the source set (rawCarouselFoods) already includes
+  // the full Regi-approved catalog (see loadCarouselFoods), so a Regi food the
+  // user hasn't favorited yet appears here to be favorited/restricted inline
+  // (green badge on the row).
   carouselFoods = computed<Food[]>(() => {
-    const q = this.pickerSearchQuery().trim();
-    const own = this.rawCarouselFoods().filter(f => this.matchesPickerSearch(f));
-    let merged = own;
-    if (q) {
-      const seen = new Set(own.map(f => f.id));
-      const regi = this.regiSearchResults().filter(f => !seen.has(f.id));
-      merged = [...own, ...regi];
-    }
-    return [...merged].sort((a, b) => {
-      const aName = (a.shortDescription || a.description || '').toLowerCase();
-      const bName = (b.shortDescription || b.description || '').toLowerCase();
-      return aName.localeCompare(bName);
-    });
+    return [...this.rawCarouselFoods()]
+      .filter(f => this.matchesPickerSearch(f))
+      .sort((a, b) => {
+        const aName = (a.shortDescription || a.description || '').toLowerCase();
+        const bName = (b.shortDescription || b.description || '').toLowerCase();
+        return aName.localeCompare(bName);
+      });
   });
 
   // Carousel destination + local lists (persisted to localStorage).
@@ -3043,12 +3005,25 @@ export class FoodsPanelComponent {
       } else if (source === 'restricted') {
         foods = await firstValueFrom(this.preferencesService.getRestrictedFoodsFull());
       } else {
-        // 'none' — the universal set: ALL the user's foods (favorited + restricted),
-        // deduped by id, so a SEARCH spans everything.
-        const restricted = await firstValueFrom(this.preferencesService.getRestrictedFoodsFull());
+        // 'none' — the universal BROWSE set: the user's own foods (favorited +
+        // restricted) PLUS the full Regi-approved catalog, deduped by id. This is
+        // what lets the user browse/search every Regi-approved food and favorite
+        // or restrict it inline (green badge on Regi rows). The catalog is fetched
+        // in bulk once (on entry to None); the client-side SEARCH box then narrows
+        // it — no per-keystroke round-trip. Own foods are listed FIRST so they win
+        // dedupe and keep their state/images.
+        // NOTE: capped at 500 rows to match the other bulk callers; revisit if the
+        // Regi-approved catalog grows past that.
+        const [restricted, regi] = await Promise.all([
+          firstValueFrom(this.preferencesService.getRestrictedFoodsFull()),
+          firstValueFrom(this.foodsService.searchYehApprovedFoods(500)),
+        ]);
+        const regiFoods = (regi.foods ?? []).map(
+          (f) => ({ ...f, foodSource: 'food' as const, regiApproved: true }),
+        );
         const seen = new Set<number>();
         foods = [];
-        for (const f of [...this.allMyFoods(), ...restricted]) {
+        for (const f of [...this.allMyFoods(), ...restricted, ...regiFoods]) {
           if (!seen.has(f.id)) { seen.add(f.id); foods.push(f); }
         }
       }

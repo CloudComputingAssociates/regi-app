@@ -45,14 +45,6 @@ export class FoodsService {
     return this.http.get<FoodSearchResponse>(url);
   }
 
-  /** Query-capable Regi-approved search — the base /foods/search handler with the
-   *  regiApproved filter (GET /api/foods/search?yehApproved=true&limit=…&query=…).
-   *  Used by the Add-Food dialog's "Regi-approved" results section. */
-  searchRegiApproved(query: string, limit: number = 8): Observable<FoodSearchResponse> {
-    const url = `${this.baseUrl}/foods/search?yehApproved=true&limit=${limit}&query=${encodeURIComponent(query)}`;
-    return this.http.get<FoodSearchResponse>(url);
-  }
-
   /** PATCH /api/foods/serving-geometry — set/teach a food's portion geometry
    *  (unit + grams-per-unit + optional default quantity). A system food is
    *  CLONED to a UserFood first (response.cloned=true, userFoodId is the clone),
