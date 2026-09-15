@@ -110,7 +110,10 @@ interface Resolved {
     <!-- ============ Options panel (Stage A full / Stage B rail) ============ -->
     <ng-template #optionsTpl let-compact="compact">
       <div class="afp-options" [class.compact]="compact">
-        <!-- Option 1: Search -->
+        <!-- Option 1: Search. Kept in the Stage B rail (compact) too — with its
+             "1" disc and the textbox reflecting what the user typed — so they can
+             re-search and swap the food. Only options 2 (barcode) and 3 (photo)
+             drop out of the rail, since they'd just confuse mid-ratify. -->
         <div class="afp-option">
           <span class="option-num">1</span>
           <label class="afp-opt-label">Search for a food</label>
@@ -123,60 +126,62 @@ interface Resolved {
           }
         </div>
 
-        <!-- Option 2: Tethered barcode scan -->
-        <div class="afp-option">
-          <span class="option-num">2</span>
-          <button type="button" class="afp-scan-btn"
-            [disabled]="!tether.anyLive()"
-            [class.disabled]="!tether.anyLive()"
-            [matTooltip]="tether.anyLive() ? 'Scan a barcode with your phone' : 'Open Regi on your phone to enable'"
-            matTooltipPosition="below"
-            (click)="onScan()">
-            <mat-icon>qr_code_scanner</mat-icon>
-            <span>Scan a barcode</span>
-          </button>
-        </div>
-
-        <!-- Option 3: Photo identify — the shared drop zone (its disc is the affordance) -->
-        <div class="afp-option">
-          <span class="option-num">3</span>
-          <div class="afp-drop" tabindex="0"
-            [class.busy]="identifying()"
-            (dragover)="onDragOver($event)"
-            (drop)="onDrop($event)"
-            (click)="idInput.click()">
-            @if (identifying()) {
-              <mat-icon class="afp-drop-icon">hourglass_top</mat-icon>
-              <span class="afp-drop-title">Identifying…</span>
-            } @else {
-              <mat-icon class="afp-drop-icon">add_a_photo</mat-icon>
-              <span class="afp-drop-title">Identify from a photo</span>
-              <span class="afp-drop-sub">
-                Drop, paste, or
-                <button type="button" class="afp-link" (click)="$event.stopPropagation(); idInput.click()">browse</button>
-                a food photo
-              </span>
-            }
+        @if (!compact) {
+          <!-- Option 2: Tethered barcode scan -->
+          <div class="afp-option">
+            <span class="option-num">2</span>
+            <button type="button" class="afp-scan-btn"
+              [disabled]="!tether.anyLive()"
+              [class.disabled]="!tether.anyLive()"
+              [matTooltip]="tether.anyLive() ? 'Scan a barcode with your phone' : 'Open Regi on your phone to enable'"
+              matTooltipPosition="below"
+              (click)="onScan()">
+              <mat-icon>qr_code_scanner</mat-icon>
+              <span>Scan a barcode</span>
+            </button>
           </div>
-          <input #idInput type="file" accept="image/jpeg,image/png" hidden (change)="onIdFile(idInput)" />
-        </div>
 
-        <!-- Phone waiting panel (barcode scan in flight) -->
-        @if (phoneWaiting()) {
-          <div class="afp-waiting">
-            <mat-icon class="afp-wait-icon">phonelink_ring</mat-icon>
-            <span class="afp-wait-title">📱 Sent to your phone</span>
-            <span class="afp-wait-sub">Open Regi on your phone and scan the barcode — the food drops in when it lands.</span>
-            <button type="button" class="afp-wait-btn" (click)="phoneWaiting.set(false)">Close</button>
+          <!-- Option 3: Photo identify — the shared drop zone (its disc is the affordance) -->
+          <div class="afp-option">
+            <span class="option-num">3</span>
+            <div class="afp-drop" tabindex="0"
+              [class.busy]="identifying()"
+              (dragover)="onDragOver($event)"
+              (drop)="onDrop($event)"
+              (click)="idInput.click()">
+              @if (identifying()) {
+                <mat-icon class="afp-drop-icon">hourglass_top</mat-icon>
+                <span class="afp-drop-title">Identifying…</span>
+              } @else {
+                <mat-icon class="afp-drop-icon">add_a_photo</mat-icon>
+                <span class="afp-drop-title">Identify from a photo</span>
+                <span class="afp-drop-sub">
+                  Drop, paste, or
+                  <button type="button" class="afp-link" (click)="$event.stopPropagation(); idInput.click()">browse</button>
+                  a food photo
+                </span>
+              }
+            </div>
+            <input #idInput type="file" accept="image/jpeg,image/png" hidden (change)="onIdFile(idInput)" />
           </div>
-        }
 
-        <!-- Identify read-out -->
-        @if (identified(); as idf) {
-          <div class="afp-identified">
-            Identified: <b>{{ idf.name }}</b>@if (idf.brand) { <span class="afp-brand">· {{ idf.brand }}</span> }
-            <span class="afp-conf afp-conf-{{ idf.confidence }}">{{ idf.confidence }} confidence</span>
-          </div>
+          <!-- Phone waiting panel (barcode scan in flight) -->
+          @if (phoneWaiting()) {
+            <div class="afp-waiting">
+              <mat-icon class="afp-wait-icon">phonelink_ring</mat-icon>
+              <span class="afp-wait-title">📱 Sent to your phone</span>
+              <span class="afp-wait-sub">Open Regi on your phone and scan the barcode — the food drops in when it lands.</span>
+              <button type="button" class="afp-wait-btn" (click)="phoneWaiting.set(false)">Close</button>
+            </div>
+          }
+
+          <!-- Identify read-out -->
+          @if (identified(); as idf) {
+            <div class="afp-identified">
+              Identified: <b>{{ idf.name }}</b>@if (idf.brand) { <span class="afp-brand">· {{ idf.brand }}</span> }
+              <span class="afp-conf afp-conf-{{ idf.confidence }}">{{ idf.confidence }} confidence</span>
+            </div>
+          }
         }
 
         <!-- FatSecret results (search OR identify). This dialog searches the
@@ -263,7 +268,15 @@ interface Resolved {
             <p class="afp-hint">No nutrition on file yet.</p>
           }
 
-          <div class="afp-nf-title">Photo</div>
+          <div class="afp-nf-title afp-nf-title-photo">
+            <span>Photo</span>
+            @if (photoSearching()) {
+              <span class="afp-photo-finding">
+                <mat-icon class="afp-photo-finding-spin" aria-hidden="true">autorenew</mat-icon>
+                finding image…
+              </span>
+            }
+          </div>
           <div class="afp-photo" [class.suggested]="photoIsSuggestion()">
             @if (photoUrl()) {
               <img [src]="photoUrl()" alt="" class="afp-photo-img" />
@@ -271,9 +284,7 @@ interface Resolved {
               <div class="afp-photo-empty"><mat-icon>image</mat-icon></div>
             }
           </div>
-          @if (photoSearching()) {
-            <p class="afp-hint">Looking for a photo…</p>
-          } @else if (photoIsSuggestion()) {
+          @if (!photoSearching() && photoIsSuggestion()) {
             <p class="afp-hint">Suggested — Save to keep it, or change it.</p>
           }
           <button type="button" class="afp-photo-change" (click)="onChangePhoto()">

@@ -416,6 +416,30 @@
   text-transform: uppercase;
   color: #9aa0a6;
 }
+// "PHOTO" title carries an inline "finding image…" indicator while the photo
+// suggestion chain (CDN → OFF) / server poll is in flight; it clears on load.
+.afp-nf-title-photo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.afp-photo-finding {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  font-style: italic;
+  color: #ffd54f;
+}
+.afp-photo-finding-spin {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  line-height: 14px;
+  animation: afp-spin 0.9s linear infinite;
+}
 .afp-longdesc {
   font-size: 12px;
   color: #9aa0a6;
