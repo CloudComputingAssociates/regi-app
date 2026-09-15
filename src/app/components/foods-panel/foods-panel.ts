@@ -781,6 +781,13 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                       <span class="selected-food-name">
                         {{ food.shortDescription || food.description }}
                       </span>
+                      @if (food.regiApproved) {
+                        <mat-icon
+                          class="regi-approved-badge"
+                          matTooltip="Regi-approved"
+                          matTooltipPosition="above"
+                          aria-label="Regi-approved">verified</mat-icon>
+                      }
                       <mat-icon
                         class="row-action favorite"
                         [class.active]="preferencesService.isAllowed(food.id)"
@@ -1207,6 +1214,15 @@ export class FoodsPanelComponent {
   // SEARCH box for the Edit-MyFoods accordion (RHS). Independent of the LHS
   // carousel search so the two don't entangle.
   pickerSearchQuery = signal('');
+  // Regi-approved discovery: while the SEARCH box has a query, we also hit the
+  // catalog (GET /foods/search?yehApproved=true&query=) per keystroke (debounced)
+  // and merge the hits into the searched set so the user can find & favorite a
+  // Regi-approved food that isn't in their MyFoods yet. Empty query → cleared,
+  // so the idle 'none' list stays favorited + restricted only.
+  private regiSearchResults = signal<Food[]>([]);
+  private regiSearchSeq = 0;
+  private regiSearchDebounce: ReturnType<typeof setTimeout> | null = null;
+
   onPickerSearchInput(value: string): void {
     this.pickerSearchQuery.set(value);
     const q = value.trim();
@@ -1218,6 +1234,31 @@ export class FoodsPanelComponent {
       this.spinSource.set('none');
     } else if (!q && this.spinSource() === 'none') {
       this.spinSource.set('myfoods');
+    }
+    // Regi-approved catalog search — 300 ms debounce, min 2 chars.
+    if (this.regiSearchDebounce) { clearTimeout(this.regiSearchDebounce); this.regiSearchDebounce = null; }
+    if (q.length < 2) {
+      this.regiSearchSeq++; // cancel any in-flight result
+      this.regiSearchResults.set([]);
+      return;
+    }
+    this.regiSearchDebounce = setTimeout(() => {
+      this.regiSearchDebounce = null;
+      void this.runRegiSearch(q);
+    }, 300);
+  }
+
+  /** Query the Regi-approved catalog and stash the hits (stamped foodSource:'food').
+   *  Seq-guarded so a slow response can't overwrite a newer search. */
+  private async runRegiSearch(q: string): Promise<void> {
+    const seq = ++this.regiSearchSeq;
+    try {
+      const resp = await firstValueFrom(this.foodsService.searchRegiApproved(q, 25));
+      if (seq !== this.regiSearchSeq) return;
+      this.regiSearchResults.set((resp.foods ?? []).map(f => ({ ...f, foodSource: 'food' as const })));
+    } catch {
+      if (seq !== this.regiSearchSeq) return;
+      this.regiSearchResults.set([]);
     }
   }
 
@@ -1249,15 +1290,24 @@ export class FoodsPanelComponent {
   }
 
   // RHS Restricted list — narrowed by the SEARCH box, then sorted alphabetically
-  // by the label the UI shows (stable across favorite/restrict toggles).
+  // by the label the UI shows (stable across favorite/restrict toggles). While a
+  // query is active, Regi-approved catalog hits (server-searched) are appended,
+  // deduped against the user's own foods by id — that's how a not-yet-favorited
+  // Regi food surfaces here to be favorited (green badge on the row).
   carouselFoods = computed<Food[]>(() => {
-    return [...this.rawCarouselFoods()]
-      .filter(f => this.matchesPickerSearch(f))
-      .sort((a, b) => {
-        const aName = (a.shortDescription || a.description || '').toLowerCase();
-        const bName = (b.shortDescription || b.description || '').toLowerCase();
-        return aName.localeCompare(bName);
-      });
+    const q = this.pickerSearchQuery().trim();
+    const own = this.rawCarouselFoods().filter(f => this.matchesPickerSearch(f));
+    let merged = own;
+    if (q) {
+      const seen = new Set(own.map(f => f.id));
+      const regi = this.regiSearchResults().filter(f => !seen.has(f.id));
+      merged = [...own, ...regi];
+    }
+    return [...merged].sort((a, b) => {
+      const aName = (a.shortDescription || a.description || '').toLowerCase();
+      const bName = (b.shortDescription || b.description || '').toLowerCase();
+      return aName.localeCompare(bName);
+    });
   });
 
   // Carousel destination + local lists (persisted to localStorage).

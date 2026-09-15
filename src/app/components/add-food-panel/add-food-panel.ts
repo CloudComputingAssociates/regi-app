@@ -5,20 +5,20 @@
 // (numbered yellow-disc options) with a two-stage flow:
 //
 //   STAGE A — pick a food. Three numbered options:
-//     1) Search — one box, two labeled result sections (Regi-approved · Food
-//        database/FatSecret).
+//     1) Search — one box, a single FatSecret result section ("Food database").
+//        Adding means the food isn't already in the system, so this dialog
+//        searches FatSecret ONLY; Regi-approved discovery lives in the main
+//        foods-panel search, not here.
 //     2) Tethered scan — barcode scan on the user's live phone.
 //     3) Photo identify — a shared drop zone (drop / paste / browse) that runs
-//        POST /userfoods/identify-from-image and seeds the SAME two result lists.
+//        POST /userfoods/identify-from-image and seeds the SAME FatSecret list
+//        (fatsecretCandidates only — regiMatches from the response are ignored).
 //
 //   STAGE B — ratify. A vertical splitter appears; the options compress to a left
 //     rail and the RHS shows the Nutrition Facts stage: quantity · unit · grams,
 //     category, editable name, read-only long description, and a photo block that
-//     overwrites via the shared meal-image-source dialog (kind 'food').
-//
-// A picked Regi food is favorited on pick and forked lazily (serving-geometry
-// PATCH with foodSource:'food' → clone) ONLY when the user edits name/category/
-// serving in Stage B — an unedited Regi pick stays a plain favorite.
+//     overwrites via the shared meal-image-source dialog (kind 'food'). A food
+//     that lands with no image gets a suggested photo (CDN → Open Food Facts).
 import {
   ChangeDetectionStrategy,
   Component,
@@ -40,11 +40,9 @@ import { firstValueFrom } from 'rxjs';
 import { UserFoodService } from '../../services/user-food.service';
 import { FoodsService } from '../../services/foods.service';
 import { ImageUploadService } from '../../services/image-upload.service';
-import { FoodPreferencesService } from '../../services/food-preferences.service';
 import { NotificationService } from '../../services/notification.service';
 import { TetherService } from '../../services/tether.service';
 import { UserFood } from '../../models/user-food.model';
-import { Food } from '../../models/food.model';
 import { FatSecretCandidate, IdentifiedFood } from '../../models/fatsecret.model';
 import {
   MealImageSourceComponent,
@@ -120,6 +118,9 @@ interface Resolved {
             placeholder="Type a food name…"
             [value]="searchQuery()"
             (input)="onSearchInput($any($event.target).value)" />
+          @if (searching()) {
+            <mat-icon class="afp-search-spin" aria-hidden="true">autorenew</mat-icon>
+          }
         </div>
 
         <!-- Option 2: Tethered barcode scan -->
@@ -178,29 +179,20 @@ interface Resolved {
           </div>
         }
 
-        <!-- Shared results (search OR identify) -->
-        @if (regiResults().length || fsResults().length) {
+        <!-- FatSecret results (search OR identify). This dialog searches the
+             FatSecret food database ONLY — max 5 rows, no badges. -->
+        @if (fsResults().length) {
           <div class="afp-results">
-            @if (regiResults().length) {
-              <div class="afp-res-head">Regi-approved</div>
-              @for (f of regiResults(); track f.id) {
-                <button type="button" class="afp-res-row" (click)="pickRegi(f)">
-                  <span class="afp-res-name">{{ f.shortDescription || f.description }}</span>
-                  <mat-icon class="afp-res-badge">verified</mat-icon>
-                </button>
-              }
+            <div class="afp-res-head">Food database</div>
+            @for (c of fsResults(); track c.fatsecretFoodId) {
+              <button type="button" class="afp-res-row" (click)="pickFatSecret(c)">
+                <span class="afp-res-name">
+                  {{ c.name }}@if (c.brand) { <span class="afp-brand">· {{ c.brand }}</span> }
+                </span>
+                @if (c.servingDescription) { <span class="afp-res-sub">{{ c.servingDescription }}</span> }
+              </button>
             }
-            @if (fsResults().length) {
-              <div class="afp-res-head">Food database</div>
-              @for (c of fsResults(); track c.fatsecretFoodId) {
-                <button type="button" class="afp-res-row" (click)="pickFatSecret(c)">
-                  <span class="afp-res-name">
-                    {{ c.name }}@if (c.brand) { <span class="afp-brand">· {{ c.brand }}</span> }
-                  </span>
-                  @if (c.servingDescription) { <span class="afp-res-sub">{{ c.servingDescription }}</span> }
-                </button>
-              }
-            }
+            <p class="afp-fs-credit">data provided by platform.fatsecret.com</p>
           </div>
         } @else if (searching()) {
           <p class="afp-hint">Searching…</p>
@@ -297,7 +289,6 @@ export class AddFoodPanelComponent implements OnInit {
   private userFoods = inject(UserFoodService);
   private foodsService = inject(FoodsService);
   private imageUpload = inject(ImageUploadService);
-  private prefs = inject(FoodPreferencesService);
   private notification = inject(NotificationService);
   protected tether = inject(TetherService);
   private dialog = inject(MatDialog);
@@ -327,52 +318,57 @@ export class AddFoodPanelComponent implements OnInit {
 
   private didAdd = false;
 
-  // ---- Option 1: search ----------------------------------------------------
+  // ---- Option 1: search (FatSecret database ONLY) --------------------------
+  /** Search cap — the API default is 8 so branded matches ranking 6th–8th aren't
+   *  cut; sending a smaller max would defeat that. */
+  private static readonly MAX_SEARCH_RESULTS = 8;
+  /** Photo-identify cap — the identify-from-image endpoint caps candidates at 5
+   *  server-side, so the list mirrors that. */
+  private static readonly MAX_IDENTIFY_RESULTS = 5;
   readonly searchQuery = signal('');
-  readonly regiResults = signal<Food[]>([]);
   readonly fsResults = signal<FatSecretCandidate[]>([]);
   readonly resolving = signal(false);
-  /** True while a search's HTTP calls are in flight (drives the "Searching…" line). */
+  /** True while a search's HTTP call is in flight (drives the inline spinner). */
   readonly searching = signal(false);
-  /** Set when both searches failed, so the user sees why instead of a dead box. */
+  /** Set when the search failed, so the user sees why instead of a dead box. */
   readonly searchError = signal<string | null>(null);
   private searchSeq = 0;
+  private searchDebounce: ReturnType<typeof setTimeout> | null = null;
 
   onSearchInput(value: string): void {
     this.searchQuery.set(value);
     this.identified.set(null);
     const q = value.trim();
+    if (this.searchDebounce) { clearTimeout(this.searchDebounce); this.searchDebounce = null; }
     if (q.length < 2) {
-      this.regiResults.set([]);
       this.fsResults.set([]);
       this.searching.set(false);
       this.searchError.set(null);
       return;
     }
-    void this.runSearch(q);
+    // 300 ms debounce — coalesce keystrokes into one FatSecret call.
+    this.searchDebounce = setTimeout(() => {
+      this.searchDebounce = null;
+      void this.runSearch(q);
+    }, 300);
   }
 
   private async runSearch(q: string): Promise<void> {
     const seq = ++this.searchSeq;
     this.searching.set(true);
     this.searchError.set(null);
-    const [regi, fs] = await Promise.allSettled([
-      firstValueFrom(this.foodsService.searchRegiApproved(q, 8)),
-      firstValueFrom(this.userFoods.searchFatSecret(q, 8)),
-    ]);
-    if (seq !== this.searchSeq) return; // a newer search superseded this one
-    const regiFoods = regi.status === 'fulfilled' ? (regi.value.foods ?? []) : [];
-    const fsCands = fs.status === 'fulfilled' ? (fs.value.candidates ?? []) : [];
-    this.regiResults.set(regiFoods);
-    this.fsResults.set(fsCands);
-    // Surface a backend failure only when it left us with nothing to show — a
-    // partial failure (one section returned) still renders the good half.
-    if (!regiFoods.length && !fsCands.length && (regi.status === 'rejected' || fs.status === 'rejected')) {
+    try {
+      const resp = await firstValueFrom(this.userFoods.searchFatSecret(q, AddFoodPanelComponent.MAX_SEARCH_RESULTS));
+      if (seq !== this.searchSeq) return; // a newer search superseded this one
+      this.fsResults.set((resp.candidates ?? []).slice(0, AddFoodPanelComponent.MAX_SEARCH_RESULTS));
+    } catch (err) {
+      if (seq !== this.searchSeq) return;
+      this.fsResults.set([]);
       this.searchError.set('Couldn’t reach the food search — please try again.');
-      if (regi.status === 'rejected') console.warn('[AddFood] Regi search failed', regi.reason);
-      if (fs.status === 'rejected') console.warn('[AddFood] FatSecret search failed', fs.reason);
+      console.warn('[AddFood] FatSecret search failed', err);
+    } finally {
+      if (seq === this.searchSeq) this.searching.set(false);
     }
-    this.searching.set(false);
   }
 
   // ---- Option 2: tethered barcode scan -------------------------------------
@@ -454,9 +450,11 @@ export class AddFoodPanelComponent implements OnInit {
     try {
       const resp = await firstValueFrom(this.userFoods.identifyFromImage(file));
       this.identified.set(resp.identified);
-      this.regiResults.set(resp.regiMatches ?? []);
-      this.fsResults.set(resp.fatsecretCandidates ?? []);
-      if (!(resp.regiMatches?.length || resp.fatsecretCandidates?.length)) {
+      // FatSecret candidates ONLY — regiMatches from the response are ignored
+      // (Regi-approved discovery lives in the main foods-panel search).
+      const cands = (resp.fatsecretCandidates ?? []).slice(0, AddFoodPanelComponent.MAX_IDENTIFY_RESULTS);
+      this.fsResults.set(cands);
+      if (!cands.length) {
         this.notification.show('Couldn’t match that photo — try searching by name.', 'warning');
       }
     } catch {
@@ -467,23 +465,6 @@ export class AddFoodPanelComponent implements OnInit {
   }
 
   // ---- Pick → Stage B ------------------------------------------------------
-  async pickRegi(food: Food): Promise<void> {
-    if (this.resolving()) return;
-    this.resolving.set(true);
-    try {
-      if (!this.prefs.isAllowed(food.id)) {
-        this.prefs.toggleFavoriteLocal(food.id);
-        try { await firstValueFrom(this.prefs.saveAllChanges()); } catch { /* debounced autosave */ }
-      }
-      this.didAdd = true;
-      // A favorited Regi food already has its own photo — no staged upload.
-      this.stagedPhoto.set(null);
-      this.resolveFromRegi(food);
-    } finally {
-      this.resolving.set(false);
-    }
-  }
-
   async pickFatSecret(c: FatSecretCandidate): Promise<void> {
     if (this.resolving()) return;
     this.resolving.set(true);
@@ -495,7 +476,17 @@ export class AddFoodPanelComponent implements OnInit {
         return;
       }
       this.didAdd = true;
-      this.resolveFromUserFood(food);
+      // Photo: the API async-enriches from-fatsecret creates. When imageStatus is
+      // 'fetching', the server is already pulling a photo — SKIP the client CDN/OFF
+      // chain (which would race the server and set a competing image) and instead
+      // poll for the server's image to land. Otherwise ('needed' / absent), run the
+      // existing client suggestion chain as before.
+      if (!food.foodImage && res.imageStatus === 'fetching') {
+        this.resolveFromUserFood(food, /* suggestWhenEmpty */ false);
+        void this.pollForServerImage(food.id);
+      } else {
+        this.resolveFromUserFood(food, /* suggestWhenEmpty */ true);
+      }
     } catch {
       this.notification.show('Could not add that food from the database.', 'error');
     } finally {
@@ -525,25 +516,38 @@ export class AddFoodPanelComponent implements OnInit {
   private baseQty = 1;
   private baseCategoryId: number | null = null;
 
-  private resolveFromUserFood(f: UserFood): void {
+  private resolveFromUserFood(f: UserFood, suggestWhenEmpty = true): void {
     this.resolved.set({ id: f.id, ownedId: f.id, foodSource: 'userfood' });
     this.seed(
       f.shortDescription ?? '', f.description ?? '',
       f.categoryId ?? null, f.servingUnit ?? '', f.servingGramsPerUnit ?? null,
-      f.servingSizeMultiplicand ?? 1, f.foodImage ?? '', f.nutritionFacts, /* suggest */ true,
-    );
-  }
-  private resolveFromRegi(f: Food): void {
-    this.resolved.set({ id: f.id, ownedId: null, foodSource: 'food' });
-    // Suggest a photo even for a Regi pick when it has none — a Regi food with its
-    // own image keeps it (image non-empty → no suggestion).
-    this.seed(
-      f.shortDescription ?? '', f.description ?? '',
-      f.categoryId ?? null, f.servingUnit ?? '', f.servingGramsPerUnit ?? null,
-      f.servingSizeMultiplicand ?? 1, f.foodImage ?? '', f.nutritionFacts, /* suggest */ true,
+      f.servingSizeMultiplicand ?? 1, f.foodImage ?? '', f.nutritionFacts, suggestWhenEmpty,
     );
   }
 
+  /** Poll for the server's async-enriched photo after a from-fatsecret create with
+   *  imageStatus 'fetching'. Every 2 s, up to 4 attempts; the first non-empty
+   *  foodImage wins and is shown as the real (non-suggestion) photo. Bails if the
+   *  user has since resolved a different food. No client CDN/OFF fallback — that's
+   *  the race this gating exists to avoid. */
+  private async pollForServerImage(userFoodId: number): Promise<void> {
+    this.photoSearching.set(true);
+    try {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        await new Promise<void>((r) => setTimeout(r, 2000));
+        if (this.resolved()?.ownedId !== userFoodId) return; // superseded
+        const f = await this.userFoods.getUserFoodById(userFoodId);
+        const img = f?.foodImage ?? '';
+        if (img) {
+          this.photoUrl.set(img);
+          this.photoIsSuggestion.set(false); // the server's real photo, not a suggestion
+          return;
+        }
+      }
+    } finally {
+      if (this.resolved()?.ownedId === userFoodId) this.photoSearching.set(false);
+    }
+  }
   private seed(
     name: string, desc: string, categoryId: number | null, unit: string,
     grams: number | null, qty: number, image: string,
@@ -645,34 +649,11 @@ export class AddFoodPanelComponent implements OnInit {
   }
 
   // ---- Commit / dismiss ----------------------------------------------------
-  /** Ensure the resolved food is the user's OWN row. A userfood already is; a Regi
-   *  favorite is forked via serving-geometry (foodSource:'food' → clone). Returns
-   *  the owned userfood id, or null if a fork wasn't possible. */
-  private async ensureOwned(): Promise<number | null> {
-    const s = this.resolved();
-    if (!s) return null;
-    if (s.ownedId != null) return s.ownedId;
-    const unit = this.unit().trim();
-    const gpu = this.gramsPerUnit();
-    if (!unit || !gpu) {
-      this.notification.show('Add a unit and grams-per-unit to save edits to this Regi food.', 'warning');
-      return null;
-    }
-    try {
-      const res = await firstValueFrom(this.foodsService.patchServingGeometry({
-        foodId: s.id, foodSource: 'food', unitName: unit, gramsPerUnit: gpu, defaultQuantity: this.quantity(),
-      }));
-      const id = res?.userFoodId ?? null;
-      if (id != null) {
-        this.resolved.set({ id, ownedId: id, foodSource: 'userfood' });
-        // The fork carried the current geometry — mark it clean so we don't re-PATCH.
-        this.baseUnit = unit; this.baseGrams = gpu; this.baseQty = this.quantity();
-      }
-      return id;
-    } catch {
-      this.notification.show('Could not fork this Regi food for editing.', 'error');
-      return null;
-    }
+  /** The resolved food's OWN userfood id. Every pick now resolves to a userfood
+   *  (FatSecret create / barcode), so the id is always present — there is no
+   *  lazy Regi fork any more. */
+  private ensureOwned(): number | null {
+    return this.resolved()?.ownedId ?? null;
   }
 
   async onSave(): Promise<void> {

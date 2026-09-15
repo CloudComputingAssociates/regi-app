@@ -2131,6 +2131,17 @@
   text-overflow: ellipsis;
 }
 
+// Green "Regi-approved" badge — sits between the food name and the fave/restrict
+// actions on catalog search hits (and on any favorited Regi-approved row).
+.regi-approved-badge {
+  flex-shrink: 0;
+  width: 18px !important;
+  height: 18px !important;
+  font-size: 18px !important;
+  line-height: 18px;
+  color: #41c941;
+}
+
 .row-action {
   flex-shrink: 0;
   cursor: pointer;

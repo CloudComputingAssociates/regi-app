@@ -246,7 +246,21 @@
   color: #9aa0a6;
   margin: 0 0 6px 4px;
 }
-.afp-search { width: 100%; box-sizing: border-box; }
+.afp-search { width: 100%; box-sizing: border-box; padding-right: 30px; }
+// Inline "searching…" spinner, pinned over the input's right edge.
+.afp-search-spin {
+  position: absolute;
+  right: 8px;
+  bottom: 7px;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 18px;
+  color: #ffd54f;
+  animation: afp-spin 0.9s linear infinite;
+  pointer-events: none;
+}
+@keyframes afp-spin { to { transform: rotate(360deg); } }
 
 .afp-scan-btn {
   display: inline-flex;
@@ -350,7 +364,13 @@
   &:hover { border-color: #6b8fc0; }
   .afp-res-name { flex: 1; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .afp-res-sub { flex: 0 0 auto; font-size: 11px; color: #9aa0a6; }
-  .afp-res-badge { flex: 0 0 auto; width: 16px; height: 16px; font-size: 16px; color: #41c941; }
+}
+// FatSecret attribution — required whenever the results section renders.
+.afp-fs-credit {
+  margin: 6px 2px 0;
+  font-size: 10px;
+  font-style: italic;
+  color: #7d8288;
 }
 
 // ---- Stage B split -------------------------------------------------------
