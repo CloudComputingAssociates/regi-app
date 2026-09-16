@@ -60,6 +60,34 @@
   gap: 8px;
 }
 
+// Confirm (Save) control — a SQUARE grey key with just a check, matching the
+// MyFoods toolbar buttons (.bar-icon-btn chrome). Deliberately not the green
+// confirm disc for this dialog.
+.afp-save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: #f0f0f0;
+  background: linear-gradient(180deg, #5c5c5c 0%, #464646 100%);
+  border: 1px solid #262626;
+  border-top-color: #7d7d7d;
+  border-radius: 5px;
+  cursor: pointer;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: background 0.05s ease, color 0.05s ease;
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+  }
+  &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
+}
+
 .afp-body {
   flex: 1;
   min-height: 0;
@@ -211,6 +239,9 @@
   gap: 12px;
 }
 .afp-options.compact { gap: 8px; }
+// Stage B rail: the search label reads as a blue "SEARCH" section heading
+// (the other two options are gone, so it's the only thing there).
+.afp-options.compact .afp-opt-label { color: #4da6ff; }
 
 .afp-option {
   position: relative; // anchor for the numbered disc
@@ -362,6 +393,13 @@
   border-radius: 6px;
   cursor: pointer;
   &:hover { border-color: #6b8fc0; }
+  // The row currently shown in the Stage B split — yellow selection halo,
+  // matching the app's "selected" affordance elsewhere.
+  &.selected {
+    border-color: #ffd54f;
+    background: linear-gradient(180deg, #4a4636 0%, #423e30 100%);
+    box-shadow: 0 0 0 1px rgba(255, 213, 79, 0.5);
+  }
   .afp-res-name { flex: 1; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .afp-res-sub { flex: 0 0 auto; font-size: 11px; color: #9aa0a6; }
 }
@@ -383,6 +421,9 @@
 .afp-rail {
   min-width: 0;
   overflow-y: auto;
+  // overflow-y:auto forces overflow-x to compute to auto, which would clip the
+  // "1" disc that hangs ~10px past the option's left edge — pad left to clear it.
+  padding-left: 16px;
   padding-right: 8px;
 }
 .afp-splitter {

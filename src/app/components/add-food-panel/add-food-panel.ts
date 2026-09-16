@@ -71,7 +71,7 @@ interface Resolved {
           <span class="afp-title">Add a Food</span>
           <div class="dialog-discs">
             @if (canSave()) {
-              <button type="button" class="dialog-disc dialog-disc-confirm"
+              <button type="button" class="afp-save-btn"
                 matTooltip="Save" matTooltipPosition="below" (click)="onSave()"
                 aria-label="Save food">
                 <mat-icon>check</mat-icon>
@@ -116,7 +116,7 @@ interface Resolved {
              drop out of the rail, since they'd just confuse mid-ratify. -->
         <div class="afp-option">
           <span class="option-num">1</span>
-          <label class="afp-opt-label">Search for a food</label>
+          <label class="afp-opt-label">{{ compact ? 'Search' : 'Search for a food' }}</label>
           <input #searchBox type="text" class="afp-search regi-field"
             placeholder="Type a food name…"
             [value]="searchQuery()"
@@ -188,9 +188,11 @@ interface Resolved {
              FatSecret food database ONLY — max 5 rows, no badges. -->
         @if (fsResults().length) {
           <div class="afp-results">
-            <div class="afp-res-head">Food database</div>
+            <div class="afp-res-head">Results</div>
             @for (c of fsResults(); track c.fatsecretFoodId) {
-              <button type="button" class="afp-res-row" (click)="pickFatSecret(c)">
+              <button type="button" class="afp-res-row"
+                [class.selected]="c.fatsecretFoodId === pickedFsId()"
+                (click)="pickFatSecret(c)">
                 <span class="afp-res-name">
                   {{ c.name }}@if (c.brand) { <span class="afp-brand">· {{ c.brand }}</span> }
                 </span>
@@ -476,6 +478,10 @@ export class AddFoodPanelComponent implements OnInit {
   }
 
   // ---- Pick → Stage B ------------------------------------------------------
+  /** The fatsecretFoodId of the row currently shown in the Stage B split, so the
+   *  results list can highlight which candidate is being viewed. */
+  readonly pickedFsId = signal<string | null>(null);
+
   async pickFatSecret(c: FatSecretCandidate): Promise<void> {
     if (this.resolving()) return;
     this.resolving.set(true);
@@ -487,6 +493,7 @@ export class AddFoodPanelComponent implements OnInit {
         return;
       }
       this.didAdd = true;
+      this.pickedFsId.set(c.fatsecretFoodId);
       // Photo: the API async-enriches from-fatsecret creates. When imageStatus is
       // 'fetching', the server is already pulling a photo — SKIP the client CDN/OFF
       // chain (which would race the server and set a competing image) and instead
@@ -633,8 +640,16 @@ export class AddFoodPanelComponent implements OnInit {
       || this.quantity() !== this.baseQty;
   }
 
-  /** Green disc: always available in Stage B (Save & Done). */
+  /** Confirm (check) button: always available in Stage B (Save & Done). */
   readonly canSave = computed<boolean>(() => this.resolved() != null);
+
+  /** True when the user has made unsaved edits in Stage B (name / category /
+   *  serving geometry / a dropped photo). Drives the close guard — a dirty
+   *  dialog can't be dismissed by the X or a backdrop click; the user must Save. */
+  readonly isDirty = computed<boolean>(() =>
+    this.resolved() != null &&
+    (this.nameDirty() || this.categoryDirty() || this.geometryDirty() || this.stagedPhoto() != null),
+  );
 
   numOf(v: string, fallback: number): number {
     const n = Number(v);
@@ -722,9 +737,18 @@ export class AddFoodPanelComponent implements OnInit {
   }
 
   onBackdrop(): void {
-    // Clicking off does NOT close — the red X is the explicit dismiss.
+    // Clicking off closes ONLY when there are no unsaved edits; a dirty dialog
+    // swallows the click so the user must Save (the check) explicitly.
+    if (this.isDirty()) return;
+    this.finish();
   }
   onClose(): void {
+    // The X dismisses only when clean; with unsaved edits it's blocked so the
+    // user can't lose changes by closing — they Save with the check.
+    if (this.isDirty()) {
+      this.notification.show('You have unsaved changes — Save them with the ✓ to close.', 'warning');
+      return;
+    }
     this.finish();
   }
   private finish(): void {
