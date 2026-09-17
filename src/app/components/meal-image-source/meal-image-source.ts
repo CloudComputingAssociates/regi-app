@@ -12,8 +12,10 @@
 //                longer pops the phone camera — an in-dialog panel directs the user to
 //                the phone's menu (☰) → Phone panel; the TetherService results poll
 //                flips the card on 'done' or closes the panel on failed/timeout.
-//   • Bottom-right — "AI Generate meal image": MealSetOwner ONLY (not rendered for
-//                others — intentional, so non-authors bring their own photo).
+//   • Bottom-right — "AI Generate image": for MEALS this is open to ALL users
+//                (temporarily ungated per product ask — built from the meal's
+//                ingredients + notes). For FOODS it stays MealSetOwner-only (built
+//                from the food's name); non-owners bring their own food photo.
 // Any success closes the dialog; the card flips to the fresh photo and the Notebook
 // thumbnail updates (both via rotation.imagedMeal / applyUploadedMealImage).
 import {
@@ -175,10 +177,11 @@ export class MealImageSourceComponent {
   readonly busy = signal(false);
   readonly dragOver = signal(false);
   readonly isOwner = computed(() => this.role.hasRole('MealSetOwner'));
-  // AI generation is a MealSetOwner (mealset-author) affordance for BOTH meals and
-  // foods — a meal builds from its ingredients + notes, a food from its name. Hidden
-  // for non-owners, who bring their own photo.
-  readonly showAi = computed(() => this.isOwner());
+  // AI generation: MEAL images are open to ALL users for now (a meal builds from its
+  // ingredients + notes) — temporarily ungated per product ask. FOOD image generation
+  // (built from the food's name) stays MealSetOwner-only, and its endpoint is still
+  // pending on regi-api. Non-owners bring their own photo for foods.
+  readonly showAi = computed(() => this.data.kind === 'meal' || this.isOwner());
   // Enabled only when one of the user's phones is LIVE — the enqueue routes to a live
   // phone and 409s if none is connected, so gate the button on presence.anyLive.
   readonly canPhone = computed(() => this.tether.anyLive());
