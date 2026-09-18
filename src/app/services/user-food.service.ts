@@ -1,8 +1,9 @@
 // src/app/services/user-food.service.ts
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { NotificationService } from './notification.service';
 import { UserFood, CreateUserFoodRequest, UpdateUserFoodCategoryRequest } from '../models/user-food.model';
 import {
   FatSecretCandidatesResponse,
@@ -22,7 +23,36 @@ interface ListUserFoodsResponse {
 })
 export class UserFoodService {
   private http = inject(HttpClient);
+  private notification = inject(NotificationService);
   private baseUrl = `${environment.apiUrl}/userfoods`;
+
+  /** Log the FULL HTTP failure (status + response body) and toast a status-aware
+   *  message, so a save failure is never silent. `status: 0` is the browser's
+   *  network/CORS-blocked signal (request never reached the server or the CORS
+   *  preflight failed) — distinct from a real 401/404 returned by the API. */
+  private reportSaveError(op: string, id: number, err: unknown): void {
+    const e = err instanceof HttpErrorResponse ? err : null;
+    const status = e?.status ?? -1;
+    const body =
+      typeof e?.error === 'string'
+        ? e.error
+        : JSON.stringify(e?.error ?? e?.message ?? String(err));
+    console.error(
+      `[UserFood] ${op} failed for id=${id} — HTTP ${status}`,
+      { status, statusText: e?.statusText, url: e?.url, body },
+    );
+    const detail =
+      status === 0
+        ? 'network/CORS blocked (status 0)'
+        : status === 401
+          ? 'not authorized (401)'
+          : status === 404
+            ? 'endpoint not found (404)'
+            : status > 0
+              ? `HTTP ${status}`
+              : 'unexpected error';
+    this.notification.show(`Couldn’t save ${op} — ${detail}.`, 'error');
+  }
 
   private userFoodsSignal = signal<UserFood[]>([]);
   private loadingSignal = signal(false);
@@ -132,7 +162,8 @@ export class UserFoodService {
         list.map(f => f.id === id ? { ...f, shortDescription: name } : f)
       );
       return true;
-    } catch {
+    } catch (err) {
+      this.reportSaveError('name', id, err);
       return false;
     }
   }
@@ -147,7 +178,8 @@ export class UserFoodService {
         list.map(f => f.id === id ? { ...f, categoryId } : f)
       );
       return true;
-    } catch {
+    } catch (err) {
+      this.reportSaveError('category', id, err);
       return false;
     }
   }

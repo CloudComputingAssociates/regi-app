@@ -1219,13 +1219,11 @@ export class FoodsPanelComponent {
     const q = value.trim();
     // SEARCH is universal: typing flips the FILTER to 'none' so the search spans
     // the whole browse set (favorited + restricted + the Regi-approved catalog),
-    // regardless of the filter; clearing it drops back to the default MyFoods
-    // filter. Set spinSource DIRECTLY (not via onSpinSourceChange, which would
-    // wipe the query).
+    // regardless of the filter. None is the default landing, so a manual narrow
+    // to MyFoods/Restricted is temporary — broaden back to None while searching.
+    // Set spinSource DIRECTLY (not via onSpinSourceChange, which would wipe query).
     if (q && this.spinSource() !== 'none') {
       this.spinSource.set('none');
-    } else if (!q && this.spinSource() === 'none') {
-      this.spinSource.set('myfoods');
     }
   }
 
@@ -1244,7 +1242,9 @@ export class FoodsPanelComponent {
    *  so ensure that pane is rendered (focusEditOpen) before showing it. */
   openEditOverlay(): void {
     this.pickerSearchQuery.set('');
-    this.spinSource.set('myfoods'); // always open on the MyFoods filter
+    // Open on FILTER=None — the combined browse view (MyFoods + restricted + the
+    // full Regi-approved catalog, green-badged) is the preferred landing.
+    this.spinSource.set('none');
     this.focusEditOpen.set(true);
     this.addTo.set('right');
   }
