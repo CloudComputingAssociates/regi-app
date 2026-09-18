@@ -374,19 +374,31 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
             </div>
 
             <div class="bm-field bm-field-notes">
-              <label class="bm-label">Notes</label>
-              <button
-                type="button"
-                class="bm-notes-preview"
-                (click)="notesEditorOpen.set(true)"
-                matTooltip="Edit notes"
-                matTooltipPosition="below"
-                aria-label="Edit meal notes">
-                <span class="bm-notes-text" [class.placeholder]="!mealNotes().trim()">
-                  {{ mealNotes().trim() || 'Add notes…' }}
-                </span>
-                <mat-icon class="bm-notes-pencil">edit</mat-icon>
-              </button>
+              <label class="bm-label" for="bm-notes">Notes</label>
+              <div class="bm-notes-inline">
+                <!-- Type directly here; the box auto-grows (to ~5 rows, then scrolls)
+                     and preserves line breaks. Enter inserts a newline. -->
+                <textarea
+                  #bmNotes
+                  id="bm-notes"
+                  class="bm-notes-input regi-field"
+                  rows="1"
+                  [value]="mealNotes()"
+                  (input)="mealNotes.set($any($event.target).value)"
+                  placeholder="Add notes…"
+                  aria-label="Meal notes"></textarea>
+                <!-- User-initiated expand to the full editor — for when the note is
+                     longer than the inline box comfortably shows. -->
+                <button
+                  type="button"
+                  class="bm-notes-expand"
+                  (click)="notesEditorOpen.set(true)"
+                  matTooltip="Expand notes"
+                  matTooltipPosition="below"
+                  aria-label="Expand notes editor">
+                  <mat-icon>open_in_full</mat-icon>
+                </button>
+              </div>
             </div>
 
             <div class="bm-field bm-field-method">
@@ -1900,6 +1912,35 @@ export class FoodsPanelComponent {
   private persistMyFoods = effect(() => {
     this.saveLocal(LS_MYFOODS, this.myFoodsLocal());
   });
+
+  /** The inline Build-a-Meal notes textarea — auto-grown to its content. */
+  private readonly bmNotesRef = viewChild<ElementRef<HTMLTextAreaElement>>('bmNotes');
+  /** Size the inline notes box to its content (up to the CSS max-height, then it
+   *  scrolls) whenever the note changes — from typing, from a load, or from the
+   *  expand-popup edits — and when the textarea first appears. Pure DOM write, so
+   *  no signal-write concerns. */
+  private sizeBmNotesEffect = effect(() => {
+    const el = this.bmNotesRef()?.nativeElement;
+    this.mealNotes(); // track: re-size on any notes change
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  });
+
+  /** A userfood's async-enriched image landed (from-fatsecret add) — patch the local
+   *  MyFoods caches so the LHS tile grid re-renders with the thumbnail, even though
+   *  the Add-Food dialog that started the add has already closed. Mirrors how the
+   *  binder reacts to rotation.imagedMeal. */
+  private foodImageLandEffect = effect(() => {
+    const landed = this.userFoodService.imagedFood();
+    if (!landed) return;
+    const patch = (f: Food): Food =>
+      f.id === landed.id
+        ? { ...f, foodImage: landed.foodImage, foodImageThumbnail: landed.foodImageThumbnail }
+        : f;
+    this.myFoodsLocal.update((list) => list.map(patch));
+    this.serverMyFoods.update((list) => list.map(patch));
+  }, { allowSignalWrites: true });
   /** Write-through to the server on every basket mutation. The
    *  hydrationSucceeded gate prevents the initial empty-baskets state
    *  (before the GET resolves) from being PUT back as authoritative. */

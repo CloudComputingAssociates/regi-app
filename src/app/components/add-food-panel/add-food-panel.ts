@@ -764,6 +764,11 @@ export class AddFoodPanelComponent implements OnInit {
       this.stagedPhoto.set(null);
     } else if (this.photoIsSuggestion() && !createdHadImage && !createdFetching) {
       await this.approveSuggestedPhoto(ownedId);
+    } else if (createdFetching) {
+      // The server is async-enriching the image (from-fatsecret: search → download →
+      // resize → GCS → DB). Hand the poll to the SERVICE so it survives this dialog
+      // closing; when the image lands, the MyFoods tile grid patches its row.
+      this.userFoods.awaitFoodImage(ownedId);
     }
     this.finish();
   }

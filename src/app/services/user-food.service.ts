@@ -118,6 +118,58 @@ export class UserFoodService {
     }
   }
 
+  // ---- Live product-image poll (from-fatsecret async enrichment) ------------
+  /** Bumped when a userfood's async-enriched image lands, carrying the URLs so any
+   *  surface (e.g. the MyFoods tile grid) can patch its cached row WITHOUT re-fetching
+   *  — even if the Add-Food dialog that started the add has since closed. `seq` makes a
+   *  repeat land for the same id still emit a change. Mirrors rotation.imagedMeal. */
+  readonly imagedFood = signal<{ id: number; foodImage: string; foodImageThumbnail: string; seq: number } | null>(null);
+  private imgPollToken = 0;
+  private imgLandSeq = 0;
+  /** foodId → the current poll's token. A newer awaitFoodImage(id) supersedes the old
+   *  one (the running loop sees a token mismatch and stops) — at most ONE poller per id. */
+  private readonly imagePollTokens = new Map<number, number>();
+
+  /** Poll for a userfood's server-enriched image (from-fatsecret: search → download →
+   *  resize → GCS → DB). ~4s interval, ~60s cap — matches the meal-image poll. This is
+   *  SERVICE-owned so it survives the Add-Food dialog closing (a component poll would
+   *  die with the component). On land: patch the cache + fire imagedFood. On give-up:
+   *  nothing visible — the photo appears on the next natural MyFoods load. */
+  awaitFoodImage(userFoodId: number, baseline = ''): void {
+    const token = ++this.imgPollToken;
+    this.imagePollTokens.set(userFoodId, token); // replaces any prior poll for this id
+    this.pollForFoodImage(userFoodId, baseline, 0, token);
+  }
+
+  private pollForFoodImage(
+    userFoodId: number,
+    baseline: string,
+    attempt: number,
+    token: number,
+    maxAttempts = 15, // ~60s at 4s
+  ): void {
+    setTimeout(async () => {
+      if (this.imagePollTokens.get(userFoodId) !== token) return; // superseded by a newer poll
+      const food = await this.getUserFoodById(userFoodId); // returns null on any error
+      if (this.imagePollTokens.get(userFoodId) !== token) return; // superseded during the await
+      const img = food?.foodImage?.trim() || '';
+      if (img && img !== baseline) {
+        const thumb = food?.foodImageThumbnail?.trim() || '';
+        this.userFoodsSignal.update(list =>
+          list.map(f => f.id === userFoodId ? { ...f, foodImage: img, foodImageThumbnail: thumb } : f),
+        );
+        this.imagePollTokens.delete(userFoodId);
+        this.imagedFood.set({ id: userFoodId, foodImage: img, foodImageThumbnail: thumb, seq: ++this.imgLandSeq });
+        return;
+      }
+      if (attempt + 1 >= maxAttempts) {
+        this.imagePollTokens.delete(userFoodId); // give up silently — next natural load shows it
+        return;
+      }
+      this.pollForFoodImage(userFoodId, baseline, attempt + 1, token, maxAttempts);
+    }, 4000);
+  }
+
   async createUserFood(req: CreateUserFoodRequest): Promise<UserFood | null> {
     try {
       const food = await firstValueFrom(
