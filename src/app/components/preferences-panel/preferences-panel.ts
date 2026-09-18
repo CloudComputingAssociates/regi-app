@@ -1209,10 +1209,10 @@ export class PreferencesPanelComponent implements OnInit, AfterViewInit {
       this.userSettingsService.setIsOverridden(true);
     }
 
-    // Recompute implied ratio so the dropdown's bound value reflects what
-    // the user actually entered. Off-rung values (e.g. 0.75) leave the
-    // select rendering blank — Angular's natural behavior when ngModel
-    // doesn't match any option.
+    // The user's exact grams are stored below (updateDailyGoal). The implied ratio
+    // (grams ÷ target-lbs) is a continuous float, but proteinRatio is a strict API
+    // enum — setProteinRatio SNAPS it to the nearest tier, so the dropdown lands on
+    // 0.8/1/1.2 and the save never 400s. Editing grams changes only the ratio field.
     const targetKg = this.userSettingsService.personalInfo().targetWeightKg;
     if (targetKg) {
       const targetLbs = PreferencesService.kgToLbs(targetKg);

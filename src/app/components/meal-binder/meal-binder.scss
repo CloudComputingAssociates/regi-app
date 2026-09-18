@@ -1040,14 +1040,10 @@
   flex-direction: column;
   gap: 0;
 }
-// Notebook ENTRIES (the meals + menus lists — NOT the filter panel) begin to the
-// RIGHT of the red margin line, so each row's photo + name reads like writing in
-// the ruled area rather than spilling into the margin. The red line sits at ~23.6%
-// of the sheet width (paper-spiral-bound.png, stretched 100%); on top of the .binder
-// 13% spiral gutter, ~14% here clears it — and stays proportional as the rail resizes.
-.section-body:not(.filter-body) {
-  padding-left: 14%;
-}
+// Notebook rows read like a ruled page: the PHOTO hangs in the left margin (left
+// of the red rule), the rule, then the NAME in the writing area. This is done
+// per-row (thumbnail hangs, text indents) — see .card-head — NOT by padding the
+// whole list, which pushed the photo across the rule too.
 
 // ---- Rows inside the sheet (Menus / Meals) ----
 // Flat rows — no per-row box/outline/shadow; a hairline divider separates them.
@@ -1203,10 +1199,20 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  // Hang the thumbnail in the left margin and start the text RIGHT of the red rule.
+  // The rule sits at ~23.6% of the sheet; the .binder gutter already clears the
+  // spiral at 13%, so ~13% more here lands the name just past the rule. Percentage
+  // so it tracks the rule as the rail resizes.
+  position: relative;
+  padding-left: 13%;
 
-  // Square thumbnail leading the collapsed row — sized to the row with tight
-  // padding. Empty variant is a muted placeholder square.
+  // Square thumbnail — absolutely positioned so it hangs in the margin (LEFT of the
+  // rule) instead of pushing the name across it. Vertically centered on the row.
   .card-thumb {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
     flex: 0 0 auto;
     width: var(--thumb);
     height: var(--thumb);
@@ -1214,7 +1220,6 @@
     border-radius: 4px;
     object-fit: cover;
     background: transparent;
-    margin-right: 6px; // gap after the pic so the red margin line reads as a divider
     // No border / shadow at rest — clean photo; yellow ring appears on select.
   }
   .card-thumb-empty {
@@ -1231,6 +1236,15 @@
       line-height: 18px;
       color: #7a7a7a;
     }
+  }
+
+  // Menu rows share .card-head — hang the book glyph in the margin too, so menu
+  // names line up with meal names (both start right of the red rule).
+  .menu-grip {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
   }
 
   .binder-card-name {

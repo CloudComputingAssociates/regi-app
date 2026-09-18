@@ -210,15 +210,14 @@ export class PreferencesService {
     return Math.abs(pi.currentWeightKg - pi.targetWeightKg) / pi.currentWeightKg * 100;
   });
 
-  /** Auto protein ratio stepped by spread: 0.7 → 1.1 g/lb as spread grows.
-   *  Values snap to dropdown increments (0.1 steps). */
-  readonly autoProteinRatio = computed(() => {
+  /** Auto protein ratio stepped by goal spread, on the API enum {0.8, 1, 1.2}:
+   *  modest spread → 0.8, moderate → 1, large → 1.2. (Maps the old 0.7–1.1 rungs
+   *  onto the three allowed tiers so a defaulted ratio can never 400 the save.) */
+  readonly autoProteinRatio = computed<0.8 | 1 | 1.2>(() => {
     const spread = this.goalSpreadPct();
-    if (spread < 15) return 0.7;
     if (spread < 25) return 0.8;
-    if (spread < 35) return 0.9;
-    if (spread < 45) return 1.0;
-    return 1.1;
+    if (spread < 45) return 1;
+    return 1.2;
   });
 
   /** Auto deficit/surplus percent from spread: -15% to -25% for loss, 5% to 15% for gain. */
@@ -368,7 +367,17 @@ export class PreferencesService {
 
     const rm = all.regiMenu;
     const dg = all.dailyGoals;
-    const pi = all.personalInfo;
+
+    // Un-poison a stored off-enum proteinRatio (older data / the prior grams-back-
+    // compute bug that wrote arbitrary floats). Snap it IN MEMORY and mark
+    // personalInfo dirty so the NEXT user-triggered save repairs it server-side —
+    // NO silent PUT on load.
+    let pi = all.personalInfo ?? DEFAULT_PERSONAL_INFO;
+    const proteinRatioPoisoned =
+      pi.proteinRatio != null && !PreferencesService.isEnumProteinRatio(pi.proteinRatio);
+    if (proteinRatioPoisoned) {
+      pi = { ...pi, proteinRatio: PreferencesService.snapProteinRatio(pi.proteinRatio) };
+    }
 
     const prefs: Preferences = {
       mealsPerDay: (rm?.mealsPerDay as MealsPerDay) || DEFAULT_PREFERENCES.mealsPerDay,
@@ -376,7 +385,7 @@ export class PreferencesService {
       weekStartDay: (rm?.weekStartDay as WeekStartDay) || DEFAULT_PREFERENCES.weekStartDay,
       foodListSource: this.mapDefaultFoodList(all.defaultFoodList),
       dailyGoals: dg ?? DEFAULT_DAILY_GOALS,
-      personalInfo: pi ?? DEFAULT_PERSONAL_INFO,
+      personalInfo: pi,
       persons: rm?.persons ?? DEFAULT_PREFERENCES.persons,
       menuDays: rm?.menuDays ?? DEFAULT_PREFERENCES.menuDays,
       glp1: all.glp1 ?? { enabled: false }
@@ -390,8 +399,13 @@ export class PreferencesService {
     this.computeDeficitPercent();
     this.syncComputedMacros();
 
-    // Reset dirty flags — the sync above is initialization, not a user change
+    // Reset dirty flags — the sync above is initialization, not a user change.
     this.dirtyGroups.set({ regiMenu: false, dailyGoals: false, defaultFoodList: false, personalInfo: false, glp1: false });
+    // ...but if we repaired a poisoned ratio, keep personalInfo dirty so the next
+    // save persists the snapped value (repairs the server row). No PUT fired here.
+    if (proteinRatioPoisoned) {
+      this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
+    }
   }
 
   // ========================================================
@@ -421,7 +435,14 @@ export class PreferencesService {
     }
     if (dirty.dailyGoals) partial.dailyGoals = current.dailyGoals;
     if (dirty.defaultFoodList) partial.defaultFoodList = this.mapFoodListSourceToApi(current.foodListSource);
-    if (dirty.personalInfo) partial.personalInfo = current.personalInfo;
+    if (dirty.personalInfo) {
+      // Belt-and-braces: the outgoing payload must never carry an off-enum
+      // proteinRatio (the API 400s the entire settings save on it).
+      const pi = current.personalInfo;
+      partial.personalInfo = pi.proteinRatio != null
+        ? { ...pi, proteinRatio: PreferencesService.snapProteinRatio(pi.proteinRatio) }
+        : pi;
+    }
     if (dirty.glp1) partial.glp1 = current.glp1;
 
     if (Object.keys(partial).length === 0) return;
@@ -563,9 +584,31 @@ export class PreferencesService {
     this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
   }
 
+  /** The API accepts proteinRatio ONLY as this strict enum ({0.8,1,1.2}); anything
+   *  else 400s the whole PUT /user/settings. All writes snap to it. */
+  static readonly PROTEIN_RATIO_TIERS: readonly (0.8 | 1 | 1.2)[] = [0.8, 1, 1.2];
+  static isEnumProteinRatio(n: number | null | undefined): boolean {
+    return n === 0.8 || n === 1 || n === 1.2;
+  }
+  /** Snap any (possibly computed / off-enum) ratio to the nearest allowed tier.
+   *  NaN/undefined falls back to the middle tier (1). */
+  static snapProteinRatio(n: number | null | undefined): 0.8 | 1 | 1.2 {
+    let best: 0.8 | 1 | 1.2 = 1;
+    let bestDiff = Infinity;
+    for (const t of PreferencesService.PROTEIN_RATIO_TIERS) {
+      const d = Math.abs((n ?? NaN) - t);
+      if (d < bestDiff) { bestDiff = d; best = t; }
+    }
+    return best;
+  }
+
+  /** Store proteinRatio — ALWAYS snapped to the API enum, so no code path (dropdown
+   *  pick OR grams-back-compute) can persist an off-enum value that would 400 the save.
+   *  Callers may pass a raw computed ratio (grams ÷ target-lbs); it snaps here. */
   setProteinRatio(value: number): void {
+    const snapped = PreferencesService.snapProteinRatio(value);
     this.preferencesSignal.update(p => ({
-      ...p, personalInfo: { ...p.personalInfo, proteinRatio: value }
+      ...p, personalInfo: { ...p.personalInfo, proteinRatio: snapped }
     }));
     this.dirtyGroups.update(d => ({ ...d, personalInfo: true }));
   }
