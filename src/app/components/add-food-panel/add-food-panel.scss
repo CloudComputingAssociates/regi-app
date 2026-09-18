@@ -87,6 +87,14 @@
   }
   &:hover { background: linear-gradient(180deg, #676767 0%, #4f4f4f 100%); color: #ffffff; }
 }
+// Lights GREEN when there's something to commit (a staged pick or user edits) —
+// Apple-green confirm, per the dialog convention; muted grey when nothing pending.
+.afp-save-btn.afp-save-btn-active {
+  background: linear-gradient(180deg, #2fd44b 0%, #23b03d 100%);
+  border-color: #1c8a30;
+  color: #ffffff;
+  &:hover { background: linear-gradient(180deg, #37e055 0%, #29c446 100%); }
+}
 
 .afp-body {
   flex: 1;

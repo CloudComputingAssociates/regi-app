@@ -36,6 +36,7 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
+import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { UserFoodService } from '../../services/user-food.service';
 import { FoodsService } from '../../services/foods.service';
@@ -43,7 +44,7 @@ import { ImageUploadService } from '../../services/image-upload.service';
 import { NotificationService } from '../../services/notification.service';
 import { TetherService } from '../../services/tether.service';
 import { UserFood } from '../../models/user-food.model';
-import { FatSecretCandidate, IdentifiedFood } from '../../models/fatsecret.model';
+import { FatSecretCandidate, FromFatSecretRequest, IdentifiedFood } from '../../models/fatsecret.model';
 import {
   MealImageSourceComponent,
   ImageSourceData,
@@ -72,6 +73,7 @@ interface Resolved {
           <div class="dialog-discs">
             @if (canSave()) {
               <button type="button" class="afp-save-btn"
+                [class.afp-save-btn-active]="isDirty()"
                 matTooltip="Save" matTooltipPosition="below" (click)="onSave()"
                 aria-label="Save food">
                 <mat-icon>check</mat-icon>
@@ -478,38 +480,51 @@ export class AddFoodPanelComponent implements OnInit {
   }
 
   // ---- Pick → Stage B ------------------------------------------------------
-  /** The fatsecretFoodId of the row currently shown in the Stage B split, so the
-   *  results list can highlight which candidate is being viewed. */
+  /** The fatsecretFoodId of the row currently shown in the Stage B split — drives
+   *  the results-list highlight AND is the id created at SAVE time. */
   readonly pickedFsId = signal<string | null>(null);
+  /** True while the resolved food is a STAGED FatSecret pick that has NOT been
+   *  created on the server yet (created in onSave). Makes isDirty true so the
+   *  green check lights the moment a candidate is picked, before any edit. */
+  readonly resolvedFromLookup = signal<boolean>(false);
 
-  async pickFatSecret(c: FatSecretCandidate): Promise<void> {
+  /** Pick a FatSecret candidate — STAGE it only (no server create at pick). The
+   *  POST /userfoods/from-fatsecret fires in onSave(), so an abandoned lookup
+   *  leaves NO orphan userfood row. The green check lights immediately (isDirty).
+   *  Stage B is seeded from the slim candidate; full per-100g / geometry arrive
+   *  from the save-time create (the API has no detail-without-create endpoint). */
+  pickFatSecret(c: FatSecretCandidate): void {
     if (this.resolving()) return;
-    this.resolving.set(true);
-    try {
-      const res = await firstValueFrom(this.userFoods.createFromFatSecret({ fatsecretFoodId: c.fatsecretFoodId }));
-      const food = res?.food;
-      if (!food) {
-        this.notification.show('Could not create that food.', 'error');
-        return;
-      }
-      this.didAdd = true;
-      this.pickedFsId.set(c.fatsecretFoodId);
-      // Photo: the API async-enriches from-fatsecret creates. When imageStatus is
-      // 'fetching', the server is already pulling a photo — SKIP the client CDN/OFF
-      // chain (which would race the server and set a competing image) and instead
-      // poll for the server's image to land. Otherwise ('needed' / absent), run the
-      // existing client suggestion chain as before.
-      if (!food.foodImage && res.imageStatus === 'fetching') {
-        this.resolveFromUserFood(food, /* suggestWhenEmpty */ false);
-        void this.pollForServerImage(food.id);
-      } else {
-        this.resolveFromUserFood(food, /* suggestWhenEmpty */ true);
-      }
-    } catch {
-      this.notification.show('Could not add that food from the database.', 'error');
-    } finally {
-      this.resolving.set(false);
-    }
+    this.pickedFsId.set(c.fatsecretFoodId);
+    this.resolvedFromLookup.set(true);
+    // Placeholder id (0) until the save-time create returns the real userfood id.
+    this.resolved.set({ id: 0, ownedId: null, foodSource: 'userfood' });
+    this.seedFromCandidate(c);
+  }
+
+  /** Seed Stage B from a slim FatSecret candidate (name/brand/serving only). No
+   *  nutrition/geometry yet — those come from the save-time create. Suggests a
+   *  photo by name now; it's applied on save if kept. Baselines are set to the
+   *  seeded values so only genuine user edits count as dirty (the staged pick's
+   *  dirtiness is carried by resolvedFromLookup). */
+  private seedFromCandidate(c: FatSecretCandidate): void {
+    const name = c.name ?? '';
+    this.nameDraft.set(name);
+    this.longDesc.set([c.brand, c.servingDescription].filter(Boolean).join(' · '));
+    this.categoryId.set(null);
+    this.unit.set('');
+    this.gramsPerUnit.set(null);
+    this.quantity.set(1);
+    this.nfStore.set(null);
+    this.baseName = name;
+    this.baseUnit = '';
+    this.baseGrams = null;
+    this.baseQty = 1;
+    this.baseCategoryId = null;
+    this.stagedPhoto.set(null);
+    this.photoUrl.set('');
+    this.photoIsSuggestion.set(false);
+    void this.suggestPhoto(name);
   }
 
   // ---- Stage B state -------------------------------------------------------
@@ -535,6 +550,8 @@ export class AddFoodPanelComponent implements OnInit {
   private baseCategoryId: number | null = null;
 
   private resolveFromUserFood(f: UserFood, suggestWhenEmpty = true): void {
+    // An already-created userfood (barcode/UPC scan) — not a staged lookup.
+    this.resolvedFromLookup.set(false);
     this.resolved.set({ id: f.id, ownedId: f.id, foodSource: 'userfood' });
     this.seed(
       f.shortDescription ?? '', f.description ?? '',
@@ -543,29 +560,6 @@ export class AddFoodPanelComponent implements OnInit {
     );
   }
 
-  /** Poll for the server's async-enriched photo after a from-fatsecret create with
-   *  imageStatus 'fetching'. Every 2 s, up to 4 attempts; the first non-empty
-   *  foodImage wins and is shown as the real (non-suggestion) photo. Bails if the
-   *  user has since resolved a different food. No client CDN/OFF fallback — that's
-   *  the race this gating exists to avoid. */
-  private async pollForServerImage(userFoodId: number): Promise<void> {
-    this.photoSearching.set(true);
-    try {
-      for (let attempt = 0; attempt < 4; attempt++) {
-        await new Promise<void>((r) => setTimeout(r, 2000));
-        if (this.resolved()?.ownedId !== userFoodId) return; // superseded
-        const f = await this.userFoods.getUserFoodById(userFoodId);
-        const img = f?.foodImage ?? '';
-        if (img) {
-          this.photoUrl.set(img);
-          this.photoIsSuggestion.set(false); // the server's real photo, not a suggestion
-          return;
-        }
-      }
-    } finally {
-      if (this.resolved()?.ownedId === userFoodId) this.photoSearching.set(false);
-    }
-  }
   private seed(
     name: string, desc: string, categoryId: number | null, unit: string,
     grams: number | null, qty: number, image: string,
@@ -640,15 +634,23 @@ export class AddFoodPanelComponent implements OnInit {
       || this.quantity() !== this.baseQty;
   }
 
-  /** Confirm (check) button: always available in Stage B (Save & Done). */
+  /** Confirm (check) button: present whenever a food is resolved (staged or owned). */
   readonly canSave = computed<boolean>(() => this.resolved() != null);
 
-  /** True when the user has made unsaved edits in Stage B (name / category /
-   *  serving geometry / a dropped photo). Drives the close guard — a dirty
-   *  dialog can't be dismissed by the X or a backdrop click; the user must Save. */
+  /** Genuine USER edits that would be lost on close — drives the close guard only.
+   *  A bare staged FatSecret pick (no edits) is NOT here, so X/backdrop can discard
+   *  it freely with no server residue (nothing was created). */
+  private hasUserEdits(): boolean {
+    return this.nameDirty() || this.categoryDirty() || this.geometryDirty() || this.stagedPhoto() != null;
+  }
+
+  /** Drives the GREEN check. A staged FatSecret pick is dirty the instant it's
+   *  resolved (resolvedFromLookup) — the check lights before any edit — as are any
+   *  user edits on a staged or already-owned food. */
   readonly isDirty = computed<boolean>(() =>
     this.resolved() != null &&
-    (this.nameDirty() || this.categoryDirty() || this.geometryDirty() || this.stagedPhoto() != null),
+    (this.resolvedFromLookup() ||
+      this.nameDirty() || this.categoryDirty() || this.geometryDirty() || this.stagedPhoto() != null),
   );
 
   numOf(v: string, fallback: number): number {
@@ -662,8 +664,13 @@ export class AddFoodPanelComponent implements OnInit {
 
   // ---- Stage B photo overwrite (shared meal-image-source dialog) ------------
   async onChangePhoto(): Promise<void> {
-    const ownedId = await this.ensureOwned();
-    if (ownedId == null) return;
+    const ownedId = this.ensureOwned();
+    if (ownedId == null) {
+      // Staged pick not yet created — no id to attach a photo to. Drop a File on the
+      // photo box instead (staged + uploaded on Save), or Save first then change it.
+      this.notification.show('Save the food first, then change its photo.', 'info');
+      return;
+    }
     const data: ImageSourceData = { kind: 'food', id: ownedId, name: this.nameDraft().trim() || 'food' };
     const ref = this.dialog.open(MealImageSourceComponent, { panelClass: 'meal-image-dialog-panel', autoFocus: false, data });
     const result = (await firstValueFrom(ref.afterClosed())) as ImageSourceResult | undefined;
@@ -685,35 +692,104 @@ export class AddFoodPanelComponent implements OnInit {
   async onSave(): Promise<void> {
     const s = this.resolved();
     if (!s) return;
-    const needsOwn = this.nameDirty() || this.categoryDirty() || this.geometryDirty() || this.stagedPhoto() != null;
     let ownedId = s.ownedId;
-    if (needsOwn && ownedId == null) {
-      ownedId = await this.ensureOwned();
+    let createdHadImage = false;
+    let createdFetching = false;
+
+    // ---- Create-at-save: a STAGED FatSecret pick (no ownedId) is created NOW ----
+    if (ownedId == null) {
+      const fsId = this.pickedFsId();
+      if (!fsId) {
+        console.error('[AddFood] onSave: staged pick has no FatSecret id', { resolved: s });
+        this.notification.show('Nothing to save — pick a food first.', 'error');
+        return;
+      }
+      // Fold the edited name / chosen category into the create so no extra PATCH.
+      const req: FromFatSecretRequest = { fatsecretFoodId: fsId };
+      if (this.nameDirty()) req.userDescription = this.nameDraft().trim();
+      if (this.categoryId() != null) req.categoryId = this.categoryId()!;
+      const created = await this.createStagedFood(req);
+      if (!created) return; // createStagedFood already surfaced status + body
+      ownedId = created.id;
+      createdHadImage = created.hadImage;
+      createdFetching = created.fetching;
+      this.didAdd = true;
+      this.resolvedFromLookup.set(false);
+      this.resolved.set({ id: ownedId, ownedId, foodSource: 'userfood' });
+      // name/category were folded into the create — sync baselines so we don't re-PATCH.
+      this.baseName = this.nameDraft().trim();
+      this.baseCategoryId = this.categoryId();
     }
-    if (ownedId != null) {
-      if (this.geometryDirty() && this.unit().trim() && this.gramsPerUnit()) {
-        try {
-          await firstValueFrom(this.foodsService.patchServingGeometry({
-            foodId: ownedId, foodSource: 'userfood',
-            unitName: this.unit().trim(), gramsPerUnit: this.gramsPerUnit()!, defaultQuantity: this.quantity(),
-          }));
-        } catch { this.notification.show('Could not save serving units.', 'error'); }
-      }
-      if (this.nameDirty()) await this.userFoods.setUserFoodName(ownedId, this.nameDraft().trim());
-      if (this.categoryDirty() && this.categoryId() != null) await this.userFoods.setUserFoodCategory(ownedId, this.categoryId()!);
-      // Photo: prefer a staged (dropped) File; else approve a suggestion.
-      const staged = this.stagedPhoto();
-      if (staged) {
-        try {
-          const res = await this.imageUpload.uploadProductImage(ownedId, staged);
-          if (res?.cdn_url) this.photoUrl.set(res.cdn_url);
-        } catch { /* leave without a photo */ }
-        this.stagedPhoto.set(null);
-      } else if (this.photoIsSuggestion()) {
-        await this.approveSuggestedPhoto(ownedId);
-      }
+
+    // ---- Apply remaining edits to the (now-)owned food -------------------------
+    if (this.geometryDirty() && this.unit().trim() && this.gramsPerUnit()) {
+      try {
+        await firstValueFrom(this.foodsService.patchServingGeometry({
+          foodId: ownedId, foodSource: 'userfood',
+          unitName: this.unit().trim(), gramsPerUnit: this.gramsPerUnit()!, defaultQuantity: this.quantity(),
+        }));
+      } catch (err) { this.reportError('serving units', err); }
+    }
+    // Name / category edits on an already-owned food (barcode path); no-ops on the
+    // create path since they were folded into the create above.
+    if (this.nameDirty()) await this.userFoods.setUserFoodName(ownedId, this.nameDraft().trim());
+    if (this.categoryDirty() && this.categoryId() != null) await this.userFoods.setUserFoodCategory(ownedId, this.categoryId()!);
+
+    // Photo: a dropped File always wins; else approve the client suggestion ONLY
+    // when the server isn't already fetching one (avoids the two-source race).
+    const staged = this.stagedPhoto();
+    if (staged) {
+      try {
+        const res = await this.imageUpload.uploadProductImage(ownedId, staged);
+        if (res?.cdn_url) this.photoUrl.set(res.cdn_url);
+      } catch (err) { this.reportError('photo', err); }
+      this.stagedPhoto.set(null);
+    } else if (this.photoIsSuggestion() && !createdHadImage && !createdFetching) {
+      await this.approveSuggestedPhoto(ownedId);
     }
     this.finish();
+  }
+
+  /** Create-at-save: POST /userfoods/from-fatsecret for a staged pick. Returns the
+   *  new id (+ image hints) or null. NEVER a silent no-op — a failure is logged with
+   *  HTTP status + body and toasted (401 vs 404 vs CORS-0 distinguishable). */
+  private async createStagedFood(
+    req: FromFatSecretRequest,
+  ): Promise<{ id: number; hadImage: boolean; fetching: boolean } | null> {
+    this.resolving.set(true);
+    try {
+      const res = await firstValueFrom(this.userFoods.createFromFatSecret(req));
+      const food = res?.food;
+      if (!food?.id) {
+        console.error('[AddFood] createFromFatSecret returned no food', { res });
+        this.notification.show('Couldn’t add that food — the database returned no result.', 'error');
+        return null;
+      }
+      return { id: food.id, hadImage: !!food.foodImage, fetching: res.imageStatus === 'fetching' };
+    } catch (err) {
+      this.reportError('add food', err);
+      return null;
+    } finally {
+      this.resolving.set(false);
+    }
+  }
+
+  /** Log the FULL HTTP failure (status + body) and toast a status-aware message —
+   *  so an Add-Food failure is never silent. status 0 = network/CORS blocked. */
+  private reportError(op: string, err: unknown): void {
+    const e = err instanceof HttpErrorResponse ? err : null;
+    const status = e?.status ?? -1;
+    const body =
+      typeof e?.error === 'string' ? e.error : JSON.stringify(e?.error ?? e?.message ?? String(err));
+    console.error(`[AddFood] ${op} failed — HTTP ${status}`, {
+      status, statusText: e?.statusText, url: e?.url, body,
+    });
+    const detail =
+      status === 0 ? 'network/CORS blocked (status 0)'
+        : status === 401 ? 'not authorized (401)'
+          : status === 404 ? 'endpoint not found (404)'
+            : status > 0 ? `HTTP ${status}` : 'unexpected error';
+    this.notification.show(`Couldn’t ${op} — ${detail}.`, 'error');
   }
 
   /** Fetch a suggested photo, wrap it as a File, and upload it so the food gets a
@@ -737,15 +813,16 @@ export class AddFoodPanelComponent implements OnInit {
   }
 
   onBackdrop(): void {
-    // Clicking off closes ONLY when there are no unsaved edits; a dirty dialog
-    // swallows the click so the user must Save (the check) explicitly.
-    if (this.isDirty()) return;
+    // Guard on USER EDITS, not isDirty: a bare staged FatSecret pick (nothing
+    // created, no edits) discards cleanly — no server residue. Only real edits
+    // swallow the backdrop click.
+    if (this.hasUserEdits()) return;
     this.finish();
   }
   onClose(): void {
-    // The X dismisses only when clean; with unsaved edits it's blocked so the
-    // user can't lose changes by closing — they Save with the check.
-    if (this.isDirty()) {
+    // The X discards a bare staged pick freely (create is at save, so nothing was
+    // written). With real edits it's blocked so the user can't lose them.
+    if (this.hasUserEdits()) {
       this.notification.show('You have unsaved changes — Save them with the ✓ to close.', 'warning');
       return;
     }
