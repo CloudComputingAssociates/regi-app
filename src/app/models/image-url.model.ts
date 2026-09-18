@@ -18,20 +18,13 @@ export interface ImageUrlLookupResponse {
   nutrition_facts_pending_url: string;
 }
 
-// ---- Open Food Facts (world.openfoodfacts.org) search --------------------
-// Best-effort public product search used to SUGGEST a photo by NAME when our own
-// CDN has none (regi-api only enriches from OFF by GTIN/barcode, so a name-add
-// with no barcode never gets an OFF photo server-side). Public, CORS-enabled, no
-// auth. Only the fields we request are populated; the rest of OFF's large shape
-// is intentionally omitted.
-export interface OpenFoodFactsProduct {
-  product_name?: string;
-  image_front_url?: string;
-  image_url?: string;
-}
-
-export interface OpenFoodFactsSearchResponse {
-  count: number;
-  page: number;
-  products: OpenFoodFactsProduct[];
+// ---- OFF product-image proxy (GET /api/foods/off-image?name=…) ------------
+// HAND-MAINTAINED, transcribed from the Go handler in regi-api/api/foods.go
+// (writeJSON {"imageUrl": OFFImageByName(name)}) — no schemas/*.json for this
+// surface, same precedent as the DTOs above. Server-side proxy so the browser
+// never hits Open Food Facts directly (CORS + rate-limit): regi-api queries OFF
+// with a proper User-Agent + 24h cache and returns a single front-image URL.
+// `imageUrl` is '' on any miss/error/timeout — never a client-facing error.
+export interface OffImageResponse {
+  imageUrl: string;
 }

@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { ImageUrlLookupResponse } from '../models/image-url.model';
+import { ImageUrlLookupResponse, OffImageResponse } from '../models/image-url.model';
 
 export interface ProductUploadResponse {
   success: boolean;
@@ -46,19 +46,23 @@ export class ImageUploadService {
     );
   }
 
-  /** Photo SUGGESTION by name from Open Food Facts — DISABLED in the browser.
-   *
-   *  The legacy cgi/search.pl sends NO Access-Control-Allow-Origin and OFF
-   *  rate-limits (~10 req/min/IP); both surface as CORS console errors, and the
-   *  image_urls it returns are hotlink-blocked (net::ERR_FAILED in <img>). Photo
-   *  suggestion is enrichment, never a dependency, so we degrade to "no
-   *  suggestion" rather than spray the console with doomed cross-origin calls.
-   *
-   *  Re-enable by moving OFF server-side behind a regi-api endpoint (proper
-   *  User-Agent + response caching), then call THAT here. Until then this is a
-   *  no-op that returns '' without touching the network. */
-  async searchOpenFoodFactsImage(_description: string): Promise<string> {
-    return '';
+  /** Photo SUGGESTION by name via our server-side OFF proxy — GET /api/foods/off-image?name=…
+   *  → {"imageUrl": "<url|empty>"}. The browser never calls Open Food Facts directly
+   *  (CORS + rate-limit); regi-api queries OFF with a proper User-Agent + 24h cache.
+   *  Goes through the standard intercepted HttpClient (auth attached). '' = no
+   *  suggestion; the endpoint never errors to the client, but we still guard. */
+  async searchOpenFoodFactsImage(description: string): Promise<string> {
+    const q = (description || '').trim();
+    if (!q) return '';
+    const params = new HttpParams().set('name', q);
+    try {
+      const res = await firstValueFrom(
+        this.http.get<OffImageResponse>(`${this.imageApiUrl}/api/foods/off-image`, { params }),
+      );
+      return res?.imageUrl ?? '';
+    } catch {
+      return '';
+    }
   }
 
   /** POST /api/image/upload/avatar — set the authenticated user's avatar (keyed
