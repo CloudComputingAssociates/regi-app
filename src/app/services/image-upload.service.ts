@@ -3,10 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
-import {
-  ImageUrlLookupResponse,
-  OpenFoodFactsSearchResponse,
-} from '../models/image-url.model';
+import { ImageUrlLookupResponse } from '../models/image-url.model';
 
 export interface ProductUploadResponse {
   success: boolean;
@@ -49,30 +46,19 @@ export class ImageUploadService {
     );
   }
 
-  /** Best-effort photo SUGGESTION by name from Open Food Facts (.org). Used when
-   *  our own CDN has no image for a just-added food — regi-api only pulls OFF
-   *  images by GTIN, so a name-add with no barcode never gets one server-side.
-   *  Public + CORS-enabled + no auth. Returns the best front image URL, or ''. */
-  async searchOpenFoodFactsImage(description: string): Promise<string> {
-    const params = new HttpParams()
-      .set('search_terms', description)
-      .set('search_simple', '1')
-      .set('action', 'process')
-      .set('json', '1')
-      .set('page_size', '5')
-      .set('fields', 'product_name,image_front_url,image_url');
-    try {
-      const res = await firstValueFrom(
-        this.http.get<OpenFoodFactsSearchResponse>(
-          'https://world.openfoodfacts.org/cgi/search.pl',
-          { params },
-        ),
-      );
-      const hit = (res?.products ?? []).find((p) => p.image_front_url || p.image_url);
-      return hit?.image_front_url || hit?.image_url || '';
-    } catch {
-      return '';
-    }
+  /** Photo SUGGESTION by name from Open Food Facts — DISABLED in the browser.
+   *
+   *  The legacy cgi/search.pl sends NO Access-Control-Allow-Origin and OFF
+   *  rate-limits (~10 req/min/IP); both surface as CORS console errors, and the
+   *  image_urls it returns are hotlink-blocked (net::ERR_FAILED in <img>). Photo
+   *  suggestion is enrichment, never a dependency, so we degrade to "no
+   *  suggestion" rather than spray the console with doomed cross-origin calls.
+   *
+   *  Re-enable by moving OFF server-side behind a regi-api endpoint (proper
+   *  User-Agent + response caching), then call THAT here. Until then this is a
+   *  no-op that returns '' without touching the network. */
+  async searchOpenFoodFactsImage(_description: string): Promise<string> {
+    return '';
   }
 
   /** POST /api/image/upload/avatar — set the authenticated user's avatar (keyed

@@ -283,7 +283,7 @@ interface Resolved {
           </div>
           <div class="afp-photo" [class.suggested]="photoIsSuggestion()">
             @if (photoUrl()) {
-              <img [src]="photoUrl()" alt="" class="afp-photo-img" />
+              <img [src]="photoUrl()" alt="" class="afp-photo-img" (error)="onPhotoImgError()" />
             } @else {
               <div class="afp-photo-empty"><mat-icon>image</mat-icon></div>
             }
@@ -590,28 +590,46 @@ export class AddFoodPanelComponent implements OnInit {
     }
   }
 
-  /** Suggest a photo for a food with none: our CDN by description first, then Open
-   *  Food Facts (.org) by name. The two lookups are INDEPENDENTLY guarded — a CDN
-   *  miss (which throws) must not skip the .org fallback. */
+  /** Suggest a photo for a food with none — pure ENRICHMENT, fire-and-forget: it is
+   *  never awaited by the pick→resolve→save chain, so it can never block resolve,
+   *  dirty-state, or save (see pickFatSecret / seed, which `void` this). Our CDN by
+   *  description first; the Open Food Facts fallback is currently a no-op in the
+   *  browser (CORS/rate-limit — see ImageUploadService.searchOpenFoodFactsImage).
+   *  Wrapped in try/finally so an unexpected throw can't leak or wedge the spinner. */
   private async suggestPhoto(term: string): Promise<void> {
     const q = (term || '').trim();
     if (!q) return;
     this.photoSearching.set(true);
-    let url = '';
     try {
-      const cdn = await this.imageUpload.lookupImageUrl(q);
-      url = cdn?.product_image_url || '';
+      let url = '';
+      try {
+        const cdn = await this.imageUpload.lookupImageUrl(q);
+        url = cdn?.product_image_url || '';
+      } catch {
+        /* CDN has no image (throws on 404) — fall through to the OFF fallback */
+      }
+      if (!url) {
+        url = await this.imageUpload.searchOpenFoodFactsImage(q); // no-op '' in browser
+      }
+      if (url) {
+        this.photoUrl.set(url);
+        this.photoIsSuggestion.set(true);
+      }
     } catch {
-      /* CDN has no image (throws on 404) — fall through to Open Food Facts */
+      /* enrichment only — degrade to no suggestion, never surface or block */
+    } finally {
+      this.photoSearching.set(false);
     }
-    if (!url) {
-      url = await this.imageUpload.searchOpenFoodFactsImage(q); // own try/catch, returns ''
+  }
+
+  /** An un-loadable image url (e.g. a hotlink-blocked OFF url on a food's stored
+   *  photo) degrades to "no suggestion" rather than showing a broken tile. Only a
+   *  SUGGESTION is cleared — a real saved photo that merely blipped is left intact. */
+  onPhotoImgError(): void {
+    if (this.photoIsSuggestion()) {
+      this.photoUrl.set('');
+      this.photoIsSuggestion.set(false);
     }
-    if (url) {
-      this.photoUrl.set(url);
-      this.photoIsSuggestion.set(true);
-    }
-    this.photoSearching.set(false);
   }
 
   readonly per100 = computed<{ cal: number; protein: number; fat: number; carbs: number } | null>(() => {
