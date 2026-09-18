@@ -9,6 +9,7 @@ import {
   FromFatSecretRequest,
   UpcLookupRequest,
   FoodAddResult,
+  IdentifyFromImageResponse,
 } from '../models/fatsecret.model';
 
 interface ListUserFoodsResponse {
@@ -66,6 +67,15 @@ export class UserFoodService {
    *  404 when the barcode isn't found. Returns FoodAddResult. */
   lookupBarcode(body: UpcLookupRequest): Observable<FoodAddResult> {
     return this.http.post<FoodAddResult>(`${this.baseUrl}/barcode`, body);
+  }
+
+  /** POST /api/userfoods/identify-from-image (multipart "image" part) — the AI
+   *  identifies the food in a photo and returns both result lists (Regi matches +
+   *  FatSecret candidates) plus a display-only scratch image URL. */
+  identifyFromImage(image: File): Observable<IdentifyFromImageResponse> {
+    const form = new FormData();
+    form.append('image', image);
+    return this.http.post<IdentifyFromImageResponse>(`${this.baseUrl}/identify-from-image`, form);
   }
 
   async getUserFoodById(id: number): Promise<UserFood | null> {

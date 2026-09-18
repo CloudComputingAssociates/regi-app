@@ -176,11 +176,6 @@
   }
 }
 
-// Look comes from the global .regi-field; keep only the pointer cursor.
-.spin-source-select {
-  cursor: pointer;
-}
-
 // Category filters relocated beneath the carousel search, inside the card.
 // Lightweight row (no control-bar chrome) so it reads as part of the card, not
 // a floating bar above it.
@@ -570,9 +565,9 @@
 .picker-search-total {
   margin-left: auto;
 }
-// Collapse-all button clusters at the right, just left of the Total.
-.curate-collapse-all { margin-left: auto; }
-.curate-collapse-all + .picker-search-total { margin-left: 8px; }
+// Collapse-all now LEADS the filter row (over the section arrows), so it sits at
+// the start — no auto margin. The Total keeps margin-left:auto to hug the right.
+.curate-collapse-all { flex: 0 0 auto; }
 
 // Nutrition Facts + Health Info action buttons — right-justified in the
 // top bar above the tile grid. Doubled from the previous size (60 × 72 →
@@ -718,12 +713,21 @@
 
 .type-row-label {
   flex-shrink: 0;
-  // Hugs the dropdown now (no reserved slot) — tight LIST · dropdown spacing.
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: #4da6ff;
+}
+
+// Compact FILTER dropdown (MyFoods | Restricted). Look comes from the global
+// .regi-field; keep only the pointer cursor + a tight width so it doesn't hog
+// the row (SEARCH sits to its right).
+.spin-source-select {
+  flex: 0 0 auto;
+  width: 108px;
+  margin-right: 14px; // ~an "M" of breathing room before the SEARCH label
+  cursor: pointer;
 }
 
 // Compact collapse/expand pair sitting to the right of the TYPE dropdown.
@@ -2021,6 +2025,9 @@
   // edge of the divider, where it sits roughly above the star/restrict/delete
   // icons in the food rows beneath. Smaller and dimmer than the title so the
   // category name stays the dominant element.
+  // "Fave / Restrict" action-column header, right-aligned. It stays put; the rows
+  // pull their favorite/restrict icons LEFT (see .row-action.restrict padding) so
+  // the icons slide under this label.
   .category-action-hint {
     flex-shrink: 0;
     margin-left: auto;
@@ -2029,6 +2036,7 @@
     font-weight: 500;
     letter-spacing: 0.3px;
     color: rgba(77, 166, 255, 0.55);
+    white-space: nowrap;
   }
 
   // "double-click to edit food" hint, rendered only on the FIRST divider
@@ -2123,6 +2131,17 @@
   text-overflow: ellipsis;
 }
 
+// Green "Regi-approved" badge — sits between the food name and the fave/restrict
+// actions on catalog search hits (and on any favorited Regi-approved row).
+.regi-approved-badge {
+  flex-shrink: 0;
+  width: 18px !important;
+  height: 18px !important;
+  font-size: 18px !important;
+  line-height: 18px;
+  color: #41c941;
+}
+
 .row-action {
   flex-shrink: 0;
   cursor: pointer;
@@ -2144,7 +2163,12 @@
     }
   }
 
+  // Right padding pulls the restrict (and, ahead of it, the favorite) glyphs
+  // LEFT off the row's right edge so they slide under the stationary
+  // "Fave / Restrict" header. This is the ONE knob to tune the alignment.
   &.restrict {
+    box-sizing: content-box;
+    padding-right: 24px;
     &:hover, &.active { color: #ff7676; }
   }
 

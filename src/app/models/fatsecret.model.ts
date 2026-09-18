@@ -6,6 +6,7 @@
 // the UPC scan: a slim candidate search (GET /api/userfoods/fatsecret-search),
 // then create-by-id (POST /api/userfoods/from-fatsecret).
 import { UserFood } from './user-food.model';
+import { Food } from './food.model';
 
 /**
  * Response of POST /api/userfoods/from-fatsecret (and the UPC scan): the resolved
@@ -37,6 +38,27 @@ export interface FatSecretCandidate {
 /** GET /api/userfoods/fatsecret-search response wrapper: { candidates: [...] }. */
 export interface FatSecretCandidatesResponse {
   candidates: FatSecretCandidate[];
+}
+
+/** The AI's read of a food photo (POST /api/userfoods/identify-from-image). */
+export interface IdentifiedFood {
+  name: string;
+  brand?: string;
+  confidence: 'high' | 'medium' | 'low';
+}
+
+/**
+ * Response of POST /api/userfoods/identify-from-image (multipart "image" part):
+ * the AI-identified food plus BOTH result lists (Regi-approved matches and
+ * FatSecret candidates) seeded from the identification, and a display-only
+ * scratch image URL. The client re-uploads its in-memory File via the existing
+ * uploadProductImage after commit — scratchImageUrl is not persisted here.
+ */
+export interface IdentifyFromImageResponse {
+  identified: IdentifiedFood;
+  regiMatches: Food[];
+  fatsecretCandidates: FatSecretCandidate[];
+  scratchImageUrl: string;
 }
 
 /**

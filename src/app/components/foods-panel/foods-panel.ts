@@ -24,7 +24,7 @@ import { RecipeAuthoringService } from '../../services/recipe-authoring.service'
 import { ImageUploadService } from '../../services/image-upload.service';
 import { ThisWeekMacrosService } from '../../services/this-week-macros.service';
 import { UserFoodService } from '../../services/user-food.service';
-import { FoodsService, FoodList } from '../../services/foods.service';
+import { FoodsService } from '../../services/foods.service';
 import { TabService } from '../../services/tab.service';
 import { LangfusePromptService, LangfusePromptError } from '../../services/langfuse-prompt.service';
 import { SettingsService } from '../../services/settings.service';
@@ -39,11 +39,11 @@ import {
 } from '../../models/picks-hydration';
 import { nutritionLabelScale, snapServing, snapServingForUnit } from '../../models/food-display';
 
-// 'myfoods' and 'restricted' are special: they pull from the user-preferences
-// service. Any other value is treated as the handle of a curated list and
-// loaded via FoodsService.getListItems(). Lists are discovered at runtime via
-// FoodsService.getLists() and appear in the dropdown below a separator.
-type SpinSource = 'myfoods' | 'restricted' | string;
+// The Edit-MyFoods filter has three states: 'myfoods' (the user's Favorited
+// foods), 'restricted' (their Restricted foods), and 'none' — no filter, the
+// universal set of all the user's foods (favorited + restricted), which the
+// SEARCH box auto-selects so a search spans everything regardless of the filter.
+type SpinSource = 'myfoods' | 'restricted' | 'none';
 
 const CAROUSEL_CATEGORIES = [
   'Protein', 'Fat', 'Dairy', 'Vegetable',
@@ -70,13 +70,6 @@ const CATEGORY_TO_BASKET: Record<string, BasketKey> = {
   Fruit: 'Carbs',
   Processed: 'Other',
   Condiment: 'Other',
-};
-
-// Labels for the two preference-driven sources. Curated lists are labelled
-// dynamically from their .description (see typeLabel computed below).
-const TYPE_LABELS: Record<string, string> = {
-  'myfoods': 'MyFoods',
-  'restricted': 'My Restricted Foods',
 };
 
 const CATEGORY_PLURALS: Record<string, string> = {
@@ -151,8 +144,8 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               </span>
             </span>
             <!-- Edit My Foods (pencil) — toggles the editor overlay on the RHS (MyFoods
-                 stays on the left). Insets while active. FIRST key. The Curate Wizard
-                 trigger now lives inside that overlay's header. -->
+                 stays on the left). Insets while active. The Curate Wizard wand now
+                 lives inside that overlay's header. -->
             <button
               type="button"
               class="bar-icon-btn"
@@ -164,20 +157,6 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               [matTooltipShowDelay]="350"
               aria-label="Edit My Foods">
               <mat-icon aria-hidden="true">edit</mat-icon>
-            </button>
-            <!-- Build-a-Meal — opens the baskets workspace on the RHS: pick foods,
-                 then generate an AI meal from them. SECOND key. -->
-            <button
-              type="button"
-              class="bar-icon-btn"
-              [class.pressed]="buildMealOpen()"
-              [attr.aria-pressed]="buildMealOpen()"
-              (click)="toggleBuildMeal()"
-              [matTooltip]="buildMealOpen() ? 'Close Build-a-Meal' : 'Build-a-Meal'"
-              matTooltipPosition="below"
-              [matTooltipShowDelay]="350"
-              aria-label="Build-a-Meal">
-              <mat-icon aria-hidden="true">restaurant_menu</mat-icon>
             </button>
             <!-- Leave-panel key — red X disc (consistent with the Notebook + Menus
                  close). Lives here so it's ALWAYS available to close the panel. -->
@@ -590,17 +569,29 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
               <div class="edit-overlay-panel">
                 <div class="edit-overlay-header">
                   <span class="edit-overlay-title">Edit MyFoods</span>
-                  <!-- Curate Wizard trigger — moved here from the MyFoods header; an
-                       "M"-width gap after the label, then the wand key. -->
+                  <!-- Curate Wizard — swipe deck to build MyFoods. Sits right of the
+                       title, left of the + add key. -->
                   <button
                     type="button"
-                    class="bar-icon-btn curate-wizard-btn edit-overlay-wizard"
+                    class="bar-icon-btn curate-wizard-btn"
                     (click)="wizardOpen.set(true)"
                     matTooltip="Curate Wizard — swipe to build MyFoods"
                     matTooltipPosition="below"
                     [matTooltipShowDelay]="350"
                     aria-label="Curate Wizard">
                     <mat-icon aria-hidden="true">auto_fix_high</mat-icon>
+                  </button>
+                  <!-- Add a food to MyFoods — the shared Add-Food dialog. Right of
+                       the wand. -->
+                  <button
+                    type="button"
+                    class="bar-icon-btn edit-overlay-add"
+                    (click)="onAddFood()"
+                    matTooltip="Add a food to My Foods"
+                    matTooltipPosition="below"
+                    [matTooltipShowDelay]="350"
+                    aria-label="Add a food to My Foods">
+                    <mat-icon aria-hidden="true">add</mat-icon>
                   </button>
                   <div class="dialog-discs">
                     <button
@@ -614,54 +605,11 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     </button>
                   </div>
                 </div>
-                <!-- TYPE row: LIST · dropdown · + · Search · Total. -->
+                <!-- Filter row: collapse-all (first, over the section arrows) ·
+                     FILTER dropdown · SEARCH box · Total. -->
                 <div class="type-row">
-                  <span class="type-row-label">LIST</span>
-                  <select
-                    class="spin-source-select regi-field"
-                    [ngModel]="spinSource()"
-                    (ngModelChange)="onSpinSourceChange($event)">
-                    <!-- Order: My Foods (default) · curated lists (Regi/YEH
-                         Approved, GLP-1 favorites) · separator · Restricted. -->
-                    <option value="myfoods">My Foods</option>
-                    @for (list of orderedLists(); track list.name) {
-                      <option [value]="list.name">{{ list.description }}</option>
-                    }
-                    <option disabled>──────────────</option>
-                    <option value="restricted">Restricted</option>
-                  </select>
-                  <!-- Add a food to MyFoods — opens the shared Add-Food dialog.
-                       Only meaningful for the MyFoods list. -->
-                  @if (spinSource() === 'myfoods') {
-                    <button
-                      type="button"
-                      class="bar-icon-btn add-food-btn"
-                      (click)="onAddFood()"
-                      matTooltip="Add a food to My Foods"
-                      matTooltipPosition="below"
-                      aria-label="Add a food to My Foods">
-                      <mat-icon aria-hidden="true">add</mat-icon>
-                    </button>
-                  }
-                  <input
-                    type="text"
-                    class="picker-search-input regi-field"
-                    [value]="pickerSearchQuery()"
-                    (input)="onPickerSearchInput($any($event.target).value)"
-                    placeholder="Search foods…" />
-                  @if (pickerSearchQuery()) {
-                    <button
-                      type="button"
-                      class="picker-search-clear"
-                      (click)="pickerSearchQuery.set('')"
-                      matTooltip="Clear search"
-                      matTooltipPosition="below"
-                      aria-label="Clear search">
-                      ✕
-                    </button>
-                  }
-                  <!-- Collapse/expand ALL category accordions for the current list
-                       (works for any list — MyFoods, curated, Restricted). -->
+                  <!-- Collapse/expand ALL category accordions — leads the row so it
+                       sits above the per-section arrows (which are on the left). -->
                   <button
                     type="button"
                     class="bar-icon-btn curate-collapse-all"
@@ -672,6 +620,33 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                     aria-label="Collapse or expand all categories">
                     <mat-icon aria-hidden="true">{{ allCategoriesCollapsed() ? 'unfold_more' : 'unfold_less' }}</mat-icon>
                   </button>
+                  <span class="type-row-label">FILTER</span>
+                  <select
+                    class="spin-source-select regi-field"
+                    [ngModel]="spinSource()"
+                    (ngModelChange)="onSpinSourceChange($event)">
+                    <option value="myfoods">MyFoods</option>
+                    <option value="restricted">Restricted</option>
+                    <option value="none">None</option>
+                  </select>
+                  <span class="type-row-label">SEARCH</span>
+                  <input
+                    type="text"
+                    class="picker-search-input regi-field"
+                    [value]="pickerSearchQuery()"
+                    (input)="onPickerSearchInput($any($event.target).value)"
+                    placeholder="Type food name…" />
+                  @if (pickerSearchQuery()) {
+                    <button
+                      type="button"
+                      class="picker-search-clear"
+                      (click)="onPickerSearchInput('')"
+                      matTooltip="Clear search"
+                      matTooltipPosition="below"
+                      aria-label="Clear search">
+                      ✕
+                    </button>
+                  }
                   <span class="top-bar-total picker-search-total">Total ({{ bottomListLength() }})</span>
                 </div>
             <div class="pane-card list-card">
@@ -689,7 +664,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <mat-icon class="collapse-icon" [class.collapsed]="group.collapsed">expand_more</mat-icon>
                   <span class="category-name">{{ categoryLabel(group.category) }}</span>
                   <span class="category-count">({{ group.foods.length }})</span>
-                  <span class="category-action-hint">{{ columnHeaderText() }}</span>
+                  <span class="category-action-hint">Fave / Restrict</span>
                 </div>
                 @if (!group.collapsed) {
                   @for (food of group.foods; track food.id) {
@@ -776,10 +751,12 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                  regardless of which TYPE is selected. -->
             @if (carouselFoods().length === 0) {
               <div class="bottom-empty">
-                @if (spinSource() === 'restricted') {
-                  No restricted foods match.
+                @if (pickerSearchQuery().trim()) {
+                  No foods match your search.
+                } @else if (spinSource() === 'restricted') {
+                  No restricted foods yet.
                 } @else {
-                  No foods in {{ typeLabel() }} match.
+                  No foods yet.
                 }
               </div>
             } @else {
@@ -789,7 +766,7 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                   <mat-icon class="collapse-icon" [class.collapsed]="group.collapsed">expand_more</mat-icon>
                   <span class="category-name">{{ categoryLabel(group.category) }}</span>
                   <span class="category-count">({{ group.foods.length }})</span>
-                  <span class="category-action-hint">{{ columnHeaderText() }}</span>
+                  <span class="category-action-hint">Fave / Restrict</span>
                 </div>
                 @if (!group.collapsed) {
                   @for (food of group.foods; track food.id) {
@@ -804,6 +781,13 @@ const FILTER_GROUPS: readonly FilterGroup[] = [
                       <span class="selected-food-name">
                         {{ food.shortDescription || food.description }}
                       </span>
+                      @if (food.regiApproved) {
+                        <mat-icon
+                          class="regi-approved-badge"
+                          matTooltip="Regi-approved"
+                          matTooltipPosition="above"
+                          aria-label="Regi-approved">verified</mat-icon>
+                      }
                       <mat-icon
                         class="row-action favorite"
                         [class.active]="preferencesService.isAllowed(food.id)"
@@ -1053,17 +1037,6 @@ export class FoodsPanelComponent {
     this.preferencesService.getAllPreferences().subscribe({
       error: (err) => console.error('Failed to load food preferences:', err),
     });
-    // Pull the curated-list catalog so the Food List dropdown can show
-    // every list the API publishes (regi-approved, glp-1-friendly, …).
-    this.foodsService.getLists().subscribe({
-      next: (resp) => {
-        const lists = resp?.lists ?? [];
-        this.availableLists.set(lists);
-        // LIST dropdown defaults to My Foods (top of the menu) — do NOT auto-switch
-        // to the Regi Approved list; the user selects a curated list explicitly.
-      },
-      error: () => this.availableLists.set([]),
-    });
     // Build-a-Meal baskets: hydrate the user's saved picks (currentPicks) into the
     // four baskets on load; write-through on every mutation happens via persistBuildMealBaskets.
     void this.hydratePicksFromServer();
@@ -1221,84 +1194,57 @@ export class FoodsPanelComponent {
   // Default TYPE for the Refine Foods pane = MyFoods, since that's the
   // primary list users come here to curate.
   spinSource = signal<SpinSource>('myfoods');
-  // Curated lists fetched from GET /api/lists. Populated once on construction
-  // and rendered below the MyFoods / Restricted entries in the Food List
-  // dropdown. Empty array if the endpoint fails — the special sources still
-  // work, you just won't see the curated catalog.
-  availableLists = signal<FoodList[]>([]);
   selectedCategories = signal<Set<string>>(new Set());
   private rawCarouselFoods = signal<Food[]>([]);
 
-  // Display label for the current TYPE. For the two preference-driven sources
-  // we use the TYPE_LABELS map; for everything else (curated lists) we look
-  // the handle up in availableLists() and return its description.
-  typeLabel = computed<string>(() => {
-    const src = this.spinSource();
-    if (TYPE_LABELS[src]) return TYPE_LABELS[src];
-    return this.availableLists().find(l => l.name === src)?.description ?? src;
-  });
-
-  // Curated-list order for the LIST dropdown: Regi Approved first (default +
-  // top), then GLP-1 Friendly, then any others.
-  readonly orderedLists = computed<FoodList[]>(() => {
-    const rank = (l: FoodList): number => {
-      const d = (l.description || '').toLowerCase();
-      if (/regi|approved/.test(d)) return 0;
-      if (/glp/.test(d)) return 1;
-      return 2;
-    };
-    return [...this.availableLists()].sort((a, b) => rank(a) - rank(b));
-  });
-
-  // Count shown next to the right-pane section title. Honors the picker
-  // search box so the number matches what's actually rendered — for MyFoods
-  // we count the type-ahead-filtered subset of allMyFoods, and for
-  // YEH/Restricted we use carouselFoods (which is already filtered).
+  // Count shown next to the right-pane section title. Honors the SEARCH box so
+  // the number matches what's rendered: Favorited → the search-filtered subset of
+  // allMyFoods; Restricted → carouselFoods (already search-filtered).
   bottomListLength = computed<number>(() => {
     if (this.spinSource() === 'myfoods') {
       const q = this.pickerSearchQuery().trim();
-      if (!q) return this.allMyFoods().length;
-      return this.allMyFoods().filter(f => this.matchesPickerSearch(f)).length;
+      return q ? this.allMyFoods().filter(f => this.matchesPickerSearch(f)).length : this.allMyFoods().length;
     }
     return this.carouselFoods().length;
   });
 
-  // Heading shown in the bottom-pane title strip when the slider is on the
-  // right side. Adds "Foods" unless the label already ends in "Foods" (avoids
-  // the double "MyFoods Foods" trap).
-  collectionHeading = computed<string>(() => {
-    const src = this.spinSource();
-    if (src === 'restricted') return 'Restricted Foods';
-    const label = this.typeLabel();
-    return label.toLowerCase().endsWith('foods') ? label : `${label} Foods`;
-  });
-
-  // Hint label shown above the action-icon column at the right edge of each
-  // row. MyFoods rows also have a delete column; curated lists do not, so
-  // the heading shrinks to "Fave / Restrict" when delete isn't applicable.
-  columnHeaderText = computed<string>(() => 'LIKE / BAN');
-
-  // Search: filters the carousel locally (no API round-trip per keystroke)
+  // Search: filters the LHS carousel locally (no API round-trip per keystroke).
   searchQuery = signal('');
 
-  // Independent type-ahead for the Food Picker (RHS). Driven by the SEARCH
-  // input that lives in the right pane above the accordion. Stays in its
-  // own signal so toggling Curate on/off doesn't entangle with the LHS
-  // carousel search.
+  // SEARCH box for the Edit-MyFoods accordion (RHS). Independent of the LHS
+  // carousel search so the two don't entangle.
   pickerSearchQuery = signal('');
-
   onPickerSearchInput(value: string): void {
     this.pickerSearchQuery.set(value);
+    const q = value.trim();
+    // SEARCH is universal: typing flips the FILTER to 'none' so the search spans
+    // the whole browse set (favorited + restricted + the Regi-approved catalog),
+    // regardless of the filter; clearing it drops back to the default MyFoods
+    // filter. Set spinSource DIRECTLY (not via onSpinSourceChange, which would
+    // wipe the query).
+    if (q && this.spinSource() !== 'none') {
+      this.spinSource.set('none');
+    } else if (!q && this.spinSource() === 'none') {
+      this.spinSource.set('myfoods');
+    }
   }
 
-  /** Edit MyFoods toggle. Clears the picker search bar every time we *enter*
-   *  Edit mode so the user isn't squinting at a list filtered by a query
-   *  they left in there from the last session.  */
-  /** Open the Edit MyFoods library overlay (its own header icon). The overlay is
-   *  a position:fixed popover hosted inside the Build-a-Meal right pane, so ensure
-   *  that pane is rendered (focusEditOpen) before showing it. */
+  /** Substring match against description + shortDescription, case-insensitive.
+   *  Used by both RHS accordions to narrow live as the user types. */
+  private matchesPickerSearch(food: Food): boolean {
+    const q = this.pickerSearchQuery().trim().toLowerCase();
+    if (!q) return true;
+    return food.description.toLowerCase().includes(q)
+      || (food.shortDescription?.toLowerCase().includes(q) ?? false);
+  }
+
+  /** Open the Edit MyFoods library overlay (its own header icon). Clears the
+   *  SEARCH box on entry so the user isn't looking at a stale-filtered list. The
+   *  overlay is a position:fixed popover hosted inside the Build-a-Meal right pane,
+   *  so ensure that pane is rendered (focusEditOpen) before showing it. */
   openEditOverlay(): void {
     this.pickerSearchQuery.set('');
+    this.spinSource.set('myfoods'); // always open on the MyFoods filter
     this.focusEditOpen.set(true);
     this.addTo.set('right');
   }
@@ -1310,35 +1256,20 @@ export class FoodsPanelComponent {
     this.focusEditOpen.set(false);
   }
 
-  /** Substring match against description + shortDescription, case-insensitive.
-   *  Used by both grouped accordions on the RHS. */
-  private matchesPickerSearch(food: Food): boolean {
-    const q = this.pickerSearchQuery().trim().toLowerCase();
-    if (!q) return true;
-    return food.description.toLowerCase().includes(q)
-      || (food.shortDescription?.toLowerCase().includes(q) ?? false);
-  }
-
-  // RHS Food Picker list. NOT filtered by the LHS carousel SEARCH box. It IS
-  // filtered by the picker's own search (above the accordion) when typed.
-  // Sorted alphabetically by the same label the UI shows, matching the
-  // MyFoods source — so curated lists (Regi Approved, GLP-1, …) and the
-  // Restricted list both read in alpha order regardless of API insertion
-  // order, and the order is stable across favorite/restrict toggles.
+  // RHS Restricted / None list — narrowed by the SEARCH box, then sorted
+  // alphabetically by the label the UI shows (stable across favorite/restrict
+  // toggles). For FILTER=None the source set (rawCarouselFoods) already includes
+  // the full Regi-approved catalog (see loadCarouselFoods), so a Regi food the
+  // user hasn't favorited yet appears here to be favorited/restricted inline
+  // (green badge on the row).
   carouselFoods = computed<Food[]>(() => {
-    const raw = this.rawCarouselFoods();
-    const q = this.pickerSearchQuery().trim().toLowerCase();
-    const filtered = q
-      ? raw.filter(f =>
-          f.description.toLowerCase().includes(q)
-          || (f.shortDescription?.toLowerCase().includes(q) ?? false),
-        )
-      : raw;
-    return [...filtered].sort((a, b) => {
-      const aName = (a.shortDescription || a.description || '').toLowerCase();
-      const bName = (b.shortDescription || b.description || '').toLowerCase();
-      return aName.localeCompare(bName);
-    });
+    return [...this.rawCarouselFoods()]
+      .filter(f => this.matchesPickerSearch(f))
+      .sort((a, b) => {
+        const aName = (a.shortDescription || a.description || '').toLowerCase();
+        const bName = (b.shortDescription || b.description || '').toLowerCase();
+        return aName.localeCompare(bName);
+      });
   });
 
   // Carousel destination + local lists (persisted to localStorage).
@@ -1479,8 +1410,7 @@ export class FoodsPanelComponent {
     const searching = this.pickerSearchQuery().trim() !== '';
     const map = new Map<string, Food[]>();
     for (const food of all) {
-      // Pre-filter by the picker's type-ahead so the accordion narrows live.
-      if (!this.matchesPickerSearch(food)) continue;
+      if (!this.matchesPickerSearch(food)) continue; // narrow live to the SEARCH box
       const cat = normalizeCategory(food.categoryName) || 'Uncategorized';
       const arr = map.get(cat);
       if (arr) arr.push(food);
@@ -1517,7 +1447,7 @@ export class FoodsPanelComponent {
   collapsedCarouselCategories = signal<Set<string>>(new Set(CAROUSEL_CATEGORIES));
 
   groupedCarouselFoods = computed<Array<{ category: string; foods: Food[]; collapsed: boolean }>>(() => {
-    const all = this.carouselFoods();
+    const all = this.carouselFoods(); // already search-filtered
     const collapsed = this.collapsedCarouselCategories();
     // While a search is active, force every category open so matches show live.
     const searching = this.pickerSearchQuery().trim() !== '';
@@ -1598,11 +1528,11 @@ export class FoodsPanelComponent {
 
   onSpinSourceChange(value: SpinSource): void {
     this.spinSource.set(value);
-    // Clear the search so the previous list's type-ahead doesn't silently
-    // keep auto-filtering (and auto-expanding) the new list.
+    // Clear the SEARCH so the previous filter's query doesn't silently keep
+    // narrowing (and force-expanding) the new list.
     this.pickerSearchQuery.set('');
-    // Expand against the NEW value, not the prior one — clear both sets so
-    // whichever accordion renders is wide open.
+    // Expand against the NEW filter — clear both collapse sets so whichever
+    // accordion renders is wide open.
     const empty = new Set<string>();
     this.collapsedMyFoodsCategories.set(empty);
     this.collapsedCarouselCategories.set(empty);
@@ -1633,17 +1563,6 @@ export class FoodsPanelComponent {
     this.focusEditOpen() ? this.leftPaneWidthFraction() : 1,
   );
 
-  /** Build-a-Meal toggle (MyFoods header): open the baskets workspace, or close it.
-   *  Opening from here is a MANUAL My Foods open — context-free (no referrer), so
-   *  reset any lingering entry context first. */
-  toggleBuildMeal(): void {
-    if (this.buildMealOpen()) {
-      this.closeBuildMeal();
-    } else {
-      this.resetBamContext();
-      this.openBuildMeal();
-    }
-  }
   /** Open the split showing the Build-a-Meal baskets (no Edit overlay). Switches away
    *  from Edit mode if it was open. Does NOT touch entry context — the caller owns
    *  that (consume effect sets it; toggle/close reset it). */
@@ -1929,8 +1848,11 @@ export class FoodsPanelComponent {
       if (ctx === 'slot' && slot) {
         await this.rotation.placeMealInSlot(slot.menuId, slot.slotOrder, meal.id);
       }
-      // Done — clear the banner + entry context and close the pane.
-      this.resetBuildMealBanner();
+      // Done — empty the baskets (the picks are now a saved meal, so the user
+      // shouldn't have to clear them by hand), clear the banner + entry context,
+      // and close the pane. clearAllBaskets also resets the banner and persists
+      // the now-empty picks.
+      this.clearAllBaskets();
       this.resetBamContext();
       this.focusEditOpen.set(false);
       // Navigate back per context. 'slot' also restores focus to the origin menu
@@ -2555,17 +2477,6 @@ export class FoodsPanelComponent {
     if (food.id != null) this.preferencesService.setUserServingSize(food.id, val, food.foodSource);
   }
 
-  /** Returns true when the NF popup was opened on a food sitting in one of
-   *  the four baskets. Retained for any future basket-aware logic, though
-   *  the popup itself is view-only on the basket side now. */
-  private isFoodFromBasketContext(food: Food): boolean {
-    const baskets = this.buildMealBaskets();
-    for (const key of this.basketKeys) {
-      if (baskets[key].some(f => f.id === food.id)) return true;
-    }
-    return false;
-  }
-
   // ----- RHS basket-tile selection + P/S meal-role designation -----
 
   /** The currently-selected food in a basket on the right pane (yellow halo). */
@@ -2651,38 +2562,6 @@ export class FoodsPanelComponent {
       ...b,
       [key]: [...b[key], stamped],
     }));
-  }
-
-  private onRightSideAdd(food: Food): void {
-    const source = this.spinSource();
-    if (source === 'myfoods') {
-      this.myFoodsLocal.update(list => {
-        const filtered = list.filter(f => f.id !== food.id);
-        return [food, ...filtered];
-      });
-    } else if (source === 'restricted') {
-      if (this.preferencesService.isRestricted(food.id)) {
-        this.preferencesService.toggleRestrictedLocal(food.id);
-      }
-      if (!this.preferencesService.isAllowed(food.id)) {
-        this.preferencesService.toggleFavoriteLocal(food.id);
-      }
-      this.refreshServerMyFoods();
-      this.notificationService.show(`${food.shortDescription || food.description} → MyFoods`, 'success');
-    } else {
-      // Curated list (regi-approved, glp-1-friendly, …) — favorite the food
-      // into MyFoods, matching the previous YEH-approved behavior.
-      if (!this.preferencesService.isAllowed(food.id)) {
-        this.preferencesService.toggleFavoriteLocal(food.id);
-        this.refreshServerMyFoods();
-        this.notificationService.show(`${food.shortDescription || food.description} → MyFoods`, 'success');
-      } else {
-        this.notificationService.show('Already a MyFood', 'info');
-      }
-    }
-    queueMicrotask(() => {
-      this.bottomListRef()?.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
-    });
   }
 
   /** Empty all four Picks baskets at once. Drops the selection and resets to
@@ -3126,10 +3005,27 @@ export class FoodsPanelComponent {
       } else if (source === 'restricted') {
         foods = await firstValueFrom(this.preferencesService.getRestrictedFoodsFull());
       } else {
-        // Curated list — load by name. Same response shape as the YEH-approved
-        // endpoint, so `foods` lands in the existing render path unchanged.
-        const resp = await firstValueFrom(this.foodsService.getListItems(source));
-        foods = resp?.foods ?? [];
+        // 'none' — the universal BROWSE set: the user's own foods (favorited +
+        // restricted) PLUS the full Regi-approved catalog, deduped by id. This is
+        // what lets the user browse/search every Regi-approved food and favorite
+        // or restrict it inline (green badge on Regi rows). The catalog is fetched
+        // in bulk once (on entry to None); the client-side SEARCH box then narrows
+        // it — no per-keystroke round-trip. Own foods are listed FIRST so they win
+        // dedupe and keep their state/images.
+        // NOTE: capped at 500 rows to match the other bulk callers; revisit if the
+        // Regi-approved catalog grows past that.
+        const [restricted, regi] = await Promise.all([
+          firstValueFrom(this.preferencesService.getRestrictedFoodsFull()),
+          firstValueFrom(this.foodsService.searchYehApprovedFoods(500)),
+        ]);
+        const regiFoods = (regi.foods ?? []).map(
+          (f) => ({ ...f, foodSource: 'food' as const, regiApproved: true }),
+        );
+        const seen = new Set<number>();
+        foods = [];
+        for (const f of [...this.allMyFoods(), ...restricted, ...regiFoods]) {
+          if (!seen.has(f.id)) { seen.add(f.id); foods.push(f); }
+        }
       }
 
       // Stale-result guard: discard if a newer load has started

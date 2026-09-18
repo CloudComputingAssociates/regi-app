@@ -1040,6 +1040,14 @@
   flex-direction: column;
   gap: 0;
 }
+// Notebook ENTRIES (the meals + menus lists — NOT the filter panel) begin to the
+// RIGHT of the red margin line, so each row's photo + name reads like writing in
+// the ruled area rather than spilling into the margin. The red line sits at ~23.6%
+// of the sheet width (paper-spiral-bound.png, stretched 100%); on top of the .binder
+// 13% spiral gutter, ~14% here clears it — and stays proportional as the rail resizes.
+.section-body:not(.filter-body) {
+  padding-left: 14%;
+}
 
 // ---- Rows inside the sheet (Menus / Meals) ----
 // Flat rows — no per-row box/outline/shadow; a hairline divider separates them.

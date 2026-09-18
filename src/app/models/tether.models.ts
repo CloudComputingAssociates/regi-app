@@ -2,8 +2,16 @@
 //
 // Hand-transcribed from schemas/tether.schema.json (regi-api). The web side
 // hand-maintains these TS models (same convention as the Dart/Go sides) — keep
-// in sync with the schema; do not invent fields. This session consumes the
-// /tether/presence response only.
+// in sync with the schema; do not invent fields.
+//
+// (see FoodAddResult import below).
+//
+// SCAN contract (kind 'scan' → command type 'scanBarcode'): id is null, name is
+// display-only. On a 'done' result the phone returns a FoodAddResult in
+// result.foodResult; on 'failed' it returns a result.reason
+// ('notFound'|'cancelled'|'error'). These fields are OPTIONAL and additive — the
+// image-capture kinds (meal/food/avatar/mealset) still carry only cdnUrl/thumbnailUrl.
+import { FoodAddResult } from './fatsecret.model';
 
 /** A registered phone/device and its live-presence state. */
 export interface TetherDevice {
@@ -40,7 +48,7 @@ export interface CaptureTarget {
 }
 
 /** Command discriminator. `type` is a coarse hint; the `capture` target is authoritative. */
-export type TetherCommandType = 'captureMeal' | 'captureFood' | 'captureAvatar' | 'captureMealset' | 'capture';
+export type TetherCommandType = 'captureMeal' | 'captureFood' | 'captureAvatar' | 'captureMealset' | 'scanBarcode' | 'capture';
 
 /** POST /api/tether/command body — USER-LEVEL: no deviceId. The API delivers the
  *  command to whichever of the user's phones is currently LIVE (gate the UI on
@@ -58,11 +66,16 @@ export interface TetherCommandResponse {
   messageId: string;
 }
 
-/** The phone's upload receipt on a 'done' result — the CDN URI of the stored image
- *  (and thumbnail, when supplied). Absent on failure. */
+/** The phone's result payload. Image-capture kinds carry the stored CDN URI (and
+ *  thumbnail). The 'scan' kind instead carries the parsed food on success
+ *  (foodResult) or a reason on failure — both optional/additive. */
 export interface TetherCaptureResult {
   cdnUrl?: string;
   thumbnailUrl?: string;
+  /** 'scan' kind, 'done' result — the created/resolved food. */
+  foodResult?: FoodAddResult;
+  /** 'scan' kind, 'failed' result — why the scan didn't produce a food. */
+  reason?: 'notFound' | 'cancelled' | 'error';
 }
 
 /** One completed command from GET /api/tether/results. `deviceId` is WHICH of the
