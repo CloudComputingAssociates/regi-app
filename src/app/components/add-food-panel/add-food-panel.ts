@@ -285,7 +285,9 @@ interface Resolved {
             @if (photoUrl()) {
               <img [src]="photoUrl()" alt="" class="afp-photo-img" (error)="onPhotoImgError()" />
             } @else {
-              <div class="afp-photo-empty"><mat-icon>image</mat-icon></div>
+              <!-- No image found (e.g. OFF had no match) — show the food slug placeholder
+                   rather than a blank box; the user can still add/change a photo. -->
+              <img src="/images/food-slug.png" alt="" class="afp-photo-img afp-photo-slug" />
             }
           </div>
           @if (!photoSearching() && photoIsSuggestion()) {

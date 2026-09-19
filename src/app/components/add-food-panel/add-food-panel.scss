@@ -220,6 +220,12 @@
   height: 100%;
   object-fit: cover;
 }
+// The slug placeholder is a graphic, not a photo — contain (don't crop) + slightly
+// muted so it reads as "no image yet," not a real picture.
+.afp-photo-slug {
+  object-fit: contain;
+  opacity: 0.7;
+}
 .afp-photo-overlay {
   position: relative;
   z-index: 1;

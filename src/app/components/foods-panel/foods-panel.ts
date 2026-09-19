@@ -2042,14 +2042,15 @@ export class FoodsPanelComponent {
    *  carousel click is view/select-only: it must NOT flip out of edit and must
    *  NOT silently drop the food into a covered basket. The user picks foods
    *  only from the default (non-edit) view. */
-  /** Image source for a food tile/row: prefer the small thumbnail, but fall
-   *  back to the full image when the thumbnail is missing. FoodImage and
-   *  FoodImageThumbnail are independent nullable columns server-side, so some
-   *  foods carry a picture with no generated thumbnail — without this fallback
-   *  those tiles render blank even though an image exists. */
-  protected foodThumb(food: Food): string | null | undefined {
-    return food.foodImageThumbnail || food.foodImage;
+  /** Image source for a food tile/row: prefer the small thumbnail, fall back to the
+   *  full image, and finally to a generic food slug so a food with NO picture (e.g.
+   *  a branded name OFF couldn't match) shows a placeholder graphic instead of a
+   *  blank tile. FoodImage / FoodImageThumbnail are independent nullable columns. */
+  protected foodThumb(food: Food): string {
+    return food.foodImageThumbnail || food.foodImage || FoodsPanelComponent.FOOD_SLUG;
   }
+  /** Placeholder graphic for a food with no image (public/images/food-slug.png). */
+  private static readonly FOOD_SLUG = '/images/food-slug.png';
 
   private myFoodTileClickTimer: ReturnType<typeof setTimeout> | null = null;
 
