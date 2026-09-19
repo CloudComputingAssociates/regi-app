@@ -1533,9 +1533,18 @@ export class FoodsPanelComponent {
     this.onSpinSourceChange('myfoods');
     this.addFoodPanelOpen.set(true);
   }
-  /** The Add-Food dialog added/changed a food — reload MyFoods so it appears. */
+  /** The Add-Food dialog added/changed a food — reload MyFoods so it appears live.
+   *  Must refresh BOTH: the allowed-food BLOBS (serverMyFoods) AND the allowed-id
+   *  GATE (localAllowedFoods, via getAllPreferences). The tile grid filters blobs by
+   *  the gate, and getAllowedFoodsFull does NOT touch the gate — so refreshing only
+   *  the blobs left a newly-added food present-but-filtered-out until a full page
+   *  reload. The add already persisted server-side (from-fatsecret favorites it), so
+   *  both fetches return the new food; server is the source of truth. */
   async onAddFoodAdded(): Promise<void> {
-    await this.refreshServerMyFoods();
+    await Promise.all([
+      this.refreshServerMyFoods(),
+      firstValueFrom(this.preferencesService.getAllPreferences()),
+    ]);
   }
 
   onSpinSourceChange(value: SpinSource): void {
