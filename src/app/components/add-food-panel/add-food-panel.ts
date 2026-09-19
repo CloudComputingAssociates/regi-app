@@ -593,8 +593,9 @@ export class AddFoodPanelComponent implements OnInit {
   /** Suggest a photo for a food with none — pure ENRICHMENT, fire-and-forget: it is
    *  never awaited by the pick→resolve→save chain, so it can never block resolve,
    *  dirty-state, or save (see pickFatSecret / seed, which `void` this). Our CDN by
-   *  description first; the Open Food Facts fallback is currently a no-op in the
-   *  browser (CORS/rate-limit — see ImageUploadService.searchOpenFoodFactsImage).
+   *  description first; the Open Food Facts fallback is live via the server proxy
+   *  (GET /api/foods/off-image — see ImageUploadService.searchOpenFoodFactsImage),
+   *  returning an OFF URL the preview hotlinks (re-hosted only on SAVE, never here).
    *  Wrapped in try/finally so an unexpected throw can't leak or wedge the spinner. */
   private async suggestPhoto(term: string): Promise<void> {
     const q = (term || '').trim();
@@ -609,7 +610,7 @@ export class AddFoodPanelComponent implements OnInit {
         /* CDN has no image (throws on 404) — fall through to the OFF fallback */
       }
       if (!url) {
-        url = await this.imageUpload.searchOpenFoodFactsImage(q); // no-op '' in browser
+        url = await this.imageUpload.searchOpenFoodFactsImage(q); // live via server proxy; '' = no hit
       }
       if (url) {
         this.photoUrl.set(url);

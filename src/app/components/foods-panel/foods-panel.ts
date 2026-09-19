@@ -3024,9 +3024,14 @@ export class FoodsPanelComponent {
     });
   }
 
-  /** Clear all category filters → show everything. */
+  /** Clear the FILTER row in one click: drop the category filter AND wipe the SEARCH
+   *  box, returning the pane to the default unfiltered, unsearched view. Setting
+   *  searchQuery('') also resets the visible input (it's [value]-bound). Deliberately
+   *  does NOT touch spinSource — the RHS Edit-MyFoods FILTER=None stickiness is a
+   *  separate pane and must be left as-is. */
   clearFilters(): void {
     this.selectedCategories.set(new Set());
+    this.searchQuery.set('');
   }
 
   private loadRequestId = 0;
