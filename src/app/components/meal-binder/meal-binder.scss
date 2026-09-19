@@ -1207,10 +1207,13 @@
   padding-left: 13%;
 
   // Square thumbnail — absolutely positioned so it hangs in the margin (LEFT of the
-  // rule) instead of pushing the name across it. Vertically centered on the row.
+  // rule) instead of pushing the name across it. Centered horizontally in the margin
+  // band (between the spiral binding and the red rule ~half the 13% gutter in) so it
+  // sits off the binding with a touch of breathing room and a tighter gap to the
+  // name; vertically centered on the row.
   .card-thumb {
     position: absolute;
-    left: 0;
+    left: calc(6% - var(--thumb) / 2);
     top: 50%;
     transform: translateY(-50%);
     flex: 0 0 auto;
@@ -1238,11 +1241,11 @@
     }
   }
 
-  // Menu rows share .card-head — hang the book glyph in the margin too, so menu
-  // names line up with meal names (both start right of the red rule).
+  // Menu rows share .card-head — hang the book glyph in the margin too, centered to
+  // match the meal thumbnail so menu + meal rows line up.
   .menu-grip {
     position: absolute;
-    left: 0;
+    left: calc(6% - var(--thumb) / 2);
     top: 50%;
     transform: translateY(-50%);
   }
