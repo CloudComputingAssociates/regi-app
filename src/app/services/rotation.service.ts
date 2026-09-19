@@ -919,6 +919,10 @@ export class RotationService {
         await this.updateMenuName(firstMenuId, this.nextUnusedDayName(firstMenuId)); // "Day 1"
         this.selectedMenuId.set(firstMenuId);
         await this.selectMenu(firstMenuId);
+      } else {
+        // No first menu (post-wipe reset) — clear the selection so the board shows
+        // the empty state instead of the last-selected (now-deleted) menu's slots.
+        this.selectedMenuId.set(null);
       }
     } catch (err) {
       this.error.set(this.errMessage(err));
@@ -2594,6 +2598,11 @@ export class RotationService {
           () => undefined,
         );
       }
+
+      // Drop the cached menu detail + selection for the torn-down rotation so a
+      // stale selectedMenu() can't keep rendering slot cards behind the empty board.
+      this.selectedMenuId.set(null);
+      this.menusById.set(new Map());
 
       await Promise.all([this.loadFolder(), this.loadBinder(), this.loadBinderMenus()]);
       // Stand a fresh EMPTY rotation back up (NO Day 1) — the strip shows only the
